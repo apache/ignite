@@ -164,39 +164,37 @@ class CacheGroupEncryptionKeys {
      * Sets new encryption key for writing.
      *
      * @param grpId Cache group ID.
-     * @param newActiveId ID of the existing encryption key to be set for writing..
+     * @param keyId ID of the existing encryption key to be set for writing..
      * @return Previous encryption key used for writing.
      */
-    GroupKey changeActiveKey(int grpId, int newActiveId) {
+    GroupKey changeActiveKey(int grpId, int keyId) {
         List<GroupKey> keys = grpKeys.get(grpId);
 
         assert !F.isEmpty(keys) : "grpId=" + grpId;
 
         GroupKey prevKey = keys.get(0);
 
-        assert prevKey.unsignedId() != newActiveId : "grpId=" + grpId + ", keyId=" + newActiveId;
+        assert prevKey.unsignedId() != keyId : "keyId=" + keyId;
 
-        GroupKey newActiveKey = null;
+        GroupKey newKey = null;
 
-        ListIterator<GroupKey> itr = keys.listIterator(keys.size());
-
-        while (itr.hasPrevious()) {
+        for (ListIterator<GroupKey> itr = keys.listIterator(keys.size()); itr.hasPrevious(); ) {
             GroupKey key = itr.previous();
 
-            if (key.unsignedId() != newActiveId)
+            if (key.unsignedId() != keyId)
                 continue;
 
-            newActiveKey = key;
+            newKey = key;
 
             break;
         }
 
-        assert newActiveKey != null : "grpId=" + grpId + ", keyId=" + newActiveId + ", keys=" + keys;
+        assert newKey != null : "exp=" + keyId + ", act=" + keys;
 
-        keys.add(0, newActiveKey);
+        keys.add(0, newKey);
 
-        // Remove the duplicate key from the tail of the list.
-        keys.subList(1, keys.size()).removeIf(k -> k.unsignedId() == newActiveId);
+        // Remove the duplicate key(s) from the tail of the list.
+        keys.subList(1, keys.size()).removeIf(k -> k.unsignedId() == keyId);
 
         return prevKey;
     }

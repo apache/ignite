@@ -30,7 +30,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
@@ -377,31 +376,6 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
     }
 
     /**
-     * Ensures that after rotation, the node has correct key identifier.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNodeJoinAfterChange() throws Exception {
-        startTestGrids(true);
-
-        IgniteEx node0 = grid(GRID_0);
-        IgniteEx node1 = grid(GRID_1);
-
-        createEncryptedCache(node0, node1, cacheName(), null);
-
-        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
-
-        startGrid(GRID_2);
-
-        resetBaselineTopology();
-
-        awaitPartitionMapExchange();
-
-        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
-    }
-
-    /**
      * @throws Exception If failed.
      */
     @Test
@@ -535,7 +509,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         // Wait until cache will be reencrypted with the old key.
         checkGroupKey(grpId, INITIAL_KEY_ID, MAX_AWAIT_MILLIS);
 
-        IgniteEncryption encrMgr1 = node1.encryption();
+        GridEncryptionManager encrMgr0 = node0.context().encryption();
+        GridEncryptionManager encrMgr1 = node1.context().encryption();
 
         // Changing the encryption key is not possible until the WAL segment,
         // encrypted (probably) with the previous key, is deleted.
@@ -553,6 +528,19 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         encrMgr1.changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS);
         checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
         checkEncryptedCaches(node0, node1);
+
+        walIdx = Math.max(node0.context().cache().context().wal().currentSegment(),
+            node1.context().cache().context().wal().currentSegment());
+
+        // Simulate WAL segment deletion.
+        for (long n = 0; n <= walIdx; n++) {
+            encrMgr0.onWalSegmentRemoved(walIdx);
+            encrMgr1.onWalSegmentRemoved(walIdx);
+        }
+
+        // Make sure the previous key has been removed.
+        assertEquals(1, encrMgr0.groupKeyIds(grpId).size());
+        assertEquals(encrMgr1.groupKeyIds(grpId), encrMgr0.groupKeyIds(grpId));
     }
 
     /**
@@ -840,10 +828,12 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
     }
 
     /**
+     * Ensures that node can join after rotation of encrypion key.
+     *
      * @throws Exception If failed.
      */
     @Test
-    public void testNotBltNodeJoin() throws Exception {
+    public void testNodeJoinAfterRotation() throws Exception {
         backups = 1;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
@@ -852,32 +842,41 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         forceCheckpoint();
 
-        long startIdx = nodes.get2().context().cache().context().wal().currentSegment();
-
         stopGrid(GRID_1);
-
         resetBaselineTopology();
 
         nodes.get1().encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
         startGrid(GRID_1);
-
         resetBaselineTopology();
-
         awaitPartitionMapExchange();
-
-        long endIdx = nodes.get2().context().cache().context().wal().currentSegment();
 
         int grpId = CU.cacheId(cacheName());
 
         checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
-
         checkEncryptedCaches(grid(GRID_0), grid(GRID_1));
 
-        for (long segment = startIdx; segment <= endIdx; segment++)
-            grid(GRID_1).context().encryption().onWalSegmentRemoved(segment);
+        GridEncryptionManager encrMgr0 = grid(GRID_0).context().encryption();
+        GridEncryptionManager encrMgr1 = grid(GRID_1).context().encryption();
 
-        assertEquals(1, grid(GRID_1).context().encryption().groupKeyIds(grpId).size());
+        long maxWalIdx = Math.max(nodes.get1().context().cache().context().wal().currentSegment(),
+            nodes.get2().context().cache().context().wal().currentSegment());
+
+        for (long idx = 0; idx <= maxWalIdx; idx++) {
+            encrMgr0.onWalSegmentRemoved(maxWalIdx);
+            encrMgr1.onWalSegmentRemoved(maxWalIdx);
+        }
+
+        assertEquals(1, encrMgr1.groupKeyIds(grpId).size());
+        assertEquals(encrMgr0.groupKeyIds(grpId), encrMgr1.groupKeyIds(grpId));
+
+        resetBaselineTopology();
+        awaitPartitionMapExchange();
+
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+        checkEncryptedCaches(grid(GRID_2), nodes.get1());
+
+        assertEquals(encrMgr0.groupKeyIds(grpId), grid(GRID_2).context().encryption().groupKeyIds(grpId));
     }
 
     /**

@@ -110,14 +110,19 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *     <li>Coordinator:
  *     <ul>
  *         <li>1. Checks master key digest are equal to local. If not join is rejected.</li>
- *         <li>2. Checks all stored keys from joining node are equal to stored keys. If not join is rejected.</li>
+ *         <li>2. Checks all stored keys from joining node are equal to stored keys. If not join is rejected.
+ *
+ *
+ *         </li>
  *         <li>3. Collects all stored keys and sends it to joining node.</li>
  *     </ul>
  *     </li>
  *     <li>All nodes:
  *     <ul>
- *         <li>1. If new key for group doesn't exists locally it added to local store.</li>
+ *         <li>1. If new key for group doesn't exists locally it added to local store</li>
  *         <li>2. If new key for group exists locally, then received key skipped.</li>
+ *         <li>3. If a cache group is encrypted with a different (previous) encryption key, then background
+ *                re-encryption of this group with a new key is started.</li>
  *     </ul>
  *     </li>
  * </ul>
