@@ -158,17 +158,18 @@ be updating the thick client with task-related execution details.
 [{table_opts}]
 |===
 |NAME | TYPE |    DESCRIPTION
-|AFFINITY_CACHE_NAME | string |  Cache name
+|ID | UUID | Task id
+|SESSION_ID | UUID | Session ID
+|TASK_NODE_ID | UUID | Task originating node id
+|TASK_NAME | string | Task name
+|TASK_CLASS_NAME | string | Task class name
 |AFFINITY_PARTITION_ID | int | Cache partition id
-|END_TIME | long |    End time
-|EXEC_NAME | string |  Thread pool name executing task
+|AFFINITY_CACHE_NAME | string | Cache name
+|START_TIME | long | Start time
+|END_TIME | long | End time
+|EXEC_NAME | string | Thread pool name executing task
 |INTERNAL | boolean | True if task is internal
-|JOB_ID | UUID |    Compute job ID
-|START_TIME | long |    Start time
-|TASK_CLASS_NAME | string |  Task class name
-|TASK_NAME | string |  Task name
-|TASK_NODE_ID | UUID |    Task originating node id
-|USER_VERSION | string |  Task user version
+|USER_VERSION | string | Task user version
 |===
 
 == JOBS
