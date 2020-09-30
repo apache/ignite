@@ -117,10 +117,35 @@ image::images/set-streaming.png[]
 
 The `KILL QUERY` command allows you to cancel a running query.
 
+[tabs]
+--
+
+tab:SQL[]
 [source,sql]
 ----
 KILL QUERY {ASYNC} 'query_id'
 ----
+
+tab:JMX[]
+[source,java]
+----
+QueryMXBean mxBean = ...;
+mxBean.cancelSQL(queryId);
+----
+
+tab:Unix[]
+[source,bash]
+----
+./control.sh --kill SQL query_id
+----
+
+tab:Windows[]
+[source,bash]
+----
+.\control.bat --kill SQL query_id
+----
+
+--
 
 === Description
 `query_id` can be retrived via the `SQL_QUERIES` view.
@@ -128,44 +153,79 @@ KILL QUERY {ASYNC} 'query_id'
 
 When a query cancelled via the `KILL` command, all parts of the query running on all other nodes are cancelled.
 
-This command available via JMX and CMD, also:
-
-- `QueryMXBean#cancelSQL`
-- `./control.sh --kill SQL query_id`
-
 == KILL TRANSACTION
 
 The `KILL TRANSACTION` command allows you to cancel a running transaction.
 
+[tabs]
+--
+
+tab:SQL[]
 [source,sql]
 ----
 KILL TRANSACTION 'xid'
 ----
 
+tab:JMX[]
+[source,java]
+----
+TransactionMXBean mxBean = ...;
+mxBean.cancel(xid);
+----
+
+tab:Unix[]
+[source,bash]
+----
+./control.sh --kill TRANSACTION xid
+----
+
+tab:Windows[]
+[source,bash]
+----
+.\control.bat --kill TRANSACTION xid
+----
+
+--
+
 === Description
 `xid` of the transaction can be retrived via the `TRANSACTIONS` view.
-
-This command available via JMX and CMD, also:
-
-- `TransactionMXBean#cancel`
-- `./control.sh --kill TRANSACTION xid`
 
 == KILL SCAN
 
 The `KILL SCAN` command allows you to cancel a running scan query.
 
+[tabs]
+--
+
+tab:SQL[]
 [source,sql]
 ----
 KILL SCAN 'origin_node_id' 'cache_name' query_id
 ----
 
+tab:JMX[]
+[source,java]
+----
+QueryMXBean mxBean = ....;
+mxBean.cancelScan(originNodeId, cacheName, queryId);
+----
+
+tab:Unix[]
+[source,bash]
+----
+./control.sh --kill SCAN origin_node_id cache_name query_id
+----
+
+tab:Windows[]
+[source,bash]
+----
+.\control.bat --kill SCAN origin_node_id cache_name query_id
+----
+
+--
+
 === Description
 `origin_node_id`, `cache_name`, `query_id` parameters can be retrived via the `SCAN_QUERIES`.
-
-This command available via JMX and CMD, also:
-
-- `QueryMXBean#cancelScan`
-- `./control.sh --kill SCAN origin_node_id cache_name query_id`
 
 === Example
 
@@ -178,35 +238,74 @@ KILL SCAN '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321' 'cache-name' 1
 
 The `KILL COMPUTE` command allows you to cancel a running compute.
 
+[tabs]
+--
+
+tab:SQL[]
 [source,sql]
 ----
 KILL COMPUTE 'session_id'
 ----
 
+tab:JMX[]
+[source,java]
+----
+ ComputeMXBean#cancel
+----
+
+tab:Unix[]
+[source,bash]
+----
+./control.sh --kill COMPUTE session_id
+----
+
+tab:Windows[]
+[source,bash]
+----
+.\control.bat --kill COMPUTE session_id
+----
+
+--
+
 === Description
 `session_id` parameter can be retrived via the `TASKS` or `JOBS` view.
-
-This command available via JMX and CMD, also:
-
-- `ComputeMXBean#cancel`
-- `./control.sh --kill COMPUTE session_id`
 
 == KILL CONTINUOUS
 
 The `KILL CONTINUOUS` command allows you to cancel a running continuous query.
 
+[tabs]
+--
+
+tab:SQL[]
 [source,sql]
 ----
 KILL CONTINUOUS 'origin_node_id', 'routine_id'
 ----
 
+tab:JMX[]
+[source,java]
+----
+QueryMXBean mxBean = ...;
+mxBean.cancelContinuous(originNodeId, routineId);
+----
+
+tab:Unix[]
+[source,bash]
+----
+./control.sh --kill CONTINUOUS origin_node_id routine_id
+----
+
+tab:Windows[]
+[source,bash]
+----
+.\control.bat --kill CONTINUOUS origin_node_id routine_id
+----
+
+--
+
 === Description
 `origin_node_id` and `routine_id` can be retrived via `CONTINUOUS_QUERIES` view.
-
-This command available via JMX and CMD, also:
-
-- `QueryMXBean#cancelContinuous`
-- `./control.sh --kill CONTINUOUS origin_node_id routine_id`
 
 === Example
 
@@ -219,15 +318,35 @@ KILL CONTINUOUS '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321' '6fa749ee-7cf8-4635
 
 The `KILL SERVICE` command allows you to cance a running service.
 
+[tabs]
+--
+
+tab:SQL[]
 [source,sql]
 ----
 KILL SERVICE 'name'
 ----
 
+tab:JMX[]
+[source,java]
+----
+ServiceMXBean mxBean = ...;
+mxBean.cancel(name);
+----
+
+tab:Unix[]
+[source,bash]
+----
+./control.sh --kill SERVICE name
+----
+
+tab:Windows[]
+[source,bash]
+----
+.\control.bat --kill SERVICE name
+----
+
+--
+
 === Description
 `name` of the service user specifies on deployment. It can be retrieved via `SERVICES` view, also.
-
-This command available via JMX and CMD, also:
-
-- `ServiceMXBean#cancel`
-- `./control.sh --kill SERVICE name`
