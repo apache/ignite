@@ -28,7 +28,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -56,13 +57,13 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
         cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         cacheCfg.setIndexedTypes(UUID.class, byte[].class);
 
-        IgniteCache<UUID, byte[]> cache = ignite.getOrCreateCache(cacheCfg);
+        ignite.getOrCreateCache(cacheCfg);
 
         long start = System.currentTimeMillis();
 
         markInitialized();
 
-        workParallel(cache, iterSize, dataSize);
+        workParallel(ignite, cacheName, iterSize, dataSize);
 
         recordResult("DURATION", System.currentTimeMillis() - start);
 
@@ -70,7 +71,7 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void workParallel(IgniteCache<UUID, byte[]> cache, long iterSize, int dataSize){
+    private void workParallel(Ignite ignite, String cacheName, long iterSize, int dataSize){
         int core = Runtime.getRuntime().availableProcessors() / 2;
 
         long iterCore = 0 < iterSize ? iterSize / core : iterSize;
@@ -84,7 +85,7 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
         CountDownLatch latch = new CountDownLatch(core);
 
         for (int i = 0; i < core; i++)
-            executors.submit(new UuidDataStreamer(cache, latch, iterCore, dataSize));
+            executors.submit(new UuidDataStreamer(ignite, cacheName, latch, iterCore, dataSize));
 
         try {
             while (!terminated()
@@ -95,13 +96,14 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
         }
 
         executors.shutdownNow();
-
     }
 
     /** */
     private class UuidDataStreamer implements Runnable{
         /** Data streamer. */
-        private final IgniteCache<UUID, byte[]> cache;
+        private final Ignite ignite;
+        /** Cache name. */
+        private final String cacheName;
         /** Latch. */
         private final CountDownLatch latch;
         /** Count. */
@@ -112,8 +114,9 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
         private final int dataSize;
 
         /** */
-        public UuidDataStreamer(IgniteCache<UUID, byte[]> cache,CountDownLatch latch, long iterSize, int dataSize) {
-            this.cache = cache;
+        public UuidDataStreamer(Ignite ignite, String cacheName, CountDownLatch latch, long iterSize, int dataSize) {
+            this.ignite = ignite;
+            this.cacheName = cacheName;
             this.latch = latch;
             this.iterSize = iterSize;
             this.dataSize = dataSize;
@@ -121,16 +124,22 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            while (cnt != iterSize && !Thread.currentThread().isInterrupted()) {
-                UUID uuid = UUID.randomUUID();
+            try(IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)){
+                dataStreamer.autoFlushFrequency(100L);
 
-                byte[] data = new byte[dataSize];
+                while (cnt != iterSize && !Thread.currentThread().isInterrupted()) {
+                    UUID uuid = UUID.randomUUID();
 
-                ThreadLocalRandom.current().nextBytes(data);
+                    byte[] data = new byte[dataSize];
 
-                cache.put(uuid, data);
+                    ThreadLocalRandom.current().nextBytes(data);
 
-                cnt++;
+                    dataStreamer.addData(uuid, data);
+
+                    cnt++;
+                }
+
+                dataStreamer.flush();
             }
 
             latch.countDown();
