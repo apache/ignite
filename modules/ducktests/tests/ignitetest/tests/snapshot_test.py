@@ -129,8 +129,8 @@ class SnapshotTest(IgniteTest):
         """
         super().copy_service_logs(test_status=test_status)
 
-        # if test_status == FAIL:
-        self.copy_ignite_root_dir()
+        if test_status == FAIL:
+            self.copy_ignite_root_dir()
 
 
 def get_dump_path(control_utility: ControlUtility, node):
