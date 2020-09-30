@@ -59,6 +59,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_CREATED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_DESTROYED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
@@ -125,6 +127,16 @@ public class CacheEventsTest extends AbstractSecurityTest {
             new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.PUT},
             new Object[] {"thin", EVT_CACHE_OBJECT_PUT, TestOperation.PUT},
             new Object[] {"rest", EVT_CACHE_OBJECT_PUT, TestOperation.PUT},
+
+            new Object[] {CLNT, EVT_CACHE_ENTRY_CREATED, TestOperation.PUT},
+            new Object[] {SRV, EVT_CACHE_ENTRY_CREATED, TestOperation.PUT},
+            new Object[] {"thin", EVT_CACHE_ENTRY_CREATED, TestOperation.PUT},
+            new Object[] {"rest", EVT_CACHE_ENTRY_CREATED, TestOperation.PUT},
+
+            new Object[] {CLNT, EVT_CACHE_ENTRY_DESTROYED, TestOperation.PUT},
+            new Object[] {SRV, EVT_CACHE_ENTRY_DESTROYED, TestOperation.PUT},
+            new Object[] {"thin", EVT_CACHE_ENTRY_DESTROYED, TestOperation.PUT},
+            new Object[] {"rest", EVT_CACHE_ENTRY_DESTROYED, TestOperation.PUT},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ASYNC},
             new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ASYNC},
