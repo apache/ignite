@@ -23,7 +23,6 @@ import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -36,12 +35,12 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointe
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
-import static org.apache.ignite.configuration.PersistentStoreConfiguration.DFLT_WAL_STORE_PATH;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 
@@ -131,7 +130,7 @@ public class IgniteCDC implements Runnable {
             Optional<WALPointer> pos = Optional.empty();
 
             while (true) {
-                Path newWalFile = walFiles.poll(1, TimeUnit.SECONDS);
+                Path newWalFile = walFiles.poll(1, SECONDS);
 
                 if (newWalFile != null) {
                     log.info("Found new WAL file[file=" + newWalFile + ']');
@@ -201,7 +200,7 @@ public class IgniteCDC implements Runnable {
                 if (log.isDebugEnabled())
                     log.debug("DB directory found[dir=" + work + ']');
 
-                wu.waitFor(Paths.get(work.toAbsolutePath().toString(), DFLT_WAL_STORE_PATH), wal -> {
+                wu.waitFor(Paths.get(work.toAbsolutePath().toString(), DFLT_WAL_PATH), wal -> {
                     if (log.isDebugEnabled())
                         log.debug("WAL directory found[dir=" + wal + ']');
 
