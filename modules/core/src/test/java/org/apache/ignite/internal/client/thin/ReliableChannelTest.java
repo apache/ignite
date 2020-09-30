@@ -63,6 +63,7 @@ public class ReliableChannelTest {
             "127.0.0.1:10800", "127.0.0.1:10800", "127.0.0.1:10801");
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+
         rc.channelsInit(false);
 
         assertEquals(3, rc.getChannelHolders().size());
@@ -89,45 +90,27 @@ public class ReliableChannelTest {
             .sorted()
             .collect(Collectors.toList());
 
-        rc.channelsInit(true);
-        assertEquals(
-            Arrays.asList("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"),
-            holderAddresses.get());
+        Consumer<List<String>> assertAddrReInitAndEqualsTo = (addrs) -> {
+            rc.channelsInit(true);
 
-        rc.channelsInit(true);
-        assertEquals(
-            Arrays.asList("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10805"),
-            holderAddresses.get());
+            assertEquals(addrs, holderAddresses.get());
+        };
 
-        rc.channelsInit(true);
-        assertEquals(
-            Arrays.asList("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10806"),
-            holderAddresses.get());
+        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"));
 
-        rc.channelsInit(true);
-        assertEquals(
-            Arrays.asList("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10806"),
-            holderAddresses.get());
+        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10805"));
 
-        rc.channelsInit(true);
-        assertEquals(
-            Arrays.asList("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10803"),
-            holderAddresses.get());
+        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10806"));
 
-        rc.channelsInit(true);
-        assertEquals(
-            Arrays.asList("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10804"),
-            holderAddresses.get());
+        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10806"));
 
-        rc.channelsInit(true);
-        assertEquals(
-            Arrays.asList("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10804"),
-            holderAddresses.get());
+        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10803"));
 
-        rc.channelsInit(true);
-        assertEquals(
-            Arrays.asList("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"),
-            holderAddresses.get());
+        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10803", "127.0.0.1:10804"));
+
+        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10803", "127.0.0.1:10804", "127.0.0.1:10804"));
+
+        assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"));
     }
 
     /** Checks that channel holders are not reinited for static address configuration. */
@@ -153,19 +136,24 @@ public class ReliableChannelTest {
     /** */
     private void checkDoesNotReinit(ClientConfiguration ccfg) {
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+
         rc.channelsInit(false);
+
         List<ReliableChannel.ClientChannelHolder> originalChannels = rc.getChannelHolders();
         List<ReliableChannel.ClientChannelHolder> copyOriginalChannels = new ArrayList<>(originalChannels);
 
         // Imitate topology change.
         rc.initChannelHolders(true);
+
         List<ReliableChannel.ClientChannelHolder> newChannels = rc.getChannelHolders();
 
         assertSame(originalChannels, newChannels);
+
         for (int i = 0; i < 3; ++i) {
             assertSame(copyOriginalChannels.get(i), newChannels.get(i));
             assertFalse(copyOriginalChannels.get(i).isClosed());
         }
+
         assertEquals(3, newChannels.size());
     }
 
@@ -175,7 +163,9 @@ public class ReliableChannelTest {
         ClientConfiguration ccfg = new ClientConfiguration().setAddresses(dfltAddrs);
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+
         rc.channelsInit(false);
+
         // Trigger TestClientChannel creation.
         rc.service(null, null, null);
 
@@ -197,9 +187,11 @@ public class ReliableChannelTest {
         ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+
         rc.channelsInit(false);
 
         List<ReliableChannel.ClientChannelHolder> originChannels = Collections.unmodifiableList(rc.getChannelHolders());
+
         // Imitate topology change.
         rc.initChannelHolders(true);
 
@@ -212,8 +204,11 @@ public class ReliableChannelTest {
         assertEquals(1, reuseChannel.size());
 
         List<ReliableChannel.ClientChannelHolder> newChannels = rc.getChannelHolders();
+
         assertEquals(2, newChannels.size());
+
         assertTrue(newChannels.get(0) == reuseChannel.get(0) || newChannels.get(1) == reuseChannel.get(0));
+
         newChannels.forEach(c -> assertFalse(c.isClosed()));
     }
 
@@ -227,7 +222,9 @@ public class ReliableChannelTest {
         ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
+
         rc.channelsInit(false);
+
         // Trigger TestClientChannel creation.
         rc.service(null, null, null);
 
@@ -247,11 +244,13 @@ public class ReliableChannelTest {
             .setPartitionAwarenessEnabled(true);
 
         ReliableChannel rc = new ReliableChannel(cfg -> new TestFailureClientChannel(), ccfg, null);
+
         rc.channelsInit(false);
     }
 
     /** Async operation should fail if cluster is down after send operation. */
     @Test
+    @SuppressWarnings("unchecked")
     public void testFailOnAsyncAfterSendOperation() {
         checkFailAfterSendOperation(cache -> {
             try {
@@ -264,6 +263,7 @@ public class ReliableChannelTest {
 
     /** Async operation should fail if cluster is down after send operation and handle topology change. */
     @Test
+    @SuppressWarnings("unchecked")
     public void testFailOnAsyncTopologyChangeAfterSendOperation() {
         checkFailAfterSendOperation(cache -> {
             try {
@@ -337,12 +337,12 @@ public class ReliableChannelTest {
 
         /** {@inheritDoc} */
         @Override public void addTopologyChangeListener(Consumer<ClientChannel> lsnr) {
-
+            /* No-op */
         }
 
         /** {@inheritDoc} */
         @Override public void addNotificationListener(NotificationListener lsnr) {
-
+            /* No-op */
         }
 
         /** {@inheritDoc} */
@@ -352,7 +352,7 @@ public class ReliableChannelTest {
 
         /** {@inheritDoc} */
         @Override public void close() throws Exception {
-
+            /* No-op */
         }
     }
 
@@ -372,6 +372,7 @@ public class ReliableChannelTest {
                                                                Function<PayloadInputChannel, T> payloadReader) {
             // Emulate that TcpClientChannel#send is ok, but TcpClientChannel#recieve is failed.
             CompletableFuture<T> fut = new CompletableFuture<>();
+
             fut.completeExceptionally(new ClientConnectionException(null));
 
             return fut;

@@ -167,6 +167,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         }
 
         List<ClientChannelHolder> holders = channels;
+
         if (holders != null) {
             for (ClientChannelHolder hld: holders)
                 hld.close();
@@ -189,7 +190,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     ) throws ClientException, ClientError {
         return applyOnDefaultChannel(channel ->
             channel.service(op, payloadWriter, payloadReader)
-        ).getKey();
+        );
     }
 
     /**
@@ -234,6 +235,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             .handle((res, err) -> {
                 if (err == null) {
                     fut.complete(res);
+
                     return null;
                 }
 
@@ -366,6 +368,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
                             if (err instanceof ClientConnectionException) {
                                 ClientConnectionException failure = (ClientConnectionException) err;
+
                                 int attemptsLimit = getRetryLimit() - 1;
 
                                 if (attemptsLimit == 0) {
@@ -516,8 +519,10 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             List<ClientChannelHolder> holders = channels;
 
             ClientChannelHolder dfltHld = holders.get(idx);
+
             if (dfltHld == hld) {
                 idx += 1;
+
                 if (idx >= holders.size())
                     curChIdx = 0;
                 else
@@ -560,6 +565,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         asyncRunner.submit(
             () -> {
                 List<ClientChannelHolder> holders = channels;
+
                 for (ClientChannelHolder hld : holders) {
                     if (closed || (startChannelsReInit > finishChannelsReInit))
                         return; // New reinit task scheduled or channel is closed.
@@ -644,18 +650,22 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         if (holders != null) {
             for (int i = 0; i < holders.size(); i++) {
                 ClientChannelHolder h = holders.get(i);
+
                 curAddrs.put(h.chCfg.getAddress(), h);
                 allAddrs.add(h.chCfg.getAddress());
             }
         }
 
         List<ClientChannelHolder> reinitHolders = new ArrayList<>();
+
         // The variable holds a new index of default channel after topology change.
         // Suppose that reuse of the channel is better than open new connection.
         int dfltChannelIdx = -1;
 
         ClientChannelHolder currDfltHolder = null;
+
         int idx = curChIdx;
+
         if (idx != -1)
             currDfltHolder = holders.get(idx);
 
@@ -682,6 +692,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
             // This holder is up to date.
             ClientChannelHolder hld = curAddrs.get(addr);
+
             for (int i = 0; i < newAddrs.get(addr); i++)
                 reinitHolders.add(hld);
 
@@ -747,7 +758,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     }
 
     /** */
-    private <T> T2<T, Integer> applyOnDefaultChannel(Function<ClientChannel, T> function) {
+    private <T> T applyOnDefaultChannel(Function<ClientChannel, T> function) {
         List<ClientChannelHolder> holders = channels;
 
         if (holders == null)
@@ -758,7 +769,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         int attemptsLimit = clientCfg.getRetryLimit() > 0 ?
             Math.min(clientCfg.getRetryLimit(), size) : size;
 
-        return applyOnDefaultChannel(function, attemptsLimit);
+        return applyOnDefaultChannel(function, attemptsLimit).getKey();
     }
 
     /**
@@ -770,11 +781,13 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         for (int attempt = 0; attempt < attemptsLimit; attempt++) {
             ClientChannelHolder hld = null;
             ClientChannel c = null;
+
             try {
                 if (closed)
                     throw new ClientException("Channel is closed");
 
                 curChannelsGuard.readLock().lock();
+
                 try {
                     hld = channels.get(curChIdx);
                 } finally {
@@ -782,6 +795,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                 }
 
                 c = hld.getOrCreateChannel();
+
                 if (c != null)
                     return new T2<>(function.apply(c), attempt + 1);
             }
@@ -812,6 +826,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
             try {
                 channel = hld.getOrCreateChannel();
+
                 if (channel != null)
                     return function.apply(channel);
 
@@ -819,9 +834,9 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                 onChannelFailure(hld, channel);
 
                 retryLimit -= 1;
+
                 if (retryLimit == 0)
                     throw e;
-
             }
         }
 
@@ -915,11 +930,13 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                         channel.addNotificationListener(ReliableChannel.this);
 
                         UUID prevId = serverNodeId;
+
                         if (prevId != null && !prevId.equals(channel.serverNodeId()))
                             nodeChannels.remove(prevId, this);
 
                         if (!channel.serverNodeId().equals(prevId)) {
                             serverNodeId = channel.serverNodeId();
+
                             // There could be multiple holders map to the same serverNodeId if user provide the same
                             // address multiple times in configuration.
                             nodeChannels.putIfAbsent(channel.serverNodeId(), this);
@@ -950,6 +967,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         /** Close holder. */
         void close() {
             close = true;
+
             if (serverNodeId != null)
                 nodeChannels.remove(serverNodeId);
 
