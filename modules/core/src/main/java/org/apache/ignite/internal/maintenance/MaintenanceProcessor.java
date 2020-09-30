@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceAction;
@@ -42,6 +43,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -54,9 +56,9 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     /** */
     private static final String DELIMITER = "\t";
 
-    /** Maintenance record consists of three parts: ID, description (user-readable part)
-     * and information to execute maintenance action. */
-    private static final int MNTC_RECORD_PARTS_COUNT = 3;
+    /** Maintenance record consists of two or three parts: ID, description (user-readable part)
+     * and optional record parameters. */
+    private static final int MAX_MNTC_RECORD_PARTS_COUNT = 3;
 
     /** */
     private static final String IN_MEMORY_MODE_ERR_MSG = "Maintenance Mode is not supported for in-memory clusters";
@@ -73,11 +75,16 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     /** */
     private final boolean inMemoryMode;
 
+    /** */
+    private final PdsFoldersResolver pdsFolderResolver;
+
     /**
      * @param ctx Kernal context.
      */
     public MaintenanceProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        pdsFolderResolver = ctx.pdsFolderResolver();
 
         inMemoryMode = !CU.isPersistenceEnabled(ctx.config());
     }
@@ -110,7 +117,11 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     private void writeMaintenanceRecord(MaintenanceRecord rec, Writer writer) throws IOException {
         writer.write(rec.id().toString() + DELIMITER);
         writer.write(rec.description() + DELIMITER);
-        writer.write(rec.actionParameters());
+
+        if (rec.parameters() != null)
+            writer.write(rec.parameters());
+
+        writer.write(System.lineSeparator());
     }
 
     /** {@inheritDoc} */
@@ -119,10 +130,8 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             return;
 
         try {
-            PdsFolderSettings folderSettings = ctx.pdsFolderResolver().resolveFolders();
-
+            PdsFolderSettings folderSettings = pdsFolderResolver.resolveFolders();
             File storeDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
-
             U.ensureDirectory(storeDir, "store directory for node persistent data", log);
 
             mntcRecordsFile = new File(storeDir, MAINTENANCE_FILE_NAME);
@@ -138,14 +147,24 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
                     reader.lines().forEach(s -> {
                         String[] subStrs = s.split(DELIMITER);
 
-                        if (subStrs.length != MNTC_RECORD_PARTS_COUNT) {
-                            log.info("Corrupted maintenance record found, skipping: " + s);
+                        int partsNum = subStrs.length;
+
+                        if (partsNum < MAX_MNTC_RECORD_PARTS_COUNT - 1) {
+                            log.info("Corrupted maintenance record found and will be skipped, " +
+                                "mandatory parts are missing: " + s);
+
+                            return;
+                        }
+
+                        if (partsNum > MAX_MNTC_RECORD_PARTS_COUNT ) {
+                            log.info("Corrupted maintenance record found and will be skipped, " +
+                                "too many parts in record: " + s);
 
                             return;
                         }
 
                         UUID id = UUID.fromString(subStrs[0]);
-                        MaintenanceRecord rec = new MaintenanceRecord(id, subStrs[1], subStrs[2]);
+                        MaintenanceRecord rec = new MaintenanceRecord(id, subStrs[1], partsNum == 3 ? subStrs[2] : null);
 
                         registeredRecords.put(id, rec);
                     });
@@ -239,10 +258,6 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
         UUID mntcId = cb.maintenanceId();
 
-        if (!registeredRecords.containsKey(mntcId))
-            throw new IgniteException("Maintenance record for given ID not found," +
-                " maintenance workflow callback for non-existing record won't be registered: " + mntcId);
-
         List<MaintenanceAction> actions = cb.allActions();
 
         if (actions == null || actions.isEmpty())
@@ -254,6 +269,17 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
         if (distinctSize < size)
             throw new IgniteException("All actions of a single workflow should have unique names: " +
                 actions.stream().map(a -> a.name()).collect(Collectors.joining(", ")));
+
+        Optional<String> wrongActionName = actions
+            .stream()
+            .map(MaintenanceAction::name)
+            .filter(name -> !U.alphanumericUnderscore(name))
+            .findFirst();
+
+        if (wrongActionName.isPresent())
+            throw new IgniteException(
+                "All actions' names should contain only alphanumeric and underscore symbols: "
+                    + wrongActionName.get());
 
         workflowCallbacks.put(mntcId, cb);
     }

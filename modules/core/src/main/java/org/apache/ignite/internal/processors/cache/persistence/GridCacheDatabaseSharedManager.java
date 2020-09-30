@@ -1980,7 +1980,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             mntcRegistry.registerWorkflowCallback(
                 new CorruptedPdsMaintenanceCallback(CORRUPTED_DATA_FILES_MNTC_RECORD_ID,
                     workDir,
-                    Arrays.asList(mntcRecord.actionParameters().split(File.separator)))
+                    Arrays.asList(mntcRecord.parameters().split(File.separator)))
             );
 
             return;

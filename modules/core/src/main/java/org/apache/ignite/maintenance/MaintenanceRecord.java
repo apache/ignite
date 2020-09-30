@@ -18,6 +18,8 @@
 package org.apache.ignite.maintenance;
 
 import org.apache.ignite.lang.IgniteExperimental;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -31,31 +33,31 @@ public class MaintenanceRecord {
     private final String description;
 
     /** */
-    private final String actionParameters;
+    private final String params;
 
     /**
      * @param id
      * @param description
-     * @param actionParameters
+     * @param params
      */
-    public MaintenanceRecord(UUID id, String description, String actionParameters) {
+    public MaintenanceRecord(UUID id, String description, String params) {
         this.id = id;
         this.description = description;
-        this.actionParameters = actionParameters;
+        this.params = params;
     }
 
     /** */
-    public UUID id() {
+    public @NotNull UUID id() {
         return id;
     }
 
     /** */
-    public String description() {
+    public @NotNull String description() {
         return description;
     }
 
     /** */
-    public String actionParameters() {
-        return actionParameters;
+    public @Nullable String parameters() {
+        return params;
     }
 }
