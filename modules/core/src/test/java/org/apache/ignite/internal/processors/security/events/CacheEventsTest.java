@@ -18,18 +18,22 @@
 package org.apache.ignite.internal.processors.security.events;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
-import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -45,6 +49,7 @@ import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityCredentials;
@@ -61,8 +66,8 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
 
 /**
- * Test that an event's local listener and an event's remote filter get correct subjectId when a cache performs an
- * operation on data.
+ * Tests that an event's local listener and an event's remote filter get correct subjectId when cache's operations are
+ * performed.
  */
 @RunWith(Parameterized.class)
 public class CacheEventsTest extends AbstractSecurityTest {
@@ -73,69 +78,241 @@ public class CacheEventsTest extends AbstractSecurityTest {
     private static final String LISTENER_NODE = "listener_node";
 
     /** Client node. */
-    static final String CLNT = "client";
+    private static final String CLNT = "client";
 
     /** Server node. */
-    static final String SRV = "server";
+    private static final String SRV = "server";
+
+    /** Key. */
+    private static final String KEY = "key";
+
+    /** Initiate value. */
+    public static final String INIT_VAL = "init_val";
+
+    /** Value. */
+    private static final String VAL = "val";
 
     /** Events latch. */
     private static CountDownLatch evtsLatch;
 
-    /** */
-    private static final AtomicInteger rmtLoginCnt = new AtomicInteger();
+    /** Remote counter. */
+    private static final AtomicInteger rmtCnt = new AtomicInteger();
 
-    /** */
-    private static final AtomicInteger locLoginCnt = new AtomicInteger();
+    /** Local counter. */
+    private static final AtomicInteger locCnt = new AtomicInteger();
 
-    /** */
+    /** Cache atomicity mode. */
     @Parameterized.Parameter()
     public CacheAtomicityMode atomicMode;
 
-    /** */
+    /** Expected login. */
     @Parameterized.Parameter(1)
     public String expLogin;
 
-    /** */
+    /** Event type. */
     @Parameterized.Parameter(2)
     public int evtType;
 
+    /** Test operation. */
+    @Parameterized.Parameter(3)
+    public TestOperation op;
+
     /** Parameters. */
-    @Parameterized.Parameters(name = "atomicMode={0},expLogin={1},evtType={2}")
+    @Parameterized.Parameters(name = "atomicMode={0}, expLogin={1}, evtType={2}, op={3}")
     public static Iterable<Object[]> data() {
-        return Arrays.asList(
-            new Object[] {CacheAtomicityMode.ATOMIC, CLNT, EVT_CACHE_OBJECT_PUT},
-            new Object[] {CacheAtomicityMode.ATOMIC, SRV, EVT_CACHE_OBJECT_PUT},
-            new Object[] {CacheAtomicityMode.ATOMIC, "thin", EVT_CACHE_OBJECT_PUT},
-            new Object[] {CacheAtomicityMode.ATOMIC, "rest", EVT_CACHE_OBJECT_PUT},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, CLNT, EVT_CACHE_OBJECT_PUT},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, SRV, EVT_CACHE_OBJECT_PUT},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, "thin", EVT_CACHE_OBJECT_PUT},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, "rest", EVT_CACHE_OBJECT_PUT},
+        List<Object[]> lst = Arrays.asList(
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.PUT},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.PUT},
+            new Object[] {"thin", EVT_CACHE_OBJECT_PUT, TestOperation.PUT},
+            new Object[] {"rest", EVT_CACHE_OBJECT_PUT, TestOperation.PUT},
 
-            new Object[] {CacheAtomicityMode.ATOMIC, CLNT, EVT_CACHE_OBJECT_READ},
-            new Object[] {CacheAtomicityMode.ATOMIC, SRV, EVT_CACHE_OBJECT_READ},
-            new Object[] {CacheAtomicityMode.ATOMIC, "thin", EVT_CACHE_OBJECT_READ},
-            new Object[] {CacheAtomicityMode.ATOMIC, "rest", EVT_CACHE_OBJECT_READ},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, CLNT, EVT_CACHE_OBJECT_READ},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, SRV, EVT_CACHE_OBJECT_READ},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, "thin", EVT_CACHE_OBJECT_READ},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, "rest", EVT_CACHE_OBJECT_READ},
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ASYNC},
 
-            new Object[] {CacheAtomicityMode.ATOMIC, CLNT, EVT_CACHE_OBJECT_REMOVED},
-            new Object[] {CacheAtomicityMode.ATOMIC, SRV, EVT_CACHE_OBJECT_REMOVED},
-            new Object[] {CacheAtomicityMode.ATOMIC, "thin", EVT_CACHE_OBJECT_REMOVED},
-            new Object[] {CacheAtomicityMode.ATOMIC, "rest", EVT_CACHE_OBJECT_REMOVED},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, CLNT, EVT_CACHE_OBJECT_REMOVED},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, SRV, EVT_CACHE_OBJECT_REMOVED},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, "thin", EVT_CACHE_OBJECT_REMOVED},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, "rest", EVT_CACHE_OBJECT_REMOVED},
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ALL},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ALL},
+            new Object[] {"thin", EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ALL},
+            new Object[] {"rest", EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ALL},
 
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, SRV, EVT_CACHE_OBJECT_LOCKED},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, CLNT, EVT_CACHE_OBJECT_LOCKED},
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ALL_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ALL_ASYNC},
 
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, SRV, EVT_CACHE_OBJECT_UNLOCKED},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, CLNT, EVT_CACHE_OBJECT_UNLOCKED}
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_IF_ABSENT},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_IF_ABSENT},
+            new Object[] {"thin", EVT_CACHE_OBJECT_PUT, TestOperation.PUT_IF_ABSENT},
+            new Object[] {"rest", EVT_CACHE_OBJECT_PUT, TestOperation.PUT_IF_ABSENT},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_IF_ABSENT_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_IF_ABSENT_ASYNC},
+            new Object[] {"rest", EVT_CACHE_OBJECT_PUT, TestOperation.PUT_IF_ABSENT_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET},
+            new Object[] {"thin", EVT_CACHE_OBJECT_READ, TestOperation.GET},
+            new Object[] {"rest", EVT_CACHE_OBJECT_READ, TestOperation.GET},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_ENTRY},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_ENTRY},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_ENTRY_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_ENTRY_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_ENTRIES},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_ENTRIES},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_ENTRIES_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_ENTRIES_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL},
+            new Object[] {"thin", EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL},
+            new Object[] {"rest", EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL_OUT_TX},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL_OUT_TX},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL_OUT_TX_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL_OUT_TX_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_PUT},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_PUT},
+            new Object[] {"thin", EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_PUT},
+            new Object[] {"rest", EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_PUT},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_PUT},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_PUT},
+            new Object[] {"thin", EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_PUT},
+            new Object[] {"rest", EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_PUT},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_PUT_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_PUT_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_PUT_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_PUT_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_PUT_IF_ABSENT},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_PUT_IF_ABSENT},
+            new Object[] {"rest", EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_PUT_IF_ABSENT},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_PUT_IF_ABSENT_PUT_CASE},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_PUT_IF_ABSENT_PUT_CASE},
+            new Object[] {"rest", EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_PUT_IF_ABSENT_PUT_CASE},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_PUT_IF_ABSENT_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_PUT_IF_ABSENT_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_PUT_IF_ABSENT_PUT_CASE_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_PUT_IF_ABSENT_PUT_CASE_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_REMOVE},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_REMOVE},
+            new Object[] {"thin", EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_REMOVE},
+            new Object[] {"rest", EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_REMOVE},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_REMOVED, TestOperation.GET_AND_REMOVE},
+            new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.GET_AND_REMOVE},
+            new Object[] {"thin", EVT_CACHE_OBJECT_REMOVED, TestOperation.GET_AND_REMOVE},
+            new Object[] {"rest", EVT_CACHE_OBJECT_REMOVED, TestOperation.GET_AND_REMOVE},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_REMOVE_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_REMOVE_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_REMOVED, TestOperation.GET_AND_REMOVE_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.GET_AND_REMOVE_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE},
+            new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE},
+            new Object[] {"thin", EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE},
+            new Object[] {"rest", EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_VAL},
+            new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_VAL},
+            new Object[] {"thin", EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_VAL},
+            new Object[] {"rest", EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_VAL},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_VAL_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_VAL_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ALL},
+            new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ALL},
+            new Object[] {"thin", EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ALL},
+            new Object[] {"rest", EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ALL},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ALL_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ALL_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE},
+            new Object[] {"thin", EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE},
+            new Object[] {"rest", EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_VAL},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_VAL},
+            new Object[] {"thin", EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_VAL},
+            new Object[] {"rest", EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_VAL},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_VAL_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_VAL_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_REPLACE},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_REPLACE},
+            new Object[] {"thin", EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_REPLACE},
+            new Object[] {"rest", EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_REPLACE},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_REPLACE_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_REPLACE_ASYNC},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_REPLACE},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_REPLACE},
+            new Object[] {"thin", EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_REPLACE},
+            new Object[] {"rest", EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_REPLACE},
+
+            new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_REPLACE_ASYNC},
+            new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_REPLACE_ASYNC},
+
+            new Object[] {SRV, EVT_CACHE_OBJECT_LOCKED, TestOperation.LOCK},
+            new Object[] {CLNT, EVT_CACHE_OBJECT_LOCKED, TestOperation.LOCK},
+            new Object[] {SRV, EVT_CACHE_OBJECT_UNLOCKED, TestOperation.LOCK},
+            new Object[] {CLNT, EVT_CACHE_OBJECT_UNLOCKED, TestOperation.LOCK},
+
+            new Object[] {SRV, EVT_CACHE_OBJECT_LOCKED, TestOperation.LOCK_ALL},
+            new Object[] {CLNT, EVT_CACHE_OBJECT_LOCKED, TestOperation.LOCK_ALL},
+            new Object[] {SRV, EVT_CACHE_OBJECT_UNLOCKED, TestOperation.LOCK_ALL},
+            new Object[] {CLNT, EVT_CACHE_OBJECT_UNLOCKED, TestOperation.LOCK_ALL}
         );
+
+        List<Object[]> res = new ArrayList<>();
+
+        for (Object[] arr : lst) {
+            res.add(new Object[] {CacheAtomicityMode.TRANSACTIONAL, arr[0], arr[1], arr[2]});
+
+            int evt = (int)arr[1];
+
+            TestOperation op = (TestOperation)arr[2];
+            // todo IGNITE-13490 Cache's operation getAndXXX doesn't trigger a CacheEvent with type EVT_CACHE_OBJECT_READ.
+            // This condition should be removed when the issue will be done.
+            if (evt == EVT_CACHE_OBJECT_READ && op.name().contains("GET_AND_"))
+                continue;
+
+            if (evt == EVT_CACHE_OBJECT_LOCKED || evt == EVT_CACHE_OBJECT_UNLOCKED)
+                continue;
+
+            res.add(new Object[] {CacheAtomicityMode.ATOMIC, arr[0], arr[1], arr[2]});
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -155,21 +332,25 @@ public class CacheEventsTest extends AbstractSecurityTest {
 
         evtsLatch = new CountDownLatch(2 * expTimes);
 
-        rmtLoginCnt.set(0);
-        locLoginCnt.set(0);
+        rmtCnt.set(0);
+        locCnt.set(0);
 
         final String cacheName = "test_cache_" + COUNTER.incrementAndGet();
 
-        grid(LISTENER_NODE).createCache(new CacheConfiguration<>(cacheName)
-            .setBackups(2)
-            .setAtomicityMode(atomicMode));
+        IgniteCache<String, String> cache = grid(LISTENER_NODE).createCache(
+            new CacheConfiguration<String, String>(cacheName)
+                .setBackups(2)
+                .setAtomicityMode(atomicMode));
+
+        if (op.valIsRequired)
+            cache.put(KEY, INIT_VAL);
 
         UUID lsnrId = grid(LISTENER_NODE).events().remoteListen(
             new IgniteBiPredicate<UUID, Event>() {
                 @IgniteInstanceResource IgniteEx ign;
 
                 @Override public boolean apply(UUID uuid, Event evt) {
-                    onEvent(ign, locLoginCnt, (CacheEvent)evt, cacheName, expLogin);
+                    onEvent(ign, locCnt, (CacheEvent)evt, cacheName, expLogin);
 
                     return true;
                 }
@@ -178,7 +359,7 @@ public class CacheEventsTest extends AbstractSecurityTest {
                 @IgniteInstanceResource IgniteEx ign;
 
                 @Override public boolean apply(Event evt) {
-                    onEvent(ign, rmtLoginCnt, (CacheEvent)evt, cacheName, expLogin);
+                    onEvent(ign, rmtCnt, (CacheEvent)evt, cacheName, expLogin);
 
                     return true;
                 }
@@ -189,8 +370,8 @@ public class CacheEventsTest extends AbstractSecurityTest {
             // Waiting for events.
             evtsLatch.await(10, TimeUnit.SECONDS);
 
-            assertEquals("Remote filter.", expTimes, rmtLoginCnt.get());
-            assertEquals("Local listener.", expTimes, locLoginCnt.get());
+            assertEquals("Remote filter.", expTimes, rmtCnt.get());
+            assertEquals("Local listener.", expTimes, locCnt.get());
         }
         finally {
             grid(LISTENER_NODE).events().stopRemoteListen(lsnrId);
@@ -199,7 +380,8 @@ public class CacheEventsTest extends AbstractSecurityTest {
 
     /** */
     private static void onEvent(IgniteEx ign, AtomicInteger cntr, CacheEvent evt, String cacheName, String expLogin) {
-        if (cacheName.equals(evt.cacheName())) {
+        if (cacheName.equals(evt.cacheName()) &&
+            (evt.type() != EVT_CACHE_OBJECT_PUT || !F.eq(INIT_VAL, evt.newValue()))) {
 
             cntr.incrementAndGet();
 
@@ -224,6 +406,38 @@ public class CacheEventsTest extends AbstractSecurityTest {
     }
 
     /** */
+    private ConsumerX<String> operation() {
+        if ("rest".equals(expLogin)) {
+            final GridRestCacheRequest req = new GridRestCacheRequest();
+
+            req.credentials(new SecurityCredentials("rest", ""));
+            req.key(KEY);
+            req.command(op.restCmd);
+
+            if (op == TestOperation.REPLACE_VAL) {
+                req.value(VAL);
+                req.value2(INIT_VAL);
+            }
+            else if (op == TestOperation.REMOVE_VAL)
+                req.value(INIT_VAL);
+            else {
+                req.value(VAL);
+                req.values(F.asMap(KEY, VAL));
+            }
+
+            return n -> {
+                req.cacheName(n);
+
+                restProtocolHandler().handle(req);
+            };
+        }
+        else if ("thin".equals(expLogin))
+            return n -> op.clntCacheOp.accept(startClient().cache(n));
+        else
+            return n -> op.ignCacheOp.accept(grid(expLogin).cache(n));
+    }
+
+    /** */
     private IgniteClient startClient() {
         return Ignition.startClient(
             new ClientConfiguration().setAddresses(Config.SERVER)
@@ -233,99 +447,8 @@ public class CacheEventsTest extends AbstractSecurityTest {
     }
 
     /** */
-    private ConsumerX<String> operation() {
-        if ("thin".equals(expLogin)) {
-            final IgniteClient client = startClient();
-
-            switch (evtType) {
-                case EVT_CACHE_OBJECT_PUT:
-                    return n -> client.cache(n).put("key", "VALUE");
-
-                case EVT_CACHE_OBJECT_READ:
-                    return n -> {
-                        client.cache(n).put("key", "VALUE");
-                        client.cache(n).get("key");
-                    };
-
-                case EVT_CACHE_OBJECT_REMOVED:
-                    return n -> {
-                        client.cache(n).put("key", "VALUE");
-                        client.cache(n).remove("key");
-                    };
-            }
-        }
-        else if ("rest".equals(expLogin)) {
-            final GridRestCacheRequest req = new GridRestCacheRequest();
-
-            req.credentials(new SecurityCredentials("rest", ""));
-            req.key("key");
-            req.value("VALUE");
-
-            switch (evtType) {
-                case EVT_CACHE_OBJECT_PUT:
-                    return n -> {
-                        req.command(GridRestCommand.CACHE_PUT);
-                        req.cacheName(n);
-
-                        restProtocolHandler().handle(req);
-                    };
-
-                case EVT_CACHE_OBJECT_READ:
-                    return n -> {
-                        grid(SRV).cache(n).put("key", "VALUE");
-
-                        req.command(GridRestCommand.CACHE_GET);
-                        req.cacheName(n);
-
-                        restProtocolHandler().handle(req);
-                    };
-
-                case EVT_CACHE_OBJECT_REMOVED:
-                    return n -> {
-                        grid(SRV).cache(n).put("key", "VALUE");
-
-                        req.command(GridRestCommand.CACHE_REMOVE);
-                        req.cacheName(n);
-
-                        restProtocolHandler().handle(req);
-                    };
-            }
-        }
-        else {
-            final Ignite ignite = grid(expLogin);
-
-            switch (evtType) {
-                case EVT_CACHE_OBJECT_PUT:
-                    return n -> ignite.cache(n).put("key", "VALUE");
-
-                case EVT_CACHE_OBJECT_READ:
-                    return n -> {
-                        ignite.cache(n).put("key", "VALUE");
-                        ignite.cache(n).get("key");
-                    };
-
-                case EVT_CACHE_OBJECT_REMOVED:
-                    return n -> {
-                        ignite.cache(n).put("key", "VALUE");
-                        ignite.cache(n).remove("key");
-                    };
-
-                case EVT_CACHE_OBJECT_LOCKED:
-                case EVT_CACHE_OBJECT_UNLOCKED:
-                    return n -> {
-                        Lock lock = grid(expLogin).cache(n).lock("key");
-                        lock.lock();
-                        lock.unlock();
-                    };
-            }
-        }
-
-        throw new RuntimeException("Event type is not processed [evtType=" + evtType + ']');
-    }
-
-    /** */
-    private GridRestProtocolHandler restProtocolHandler() throws Exception{
-        Object restPrc = grid(SRV).context().components().stream()
+    private GridRestProtocolHandler restProtocolHandler() throws Exception {
+        Object restPrc = grid(LISTENER_NODE).context().components().stream()
             .filter(c -> c instanceof GridRestProcessor).findFirst()
             .orElseThrow(RuntimeException::new);
 
@@ -333,7 +456,189 @@ public class CacheEventsTest extends AbstractSecurityTest {
 
         fld.setAccessible(true);
 
-        return  (GridRestProtocolHandler)fld.get(restPrc);
+        return (GridRestProtocolHandler)fld.get(restPrc);
+    }
+
+    /** Test opeartions. */
+    private enum TestOperation {
+        /** Put. */
+        PUT(c -> c.put(KEY, VAL), c -> c.put(KEY, VAL), GridRestCommand.CACHE_PUT, false),
+
+        /** Put async. */
+        PUT_ASYNC(c -> c.putAsync(KEY, VAL).get(), false),
+
+        /** Put all. */
+        PUT_ALL(c -> c.putAll(F.asMap(KEY, VAL)), c -> c.putAll(F.asMap(KEY, VAL)), GridRestCommand.CACHE_PUT_ALL, false),
+
+        /** Put all async. */
+        PUT_ALL_ASYNC(c -> c.putAll(F.asMap(KEY, VAL)), false),
+
+        /** Put if absent. */
+        PUT_IF_ABSENT(c -> c.putIfAbsent(KEY, VAL), c -> c.putIfAbsent(KEY, VAL), GridRestCommand.CACHE_PUT_IF_ABSENT, false),
+
+        /** Put if absent async. */
+        PUT_IF_ABSENT_ASYNC(c -> c.putIfAbsentAsync(KEY, VAL), null, GridRestCommand.CACHE_ADD, false),
+
+        /** Get. */
+        GET(c -> c.get(KEY), c -> c.get(KEY), GridRestCommand.CACHE_GET),
+
+        /** Get async. */
+        GET_ASYNC(c -> c.getAsync(KEY).get()),
+
+        /** Get entry. */
+        GET_ENTRY(c -> c.getEntry(KEY)),
+
+        /** Get entry async. */
+        GET_ENTRY_ASYNC(c -> c.getEntryAsync(KEY).get()),
+
+        /** Get entries. */
+        GET_ENTRIES(c -> c.getEntries(Collections.singleton(KEY))),
+
+        /** Get entries async. */
+        GET_ENTRIES_ASYNC(c -> c.getEntriesAsync(Collections.singleton(KEY))),
+
+        /** Get all. */
+        GET_ALL(c -> c.getAll(Collections.singleton(KEY)), c -> c.getAll(Collections.singleton(KEY)), GridRestCommand.CACHE_GET_ALL),
+
+        /** Get all async. */
+        GET_ALL_ASYNC(c -> c.getAllAsync(Collections.singleton(KEY)).get()),
+
+        /** Get all out tx. */
+        GET_ALL_OUT_TX(c -> c.getAllOutTx(Collections.singleton(KEY))),
+
+        /** Get all out tx async. */
+        GET_ALL_OUT_TX_ASYNC(c -> c.getAllOutTxAsync(Collections.singleton(KEY)).get()),
+
+        /** Get and put. */
+        GET_AND_PUT(c -> c.getAndPut(KEY, VAL), c -> c.getAndPut(KEY, VAL), GridRestCommand.CACHE_GET_AND_PUT),
+
+        /** Get and put async. */
+        GET_AND_PUT_ASYNC(c -> c.getAndPutAsync(KEY, VAL).get()),
+
+        /** Get and put if absent. */
+        GET_AND_PUT_IF_ABSENT(c -> c.getAndPutIfAbsent(KEY, VAL), null, GridRestCommand.CACHE_GET_AND_PUT_IF_ABSENT),
+
+        /** Get and put if absent async. */
+        GET_AND_PUT_IF_ABSENT_ASYNC(c -> c.getAndPutIfAbsentAsync(KEY, VAL).get()),
+
+        /** Get and put if absent put case. */
+        GET_AND_PUT_IF_ABSENT_PUT_CASE(c -> c.getAndPutIfAbsent(KEY, VAL), null, GridRestCommand.CACHE_GET_AND_PUT_IF_ABSENT, false),
+
+        /** Get and put if absent put case async. */
+        GET_AND_PUT_IF_ABSENT_PUT_CASE_ASYNC(c -> c.getAndPutIfAbsentAsync(KEY, VAL).get(), false),
+
+        /** Remove. */
+        REMOVE(c -> c.remove(KEY), c -> c.remove(KEY), GridRestCommand.CACHE_REMOVE),
+
+        /** Remove async. */
+        REMOVE_ASYNC(c -> c.removeAsync(KEY).get()),
+
+        /** Remove value. */
+        REMOVE_VAL(c -> c.remove(KEY, INIT_VAL), c -> c.remove(KEY, INIT_VAL), GridRestCommand.CACHE_REMOVE_VALUE),
+
+        /** Remove value async. */
+        REMOVE_VAL_ASYNC(c -> c.removeAsync(KEY, INIT_VAL).get()),
+
+        /** Get and remove. */
+        GET_AND_REMOVE(c -> c.getAndRemove(KEY), c -> c.getAndRemove(KEY), GridRestCommand.CACHE_GET_AND_REMOVE),
+
+        /** Get and remove async. */
+        GET_AND_REMOVE_ASYNC(c -> c.getAndRemoveAsync(KEY).get()),
+
+        /** Remove all. */
+        REMOVE_ALL(c -> c.removeAll(Collections.singleton(KEY)), c -> c.removeAll(Collections.singleton(KEY)), GridRestCommand.CACHE_REMOVE_ALL),
+
+        /** Remove all async. */
+        REMOVE_ALL_ASYNC(c -> c.removeAllAsync(Collections.singleton(KEY)).get()),
+
+        /** Replace. */
+        REPLACE(c -> c.replace(KEY, VAL), c -> c.replace(KEY, VAL), GridRestCommand.CACHE_REPLACE, true),
+
+        /** Replace async. */
+        REPLACE_ASYNC(c -> c.replaceAsync(KEY, VAL).get(), true),
+
+        /** Replace value. */
+        REPLACE_VAL(c -> c.replace(KEY, INIT_VAL, VAL), c -> c.replace(KEY, INIT_VAL, VAL), GridRestCommand.CACHE_REPLACE_VALUE),
+
+        /** Replace value async. */
+        REPLACE_VAL_ASYNC(c -> c.replaceAsync(KEY, INIT_VAL, VAL).get()),
+
+        /** Get and replace. */
+        GET_AND_REPLACE(c -> c.getAndReplace(KEY, VAL), c -> c.getAndReplace(KEY, VAL), GridRestCommand.CACHE_GET_AND_REPLACE),
+
+        /** Get and replace async. */
+        GET_AND_REPLACE_ASYNC(c -> c.getAndReplaceAsync(KEY, VAL).get()),
+
+        /** Lock. */
+        LOCK(c -> {
+            Lock lock = c.lock(KEY);
+
+            lock.lock();
+            lock.unlock();
+        }, false),
+
+        /** Lock all. */
+        LOCK_ALL(c -> {
+            Lock lock = c.lockAll(Collections.singleton(KEY));
+
+            lock.lock();
+            lock.unlock();
+        }, false);
+
+        /** IgniteCache operation. */
+        final Consumer<IgniteCache<String, String>> ignCacheOp;
+
+        /** ClientCache operation. */
+        final Consumer<ClientCache<String, String>> clntCacheOp;
+
+        /** Rest client command. */
+        final GridRestCommand restCmd;
+
+        /**
+         * True if a test operation requires existence of value in a cache.
+         */
+        final boolean valIsRequired;
+
+        /**
+         * @param ignCacheOp IgniteCache operation.
+         */
+        TestOperation(Consumer<IgniteCache<String, String>> ignCacheOp) {
+            this(ignCacheOp, null, null, true);
+        }
+
+        /**
+         * @param ignCacheOp IgniteCache operation.
+         */
+        TestOperation(Consumer<IgniteCache<String, String>> ignCacheOp, boolean valIsRequired) {
+            this(ignCacheOp, null, null, valIsRequired);
+        }
+
+        /**
+         * @param ignCacheOp IgniteCache operation.
+         * @param clntCacheOp ClientCache operation.
+         * @param restCmd Rest client command.
+         */
+        TestOperation(Consumer<IgniteCache<String, String>> ignCacheOp,
+            Consumer<ClientCache<String, String>> clntCacheOp,
+            GridRestCommand restCmd) {
+            this(ignCacheOp, clntCacheOp, restCmd, true);
+        }
+
+        /**
+         * @param ignCacheOp IgniteCache operation.
+         * @param clntCacheOp ClientCache operation.
+         * @param restCmd Rest client command.
+         * @param valIsRequired Test operation requires existence of value in a cache.
+         */
+        TestOperation(Consumer<IgniteCache<String, String>> ignCacheOp,
+            Consumer<ClientCache<String, String>> clntCacheOp,
+            GridRestCommand restCmd,
+            boolean valIsRequired) {
+            this.ignCacheOp = ignCacheOp;
+            this.clntCacheOp = clntCacheOp;
+            this.restCmd = restCmd;
+            this.valIsRequired = valIsRequired;
+        }
     }
 
     /**
