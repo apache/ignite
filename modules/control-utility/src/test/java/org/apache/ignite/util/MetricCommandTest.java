@@ -43,10 +43,8 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandList.METRIC;
 import static org.apache.ignite.internal.commandline.TablePrinter.COLUMN_SEPARATOR;
-import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_ID;
+import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.NODE_ID;
 import static org.apache.ignite.internal.managers.communication.GridIoManager.COMM_METRICS;
-import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
-import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_METRICS;
@@ -59,7 +57,6 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -103,7 +100,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     /** Tests command error output in case value of {@link MetricCommandArg#NODE_ID} argument is omitted. */
     @Test
     public void testNodeIdMissedFailure() {
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, SVCS_VIEW, NODE_ID.argName()),
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, SYS_METRICS, NODE_ID.argName()),
             "ID of the node from which metric values should be obtained is expected.");
     }
 
@@ -120,9 +117,9 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
     /** Tests command error output in case multiple metric names are specified. */
     @Test
-    public void testMultipleSystemViewNamesFailure() {
+    public void testMultipleMetricNamesFailure() {
         assertContains(log,
-            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, SVCS_VIEW, CACHE_GRP_PAGE_LIST_VIEW),
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, IGNITE_METRICS, SYS_METRICS),
             "Multiple metric(metric registry) names are not supported.");
     }
 
@@ -132,7 +129,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         String incorrectNodeId = UUID.randomUUID().toString();
 
         assertContains(log,
-            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, "--node-id", incorrectNodeId, CACHES_VIEW),
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, "--node-id", incorrectNodeId, IGNITE_METRICS),
             "Failed to perform operation.\nNode with id=" + incorrectNodeId + " not found");
     }
 
@@ -579,7 +576,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
      * Obtains metric values from command output.
      *
      * @param out Command output to parse.
-     * @return System view values.
+     * @return Metric values.
      */
     private Map<String, String> parseMetricCommandOutput(String out) {
         String outStart = "--------------------------------------------------------------------------------";
