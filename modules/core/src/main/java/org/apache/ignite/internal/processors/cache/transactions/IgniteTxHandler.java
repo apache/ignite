@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -88,7 +90,6 @@ import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -1779,7 +1780,7 @@ public class IgniteTxHandler {
                 txCounters.updateCounters(req.updateCounters());
             }
 
-            IntHashMap<GridDhtLocalPartition> reservationMap = new IntHashMap<>();
+            Set<GridDhtLocalPartition> reservedParts = new HashSet<>();
 
             try {
                 if (!tx.isSystemInvalidate()) {
@@ -1791,16 +1792,16 @@ public class IgniteTxHandler {
                         int part = cacheCtx.affinity().partition(entry.key());
 
                         try {
+                            GridDhtLocalPartition locPart = cacheCtx.topology().localPartition(part,
+                                req.topologyVersion(),
+                                false);
+
                             // Avoid enlisting to invalid partition.
-                            boolean reserved = reservationMap.containsKey(part);
+                            boolean reserved = locPart != null && reservedParts.contains(locPart);
 
                             if (!reserved) {
-                                GridDhtLocalPartition locPart = cacheCtx.topology().localPartition(part,
-                                    req.topologyVersion(),
-                                    false);
-
                                 if ((reserved = locPart != null && locPart.reserve()))
-                                    reservationMap.put(part, locPart);
+                                    reservedParts.add(locPart);
                             }
 
                             if (reserved) {
@@ -1888,7 +1889,7 @@ public class IgniteTxHandler {
                 tx.prepareRemoteTx();
             }
             finally {
-                reservationMap.forEach((k, p) -> p.release());
+                reservedParts.forEach(GridDhtLocalPartition::release);
             }
 
             if (req.last()) {
