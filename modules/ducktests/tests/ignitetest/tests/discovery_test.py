@@ -26,7 +26,7 @@ from datetime import datetime
 from time import monotonic
 from typing import NamedTuple
 
-from ducktape.mark import matrix, parametrize
+from ducktape.mark import matrix
 from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteAwareService, IgniteService
@@ -95,7 +95,7 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
-    @parametrize(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_2_nodes_fail_seq_tcp(self, ignite_version, load_type):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
@@ -122,7 +122,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES + 3)
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
-    @parametrize(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_2_nodes_fail_seq_zk(self, ignite_version, load_type):
         """
         Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
