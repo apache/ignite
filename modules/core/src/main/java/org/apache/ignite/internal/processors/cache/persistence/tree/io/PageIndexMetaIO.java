@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
 /**
- *
+ * IO for index partition metadata page.
  */
 public class PageIndexMetaIO extends PageMetaIO {
     /** Total pages for reencryption offset. */

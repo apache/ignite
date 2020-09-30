@@ -282,9 +282,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    private T3<ByteBufferBackedDataInput, Integer, RecordType> readEncryptedData(ByteBufferBackedDataInput in,
-        boolean readType, boolean readKeyId)
-        throws IOException, IgniteCheckedException {
+    private T3<ByteBufferBackedDataInput, Integer, RecordType> readEncryptedData(
+        ByteBufferBackedDataInput in,
+        boolean readType,
+        boolean readKeyId
+    ) throws IOException, IgniteCheckedException {
         int grpId = in.readInt();
         int encRecSz = in.readInt();
 
@@ -293,7 +295,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (readType)
             plainRecType = RecordV1Serializer.readRecordType(in);
 
-        int keyId = readKeyId ? in.readUnsignedByte() : 0;
+        int keyId = readKeyId ? in.readUnsignedByte() : GridEncryptionManager.INITIAL_KEY_ID;
 
         byte[] encData = new byte[encRecSz];
 
@@ -1887,11 +1889,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case REENCRYPTION_START_RECORD:
                 ReencryptionStartRecord statusRecord = (ReencryptionStartRecord)rec;
 
-                Map<Integer, Byte> map = statusRecord.groups();
+                Map<Integer, Byte> grps = statusRecord.groups();
 
-                buf.putInt(map.size());
+                buf.putInt(grps.size());
 
-                for (Map.Entry<Integer, Byte> e : map.entrySet()) {
+                for (Map.Entry<Integer, Byte> e : grps.entrySet()) {
                     buf.putInt(e.getKey());
                     buf.put(e.getValue());
                 }

@@ -54,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.junit.Test;
@@ -541,6 +542,55 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         // Make sure the previous key has been removed.
         assertEquals(1, encrMgr0.groupKeyIds(grpId).size());
         assertEquals(encrMgr1.groupKeyIds(grpId), encrMgr0.groupKeyIds(grpId));
+    }
+
+    /**
+     * Ensures that a node cannot join the cluster if it cannot replace an existing encryption key.
+     * <p>
+     * If the joining node has a different encryption key than the coordinator, but with the same identifier, it should
+     * not perform key rotation to a new key (recevied from coordinator) until the previous key is deleted.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNodeJoinRejectedIfKeyCannotBeReplaced() throws Exception {
+        backups = 2;
+
+        T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
+
+        startGrid(GRID_2);
+
+        resetBaselineTopology();
+
+        createEncryptedCache(nodes.get1(), nodes.get2(), cacheName(), null);
+
+        forceCheckpoint();
+
+        stopGrid(GRID_0);
+        stopGrid(GRID_1);
+
+        grid(GRID_2).encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS);
+
+        int grpId = CU.cacheId(cacheName());
+
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+
+        grid(GRID_2).encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS);
+
+        checkGroupKey(grpId, INITIAL_KEY_ID + 2, MAX_AWAIT_MILLIS);
+
+        stopGrid(GRID_2);
+
+        startTestGrids(false);
+
+        checkGroupKey(grpId, INITIAL_KEY_ID, MAX_AWAIT_MILLIS);
+
+        grid(GRID_0).encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS);
+
+        assertThrowsAnyCause(log,
+            () -> startGrid(GRID_2),
+            IgniteSpiException.class,
+            "Cache key differs! Node join is rejected.");
     }
 
     /**

@@ -110,16 +110,13 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *     <li>Coordinator:
  *     <ul>
  *         <li>1. Checks master key digest are equal to local. If not join is rejected.</li>
- *         <li>2. Checks all stored keys from joining node are equal to stored keys. If not join is rejected.
- *
- *
- *         </li>
+ *         <li>2. Checks all stored keys from joining node are equal to stored keys. If not join is rejected.</li>
  *         <li>3. Collects all stored keys and sends it to joining node.</li>
  *     </ul>
  *     </li>
  *     <li>All nodes:
  *     <ul>
- *         <li>1. If new key for group doesn't exists locally it added to local store</li>
+ *         <li>1. If new key for group doesn't exists locally it added to local store.</li>
  *         <li>2. If new key for group exists locally, then received key skipped.</li>
  *         <li>3. If a cache group is encrypted with a different (previous) encryption key, then background
  *                re-encryption of this group with a new key is started.</li>
@@ -463,9 +460,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             return null;
         }
 
-        assert !F.isEmpty(nodeEncKeys.knownKeyIds);
+        assert !F.isEmpty(nodeEncKeys.knownKeysWithIds);
 
-        for (Map.Entry<Integer, byte[]> entry : nodeEncKeys.knownKeys.entrySet()) {
+        for (Map.Entry<Integer, List<GroupKeyEncrypted>> entry : nodeEncKeys.knownKeysWithIds.entrySet()) {
             int grpId = entry.getKey();
 
             GroupKey locEncKey = groupKey(grpId);
@@ -473,11 +470,27 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (locEncKey == null)
                 continue;
 
-            Serializable rmtKey = getSpi().decryptKey(entry.getValue());
+            List<GroupKeyEncrypted> rmtKeys = entry.getValue();
 
-            if (!F.eq(locEncKey.id(), nodeEncKeys.knownKeyIds.get(grpId)) || F.eq(locEncKey.key(), rmtKey))
+            if (rmtKeys == null)
                 continue;
 
+            GroupKeyEncrypted rmtKeyEncrypted = null;
+
+            for (GroupKeyEncrypted rmtKey0 : rmtKeys) {
+                if (rmtKey0.id() != locEncKey.unsignedId())
+                    continue;
+
+                rmtKeyEncrypted = rmtKey0;
+
+                break;
+            }
+
+            if (rmtKeyEncrypted == null || F.eq(locEncKey.key(), getSpi().decryptKey(rmtKeyEncrypted.key())))
+                continue;
+
+            // The remote node should not rotate the cache key to the current one
+            // until the old key (with an identifier that is currently active in the cluster) is removed.
             return new IgniteNodeValidationResult(ctx.localNodeId(),
                 "Cache key differs! Node join is rejected. [node=" + node.id() + ", grp=" + entry.getKey() + "]",
                 "Cache key differs! Node join is rejected.");
@@ -491,10 +504,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (dataBag.isJoiningNodeClient())
             return;
 
-        HashMap<Integer, GroupKeyEncrypted> knownEncKeys = grpKeys.getAll();
+        Set<Integer> grpIds = grpKeys.groupIds();
 
-        HashMap<Integer, byte[]> newKeys =
-            newEncryptionKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
+        HashMap<Integer, List<GroupKeyEncrypted>> knownEncKeys = U.newHashMap(grpIds.size());
+
+        for (int grpId : grpIds)
+            knownEncKeys.put(grpId, grpKeys.getAll(grpId));
+
+        HashMap<Integer, byte[]> newKeys = newEncryptionKeys(grpIds);
 
         if (log.isInfoEnabled()) {
             String knownGrps = F.isEmpty(knownEncKeys) ? null : F.concat(knownEncKeys.keySet(), ",");
@@ -560,8 +577,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        assert !writeToMetaStoreEnabled;
-
         if (ctx.clientNode())
             return;
 
@@ -760,9 +775,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             int newKeyId = keyIds[i] & 0xff;
 
             synchronized (metaStorageMux) {
-                // Set new key as key for writing.
-                // Note that we cannot pass the encrypted key here because the master key may have changed,
-                // in which case we will not be able to decrypt the cache encryption key.
+                // Set new key as key for writing. Note that we cannot pass the encrypted key here because the master
+                // key may have changed in which case we will not be able to decrypt the cache encryption key.
                 GroupKey prevGrpKey = grpKeys.changeActiveKey(grpId, newKeyId);
 
                 List<GroupKeyEncrypted> keysEncrypted = withMasterKeyChangeReadLock(() -> grpKeys.getAll(grpId));
@@ -857,9 +871,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     public void onCacheGroupStop(int grpId) {
         try {
-            IgniteInternalFuture<Void> fut = reencryptionFuture(grpId);
-
-            fut.cancel();
+            reencryptionFuture(grpId).cancel();
         }
         catch (IgniteCheckedException e) {
             log.warning("Unable to cancel reencryption [grpId=" + grpId + "]", e);
@@ -890,7 +902,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * Callabck when WAL segment is removed.
+     * Callback when WAL segment is removed.
      *
      * @param segmentIdx WAL segment index.
      */
@@ -1078,6 +1090,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param total Total pages to be reencrypted.
      */
     public void setEncryptionState(CacheGroupContext grp, int partId, int idx, int total) {
+        // The last element of the array is used to store the status of the index partition.
         long[] states = reencryptGroups.computeIfAbsent(grp.groupId(), v -> new long[grp.affinity().partitions() + 1]);
 
         states[Math.min(partId, states.length - 1)] = ReencryptStateUtils.state(idx, total);
@@ -1739,7 +1752,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         /** */
         NodeEncryptionKeys(
-            HashMap<Integer, GroupKeyEncrypted> knownKeysWithIds,
+            HashMap<Integer, List<GroupKeyEncrypted>> knownKeysWithIds,
             Map<Integer, byte[]> newKeys,
             byte[] masterKeyDigest
         ) {
@@ -1749,17 +1762,16 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (F.isEmpty(knownKeysWithIds))
                 return;
 
-            // For backward compatibilty store key identifiers into separate field.
+            // To be able to join the old cluster.
             knownKeys = U.newHashMap(knownKeysWithIds.size());
-            knownKeyIds = U.newHashMap(knownKeysWithIds.size());
 
-            for (Map.Entry<Integer, GroupKeyEncrypted> entry : knownKeysWithIds.entrySet()) {
-                knownKeys.put(entry.getKey(), entry.getValue().key());
-                knownKeyIds.put(entry.getKey(), (byte)entry.getValue().id());
-            }
+            for (Map.Entry<Integer, List<GroupKeyEncrypted>> entry : knownKeysWithIds.entrySet())
+                knownKeys.put(entry.getKey(), entry.getValue().get(0).key());
+
+            this.knownKeysWithIds = knownKeysWithIds;
         }
 
-        /** Known i.e. stored in {@code ReadWriteMetastorage} keys from node. */
+        /** Known i.e. stored in {@code ReadWriteMetastorage} keys from node (in compatible format). */
         Map<Integer, byte[]> knownKeys;
 
         /**  New keys i.e. keys for a local statically configured caches. */
@@ -1768,8 +1780,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         /** Master key digest. */
         byte[] masterKeyDigest;
 
-        /** Identifiers for known keys. */
-        Map<Integer, Byte> knownKeyIds;
+        /** Known i.e. stored in {@code ReadWriteMetastorage} keys from node. */
+        Map<Integer, List<GroupKeyEncrypted>> knownKeysWithIds;
     }
 
     /** */

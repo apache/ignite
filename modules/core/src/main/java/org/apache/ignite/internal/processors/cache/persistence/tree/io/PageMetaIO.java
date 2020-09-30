@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.GridStringBuilder;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * IO for index partition metadata page.
+ *
  */
 public class PageMetaIO extends PageIO {
     /** */

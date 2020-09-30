@@ -303,7 +303,6 @@ public class CacheGroupPageScanner implements DbCheckpointListener {
                 @Override public void applyx(Integer partId) throws IgniteCheckedException {
                     int pagesCnt = ctx.cache().context().pageStore().pages(grp.groupId(), partId);
 
-                    // The last element of the array is used to store the status of the index partition.
                     partStates[Math.min(partId, partStates.length - 1)] = pagesCnt;
                 }
             });

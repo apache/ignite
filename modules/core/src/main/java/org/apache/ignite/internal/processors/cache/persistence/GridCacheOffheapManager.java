@@ -403,10 +403,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
             IgniteWriteAheadLogManager wal = this.ctx.wal();
-            GridEncryptionManager encrypt = this.ctx.kernalContext().encryption();
+            GridEncryptionManager encrMgr = this.ctx.kernalContext().encryption();
 
             if (size > 0 || updCntr > 0 || !store.partUpdateCounter().sequential() ||
-                (grp.config().isEncryptionEnabled() && encrypt.getEncryptionState(grp.groupId(), store.partId()) > 0)) {
+                (grp.config().isEncryptionEnabled() && encrMgr.getEncryptionState(grp.groupId(), store.partId()) > 0)) {
                 GridDhtPartitionState state = null;
 
                 // localPartition will not acquire writeLock here because create=false.
@@ -494,14 +494,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         int encryptCnt = 0;
 
                         if (grp.config().isEncryptionEnabled()) {
-                            long reencryptState = encrypt.getEncryptionState(grpId, store.partId());
+                            long reencryptState = encrMgr.getEncryptionState(grpId, store.partId());
 
                             if (reencryptState != 0) {
                                 encryptIdx = ReencryptStateUtils.pageIndex(reencryptState);
                                 encryptCnt = ReencryptStateUtils.pageCount(reencryptState);
 
                                 if (encryptIdx == encryptCnt) {
-                                    encrypt.setEncryptionState(grp, store.partId(), 0, 0);
+                                    encrMgr.setEncryptionState(grp, store.partId(), 0, 0);
 
                                     encryptIdx = encryptCnt = 0;
                                 }
