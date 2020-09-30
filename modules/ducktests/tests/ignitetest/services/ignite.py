@@ -79,9 +79,9 @@ class IgniteService(IgniteAwareService):
 
     def exec_on_nodes_async(self, nodes, task, simultaneously=True, delay_ms=0, timeout_sec=20):
         """
-        Executes given task/lambda on the nodes.
-        :param task: a 'lambda: node'
-        :param simultaneously: Enables or disables simultaneous start of the task on each node
+        Executes given task on the nodes.
+        :param task: a 'lambda: node'.
+        :param simultaneously: Enables or disables simultaneous start of the task on each node.
         :param delay_ms: delay before task run. Begins with 0, grows by delay_ms for each next node in nodes.
         """
         sem = CountDownLatch(len(nodes)) if simultaneously else None

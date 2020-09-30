@@ -26,7 +26,7 @@ from datetime import datetime
 from time import monotonic
 from typing import NamedTuple
 
-from ducktape.mark import matrix
+from ducktape.mark import matrix, parametrize
 from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteAwareService, IgniteService
@@ -82,10 +82,11 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
-    @matrix(nodes_to_kill=[1, 2], load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    @matrix(nodes_to_kill=[1, 2],
+            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_nodes_fail_notseq_tcp(self, ignite_version, nodes_to_kill, load_type):
         """
-        Test nodes failure scenario with TcpDiscoverySpi not allowing to fail nodes in a row.
+        Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
                                           load_type=load_type, sequential_failure=False)
@@ -94,7 +95,7 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
-    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    @parametrize(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_2_nodes_fail_seq_tcp(self, ignite_version, load_type):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
@@ -111,7 +112,7 @@ class DiscoveryTest(IgniteTest):
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_nodes_fail_notseq_zk(self, ignite_version, nodes_to_kill, load_type):
         """
-        Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
+        Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
                                           load_type=load_type, sequential_failure=False, with_zk=True)
@@ -121,7 +122,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES + 3)
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
-    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    @parametrize(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_2_nodes_fail_seq_zk(self, ignite_version, load_type):
         """
         Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
@@ -224,8 +225,8 @@ class DiscoveryTest(IgniteTest):
 
         return data
 
-    def _check_results(self, failed_nodes, survived_node, clients=None):
-        """Makes sure the test finishes correctly."""
+    def _check_results(self, failed_nodes, survived_node, clients):
+        """Ensures test finishes correctly."""
         cmd = "grep '%s' %s | wc -l" % (failed_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE)
 
         failed_cnt = int(str(survived_node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding()))
@@ -338,7 +339,8 @@ def failed_pattern(failed_node_id=None):
     """
     Failed node pattern in log
     """
-    return "Node FAILED: .\\{1,\\}Node \\[id=" + (failed_node_id if failed_node_id else "") + ".\\{1,\\}\(isClient\|client\)=false"
+    return "Node FAILED: .\\{1,\\}Node \\[id=" + (failed_node_id if failed_node_id else "") + \
+           ".\\{1,\\}\\(isClient\\|client\\)=false"
 
 
 def choose_node_to_kill(servers, nodes_to_kill, sequential):
