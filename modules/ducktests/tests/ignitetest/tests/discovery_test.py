@@ -194,7 +194,7 @@ class DiscoveryTest(IgniteTest):
 
         for node in failed_nodes:
             self.logger.debug(
-                "Netfilter activated on '%s' (%s): %s" % (node.name, node_id(node), dump_netfilter_settings(node)))
+                "Netfilter activated on '%s': %s" % (node.name, dump_netfilter_settings(node)))
 
         # Keeps dates of logged node failures.
         logged_timestamps = []
