@@ -34,9 +34,9 @@ class IgniteApplicationService(IgniteAwareService):
     SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"
 
     # pylint: disable=R0913
-    def __init__(self, context, config, java_class_name, num_nodes=1, params="", timeout_sec=60, modules=None,
+    def __init__(self, context, config, java_class_name, params="", timeout_sec=60, modules=None,
                  servicejava_class_name=SERVICE_JAVA_CLASS_NAME, jvm_opts=None, start_ignite=True):
-        super().__init__(context, config, num_nodes, modules=modules, servicejava_class_name=servicejava_class_name,
+        super().__init__(context, config, 1, modules=modules, servicejava_class_name=servicejava_class_name,
                          java_class_name=java_class_name, params=params, jvm_opts=jvm_opts, start_ignite=start_ignite)
 
         self.servicejava_class_name = servicejava_class_name
@@ -70,6 +70,12 @@ class IgniteApplicationService(IgniteAwareService):
                         (str(self.nodes[0].account), str(timeout_sec))
 
         self.__check_status("IGNITE_APPLICATION_FINISHED", timeout=timeout_sec)
+
+    # pylint: disable=W0221
+    def stop_node(self, node, clean_shutdown=True, timeout_sec=10):
+        assert node == self.nodes[0]
+        self.stop_async(clean_shutdown)
+        self.await_stopped(timeout_sec)
 
     def __check_status(self, desired, timeout=1):
         self.await_event("%s\\|IGNITE_APPLICATION_BROKEN" % desired, timeout, from_the_beginning=True)

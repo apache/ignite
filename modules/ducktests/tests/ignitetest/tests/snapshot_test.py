@@ -77,7 +77,6 @@ class SnapshotTest(IgniteTest):
         streamer = IgniteApplicationService(
             self.test_context,
             client_config,
-            num_nodes=2,
             java_class_name="org.apache.ignite.internal.ducktest.tests.UuidStreamerApplication",
             params={
                 "cacheName": "test-cache",
