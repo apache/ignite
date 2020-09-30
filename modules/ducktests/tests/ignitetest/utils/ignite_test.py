@@ -16,9 +16,13 @@
 """
 This module contains basic ignite test.
 """
+import os
 from time import monotonic
 
-from ducktape.tests.test import Test
+from ducktape.utils.local_filesystem_utils import mkdir_p
+from ducktape.tests.test import Test, TestContext
+from ignitetest.services.ignite import IgniteService
+from ignitetest.services.utils.ignite_persistence import PersistenceAware
 
 
 # pylint: disable=W0223
@@ -40,3 +44,45 @@ class IgniteTest(Test):
             so that only the difference between the results of consecutive calls is valid.
         """
         return monotonic()
+
+    def copy_ignite_root_dir(self):
+        """
+        Copying root directory from service nodes to the results directory.
+        """
+        for service in self.test_context.services:
+            if not isinstance(service, IgniteService):
+                self.logger.debug("Won't collect service workdir from %s." % service.service_id)
+                continue
+
+            if service.config.data_storage and service.config.data_storage.default.persistent:
+                # Try to copy the root directory
+                self.logger.debug("Copying persistence dir...")
+                try:
+                    for node in service.nodes:
+                        dest = os.path.join(
+                            TestContext.results_dir(self.test_context, self.test_context.test_index),
+                            service.service_id, node.account.hostname)
+                        self.logger.debug("Dest dir " + dest)
+                        if not os.path.isdir(dest):
+                            mkdir_p(dest)
+
+                        tgz_root = '%s.tgz' % PersistenceAware.PERSISTENT_ROOT
+
+                        node.account.ssh(compress_cmd(PersistenceAware.PERSISTENT_ROOT, tgz_root))
+                        node.account.copy_from(tgz_root, dest)
+                except Exception as ex:  # pylint: disable=W0703
+                    self.logger.warn(
+                        "Error copying persistence dir from %(source)s to %(dest)s. \
+                        service %(service)s: %(message)s" %
+                        {'source': PersistenceAware.PERSISTENT_ROOT,
+                         'dest': dest,
+                         'service': service,
+                         'message': ex})
+
+
+def compress_cmd(src_path, dest_tgz):
+    """Return bash command which compresses the given path to a tarball."""
+
+    compres_cmd = f'cd {src_path} ; tar czf "{dest_tgz}" *;'
+
+    return compres_cmd
