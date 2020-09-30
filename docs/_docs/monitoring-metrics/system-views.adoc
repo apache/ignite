@@ -171,6 +171,35 @@ be updating the thick client with task-related execution details.
 |USER_VERSION | string |  Task user version
 |===
 
+== JOBS - compute jobs
+
+This system view shows a list of compute jobs started by a node as part of a compute task.
+To view the status of the compute task refer to the TASKS system view.
+
+[{table_opts}]
+|===
+|NAME | TYPE |    DESCRIPTION
+|ID | UUID | Job ID
+|SESSION_ID | UUID | Session ID. Note, `SESSION_ID` equal to `TASKS.SESSION_ID` for the jobs that belong to the specific task
+|ORIGIN_NODE_ID | UUID | The id of the node that started the job
+|TASK_NAME | string | Name of the task
+|TASK_CLASSNAME | string | Class name of the task
+|AFFINITY_CACHE_IDS | string | Affinity cache ids
+|AFFINITY_PARTITION_ID | int | Partition id
+|CREATE_TIME | long | Create time
+|START_TIME | long | Start time
+|FINISH_TIME | long | Finish time
+|EXECUTOR_NAME | string | Name of the executor for task
+|IS_FINISHING | boolean | True if job finishing
+|IS_INTERNAL | boolean | True if job internal
+|IS_STARTED | boolean | True if job started
+|IS_TIMEDOUT | boolean | True if job timed out
+|STATE | string | Possible values: +
+`ACTIVE` - Job executing. +
+`PASSIVE` - Job is added to the execution queue. Please, see `CollisionSPI` for more details. +
+`CANCELED` - Job canceled.
+|===
+
 == SERVICES
 
 [{table_opts}]
@@ -339,23 +368,6 @@ This view exposes information about currently running scan queries.
 |TRANSFORMER | string |  toString representation of transformer
 |===
 
-
-== SQL_QUERIES_HISTORY
-
-This view exposes information about SQL queries history.
-
-[{table_opts}]
-|===
-|NAME | TYPE |    DESCRIPTION
-|SCHEMA_NAME | string |  Schema name
-|SQL | string |  Query text
-|LOCAL | boolean | True if local only
-|EXECUTIONS | long |    Count of executions
-|FAILURES | long |    Count of failures
-|DURATION_MIN | long |    Minimal duration of execution
-|DURATION_MAX | long |    Maximum duration of execution
-|LAST_START_TIME | date |    Last execution date
-|===
 
 == CONTINUOUS_QUERIES
 
