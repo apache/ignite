@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
@@ -33,13 +34,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientCompute;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -91,6 +96,14 @@ public class ComputeTaskTest extends AbstractThinClientTest {
         stopAllGrids();
 
         super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        TestLatchTask.latch = null;
+        TestLatchTask.startLatch = null;
+
+        super.afterTest();
     }
 
     /**
@@ -163,6 +176,49 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     }
 
     /**
+     * Tests asynchronous task execution.
+     */
+    @Test
+    public void testExecuteTaskAsync2() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            TestLatchTask.latch = new CountDownLatch(1);
+
+            IgniteClientFuture<T2<UUID, Set<UUID>>> fut = client.compute()
+                    .executeAsync2(TestLatchTask.class.getName(), null);
+
+            GridTestUtils.assertThrowsAnyCause(
+                null,
+                () -> fut.get(10L, TimeUnit.MILLISECONDS),
+                TimeoutException.class,
+                null
+            );
+
+            assertFalse(fut.isDone());
+
+            TestLatchTask.latch.countDown();
+
+            T2<UUID, Set<UUID>> val = fut.get();
+
+            assertTrue(fut.isDone());
+            assertEquals(nodeId(0), val.get1());
+            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
+        }
+    }
+
+    /**
+     * Tests asynchronous task execution with an exception.
+     */
+    @Test
+    public void testExecuteTaskAsync2WithExceptionInTask() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            IgniteClientFuture<Object> fut = client.compute().executeAsync2(TestExceptionalTask.class.getName(), null);
+
+            String errMessage = fut.handle((f, t) -> t.getMessage()).toCompletableFuture().get(2, TimeUnit.SECONDS);
+            assertTrue(errMessage.contains("cause=Foo"));
+        }
+    }
+
+    /**
      *
      */
     @Test(expected = CancellationException.class)
@@ -173,6 +229,35 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             assertFalse(fut.isCancelled());
             assertFalse(fut.isDone());
 
+            assertTrue(fut.cancel(true));
+
+            assertTrue(GridTestUtils.waitForCondition(
+                () -> ((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty(), TIMEOUT));
+
+            assertTrue(fut.isCancelled());
+            assertTrue(fut.isDone());
+
+            fut.get();
+        }
+    }
+
+    /**
+     *
+     */
+    @Test(expected = CancellationException.class)
+    public void testTaskCancellation2() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            IgniteClientFuture<T2<UUID, List<UUID>>> fut = client.compute().executeAsync2(TestTask.class.getName(), TIMEOUT);
+
+            assertFalse(fut.isCancelled());
+            assertFalse(fut.isDone());
+
+            AtomicReference<Throwable> handledErr = new AtomicReference<>();
+            CompletionStage<T2<UUID, List<UUID>>> handledFut = fut.handle((r, err) -> {
+                handledErr.set(err);
+                return r;
+            });
+
             fut.cancel(true);
 
             assertTrue(GridTestUtils.waitForCondition(
@@ -180,6 +265,10 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
             assertTrue(fut.isCancelled());
             assertTrue(fut.isDone());
+
+            assertNotNull(handledErr.get());
+            assertTrue(handledErr.get() instanceof CancellationException);
+            assertNull(handledFut.toCompletableFuture().get());
 
             fut.get();
         }
@@ -311,31 +400,29 @@ public class ComputeTaskTest extends AbstractThinClientTest {
         try (IgniteClient client = startClient(0, 1)) {
             ClientComputeImpl compute = (ClientComputeImpl)client.compute();
 
-            Future<Object> fut1 = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
+            TestLatchTask.latch = new CountDownLatch(1);
+            TestLatchTask.startLatch = new CountDownLatch(1);
+            Future<Object> fut1 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
+            // Wait for the task to start, then drop connections.
+            TestLatchTask.startLatch.await();
             dropAllThinClientConnections();
 
-            Future<Object> fut2 = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
+            TestLatchTask.startLatch = new CountDownLatch(1);
+            Future<Object> fut2 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
+            TestLatchTask.startLatch.await();
             dropAllThinClientConnections();
 
             TestLatchTask.latch = new CountDownLatch(1);
 
             Future<Object> fut3 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
-            assertEquals(1, compute.activeTaskFutures().size());
-
             compute.execute(TestTask.class.getName(), null);
 
-            assertTrue(GridTestUtils.waitForCondition(() -> compute.activeTaskFutures().size() == 1, TIMEOUT));
+            GridTestUtils.assertThrowsAnyCause(null, fut1::get, ClientConnectionException.class, "closed");
 
-            assertTrue(fut1.isDone());
-
-            GridTestUtils.assertThrowsAnyCause(null, fut1::get, ClientException.class, "closed");
-
-            assertTrue(fut2.isDone());
-
-            GridTestUtils.assertThrowsAnyCause(null, fut2::get, ClientException.class, "closed");
+            GridTestUtils.assertThrowsAnyCause(null, fut2::get, ClientConnectionException.class, "closed");
 
             assertFalse(fut3.isDone());
 
@@ -356,13 +443,17 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             ClientCompute compute1 = client.compute(client.cluster().forNodeId(nodeId(1)));
             ClientCompute compute2 = client.compute(client.cluster().forNodeId(nodeId(2)));
 
-            CountDownLatch latch1 = TestLatchTask.latch = new CountDownLatch(1);
+            CountDownLatch latch1 = TestLatchTask.latch = new CountDownLatch(2);
+            TestLatchTask.startLatch = new CountDownLatch(1);
 
             Future<T2<UUID, Set<UUID>>> fut1 = compute1.executeAsync(TestLatchTask.class.getName(), null);
+            TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
             CountDownLatch latch2 = TestLatchTask.latch = new CountDownLatch(1);
+            TestLatchTask.startLatch = new CountDownLatch(1);
 
             Future<T2<UUID, Set<UUID>>> fut2 = compute2.executeAsync(TestLatchTask.class.getName(), null);
+            TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
             latch2.countDown();
 
@@ -386,12 +477,16 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             ClientCompute compute2 = client2.compute(client2.cluster().forNodeId(nodeId(2)));
 
             CountDownLatch latch1 = TestLatchTask.latch = new CountDownLatch(1);
+            TestLatchTask.startLatch = new CountDownLatch(1);
 
             Future<T2<UUID, Set<UUID>>> fut1 = compute1.executeAsync(TestLatchTask.class.getName(), null);
+            TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
             CountDownLatch latch2 = TestLatchTask.latch = new CountDownLatch(1);
+            TestLatchTask.startLatch = new CountDownLatch(1);
 
             Future<T2<UUID, Set<UUID>>> fut2 = compute2.executeAsync(TestLatchTask.class.getName(), null);
+            TestLatchTask.startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
             latch2.countDown();
 
@@ -420,10 +515,14 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             for (int i = 0; i < ACTIVE_TASKS_LIMIT; i++)
                 futs.add(compute.executeAsync(TestLatchTask.class.getName(), null));
 
+            assertTrue(GridTestUtils.waitForCondition(
+                    () -> ((ClientComputeImpl)client.compute()).activeTaskFutures().size() == ACTIVE_TASKS_LIMIT,
+                    TIMEOUT));
+
             // Check that we can't start more tasks.
             GridTestUtils.assertThrowsAnyCause(
                 null,
-                () -> compute.executeAsync(TestLatchTask.class.getName(), null),
+                () -> compute.executeAsync(TestLatchTask.class.getName(), null).get(),
                 ClientException.class,
                 "limit"
             );
@@ -468,7 +567,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     public void testExecuteTaskConcurrentLoad() throws Exception {
         try (IgniteClient client = startClient(0)) {
             int threadsCnt = 20;
-            int iterations = 20;
+            int iterations = 100;
 
             ClientCache<Integer, Integer> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -554,19 +653,29 @@ public class ComputeTaskTest extends AbstractThinClientTest {
         /** Global latch. */
         private static volatile CountDownLatch latch;
 
+        /** Global start latch. */
+        private static volatile CountDownLatch startLatch;
+
         /** Local latch. */
         private final CountDownLatch locLatch;
+
+        /** Local start latch. */
+        private final CountDownLatch locStartLatch;
 
         /**
          * Default constructor.
          */
         public TestLatchTask() {
             locLatch = latch;
+            locStartLatch = startLatch;
         }
 
         /** {@inheritDoc} */
         @Override public @Nullable T2<UUID, Set<UUID>> reduce(List<ComputeJobResult> results) throws IgniteException {
             try {
+                if (locStartLatch != null)
+                    locStartLatch.countDown();
+
                 if (locLatch != null)
                     locLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
             }

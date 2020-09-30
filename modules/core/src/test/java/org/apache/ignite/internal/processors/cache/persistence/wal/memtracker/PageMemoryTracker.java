@@ -55,8 +55,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
@@ -147,7 +147,7 @@ public class PageMemoryTracker implements IgnitePlugin {
     private final ConcurrentMap<WALRecord.RecordType, AtomicInteger> stats = new ConcurrentHashMap<>();
 
     /** Checkpoint listener. */
-    private DbCheckpointListener checkpointLsnr;
+    private CheckpointListener checkpointLsnr;
 
     /** Temporary byte buffer, used to compact local pages. */
     private volatile ByteBuffer tmpBuf1;
@@ -276,7 +276,7 @@ public class PageMemoryTracker implements IgnitePlugin {
         tmpBuf2 = ByteBuffer.allocateDirect(pageSize);
 
         if (cfg.isCheckPagesOnCheckpoint()) {
-            checkpointLsnr = new DbCheckpointListener() {
+            checkpointLsnr = new CheckpointListener() {
                 @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
                     if (!checkPages(false, true))
                         throw new IgniteCheckedException("Page memory is inconsistent after applying WAL delta records.");

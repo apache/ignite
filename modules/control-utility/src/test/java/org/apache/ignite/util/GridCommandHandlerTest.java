@@ -96,7 +96,6 @@ import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvid
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
@@ -1274,9 +1273,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         primSpi.waitForBlocked(clients.length);
 
         // Unblock only finish messages from clients from 2 to 4.
-        primSpi.stopBlock(true, new IgnitePredicate<T2<ClusterNode, GridIoMessage>>() {
-            @Override public boolean apply(T2<ClusterNode, GridIoMessage> objects) {
-                GridIoMessage iom = objects.get2();
+        primSpi.stopBlock(true, blockedMsg -> {
+                GridIoMessage iom = blockedMsg.ioMessage();
 
                 Message m = iom.message();
 
@@ -1288,7 +1286,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
                 return true;
             }
-        });
+        );
 
         // Wait until queue is stable
         for (Ignite ignite : G.allGrids()) {
@@ -2359,14 +2357,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         try {
             U.await(blockedWarmUpStgy.startLatch, 60, TimeUnit.SECONDS);
 
-            assertEquals(EXIT_CODE_OK, execute("--warm-up", "--stop", "--yes"));
+            // Arguments --user and --password are needed for additional sending of the GridClientAuthenticationRequest.
+            assertEquals(EXIT_CODE_OK, execute("--warm-up", "--stop", "--yes", "--user", "user", "--password", "123"));
 
-            fut.get(60_000);
+            assertEquals(0, blockedWarmUpStgy.stopLatch.getCount());
         }
-        catch (Throwable t) {
+        finally {
             blockedWarmUpStgy.stopLatch.countDown();
 
-            throw t;
+            fut.get(60_000);
         }
     }
 

@@ -152,7 +152,7 @@ namespace ignite
             /**
              * Primitives for atomic access.
              */
-            class Atomics
+            class IGNITE_IMPORT_EXPORT Atomics
             {
             public:
                 /**

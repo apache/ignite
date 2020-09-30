@@ -75,7 +75,8 @@ if (WIN32)
     list(APPEND SOURCES os/win/src/system_dsn.cpp
             os/win/src/system/ui/custom_window.cpp
             os/win/src/system/ui/dsn_configuration_window.cpp
-            os/win/src/system/ui/window.cpp)
+            os/win/src/system/ui/window.cpp
+            project/vs/module.def)
 endif ()
 
 add_library(${TARGET} SHARED ${SOURCES})
@@ -85,7 +86,7 @@ set_target_properties(${TARGET} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 target_link_libraries(${TARGET} ${ODBC_LIBRARIES})
 
 if (WIN32)
-    target_link_libraries(${TARGET} ignite-common-objlib ignite-binary-objlib ignite-network-objlib shlwapi)
+    target_link_libraries(${TARGET} ignite-common-objlib ignite-binary-objlib ignite-network-objlib odbccp32 shlwapi)
 
     remove_definitions(-DUNICODE=1)
 
@@ -94,6 +95,8 @@ if (WIN32)
     if (MSVC_VERSION GREATER_EQUAL 1900)
         target_link_libraries(${TARGET} legacy_stdio_definitions)
     endif()
+				
+	set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.odbc")
 else()
     target_link_libraries(${TARGET} ignite-common ignite-binary ignite-network)
 endif()
@@ -101,8 +104,3 @@ endif()
 target_include_directories(${TARGET} INTERFACE include)
 
 install(TARGETS ${TARGET} LIBRARY DESTINATION lib)
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h*")
-
-if (WIN32)
-    install(DIRECTORY os/win/include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include FILES_MATCHING PATTERN "*.h*")
-endif()
