@@ -659,6 +659,6 @@ This view exposes information about the distribution of cache group partitions a
 |CACHE_GROUP_ID |  int| Cache group ID
 |PARTITION_ID |    int| Partition ID
 |NODE_ID | UUID | Node ID
-|STATE | string | Partition state
+|STATE | string | Partition state. Possible states: MOVING - partition is being loaded from another node to this node; OWNING - this node is either a primary or backup owner; RENTING - this node is neither primary nor back up owner (is being currently evicted); EVICTED - partition has been evicted; LOST - partition state is invalid, the partition should not be used.
 |IS_PRIMARY | boolean  | Primary partition flag
 |===
