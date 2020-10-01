@@ -17,7 +17,6 @@
 This module contains PME free switch tests.
 """
 import multiprocessing
-import time
 
 from ducktape.mark._mark import parametrize
 from ducktape.mark.resource import cluster
@@ -38,20 +37,60 @@ class ChangeCacheEnryptionTest(IgniteTest):
     Tests background encryption with and without load.
     """
     NUM_NODES = 3
-    PRELOAD_TIMEOUT = 300
+    MAX_AWAIT_SEC = 900
     CACHE_NAME = "test-cache"
-    THREADS = multiprocessing.cpu_count() / 2
-    DATAGEN_DURATION = 99
+    THREADS = multiprocessing.cpu_count()
+    DATAGEN_TIME = 99
     LOAD_TIME = 33
 
     @cluster(num_nodes=NUM_NODES + 2)
-    @parametrize(gen_time=DATAGEN_DURATION, gen_threads=THREADS, load_time = LOAD_TIME, load_threads=THREADS)
-    def test_encrypt(self, gen_time, gen_threads, load_time, load_threads):
+    @parametrize(gen_time=DATAGEN_TIME, gen_threads=THREADS, load_time = LOAD_TIME, load_threads=THREADS)
+    def test_encrypt11(self, gen_time, gen_threads, load_time, load_threads):
         return self._perform_load(True, gen_time, gen_threads, load_time, load_threads)
 
     @cluster(num_nodes=NUM_NODES + 2)
-    @parametrize(gen_time=DATAGEN_DURATION, gen_threads=THREADS, load_time = LOAD_TIME, load_threads=THREADS)
-    def test_idle(self, gen_time, gen_threads, load_time, load_threads):
+    @parametrize(gen_time=DATAGEN_TIME, gen_threads=THREADS, load_time = LOAD_TIME, load_threads=THREADS)
+    def test_idle11(self, gen_time, gen_threads, load_time, load_threads):
+        return self._perform_load(False, gen_time, gen_threads, load_time, load_threads)
+
+    @cluster(num_nodes=NUM_NODES + 2)
+    @parametrize(gen_time=DATAGEN_TIME, gen_threads=THREADS / 2, load_time = LOAD_TIME, load_threads=THREADS)
+    def test_encrypt21(self, gen_time, gen_threads, load_time, load_threads):
+        return self._perform_load(True, gen_time, gen_threads, load_time, load_threads)
+
+    @cluster(num_nodes=NUM_NODES + 2)
+    @parametrize(gen_time=DATAGEN_TIME, gen_threads=THREADS / 2, load_time = LOAD_TIME, load_threads=THREADS)
+    def test_idle21(self, gen_time, gen_threads, load_time, load_threads):
+        return self._perform_load(False, gen_time, gen_threads, load_time, load_threads)
+
+    @cluster(num_nodes=NUM_NODES + 2)
+    @parametrize(gen_time=DATAGEN_TIME, gen_threads=THREADS / 2, load_time = LOAD_TIME, load_threads=THREADS / 2)
+    def test_encrypt22(self, gen_time, gen_threads, load_time, load_threads):
+        return self._perform_load(True, gen_time, gen_threads, load_time, load_threads)
+
+    @cluster(num_nodes=NUM_NODES + 2)
+    @parametrize(gen_time=DATAGEN_TIME, gen_threads=THREADS / 2, load_time = LOAD_TIME, load_threads=THREADS / 2)
+    def test_idle22(self, gen_time, gen_threads, load_time, load_threads):
+        return self._perform_load(False, gen_time, gen_threads, load_time, load_threads)
+
+    @cluster(num_nodes=NUM_NODES + 2)
+    @parametrize(gen_time=DATAGEN_TIME, gen_threads=THREADS / 4, load_time = LOAD_TIME, load_threads=THREADS / 2)
+    def test_encrypt42(self, gen_time, gen_threads, load_time, load_threads):
+        return self._perform_load(True, gen_time, gen_threads, load_time, load_threads)
+
+    @cluster(num_nodes=NUM_NODES + 2)
+    @parametrize(gen_time=DATAGEN_TIME, gen_threads=THREADS / 4, load_time = LOAD_TIME, load_threads=THREADS / 2)
+    def test_idle42(self, gen_time, gen_threads, load_time, load_threads):
+        return self._perform_load(False, gen_time, gen_threads, load_time, load_threads)
+
+    @cluster(num_nodes=NUM_NODES + 2)
+    @parametrize(gen_time=DATAGEN_TIME, gen_threads=THREADS / 4, load_time = LOAD_TIME, load_threads=THREADS / 4)
+    def test_encrypt44(self, gen_time, gen_threads, load_time, load_threads):
+        return self._perform_load(True, gen_time, gen_threads, load_time, load_threads)
+
+    @cluster(num_nodes=NUM_NODES + 2)
+    @parametrize(gen_time=DATAGEN_TIME, gen_threads=THREADS / 4, load_time = LOAD_TIME, load_threads=THREADS / 4)
+    def test_idle44(self, gen_time, gen_threads, load_time, load_threads):
         return self._perform_load(False, gen_time, gen_threads, load_time, load_threads)
 
     def _perform_load(self, encrypt, generate_time, gen_threads, load_time, load_threads):
@@ -87,11 +126,11 @@ class ChangeCacheEnryptionTest(IgniteTest):
         control_utility.activate()
 
         data_generator = IgniteApplicationService(self.test_context, client_config,
-                                 java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
-                                 params={"cache_name": self.CACHE_NAME,
+                                                  java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
+                                                  params={"cache_name": self.CACHE_NAME,
                                          "duration": generate_time,
                                          "threads_count": gen_threads},
-                                 timeout_sec=self.PRELOAD_TIMEOUT)
+                                                  timeout_sec=self.MAX_AWAIT_SEC)
 
         data_generator.run()
 
@@ -111,7 +150,7 @@ class ChangeCacheEnryptionTest(IgniteTest):
         # time.sleep(load_time)
 
         if encrypt:
-            ignites.await_event("Cache group reencryption is finished", 300, from_the_beginning=True)
+            ignites.await_event("Cache group reencryption is finished", self.MAX_AWAIT_SEC, from_the_beginning=True)
 
         # load_generator.stop()
 
