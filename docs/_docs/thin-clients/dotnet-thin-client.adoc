@@ -154,8 +154,9 @@ include::{sourceCodeFile}[tag=executingSql,indent=0]
 
 == Cluster API
 
-Cluster functionality (APIs for accessing cluster and nodes) is provided via the `ClientCluster` interface. You can get an instance of `ClientCluster` from `IgniteClient` as follows:
-[source, java]
+Cluster functionality (APIs for accessing cluster and nodes) is provided via the `IClientCluster` interface. 
+You can get an instance of `IClientCluster` from `IIgniteClient` as follows:
+[source, csharp]
 -------------------------------------------------------------------------------
 include::{sourceCodeFile}[tag=client-cluster,indent=0]
 -------------------------------------------------------------------------------

@@ -283,5 +283,16 @@ namespace dotnet_helloworld
             }
             //end::discovery[]
         }
+
+        public static void ClientCluster()
+        {
+            var cfg = new IgniteClientConfiguration();
+            //tag::client-cluster[]
+            IIgniteClient client = Ignition.StartClient(cfg);
+            IClientCluster cluster = client.GetCluster();
+            cluster.SetActive(true);
+            cluster.EnableWal("my-cache");
+            //end::client-cluster[]
+        }
     }
 }
