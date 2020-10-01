@@ -82,7 +82,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
      * @param invokeArgs Optional arguments for entry processor.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
      * @param addDepInfo Deployment info flag.
@@ -95,7 +94,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         @Nullable Object[] invokeArgs,
-        @Nullable UUID subjId,
         int taskNameHash,
         byte flags,
         boolean addDepInfo
@@ -107,7 +105,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
             topVer,
             syncMode,
             op,
-            subjId,
             taskNameHash,
             flags,
             addDepInfo
@@ -225,13 +222,13 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         }
 
         switch (writer.state()) {
-            case 13:
+            case 12:
                 if (!writer.writeByteArray("entryProcessorBytes", entryProcessorBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 13:
                 if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
@@ -253,7 +250,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
             return false;
 
         switch (reader.state()) {
-            case 13:
+            case 12:
                 entryProcessorBytes = reader.readByteArray("entryProcessorBytes");
 
                 if (!reader.isLastRead())
@@ -261,7 +258,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
 
                 reader.incrementState();
 
-            case 14:
+            case 13:
                 invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
@@ -276,7 +273,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 15;
+        return 14;
     }
 
     /** {@inheritDoc} */

@@ -62,7 +62,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  * DHT atomic cache near update future.
@@ -1027,7 +1026,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     expiryPlc,
                     invokeArgs,
                     filter,
-                    securitySubjectId(cctx.kernalContext()),
                     taskNameHash,
                     flags,
                     cctx.deploymentEnabled(),
@@ -1141,7 +1139,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             expiryPlc,
             invokeArgs,
             filter,
-            securitySubjectId(cctx.kernalContext()),
             taskNameHash,
             flags,
             cctx.deploymentEnabled(),

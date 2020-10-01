@@ -56,8 +56,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
-
 /**
  * Colocated get future.
  */
@@ -687,7 +685,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 keys,
                 readThrough,
                 topVer,
-                securitySubjectId(cctx.kernalContext()),
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc != null ? expiryPlc.forCreate() : -1L,
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,

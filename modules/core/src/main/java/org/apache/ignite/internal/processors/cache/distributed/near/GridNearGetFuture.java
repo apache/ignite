@@ -55,8 +55,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
-
 /**
  *
  */
@@ -748,7 +746,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 keys,
                 readThrough,
                 topVer,
-                securitySubjectId(cctx.kernalContext()),
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc != null ? expiryPlc.forCreate() : -1L,
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,

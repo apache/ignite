@@ -71,7 +71,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAP
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter.DFLT_MAX_REMAP_CNT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  *
@@ -352,7 +351,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 key,
                 readThrough,
                 topVer,
-                securitySubjectId(cctx.kernalContext()),
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc != null ? expiryPlc.forCreate() : -1L,
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,

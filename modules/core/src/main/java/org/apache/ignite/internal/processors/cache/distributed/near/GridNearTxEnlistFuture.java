@@ -451,7 +451,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             threadId,
             futId,
             batchId,
-            securitySubjectId(),
             topVer,
             lockVer,
             mvccSnapshot,

@@ -88,9 +88,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /** Update operation. */
     protected GridCacheOperation op;
 
-    /** Subject ID. */
-    protected UUID subjId;
-
     /** Task name hash. */
     protected int taskNameHash;
 
@@ -118,7 +115,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @param topVer Topology version.
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
      * @param addDepInfo Deployment info flag.
@@ -130,7 +126,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         @NotNull AffinityTopologyVersion topVer,
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
-        @Nullable UUID subjId,
         int taskNameHash,
         byte flags,
         boolean addDepInfo
@@ -141,7 +136,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.topVer = topVer;
         this.syncMode = syncMode;
         this.op = op;
-        this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.flags = flags;
         this.addDepInfo = addDepInfo;
@@ -274,13 +268,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      */
     public GridCacheOperation operation() {
         return op;
-    }
-
-    /**
-     * @return Subject ID.
-     */
-    public UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -528,7 +515,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 10;
     }
 
     /** {@inheritDoc} */
@@ -565,24 +552,18 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
                 if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
@@ -633,14 +614,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 reader.incrementState();
 
             case 7:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
                 byte syncModeOrd;
 
                 syncModeOrd = reader.readByte("syncMode");
@@ -652,7 +625,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
                 reader.incrementState();
 
-            case 9:
+            case 8:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -660,7 +633,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
