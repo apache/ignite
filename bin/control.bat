@@ -254,6 +254,11 @@ if %MAJOR_JAVA_VER% GEQ 11 (
     %CONTROL_JVM_OPTS%
 )
 
+if defined JVM_OPTS (
+    echo JVM_OPTS environment variable is set, but will not be used. To pass JVM options use CONTROL_JVM_OPTS
+    echo JVM_OPTS=%JVM_OPTS%
+)
+
 if "%INTERACTIVE%" == "1" (
     "%JAVA_HOME%\bin\java.exe" %CONTROL_JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% %JMX_MON% ^
     -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="%IGNITE_HOME%" -DIGNITE_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
