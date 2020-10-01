@@ -243,8 +243,6 @@ class DiscoveryTest(IgniteTest):
 
         for service in [srv for srv in self.test_context.services if isinstance(srv, IgniteAwareService)]:
             for node in [srv_node for srv_node in service.nodes if srv_node not in failed_nodes]:
-                self.logger.error("Checking node: " + node.name + " of service " + str(service))
-
                 cmd = "grep -i '%s' %s | wc -l" % ("local no1de segmented", IgniteAwareService.STDOUT_STDERR_CAPTURE)
 
                 failed = str(node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding())
