@@ -48,9 +48,9 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
         new ProjectScanMergeRule<IgniteIndexScan>(LogicalProject.class, IgniteIndexScan.class, "ProjectIndexScanMergeRule") {
             /** {@inheritDoc} */
             @Override protected IgniteIndexScan createNode(RelOptCluster cluster, IgniteIndexScan scan,
-                RelTraitSet traits, List<RexNode> projections, ImmutableBitSet requiredColunms) {
+                RelTraitSet traits, List<RexNode> projections, RexNode cond, ImmutableBitSet requiredColunms) {
                 return new IgniteIndexScan(cluster, traits, scan.getTable(), scan.indexName(), projections,
-                    scan.condition(), requiredColunms);
+                    cond, requiredColunms);
             }
         };
 
@@ -59,13 +59,14 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
         new ProjectScanMergeRule<IgniteTableScan>(LogicalProject.class, IgniteTableScan.class, "ProjectTableScanMergeRule") {
             /** {@inheritDoc} */
             @Override protected IgniteTableScan createNode(RelOptCluster cluster, IgniteTableScan scan,
-                RelTraitSet traits, List<RexNode> projections, ImmutableBitSet requiredColunms) {
-                return new IgniteTableScan(cluster, traits, scan.getTable(), projections, scan.condition(), requiredColunms);
+                RelTraitSet traits, List<RexNode> projections, RexNode cond, ImmutableBitSet requiredColunms) {
+                return new IgniteTableScan(cluster, traits, scan.getTable(), projections, cond, requiredColunms);
             }
         };
 
     /** */
-    protected abstract T createNode(RelOptCluster cluster, T scan, RelTraitSet traits, List<RexNode> projections, ImmutableBitSet requiredColunms);
+    protected abstract T createNode(RelOptCluster cluster, T scan, RelTraitSet traits, List<RexNode> projections,
+                                    RexNode cond, ImmutableBitSet requiredColunms);
 
     /**
      * Constructor.
@@ -94,6 +95,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
 
         RelOptCluster cluster = scan.getCluster();
         List<RexNode> projects = relProject.getProjects();
+        RexNode cond = scan.condition();
 
         ImmutableBitSet requiredColunms = null;
 
@@ -109,6 +111,14 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
 
             shuttle.apply(projects);
 
+            if (cond != null)
+               new RexShuttle() {
+                    @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
+                        builder.set(inputRef.getIndex());
+                        return inputRef;
+                    }
+                }.apply(cond);
+
             requiredColunms = builder.build();
 
             IgniteTypeFactory typeFactory = Commons.context(scan).typeFactory();
@@ -122,10 +132,17 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
                 targetMapping.set(ord.e, ord.i);
 
             projects = new RexShuttle() {
-                @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
+                @Override public RexNode visitInputRef(RexInputRef inputRef) {
                     return new RexLocalRef(targetMapping.getTarget(inputRef.getIndex()), inputRef.getType());
                 }
             }.apply(projects);
+
+            if (cond != null)
+                cond = new RexShuttle() {
+                    @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
+                        return new RexLocalRef(targetMapping.getTarget(inputRef.getIndex()), inputRef.getType());
+                    }
+                }.apply(cond);
         }
 
         // projection changes input collation and distribution.
@@ -139,7 +156,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
 
         projects = new InputRefReplacer().apply(projects);
 
-        call.transformTo(createNode(cluster, scan, traits, projects, requiredColunms));
+        call.transformTo(createNode(cluster, scan, traits, projects, cond, requiredColunms));
     }
 
     /** Visitor for replacing input refs to local refs. We need it for proper plan serialization. */

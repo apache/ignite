@@ -61,7 +61,7 @@ public class ProjectableFilterableTableScan extends TableScan {
     public ProjectableFilterableTableScan(RelInput input) {
         super(input);
         condition = input.getExpression("filters");
-        projects = input.get("projections") == null ? null : input.getExpressionList("projections");
+        projects = input.get("projects") == null ? null : input.getExpressionList("projects");
         requiredColunms = input.get("requiredColunms") == null ? null : input.getBitSet("requiredColunms");
     }
 
@@ -96,7 +96,8 @@ public class ProjectableFilterableTableScan extends TableScan {
     protected RelWriter explainTerms0(RelWriter pw) {
         return pw
             .itemIf("filters", condition, condition != null)
-            .itemIf("projections", projects, projects != null);
+            .itemIf("projects", projects, projects != null)
+            .itemIf("requiredColunms", requiredColunms, requiredColunms != null);
     }
 
     /** {@inheritDoc} */

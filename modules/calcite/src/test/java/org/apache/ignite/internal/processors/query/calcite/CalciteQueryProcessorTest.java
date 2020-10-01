@@ -288,15 +288,37 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+/*        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
             "" +
                 "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?;" +
-                "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0,1);
+                "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0, 1);
 
         assertEquals(2, query.size());
 
         assertEqualsCollections(Arrays.asList("Igor", 1, "Calcite"), F.first(query.get(0).getAll()));
         assertEqualsCollections(Arrays.asList("Roman", 0, "Ignite"), F.first(query.get(1).getAll()));
+
+        query = engine.query(null, "PUBLIC",
+            "" +
+                "select * from DEVELOPER d where d.projectId > ?;", 0);
+
+        assertEquals(1, query.size());*/
+
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "" +
+                "select name from DEVELOPER d where d.projectId > ?;", 0);
+
+        //EXPLAIN PLAN FOR
+
+        System.err.println("!!!" + query.get(0).getAll());
+
+        query = engine.query(null, "PUBLIC",
+            "" +
+                "EXPLAIN PLAN FOR select name from DEVELOPER d where d.projectId > ?;", 0);
+
+        //EXPLAIN PLAN FOR
+
+        System.err.println("!!!" + query.get(0).getAll());
     }
 
     @Test
