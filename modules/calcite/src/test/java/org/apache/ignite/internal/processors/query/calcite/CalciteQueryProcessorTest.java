@@ -306,7 +306,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
             "" +
-                "select name from DEVELOPER d where d.projectId > ?;", 0);
+                "select name from DEVELOPER d;", 0);
 
         //EXPLAIN PLAN FOR
 
