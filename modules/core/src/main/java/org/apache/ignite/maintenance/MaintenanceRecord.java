@@ -23,7 +23,26 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
-/** */
+/**
+ * Represents request to handle maintenance situation stored on disk.
+ *
+ * Maintenance request can be created programmatically
+ * with {@link MaintenanceRegistry#registerMaintenanceRecord(MaintenanceRecord)} public API call.
+ *
+ * Record contains unique ID of maintenance situation (e.g. situation of PDS corruption or defragmentation),
+ * description of record and optional parameters.
+ *
+ * When record is created node should be restarted to enter maintenance mode.
+ * In that mode node can start actions needed to resolve maintenance situation or wait for user to trigger them.
+ *
+ * Components that may need to perform maintenance actions as part of their recovery workflow should check
+ * maintenance status on startup and supply {@link MaintenanceWorkflowCallback} implementation to
+ * {@link MaintenanceRegistry#registerWorkflowCallback(MaintenanceWorkflowCallback)} to allow Maintenance Registry
+ * to find maintenance actions and start them automatically or by user request.
+ *
+ * Matching between {@link MaintenanceRecord} and {@link MaintenanceWorkflowCallback} is performed based on
+ * unique ID of maintenance situation.
+ */
 @IgniteExperimental
 public class MaintenanceRecord {
     /** */
@@ -36,9 +55,9 @@ public class MaintenanceRecord {
     private final String params;
 
     /**
-     * @param id
-     * @param description
-     * @param params
+     * @param id Mandatory unique ID of maintenance record.
+     * @param description Mandatory description of maintenance situation.
+     * @param params Optional parameters that may be needed to perform maintenance actions.
      */
     public MaintenanceRecord(UUID id, String description, String params) {
         this.id = id;

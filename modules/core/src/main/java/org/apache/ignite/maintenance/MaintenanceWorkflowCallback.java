@@ -17,6 +17,7 @@
 
 package org.apache.ignite.maintenance;
 
+import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,6 +34,7 @@ import java.util.UUID;
  * {@link MaintenanceRegistry} during its workflow will collect necessary information about maintenance for components
  * without knowing implementation details of the components.
  */
+@IgniteExperimental
 public interface MaintenanceWorkflowCallback {
     /**
      * Unique ID of corresponding {@link MaintenanceRecord}. Should not be null.
