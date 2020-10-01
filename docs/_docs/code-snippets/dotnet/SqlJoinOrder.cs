@@ -5,8 +5,6 @@ namespace dotnet_helloworld
     using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core;
-    using GridGain.Core;
-    using GridGain.Core.Security;
 
     public static class SqlJoinOrder
     {

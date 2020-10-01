@@ -95,7 +95,7 @@ namespace dotnet_helloworld
 
         public static void ScanQueryFilterDemo()
         {
-            using (var ignite = Ignition.Start(Util.getIngiteCfg()))
+            using (var ignite = Ignition.Start())
             {
                 var cfg = new IgniteClientConfiguration
                 {
@@ -158,7 +158,7 @@ namespace dotnet_helloworld
 
         public static void ExecutingSql()
         {
-            using (var ignite = Ignition.Start(Util.getIngiteCfg()))
+            using (var ignite = Ignition.Start())
             {
                 var cfg = new IgniteClientConfiguration
                 {
