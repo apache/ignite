@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 
@@ -32,7 +33,7 @@ public interface CDCConsumer {
      *
      * @param configuration Ignite configuration.
      */
-    void start(IgniteConfiguration configuration);
+    void start(IgniteConfiguration configuration, IgniteLogger log);
 
     /**
      * @param record WAL record.

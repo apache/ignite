@@ -34,8 +34,8 @@ public class LogAllCDCConsumer implements CDCConsumer {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(IgniteConfiguration configuration) {
-        log = configuration.getGridLogger().getLogger(LogAllCDCConsumer.class);
+    @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
+        this.log = log;
     }
 
     /** {@inheritDoc} */

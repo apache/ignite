@@ -93,8 +93,6 @@ public class CommandLineStartup {
 
             CDCConsumer consumer = consumer(cfgUrl, spring);
 
-            initEnvironment(igniteCfg);
-
             IgniteCDC app = new IgniteCDC(igniteCfg, consumer);
 
             app.run();
@@ -111,7 +109,12 @@ public class CommandLineStartup {
         }
     }
 
-    @NotNull
+    /**
+     * @param cfgUrl String configuration URL.
+     * @param spring Ignite spring helper.
+     * @return CDC consumer defined in spring configuration.
+     * @throws IgniteCheckedException
+     */
     private static CDCConsumer consumer(URL cfgUrl, IgniteSpringHelper spring) throws IgniteCheckedException {
         Map<Class<?>, Object> consumersMap = spring.loadBeans(cfgUrl, CDCConsumer.class);
 
@@ -124,33 +127,6 @@ public class CommandLineStartup {
             return (CDCConsumer)cdcConsumer;
 
         throw new IllegalArgumentException("Expected CDCConsumer but found " + cdcConsumer.getClass());
-    }
-
-    /**
-     * @param cfg
-     * @throws IgniteCheckedException
-     */
-    private static void initEnvironment(IgniteConfiguration cfg) throws IgniteCheckedException {
-        String igniteHome = cfg.getIgniteHome();
-
-        // Set Ignite home.
-        if (igniteHome == null)
-            igniteHome = U.getIgniteHome();
-        else
-            // If user provided IGNITE_HOME - set it as a system property.
-            U.setIgniteHome(igniteHome);
-
-        String userProvidedWorkDir = cfg.getWorkDirectory();
-
-        // Correctly resolve work directory and set it back to configuration.
-        String workDir = U.workDirectory(userProvidedWorkDir, igniteHome);
-
-        cfg.setWorkDirectory(workDir);
-
-        UUID appLogId = UUID.randomUUID();
-        IgniteLogger cfgLog = IgnitionEx.IgniteNamedInstance.initLogger(cfg.getGridLogger(), appLogId, workDir);
-
-        cfg.setGridLogger(cfgLog);
     }
 
     /**

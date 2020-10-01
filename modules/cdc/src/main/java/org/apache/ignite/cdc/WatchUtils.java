@@ -72,7 +72,7 @@ public class WatchUtils {
             try(Stream<Path> children = Files.walk(watchDir, 1).filter(p -> !p.equals(watchDir))) {
                 final boolean[] status = {true};
 
-                children.filter(filter).peek(p -> {
+                children.filter(filter).sorted().peek(p -> {
                     if (status[0])
                         status[0] = callback.test(p);
                 }).count();

@@ -21,6 +21,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Consumer;
@@ -28,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -85,7 +87,8 @@ public class IgniteCDC implements Runnable {
     public IgniteCDC(IgniteConfiguration cfg, CDCConsumer consumer) {
         this.cfg = cfg;
         this.consumer = consumer;
-        this.log = cfg.getGridLogger().getLogger(IgniteCDC.class);
+        this.workDir = Paths.get(workDirectory(cfg));
+        this.log = logger(cfg, workDir.toString());
         this.factory = new IgniteWalIteratorFactory(log);
         this.wu = new WatchUtils(log);
 
@@ -101,7 +104,7 @@ public class IgniteCDC implements Runnable {
             log.info("--------------------------------");
         }
 
-        consumer.start(cfg);
+        consumer.start(cfg, log);
 
         final Path[] nodeWalDir = new Path[1];
 
@@ -161,8 +164,8 @@ public class IgniteCDC implements Runnable {
      */
     private Optional<WALPointer> readAvailableEvents(Path walFile, Optional<WALPointer> pos)
         throws IgniteCheckedException {
-        if (log.isInfoEnabled())
-            log.info("Fetching new events from walFile[file=" + walFile + ']');
+        if (log.isDebugEnabled())
+            log.debug("Fetching new events from walFile[file=" + walFile + ']');
 
         IteratorParametersBuilder builder = new IteratorParametersBuilder()
             .log(log)
@@ -190,9 +193,7 @@ public class IgniteCDC implements Runnable {
      * @param callback Callback to be notified.
      */
     private void findNodeWalDir(Consumer<Path> callback) {
-        wu.waitFor(new File(cfg.getWorkDirectory()).toPath(), work -> {
-            workDir = work;
-
+        wu.waitFor(workDir, work -> {
             if (log.isDebugEnabled())
                 log.debug("Work directory found[dir=" + work + ']');
 
@@ -210,8 +211,10 @@ public class IgniteCDC implements Runnable {
                         wu.waitFor(Paths.get(wal.toAbsolutePath().toString(), consIdDir),
                             preCallback.andThen(callback));
                     else {
-                        log.info("Consistent id not specified. Waiting for first WAL directory available[parent=" +
-                            wal + ']');
+                        if (log.isInfoEnabled()) {
+                            log.info("Consistent id not specified. Waiting for first WAL directory available[parent=" +
+                                wal + ']');
+                        }
 
                         wu.waitFor(wal, p -> !p.endsWith(DFLT_WAL_ARCHIVE_PATH), p -> {
                             consIdDir = p.subpath(p.getNameCount() - 1, p.getNameCount()).toString();
@@ -219,7 +222,7 @@ public class IgniteCDC implements Runnable {
                             if (log.isInfoEnabled())
                                 log.info("Found consistenId directory[consId=" + consIdDir + ']');
 
-                            preCallback.andThen(callback);
+                            preCallback.andThen(callback).accept(p);
                         });
                     }
                 });
@@ -239,6 +242,51 @@ public class IgniteCDC implements Runnable {
                 log.info("Using BinaryMeta directory[dir=" + binaryMeta + ']');
                 log.info("Using Marshaller directory[dir=" + marshaller + ']');
             }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Initialize logger.
+     *
+     * @param cfg Configuration.
+     * @throws IgniteCheckedException
+     */
+    private static IgniteLogger logger(IgniteConfiguration cfg, String workDir) {
+        try {
+            UUID appLogId = UUID.randomUUID();
+
+            return IgnitionEx.IgniteNamedInstance.initLogger(cfg.getGridLogger(), appLogId, workDir);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Resolves work directory.
+     *
+     * @param cfg
+     * @return
+     * @throws IgniteCheckedException
+     */
+    private static String workDirectory(IgniteConfiguration cfg) {
+        try {
+            String igniteHome = cfg.getIgniteHome();
+
+            // Set Ignite home.
+            if (igniteHome == null)
+                igniteHome = U.getIgniteHome();
+            else
+                // If user provided IGNITE_HOME - set it as a system property.
+                U.setIgniteHome(igniteHome);
+
+            String userProvidedWorkDir = cfg.getWorkDirectory();
+
+            // Correctly resolve work directory and set it back to configuration.
+            return U.workDirectory(userProvidedWorkDir, igniteHome);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
