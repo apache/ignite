@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 
 import java.io.File;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -53,8 +54,12 @@ import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.genNewStyleSubfolderName;
 
 public class IgniteWalReader2Test extends GridCommonAbstractTest {
+    /** */
+    public static final boolean persistenceEnabled = false;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -68,7 +73,7 @@ public class IgniteWalReader2Test extends GridCommonAbstractTest {
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setMaxSize(1024L * 1024 * 1024)
-                    .setPersistenceEnabled(true))
+                    .setPersistenceEnabled(persistenceEnabled))
             .setWalSegmentSize(1024 * 1024)
             .setWalSegments(10)
             .setWalMode(LOG_ONLY);
@@ -96,7 +101,9 @@ public class IgniteWalReader2Test extends GridCommonAbstractTest {
 
         ign.cluster().active(true);
 
-        String consIdDir = U.maskForFileName(ign.cluster().localNode().consistentId().toString());
+        String consIdDir = persistenceEnabled ?
+            genNewStyleSubfolderName(0, (UUID)ign.cluster().localNode().consistentId()) :
+            U.maskForFileName(ign.cluster().localNode().consistentId().toString());
 
         IgniteCache<Object, Object> cache0 = ign.cache(DEFAULT_CACHE_NAME);
 
@@ -121,13 +128,48 @@ public class IgniteWalReader2Test extends GridCommonAbstractTest {
 
         fill(keyArr, 0);
 
+        int[] finalKeyArr = keyArr;
+
         iterateAndCountDataRecord(
             factory.iterator(params),
-            (key, val) -> keyArr[(Integer)key]++,
+            (key, val) -> finalKeyArr[(Integer)key]++,
             null
         );
 
         for (int i = 0; i < entryCnt; i++)
+            assertTrue("Iterator didn't find key=" + i, keyArr[i] > 0);
+
+        ign = startGrid();
+
+        ign.cluster().active(true);
+
+        cache0 = ign.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < entryCnt; i++) {
+            if (!persistenceEnabled)
+                assertNull(cache0.get(i));
+            else
+                assertNotNull(cache0.get(i));
+        }
+
+        for (int i = entryCnt; i < entryCnt*2; i++)
+            cache0.put(i, new IndexedObject(i));
+
+        stopGrid();
+
+        keyArr = new int[entryCnt*2];
+
+        fill(keyArr, 0);
+
+        int[] finalKeyArr1 = keyArr;
+
+        iterateAndCountDataRecord(
+            factory.iterator(params),
+            (key, val) -> finalKeyArr1[(Integer)key]++,
+            null
+        );
+
+        for (int i = 0; i < entryCnt*2; i++)
             assertTrue("Iterator didn't find key=" + i, keyArr[i] > 0);
     }
 
@@ -179,11 +221,13 @@ public class IgniteWalReader2Test extends GridCommonAbstractTest {
                                 unwrappedKeyObj = key instanceof BinaryObject ? key : key.value(null, false);
                             }
 
+/*
                             log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
                                 "under transaction: " + globalTxId +
                                 //; entry " + entry +
                                 "; Key: " + unwrappedKeyObj +
                                 "; Value: " + unwrappedValObj);
+*/
 
                             if (cacheObjHnd != null && (unwrappedKeyObj != null || unwrappedValObj != null))
                                 cacheObjHnd.apply(unwrappedKeyObj, unwrappedValObj);
@@ -200,7 +244,7 @@ public class IgniteWalReader2Test extends GridCommonAbstractTest {
                         TxRecord txRecord = (TxRecord)walRecord;
                         GridCacheVersion globalTxId = txRecord.nearXidVersion();
 
-                        log.info("//Tx Record, state: " + txRecord.state() + "; nearTxVersion" + globalTxId);
+                        //log.info("//Tx Record, state: " + txRecord.state() + "; nearTxVersion" + globalTxId);
                     }
                 }
             }

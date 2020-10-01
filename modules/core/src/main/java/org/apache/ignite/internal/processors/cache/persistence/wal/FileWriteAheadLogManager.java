@@ -1131,6 +1131,24 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
+    @Override public long lastSegment() {
+        long lastIdx = -1;
+
+        for (File file : walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER)) {
+            try {
+                long idx = Long.parseLong(file.getName().substring(0, 16));
+
+                lastIdx = Math.max(lastIdx, idx);
+            }
+            catch (NumberFormatException | IndexOutOfBoundsException ignore) {
+
+            }
+        }
+
+        return lastIdx;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean reserved(WALPointer ptr) {
         FileWALPointer fPtr = (FileWALPointer)ptr;
 

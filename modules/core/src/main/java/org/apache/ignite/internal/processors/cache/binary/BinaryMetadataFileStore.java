@@ -66,6 +66,9 @@ class BinaryMetadataFileStore {
     private final boolean isPersistenceEnabled;
 
     /** */
+    private final boolean isWalEnabled;
+
+    /** */
     private FileIOFactory fileIOFactory;
 
     /** */
@@ -90,9 +93,10 @@ class BinaryMetadataFileStore {
         this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
         this.isPersistenceEnabled = CU.isPersistenceEnabled(ctx.config());
+        this.isWalEnabled = ctx.config().getDataStorageConfiguration().getWalMode() != null;
         this.log = log;
 
-        if (!isPersistenceEnabled)
+        if (!isPersistenceEnabled && !isWalEnabled)
             return;
 
         fileIOFactory = ctx.config().getDataStorageConfiguration().getFileIOFactory();
@@ -115,7 +119,7 @@ class BinaryMetadataFileStore {
      * Starts worker thread for async writing of binary metadata.
      */
     void start() throws IgniteCheckedException {
-        if (!isPersistenceEnabled)
+        if (!isPersistenceEnabled && !isWalEnabled)
             return;
 
         U.ensureDirectory(metadataDir, "directory for serialized binary metadata", log);
@@ -136,7 +140,7 @@ class BinaryMetadataFileStore {
      * @param binMeta Binary metadata to be written to disk.
      */
     void writeMetadata(BinaryMetadata binMeta) {
-        if (!isPersistenceEnabled)
+        if (!isPersistenceEnabled && !isWalEnabled)
             return;
 
         try {
@@ -172,7 +176,7 @@ class BinaryMetadataFileStore {
      * @param typeId Type identifier.
      */
     private void removeMeta(int typeId) {
-        if (!isPersistenceEnabled)
+        if (!isPersistenceEnabled && !isWalEnabled)
             return;
 
         File file = new File(metadataDir, typeId + ".bin");
@@ -196,7 +200,7 @@ class BinaryMetadataFileStore {
      * Restores metadata on startup of {@link CacheObjectBinaryProcessorImpl} but before starting discovery.
      */
     void restoreMetadata() {
-        if (!isPersistenceEnabled)
+        if (!isPersistenceEnabled && !isWalEnabled)
             return;
 
         for (File file : metadataDir.listFiles()) {
@@ -256,7 +260,7 @@ class BinaryMetadataFileStore {
      *
      */
     void prepareMetadataWriting(BinaryMetadata meta, int typeVer) {
-        if (!isPersistenceEnabled)
+        if (!isPersistenceEnabled && !isWalEnabled)
             return;
 
         writer.prepareWriteFuture(meta, typeVer);
@@ -267,7 +271,7 @@ class BinaryMetadataFileStore {
      * @param typeVer Type version.
      */
     void writeMetadataAsync(int typeId, int typeVer) {
-        if (!isPersistenceEnabled)
+        if (!isPersistenceEnabled && !isWalEnabled)
             return;
 
         writer.startTaskAsync(typeId, typeVer);
@@ -277,7 +281,7 @@ class BinaryMetadataFileStore {
      * @param typeId Type ID.
      */
     public void removeMetadataAsync(int typeId) {
-        if (!isPersistenceEnabled)
+        if (!isPersistenceEnabled && !isWalEnabled)
             return;
 
         writer.startTaskAsync(typeId, BinaryMetadataTransport.REMOVED_VERSION);
@@ -294,7 +298,7 @@ class BinaryMetadataFileStore {
      * @throws IgniteCheckedException
      */
     void waitForWriteCompletion(int typeId, int typeVer) throws IgniteCheckedException {
-        if (!isPersistenceEnabled)
+        if (!isPersistenceEnabled && !isWalEnabled)
             return;
 
         writer.waitForWriteCompletion(typeId, typeVer);
@@ -305,7 +309,7 @@ class BinaryMetadataFileStore {
      * @param typeVer Type version.
      */
     void finishWrite(int typeId, int typeVer) {
-        if (!isPersistenceEnabled)
+        if (!isPersistenceEnabled && !isWalEnabled)
             return;
 
         writer.finishWriteFuture(typeId, typeVer, null);
@@ -354,7 +358,7 @@ class BinaryMetadataFileStore {
      * @param typeId Type ID.
      */
     void prepareMetadataRemove(int typeId) {
-        if (!isPersistenceEnabled)
+        if (!isPersistenceEnabled && !isWalEnabled)
             return;
 
         writer.cancelTasksForType(typeId);
