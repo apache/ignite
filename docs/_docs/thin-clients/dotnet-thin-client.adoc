@@ -148,10 +148,6 @@ include::{sourceCodeFile}[tag=executingSql,indent=0]
 ----
 
 
-////
-*TODO: fix class names, add snippets below*
-////
-
 == Cluster API
 
 Cluster functionality (APIs for accessing cluster and nodes) is provided via the `IClientCluster` interface. 
@@ -161,11 +157,15 @@ You can get an instance of `IClientCluster` from `IIgniteClient` as follows:
 include::{sourceCodeFile}[tag=client-cluster,indent=0]
 -------------------------------------------------------------------------------
 
-Through the `ClientCluster` interface you can:
+Through the `IClientCluster` interface you can:
 
 * Get or set cluster state
 * Get a list of all cluster members
 * Create logical groups of nodes
+
+////
+*TODO: fix class names, add snippets below*
+////
 
 === Logical nodes grouping
 
