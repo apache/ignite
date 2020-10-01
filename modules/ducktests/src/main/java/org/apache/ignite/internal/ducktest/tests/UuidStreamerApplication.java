@@ -23,8 +23,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -71,7 +71,7 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void workParallel(Ignite ignite, String cacheName, long iterSize, int dataSize){
+    private void workParallel(Ignite ignite, String cacheName, long iterSize, int dataSize) {
         int core = Runtime.getRuntime().availableProcessors() / 2;
 
         long iterCore = 0 < iterSize ? iterSize / core : iterSize;
@@ -99,17 +99,22 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private class UuidDataStreamer implements Runnable{
-        /** Data streamer. */
+    private class UuidDataStreamer implements Runnable {
+        /** Ignite. */
         private final Ignite ignite;
+
         /** Cache name. */
         private final String cacheName;
+
         /** Latch. */
         private final CountDownLatch latch;
+
         /** Count. */
         private long cnt = 0L;
-        /** Iterator size. */
+
+        /** Iteration size. */
         private final long iterSize;
+
         /** Data size. */
         private final int dataSize;
 
@@ -124,7 +129,7 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            try(IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)){
+            try (IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
                 dataStreamer.autoFlushFrequency(100L);
 
                 while (cnt != iterSize && !Thread.currentThread().isInterrupted()) {
