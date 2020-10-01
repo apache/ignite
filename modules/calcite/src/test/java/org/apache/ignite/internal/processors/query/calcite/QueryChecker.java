@@ -52,6 +52,29 @@ public abstract class QueryChecker {
     }
 
     /**
+     * Ignite table scan matcher.
+     *
+     * @param schema  Schema name.
+     * @param tblName Table name.
+     * @return Matcher.
+     */
+    public static Matcher<String> containsAnyProject(String schema, String tblName) {
+        return containsSubPlan("IgniteTableScan(table=[[" + schema + ", " + tblName + "]], " + "projects=");
+    }
+
+    /**
+     * Ignite table scan matcher.
+     *
+     * @param schema  Schema name.
+     * @param tblName Table name.
+     * @return Matcher.
+     */
+    public static Matcher<String> notContainsProject(String schema, String tblName) {
+        return CoreMatchers.not(containsSubPlan("IgniteTableScan(table=[[" + schema + ", " +
+            tblName + "]], " + "projects="));
+    }
+
+    /**
      * Ignite index scan matcher.
      *
      * @param schema  Schema name.
@@ -93,7 +116,7 @@ public abstract class QueryChecker {
     private final ArrayList<Matcher<String>> planMatchers = new ArrayList<>();
 
     /** */
-    private List<List<?>> expectedResult = null;
+    private List<List<?>> expectedResult;
 
     /** */
     private boolean ordered;
@@ -168,9 +191,8 @@ public abstract class QueryChecker {
                 assertThat(actualPlan, matcher);
         }
 
-        if (exactPlan != null) {
+        if (exactPlan != null)
             assertEquals(exactPlan, actualPlan);
-        }
 
         // Check result.
         List<FieldsQueryCursor<List<?>>> cursors =

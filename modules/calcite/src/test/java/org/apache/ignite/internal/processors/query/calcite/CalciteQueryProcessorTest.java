@@ -304,46 +304,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     @Test
-    public void testProjectsWithFilterPlan() throws Exception {
-        IgniteCache<Integer, Developer> developer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Developer>()
-            .setName("developer")
-            .setSqlSchema("PUBLIC")
-            .setIndexedTypes(Integer.class, Developer.class)
-            .setBackups(1)
-        );
-
-        waitForReadyTopology(internalCache(developer).context().topology(), new AffinityTopologyVersion(5, 2));
-
-        developer.putAll(ImmutableMap.of(
-            0, new Developer("Igor", 1),
-            1, new Developer("Zhenya", 0)
-        ));
-
-        calciteAssert()
-            .query("select name from DEVELOPER d;")
-            .returnsCount(2)
-            .explainContains("PLAN=IgniteExchange(distribution=[single])\n  " +
-                "IgniteTableScan(table=[[PUBLIC, DEVELOPER]], projects=[[$t0]], requiredColunms=[{2}])");
-
-        calciteAssert()
-            .query("select name from DEVELOPER d WHERE d.projectId > 0;")
-            .returnsCount(1)
-            .explainMatches("INCLUDING ATTRIBUTES ",
-                CalciteAssert.checkResultContains("PLAN=IgniteExchange(distribution=[single])\n  " +
-                    "IgniteProject(NAME=[$2])\n    " +
-                    "IgniteTableScan(table=[[PUBLIC, DEVELOPER]], filters=[>($t3, 0)])"));
-
-        // H2 plan.
-        calciteAssert()
-            .query("select name from DEVELOPER d WHERE d.projectId > (SELECT 0 FROM DUAL);")
-            .returnsCount(1)
-            .explainContains("PLAN=SELECT\n    D__Z0.NAME AS __C0_0" +
-                "\nFROM PUBLIC.DEVELOPER D__Z0\n    " +
-                "/* PUBLIC.DEVELOPER.__SCAN_ */\nWHERE D__Z0.PROJECTID > (SELECT\n    0\nFROM SYSTEM_RANGE(1, 1) __Z1\n    " +
-                "/* PUBLIC.RANGE_INDEX */)\nPLAN=SELECT\n    __C0_0 AS NAME\nFROM PUBLIC.__T0\n    /* PUBLIC.\"merge_scan\" */\n");
-    }
-
-    @Test
     public void testInsertPrimitiveKey() throws Exception {
         IgniteCache<Integer, Developer> developer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Developer>()
             .setName("developer")
