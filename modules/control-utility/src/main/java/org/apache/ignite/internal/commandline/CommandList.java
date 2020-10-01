@@ -21,8 +21,10 @@ import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.commandline.encryption.EncryptionCommand;
 import org.apache.ignite.internal.commandline.meta.MetadataCommand;
+import org.apache.ignite.internal.commandline.property.PropertyCommand;
 import org.apache.ignite.internal.commandline.query.KillCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
+import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 
 /**
  * High-level commands.
@@ -74,7 +76,16 @@ public enum CommandList {
     SHUTDOWN_POLICY("--shutdown-policy", new ShutdownPolicyCommand()),
 
     /** */
-    TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand());
+    TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand()),
+
+    /** Warm-up command. */
+    WARM_UP("--warm-up", new WarmUpCommand()),
+
+    /** Commands to manage distributed properties. */
+    PROPERTY("--property", new PropertyCommand()),
+
+    /** Command for printing system view content. */
+    SYSTEM_VIEW("--system-view", new SystemViewCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

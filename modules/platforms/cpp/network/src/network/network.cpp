@@ -29,17 +29,17 @@ namespace ignite
     {
         namespace ssl
         {
-            void EnsureSslLoaded()
+            IGNITE_IMPORT_EXPORT void EnsureSslLoaded()
             {
                 SslGateway::GetInstance().LoadAll();
             }
 
-            SocketClient* MakeTcpSocketClient()
+            IGNITE_IMPORT_EXPORT SocketClient* MakeTcpSocketClient()
             {
                 return new TcpSocketClient;
             }
 
-            SocketClient* MakeSecureSocketClient(const std::string& certPath,
+            IGNITE_IMPORT_EXPORT SocketClient* MakeSecureSocketClient(const std::string& certPath,
                 const std::string& keyPath, const std::string& caPath)
             {
                 EnsureSslLoaded();

@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -190,16 +191,26 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FU
  * Partition exchange manager.
  */
 public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
+    /** @see IgniteSystemProperties#IGNITE_EXCHANGE_HISTORY_SIZE */
+    public static final int DFLT_EXCHANGE_HISTORY_SIZE = 1_000;
+
+    /** @see IgniteSystemProperties#IGNITE_EXCHANGE_MERGE_DELAY */
+    public static final int DFLT_EXCHANGE_MERGE_DELAY = 0;
+
+    /** @see IgniteSystemProperties#IGNITE_DIAGNOSTIC_WARN_LIMIT */
+    public static final int DFLT_DIAGNOSTIC_WARN_LIMIT = 10;
+
     /** Exchange history size. */
-    private final int EXCHANGE_HISTORY_SIZE =
-        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, 1_000);
+    private final int EXCHANGE_HISTORY_SIZE = IgniteSystemProperties.getInteger(
+        IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, DFLT_EXCHANGE_HISTORY_SIZE);
 
     /** */
     private final long IGNITE_EXCHANGE_MERGE_DELAY =
-        IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_EXCHANGE_MERGE_DELAY, 0);
+        IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_EXCHANGE_MERGE_DELAY, DFLT_EXCHANGE_MERGE_DELAY);
 
     /** */
-    private final int DIAGNOSTIC_WARN_LIMIT = IgniteSystemProperties.getInteger(IGNITE_DIAGNOSTIC_WARN_LIMIT, 10);
+    private final int DIAGNOSTIC_WARN_LIMIT =
+        IgniteSystemProperties.getInteger(IGNITE_DIAGNOSTIC_WARN_LIMIT, DFLT_DIAGNOSTIC_WARN_LIMIT);
 
     /** */
     private static final IgniteProductVersion EXCHANGE_PROTOCOL_2_SINCE = IgniteProductVersion.fromString("2.1.4");
@@ -281,7 +292,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private ExchangeLatchManager latchMgr;
 
     /** List of exchange aware components. */
-    private final List<PartitionsExchangeAware> exchangeAwareComps = new ArrayList<>();
+    private final List<PartitionsExchangeAware> exchangeAwareComps = new CopyOnWriteArrayList<>();
 
     /** Histogram of PME durations. */
     private volatile HistogramMetricImpl durationHistogram;

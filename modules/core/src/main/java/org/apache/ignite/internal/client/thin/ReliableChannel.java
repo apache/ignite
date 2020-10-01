@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -31,6 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -41,6 +43,7 @@ import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.util.HostAndPortRange;
@@ -105,7 +108,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     private volatile boolean closed;
 
     /** Fail (disconnect) listeners. */
-    private ArrayList<Runnable> chFailLsnrs = new ArrayList<>();
+    private final ArrayList<Runnable> chFailLsnrs = new ArrayList<>();
 
     /**
      * Constructor.
@@ -211,11 +214,92 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     }
 
     /**
+     * Send request and handle response asynchronously.
+     */
+    public <T> IgniteClientFuture<T> serviceAsync(
+            ClientOperation op,
+            Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T> payloadReader
+    ) throws ClientException, ClientError {
+        CompletableFuture<T> fut = new CompletableFuture<>();
+
+        ClientChannel ch = channel();
+
+        ch.serviceAsync(op, payloadWriter, payloadReader).handle((res, err) ->
+                handleServiceAsync(op, payloadWriter, payloadReader, fut, null, null, ch, res, err));
+
+        return new IgniteClientFutureImpl<>(fut);
+    }
+
+    /**
+     * Handles serviceAsync results and retries as needed.
+     */
+    private <T> Object handleServiceAsync(ClientOperation op,
+                                          Consumer<PayloadOutputChannel> payloadWriter,
+                                          Function<PayloadInputChannel, T> payloadReader,
+                                          CompletableFuture<T> fut,
+                                          ClientConnectionException failure,
+                                          AtomicInteger chIdx,
+                                          ClientChannel ch,
+                                          T res,
+                                          Throwable err) {
+        if (err == null) {
+            fut.complete(res);
+            return null;
+        }
+
+        if (err instanceof ClientConnectionException) {
+            onChannelFailure(ch);
+
+            if (failure == null)
+                failure = (ClientConnectionException) err;
+            else
+                failure.addSuppressed(err);
+
+            if (chIdx == null)
+                chIdx = new AtomicInteger();
+
+            while (chIdx.incrementAndGet() < channels.length) {
+                try {
+                    ch = channel();
+
+                    ClientConnectionException failure0 = failure;
+                    AtomicInteger chIdx0 = chIdx;
+                    ClientChannel ch0 = ch;
+
+                    ch.serviceAsync(op, payloadWriter, payloadReader).handle((res2, err2) ->
+                            handleServiceAsync(op, payloadWriter, payloadReader, fut, failure0, chIdx0, ch0, res2, err2));
+
+                    return null;
+                } catch (ClientConnectionException e) {
+                    onChannelFailure(ch);
+                    failure.addSuppressed(e);
+                }
+            }
+        }
+
+        if (failure != null)
+            fut.completeExceptionally(failure);
+        else
+            fut.completeExceptionally(err instanceof ClientException ? err : new ClientException(err));
+
+        return null;
+    }
+
+    /**
      * Send request without payload and handle response.
      */
     public <T> T service(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
-        throws ClientException, ClientError {
+            throws ClientException, ClientError {
         return service(op, null, payloadReader);
+    }
+
+    /**
+     * Send request without payload and handle response asynchronously.
+     */
+    public <T> IgniteClientFuture<T> serviceAsync(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
+            throws ClientException, ClientError {
+        return serviceAsync(op, null, payloadReader);
     }
 
     /**
@@ -224,6 +308,14 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     public void request(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
         throws ClientException, ClientError {
         service(op, payloadWriter, null);
+    }
+
+    /**
+     * Send request and handle response without payload.
+     */
+    public IgniteClientFuture<Void> requestAsync(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
+        throws ClientException, ClientError {
+        return serviceAsync(op, payloadWriter, null);
     }
 
     /**
@@ -236,29 +328,70 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
-        if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
-            UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
+        ClientChannelHolder hld = getChannelHolder(cacheId, key);
 
-            if (affinityNodeId != null) {
-                ClientChannelHolder hld = nodeChannels.get(affinityNodeId);
+        if (hld != null) {
+            ClientChannel ch = null;
 
-                if (hld != null) {
-                    ClientChannel ch = null;
+            try {
+                ch = hld.getOrCreateChannel();
 
-                    try {
-                        ch = hld.getOrCreateChannel();
-
-                        return ch.service(op, payloadWriter, payloadReader);
-                    }
-                    catch (ClientConnectionException ignore) {
-                        onChannelFailure(hld, ch);
-                    }
-                }
+                return ch.service(op, payloadWriter, payloadReader);
+            } catch (ClientConnectionException ignore) {
+                onChannelFailure(hld, ch);
             }
         }
 
         // Can't determine affinity node or request to affinity node failed - proceed with standart failover service.
         return service(op, payloadWriter, payloadReader);
+    }
+
+    /**
+     * Send request to affinity node and handle response.
+     */
+    public <T> IgniteClientFuture<T> affinityServiceAsync(
+        int cacheId,
+        Object key,
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
+    ) throws ClientException, ClientError {
+        ClientChannelHolder hld = getChannelHolder(cacheId, key);
+
+        if (hld != null) {
+            ClientChannel ch = null;
+
+            try {
+                ch = hld.getOrCreateChannel();
+                ClientChannel ch0 = ch;
+
+                CompletableFuture<T> fut = new CompletableFuture<>();
+
+                ch.serviceAsync(op, payloadWriter, payloadReader).handle((res, err) -> handleServiceAsync(
+                        op, payloadWriter, payloadReader, fut, null, null, ch0, res, err));
+
+                return new IgniteClientFutureImpl<>(fut);
+            } catch (ClientConnectionException ignore) {
+                onChannelFailure(hld, ch);
+            }
+        }
+
+        return serviceAsync(op, payloadWriter, payloadReader);
+    }
+
+    /**
+     * Gets the affinity channel holder.
+     */
+    private ClientChannelHolder getChannelHolder(int cacheId, Object key) {
+        if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
+            UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
+
+            if (affinityNodeId != null) {
+                return nodeChannels.get(affinityNodeId);
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.management.InstanceNotFoundException;
@@ -41,6 +42,7 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WarmUpConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -59,9 +61,9 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
@@ -76,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.typedef.F;
@@ -84,12 +87,15 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
@@ -527,28 +533,40 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Validation of memory configuration.
+     *
      * @param memCfg configuration to validate.
+     * @throws IgniteCheckedException In case of validation violation.
      */
     private void validateConfiguration(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         checkPageSize(memCfg);
 
         DataRegionConfiguration[] regCfgs = memCfg.getDataRegionConfigurations();
 
-        Set<String> regNames = (regCfgs != null) ? U.<String>newHashSet(regCfgs.length) : new HashSet<String>(0);
+        Set<String> regNames = new HashSet<>();
 
         checkSystemDataRegionSizeConfiguration(
             memCfg.getSystemRegionInitialSize(),
             memCfg.getSystemRegionMaxSize()
         );
 
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies =
+            CU.warmUpStrategies(cctx.kernalContext());
+
         if (regCfgs != null) {
             for (DataRegionConfiguration regCfg : regCfgs)
-                checkDataRegionConfiguration(memCfg, regNames, regCfg);
+                checkDataRegionConfiguration(memCfg, regNames, regCfg, warmUpStrategies);
         }
 
-        checkDataRegionConfiguration(memCfg, regNames, memCfg.getDefaultDataRegionConfiguration());
+        checkDataRegionConfiguration(memCfg, regNames, memCfg.getDefaultDataRegionConfiguration(), warmUpStrategies);
 
         checkWalArchiveSizeConfiguration(memCfg);
+
+        checkExistenceWarmUpConfiguration(
+            memCfg.getDefaultWarmUpConfiguration(),
+            warmUpStrategies,
+            (warmUpCfg) -> "Unknown default warm-up configuration: " + warmUpCfg
+        );
     }
 
     /**
@@ -574,12 +592,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Checking configuration of data region.
+     *
      * @param memCfg Mem config.
      * @param regNames Region names.
      * @param regCfg Reg config.
+     * @param warmUpStrategies Available warming-up strategies.
+     * @throws IgniteCheckedException If config is invalid.
      */
-    private void checkDataRegionConfiguration(DataStorageConfiguration memCfg, Set<String> regNames,
-        DataRegionConfiguration regCfg) throws IgniteCheckedException {
+    private void checkDataRegionConfiguration(
+        DataStorageConfiguration memCfg,
+        Set<String> regNames,
+        DataRegionConfiguration regCfg,
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies
+    ) throws IgniteCheckedException {
         assert regCfg != null;
 
         checkDataRegionName(regCfg.getName(), regNames);
@@ -591,6 +617,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         checkRegionEvictionProperties(regCfg, memCfg);
 
         checkRegionMemoryStorageType(regCfg);
+
+        checkRegionWarmUpConfiguration(regCfg, warmUpStrategies);
     }
 
     /**
@@ -764,10 +792,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @return collection of all configured {@link DataRegion policies}.
+     * Getting registered data regions.
+     *
+     * @return Collection of all configured {@link DataRegion policies}.
      */
     public Collection<DataRegion> dataRegions() {
-        return dataRegionMap != null ? dataRegionMap.values() : null;
+        return dataRegionMap.values();
     }
 
     /**
@@ -810,11 +840,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param memPlcName data region name.
-     * @return {@link DataRegion} instance associated with a given {@link DataRegionConfiguration}.
+     * Getting data region by name.
+     *
+     * @param memPlcName Data region name. In case of {@code null}, default data region will be returned.
+     * @return {@link DataRegion} instance associated with a given {@link DataRegionConfiguration},
+     *      or {@code null} if there are no registered data regions.
      * @throws IgniteCheckedException in case of request for unknown DataRegion.
      */
-    public DataRegion dataRegion(String memPlcName) throws IgniteCheckedException {
+    @Nullable public DataRegion dataRegion(@Nullable String memPlcName) throws IgniteCheckedException {
         if (memPlcName == null)
             return dfltDataRegion;
 
@@ -897,7 +930,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Clean checkpoint directory {@link GridCacheDatabaseSharedManager#cpDir}. The operation
+     * Clean checkpoint directory
+     * {@link CheckpointMarkersStorage#cpDir}. The operation
      * is necessary when local node joined to baseline topology with different consistentId.
      */
     public void cleanupCheckpointDirectory() throws IgniteCheckedException {
@@ -1048,6 +1082,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Returns the latest WAL pointer that reserved for preloading or {@code null}.
+     *
+     * @return WAL pointer or {@code null} if nothing reserved.
+     */
+    public WALPointer latestWalPointerReservedForPreloading() {
+        return null;
+    }
+
+    /**
      * Checks that the given {@code region} has enough space for putting a new entry.
      *
      * This method makes sense then and only then
@@ -1111,7 +1154,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * See {@link GridCacheMapEntry#ensureFreeSpace()}
+     * See {@code GridCacheMapEntry#ensureFreeSpace()}
      *
      * @param memPlc data region.
      */
@@ -1480,5 +1523,52 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         U.warn(log, "Page-based evictions started." +
                 " Consider increasing 'maxSize' on Data Region configuration: " + regCfg.getName());
+    }
+
+    /**
+     * Checking existence of a warm-up configuration.
+     *
+     * @param warmUpCfg Warm-up configuration.
+     * @param warmUpStrategies Available warming-up strategies.
+     * @param errMsgSupplier Supplier error message.
+     * @throws IgniteCheckedException If config is invalid.
+     */
+    private void checkExistenceWarmUpConfiguration(
+        @Nullable WarmUpConfiguration warmUpCfg,
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies,
+        IgniteClosure<WarmUpConfiguration, String> errMsgSupplier
+    ) throws IgniteCheckedException {
+        if (nonNull(warmUpCfg) && !warmUpStrategies.containsKey(warmUpCfg.getClass()))
+            throw new IgniteCheckedException(errMsgSupplier.apply(warmUpCfg));
+    }
+
+    /**
+     * Checking data region warm-up configuration.
+     *
+     * @param regCfg DataRegionConfiguration to validate.
+     * @param warmUpStrategies Available warming-up strategies.
+     * @throws IgniteCheckedException If config is invalid.
+     */
+    private void checkRegionWarmUpConfiguration(
+        DataRegionConfiguration regCfg,
+        Map<Class<? extends WarmUpConfiguration>, WarmUpStrategy> warmUpStrategies
+    ) throws IgniteCheckedException {
+        WarmUpConfiguration warmUpCfg = regCfg.getWarmUpConfiguration();
+
+        if (isNull(warmUpCfg))
+            return;
+
+        Supplier<String> errPostfix = () -> "[name=" + regCfg.getName() + ", warmUpConfig=" + warmUpCfg + ']';
+
+        if (!regCfg.isPersistenceEnabled()) {
+            throw new IgniteCheckedException("Warm-up setting is not expected for a non-persistent data region: " +
+                errPostfix.get());
+        }
+
+        checkExistenceWarmUpConfiguration(
+            regCfg.getWarmUpConfiguration(),
+            warmUpStrategies,
+            (warmUpConfig) -> "Unknown data region warm-up configuration: " + errPostfix.get()
+        );
     }
 }

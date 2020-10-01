@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.startup.cmdline.CommandLinePrintPropertiesTest;
 import org.apache.ignite.startup.cmdline.GridCommandLineTransformerSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -25,6 +26,9 @@ import org.junit.runners.Suite;
  * Loaders self-test suite.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({GridCommandLineTransformerSelfTest.class})
+@Suite.SuiteClasses({
+    GridCommandLineTransformerSelfTest.class,
+    CommandLinePrintPropertiesTest.class
+})
 public class IgniteStartUpTestSuite {
 }

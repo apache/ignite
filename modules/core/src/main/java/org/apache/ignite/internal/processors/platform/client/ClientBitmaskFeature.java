@@ -40,7 +40,10 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     CLUSTER_GROUPS(4),
 
     /** Service invocation. */
-    SERVICE_INVOKE(5);
+    SERVICE_INVOKE(5),
+
+    /** Feature for use default query timeout if the qry timeout isn't set explicitly. */
+    DEFAULT_QRY_TIMEOUT(6);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =
