@@ -213,3 +213,14 @@ class IgniteService(IgniteAwareService):
             return pid_arr
         except (RemoteCommandError, ValueError):
             return []
+
+    def ssh_output_all(self, cmd: str):
+        """
+        Execute ssh command on all nodes.
+        """
+        res = {}
+        for node in self.nodes:
+            data = node.account.ssh_output(cmd)
+            res[node.account.hostname] = data
+
+        return res

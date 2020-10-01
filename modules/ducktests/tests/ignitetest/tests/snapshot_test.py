@@ -18,6 +18,7 @@ Module contains discovery tests.
 """
 
 import re
+import time
 
 from ducktape.mark.resource import cluster
 from ducktape.tests.status import FAIL
@@ -27,6 +28,7 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
+from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -80,7 +82,7 @@ class SnapshotTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.UuidStreamerApplication",
             params={
                 "cacheName": "test-cache",
-                "iterSize": 128 * 1024
+                "iterSize": 512 * 1024
             }
         )
 
@@ -97,6 +99,10 @@ class SnapshotTest(IgniteTest):
         data = control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
         self.logger.debug(data)
+
+        time.sleep(15)  # flushing snapshot
+
+        print_snapshot_size(service, self.SNAPSHOT_NAME, self.logger)
 
         load(streamer)
 
@@ -172,3 +178,13 @@ def load(service_load: IgniteApplicationService, duration: int = 60):
         service_load.await_stopped(duration)
     except AssertionError:
         service_load.stop()
+
+
+def print_snapshot_size(service: IgniteApplicationService, snapshot_name: str, logger):
+    """
+    Print size snapshot dir on service nodes.
+    """
+    res = service.ssh_output_all(f'du -hs {IgnitePersistenceAware.SNAPSHOT}/{snapshot_name} | ' + "awk '{print $1}'")
+    for items in res .items():
+        data = items[1].decode("utf-8")
+        logger.info(f'Snapshot {snapshot_name} on {items[0]}: {data}')

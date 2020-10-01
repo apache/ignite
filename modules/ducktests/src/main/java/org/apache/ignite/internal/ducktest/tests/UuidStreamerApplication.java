@@ -109,9 +109,6 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
         /** Latch. */
         private final CountDownLatch latch;
 
-        /** Count. */
-        private long cnt = 0L;
-
         /** Iteration size. */
         private final long iterSize;
 
@@ -129,6 +126,8 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
 
         /** {@inheritDoc} */
         @Override public void run() {
+            long cnt = 0L;
+
             try (IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
                 dataStreamer.autoFlushFrequency(100L);
 
