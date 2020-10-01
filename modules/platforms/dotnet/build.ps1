@@ -174,6 +174,8 @@ cd $PSScriptRoot
 # Detect NuGet
 $ng = if ($nugetPath) { $nugetPath } else { "nuget" }
 
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) { 
 	$ng = If ($IsLinux) { "mono $PSScriptRoot/nuget.exe" } else { "$PSScriptRoot\nuget.exe" }    
 
