@@ -136,7 +136,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  * Non-transactional partitioned cache.
@@ -1104,7 +1103,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             rawRetval,
             opCtx != null ? opCtx.expiry() : null,
             CU.filterArray(null),
-            securitySubjectId(ctx.kernalContext()),
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
@@ -1288,7 +1286,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 false,
                 opCtx != null ? opCtx.expiry() : null,
                 filters,
-                securitySubjectId(ctx.kernalContext()),
                 ctx.kernalContext().job().currentTaskNameHash(),
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
@@ -1311,7 +1308,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 false,
                 opCtx != null ? opCtx.expiry() : null,
                 filters,
-                securitySubjectId(ctx.kernalContext()),
                 ctx.kernalContext().job().currentTaskNameHash(),
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
@@ -1375,7 +1371,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             rawRetval,
             opCtx != null ? opCtx.expiry() : null,
             CU.filterArray(null),
-            securitySubjectId(ctx.kernalContext()),
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
@@ -3257,7 +3252,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             req.expiry(),
             req.filter(),
-            req.subjectId(),
             req.taskNameHash(),
             req.skipStore(),
             req.keepBinary(),

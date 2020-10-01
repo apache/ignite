@@ -62,6 +62,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  * DHT atomic cache near update future.
@@ -108,7 +109,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param rawRetval {@code True} if should return {@code GridCacheReturn} as future result.
      * @param expiryPlc Expiry policy explicitly specified for cache operation.
      * @param filter Entry filter.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip store flag.
      * @param keepBinary Keep binary flag.
@@ -128,7 +128,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         final boolean rawRetval,
         @Nullable ExpiryPolicy expiryPlc,
         final CacheEntryPredicate[] filter,
-        UUID subjId,
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
@@ -144,7 +143,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             rawRetval,
             expiryPlc,
             filter,
-            subjId,
             taskNameHash,
             skipStore,
             keepBinary,
@@ -1029,7 +1027,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     expiryPlc,
                     invokeArgs,
                     filter,
-                    subjId,
+                    securitySubjectId(cctx.kernalContext()),
                     taskNameHash,
                     flags,
                     cctx.deploymentEnabled(),
@@ -1143,7 +1141,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             expiryPlc,
             invokeArgs,
             filter,
-            subjId,
+            securitySubjectId(cctx.kernalContext()),
             taskNameHash,
             flags,
             cctx.deploymentEnabled(),
