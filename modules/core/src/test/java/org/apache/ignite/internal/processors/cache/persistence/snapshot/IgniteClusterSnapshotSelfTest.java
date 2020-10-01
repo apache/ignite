@@ -1128,6 +1128,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), srv.cache(dfltCacheCfg.getName()),
             snpName -> killCli.snapshot().cancelSnapshot(snpName).get());
+
+        waitForEvents(Arrays.asList(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED));
     }
 
     /** @throws Exception If fails. */
