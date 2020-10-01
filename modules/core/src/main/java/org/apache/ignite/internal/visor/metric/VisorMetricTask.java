@@ -87,7 +87,7 @@ public class VisorMetricTask extends VisorOneNodeTask<VisorMetricTaskArg, Map<St
                 if (!name.startsWith(mRegPrefix))
                     continue;
 
-                if (mRegPrefix.equals(name))
+                if (mRegPrefix.length() == name.length())
                     return null;
 
                 String metricName = name.substring(mRegPrefix.length());
