@@ -72,7 +72,7 @@ class DiscoveryTest(IgniteTest):
     """
     NUM_NODES = 7
 
-    FAILURE_DETECTION_TIMEOUT = 1000
+    FAILURE_DETECTION_TIMEOUT = 2000
 
     DATA_AMOUNT = 5_000_000
 
