@@ -431,30 +431,30 @@
           url: extensions-and-integrations/cassandra/usage-examples
         - title: DDL Generator
           url: extensions-and-integrations/cassandra/ddl-generator
-- title: C# and .NET Specific
+- title: .NET Specific
   items:
     - title: Configuration Options
-      url: net-specific/configuration-options
+      url: net-specific/net-configuration-options
     - title: Deployment Options
-      url: net-specific/deployment-options
+      url: net-specific/net-deployment-options
     - title: Standalone Nodes
-      url: net-specific/standalone-nodes
+      url: net-specific/net-standalone-nodes
     - title: Logging
       url: net-specific/net-logging
     - title: LINQ
-      url: net-specific/linq
+      url: net-specific/net-linq
     - title: Java Services Execution
-      url: net-specific/java-services-execution
+      url: net-specific/net-java-services-execution
     - title: Plugins
       url: net-specific/net-plugins
     - title: Serialization
       url: net-specific/net-serialization
     - title: Cross-Platform Support
-      url: net-specific/cross-platform-support
+      url: net-specific/net-cross-platform-support
     - title: Platform Interoperability
-      url: net-specific/platform-interoperability
+      url: net-specific/net-platform-interoperability
     - title: Remote Assembly Loading
-      url: net-specific/remote-assembly-loading
+      url: net-specific/net-remote-assembly-loading
     - title: Troubleshooting
       url: net-specific/net-troubleshooting
     - title: Integrations
@@ -464,7 +464,15 @@
         - title: ASP.NET Session State Caching
           url: net-specific/asp-net-session-state-caching
         - title: Entity Framework 2nd Level Cache
-          url: net-specific/entity-framework-cache
+          url: net-specific/net-entity-framework-cache
+- title: C++ Specific
+  items:
+    - title: Serialization
+      url: cpp-specific/cpp-serialization
+    - title: Platform Interoperability
+      url: cpp-specific/cpp-platform-interoperability
+    - title: Objects Lifetime
+      url: cpp-specific/cpp-objects-lifetime
 - title: Plugins
   url: plugins
 - title: SQL Reference

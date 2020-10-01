@@ -1,4 +1,4 @@
-= Platform Interoperability
+= Ignite.NET and Platform Interoperability
 
 Ignite allows different platforms, such as .NET, Java and C{pp}, to interoperate with each other.
 Classes and objects defined and written to Ignite by one platform can be read and used by another platform.
