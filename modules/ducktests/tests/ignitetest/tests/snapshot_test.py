@@ -185,6 +185,6 @@ def print_snapshot_size(service: IgniteApplicationService, snapshot_name: str, l
     Print size snapshot dir on service nodes.
     """
     res = service.ssh_output_all(f'du -hs {IgnitePersistenceAware.SNAPSHOT}/{snapshot_name} | ' + "awk '{print $1}'")
-    for items in res .items():
+    for items in res.items():
         data = items[1].decode("utf-8")
         logger.info(f'Snapshot {snapshot_name} on {items[0]}: {data}')
