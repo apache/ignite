@@ -84,15 +84,15 @@ class StartStopClientTest(IgniteTest):
                                      self.PACING,
                                      self.CACHE_NAME))
 
-        topology_ver = startClients(static_cl, ignite)
+        startClients(static_cl, ignite)
         checkClusterState(ignite, servers_count, self.STATIC_CLIENTS_NUM)
 
         for iteration_number in range(self.ITERATION_COUNT):
-            topology_ver = startClients(temp_cl, ignite)
+            startClients(temp_cl, ignite)
             time.sleep(self.CLIENTS_WORK_TIME_S)
-            topology_ver = stopClients(temp_cl, ignite)
+            stopClients(temp_cl, ignite)
 
-        topology_ver = stopClients(static_cl, ignite)
+        stopClients(static_cl, ignite)
         checkClusterState(ignite, servers_count, 0)
         time.sleep(10)
         ignite.stop()
