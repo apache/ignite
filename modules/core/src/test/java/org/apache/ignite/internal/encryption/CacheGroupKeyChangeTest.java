@@ -19,6 +19,7 @@ package org.apache.ignite.internal.encryption;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -604,27 +605,44 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         IgniteEx node1 = grid(GRID_1);
 
         Object nodeId0 = node0.localNode().consistentId();
+        Object nodeId1 = node1.localNode().consistentId();
 
-        node0.createCache(cacheConfiguration(cacheName(), null)
+        String cache1 = cacheName();
+        String cache2 = "cache2";
+
+        node0.createCache(cacheConfiguration(cache1, null)
             .setNodeFilter(node -> !node.consistentId().equals(nodeId0)));
+
+        node0.createCache(cacheConfiguration(cache2, null)
+            .setNodeFilter(node -> !node.consistentId().equals(nodeId1)));
 
         loadData(10_000);
 
         forceCheckpoint();
 
-        int grpId = CU.cacheId(cacheName());
+        int grpId1 = CU.cacheId(cache1);
+        int grpId2 = CU.cacheId(cache2);
 
-        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
+        node0.encryption().changeCacheGroupKey(Arrays.asList(cache1, cache2)).get();
 
-        List<Integer> keys0 = node0.context().encryption().groupKeyIds(grpId);
-        List<Integer> keys1 = node1.context().encryption().groupKeyIds(grpId);
+        List<Integer> keys0 = node0.context().encryption().groupKeyIds(grpId1);
+        List<Integer> keys1 = node1.context().encryption().groupKeyIds(grpId1);
 
         assertEquals(2, keys0.size());
         assertEquals(2, keys1.size());
 
         assertTrue(keys0.containsAll(keys1));
 
-        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+        keys0 = node0.context().encryption().groupKeyIds(grpId2);
+        keys1 = node1.context().encryption().groupKeyIds(grpId2);
+
+        assertEquals(2, keys0.size());
+        assertEquals(2, keys1.size());
+
+        assertTrue(keys0.containsAll(keys1));
+
+        checkGroupKey(grpId1, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+        checkGroupKey(grpId2, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
 
         stopAllGrids();
 
@@ -633,7 +651,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         node0 = grid(GRID_0);
         node1 = grid(GRID_1);
 
-        IgniteCache<Object, Object> allNodesCache = node0.createCache("cache2");
+        IgniteCache<Object, Object> allNodesCache = node0.createCache("cacheX");
 
         // Previous keys must be deleted when the corresponding WAL segment is deleted, so we adding data on all nodes.
         long endTime = U.currentTimeMillis() + 30_000;
@@ -642,17 +660,24 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         do {
             allNodesCache.put(cntr, String.valueOf(cntr));
 
-            if (node0.context().encryption().groupKeyIds(grpId).size() == 1 &&
-                node1.context().encryption().groupKeyIds(grpId).size() == 1)
+            if (node0.context().encryption().groupKeyIds(grpId1).size() == 1 &&
+                node1.context().encryption().groupKeyIds(grpId1).size() == 1 &&
+                node0.context().encryption().groupKeyIds(grpId2).size() == 1 &&
+                node1.context().encryption().groupKeyIds(grpId2).size() == 1)
                 break;
 
             ++cntr;
         } while (U.currentTimeMillis() < endTime);
 
-        assertEquals(1, node0.context().encryption().groupKeyIds(grpId).size());
-        assertEquals(node0.context().encryption().groupKeyIds(grpId), node1.context().encryption().groupKeyIds(grpId));
+        assertEquals(1, node0.context().encryption().groupKeyIds(grpId1).size());
+        assertEquals(1, node0.context().encryption().groupKeyIds(grpId2).size());
 
-        checkGroupKey(grpId, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+        assertEquals(node0.context().encryption().groupKeyIds(grpId1), node1.context().encryption().groupKeyIds(grpId1));
+        assertEquals(node0.context().encryption().groupKeyIds(grpId2), node1.context().encryption().groupKeyIds(grpId2));
+
+        checkGroupKey(grpId1, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+        checkGroupKey(grpId2, INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+
         checkEncryptedCaches(node0, node1);
     }
 
