@@ -2796,7 +2796,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Map<String, IgniteIndex> indexes() {
-            return indexes;
+            return Collections.unmodifiableMap(indexes);
         }
 
         /** {@inheritDoc} */

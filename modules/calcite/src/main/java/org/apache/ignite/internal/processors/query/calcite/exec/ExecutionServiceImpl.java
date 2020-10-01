@@ -636,6 +636,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         SqlNode sql = ((SqlExplain)explain).getExplicandum();
 
+        SqlExplainLevel detalization = ((SqlExplain) explain).getDetailLevel();
+
         // Validate
         explain = planner.validate(sql);
 
@@ -644,7 +646,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         List<GridQueryFieldMetadata> meta = buildExplainColumnMeta(ctx);
 
-        String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
+        String plan = RelOptUtil.toString(igniteRel, detalization);
 
         return new ExplainPlan(plan, meta);
     }

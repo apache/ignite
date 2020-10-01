@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import com.google.common.collect.ImmutableMap;
+import org.apache.calcite.test.CalciteAssert;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -288,37 +292,55 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-/*        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
             "" +
                 "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?;" +
-                "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0, 1);
+                "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0,1);
 
         assertEquals(2, query.size());
 
         assertEqualsCollections(Arrays.asList("Igor", 1, "Calcite"), F.first(query.get(0).getAll()));
         assertEqualsCollections(Arrays.asList("Roman", 0, "Ignite"), F.first(query.get(1).getAll()));
+    }
 
-        query = engine.query(null, "PUBLIC",
-            "" +
-                "select * from DEVELOPER d where d.projectId > ?;", 0);
+    @Test
+    public void testProjectsWithFilterPlan() throws Exception {
+        IgniteCache<Integer, Developer> developer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Developer>()
+            .setName("developer")
+            .setSqlSchema("PUBLIC")
+            .setIndexedTypes(Integer.class, Developer.class)
+            .setBackups(1)
+        );
 
-        assertEquals(1, query.size());*/
+        waitForReadyTopology(internalCache(developer).context().topology(), new AffinityTopologyVersion(5, 2));
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
-            "" +
-                "select name from DEVELOPER d;", 0);
+        developer.putAll(ImmutableMap.of(
+            0, new Developer("Igor", 1),
+            1, new Developer("Zhenya", 0)
+        ));
 
-        //EXPLAIN PLAN FOR
+        calciteAssert()
+            .query("select name from DEVELOPER d;")
+            .returnsCount(2)
+            .explainContains("PLAN=IgniteExchange(distribution=[single])\n  " +
+                "IgniteTableScan(table=[[PUBLIC, DEVELOPER]], projects=[[$t0]], requiredColunms=[{2}])");
 
-        System.err.println("!!!" + query.get(0).getAll());
+        calciteAssert()
+            .query("select name from DEVELOPER d WHERE d.projectId > 0;")
+            .returnsCount(1)
+            .explainMatches("INCLUDING ATTRIBUTES ",
+                CalciteAssert.checkResultContains("PLAN=IgniteExchange(distribution=[single])\n  " +
+                    "IgniteProject(NAME=[$2])\n    " +
+                    "IgniteTableScan(table=[[PUBLIC, DEVELOPER]], filters=[>($t3, 0)])"));
 
-        query = engine.query(null, "PUBLIC",
-            "" +
-                "EXPLAIN PLAN FOR select name from DEVELOPER d where d.projectId > ?;", 0);
-
-        //EXPLAIN PLAN FOR
-
-        System.err.println("!!!" + query.get(0).getAll());
+        // H2 plan.
+        calciteAssert()
+            .query("select name from DEVELOPER d WHERE d.projectId > (SELECT 0 FROM DUAL);")
+            .returnsCount(1)
+            .explainContains("PLAN=SELECT\n    D__Z0.NAME AS __C0_0" +
+                "\nFROM PUBLIC.DEVELOPER D__Z0\n    " +
+                "/* PUBLIC.DEVELOPER.__SCAN_ */\nWHERE D__Z0.PROJECTID > (SELECT\n    0\nFROM SYSTEM_RANGE(1, 1) __Z1\n    " +
+                "/* PUBLIC.RANGE_INDEX */)\nPLAN=SELECT\n    __C0_0 AS NAME\nFROM PUBLIC.__T0\n    /* PUBLIC.\"merge_scan\" */\n");
     }
 
     @Test
@@ -548,5 +570,22 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         public Project(String name) {
             this.name = name;
         }
+    }
+
+    /** */
+    private CalciteAssert.ConnectionFactory newConnectionFactory() {
+        return new CalciteAssert.ConnectionFactory() {
+            @Override public Connection createConnection() throws SQLException {
+                final Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?useExperimentalQueryEngine=true");
+                conn.setSchema("PUBLIC");
+                return conn;
+            }
+        };
+    }
+
+    /** */
+    private CalciteAssert.AssertThat calciteAssert() {
+        return CalciteAssert.that()
+            .with(newConnectionFactory());
     }
 }
