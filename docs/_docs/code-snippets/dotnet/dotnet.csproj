@@ -5,4 +5,8 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Apache.Ignite" Version="2.9.0-alpha20201001" />
+  </ItemGroup>
+
 </Project>
