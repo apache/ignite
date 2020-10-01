@@ -38,8 +38,8 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.BasicRateLimiter;
@@ -58,7 +58,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.MB;
  * Cache group page stores scanner.
  * Scans a range of pages and marks them as dirty to re-encrypt them with the last encryption key on disk.
  */
-public class CacheGroupPageScanner implements DbCheckpointListener {
+public class CacheGroupPageScanner implements CheckpointListener {
     /** Thread prefix for scanning tasks. */
     private static final String REENCRYPT_THREAD_PREFIX = "reencrypt";
 
