@@ -54,6 +54,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.SnapshotEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -96,6 +97,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -113,6 +115,9 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
@@ -172,6 +177,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Prefix for snapshot threads. */
     private static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
+
+    /** Snapshot operation finish log message. */
+    private static final String SNAPSHOT_FINISHED_MSG = "Cluster-wide snapshot operation finished successfully: ";
+
+    /** Snapshot operation fail log message. */
+    private static final String SNAPSHOT_FAILED_MSG = "Cluster-wide snapshot operation failed: ";
 
     /** Total number of thread to perform local snapshot. */
     private static final int SNAPSHOT_THREAD_POOL_SIZE = 4;
@@ -625,7 +636,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     clusterSnpFut.onDone();
 
                     if (log.isInfoEnabled())
-                        log.info("Cluster-wide snapshot operation finished successfully [req=" + snpReq + ']');
+                        log.info(SNAPSHOT_FINISHED_MSG + snpReq);
                 }
                 else if (snpReq.err == null) {
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
@@ -780,6 +791,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 clusterSnpFut = snpFut0;
                 lastSeenSnpFut = snpFut0;
+
+                snpFut0.listen(f -> {
+                    if (f.error() == null)
+                        recordSnapshotEvent(name, SNAPSHOT_FINISHED_MSG, EVT_CLUSTER_SNAPSHOT_FINISHED);
+                    else
+                        recordSnapshotEvent(name, SNAPSHOT_FAILED_MSG + f.error().getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
+                });
             }
 
             List<Integer> grps = cctx.cache().persistentGroups().stream()
@@ -798,13 +816,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     F.node2id(),
                     (node) -> CU.baselineNode(node, clusterState)))));
 
+            String msg = "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps + ']';
+
+            recordSnapshotEvent(name, msg, EVT_CLUSTER_SNAPSHOT_STARTED);
+
             if (log.isInfoEnabled())
-                log.info("Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps + ']');
+                log.info(msg);
 
             return new IgniteFutureImpl<>(snpFut0);
         }
         catch (Exception e) {
-            U.error(log, "Start snapshot operation failed", e);
+            recordSnapshotEvent(name, SNAPSHOT_FAILED_MSG + e.getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
+
+            U.error(log, SNAPSHOT_FAILED_MSG, e);
 
             lastSeenSnpFut = new ClusterSnapshotFuture(name, e);
 
@@ -968,6 +992,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         finally {
             cctx.database().checkpointReadUnlock();
         }
+    }
+
+    /**
+     * @param snpName Snapshot name event related to.
+     * @param msg Event message.
+     * @param type Snapshot event type.
+     */
+    private void recordSnapshotEvent(String snpName, String msg, int type) {
+        if (!cctx.gridEvents().isRecordable(type))
+            return;
+
+        cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+            @Override public void run() {
+                cctx.gridEvents().record(new SnapshotEvent(cctx.localNode(),
+                    msg,
+                    snpName,
+                    type));
+            }
+        });
     }
 
     /**
