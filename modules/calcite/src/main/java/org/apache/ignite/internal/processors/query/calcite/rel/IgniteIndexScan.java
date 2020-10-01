@@ -125,17 +125,20 @@ public class IgniteIndexScan extends ProjectableFilterableTableScan implements I
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
      * @param idxName Index name.
+     * @param proj Projects.
+     * @param cond Filters.
+     * @param requiredColunms Participating colunms.
      */
     public IgniteIndexScan(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
         String idxName,
-        @Nullable List<RexNode> projections,
+        @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColunms
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, projections, cond,
+        super(cluster, traits, ImmutableList.of(), tbl, proj, cond,
             requiredColunms);
 
         this.idxName = idxName;

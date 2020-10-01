@@ -51,7 +51,8 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements I
     public IgniteTableScan(
         RelOptCluster cluster,
         RelTraitSet traits,
-        RelOptTable tbl) {
+        RelOptTable tbl
+    ) {
         super(cluster, traits, ImmutableList.of(), tbl);
     }
 
@@ -60,15 +61,19 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements I
      * @param cluster Cluster that this relational expression belongs to
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
+     * @param proj Projects.
+     * @param cond Filters.
+     * @param requiredColunms Participating colunms.
      */
     public IgniteTableScan(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
-        @Nullable List<RexNode> projections,
+        @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColunms) {
-        super(cluster, traits, ImmutableList.of(), tbl, projections, cond, requiredColunms);
+        @Nullable ImmutableBitSet requiredColunms
+    ) {
+        super(cluster, traits, ImmutableList.of(), tbl, proj, cond, requiredColunms);
     }
 
     /** {@inheritDoc} */

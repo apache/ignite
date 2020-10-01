@@ -79,7 +79,7 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * Returns row type.
      *
      * @param factory Type factory.
-     * @param usedColumns Used columns numeration.
+     * @param usedColumns Participating columns numeration.
      * @return Row type.
      */
     RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet usedColumns);
@@ -106,7 +106,7 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      *
      * @param ectx Execution context.
      * @param row Cache row.
-     * @param requiredColunms
+     * @param requiredColunms Participating colunms.
      * @return Relational node row.
      * @throws IgniteCheckedException If failed.
      */

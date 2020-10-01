@@ -19,7 +19,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/** Scan with projects and filters. */
 public class ProjectableFilterableTableScan extends TableScan {
     /** Filters. */
     private final RexNode condition;

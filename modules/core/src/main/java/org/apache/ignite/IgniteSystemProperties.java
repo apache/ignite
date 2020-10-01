@@ -1920,10 +1920,6 @@ public final class IgniteSystemProperties {
         // No-op.
     }
 
-    @Override public String toString() {
-        return super.toString();
-    }
-
     /**
      * @param enumCls Enum type.
      * @param name Name of the system property or environment variable.

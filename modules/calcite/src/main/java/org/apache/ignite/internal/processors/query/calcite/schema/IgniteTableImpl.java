@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -155,9 +156,8 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Override public Map<String, IgniteIndex> indexes() {
-        return indexes;
+        return Collections.unmodifiableMap(indexes);
     }
 
     /** {@inheritDoc} */

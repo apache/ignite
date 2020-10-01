@@ -78,7 +78,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     /** */
     private final Function<Row, Row> rowTransformer;
 
-    /** */
+    /** Participating colunms. */
     private final ImmutableBitSet requiredColunms;
 
     /** */
