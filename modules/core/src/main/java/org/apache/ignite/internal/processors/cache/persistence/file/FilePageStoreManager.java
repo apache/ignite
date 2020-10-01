@@ -368,7 +368,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         if (!groupsWithWalDisabled.isEmpty()) {
             String errorMsg = "Cache groups with potentially corrupted partition files found. " +
-                "Cleanup cache group folders and restart the node: " + groupsWithWalDisabled;
+                "To cleanup them maintenance is needed, node will enter maintenance mode on next restart. " +
+                "Cleanup cache group folders manually or trigger maintenance action to do that and restart the node. " +
+                "Corrupted files are located in subdirectories " + groupsWithWalDisabled +
+                " in a work dir " + storeWorkDir
+                ;
 
             log.warning(errorMsg);
 
