@@ -909,7 +909,7 @@ public interface EventType {
     public static final int EVT_CLUSTER_SNAPSHOT_FINISHED = 150;
 
     /**
-     * Built-in event type: Cluster snapshot has been finished event.
+     * Built-in event type: Cluster snapshot has been failed event.
      *
      * <p>
      * Fired when new tag is successfully set on all nodes.
