@@ -36,7 +36,7 @@ from ignitetest.services.utils.ignite_configuration.cache import CacheConfigurat
 from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster, \
     TcpDiscoverySpi
 from ignitetest.services.utils.time_utils import epoch_mills
-from ignitetest.services.zk.zookeeper import ZookeeperService
+from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
 from ignitetest.utils import ignite_versions, version_if
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, V_2_8_0, IgniteVersion
@@ -72,7 +72,7 @@ class DiscoveryTest(IgniteTest):
     """
     NUM_NODES = 7
 
-    FAILURE_DETECTION_TIMEOUT = 2000
+    FAILURE_DETECTION_TIMEOUT = 1000
 
     DATA_AMOUNT = 5_000_000
 
@@ -301,7 +301,10 @@ def start_zookeeper(test_context, num_nodes):
     """
     Start zookeeper cluster.
     """
-    zk_quorum = ZookeeperService(test_context, num_nodes)
+    zk_settings = ZookeeperSettings(min_session_timeout=DiscoveryTest.FAILURE_DETECTION_TIMEOUT,
+                                    tick_time=DiscoveryTest.FAILURE_DETECTION_TIMEOUT // 2)
+
+    zk_quorum = ZookeeperService(test_context, num_nodes, settings=zk_settings)
     zk_quorum.start()
     return zk_quorum
 

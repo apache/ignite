@@ -27,8 +27,9 @@ class ZookeeperSettings:
     """
     Settings for zookeeper quorum nodes.
     """
-    def __init__(self, tick_time=1000, init_limit=10, sync_limit=5, client_port=2181):
+    def __init__(self, tick_time=1000, min_session_timeout=2000, init_limit=10, sync_limit=5, client_port=2181):
         self.tick_time = tick_time
+        self.min_session_timeout = min_session_timeout
         self.init_limit = init_limit
         self.sync_limit = sync_limit
         self.client_port = client_port
