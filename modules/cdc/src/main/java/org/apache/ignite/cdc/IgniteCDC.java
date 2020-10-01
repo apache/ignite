@@ -20,10 +20,9 @@ package org.apache.ignite.cdc;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -38,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
@@ -66,7 +64,7 @@ public class IgniteCDC implements Runnable {
     private final WatchUtils wu;
 
     /** Work dir. */
-    private Path workDir;
+    private File workDir;
 
     /** Consistent id directory name. */
     private String consIdDir;
@@ -77,8 +75,11 @@ public class IgniteCDC implements Runnable {
     /** Marshaller directory. */
     private File marshaller;
 
-    /** WAL files queue. */
-    private final BlockingQueue<Path> walFiles = new LinkedBlockingDeque<>();
+    /** WAL segments. */
+    private volatile File[] segments = new File[0];
+
+    /** WAL segment position. */
+    private Optional<WALPointer> pos = Optional.empty();
 
     /**
      * @param cfg Ignite configuration.
@@ -87,7 +88,7 @@ public class IgniteCDC implements Runnable {
     public IgniteCDC(IgniteConfiguration cfg, CDCConsumer consumer) {
         this.cfg = cfg;
         this.consumer = consumer;
-        this.workDir = Paths.get(workDirectory(cfg));
+        this.workDir = new File(workDirectory(cfg));
         this.log = logger(cfg, workDir.toString());
         this.factory = new IgniteWalIteratorFactory(log);
         this.wu = new WatchUtils(log);
@@ -115,40 +116,38 @@ public class IgniteCDC implements Runnable {
 
         Thread newFileThread = new Thread(() ->
             wu.waitFor(nodeWalDir[0], p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches(), walFile -> {
-                try {
-                    walFiles.put(walFile);
+                File[] newWalFiles = new File[segments.length + 1];
 
-                    return true;
-                }
-                catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+                System.arraycopy(segments, 0, newWalFiles, 0, segments.length);
+
+                newWalFiles[segments.length] = walFile.toFile();
+
+                Arrays.sort(newWalFiles);
+
+                segments = newWalFiles;
+
+                return true;
             })
         );
 
         newFileThread.start();
 
         try {
-            Path walFile = null;
-            Optional<WALPointer> pos = Optional.empty();
+            int segmentIdx = 0;
+
+            while (segments.length == 0) {
+                if (log.isDebugEnabled())
+                    log.debug("No WAL segments found");
+
+                Thread.sleep(250);
+            }
+
+            log.info("Moving to the next WAL segment[segment=" + segments[segmentIdx].getName() + ']');
 
             while (true) {
-                Path newWalFile = walFiles.poll(1, SECONDS);
+                segmentIdx = readAvailableEvents(segmentIdx);
 
-                if (newWalFile != null) {
-                    log.info("Found new WAL file[file=" + newWalFile + ']');
-
-                    if (walFile != null)
-                        readAvailableEvents(walFile, pos);
-
-                    pos = Optional.empty();
-                    walFile = newWalFile;
-                }
-
-                if (walFile == null)
-                    continue;
-
-                pos = readAvailableEvents(walFile, pos);
+                Thread.sleep(250);
             }
         }
         catch (InterruptedException | IgniteCheckedException e) {
@@ -157,34 +156,57 @@ public class IgniteCDC implements Runnable {
     }
 
     /**
-     * @param walFile WAL file.
-     * @param pos Last readed position.
+     * Reads available events from {@code idx} file of {@link #segments}.
+     * @param idx Index of the WAL segment.
      * @return Last readed position.
      * @throws IgniteCheckedException In case of error.
      */
-    private Optional<WALPointer> readAvailableEvents(Path walFile, Optional<WALPointer> pos)
+    private int readAvailableEvents(int idx)
         throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Fetching new events from walFile[file=" + walFile + ']');
 
+        if (log.isDebugEnabled())
+            log.debug("Fetching new events from WAL[segment=" + segments[idx].getName() + ']');
+
+        int read = readFromFile(segments[idx]);
+
+        if (read == 0 && idx < segments.length - 1) {
+            read = readFromFile(segments[idx+1]);
+
+            if (read > 0) {
+                log.info("Moving to the next WAL segment[segment=" + segments[idx+1].getName() + ']');
+
+                return idx + 1;
+            }
+        }
+
+        return idx;
+    }
+
+    private int readFromFile(File file) throws IgniteCheckedException {
         IteratorParametersBuilder builder = new IteratorParametersBuilder()
             .log(log)
             .binaryMetadataFileStoreDir(binaryMeta)
             .marshallerMappingFileStoreDir(marshaller)
             .keepBinary(true)
-            .filesOrDirs(walFile.toFile());
+            .filesOrDirs(file);
 
         pos.ifPresent(ptr -> builder.from((FileWALPointer)ptr));
+
+        int read = 0;
 
         try (WALIterator it = factory.iterator(builder)) {
             while (it.hasNext()) {
                 WALRecord rec = it.next().get2();
 
+                read++;
+
                 consumer.onRecord(rec);
             }
 
-            return it.lastRead();
+            if (read > 0)
+                pos = it.lastRead().map(WALPointer::next);
         }
+        return read;
     }
 
     /**
@@ -193,7 +215,7 @@ public class IgniteCDC implements Runnable {
      * @param callback Callback to be notified.
      */
     private void findNodeWalDir(Consumer<Path> callback) {
-        wu.waitFor(workDir, work -> {
+        wu.waitFor(workDir.toPath(), work -> {
             if (log.isDebugEnabled())
                 log.debug("Work directory found[dir=" + work + ']');
 

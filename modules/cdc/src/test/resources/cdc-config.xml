@@ -28,7 +28,9 @@
             </bean>
         </property>
 
+<!--
         <property name="consistentId" value="cdc-node" />
+-->
     </bean>
 
     <bean class="org.apache.ignite.cdc.LogAllCDCConsumer" />
