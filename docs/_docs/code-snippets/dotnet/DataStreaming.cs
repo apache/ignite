@@ -15,7 +15,7 @@ namespace dotnet_helloworld
 
         public static void DataStreamerExample()
         {
-            using (var ignite = Ignition.Start(Util.getIngiteCfg()))
+            using (var ignite = Ignition.Start())
             {
                 ignite.GetOrCreateCache<int, string>("myCache");
                 //tag::dataStreamer1[]

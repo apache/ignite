@@ -8,6 +8,7 @@ using Apache.Ignite.Core.Cache.Configuration;
 using Apache.Ignite.Core.Cache.Query;
 using Apache.Ignite.Core.Client;
 using Apache.Ignite.Core.Client.Cache;
+using Apache.Ignite.Core.Client.Compute;
 using Apache.Ignite.Core.Configuration;
 using Apache.Ignite.Core.Log;
 
@@ -95,7 +96,7 @@ namespace dotnet_helloworld
 
         public static void ScanQueryFilterDemo()
         {
-            using (var ignite = Ignition.Start(Util.getIngiteCfg()))
+            using (var ignite = Ignition.Start())
             {
                 var cfg = new IgniteClientConfiguration
                 {
@@ -158,7 +159,7 @@ namespace dotnet_helloworld
 
         public static void ExecutingSql()
         {
-            using (var ignite = Ignition.Start(Util.getIngiteCfg()))
+            using (var ignite = Ignition.Start())
             {
                 var cfg = new IgniteClientConfiguration
                 {
@@ -282,6 +283,53 @@ namespace dotnet_helloworld
                 Console.WriteLine(connection.RemoteEndPoint);
             }
             //end::discovery[]
+        }
+
+        public static void ClientCluster()
+        {
+            var cfg = new IgniteClientConfiguration();
+            //tag::client-cluster[]
+            IIgniteClient client = Ignition.StartClient(cfg);
+            IClientCluster cluster = client.GetCluster();
+            cluster.SetActive(true);
+            cluster.EnableWal("my-cache");
+            //end::client-cluster[]
+        }
+
+        public static void ClientClusterGroups()
+        {
+            var cfg = new IgniteClientConfiguration();
+            //tag::client-cluster-groups[]
+            IIgniteClient client = Ignition.StartClient(cfg);
+            IClientClusterGroup serversInDc1 = client.GetCluster().ForServers().ForAttribute("dc", "dc1");
+            foreach (IClientClusterNode node in serversInDc1.GetNodes())
+                Console.WriteLine($"Node ID: {node.Id}");
+            //end::client-cluster-groups[]
+        }
+
+        public static void Compute()
+        {
+            //tag::client-compute-setup[]
+            var igniteCfg = new IgniteConfiguration
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
+                {
+                    ThinClientConfiguration = new ThinClientConfiguration
+                    {
+                        MaxActiveComputeTasksPerConnection = 10
+                    }
+                }
+            };
+
+            IIgnite ignite = Ignition.Start(igniteCfg);
+            //end::client-compute-setup[]
+
+            var cfg = new IgniteClientConfiguration();
+            //tag::client-compute-task[]
+            IIgniteClient client = Ignition.StartClient(cfg);
+            IComputeClient compute = client.GetCompute();
+            int result = compute.ExecuteJavaTask<int>("org.foo.bar.AddOneTask", 1);
+            //end::client-compute-task[]
         }
     }
 }
