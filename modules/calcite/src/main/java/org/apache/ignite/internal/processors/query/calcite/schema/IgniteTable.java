@@ -17,17 +17,22 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TranslatableTable;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite table.
@@ -37,6 +42,19 @@ public interface IgniteTable extends TranslatableTable {
      * @return Table description.
      */
     TableDescriptor descriptor();
+
+    /** {@inheritDoc} */
+    default @Override RelDataType getRowType(RelDataTypeFactory typeFactory) {
+        return getRowType(typeFactory, null);
+    }
+
+    /**
+     * Returns new type according {@code usedClumns} param.
+     *
+     * @param typeFactory Factory.
+     * @param usedColumns Used columns enumeration.
+     */
+    RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet usedColumns);
 
     /** {@inheritDoc} */
     @Override default TableScan toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
@@ -67,9 +85,15 @@ public interface IgniteTable extends TranslatableTable {
      *
      * @param execCtx Execution context.
      * @param filter
+     * @param rowTransformer Row transformer.
+     * @param usedColumns Used columns enumeration.
      * @return Rows iterator.
      */
-    public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filter);
+    public <Row> Iterable<Row> scan(
+        ExecutionContext<Row> execCtx,
+        Predicate<Row> filter,
+        Function<Row, Row> rowTransformer,
+        @Nullable ImmutableBitSet usedColumns);
 
     /**
      * Returns nodes mapping.

@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
@@ -35,6 +34,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.sql2rel.NullInitializerExpressionFactory;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -53,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -88,7 +89,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     private final int affField;
 
     /** */
-    private final BitSet virtualFlags;
+    private final ImmutableBitSet insertFields;
 
     /** */
     public TableDescriptorImpl(GridCacheContext<?,?> cctx, GridQueryTypeDescriptor typeDesc, Object affinityIdentity) {
@@ -101,7 +102,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         List<ColumnDescriptor> descriptors = new ArrayList<>(fields.size() + 2);
 
         // A _key/_val fields is virtual in case there is an alias or a property(es) mapped to _key/_val object fields.
-        BitSet virtualFlags = new BitSet();
+        BitSet virtualFields = new BitSet();
 
         descriptors.add(
             new KeyValDescriptor(QueryUtils.KEY_FIELD_NAME, typeDesc.keyClass(), true, QueryUtils.KEY_COL));
@@ -124,7 +125,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
                 keyField = descriptors.size();
 
-                virtualFlags.set(0);
+                virtualFields.set(0);
 
                 descriptors.add(new KeyValDescriptor(typeDesc.keyFieldAlias(), typeDesc.keyClass(), true, fldIdx++));
             }
@@ -133,12 +134,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
                 descriptors.add(new KeyValDescriptor(typeDesc.valueFieldAlias(), typeDesc.valueClass(), false, fldIdx++));
 
-                virtualFlags.set(1);
+                virtualFields.set(1);
             }
             else {
                 GridQueryProperty prop = typeDesc.property(field);
 
-                virtualFlags.set(prop.key() ? 0 : 1);
+                virtualFields.set(prop.key() ? 0 : 1);
 
                 descriptors.add(new FieldDescriptor(prop, fldIdx++));
             }
@@ -151,19 +152,23 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         this.keyField = keyField;
         this.valField = valField;
         this.affField = affField;
-        this.virtualFlags = virtualFlags;
         this.descriptors = descriptors.toArray(DUMMY);
         this.descriptorsMap = descriptorsMap;
-    }
 
-    /** {@inheritDoc} */
-    @Override public RelDataType apply(RelDataTypeFactory factory) {
-        return rowType((IgniteTypeFactory) factory, false);
+        ImmutableBitSet.Builder b = ImmutableBitSet.builder();
+        for (int i = 0; i < this.descriptors.length; i++) {
+            if (virtualFields.get(i))
+                continue;
+
+            b.set(i);
+        }
+
+        insertFields = b.build();
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType insertRowType(IgniteTypeFactory factory) {
-        return rowType(factory, true);
+        return rowType(factory, insertFields);
     }
 
     /** {@inheritDoc} */
@@ -185,17 +190,28 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** {@inheritDoc} */
-    @Override public <Row> Row toRow(ExecutionContext<Row> ectx, CacheDataRow row, RowHandler.RowFactory<Row> factory) throws IgniteCheckedException {
+    @Override public <Row> Row toRow(
+        ExecutionContext<Row> ectx,
+        CacheDataRow row,
+        RowHandler.RowFactory<Row> factory,
+        @Nullable ImmutableBitSet requiredColunms
+    ) throws IgniteCheckedException {
         RowHandler<Row> handler = factory.handler();
 
         assert handler == ectx.rowHandler();
 
         Row res = factory.create();
 
-        assert handler.columnCount(res) == descriptors.length;
+        assert handler.columnCount(res) == (requiredColunms == null ? descriptors.length : requiredColunms.cardinality());
 
-        for (int i = 0; i < descriptors.length; i++)
-            handler.set(i, res, descriptors[i].value(ectx, cctx, row));
+        if (requiredColunms == null) {
+            for (int i = 0; i < descriptors.length; i++)
+                handler.set(i, res, descriptors[i].value(ectx, cctx, row));
+        }
+        else {
+            for (int i = 0, j = requiredColunms.nextSetBit(0); j != -1; j = requiredColunms.nextSetBit(j + 1), i++)
+                handler.set(i, res, descriptors[j].value(ectx, cctx, row));
+        }
 
         return res;
     }
@@ -399,15 +415,17 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         return F.t(Objects.requireNonNull(key), null);
     }
 
-    /** */
-    private RelDataType rowType(IgniteTypeFactory factory, boolean skipVirtual) {
+    /** {@inheritDoc} */
+    @Override public RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet usedColumns) {
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
 
-        for (int i = 0; i < descriptors.length; i++) {
-            if (skipVirtual && virtualFlags.get(i))
-                continue;
-
-            b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
+        if (usedColumns == null) {
+            for (int i = 0; i < descriptors.length; i++)
+                b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
+        }
+        else {
+            for (int i = usedColumns.nextSetBit(0); i != -1; i = usedColumns.nextSetBit(i + 1))
+                b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
         }
 
         return b.build();

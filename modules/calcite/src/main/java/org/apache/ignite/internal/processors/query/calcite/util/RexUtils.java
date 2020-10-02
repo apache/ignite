@@ -18,18 +18,24 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.util.Arrays;
-
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPredicateList;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexSimplify;
+import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -80,5 +86,34 @@ public class RexUtils {
         }
 
         return builder.makeCall(SqlStdOperatorTable.CASE, operands);
+    }
+
+    /** Returns whether a list of expressions projects the incoming fields. */
+    public static boolean isIdentity(List<? extends RexNode> projects, RelDataType inputRowType) {
+        return isIdentity(projects, inputRowType, false);
+    }
+
+    /** Returns whether a list of expressions projects the incoming fields. */
+    public static boolean isIdentity(List<? extends RexNode> projects, RelDataType inputRowType, boolean local) {
+        if (inputRowType.getFieldCount() != projects.size())
+            return false;
+
+        final List<RelDataTypeField> fields = inputRowType.getFieldList();
+        Class<? extends RexSlot> clazz = local ? RexLocalRef.class : RexInputRef.class;
+
+        for (int i = 0; i < fields.size(); i++) {
+            if (!clazz.isInstance(projects.get(i)))
+                return false;
+
+            RexSlot ref = (RexSlot) projects.get(i);
+
+            if (ref.getIndex() != i)
+                return false;
+
+            if (!RelOptUtil.eq("t1", projects.get(i).getType(), "t2", fields.get(i).getType(), Litmus.IGNORE))
+                return false;
+        }
+
+        return true;
     }
 }

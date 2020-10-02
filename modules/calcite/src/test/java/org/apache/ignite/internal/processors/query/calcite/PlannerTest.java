@@ -25,7 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -775,11 +777,17 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build()) {
             @Override public IgniteIndex getIndex(String idxName) {
                 return new IgniteIndex(null, null, null, null) {
-                    @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filters,
-                        Supplier<Row> lowerIdxConditions, Supplier<Row> upperIdxConditions) {
+                    @Override public <Row> Iterable<Row> scan(
+                        ExecutionContext<Row> execCtx,
+                        Predicate<Row> filters,
+                        Supplier<Row> lowerIdxConditions,
+                        Supplier<Row> upperIdxConditions,
+                        Function<Row, Row> rowTransformer,
+                        @Nullable ImmutableBitSet requiredColunms
+                    ) {
                         return Linq4j.asEnumerable(Arrays.asList(
-                            row(execCtx, 0, "Igor", 0),
-                            row(execCtx, 1, "Roman", 0)
+                            row(execCtx, requiredColunms, 0, "Igor", 0),
+                            row(execCtx, requiredColunms, 1, "Roman", 0)
                         ));
                     }
                 };
@@ -808,11 +816,17 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build()) {
             @Override public IgniteIndex getIndex(String idxName) {
                 return new IgniteIndex(null, null, null, null) {
-                    @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filters,
-                        Supplier<Row> lowerIdxConditions, Supplier<Row> upperIdxConditions) {
+                    @Override public <Row> Iterable<Row> scan(
+                        ExecutionContext<Row> execCtx,
+                        Predicate<Row> filters,
+                        Supplier<Row> lowerIdxConditions,
+                        Supplier<Row> upperIdxConditions,
+                        Function<Row, Row> rowTransformer,
+                        @Nullable ImmutableBitSet requiredColunms
+                    ) {
                         return Linq4j.asEnumerable(Arrays.asList(
-                            row(execCtx, 0, "Calcite", 1),
-                            row(execCtx, 1, "Ignite", 1)
+                            row(execCtx, requiredColunms, 0, "Calcite", 1),
+                            row(execCtx, requiredColunms, 1, "Ignite", 1)
                         ));
                     }
                 };
@@ -1143,10 +1157,15 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filter) {
+            @Override public <Row> Iterable<Row> scan(
+                ExecutionContext<Row> execCtx,
+                Predicate<Row> filter,
+                Function<Row, Row> transformer,
+                ImmutableBitSet requiredColunms
+            ) {
                 return Arrays.asList(
-                    row(execCtx, 0, "Igor", 0),
-                    row(execCtx, 1, "Roman", 0)
+                    row(execCtx, requiredColunms, 0, "Igor", 0),
+                    row(execCtx, requiredColunms, 1, "Roman", 0)
                 );
             }
 
@@ -1165,10 +1184,15 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filter) {
+            @Override public <Row> Iterable<Row> scan(
+                ExecutionContext<Row> execCtx,
+                Predicate<Row> filter,
+                Function<Row, Row> transformer,
+                ImmutableBitSet requiredColunms
+            ) {
                 return Arrays.asList(
-                    row(execCtx, 0, "Calcite", 1),
-                    row(execCtx, 1, "Ignite", 1)
+                    row(execCtx, requiredColunms, 0, "Calcite", 1),
+                    row(execCtx, requiredColunms, 1, "Ignite", 1)
                 );
             }
 
@@ -1406,17 +1430,35 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
+        ThreadLocal<List<?>> checkRes = new ThreadLocal<>();
+
         TestTable testTbl = new TestTable(
             new RelDataTypeFactory.Builder(f)
                 .add("ID0", f.createJavaType(Integer.class))
                 .add("ID1", f.createJavaType(Integer.class))
                 .build()) {
+            @Override public <Row> Iterable<Row> scan(
+                ExecutionContext<Row> execCtx,
+                Predicate<Row> filter,
+                Function<Row, Row> rowTransformer,
+                ImmutableBitSet requiredColunms
+            ) {
+                List<Row> checkRes0 = new ArrayList<>();
 
-            @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filter) {
-                return Arrays.asList(
-                    row(execCtx, 0, 1),
-                    row(execCtx, 1, 2)
-                );
+                for (int i = 0; i < 10; ++i) {
+                    int col = ThreadLocalRandom.current().nextInt(1_000);
+
+                    Row r = row(execCtx, requiredColunms, col, col);
+
+                    if (rowTransformer != null)
+                        r = rowTransformer.apply(r);
+
+                    checkRes0.add(r);
+                }
+
+                checkRes.set(checkRes0);
+
+                return checkRes0;
             }
 
             @Override public NodesMapping mapping(PlanningContext ctx) {
@@ -1633,8 +1675,10 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             assertFalse(res.isEmpty());
 
-            Assert.assertArrayEquals(new Object[]{1}, res.get(0));
-            Assert.assertArrayEquals(new Object[]{3}, res.get(1));
+            int pos = 0;
+
+            for (Object obj : checkRes.get())
+                Assert.assertArrayEquals((Object[]) obj, res.get(pos++));
         }
     }
 
@@ -2586,10 +2630,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             assertNotNull(phys);
-            assertEquals("" +
-                    "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner])\n" +
-                    "  IgniteProject(DEPTNO=[$0])\n" +
-                    "    IgniteTableScan(table=[[PUBLIC, DEPT]])\n" +
+            assertEquals("IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner])\n" +
+                    "  IgniteTableScan(table=[[PUBLIC, DEPT]], requiredColunms=[{0}])\n" +
                     "  IgniteProject(DEPTNO=[$2])\n" +
                     "    IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor1.DEPTNO, $t2)):INTEGER, 2)])\n",
                 RelOptUtil.toString(phys));
@@ -2606,18 +2648,26 @@ public class PlannerTest extends GridCommonAbstractTest {
     private static <T> List<T> select(List<T> src, int... idxs) {
         ArrayList<T> res = new ArrayList<>(idxs.length);
 
-        for (int idx : idxs) {
+        for (int idx : idxs)
             res.add(src.get(idx));
-        }
 
         return res;
     }
 
     /** */
-    private <Row> Row row(ExecutionContext<Row> ctx, Object... fields) {
+    private <Row> Row row(ExecutionContext<Row> ctx, ImmutableBitSet requiredColunms, Object... fields) {
         Type[] types = new Type[fields.length];
         for (int i = 0; i < fields.length; i++)
             types[i] = fields[i] == null ? Object.class : fields[i].getClass();
+
+        if (requiredColunms == null) {
+            for (int i = 0; i < fields.length; i++)
+                types[i] = fields[i] == null ? Object.class : fields[i].getClass();
+        }
+        else {
+            for (int i = 0, j = requiredColunms.nextSetBit(0); j != -1; j = requiredColunms.nextSetBit(j + 1), i++)
+                types[i] = fields[i] == null ? Object.class : fields[i].getClass();
+        }
 
         return ctx.rowHandler().factory(types).create(fields);
     }
@@ -2643,7 +2693,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .replaceIf(RewindabilityTraitDef.INSTANCE, () -> RewindabilityTrait.REWINDABLE)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-            return new IgniteTableScan(cluster, traitSet, relOptTbl, null);
+            return new IgniteTableScan(cluster, traitSet, relOptTbl);
         }
 
         /** {@inheritDoc} */
@@ -2651,12 +2701,21 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-            return new IgniteIndexScan(cluster, traitSet, relOptTbl, idxName, null);
+            return new IgniteIndexScan(cluster, traitSet, relOptTbl, idxName);
         }
 
         /** {@inheritDoc} */
-        @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-            return protoType.apply(typeFactory);
+        @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet) {
+            RelDataType rowType = protoType.apply(typeFactory);
+
+            if (bitSet != null) {
+                RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(typeFactory);
+                for (int i = bitSet.nextSetBit(0); i != -1; i = bitSet.nextSetBit(i + 1))
+                    b.add(rowType.getFieldList().get(i));
+                rowType = b.build();
+            }
+
+            return rowType;
         }
 
         /** {@inheritDoc} */
@@ -2695,7 +2754,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> root, Predicate<Row> filter) {
+        @Override public <Row> Iterable<Row> scan(
+            ExecutionContext<Row> execCtx,
+            Predicate<Row> filter,
+            Function<Row, Row> transformer,
+            ImmutableBitSet bitSet
+        ) {
             throw new AssertionError();
         }
 
@@ -2732,7 +2796,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Map<String, IgniteIndex> indexes() {
-            return indexes;
+            return Collections.unmodifiableMap(indexes);
         }
 
         /** {@inheritDoc} */

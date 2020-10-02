@@ -246,7 +246,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
     /**
      *
      */
-    static class Product {
+    public static class Product {
         /** */
         long id;
 

@@ -45,8 +45,8 @@ public class ExposeIndexRule extends RelOptRule {
 
     /** */
     private static boolean preMatch(IgniteTableScan scan) {
-        return scan.getTable().unwrap(IgniteTable.class).indexes().size() > 1     // has indexes to expose
-            && scan.condition() == null;                                          // was not modified by PushFilterIntoScanRule
+        return scan.simple() // was not modified by ProjectScanMergeRule or FilterScanMergeRule
+            && scan.getTable().unwrap(IgniteTable.class).indexes().size() > 1; // has indexes to expose
     }
 
     /** {@inheritDoc} */
@@ -63,7 +63,7 @@ public class ExposeIndexRule extends RelOptRule {
 
         assert indexes.size() > 1;
 
-        Map<RelNode, RelNode> equivMap = new HashMap<>();
+        Map<RelNode, RelNode> equivMap = new HashMap<>(indexes.size() - 1);
         for (int i = 1; i < indexes.size(); i++)
             equivMap.put(indexes.get(i), scan);
 

@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.QueryEngine;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
+import org.hamcrest.core.SubstringMatcher;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -49,6 +51,59 @@ public abstract class QueryChecker {
      */
     public static Matcher<String> containsScan(String schema, String tblName) {
         return containsSubPlan("IgniteTableScan(table=[[" + schema + ", " + tblName + "]]");
+    }
+
+    /**
+     * Ignite table scan with projects matcher.
+     *
+     * @param schema  Schema name.
+     * @param tblName Table name.
+     * @return Matcher.
+     */
+    public static Matcher<String> containsAnyProject(String schema, String tblName) {
+        return containsSubPlan("IgniteTableScan(table=[[" + schema + ", " + tblName + "]], " + "requiredColunms=");
+    }
+
+    /**
+     * Ignite table scan with projects unmatcher.
+     *
+     * @param schema  Schema name.
+     * @param tblName Table name.
+     * @return Matcher.
+     */
+    public static Matcher<String> notContainsProject(String schema, String tblName) {
+        return CoreMatchers.not(containsSubPlan("IgniteTableScan(table=[[" + schema + ", " +
+            tblName + "]], " + "requiredColunms="));
+    }
+
+    /**
+     * Ignite table scan with projects unmatcher.
+     *
+     * @param schema  Schema name.
+     * @param tblName Table name.
+     * @return Matcher.
+     */
+    public static Matcher<String> containsProject(String schema, String tblName, int... requiredColunms) {
+        return matches(".*IgniteTableScan\\(table=\\[\\[" + schema + ", " +
+            tblName + "\\]\\], " + "requiredColunms=\\[\\{" +
+            Arrays.toString(requiredColunms)
+                .replaceAll("\\[", "")
+                .replaceAll("]", "") + "\\}\\]\\).*");
+    }
+
+    /**
+     * Ignite table scan with projects unmatcher.
+     *
+     * @param schema  Schema name.
+     * @param tblName Table name.
+     * @return Matcher.
+     */
+    public static Matcher<String> containsOneProject(String schema, String tblName, int... requiredColunms) {
+        return matchesOnce(".*IgniteTableScan\\(table=\\[\\[" + schema + ", " +
+            tblName + "\\]\\], " + "requiredColunms=\\[\\{" +
+            Arrays.toString(requiredColunms)
+                .replaceAll("\\[", "")
+                .replaceAll("]", "") + "\\}\\]\\).*");
     }
 
     /**
@@ -73,6 +128,51 @@ public abstract class QueryChecker {
         return CoreMatchers.containsString(subPlan);
     }
 
+    /** */
+    public static Matcher<String> matches(final String substring) {
+        return new SubstringMatcher(substring) {
+            /** {@inheritDoc} */
+            @Override protected boolean evalSubstringOf(String sIn) {
+                sIn = sIn.replaceAll("\n", "");
+
+                return sIn.matches(substring);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected String relationship() {
+                return null;
+            }
+        };
+    }
+
+    /** */
+    public static Matcher<String> matchesOnce(final String substring) {
+        return new SubstringMatcher(substring) {
+            /** {@inheritDoc} */
+            @Override protected boolean evalSubstringOf(String sIn) {
+                sIn = sIn.replaceAll("\n", "");
+
+                return containsOnce(sIn, substring);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected String relationship() {
+                return null;
+            }
+        };
+    }
+
+    /** Check only single matching. */
+    public static boolean containsOnce(final String s, final CharSequence substring) {
+        Pattern pattern = Pattern.compile(substring.toString());
+        java.util.regex.Matcher matcher = pattern.matcher(s);
+
+        if (matcher.find())
+            return !matcher.find();
+
+        return false;
+    }
+
     /**
      * Ignite any index can matcher.
      *
@@ -93,7 +193,7 @@ public abstract class QueryChecker {
     private final ArrayList<Matcher<String>> planMatchers = new ArrayList<>();
 
     /** */
-    private List<List<?>> expectedResult = null;
+    private List<List<?>> expectedResult;
 
     /** */
     private boolean ordered;
@@ -168,9 +268,8 @@ public abstract class QueryChecker {
                 assertThat(actualPlan, matcher);
         }
 
-        if (exactPlan != null) {
+        if (exactPlan != null)
             assertEquals(exactPlan, actualPlan);
-        }
 
         // Check result.
         List<FieldsQueryCursor<List<?>>> cursors =

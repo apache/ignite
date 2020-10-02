@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
@@ -30,7 +32,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
 /**
  * Relational operator that returns the contents of a table.
  */
-public class IgniteTableScan extends FilterableTableScan implements IgniteRel {
+public class IgniteTableScan extends ProjectableFilterableTableScan implements IgniteRel {
     /**
      * Constructor used for deserialization.
      *
@@ -49,9 +51,29 @@ public class IgniteTableScan extends FilterableTableScan implements IgniteRel {
     public IgniteTableScan(
         RelOptCluster cluster,
         RelTraitSet traits,
+        RelOptTable tbl
+    ) {
+        super(cluster, traits, ImmutableList.of(), tbl);
+    }
+
+    /**
+     * Creates a TableScan.
+     * @param cluster Cluster that this relational expression belongs to
+     * @param traits Traits of this relational expression
+     * @param tbl Table definition.
+     * @param proj Projects.
+     * @param cond Filters.
+     * @param requiredColunms Participating colunms.
+     */
+    public IgniteTableScan(
+        RelOptCluster cluster,
+        RelTraitSet traits,
         RelOptTable tbl,
-        @Nullable RexNode cond) {
-        super(cluster, traits, ImmutableList.of(), tbl, cond);
+        @Nullable List<RexNode> proj,
+        @Nullable RexNode cond,
+        @Nullable ImmutableBitSet requiredColunms
+    ) {
+        super(cluster, traits, ImmutableList.of(), tbl, proj, cond, requiredColunms);
     }
 
     /** {@inheritDoc} */

@@ -21,11 +21,13 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteBasicSecondary
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
 import org.apache.ignite.internal.processors.query.calcite.PlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.QueryCheckerTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
+import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -36,13 +38,16 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     PlannerTest.class,
     OrToUnionRuleTest.class,
+    ProjectScanMergeRuleTest.class,
     ExecutionTest.class,
     ClosableIteratorsHolderTest.class,
     ContinuousExecutionTest.class,
     CalciteQueryProcessorTest.class,
     JdbcQueryTest.class,
     CalciteBasicSecondaryIndexIntegrationTest.class,
-    CancelTest.class
+    CancelTest.class,
+    QueryCheckerTest.class,
+    ProjectScanMergeRuleTest.class
 })
 public class IgniteCalciteTestSuite {
 }

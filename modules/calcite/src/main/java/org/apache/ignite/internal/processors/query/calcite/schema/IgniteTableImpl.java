@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
@@ -50,10 +52,12 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -82,8 +86,8 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-        return desc.apply(typeFactory);
+    @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet usedColumns) {
+        return desc.rowType((IgniteTypeFactory)typeFactory, usedColumns);
     }
 
     /** {@inheritDoc} */
@@ -103,7 +107,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
             .replace(distribution())
             .replace(RewindabilityTrait.REWINDABLE);
 
-        return new IgniteTableScan(cluster, traitSet, relOptTbl, null);
+        return new IgniteTableScan(cluster, traitSet, relOptTbl);
     }
 
     /** {@inheritDoc} */
@@ -113,12 +117,17 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
             .replace(RewindabilityTrait.REWINDABLE)
             .replace(getIndex(idxName).collation());
 
-        return new IgniteIndexScan(cluster, traitSet, relOptTbl, idxName, null);
+        return new IgniteIndexScan(cluster, traitSet, relOptTbl, idxName);
     }
 
     /** {@inheritDoc} */
-    @Override public <Row> Iterable<Row> scan(ExecutionContext<Row> execCtx, Predicate<Row> filter) {
-        return new TableScan<>(execCtx, desc, filter);
+    @Override public <Row> Iterable<Row> scan(
+        ExecutionContext<Row> execCtx,
+        Predicate<Row> filter,
+        Function<Row, Row> rowTransformer,
+        @Nullable ImmutableBitSet usedColumns
+    ) {
+        return new TableScan<>(execCtx, desc, filter, rowTransformer, usedColumns);
     }
 
     /** {@inheritDoc} */
@@ -141,16 +150,14 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
         }
     }
 
-
     /** {@inheritDoc} */
     @Override public IgniteDistribution distribution() {
         return desc.distribution();
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Override public Map<String, IgniteIndex> indexes() {
-        return indexes;
+        return Collections.unmodifiableMap(indexes);
     }
 
     /** {@inheritDoc} */

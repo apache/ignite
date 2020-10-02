@@ -49,6 +49,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -67,7 +68,7 @@ import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.
 /**
  * Relational operator that returns the contents of a table.
  */
-public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
+public class IgniteIndexScan extends ProjectableFilterableTableScan implements IgniteRel {
     /** Supported index operations. */
     public static final Set<SqlKind> TREE_INDEX_COMPARISON =
         EnumSet.of(
@@ -109,16 +110,36 @@ public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
      * @param idxName Index name.
-     * @param cond Filters for scan.
+     */
+    public IgniteIndexScan(
+        RelOptCluster cluster,
+        RelTraitSet traits,
+        RelOptTable tbl,
+        String idxName) {
+        this(cluster, traits, tbl, idxName, null, null, null);
+    }
+
+    /**
+     * Creates a TableScan.
+     * @param cluster Cluster that this relational expression belongs to
+     * @param traits Traits of this relational expression
+     * @param tbl Table definition.
+     * @param idxName Index name.
+     * @param proj Projects.
+     * @param cond Filters.
+     * @param requiredColunms Participating colunms.
      */
     public IgniteIndexScan(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
         String idxName,
-        @Nullable RexNode cond
+        @Nullable List<RexNode> proj,
+        @Nullable RexNode cond,
+        @Nullable ImmutableBitSet requiredColunms
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, cond);
+        super(cluster, traits, ImmutableList.of(), tbl, proj, cond,
+            requiredColunms);
 
         this.idxName = idxName;
         RelCollation coll = TraitUtils.collation(traits);
@@ -135,7 +156,7 @@ public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
         if (!boundsArePossible())
             return;
 
-        assert cond != null;
+        assert condition() != null;
 
         Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields();
 
@@ -222,7 +243,7 @@ public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
 
     /** */
     private Map<Integer, List<RexCall>> mapPredicatesToFields() {
-        List<RexNode> predicatesConjunction = RelOptUtil.conjunctions(cond);
+        List<RexNode> predicatesConjunction = RelOptUtil.conjunctions(condition());
 
         Map<Integer, List<RexCall>> fieldsToPredicates = new HashMap<>(predicatesConjunction.size());
 
@@ -252,10 +273,10 @@ public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
 
     /** */
     private boolean boundsArePossible() {
-        if (cond == null)
+        if (condition() == null)
             return false;
 
-        RexCall dnf = (RexCall)RexUtil.toDnf(getCluster().getRexBuilder(), cond);
+        RexCall dnf = (RexCall)RexUtil.toDnf(getCluster().getRexBuilder(), condition());
 
         if (dnf.isA(OR) && dnf.getOperands().size() > 1) // OR conditions are not supported yet.
             return false;
@@ -354,9 +375,11 @@ public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override protected RelWriter explainTerms0(RelWriter pw) {
-        return pw.item("index", idxName )
-            .item("collation", collation)
-            .itemIf("filters", cond, cond != null)
+        pw = pw
+            .item("index", idxName)
+            .item("collation", collation);
+        pw = super.explainTerms0(pw);
+        return pw
             .itemIf("lower", lowerIdxCond, !F.isEmpty(lowerIdxCond))
             .itemIf("upper", upperIdxCond, !F.isEmpty(upperIdxCond));
     }
@@ -377,6 +400,9 @@ public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double tableRows = table.getRowCount() * idxSelectivity;
 
+        if (projects() != null)
+            tableRows += tableRows * projects().size();
+
         tableRows = RelMdUtil.addEpsilon(tableRows);
 
         return planner.getCostFactory().makeCost(tableRows, 0, 0);
@@ -386,8 +412,8 @@ public class IgniteIndexScan extends FilterableTableScan implements IgniteRel {
     @Override public double estimateRowCount(RelMetadataQuery mq) {
         double rows = table.getRowCount() * idxSelectivity;
 
-        if (cond != null)
-            rows *= mq.getSelectivity(this, cond);
+        if (condition() != null)
+            rows *= mq.getSelectivity(this, condition());
 
         return rows;
     }

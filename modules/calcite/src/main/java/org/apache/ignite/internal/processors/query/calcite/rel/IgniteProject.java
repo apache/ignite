@@ -21,10 +21,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
@@ -32,6 +33,8 @@ import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.metadata.RelMdUtil;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
@@ -109,6 +112,8 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         ImmutableIntList keys = distribution.getKeys();
         List<Integer> srcKeys = new ArrayList<>(keys.size());
 
+        distribution = distribution.apply(mapping);
+
         for (int key : keys) {
             int src = mapping.getSourceOpt(key);
 
@@ -170,47 +175,28 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // All distribution types except hash distribution are propagated as is.
-        // In case of hash distribution we need to project distribution keys.
-        // In case one of distribution keys is erased by projection result distribution
-        // becomes random since we cannot determine where data is without erased key.
-
         RelTraitSet in = inputTraits.get(0);
-        IgniteDistribution distribution = TraitUtils.distribution(in);
 
-        if (distribution.getType() == HASH_DISTRIBUTED) {
-            Mappings.TargetMapping mapping = Project.getPartialMapping(
-                input.getRowType().getFieldCount(), getProjects());
-
-            return ImmutableList.of(Pair.of(nodeTraits.replace(distribution.apply(mapping)), ImmutableList.of(in)));
-        }
+        IgniteDistribution distribution = TraitUtils.projectDistribution(
+            TraitUtils.distribution(in), getProjects(), getInput().getRowType());
 
         return ImmutableList.of(Pair.of(nodeTraits.replace(distribution), ImmutableList.of(in)));
     }
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // The code below projects input collation.
-
         RelTraitSet in = inputTraits.get(0);
-        RelCollation collation = TraitUtils.collation(in);
 
-        if (collation.getFieldCollations().isEmpty())
-            return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY), ImmutableList.of(in)));
+        RelCollation collation = TraitUtils.projectCollation(
+            TraitUtils.collation(in), getProjects(), getInput().getRowType());
 
-        Map<Integer, Integer> targets = new HashMap<>();
-        for (Ord<RexNode> project : Ord.zip(getProjects())) {
-            if (project.e instanceof RexInputRef)
-                targets.putIfAbsent(((RexInputRef)project.e).getIndex(), project.i);
-        }
+        return ImmutableList.of(Pair.of(nodeTraits.replace(collation), ImmutableList.of(in)));
+    }
 
-        List<RelFieldCollation> outFieldCollations = new ArrayList<>();
-        for (RelFieldCollation inFieldCollation : collation.getFieldCollations()) {
-            Integer newIndex = targets.get(inFieldCollation.getFieldIndex());
-            if (newIndex != null)
-                outFieldCollations.add(inFieldCollation.withFieldIndex(newIndex));
-        }
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.of(outFieldCollations)), ImmutableList.of(in)));
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        double rowCount = mq.getRowCount(getInput()) * exps.size();
+        rowCount = RelMdUtil.addEpsilon(rowCount); // to differ from rel nodes with integrated projection
+        return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }
 }

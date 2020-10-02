@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.TableDescripto
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -216,16 +217,24 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteIndexScan rel) {
         RexNode condition = rel.condition();
-        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rel.getRowType());
+        List<RexNode> projects = rel.projects();
 
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
+        ImmutableBitSet requiredColunms = rel.requiredColunms();
         List<RexNode> lowerCond = rel.lowerIndexCondition();
-        Supplier<Row> lower = lowerCond == null ? null : expressionFactory.rowSource(lowerCond);
-
         List<RexNode> upperCond = rel.upperIndexCondition();
-        Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
 
-        IgniteIndex idx = rel.getTable().unwrap(IgniteTable.class).getIndex(rel.indexName());
-        Iterable<Row> rowsIter = idx.scan(ctx, filters, lower, upper);
+        RelDataType cols = tbl.getRowType(typeFactory, requiredColunms);
+
+        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, cols);
+        Supplier<Row> lower = lowerCond == null ? null : expressionFactory.rowSource(lowerCond);
+        Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
+        Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, cols);
+
+        IgniteIndex idx = tbl.getIndex(rel.indexName());
+        Iterable<Row> rowsIter = idx.scan(ctx, filters, lower, upper, prj, requiredColunms);
 
         return new ScanNode<>(ctx, rowsIter);
     }
@@ -233,10 +242,18 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableScan rel) {
         RexNode condition = rel.condition();
-        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rel.getRowType());
+        List<RexNode> projects = rel.projects();
+        ImmutableBitSet requiredColunms = rel.requiredColunms();
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
-        Iterable<Row> rowsIter = tbl.scan(ctx, filters);
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+
+        RelDataType cols = tbl.getRowType(typeFactory, requiredColunms);
+
+        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, cols);
+        Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, cols);
+
+        Iterable<Row> rowsIter = tbl.scan(ctx, filters, prj, requiredColunms);
 
         return new ScanNode<>(ctx, rowsIter);
     }
