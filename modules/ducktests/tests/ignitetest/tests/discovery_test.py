@@ -84,7 +84,7 @@ class DiscoveryTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(nodes_to_kill=[1, 2],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_nodes_fail_notseq_tcp(self, ignite_version, nodes_to_kill, load_type):
+    def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type):
         """
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
         """
@@ -96,7 +96,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_2_nodes_fail_seq_tcp(self, ignite_version, load_type):
+    def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
         """
@@ -110,7 +110,7 @@ class DiscoveryTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(nodes_to_kill=[1, 2],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_nodes_fail_notseq_zk(self, ignite_version, nodes_to_kill, load_type):
+    def test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type):
         """
         Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
         """
@@ -123,7 +123,7 @@ class DiscoveryTest(IgniteTest):
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_2_nodes_fail_seq_zk(self, ignite_version, load_type):
+    def test_2_nodes_fail_sequential_zk(self, ignite_version, load_type):
         """
         Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
         """
@@ -252,7 +252,7 @@ class DiscoveryTest(IgniteTest):
                         "Wrong node failed (segmented) on '%s'. Check the logs." % node.name)
 
     def setup(self):
-        IgniteTest.setup(self)
+        super().setup()
 
         # Store current network filter settings.
         for node in self.test_context.cluster.nodes:
@@ -292,15 +292,17 @@ class DiscoveryTest(IgniteTest):
 
             raise RuntimeError("Unable to restore node states. See the log above.")
 
-        IgniteTest.teardown(self)
+        super().teardown()
 
 
 def start_zookeeper(test_context, num_nodes):
     """
     Start zookeeper cluster.
     """
-    zk_quorum = ZookeeperService(test_context, num_nodes, settings=ZookeeperSettings(
-        min_session_timeout=DiscoveryTest.FAILURE_DETECTION_TIMEOUT))
+    zk_settings = ZookeeperSettings(min_session_timeout=DiscoveryTest.FAILURE_DETECTION_TIMEOUT,
+                                    tick_time=DiscoveryTest.FAILURE_DETECTION_TIMEOUT // 2)
+
+    zk_quorum = ZookeeperService(test_context, num_nodes, settings=zk_settings)
     zk_quorum.start()
     return zk_quorum
 

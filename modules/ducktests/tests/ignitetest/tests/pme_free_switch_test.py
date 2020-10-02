@@ -81,7 +81,8 @@ class PmeFreeSwitchTest(IgniteTest):
 
         ignites.stop_node(ignites.nodes[self.NUM_NODES - 1])
 
-        long_tx_streamer.await_event("Node left topology", 60, from_the_beginning=True)
+        long_tx_streamer.await_event("Node left topology", 120 if ignite_version < V_2_8_0 else 60,
+                                     from_the_beginning=True)
 
         time.sleep(30)  # keeping txs alive for 30 seconds.
 

@@ -35,7 +35,7 @@ class IgniteTest(Test):
         for node in self.test_context.cluster.nodes:
             node.account.ssh_client.exec_command("rm -drf " + self.TEMP_PATH_ROOT)
 
-        Test.teardown(self)
+        super().teardown()
 
     @staticmethod
     def monotonic():
