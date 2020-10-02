@@ -89,19 +89,19 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.7.0</version>
-                <configuration>
-                    <encoding>UTF-8</encoding>
-                    <fork>true</fork>
-                    <debug>false</debug>
-                    <debuglevel>lines,vars,source</debuglevel>
-                    <meminitial>256</meminitial>
-                    <maxmem>512</maxmem>
-                </configuration>
-            </plugin>
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-compiler-plugin</artifactId>-->
+<!--                <version>3.7.0</version>-->
+<!--                <configuration>-->
+<!--                    <encoding>UTF-8</encoding>-->
+<!--                    <fork>true</fork>-->
+<!--                    <debug>false</debug>-->
+<!--                    <debuglevel>lines,vars,source</debuglevel>-->
+<!--                    <meminitial>256</meminitial>-->
+<!--                    <maxmem>512</maxmem>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

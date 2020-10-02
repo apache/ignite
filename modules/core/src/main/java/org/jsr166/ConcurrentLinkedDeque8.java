@@ -15,10 +15,8 @@
 
 package org.jsr166;
 
-import java.lang.reflect.Field;
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,7 +25,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.atomic.LongAdder;
-import sun.misc.Unsafe;
 
 
 /**
@@ -292,7 +289,7 @@ public class ConcurrentLinkedDeque8<E>
          * only be seen after publication via casNext or casPrev.
          */
         Node(E item) {
-            UNSAFE.putObject(this, itemOffset, item);
+            ITEM.set(this, item);
         }
 
         /**
@@ -303,46 +300,25 @@ public class ConcurrentLinkedDeque8<E>
         }
 
         boolean casItem(E cmp, E val) {
-            return UNSAFE.compareAndSwapObject(this, itemOffset, cmp, val);
+            return ITEM.compareAndSet(this, cmp, val);
         }
 
         void lazySetNext(Node<E> val) {
-            UNSAFE.putOrderedObject(this, nextOffset, val);
+            NEXT.set(this, val);
         }
 
         boolean casNext(Node<E> cmp, Node<E> val) {
-            return UNSAFE.compareAndSwapObject(this, nextOffset, cmp, val);
+            return NEXT.compareAndSet(this, cmp, val);
         }
 
         void lazySetPrev(Node<E> val) {
-            UNSAFE.putOrderedObject(this, prevOffset, val);
+            PREV.set(this, val);
         }
 
         boolean casPrev(Node<E> cmp, Node<E> val) {
-            return UNSAFE.compareAndSwapObject(this, prevOffset, cmp, val);
+            return PREV.compareAndSet(this, cmp, val);
         }
 
-        // Unsafe mechanics
-
-        private static final sun.misc.Unsafe UNSAFE;
-        private static final long prevOffset;
-        private static final long itemOffset;
-        private static final long nextOffset;
-
-        static {
-            try {
-                UNSAFE = unsafe();
-                Class<?> k = Node.class;
-                prevOffset = UNSAFE.objectFieldOffset
-                    (k.getDeclaredField("prev"));
-                itemOffset = UNSAFE.objectFieldOffset
-                    (k.getDeclaredField("item"));
-                nextOffset = UNSAFE.objectFieldOffset
-                    (k.getDeclaredField("next"));
-            } catch (Exception e) {
-                throw new Error(e);
-            }
-        }
     }
 
     /**
@@ -1672,59 +1648,36 @@ public class ConcurrentLinkedDeque8<E>
         initHeadTail(h, t);
     }
 
-    private boolean casHead(Node<E> cmp, Node<E> val) {
-        return UNSAFE.compareAndSwapObject(this, headOffset, cmp, val);
-    }
-
-    private boolean casTail(Node<E> cmp, Node<E> val) {
-        return UNSAFE.compareAndSwapObject(this, tailOffset, cmp, val);
-    }
-
-    // Unsafe mechanics
-
-    private static final sun.misc.Unsafe UNSAFE;
-    private static final long headOffset;
-    private static final long tailOffset;
+    // VarHandle mechanics
+    private static final VarHandle HEAD;
+    private static final VarHandle TAIL;
+    private static final VarHandle PREV;
+    private static final VarHandle NEXT;
+    private static final VarHandle ITEM;
     static {
         PREV_TERMINATOR = new Node<Object>();
         PREV_TERMINATOR.next = PREV_TERMINATOR;
         NEXT_TERMINATOR = new Node<Object>();
         NEXT_TERMINATOR.prev = NEXT_TERMINATOR;
         try {
-            UNSAFE = unsafe();
-            Class<?> k = ConcurrentLinkedDeque8.class;
-            headOffset = UNSAFE.objectFieldOffset
-                (k.getDeclaredField("head"));
-            tailOffset = UNSAFE.objectFieldOffset
-                (k.getDeclaredField("tail"));
-        } catch (Exception e) {
-            throw new Error(e);
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            HEAD = l.findVarHandle(ConcurrentLinkedDeque8.class, "head",
+                    Node.class);
+            TAIL = l.findVarHandle(ConcurrentLinkedDeque8.class, "tail",
+                    Node.class);
+            PREV = l.findVarHandle(Node.class, "prev", Node.class);
+            NEXT = l.findVarHandle(Node.class, "next", Node.class);
+            ITEM = l.findVarHandle(Node.class, "item", Object.class);
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
         }
     }
 
-    /**
-     * @return Instance of Unsafe class.
-     */
-    static Unsafe unsafe() {
-        try {
-            return Unsafe.getUnsafe();
-        }
-        catch (SecurityException ignored) {
-            try {
-                return AccessController.doPrivileged
-                    (new PrivilegedExceptionAction<Unsafe>() {
-                        @Override public Unsafe run() throws Exception {
-                            Field f = Unsafe.class.getDeclaredField("theUnsafe");
+    private boolean casHead(Node<E> cmp, Node<E> val) {
+        return HEAD.weakCompareAndSet(this, cmp, val);
+    }
 
-                            f.setAccessible(true);
-
-                            return (Unsafe) f.get(null);
-                        }
-                    });
-            }
-            catch (PrivilegedActionException e) {
-                throw new RuntimeException("Could not initialize intrinsics.", e.getCause());
-            }
-        }
+    private boolean casTail(Node<E> cmp, Node<E> val) {
+        return TAIL.weakCompareAndSet(this, cmp, val);
     }
 }
