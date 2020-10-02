@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
+import org.hamcrest.core.SubstringMatcher;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -52,7 +53,7 @@ public abstract class QueryChecker {
     }
 
     /**
-     * Ignite table scan matcher.
+     * Ignite table scan with projects matcher.
      *
      * @param schema  Schema name.
      * @param tblName Table name.
@@ -63,7 +64,7 @@ public abstract class QueryChecker {
     }
 
     /**
-     * Ignite table scan matcher.
+     * Ignite table scan with projects unmatcher.
      *
      * @param schema  Schema name.
      * @param tblName Table name.
@@ -72,6 +73,21 @@ public abstract class QueryChecker {
     public static Matcher<String> notContainsProject(String schema, String tblName) {
         return CoreMatchers.not(containsSubPlan("IgniteTableScan(table=[[" + schema + ", " +
             tblName + "]], " + "projects="));
+    }
+
+    /**
+     * Ignite table scan with projects unmatcher.
+     *
+     * @param schema  Schema name.
+     * @param tblName Table name.
+     * @return Matcher.
+     */
+    public static Matcher<String> containsProject(String schema, String tblName, int... requiredColunms) {
+        return matchesString(".*IgniteTableScan\\(table=\\[\\[" + schema + ", " +
+            tblName + "\\]\\], " + "projects=\\[.+\\], requiredColunms=\\[\\{" +
+            Arrays.toString(requiredColunms)
+                .replaceAll("\\[", "")
+                .replaceAll("]", "") + "\\}\\]\\).*");
     }
 
     /**
@@ -94,6 +110,23 @@ public abstract class QueryChecker {
      */
     public static Matcher<String> containsSubPlan(String subPlan) {
         return CoreMatchers.containsString(subPlan);
+    }
+
+    /** */
+    public static Matcher<String> matchesString(final String substring) {
+        return new SubstringMatcher(substring) {
+            /** {@inheritDoc} */
+            @Override protected boolean evalSubstringOf(String sIn) {
+                sIn = sIn.replaceAll("\n", "");
+
+                return sIn.matches(substring);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected String relationship() {
+                return null;
+            }
+        };
     }
 
     /**

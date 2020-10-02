@@ -23,7 +23,6 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import com.google.common.collect.ImmutableMap;
-import org.apache.calcite.test.CalciteAssert;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -530,22 +529,5 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         public Project(String name) {
             this.name = name;
         }
-    }
-
-    /** */
-    private CalciteAssert.ConnectionFactory newConnectionFactory() {
-        return new CalciteAssert.ConnectionFactory() {
-            @Override public Connection createConnection() throws SQLException {
-                final Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?useExperimentalQueryEngine=true");
-                conn.setSchema("PUBLIC");
-                return conn;
-            }
-        };
-    }
-
-    /** */
-    private CalciteAssert.AssertThat calciteAssert() {
-        return CalciteAssert.that()
-            .with(newConnectionFactory());
     }
 }

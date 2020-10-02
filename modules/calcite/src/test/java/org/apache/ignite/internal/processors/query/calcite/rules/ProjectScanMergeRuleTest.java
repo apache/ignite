@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsAnyProject;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsProject;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.notContainsProject;
 import static org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest.Product;
@@ -90,15 +91,25 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
      */
     @Test
     public void testProjects() {
-        checkQuery("SELECT name FROM products d;")
+        checkQuery("SELECT NAME FROM products d;")
             .matches(containsScan("PUBLIC", "PRODUCTS"))
             .matches(containsAnyProject("PUBLIC", "PRODUCTS"))
+            .matches(containsProject("PUBLIC", "PRODUCTS", 7))
             .returns("noname1")
             .returns("noname2")
             .returns("noname3")
             .check();
 
-        checkQuery("SELECT name FROM products d WHERE CAT_ID > 1;")
+        checkQuery("SELECT SUBCAT_ID, NAME FROM products d;")
+            .matches(containsScan("PUBLIC", "PRODUCTS"))
+            .matches(containsAnyProject("PUBLIC", "PRODUCTS"))
+            .matches(containsProject("PUBLIC", "PRODUCTS", 6, 7))
+            .returns(11, "noname1")
+            .returns(11, "noname2")
+            .returns(12, "noname3")
+            .check();
+
+        checkQuery("SELECT NAME FROM products d WHERE CAT_ID > 1;")
             .matches(containsScan("PUBLIC", "PRODUCTS"))
             .matches(notContainsProject("PUBLIC", "PRODUCTS"))
             .returns("noname2")

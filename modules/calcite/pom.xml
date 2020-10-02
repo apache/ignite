@@ -175,14 +175,6 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.apache.calcite</groupId>
-            <artifactId>calcite-core</artifactId>
-            <version>${calcite.version}</version>
-            <classifier>tests</classifier>
-            <type>test-jar</type>
-        </dependency>
     </dependencies>
 
     <build>
