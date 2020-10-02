@@ -185,11 +185,12 @@ Refer to link:distributed-computing/cluster-groups[Cluster groups] to get more i
 
 == Executing compute tasks
 
-The Java thin client has basic functionality to execute compute tasks. By default this feature is disabled on server-side. To enable this functionality server-side configuration property `maxActiveComputeTasksPerConnection` should be set explicitly to value more than 0:
+Thin client has basic functionality to execute compute tasks. This feature is disabled by default on the server side.
+Set `ThinClientConfiguration.MaxActiveComputeTasksPerConnection` to a non-zero value to enable:
 
 [tabs]
 --
-tab:XML[]
+tab:Spring XML[]
 [source,xml]
 ----
 <bean class="org.apache.ignite.configuration.IgniteConfiguration" id="ignite.cfg">
