@@ -19,11 +19,13 @@ package org.apache.ignite.internal.processors.odbc;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * This class implements stream parser based on {@link ClientListenerNioServerBuffer}.
@@ -36,45 +38,57 @@ import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
  *     +--+--+--+--+--+--+...+--+--+--+--+--+--+--+...+--+
  * </pre>
  */
-public class ClientListenerBufferedParser implements GridNioParser {
-    /** Buffer metadata key. */
-    private static final int BUF_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+public class ClientListenerNioMessageParser implements GridNioParser {
+    /** Message metadata key. */
+    static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** Reader metadata key. */
+    static final int READER_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** */
+    private final IgniteLogger log;
+
+    /** */
+    public ClientListenerNioMessageParser(IgniteLogger log) {
+        this.log = log;
+    }
 
     /** {@inheritDoc} */
-    @Override public byte[] decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
-        ClientListenerNioServerBuffer nioBuf = ses.meta(BUF_META_KEY);
+    @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
+        Message msg = ses.removeMeta(MSG_META_KEY);
 
-        // Decode for a given session is called per one thread, so there should not be any concurrency issues.
-        // However, we make some additional checks.
-        if (nioBuf == null) {
-            nioBuf = new ClientListenerNioServerBuffer();
+        try {
+            if (msg == null)
+                msg = new ClientMessage();
 
-            ClientListenerNioServerBuffer old = ses.addMeta(BUF_META_KEY, nioBuf);
+            boolean finished = false;
 
-            assert old == null;
+            if (buf.hasRemaining())
+                finished = msg.readFrom(buf, null);
+
+            if (finished)
+                return msg;
+            else {
+                ses.addMeta(MSG_META_KEY, msg);
+
+                return null;
+            }
         }
+        catch (Throwable e) {
+            U.error(log, "Failed to read message [msg=" + msg +
+                    ", buf=" + buf + ", ses=" + ses + "]", e);
 
-        return nioBuf.read(buf);
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
-        byte[] msg0 = (byte[])msg;
-
-        ByteBuffer res = ByteBuffer.allocate(msg0.length + 4);
-
-        res.order(ByteOrder.LITTLE_ENDIAN);
-
-        res.putInt(msg0.length);
-        res.put(msg0);
-
-        res.flip();
-
-        return res;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return ClientListenerBufferedParser.class.getSimpleName();
+        return ClientListenerNioMessageParser.class.getSimpleName();
     }
 }
