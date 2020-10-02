@@ -977,7 +977,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public boolean reserve(WALPointer start) {
-        assert start instanceof WALPointer : "Invalid start pointer: " + start;
+        assert start != null : "Invalid start pointer: " + start;
 
         if (mode == WALMode.NONE)
             return false;
@@ -995,7 +995,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void release(WALPointer start) {
-        assert start instanceof WALPointer : "Invalid start pointer: " + start;
+        assert start != null : "Invalid start pointer: " + start;
 
         if (mode == WALMode.NONE)
             return;

@@ -133,8 +133,11 @@ public class WalStat {
             registerTxRecord((TxRecord)record);
 
         incrementStat(type.toString(), record, recTypeSizes);
-        incrementStat(Long.toString(walPointer.index()), record, segmentsIndexes);
-        incrementStat(workDir ? "work" : "archive", record, segmentsFolder);
+
+        if (walPointer != null) {
+            incrementStat(Long.toString(walPointer.index()), record, segmentsIndexes);
+            incrementStat(workDir ? "work" : "archive", record, segmentsFolder);
+        }
     }
 
     /**
