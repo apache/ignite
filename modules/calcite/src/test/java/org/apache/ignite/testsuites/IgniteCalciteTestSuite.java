@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousEx
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
+import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -36,6 +37,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     PlannerTest.class,
     OrToUnionRuleTest.class,
+    ProjectScanMergeRuleTest.class,
     ExecutionTest.class,
     ClosableIteratorsHolderTest.class,
     ContinuousExecutionTest.class,

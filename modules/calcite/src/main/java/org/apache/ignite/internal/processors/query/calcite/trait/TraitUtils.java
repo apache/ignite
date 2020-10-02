@@ -50,7 +50,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchang
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.calcite.plan.RelOptUtil.permutation;
+import static org.apache.calcite.plan.RelOptUtil.permutationPushDownProject;
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.calcite.rel.core.Project.getPartialMapping;
@@ -341,7 +341,7 @@ public class TraitUtils {
         if (collation.getFieldCollations().isEmpty())
             return RelCollations.EMPTY;
 
-        Mappings.TargetMapping mapping = permutation(projects, inputRowType).inverse();
+        Mappings.TargetMapping mapping = permutationPushDownProject(projects, inputRowType, 0, 0);
 
         return collation.apply(mapping);
     }

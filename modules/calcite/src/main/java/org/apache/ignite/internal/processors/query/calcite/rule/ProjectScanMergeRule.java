@@ -41,6 +41,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.isIdentity;
+
 /** */
 public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableScan> extends RelOptRule {
     /** Instance. */
@@ -97,54 +99,6 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
         List<RexNode> projects = relProject.getProjects();
         RexNode cond = scan.condition();
 
-        ImmutableBitSet requiredColunms = null;
-
-        if (projects != null) {
-            final ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
-
-            RexShuttle shuttle = new RexShuttle() {
-                @Override public RexNode visitInputRef(RexInputRef ref) {
-                    builder.set(ref.getIndex());
-                    return ref;
-                }
-            };
-
-            shuttle.apply(projects);
-
-            if (cond != null)
-               new RexShuttle() {
-                    @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
-                        builder.set(inputRef.getIndex());
-                        return inputRef;
-                    }
-                }.apply(cond);
-
-            requiredColunms = builder.build();
-
-            IgniteTypeFactory typeFactory = Commons.context(scan).typeFactory();
-
-            IgniteTable tbl = scan.getTable().unwrap(IgniteTable.class);
-
-            Mappings.TargetMapping targetMapping = Mappings.create(MappingType.PARTIAL_FUNCTION,
-                tbl.getRowType(typeFactory).getFieldCount(), requiredColunms.cardinality());
-
-            for (Ord<Integer> ord : Ord.zip(requiredColunms))
-                targetMapping.set(ord.e, ord.i);
-
-            projects = new RexShuttle() {
-                @Override public RexNode visitInputRef(RexInputRef inputRef) {
-                    return new RexLocalRef(targetMapping.getTarget(inputRef.getIndex()), inputRef.getType());
-                }
-            }.apply(projects);
-
-            if (cond != null)
-                cond = new RexShuttle() {
-                    @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
-                        return new RexLocalRef(targetMapping.getTarget(inputRef.getIndex()), inputRef.getType());
-                    }
-                }.apply(cond);
-        }
-
         // projection changes input collation and distribution.
         RelTraitSet traits = scan.getTraitSet();
 
@@ -154,15 +108,47 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
         traits = traits.replace(TraitUtils.projectDistribution(
             TraitUtils.distribution(traits), projects, scan.getRowType()));
 
-        projects = new InputRefReplacer().apply(projects);
+        IgniteTable tbl = scan.getTable().unwrap(IgniteTable.class);
+        IgniteTypeFactory typeFactory = Commons.context(scan).typeFactory();
+        ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
+
+        new RexShuttle() {
+            @Override public RexNode visitInputRef(RexInputRef ref) {
+                builder.set(ref.getIndex());
+                return ref;
+            }
+        }.apply(projects);
+
+        new RexShuttle() {
+            @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
+                builder.set(inputRef.getIndex());
+                return inputRef;
+            }
+        }.apply(cond);
+
+        ImmutableBitSet requiredColunms = builder.build();
+
+        Mappings.TargetMapping targetMapping = Mappings.create(MappingType.PARTIAL_FUNCTION,
+            tbl.getRowType(typeFactory).getFieldCount(), requiredColunms.cardinality());
+
+        for (Ord<Integer> ord : Ord.zip(requiredColunms))
+            targetMapping.set(ord.e, ord.i);
+
+        projects = new RexShuttle() {
+            @Override public RexNode visitInputRef(RexInputRef ref) {
+                return new RexLocalRef(targetMapping.getTarget(ref.getIndex()), ref.getType());
+            }
+        }.apply(projects);
+
+        if (isIdentity(projects, tbl.getRowType(typeFactory, requiredColunms), true))
+            projects = null;
+
+        cond = new RexShuttle() {
+            @Override public RexNode visitLocalRef(RexLocalRef ref) {
+                return new RexLocalRef(targetMapping.getTarget(ref.getIndex()), ref.getType());
+            }
+        }.apply(cond);
 
         call.transformTo(createNode(cluster, scan, traits, projects, cond, requiredColunms));
-    }
-
-    /** Visitor for replacing input refs to local refs. We need it for proper plan serialization. */
-    private static class InputRefReplacer extends RexShuttle {
-        @Override public RexNode visitInputRef(RexInputRef inputRef) {
-            return new RexLocalRef(inputRef.getIndex(), inputRef.getType());
-        }
     }
 }

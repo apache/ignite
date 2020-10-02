@@ -60,7 +60,7 @@ public abstract class QueryChecker {
      * @return Matcher.
      */
     public static Matcher<String> containsAnyProject(String schema, String tblName) {
-        return containsSubPlan("IgniteTableScan(table=[[" + schema + ", " + tblName + "]], " + "projects=");
+        return containsSubPlan("IgniteTableScan(table=[[" + schema + ", " + tblName + "]], " + "requiredColunms=");
     }
 
     /**
@@ -72,7 +72,7 @@ public abstract class QueryChecker {
      */
     public static Matcher<String> notContainsProject(String schema, String tblName) {
         return CoreMatchers.not(containsSubPlan("IgniteTableScan(table=[[" + schema + ", " +
-            tblName + "]], " + "projects="));
+            tblName + "]], " + "requiredColunms="));
     }
 
     /**
@@ -84,7 +84,7 @@ public abstract class QueryChecker {
      */
     public static Matcher<String> containsProject(String schema, String tblName, int... requiredColunms) {
         return matchesString(".*IgniteTableScan\\(table=\\[\\[" + schema + ", " +
-            tblName + "\\]\\], " + "projects=\\[.+\\], requiredColunms=\\[\\{" +
+            tblName + "\\]\\], " + "requiredColunms=\\[\\{" +
             Arrays.toString(requiredColunms)
                 .replaceAll("\\[", "")
                 .replaceAll("]", "") + "\\}\\]\\).*");

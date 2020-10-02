@@ -2631,7 +2631,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             assertNotNull(phys);
             assertEquals("IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner])\n" +
-                    "  IgniteTableScan(table=[[PUBLIC, DEPT]], projects=[[$t0]], requiredColunms=[{0}])\n" +
+                    "  IgniteTableScan(table=[[PUBLIC, DEPT]], requiredColunms=[{0}])\n" +
                     "  IgniteProject(DEPTNO=[$2])\n" +
                     "    IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor1.DEPTNO, $t2)):INTEGER, 2)])\n",
                 RelOptUtil.toString(phys));

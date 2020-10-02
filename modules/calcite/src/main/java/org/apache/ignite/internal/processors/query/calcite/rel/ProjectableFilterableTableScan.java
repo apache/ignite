@@ -16,6 +16,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
 
@@ -120,11 +121,16 @@ public class ProjectableFilterableTableScan extends TableScan {
         return rows;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public RelDataType deriveRowType() {
         if (projects != null)
             return RexUtil.createStructType(Commons.context(this).typeFactory(), projects);
+        else
+            return table.unwrap(IgniteTable.class).getRowType(getCluster().getTypeFactory(), requiredColunms);
+    }
 
-        return table.getRowType();
+    /** */
+    public boolean simple() {
+        return condition == null && projects == null && requiredColunms == null;
     }
 }
