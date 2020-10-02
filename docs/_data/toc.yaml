@@ -518,7 +518,21 @@
       url: sql-reference/system-functions
     - title: Data Types
       url: sql-reference/data-types
-- title: Thread Pools
-  url: thread-pools
 - title: Resources Injection
   url: resources-injection
+- title: Performance and Troubleshooting
+  items:
+    - title: General Performance Tips
+      url: /perf-and-troubleshooting/general-perf-tips
+    - title: Memory and JVM Tuning
+      url: /perf-and-troubleshooting/memory-tuning
+    - title: Persistence Tuning
+      url: /perf-and-troubleshooting/persistence-tuning
+    - title: SQL Tuning
+      url: /perf-and-troubleshooting/sql-tuning
+    - title: Thread Pools Tuning
+      url: /perf-and-troubleshooting/thread-pools-tuning
+    - title: Troubleshooting and Debugging
+      url: /perf-and-troubleshooting/troubleshooting
+    - title: Handling Exceptions
+      url: /perf-and-troubleshooting/handling-exceptions
