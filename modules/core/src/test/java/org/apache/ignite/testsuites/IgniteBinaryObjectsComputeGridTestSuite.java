@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.GridComputationBinarylizableClosuresSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -26,8 +25,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    IgniteComputeGridTestSuite.class,
-    GridComputationBinarylizableClosuresSelfTest.class
+    IgniteComputeGridTestSuite.class
+    //GridComputationBinarylizableClosuresSelfTest.class
 })
 public class IgniteBinaryObjectsComputeGridTestSuite {
 }
