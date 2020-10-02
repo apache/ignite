@@ -8,6 +8,7 @@ using Apache.Ignite.Core.Cache.Configuration;
 using Apache.Ignite.Core.Cache.Query;
 using Apache.Ignite.Core.Client;
 using Apache.Ignite.Core.Client.Cache;
+using Apache.Ignite.Core.Client.Compute;
 using Apache.Ignite.Core.Configuration;
 using Apache.Ignite.Core.Log;
 
@@ -304,6 +305,31 @@ namespace dotnet_helloworld
             foreach (IClientClusterNode node in serversInDc1.GetNodes())
                 Console.WriteLine($"Node ID: {node.Id}");
             //end::client-cluster-groups[]
+        }
+
+        public static void Compute()
+        {
+            //tag::client-compute-setup[]
+            var igniteCfg = new IgniteConfiguration
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
+                {
+                    ThinClientConfiguration = new ThinClientConfiguration
+                    {
+                        MaxActiveComputeTasksPerConnection = 10
+                    }
+                }
+            };
+
+            IIgnite ignite = Ignition.Start(igniteCfg);
+            //end::client-compute-setup[]
+
+            var cfg = new IgniteClientConfiguration();
+            //tag::client-compute-task[]
+            IIgniteClient client = Ignition.StartClient(cfg);
+            IComputeClient compute = client.GetCompute();
+            int result = compute.ExecuteJavaTask<int>("org.foo.bar.AddOneTask", 1);
+            //end::client-compute-task[]
         }
     }
 }

@@ -206,7 +206,7 @@ tab:Spring XML[]
 </bean>
 ----
 tab:Java[]
-[source,java]
+[source,csharp]
 ----
 include::{sourceCodeFile}[tag=client-compute-setup,indent=0]
 ----
