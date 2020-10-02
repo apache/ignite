@@ -2458,6 +2458,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         U.warn(log, "Partitions have been scheduled for rebalancing due to outdated update counter "
                             + "[grp=" + grp.cacheOrGroupName()
+                            + ", readyTopVer=" + readyTopVer
                             + ", topVer=" + exchFut.initialVersion()
                             + ", nodeId=" + nodeId
                             + ", partsFull=" + S.compact(rebalancedParts)
@@ -3201,6 +3202,48 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean rent(int p) {
+        ctx.database().checkpointReadLock();
+
+        try {
+            lock.writeLock().lock();
+
+            try {
+                // Do not rent if PME in progress, will be rented later if applicable.
+                if (lastTopChangeVer.after(readyTopVer))
+                    return false;
+
+                GridDhtLocalPartition locPart = localPartition(p);
+
+                GridDhtPartitionState state0 = locPart.state();
+
+                if (locPart == null || state0 == RENTING || state0 == EVICTED || partitionLocalNode(p, readyTopVer))
+                    return false;
+
+                locPart.rent();
+
+                GridDhtPartitionState state = locPart.state();
+
+                if (state == RENTING && state != state0) {
+                    long updateSeq = this.updateSeq.incrementAndGet();
+
+                    updateLocal(p, state0, updateSeq, readyTopVer);
+
+                    ctx.exchange().scheduleResendPartitions();
+                }
+
+                return true;
+            }
+            finally {
+                lock.writeLock().unlock();
+            }
+        }
+        finally {
+            ctx.database().checkpointReadUnlock();
+        }
     }
 
     /**

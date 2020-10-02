@@ -9544,8 +9544,8 @@ public abstract class IgniteUtils {
                         "    Ignite nodes need in order to function normally.\n" +
                         "Don't delete it unless you're sure you know what you're doing.\n\n" +
                         "You can change the location of working directory with \n" +
-                        "    igniteConfiguration.setWorkingDirectory(location) or \n" +
-                        "    <property name=\"workingDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
+                        "    igniteConfiguration.setWorkDirectory(location) or \n" +
+                        "    <property name=\"workDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
                 }
             }
             catch (Exception e) {
