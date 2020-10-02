@@ -453,7 +453,7 @@ public class CheckpointMarkersStorage {
         @Nullable CheckpointRecord rec,
         CheckpointEntryType type
     ) {
-        assert  ptr != null;
+        assert ptr != null;
 
         entryBuf.rewind();
 
