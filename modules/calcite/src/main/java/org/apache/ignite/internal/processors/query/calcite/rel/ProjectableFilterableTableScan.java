@@ -120,7 +120,7 @@ public class ProjectableFilterableTableScan extends TableScan {
         return rows;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public RelDataType deriveRowType() {
         if (projects != null)
             return RexUtil.createStructType(Commons.context(this).typeFactory(), projects);

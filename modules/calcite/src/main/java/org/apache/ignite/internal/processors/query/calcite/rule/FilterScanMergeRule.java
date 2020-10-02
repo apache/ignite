@@ -101,7 +101,7 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
 
             RelDataType cols = tbl.getRowType(typeFactory, scan.requiredColunms());
 
-            Mappings.TargetMapping permutation = permutation(scan.projects(), cols);
+            Mappings.TargetMapping permutation = permutation(scan.projects(), cols.getFieldCount());
 
             try {
                 cond = new RexShuttle() {
@@ -154,20 +154,14 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         }
     }
 
-    private static Mappings.TargetMapping permutation(
-        List<RexNode> nodes,
-        RelDataType inputRowType) {
+    /** */
+    private static Mappings.TargetMapping permutation(List<RexNode> nodes, int totalSize) {
         final Mappings.TargetMapping mapping =
-            Mappings.create(
-                MappingType.PARTIAL_FUNCTION,
-                nodes.size(),
-                inputRowType.getFieldCount());
+            Mappings.create(MappingType.PARTIAL_FUNCTION, nodes.size(), totalSize);
+
         for (Ord<RexNode> node : Ord.zip(nodes)) {
-            if (node.e instanceof RexLocalRef) {
-                mapping.set(
-                    node.i,
-                    ((RexLocalRef) node.e).getIndex());
-            }
+            if (node.e instanceof RexLocalRef)
+                mapping.set(node.i, ((RexLocalRef) node.e).getIndex());
         }
         return mapping;
     }
