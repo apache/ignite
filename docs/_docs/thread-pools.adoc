@@ -1,0 +1,136 @@
+= Thread Pools
+
+== Overview
+
+Apache Ignite creates and maintains a variety of Thread pools that are used for different purposes depending on the
+API being used. In this documentation, we list some of the well-known internal pools and show how you can create a
+custom one. Refer to `IgniteConfiguration` javadoc to get a full list of thread pools available in Apache Ignite.
+
+== System Pool
+
+The system pool processes all the cache related operations except for SQL and some other types of queries. Also, this pool is
+responsible for processing of Ignite Compute tasks' cancellation operations.
+
+The default pool size is `max(8, total number of cores)`. Use `IgniteConfiguration.setSystemThreadPoolSize(...)` to change the pool size.
+
+== Public Pool
+
+The public pool is the work-horse of Apache Ignite compute grid. All computations are received and processed by this pool.
+
+The default pool size is `max(8, total number of cores)`. Use `IgniteConfiguration.setPublicThreadPoolSize(...)` to change the pool size.
+
+== Queries Pool
+
+The queries pool takes care of all SQL, Scan and SPI queries that are being sent and executed across the cluster.
+
+The default pool size is `max(8, total number of cores)`. Use `IgniteConfiguration.setQueryThreadPoolSize(...)` to change the pool size.
+
+== Services Pool
+
+Apache Ignite Service Grid calls go to the services' thread pool. Having dedicated pools for Ignite Service and
+Compute Grid components allows us to avoid threads starvation and deadlocks when a service implementation wants to call a computation or vice versa.
+
+The default pool size is `max(8, total number of cores)`. Use `IgniteConfiguration.setServiceThreadPoolSize(...)` to change the pool size.
+
+== Striped Pool
+
+The striped pool helps to accelerate basic cache operations and transactions significantly by spreading the operations
+execution across multiple stripes that don't contend with each other.
+
+The default pool size is `max(8, total number of cores)`. Use `IgniteConfiguration.setStripedPoolSize(...)` to change the pool size.
+
+== Data Streamer Pool
+
+The data streamer pool processes all messages and requests coming from `IgniteDataStreamer` and a variety of streaming
+adapters that use `IgniteDataStreamer` internally.
+
+The default pool size is `max(8, total number of cores)`. Use `IgniteConfiguration.setDataStreamerThreadPoolSize(...)` to change the pool size.
+
+== Custom Thread Pools
+
+It is possible to configure a custom thread pool for Ignite Compute tasks. This is useful if you want to execute one
+compute task from another synchronously avoiding deadlocks. To guarantee this, you need to make sure that a nested
+task is executed in a thread pool different from the parent's tasks thread pool.
+
+A custom pool is defined in `IgniteConfiguration` and has to have a unique name:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+IgniteConfiguration cfg = ...;
+
+cfg.setExecutorConfiguration(new ExecutorConfiguration("myPool").setSize(16));
+----
+tab:XML[]
+[source,xml]
+----
+<bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+  ...
+  <property name="executorConfiguration">
+    <list>
+      <bean class="org.apache.ignite.configuration.ExecutorConfiguration">
+        <property name="name" value="myPool"/>
+        <property name="size" value="16"/>
+      </bean>
+    </list>
+  </property>
+  ...
+</bean>
+----
+--
+
+Now, let's assume that an Ignite Compute task below has to be executed in the `myPool` defined above:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+public class InnerRunnable implements IgniteRunnable {
+    @Override public void run() {
+        System.out.println("Hello from inner runnable!");
+    }
+}
+----
+--
+
+To do that, you need to use the `IgniteCompute.withExecutor()` method that will execute the task right away from an
+implementation of the parent task, as shown below:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+public class OuterRunnable implements IgniteRunnable {
+    @IgniteInstanceResource
+    private Ignite ignite;
+
+    @Override public void run() {
+        // Synchronously execute InnerRunnable in custom executor.
+        ignite.compute().withExecutor("myPool").run(new InnerRunnable());
+    }
+}
+----
+--
+
+The parent task's execution might be triggered the following way and, in this scenario, it will be executed by the public pool size:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+ignite.compute().run(new OuterRunnable());
+----
+--
+
+[CAUTION]
+====
+[discrete]
+=== Undefined Thread Pool
+If you attempt to execute a compute task in a custom thread pool that is not explicitly configured with Ignite,
+then a special warning message will be printed in the node's logs, and the task will be picked up by the public pool for the execution.
+====

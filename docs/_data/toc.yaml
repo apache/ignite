@@ -35,6 +35,8 @@
         url: installation/kubernetes/azure-deployment
       - title: Google Kubernetes Engine
         url: installation/kubernetes/gke-deployment
+  - title: VMWare
+    url: installation/vmware-installation
 - title: Setting Up
   items:
     - title: Setting Up Ignite for Java 
@@ -71,6 +73,8 @@
       url: data-modeling/data-partitioning
     - title: Affinity Colocation 
       url: data-modeling/affinity-collocation
+    - title: Binary Marshaller
+      url: data-modeling/binary-marshaller
 - title: Configuring Memory 
   items:
     - title: Memory Architecture
@@ -427,6 +431,8 @@
           url: extensions-and-integrations/cassandra/usage-examples
         - title: DDL Generator
           url: extensions-and-integrations/cassandra/ddl-generator
+    - title: PHP PDO
+      url: extensions-and-integrations/php-pdo
 - title: .NET Specific
   items:
     - title: Configuration Options
@@ -512,3 +518,7 @@
       url: sql-reference/system-functions
     - title: Data Types
       url: sql-reference/data-types
+- title: Thread Pools
+  url: thread-pools
+- title: Resources Injection
+  url: resources-injection
