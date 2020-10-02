@@ -452,7 +452,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         assert tx == null || !ctx.kernalContext().security().enabled() ||
-            F.eq(tx.subjectId(), securitySubjectId(ctx.kernalContext()));
+            F.eq(tx.subjectId(), securitySubjectId(ctx));
 
         GridNearLockFuture fut = new GridNearLockFuture(ctx,
             keys,
@@ -466,7 +466,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery(),
-            securitySubjectId(ctx.kernalContext()));
+            securitySubjectId(ctx));
 
         fut.map();
 

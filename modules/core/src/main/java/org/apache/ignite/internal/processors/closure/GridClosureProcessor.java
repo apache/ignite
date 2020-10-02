@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.resource.GridNoImplicitInjection;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -75,6 +77,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.REDUCE;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
@@ -960,23 +963,28 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final GridWorkerFuture<R> fut = new GridWorkerFuture<>();
 
+            final UUID secSubjId = securitySubjectId(ctx);
+
             GridWorker w = new GridWorker(ctx.igniteInstanceName(), "closure-proc-worker", log) {
                 @Override protected void body() {
-                    try {
-                        if (ldr != null)
-                            fut.onDone(U.wrapThreadLoader(ldr, c));
-                        else
-                            fut.onDone(c.call());
-                    }
-                    catch (Throwable e) {
-                        if (e instanceof Error)
-                            U.error(log, "Closure execution failed with error.", e);
+                    SecurityUtils.withContextIfNeed(secSubjId, ctx.security(),
+                        () -> {
+                            try {
+                                if (ldr != null)
+                                    fut.onDone(U.wrapThreadLoader(ldr, c));
+                                else
+                                    fut.onDone(c.call());
+                            }
+                            catch (Throwable e) {
+                                if (e instanceof Error)
+                                    U.error(log, "Closure execution failed with error.", e);
 
-                        fut.onDone(U.cast(e));
+                                fut.onDone(U.cast(e));
 
-                        if (e instanceof Error)
-                            throw (Error)e;
-                    }
+                                if (e instanceof Error)
+                                    throw (Error)e;
+                            }
+                        });
                 }
             };
 

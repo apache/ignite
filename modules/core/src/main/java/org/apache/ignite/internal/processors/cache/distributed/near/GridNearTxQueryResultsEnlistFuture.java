@@ -416,7 +416,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
             threadId,
             futId,
             batchId,
-            securitySubjectId(),
             topVer,
             lockVer,
             mvccSnapshot,

@@ -28,11 +28,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
@@ -41,13 +44,15 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.CacheQueryExecutedEvent;
+import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
+import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -66,6 +71,8 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 
 /**
  * Tests that an event's local listener and an event's remote filter get correct subjectId when cache's operations are
@@ -302,7 +309,17 @@ public class CacheEventsTest extends AbstractSecurityTest {
             new Object[] {SRV, EVT_CACHE_OBJECT_LOCKED, TestOperation.LOCK_ALL},
             new Object[] {CLNT, EVT_CACHE_OBJECT_LOCKED, TestOperation.LOCK_ALL},
             new Object[] {SRV, EVT_CACHE_OBJECT_UNLOCKED, TestOperation.LOCK_ALL},
-            new Object[] {CLNT, EVT_CACHE_OBJECT_UNLOCKED, TestOperation.LOCK_ALL}
+            new Object[] {CLNT, EVT_CACHE_OBJECT_UNLOCKED, TestOperation.LOCK_ALL},
+
+            new Object[] {CLNT, EVT_CACHE_QUERY_EXECUTED, TestOperation.SCAN_QUERY},
+            new Object[] {SRV, EVT_CACHE_QUERY_EXECUTED, TestOperation.SCAN_QUERY},
+            new Object[] {"thin", EVT_CACHE_QUERY_EXECUTED, TestOperation.SCAN_QUERY},
+            new Object[] {"rest", EVT_CACHE_QUERY_EXECUTED, TestOperation.SCAN_QUERY},
+
+            new Object[] {CLNT, EVT_CACHE_QUERY_OBJECT_READ, TestOperation.SCAN_QUERY},
+            new Object[] {SRV, EVT_CACHE_QUERY_OBJECT_READ, TestOperation.SCAN_QUERY},
+            new Object[] {"thin", EVT_CACHE_QUERY_OBJECT_READ, TestOperation.SCAN_QUERY},
+            new Object[] {"rest", EVT_CACHE_QUERY_OBJECT_READ, TestOperation.SCAN_QUERY}
         );
 
         List<Object[]> res = new ArrayList<>();
@@ -340,7 +357,7 @@ public class CacheEventsTest extends AbstractSecurityTest {
     /** */
     @Test
     public void testCacheEvent() throws Exception {
-        int expTimes = evtType == EVT_CACHE_OBJECT_READ ? 1 : 3;
+        int expTimes = evtType == EVT_CACHE_OBJECT_READ || evtType == EVT_CACHE_QUERY_OBJECT_READ ? 1 : 3;
 
         evtsLatch = new CountDownLatch(2 * expTimes);
 
@@ -362,7 +379,7 @@ public class CacheEventsTest extends AbstractSecurityTest {
                 @IgniteInstanceResource IgniteEx ign;
 
                 @Override public boolean apply(UUID uuid, Event evt) {
-                    onEvent(ign, locCnt, (CacheEvent)evt, cacheName, expLogin);
+                    onEvent(ign, locCnt, new TestEventAdapter(evt), cacheName, expLogin);
 
                     return true;
                 }
@@ -371,7 +388,7 @@ public class CacheEventsTest extends AbstractSecurityTest {
                 @IgniteInstanceResource IgniteEx ign;
 
                 @Override public boolean apply(Event evt) {
-                    onEvent(ign, rmtCnt, (CacheEvent)evt, cacheName, expLogin);
+                    onEvent(ign, rmtCnt, new TestEventAdapter(evt), cacheName, expLogin);
 
                     return true;
                 }
@@ -390,8 +407,11 @@ public class CacheEventsTest extends AbstractSecurityTest {
         }
     }
 
-    /** */
-    private static void onEvent(IgniteEx ign, AtomicInteger cntr, CacheEvent evt, String cacheName, String expLogin) {
+    /**
+     *
+     */
+    private static void onEvent(IgniteEx ign, AtomicInteger cntr, TestEventAdapter evt, String cacheName,
+        String expLogin) {
         if (cacheName.equals(evt.cacheName()) &&
             (evt.type() != EVT_CACHE_OBJECT_PUT || !F.eq(INIT_VAL, evt.newValue()))) {
 
@@ -414,34 +434,58 @@ public class CacheEventsTest extends AbstractSecurityTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setConnectorConfiguration(new ConnectorConfiguration())
-            .setIncludeEventTypes(EventType.EVTS_CACHE);
+            .setIncludeEventTypes(EVT_CACHE_ENTRY_CREATED,
+                EVT_CACHE_ENTRY_DESTROYED,
+                EVT_CACHE_OBJECT_PUT,
+                EVT_CACHE_OBJECT_READ,
+                EVT_CACHE_OBJECT_REMOVED,
+                EVT_CACHE_OBJECT_LOCKED,
+                EVT_CACHE_OBJECT_UNLOCKED,
+                EVT_CACHE_QUERY_EXECUTED,
+                EVT_CACHE_QUERY_OBJECT_READ);
     }
 
     /** */
     private ConsumerX<String> operation() {
         if ("rest".equals(expLogin)) {
-            final GridRestCacheRequest req = new GridRestCacheRequest();
+            if (op == TestOperation.SCAN_QUERY) {
+                RestQueryRequest req = new RestQueryRequest();
 
-            req.credentials(new SecurityCredentials("rest", ""));
-            req.key(KEY);
-            req.command(op.restCmd);
+                req.credentials(new SecurityCredentials("rest", ""));
+                req.command(op.restCmd);
+                req.queryType(RestQueryRequest.QueryType.SCAN);
+                req.pageSize(256);
 
-            if (op == TestOperation.REPLACE_VAL) {
-                req.value(VAL);
-                req.value2(INIT_VAL);
+                return n -> {
+                    req.cacheName(n);
+
+                    restProtocolHandler().handle(req);
+                };
             }
-            else if (op == TestOperation.REMOVE_VAL)
-                req.value(INIT_VAL);
             else {
-                req.value(VAL);
-                req.values(F.asMap(KEY, VAL));
+                final GridRestCacheRequest req = new GridRestCacheRequest();
+
+                req.credentials(new SecurityCredentials("rest", ""));
+                req.key(KEY);
+                req.command(op.restCmd);
+
+                if (op == TestOperation.REPLACE_VAL) {
+                    req.value(VAL);
+                    req.value2(INIT_VAL);
+                }
+                else if (op == TestOperation.REMOVE_VAL)
+                    req.value(INIT_VAL);
+                else {
+                    req.value(VAL);
+                    req.values(F.asMap(KEY, VAL));
+                }
+
+                return n -> {
+                    req.cacheName(n);
+
+                    restProtocolHandler().handle(req);
+                };
             }
-
-            return n -> {
-                req.cacheName(n);
-
-                restProtocolHandler().handle(req);
-            };
         }
         else if ("thin".equals(expLogin))
             return n -> op.clntCacheOp.accept(startClient().cache(n));
@@ -595,7 +639,21 @@ public class CacheEventsTest extends AbstractSecurityTest {
 
             lock.lock();
             lock.unlock();
-        }, false);
+        }, false),
+
+        /** Scan query. */
+        SCAN_QUERY(
+            c -> {
+                try (QueryCursor<Cache.Entry<String, String>> cursor = c.query(new ScanQuery<>())) {
+                    cursor.getAll();
+                }
+            },
+            c -> {
+                try (QueryCursor<Cache.Entry<String, String>> cursor = c.query(new ScanQuery<>())) {
+                    cursor.getAll();
+                }
+            },
+            GridRestCommand.EXECUTE_SCAN_QUERY);
 
         /** IgniteCache operation. */
         final Consumer<IgniteCache<String, String>> ignCacheOp;
@@ -673,6 +731,89 @@ public class CacheEventsTest extends AbstractSecurityTest {
             catch (Exception e) {
                 throw new IgniteException(e);
             }
+        }
+    }
+
+    /**
+     * Test event's adapter.
+     */
+    class TestEventAdapter {
+        /** CacheEvent. */
+        private final CacheEvent cacheEvt;
+
+        /** CacheQueryExecutedEvent. */
+        private final CacheQueryExecutedEvent<String, String> qryExecEvt;
+
+        /** CacheQueryReadEvent. */
+        private final CacheQueryReadEvent<String, String> qryReadEvt;
+
+        /**
+         * @param evt Event.
+         */
+        TestEventAdapter(Event evt) {
+            if (evt instanceof CacheEvent) {
+                cacheEvt = (CacheEvent)evt;
+                qryReadEvt = null;
+                qryExecEvt = null;
+            }
+            else if (evt instanceof CacheQueryExecutedEvent) {
+                qryExecEvt = (CacheQueryExecutedEvent<String, String>)evt;
+                cacheEvt = null;
+                qryReadEvt = null;
+            }
+            else if (evt instanceof CacheQueryReadEvent) {
+                qryReadEvt = (CacheQueryReadEvent<String, String>)evt;
+                cacheEvt = null;
+                qryExecEvt = null;
+            }
+            else
+                throw new IllegalArgumentException("Unexpected event=[" + evt + "]");
+        }
+
+        /**
+         * @return Event's type.
+         */
+        int type() {
+            if (cacheEvt != null)
+                return cacheEvt.type();
+
+            if (qryExecEvt != null)
+                return qryExecEvt.type();
+
+            return qryReadEvt.type();
+        }
+
+        /**
+         * @return Event's cache name.
+         */
+        String cacheName() {
+            if (cacheEvt != null)
+                return cacheEvt.cacheName();
+
+            if (qryExecEvt != null)
+                return qryExecEvt.cacheName();
+
+            return qryReadEvt.cacheName();
+        }
+
+        /**
+         * @return Event's subject id.
+         */
+        UUID subjectId() {
+            if (cacheEvt != null)
+                return cacheEvt.subjectId();
+
+            if (qryExecEvt != null)
+                return qryExecEvt.subjectId();
+
+            return qryReadEvt.subjectId();
+        }
+
+        /**
+         * @return Event's new value.
+         */
+        Object newValue() {
+            return cacheEvt != null ? cacheEvt.newValue() : null;
         }
     }
 }

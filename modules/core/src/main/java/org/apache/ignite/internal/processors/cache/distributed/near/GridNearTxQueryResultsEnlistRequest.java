@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -62,9 +61,6 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
 
     /** */
     private int miniId;
-
-    /** */
-    private UUID subjId;
 
     /** */
     private AffinityTopologyVersion topVer;
@@ -111,7 +107,6 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
      * @param threadId Thread id.
      * @param futId Future id.
      * @param miniId Mini-future id.
-     * @param subjId Transaction subject id.
      * @param topVer Topology version.
      * @param lockVer Lock version.
      * @param mvccSnapshot Mvcc snapshot.
@@ -126,7 +121,6 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
         long threadId,
         IgniteUuid futId,
         int miniId,
-        UUID subjId,
         AffinityTopologyVersion topVer,
         GridCacheVersion lockVer,
         MvccSnapshot mvccSnapshot,
@@ -140,7 +134,6 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
         this.threadId = threadId;
         this.futId = futId;
         this.miniId = miniId;
-        this.subjId = subjId;
         this.topVer = topVer;
         this.lockVer = lockVer;
         this.mvccSnapshot = mvccSnapshot;
@@ -170,13 +163,6 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
      */
     public int miniId() {
         return miniId;
-    }
-
-    /**
-     * @return Subject id.
-     */
-    public UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -378,8 +364,8 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
+//                if (!writer.writeUuid("subjId", subjId))
+//                    return false;
 
                 writer.incrementState();
 
@@ -496,7 +482,7 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 11:
-                subjId = reader.readUuid("subjId");
+//                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
