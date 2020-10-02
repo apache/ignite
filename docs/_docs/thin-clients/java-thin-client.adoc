@@ -181,38 +181,44 @@ NOTE: The `getAll()` method retrieves the results from the cursor and closes it.
 
 Read more about using `SqlFieldsQuery` and SQL API in the link:SQL/sql-api[Using SQL API] section.
 
-== Cluster API
+== Using Cluster APIs
 
-Cluster functionality (APIs for accessing cluster and nodes) is provided via the `ClientCluster` interface. You can get an instance of `ClientCluster` from `IgniteClient` as follows:
+The cluster APIs let you create a group of cluster nodes and run various operations against the group. The `ClientCluster`
+interface is the entry-point to the APIs that can be used as follows:
+
+* Get or change the state of a cluster
+* Get a list of all cluster nodes
+* Create logical groups our of cluster nodes and use other Ignite APIs to perform certain operations on the group
+
+Use the instance of `IgniteClient` to obtain a reference to the `ClientCluster` interface:
 [source, java]
 -------------------------------------------------------------------------------
 include::{sourceCodeFile}[tag=client-cluster,indent=0]
 -------------------------------------------------------------------------------
 
-Through the `ClientCluster` interface you can:
+=== Logical Nodes Grouping
 
-* Get or set cluster state
-* Get a list of all cluster members
-* Create logical groups of nodes
+You can use the `ClientClusterGroup` interface of the cluster APIs to create various groups of cluster nodes. For instance,
+one group can comprise all servers nodes, while the other group can include only those nodes that match a specific
+TCP/IP address format. The example below shows how to create a group of server nodes located in the `dc1` data center:
 
-=== Logical nodes grouping
-
-API to create logical groups of nodes within your cluster is provided by `ClientClusterGroup` interface. Instance of this interface can be obtained from a parent `ClientClusterGroup` instance using node-filtering methods.
-
-The `ClientCluster` instance it's a root cluster nodes group, which includes all nodes in the cluster.
-
-Here is how you can use this API to get all server nodes in certain data-center (assuming node attribute "dc" is set to bind node and data-center):
 [source, java]
 -------------------------------------------------------------------------------
 include::{sourceCodeFile}[tag=client-cluster-groups,indent=0]
 -------------------------------------------------------------------------------
 
-Refer to link:distributed-computing/cluster-groups[Cluster groups] to get more information about logical nodes grouping.
+Refer to the main link:distributed-computing/cluster-groups[cluster groups] documentation page for more details on the capability.
 
-== Executing compute tasks
+== Executing Compute Tasks
 
-The Java thin client has basic functionality to execute compute tasks. By default this feature is disabled on server-side. To enable this functionality server-side configuration property `maxActiveComputeTasksPerConnection` should be set explicitly to value more than 0:
+Presently, the Java thin client supports basic link:distributed-computing/distributed-computing[compute capabilities]
+by letting you execute those compute tasks that are *already deployed* in the cluster. You can either run a task across all
+cluster nodes or a specific link:thin-clients/java-thin-client#logical-nodes-grouping[cluster group]. The deployment
+assumes that you create a JAR file with the compute tasks and add the JAR to the cluster nodes' classpath.
 
+By default, the execution of tasks, triggered by the thin client, is disabled on the cluster side. You need to set the
+`ThinClientConfiguration.maxActiveComputeTasksPerConnection` parameter to a non-zero value in the configuration of your
+server nodes and thick clients:
 [tabs]
 --
 tab:XML[]
@@ -237,33 +243,23 @@ include::{sourceCodeFile}[tag=client-compute-setup,indent=0]
 ----
 --
 
-Compute tasks execution functionality provided by `ClientCompute` interface, which can be obtained from `IgniteClient` instance.
-
-Currently, thin client only have an ability to run already deployed tasks by task name. To run some custom task users should deploy classes related to this task to the server manually.
+The example below shows how to get access to the compute APIs via the `ClientCompute` interface and execute the compute
+task named `MyTask`:
 [source, java]
 -------------------------------------------------------------------------------
 include::{sourceCodeFile}[tag=client-compute-task,indent=0]
 -------------------------------------------------------------------------------
 
-Nodes set to execute compute tasks can be limited using cluster groups and corresponding `IgniteClient.compute(ClientClusterGroup)` method.
+== Executing Ignite Services
 
-See link:distributed-computing/distributed-computing[distributed computing] for more information about compute grid functionality.
+You can use the `ClientServices` APIs of the Java thin client to invoke an link:services/services[Ignite Service] that
+is *already deployed* in the cluster.
 
-== Service invocation
-
-The Java thin client is able to invoke grid-managed services. API for this functionality is provided by `ClientServices` interface, which can be obtained from `IgniteClient` instance.
-
-Only already deployed to cluster services can be invoked, there is no functionality to deploy services by thin clients.
+The example below shows how to invoke the service named `MyService`:
 [source, java]
 -------------------------------------------------------------------------------
 include::{sourceCodeFile}[tag=client-services,indent=0]
 -------------------------------------------------------------------------------
-
-////
-*TODO: fix link*
-////
-
-See link:services/services[Services] for more information about Ignite services.
 
 == Handling Exceptions
 
