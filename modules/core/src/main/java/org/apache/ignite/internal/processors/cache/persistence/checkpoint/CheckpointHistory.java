@@ -359,18 +359,18 @@ public class CheckpointHistory {
     }
 
     /**
-     * @param firstPointer One of pointers to choose the newest.
-     * @param secondPointer One of pointers to choose the newest.
+     * @param first One of pointers to choose the newest.
+     * @param second One of pointers to choose the newest.
      * @return The newest pointer from input ones.
      */
-    private WALPointer newerPointer(WALPointer firstPointer, WALPointer secondPointer) {
-        if (firstPointer == null)
-            return secondPointer;
+    private WALPointer newerPointer(WALPointer first, WALPointer second) {
+        if (first == null)
+            return second;
 
-        if (secondPointer == null)
-            return firstPointer;
+        if (second == null)
+            return first;
 
-        return firstPointer.index() > secondPointer.index() ? firstPointer : secondPointer;
+        return first.index() > second.index() ? first : second;
     }
 
     /**
