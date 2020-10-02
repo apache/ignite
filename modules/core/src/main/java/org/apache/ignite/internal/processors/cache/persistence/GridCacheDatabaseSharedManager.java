@@ -3234,7 +3234,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return Last read WAL record pointer.
          */
         public WALPointer lastReadRecordPointer() {
-            assert status.startPtr instanceof WALPointer;
+            assert status.startPtr != null;
 
             return iterator.lastRead()
                 .orElseGet(() -> status.startPtr);
