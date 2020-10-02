@@ -22,43 +22,25 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ThreadPoolExecutor.AbortPolicy;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.metric.MetricCommandArg;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.junit.Test;
 
-import static java.lang.Long.parseLong;
-import static java.lang.System.currentTimeMillis;
 import static java.util.regex.Pattern.quote;
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandList.METRIC;
-import static org.apache.ignite.internal.commandline.TablePrinter.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.NODE_ID;
-import static org.apache.ignite.internal.managers.communication.GridIoManager.COMM_METRICS;
-import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
-import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_METRICS;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
+import static org.apache.ignite.internal.commandline.systemview.SystemViewCommand.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.IGNITE_METRICS;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.THREAD_POOLS;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** Tests output of {@link CommandList#METRIC} command. */
 public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractTest {
@@ -67,16 +49,6 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
     /** Test node with 0 index. */
     private IgniteEx ignite0;
-
-    /** Test node with 1 index. */
-    private IgniteEx ignite1;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        awaitPartitionMapExchange();
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -87,7 +59,6 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         autoConfirmation = false;
 
         ignite0 = ignite(0);
-        ignite1 = ignite(1);
     }
 
     /** Tests command error output in case of mandatory metric name is omitted. */
@@ -145,186 +116,10 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
     /** */
     @Test
-    public void testCommunicationMetrics() {
-        Map<String, String> metrics = metrics(ignite0, COMM_METRICS);
-
-        assertTrue(Integer.parseInt(metrics.get(metricName(COMM_METRICS, "SentBytesCount"))) > 0);
-        assertTrue(Integer.parseInt(metrics.get(metricName(COMM_METRICS, "ReceivedBytesCount"))) > 0);
-        assertEquals("0", metrics.get(metricName(COMM_METRICS, "OutboundMessagesQueueSize")));
-        assertTrue(Integer.parseInt(metrics.get(metricName(COMM_METRICS, "ReceivedMessagesCount"))) > 0);
-        assertTrue(Integer.parseInt(metrics.get(metricName(COMM_METRICS, "SentMessagesCount"))) > 0);
-    }
-
-    /** */
-    @Test
-    public void testJobsMetrics() {
-        Arrays.asList(
-            "WaitingTime",
-            "Canceled",
-            "Active",
-            "Started",
-            "Rejected",
-            "ExecutionTime",
-            "ExecutionTime",
-            "Waiting"
-        ).forEach(name -> assertEquals("0", metrics(ignite0, JOBS_METRICS).get(metricName(JOBS_METRICS, name))));
-    }
-
-    /** */
-    @Test
-    public void testPmeMetrics() {
-        Map<String, String> metrics = metrics(ignite0, PME_METRICS);
-
-        assertFalse(metrics.get(metricName(PME_METRICS, "CacheOperationsBlockedDurationHistogram")).isEmpty());
-        assertFalse(metrics.get(metricName(PME_METRICS, "DurationHistogram")).isEmpty());
-        assertEquals("0", metrics.get(metricName(PME_METRICS, "CacheOperationsBlockedDuration")));
-        assertEquals("0", metrics.get(metricName(PME_METRICS, "Duration")));
-    }
-
-    /** */
-    @Test
-    public void testClusterMetrics() {
-        Map<String, String> metrics = metrics(ignite0, CLUSTER_METRICS);
-
-        assertEquals("true", metrics.get(metricName(CLUSTER_METRICS, "Rebalanced")));
-        assertEquals("2", metrics.get(metricName(CLUSTER_METRICS, "TotalServerNodes")));
-        assertEquals("2", metrics.get(metricName(CLUSTER_METRICS, "ActiveBaselineNodes")));
-        assertEquals("2", metrics.get(metricName(CLUSTER_METRICS, "TotalBaselineNodes")));
-        assertEquals("1", metrics.get(metricName(CLUSTER_METRICS, "TotalClientNodes")));
-    }
-
-    /** */
-    @Test
-    public void testDataRegionMetrics() {
-        String mRegName = metricName("io", "dataregion", "default");
-
-        Map<String, String> metrics = metrics(ignite0, mRegName);
-
-        Arrays.asList(
-            "TotalAllocatedSize",
-            "LargeEntriesPagesCount",
-            "PagesReplaced",
-            "PhysicalMemorySize",
-            "CheckpointBufferSize",
-            "PagesReplaceRate",
-            "AllocationRate",
-            "PagesRead",
-            "OffHeapSize",
-            "UsedCheckpointBufferSize",
-            "OffheapUsedSize",
-            "EmptyDataPages",
-            "PagesFillFactor",
-            "DirtyPages",
-            "EvictionRate",
-            "PagesWritten",
-            "TotalAllocatedPages",
-            "PagesReplaceAge",
-            "PhysicalMemoryPages",
-            "TotalThrottlingTime",
-            "InitialSize",
-            "MaxSize"
-        ).forEach(name -> assertFalse(metrics.get(metricName(mRegName, name)).isEmpty()));
-
-        DataRegionConfiguration cfg =
-            ignite0.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration();
-
-        assertEquals(Long.toString(cfg.getInitialSize()), metric(ignite0, metricName(mRegName, "InitialSize")));
-        assertEquals(Long.toString(cfg.getMaxSize()), metric(ignite0, metricName(mRegName, "MaxSize")));
-    }
-
-    /** */
-    @Test
-    public void testCacheMetrics() {
-        ignite0.createCache("default");
-
-        String mRegName = cacheMetricsRegistryName("default", false);
-
-        Map<String, String> metrics = metrics(ignite0, mRegName);
-
-        Arrays.asList(
-            "CacheTxRollbacks",
-            "CacheMisses",
-            "PutTimeTotal",
-            "OffHeapGets",
-            "CacheRemovals",
-            "EntryProcessorHits",
-            "HeapEntriesCount",
-            "RemoveTimeTotal",
-            "CachePuts",
-            "EntryProcessorMisses",
-            "OffHeapBackupEntriesCount",
-            "CacheHits",
-            "EntryProcessorPuts",
-            "TotalRebalancedBytes",
-            "QuerySumTime",
-            "EntryProcessorInvokeTimeNanos",
-            "EstimatedRebalancingKeys",
-            "RollbackTimeTotal",
-            "OffHeapMisses",
-            "GetTimeTotal",
-            "QueryFailed",
-            "EntryProcessorReadOnlyInvocations",
-            "CommitTimeTotal",
-            "RebalancingBytesRate",
-            "QueryCompleted",
-            "EvictingPartitionsLeft",
-            "CacheGets",
-            "OffHeapEvictions",
-            "IndexRebuildKeyProcessed",
-            "RebalancingKeysRate",
-            "OffHeapEntriesCount",
-            "OffHeapPuts",
-            "CacheTxCommits",
-            "CacheSize",
-            "RebalancedKeys",
-            "EntryProcessorRemovals",
-            "OffHeapPrimaryEntriesCount",
-            "CacheEvictions",
-            "OffHeapRemovals",
-            "QueryExecuted",
-            "RebalanceClearingPartitionsLeft",
-            "OffHeapHits",
-            "EntryProcessorMaxInvocationTime",
-            "EntryProcessorMinInvocationTime"
-        ).forEach(name -> assertEquals("0", metrics.get(metricName(mRegName, name))));
-
-        assertEquals("-1", metrics.get(metricName(mRegName, "RebalanceStartTime")));
-        assertEquals("false", metrics.get(metricName(mRegName, "IsIndexRebuildInProgress")));
-        assertTrue(Long.parseLong(metrics.get(metricName(mRegName, "QueryMinimalTime"))) > 0);
-
-        Arrays.asList(
-            "RemoveTime",
-            "GetTime",
-            "PutTime",
-            "CommitTime",
-            "RollbackTime"
-        ).forEach(name -> assertEquals("[0, 0, 0, 0, 0, 0]", metrics.get(metricName(mRegName, name))));
-
-        assertTrue(metrics.get(metricName(mRegName, "TxKeyCollisions")).isEmpty());
-
-        Map<String, String> cacheGrpMetrics = metrics(ignite0, "cacheGroups.default");
-
-        assertEquals("[default]", cacheGrpMetrics.get("cacheGroups.default.Caches"));
-
-        String idxMRegName = "io.statistics.hashIndexes.default.HASH_PK";
-
-        Map<String, String> idxMetrics = metrics(ignite0, idxMRegName);
-
-        assertEquals("0", idxMetrics.get(metricName(idxMRegName, "PHYSICAL_READS_INNER")));
-        assertEquals("0", idxMetrics.get(metricName(idxMRegName, "LOGICAL_READS_LEAF")));
-        assertEquals("0", idxMetrics.get(metricName(idxMRegName, "PHYSICAL_READS_LEAF")));
-        assertEquals("HASH_PK", idxMetrics.get(metricName(idxMRegName, "indexName")));
-        assertTrue(Long.parseLong(idxMetrics.get(metricName(idxMRegName, "startTime"))) > 0);
-        assertEquals("default", idxMetrics.get(metricName(idxMRegName, "name")));
-        assertEquals("0", idxMetrics.get(metricName(idxMRegName, "LOGICAL_READS_INNER")));
-    }
-
-    /** */
-    @Test
     public void testHistogramMetrics() {
-        String mRegName = "histogramTest";
+        String mregName = "histogram-registry";
 
-        MetricRegistry mreg = ignite1.context().metric().registry(mRegName);
+        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         long[] bounds = new long[] {50, 500};
 
@@ -346,221 +141,161 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         histogram.value(600);
         histogram.value(600);
 
-        assertEquals("1", metric(ignite1, metricName(mRegName, "histogram_0_50")));
-        assertEquals("2", metric(ignite1, metricName(mRegName, "histogram_50_500")));
-        assertEquals("3", metric(ignite1, metricName(mRegName, "histogram_500_inf")));
-        assertEquals("[1, 2, 3]", metric(ignite1, metricName(mRegName, "histogram")));
+        assertEquals("1", metric(ignite0, metricName(mregName, "histogram_0_50")));
+        assertEquals("2", metric(ignite0, metricName(mregName, "histogram_50_500")));
+        assertEquals("3", metric(ignite0, metricName(mregName, "histogram_500_inf")));
+        assertEquals("[1, 2, 3]", metric(ignite0, metricName(mregName, "histogram")));
 
-        assertEquals("1", metric(ignite1, metricName(mRegName, "histogram_with_underscore_0_50")));
-        assertEquals("2", metric(ignite1, metricName(mRegName, "histogram_with_underscore_50_500")));
-        assertEquals("3", metric(ignite1, metricName(mRegName, "histogram_with_underscore_500_inf")));
-        assertEquals("[1, 2, 3]", metric(ignite1, metricName(mRegName, "histogram_with_underscore")));
+        assertEquals("1", metric(ignite0, metricName(mregName, "histogram_with_underscore_0_50")));
+        assertEquals("2", metric(ignite0, metricName(mregName, "histogram_with_underscore_50_500")));
+        assertEquals("3", metric(ignite0, metricName(mregName, "histogram_with_underscore_500_inf")));
+        assertEquals("[1, 2, 3]", metric(ignite0, metricName(mregName, "histogram_with_underscore")));
     }
 
     /** */
     @Test
-    public void testSystemMetrics() {
-        Arrays.asList(
-            "CurrentThreadCpuTime",
-            "memory.heap.committed",
-            "ThreadCount",
-            "memory.nonheap.committed",
-            "TotalStartedThreadCount",
-            "CurrentThreadUserTime",
-            "PeakThreadCount",
-            "memory.nonheap.used",
-            "memory.heap.used",
-            "memory.nonheap.max",
-            "TotalExecutedTasks",
-            "SystemLoadAverage",
-            "memory.heap.init",
-            "UpTime",
-            "DaemonThreadCount",
-            "CpuLoad",
-            "GcCpuLoad",
-            "memory.heap.max",
-            "memory.nonheap.init"
-        ).forEach(name -> assertFalse(metrics(ignite0, SYS_METRICS).get(metricName(SYS_METRICS, name)).isEmpty()));
+    public void testNodeIdArgument() {
+        String mregName = "boolean-metric-registry";
+
+        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+
+        mreg.booleanMetric("boolean-metric", "");
+
+        mreg = ignite(1).context().metric().registry(mregName);
+
+        mreg.booleanMetric("boolean-metric", "").value(true);
+
+        assertEquals("false", metric(ignite0, metricName(mregName, "boolean-metric")));
+        assertEquals("true", metric(ignite(1), metricName(mregName, "boolean-metric")));
     }
 
     /** */
     @Test
-    public void testThreadPoolMetrics() {
-        String mRegName = metricName(THREAD_POOLS, "GridSystemExecutor");
+    public void testRegistryMetrics() {
+        String mregName = "test-metric-registry";
 
-        Map<String, String> metrics = metrics(ignite0, mRegName);
+        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
-        Arrays.asList(
-            "MaximumPoolSize",
-            "Terminated",
-            "QueueSize",
-            "KeepAliveTime",
-            "RejectedExecutionHandlerClass",
-            "ThreadFactoryClass",
-            "CompletedTaskCount",
-            "Terminating",
-            "Shutdown",
-            "ActiveCount",
-            "LargestPoolSize",
-            "PoolSize",
-            "CorePoolSize",
-            "TaskCount"
-        ).forEach(name -> assertFalse(metrics.get(metricName(mRegName, name)).isEmpty()));
+        mreg.booleanMetric("boolean-metric", "");
+        mreg.longMetric("long-metric", "").increment();
+        mreg.intMetric("int-metric", "").increment();
+        mreg.doubleMetric("double-metric", "");
+        mreg.hitRateMetric("hitrate-metric", "", getTestTimeout(), 2);
+        mreg.histogram("histogram", new long[] {50, 100}, null).value(10);
+        mreg.hitRateMetric("hitrate-metric", "", getTestTimeout(), 2);
+        mreg.objectMetric("object-metric", Object.class, "").value(new Object() {
+            @Override public String toString() {
+                return "test-object";
+            }
+        });
 
-        assertEquals(AbortPolicy.class.getName(), metrics.get(metricName(mRegName, "RejectedExecutionHandlerClass")));
-        assertEquals(IgniteThreadFactory.class.getName(), metrics.get(metricName(mRegName, "ThreadFactoryClass")));
-        assertEquals("false", metrics.get(metricName(mRegName, "Terminating")));
-        assertEquals("false", metrics.get(metricName(mRegName, "Shutdown")));
-        assertEquals("false", metrics.get(metricName(mRegName, "Terminated")));
-        assertEquals(Long.toString(DFLT_THREAD_KEEP_ALIVE_TIME), metrics.get(metricName(mRegName, "KeepAliveTime")));
+        Map<String, String> metrics = metrics(ignite0, mregName);
+
+        assertEquals("0.0", metrics.get(metricName(mregName, "double-metric")));
+        assertEquals("false", metrics.get(metricName(mregName, "boolean-metric")));
+        assertEquals("1", metrics.get(metricName(mregName, "long-metric")));
+        assertEquals("1", metrics.get(metricName(mregName, "int-metric")));
+        assertEquals("test-object", metrics.get(metricName(mregName, "object-metric")));
+        assertEquals("[1, 0, 0]", metrics.get(metricName(mregName, "histogram")));
+        assertEquals("0", metric(ignite0, metricName(mregName, "hitrate-metric")));
     }
 
     /** */
     @Test
-    public void testDataStorageMetrics() {
-        Map<String, String> metrics = metrics(ignite0, DATASTORAGE_METRIC_PREFIX);
+    public void testBooleanMetrics() {
+        String mregName = "boolean-metric-registry";
 
-        Arrays.asList(
-            "LastCheckpointTotalPagesNumber",
-            "WalFsyncTimeDuration",
-            "WalBuffPollSpinsRate",
-            "WalTotalSize",
-            "StorageSize",
-            "LastCheckpointCopiedOnWritePagesNumber",
-            "LastCheckpointMarkDuration",
-            "SparseStorageSize",
-            "LastCheckpointPagesWriteDuration",
-            "CheckpointTotalTime",
-            "WalLastRollOverTime",
-            "LastCheckpointLockWaitDuration",
-            "WalArchiveSegments",
-            "WalFsyncTimeNum",
-            "LastCheckpointDataPagesNumber",
-            "LastCheckpointFsyncDuration",
-            "WalWritingRate",
-            "LastCheckpointDuration"
-        ).forEach(name -> assertEquals("0", metrics.get(metricName(DATASTORAGE_METRIC_PREFIX, name))));
+        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
-        assertTrue(Integer.parseInt(metrics.get(metricName(DATASTORAGE_METRIC_PREFIX, "WalLoggingRate"))) > 0);
+        mreg.booleanMetric("boolean-metric", "");
+
+        assertEquals("false", metric(ignite0, metricName(mregName, "boolean-metric")));
+
+        mreg.register("boolean-gauge", () -> true, "");
+
+        assertEquals("true", metric(ignite0, metricName(mregName, "boolean-gauge")));
     }
 
     /** */
     @Test
-    public void testIgniteKernalMetrics() {
-        Map<String, String> metrics = metrics(ignite0, IGNITE_METRICS);
+    public void testLongMetrics() {
+        String mregName = "long-metric-registry";
 
-        Arrays.asList(
-            "fullVersion",
-            "copyright",
-            "osInformation",
-            "jdkInformation",
-            "vmName",
-            "discoverySpiFormatted",
-            "communicationSpiFormatted",
-            "deploymentSpiFormatted",
-            "checkpointSpiFormatted",
-            "collisionSpiFormatted",
-            "eventStorageSpiFormatted",
-            "failoverSpiFormatted",
-            "loadBalancingSpiFormatted",
-            "startTimestampFormatted",
-            "uptimeFormatted"
-        ).forEach(name -> assertFalse(metrics.get(metricName(IGNITE_METRICS, name)).isEmpty()));
+        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
-        assertEquals(System.getProperty("user.name"), metrics.get(metricName(IGNITE_METRICS, "osUser")));
+        mreg.longMetric("long-metric", "").add(Long.MAX_VALUE);
 
-        assertEquals("true", metrics.get(metricName(IGNITE_METRICS, "isRebalanceEnabled")));
-        assertEquals("true", metrics.get(metricName(IGNITE_METRICS, "isNodeInBaseline")));
-        assertEquals("true", metrics.get(metricName(IGNITE_METRICS, "active")));
+        assertEquals(Long.toString(Long.MAX_VALUE), metric(ignite0, metricName(mregName, "long-metric")));
 
-        assertTrue(parseLong(metrics.get(metricName(IGNITE_METRICS, "startTimestamp"))) > 0);
-        assertTrue(parseLong(metrics.get(metricName(IGNITE_METRICS, "uptime"))) > 0);
+        mreg.register("long-gauge", () -> 0L, "");
 
-        assertEquals(ignite0.name(), metrics.get(metricName(IGNITE_METRICS, "instanceName")));
-
-        assertEquals("[]", metrics.get(metricName(IGNITE_METRICS, "userAttributesFormatted")));
-        assertEquals("[]", metrics.get(metricName(IGNITE_METRICS, "lifecycleBeansFormatted")));
-        assertEquals("{}", metrics.get(metricName(IGNITE_METRICS, "longJVMPauseLastEvents")));
-
-        assertEquals("0", metrics.get(metricName(IGNITE_METRICS, "longJVMPausesCount")));
-        assertEquals("0", metrics.get(metricName(IGNITE_METRICS, "longJVMPausesTotalDuration")));
-
-        long clusterStateChangeTime = parseLong(metrics.get(
-            metricName(IGNITE_METRICS, "lastClusterStateChangeTime")));
-
-        assertTrue(0 < clusterStateChangeTime && clusterStateChangeTime < currentTimeMillis());
-
-        assertEquals(String.valueOf(ignite0.configuration().getPublicThreadPoolSize()),
-            metrics.get(metricName(IGNITE_METRICS, "executorServiceFormatted")));
-
-        assertEquals(Boolean.toString(ignite0.configuration().isPeerClassLoadingEnabled()),
-            metrics.get(metricName(IGNITE_METRICS, "isPeerClassLoadingEnabled")));
-
-        assertTrue(metrics.get(metricName(IGNITE_METRICS, "currentCoordinatorFormatted"))
-            .contains(ignite0.localNode().id().toString()));
-
-        assertEquals(ignite0.configuration().getIgniteHome(), metrics.get(metricName(IGNITE_METRICS, "igniteHome")));
-
-        assertEquals(ignite0.localNode().id().toString(), metrics.get(metricName(IGNITE_METRICS, "localNodeId")));
-
-        assertEquals(ignite0.configuration().getGridLogger().toString(),
-            metrics.get(metricName(IGNITE_METRICS, "gridLoggerFormatted")));
-
-        assertEquals(ignite0.configuration().getMBeanServer().toString(),
-            metrics.get(metricName(IGNITE_METRICS, "mBeanServerFormatted")));
-
-        assertEquals(ACTIVE.toString(), metrics.get(metricName(IGNITE_METRICS, "clusterState")));
+        assertEquals("0", metric(ignite0, metricName(mregName, "long-gauge")));
     }
 
     /** */
     @Test
-    public void testSnapshotMetrics() {
-        assertThrowsWithCause(
-            () -> ignite0.snapshot().createSnapshot("test_snapshot").get(), IgniteCheckedException.class);
+    public void testIntegerMetrics() {
+        String mregName = "int-metric-registry";
 
-        Map<String, String> metrics = metrics(ignite0, SNAPSHOT_METRICS);
+        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
-        assertEquals("test_snapshot", metrics.get(metricName(SNAPSHOT_METRICS, "LastSnapshotName")));
-        assertEquals("Snapshot operation has not been fully completed [err={}, snpReq=null]",
-            metrics.get(metricName(SNAPSHOT_METRICS, "LastSnapshotErrorMessage")));
-        assertTrue(parseLong(metrics.get(metricName(SNAPSHOT_METRICS, "LastSnapshotStartTime"))) < currentTimeMillis());
-        assertTrue(parseLong(metrics.get(metricName(SNAPSHOT_METRICS, "LastSnapshotEndTime"))) < currentTimeMillis());
-        assertEquals("[]", metrics.get(metricName(SNAPSHOT_METRICS, "LocalSnapshotNames")));
+        mreg.intMetric("int-metric", "").add(Integer.MAX_VALUE);
+
+        assertEquals(Integer.toString(Integer.MAX_VALUE), metric(ignite0, metricName(mregName, "int-metric")));
+
+        mreg.register("int-gauge", () -> 0, "");
+
+        assertEquals("0", metric(ignite0, metricName(mregName, "int-gauge")));
     }
 
     /** */
     @Test
-    public void testTxMetrics() {
-        Map<String, String> metrics = metrics(ignite0, TX_METRICS);
+    public void testDoubleMetrics() {
+        String mregName = "int-double-registry";
 
-        Arrays.asList(
-            "txRollbacks",
-            "commitTime",
-            "totalNodeSystemTime",
-            "rollbackTime",
-            "OwnerTransactionsNumber",
-            "totalNodeUserTime",
-            "txCommits",
-            "TransactionsHoldingLockNumber",
-            "LockedKeysNumber"
-        ).forEach(name -> assertEquals("0", metrics.get(metricName(TX_METRICS, name))));
+        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
-        assertEquals("{}", metrics.get(metricName(TX_METRICS, "AllOwnerTransactions")));
+        mreg.doubleMetric("double-metric", "").add(111.222);
 
-        assertEquals("[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]",
-            metrics.get(metricName(TX_METRICS, "nodeSystemTimeHistogram")));
+        assertEquals("111.222", metric(ignite0, metricName(mregName, "double-metric")));
 
-        assertEquals("[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]",
-            metrics.get(metricName(TX_METRICS, "nodeUserTimeHistogram")));
+        mreg.register("double-gauge", () -> 0D, "");
+
+        assertEquals("0.0", metric(ignite0, metricName(mregName, "double-gauge")));
     }
 
     /** */
     @Test
-    public void testSqlParserMetrics() {
-        Map<String, String> metrics = metrics(ignite0, "sql.parser.cache");
+    public void testObjectMetrics() {
+        String mregName = "object-registry";
 
-        assertEquals("0", metrics.get("sql.parser.cache.hits"));
-        assertEquals("0", metrics.get("sql.parser.cache.misses"));
+        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+
+        Object metricVal = new Object() {
+            @Override public String toString() {
+                return "test-object";
+            }
+        };
+
+        mreg.objectMetric("object-metric", Object.class, "").value(metricVal);
+
+        assertEquals("test-object", metric(ignite0, metricName(mregName, "object-metric")));
+
+        mreg.register("object-gauge", () -> metricVal, Object.class, "");
+
+        assertEquals("test-object", metric(ignite0, metricName(mregName, "object-gauge")));
+    }
+
+    /** */
+    @Test
+    public void testHitrateMetrics() {
+        String mregName = "hitrate-registry";
+
+        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+
+        mreg.hitRateMetric("hitrate-metric", "", getTestTimeout(), 2).add(Integer.MAX_VALUE);
+
+        assertEquals(Integer.toString(Integer.MAX_VALUE), metric(ignite0, metricName(mregName, "hitrate-metric")));
     }
 
     /**
@@ -621,7 +356,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
                 .filter(str -> !str.isEmpty())
                 .iterator();
 
-            res.put(iter.next(), iter.hasNext() ? iter.next() : "");
+            res.put(iter.next(), iter.next());
         }
         
         return res;

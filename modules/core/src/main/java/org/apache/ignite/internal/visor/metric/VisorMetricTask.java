@@ -69,35 +69,35 @@ public class VisorMetricTask extends VisorOneNodeTask<VisorMetricTaskArg, Map<St
         @Override protected Map<String, ?> run(@Nullable VisorMetricTaskArg arg) throws IgniteException {
             String name = arg.name();
 
-            GridMetricManager mMgr = ignite.context().metric();
+            GridMetricManager mmgr = ignite.context().metric();
 
-            for (ReadOnlyMetricRegistry mReg : mMgr) {
-                String mRegName = mReg.name();
+            for (ReadOnlyMetricRegistry mreg : mmgr) {
+                String mregName = mreg.name();
 
-                if (mRegName.equals(name)) {
+                if (mregName.equals(name)) {
                     Map<String, Object> res = new HashMap<>();
 
-                    mReg.forEach(metric -> res.put(metric.name(), valueOf(metric)));
+                    mreg.forEach(metric -> res.put(metric.name(), valueOf(metric)));
 
                     return res;
                 }
 
-                String mRegPrefix = mRegName + SEPARATOR;
+                String mregPrefix = mregName + SEPARATOR;
 
-                if (!name.startsWith(mRegPrefix))
+                if (!name.startsWith(mregPrefix))
                     continue;
 
-                if (mRegPrefix.length() == name.length())
+                if (mregPrefix.length() == name.length())
                     return null;
 
-                String metricName = name.substring(mRegPrefix.length());
+                String metricName = name.substring(mregPrefix.length());
 
-                Metric metric = mReg.findMetric(metricName);
+                Metric metric = mreg.findMetric(metricName);
 
                 if (metric != null)
                     return Collections.singletonMap(name, valueOf(metric));
 
-                Object val = searchHistogram(metricName, mReg);
+                Object val = searchHistogram(metricName, mreg);
 
                 if (val != null)
                     return Collections.singletonMap(name, val);

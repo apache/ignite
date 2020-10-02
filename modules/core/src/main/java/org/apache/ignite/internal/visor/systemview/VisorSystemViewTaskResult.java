@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.util.SimpleType;
+import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType;
 
 /** Reperesents result of {@link VisorSystemViewTask}. */
 public class VisorSystemViewTaskResult extends IgniteDataTransferObject {

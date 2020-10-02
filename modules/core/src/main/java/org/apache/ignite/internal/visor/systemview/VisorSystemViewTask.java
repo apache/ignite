@@ -33,13 +33,12 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
-import org.apache.ignite.util.SimpleType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
-import static org.apache.ignite.util.SimpleType.DATE;
-import static org.apache.ignite.util.SimpleType.NUMBER;
-import static org.apache.ignite.util.SimpleType.STRING;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.DATE;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.NUMBER;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /** Reperesents visor task for obtaining system view content. */
 @GridInternal
@@ -176,5 +175,19 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
 
             return res;
         }
+    }
+
+    /**
+     * Represents lightweight type descriptors.
+     */
+    public enum SimpleType {
+        /** Date. */
+        DATE,
+
+        /** Number. */
+        NUMBER,
+
+        /** String. */
+        STRING
     }
 }
