@@ -17,6 +17,29 @@
 
 package org.apache.ignite.cdc;
 
-public class ConsumerState {
+import java.io.File;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 
+/** Consumer state. */
+public class ConsumerState {
+    /** Capture data change state directory. */
+    public static final String CDC_STATE_DIR = "cdc";
+
+    /** State directory. */
+    private final File stateDir;
+
+    /**
+     * @param workDir Work directory.
+     */
+    public ConsumerState(File workDir, String consumerId) {
+        this.stateDir = new File(workDir, CDC_STATE_DIR);
+    }
+
+    public FileWALPointer get() {
+
+    }
+
+    public void save(FileWALPointer ptr) {
+
+    }
 }

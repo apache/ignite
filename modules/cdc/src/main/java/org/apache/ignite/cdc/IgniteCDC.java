@@ -114,23 +114,7 @@ public class IgniteCDC implements Runnable {
         if (log.isInfoEnabled())
             log.info("Node WAL directory found[dir=" + nodeWalDir[0] + ']');
 
-        Thread newFileThread = new Thread(() ->
-            wu.waitFor(nodeWalDir[0], p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches(), walFile -> {
-                File[] newWalFiles = new File[segments.length + 1];
-
-                System.arraycopy(segments, 0, newWalFiles, 0, segments.length);
-
-                newWalFiles[segments.length] = walFile.toFile();
-
-                Arrays.sort(newWalFiles);
-
-                segments = newWalFiles;
-
-                return true;
-            })
-        );
-
-        newFileThread.start();
+        watchForNewWALFiles(nodeWalDir);
 
         try {
             int segmentIdx = 0;
@@ -153,6 +137,27 @@ public class IgniteCDC implements Runnable {
         catch (InterruptedException | IgniteCheckedException e) {
             log.info("IgniteCDC stopped.");
         }
+    }
+
+    /** @param nodeWalDir */
+    private void watchForNewWALFiles(Path[] nodeWalDir) {
+        Thread newFileThread = new Thread(() ->
+            wu.waitFor(nodeWalDir[0], p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches(), walFile -> {
+                File[] newWalFiles = new File[segments.length + 1];
+
+                System.arraycopy(segments, 0, newWalFiles, 0, segments.length);
+
+                newWalFiles[segments.length] = walFile.toFile();
+
+                Arrays.sort(newWalFiles);
+
+                segments = newWalFiles;
+
+                return true;
+            })
+        );
+
+        newFileThread.start();
     }
 
     /**
