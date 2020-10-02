@@ -19,7 +19,7 @@ Module contains discovery tests.
 
 import re
 import time
-
+from datetime import datetime, timedelta
 from ducktape.mark.resource import cluster
 from ducktape.tests.status import FAIL
 
@@ -29,6 +29,7 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
+from ignitetest.services.utils.jmx_utils import JmxClient
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -100,7 +101,7 @@ class SnapshotTest(IgniteTest):
 
         self.logger.debug(data)
 
-        time.sleep(15)  # flushing snapshot
+        await_snapshot(service, logger=self.logger)
 
         print_snapshot_size(service, self.SNAPSHOT_NAME, self.logger)
 
@@ -178,6 +179,36 @@ def load(service_load: IgniteApplicationService, duration: int = 60):
         service_load.await_stopped(duration)
     except AssertionError:
         service_load.stop()
+
+
+def await_snapshot(service: IgniteApplicationService, time_out=60, logger=None):
+    """
+    Waiting for the snapshot to complete.
+    """
+    delta_time = datetime.now() + timedelta(seconds=time_out)
+
+    while datetime.now() < delta_time:
+        for node in service.nodes:
+            mbean = JmxClient(node).find_mbean('snapshot')
+            star_time = int(list(mbean.__getattr__('LastSnapshotStartTime'))[0])
+            end_time = int(list(mbean.__getattr__('LastSnapshotEndTime'))[0])
+            err_msg = list(mbean.__getattr__('LastSnapshotErrorMessage'))[0]
+
+            if logger is not None:
+                logger.debug(f'Hostname={node.account.hostname}, '
+                             f'LastSnapshotStartTime={star_time}, '
+                             f'LastSnapshotEndTime={end_time}, '
+                             f'LastSnapshotErrorMessage={err_msg}'
+                             )
+
+            if (0 < star_time < end_time) & (err_msg == ''):
+                return
+
+        time.sleep(1)
+
+    raise TimeoutError(f'LastSnapshotStartTime={star_time}, '
+                       f'LastSnapshotEndTime={end_time}, '
+                       f'LastSnapshotErrorMessage={err_msg}')
 
 
 def print_snapshot_size(service: IgniteApplicationService, snapshot_name: str, logger):

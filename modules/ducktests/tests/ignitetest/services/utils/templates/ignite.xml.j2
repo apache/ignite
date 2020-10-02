@@ -38,6 +38,10 @@
         <property name="consistentId" value="{{ config.consistent_id }}"/>
         <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
 
+        <property name="metricExporterSpi">
+            <bean class="org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"/>
+        </property>
+
         {{ misc_utils.cluster_state(config.cluster_state, config.version) }}
 
         {{ disco_utils.discovery_spi(config.discovery_spi) }}
