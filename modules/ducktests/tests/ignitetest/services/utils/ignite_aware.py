@@ -17,11 +17,13 @@
 This module contains the base class to build services aware of Ignite.
 """
 import signal
+import time
 from abc import abstractmethod, ABCMeta
 
+from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
-import time
+
 from datetime import datetime
 from time import monotonic
 
@@ -140,6 +142,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
             self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
                                      backoff_sec=backoff_sec)
     # pylint: disable=W0221
+
     def stop_node(self, node, clean_shutdown=True, timeout_sec=60):
         pids = self.pids(node)
         sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL

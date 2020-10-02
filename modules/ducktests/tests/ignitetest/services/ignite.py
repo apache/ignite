@@ -61,8 +61,6 @@ class IgniteService(IgniteAwareService):
         if len(self.pids(node)) == 0:
             raise Exception("No process ids recorded on node %s" % node.account.hostname)
 
-
-
     def stop_nodes_async(self, nodes, delay_ms=0, clean_shutdown=True, timeout_sec=20, wait_for_stop=False):
         """
         Stops the nodes asynchronously.
@@ -102,7 +100,6 @@ class IgniteService(IgniteAwareService):
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
         node.account.ssh("sudo rm -rf -- %s" % self.PERSISTENT_ROOT, allow_fail=False)
-
 
     def pids(self, node):
         try:

@@ -57,21 +57,20 @@ class ClientTest(IgniteTest):
     @cluster(num_nodes=CLUSTER_NODES)
     @ignite_versions(str(DEV_BRANCH))
     def test_ignite_start_stop(self, ignite_version):
-
         """
         test scenario
         """
         # prepare servers
         servers_count = self.CLUSTER_NODES - self.STATIC_CLIENTS_NUM - self.TEMP_CLIENTS_NUM
-        server_configuration = IgniteConfiguration(version=IgniteVersion(ignite_version))
-        ignite = IgniteService(self.test_context, server_configuration, num_nodes=servers_count)
+        server_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version))
+        ignite = IgniteService(self.test_context, server_cfg, num_nodes=servers_count)
         # build client config
-        client_configuration = server_configuration._replace(client_mode=True,discovery_spi=from_ignite_cluster(ignite))
+        client_cfg = server_cfg._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite))
 
         # prepare client services
         static_clients = IgniteApplicationService(
             self.test_context,
-            client_configuration,
+            client_cfg,
             java_class_name=self.JAVA_CLIENT_CLASS_NAME,
             num_nodes=self.STATIC_CLIENTS_NUM,
             params={"cacheName": self.CACHE_NAME,
@@ -79,7 +78,7 @@ class ClientTest(IgniteTest):
                     "pacing": self.PACING})
         temp_clients = IgniteApplicationService(
             self.test_context,
-            client_configuration,
+            client_cfg,
             java_class_name=self.JAVA_CLIENT_CLASS_NAME,
             num_nodes=self.TEMP_CLIENTS_NUM,
             params={"cacheName": self.CACHE_NAME,
@@ -105,9 +104,9 @@ class ClientTest(IgniteTest):
             temp_clients.start()
             time.sleep(self.CLIENTS_WORK_TIME_S)
             temp_clients.await_event("clients=" + str(self.STATIC_CLIENTS_NUM + self.TEMP_CLIENTS_NUM),
-                               timeout_sec=60,
-                               from_the_beginning=True,
-                               backoff_sec=1)
+                                     timeout_sec=60,
+                                     from_the_beginning=True,
+                                     backoff_sec=1)
             temp_clients.stop()
             ignite.await_event("clients=" + str(self.STATIC_CLIENTS_NUM),
                                timeout_sec=60,
