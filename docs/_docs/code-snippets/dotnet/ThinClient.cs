@@ -294,5 +294,16 @@ namespace dotnet_helloworld
             cluster.EnableWal("my-cache");
             //end::client-cluster[]
         }
+
+        public static void ClientClusterGroups()
+        {
+            var cfg = new IgniteClientConfiguration();
+            //tag::client-cluster-groups[]
+            IIgniteClient client = Ignition.StartClient(cfg);
+            IClientClusterGroup serversInDc1 = client.GetCluster().ForServers().ForAttribute("dc", "dc1");
+            foreach (IClientClusterNode node in serversInDc1.GetNodes())
+                Console.WriteLine($"Node ID: {node.Id}");
+            //end::client-cluster-groups[]
+        }
     }
 }
