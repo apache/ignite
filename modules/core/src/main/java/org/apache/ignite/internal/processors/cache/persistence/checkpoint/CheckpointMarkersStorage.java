@@ -42,7 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -145,7 +145,7 @@ public class CheckpointMarkersStorage {
      *
      * @param highBound FileWALPointer.
      */
-    public void removeCheckpointsUntil(FileWALPointer highBound) throws IgniteCheckedException {
+    public void removeCheckpointsUntil(WALPointer highBound) throws IgniteCheckedException {
         List<CheckpointEntry> removedFromHistory = history().onWalTruncated(highBound);
 
         for (CheckpointEntry cp : removedFromHistory)
@@ -177,8 +177,8 @@ public class CheckpointMarkersStorage {
         File startFile = null;
         File endFile = null;
 
-        FileWALPointer startPtr = CheckpointStatus.NULL_PTR;
-        FileWALPointer endPtr = CheckpointStatus.NULL_PTR;
+        WALPointer startPtr = CheckpointStatus.NULL_PTR;
+        WALPointer endPtr = CheckpointStatus.NULL_PTR;
 
         File dir = cpDir;
 
@@ -211,7 +211,7 @@ public class CheckpointMarkersStorage {
             }
         }
 
-        ByteBuffer buf = ByteBuffer.allocate(FileWALPointer.POINTER_SIZE);
+        ByteBuffer buf = ByteBuffer.allocate(WALPointer.POINTER_SIZE);
         buf.order(ByteOrder.nativeOrder());
 
         if (startFile != null)
@@ -241,7 +241,7 @@ public class CheckpointMarkersStorage {
         ) {
             List<CheckpointEntry> checkpoints = new ArrayList<>();
 
-            ByteBuffer buf = ByteBuffer.allocate(FileWALPointer.POINTER_SIZE);
+            ByteBuffer buf = ByteBuffer.allocate(WALPointer.POINTER_SIZE);
             buf.order(ByteOrder.nativeOrder());
 
             for (Path cpFile : cpFiles) {
@@ -278,7 +278,7 @@ public class CheckpointMarkersStorage {
         long cpTs = Long.parseLong(matcher.group(1));
         UUID cpId = UUID.fromString(matcher.group(2));
 
-        FileWALPointer ptr = readPointer(file, buf);
+        WALPointer ptr = readPointer(file, buf);
 
         return createCheckPointEntry(cpTs, ptr, cpId, null, CheckpointEntryType.START);
     }
@@ -290,7 +290,7 @@ public class CheckpointMarkersStorage {
      * @return WAL pointer.
      * @throws IgniteCheckedException If failed to read mignite-put-get-exampleark file.
      */
-    private FileWALPointer readPointer(File cpMarkerFile, ByteBuffer buf) throws IgniteCheckedException {
+    private WALPointer readPointer(File cpMarkerFile, ByteBuffer buf) throws IgniteCheckedException {
         buf.position(0);
 
         try (FileIO io = ioFactory.create(cpMarkerFile, READ)) {
@@ -298,7 +298,7 @@ public class CheckpointMarkersStorage {
 
             buf.flip();
 
-            return new FileWALPointer(buf.getLong(), buf.getInt(), buf.getInt());
+            return new WALPointer(buf.getLong(), buf.getInt(), buf.getInt());
         }
         catch (IOException e) {
             throw new IgniteCheckedException(
@@ -316,7 +316,7 @@ public class CheckpointMarkersStorage {
      */
     private CheckpointEntry createCheckPointEntry(
         long cpTs,
-        FileWALPointer ptr,
+        WALPointer ptr,
         UUID cpId,
         @Nullable CheckpointRecord rec,
         CheckpointEntryType type
@@ -411,7 +411,7 @@ public class CheckpointMarkersStorage {
     public CheckpointEntry writeCheckpointEntry(
         long cpTs,
         UUID cpId,
-        FileWALPointer ptr,
+        WALPointer ptr,
         @Nullable CheckpointRecord rec,
         CheckpointEntryType type,
         boolean skipSync
@@ -449,7 +449,7 @@ public class CheckpointMarkersStorage {
         ByteBuffer entryBuf,
         long cpTs,
         UUID cpId,
-        FileWALPointer ptr,
+        WALPointer ptr,
         @Nullable CheckpointRecord rec,
         CheckpointEntryType type
     ) {

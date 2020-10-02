@@ -30,7 +30,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -154,7 +154,7 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
 
         try (WALIterator it = iteratorFactory.iterator(walPath(name), walArchivePath(name))) {
             while (it.hasNext()) {
-                IgniteBiTuple<FileWALPointer, WALRecord> tup = it.next();
+                IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
                 WALRecord rec = tup.get2();
 

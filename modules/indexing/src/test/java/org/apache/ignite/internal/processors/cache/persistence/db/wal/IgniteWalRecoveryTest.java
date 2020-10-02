@@ -97,7 +97,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
@@ -1348,7 +1348,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         db.enableCheckpoints(false).get();
 
         // Log something to know where to start.
-        FileWALPointer ptr = sharedCtx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
+        WALPointer ptr = sharedCtx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
 
         info("Replay marker: " + ptr);
 
@@ -1408,7 +1408,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         db.enableCheckpoints(false).get();
 
         // Log something to know where to start.
-        FileWALPointer ptr = sharedCtx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
+        WALPointer ptr = sharedCtx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
 
         info("Replay marker: " + ptr);
 
@@ -1438,7 +1438,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         // Now check that deltas can be correctly applied.
         try (WALIterator it = sharedCtx.wal().replay(ptr)) {
             while (it.hasNext()) {
-                IgniteBiTuple<FileWALPointer, WALRecord> tup = it.next();
+                IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
                 WALRecord rec = tup.get2();
 
@@ -1662,7 +1662,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         db.enableCheckpoints(false).get();
 
         // Log something to know where to start.
-        FileWALPointer startPtr = sharedCtx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
+        WALPointer startPtr = sharedCtx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
 
         final int transactions = 100;
         final int operationsPerTransaction = 40;
@@ -1697,7 +1697,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         // Check that all DataRecords are within PREPARED and COMMITTED tx records.
         try (WALIterator it = sharedCtx.wal().replay(startPtr)) {
             while (it.hasNext()) {
-                IgniteBiTuple<FileWALPointer, WALRecord> tup = it.next();
+                IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
                 WALRecord rec = tup.get2();
 

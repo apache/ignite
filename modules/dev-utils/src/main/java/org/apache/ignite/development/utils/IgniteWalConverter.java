@@ -25,8 +25,8 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
@@ -104,9 +104,9 @@ public class IgniteWalConverter {
 
         try (WALIterator stIt = factory.iterator(iteratorParametersBuilder)) {
             while (stIt.hasNextX()) {
-                IgniteBiTuple<FileWALPointer, WALRecord> next = stIt.nextX();
+                IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
 
-                final FileWALPointer pointer = next.get1();
+                final WALPointer pointer = next.get1();
                 final WALRecord record = next.get2();
 
                 if (stat != null)
@@ -122,9 +122,9 @@ public class IgniteWalConverter {
 
             try (WALIterator stIt = factory.iterator(walArchiveDirWithConsistentId)) {
                 while (stIt.hasNextX()) {
-                    IgniteBiTuple<FileWALPointer, WALRecord> next = stIt.nextX();
+                    IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
 
-                    final FileWALPointer pointer = next.get1();
+                    final WALPointer pointer = next.get1();
                     final WALRecord record = next.get2();
 
                     if (stat != null)

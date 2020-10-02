@@ -27,7 +27,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -258,7 +258,7 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
             ig.context().cache().context().database().checkpointReadLock();
 
             try {
-                FileWALPointer ptr = walMgr.log(new AdHocWALRecord(), CURRENT_SEGMENT);
+                WALPointer ptr = walMgr.log(new AdHocWALRecord(), CURRENT_SEGMENT);
             }
             finally {
                 ig.context().cache().context().database().checkpointReadUnlock();

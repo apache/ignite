@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
@@ -51,7 +51,7 @@ public interface RecordSerializerFactory {
      *
      * @param readTypeFilter Read type filter.
      */
-    public RecordSerializerFactory recordDeserializeFilter(IgniteBiPredicate<WALRecord.RecordType, FileWALPointer> readTypeFilter);
+    public RecordSerializerFactory recordDeserializeFilter(IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter);
 
     /**
      * If marshalledMode is on, created serializer will read {@link MarshalledRecord} with raw binary data instead of

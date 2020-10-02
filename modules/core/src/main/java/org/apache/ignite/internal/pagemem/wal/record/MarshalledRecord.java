@@ -17,7 +17,7 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 
 /**
  * Special type of WAL record. Shouldn't be stored in file.
@@ -38,7 +38,7 @@ public class MarshalledRecord extends WALRecord {
      * @param pos WAL pointer to record.
      * @param buf Reusable buffer with record data.
      */
-    public MarshalledRecord(RecordType type, FileWALPointer pos, ByteBuffer buf) {
+    public MarshalledRecord(RecordType type, WALPointer pos, ByteBuffer buf) {
         this.type = type;
         this.buf = buf;
 

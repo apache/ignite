@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.List;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -39,7 +39,7 @@ public class GridCacheUpdateTxResult {
     private GridFutureAdapter<GridCacheUpdateTxResult> fut;
 
     /** */
-    private FileWALPointer logPtr;
+    private WALPointer logPtr;
 
     /** Mvcc history. */
     private List<MvccLinkAwareSearchRow> mvccHistory;
@@ -74,7 +74,7 @@ public class GridCacheUpdateTxResult {
      * @param success Success flag.
      * @param logPtr Logger WAL pointer for the update.
      */
-    GridCacheUpdateTxResult(boolean success, FileWALPointer logPtr) {
+    GridCacheUpdateTxResult(boolean success, WALPointer logPtr) {
         this.success = success;
         this.logPtr = logPtr;
     }
@@ -97,7 +97,7 @@ public class GridCacheUpdateTxResult {
      * @param updateCntr Update counter.
      * @param logPtr Logger WAL pointer for the update.
      */
-    GridCacheUpdateTxResult(boolean success, long updateCntr, FileWALPointer logPtr) {
+    GridCacheUpdateTxResult(boolean success, long updateCntr, WALPointer logPtr) {
         this.success = success;
         this.updateCntr = updateCntr;
         this.logPtr = logPtr;
@@ -120,7 +120,7 @@ public class GridCacheUpdateTxResult {
     /**
      * @return Logged WAL pointer for the update if persistence is enabled.
      */
-    public FileWALPointer loggedPointer() {
+    public WALPointer loggedPointer() {
         return logPtr;
     }
 

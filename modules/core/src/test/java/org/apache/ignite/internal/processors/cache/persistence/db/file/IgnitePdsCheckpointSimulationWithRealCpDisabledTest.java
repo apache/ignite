@@ -76,7 +76,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridFilteredClosableIterator;
@@ -171,7 +171,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         PageMemory mem = shared.database().dataRegion(null).pageMemory();
 
-        IgniteBiTuple<Map<FullPageId, Integer>, FileWALPointer> res;
+        IgniteBiTuple<Map<FullPageId, Integer>, WALPointer> res;
 
         try {
             res = runCheckpointing(ig, (PageMemoryImpl)mem, pageStore, shared.wal(),
@@ -225,7 +225,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         IgniteWriteAheadLogManager wal = shared.wal();
 
-        FileWALPointer start = wal.log(new CheckpointRecord(null));
+        WALPointer start = wal.log(new CheckpointRecord(null));
 
         final FullPageId[] initWrites = new FullPageId[10];
 
@@ -282,7 +282,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
             it.next();
 
             for (FullPageId initialWrite : initWrites) {
-                IgniteBiTuple<FileWALPointer, WALRecord> tup = it.next();
+                IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
                 assertTrue(String.valueOf(tup.get2()), tup.get2() instanceof PageSnapshot);
 
@@ -363,7 +363,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         UUID cpId = UUID.randomUUID();
 
-        FileWALPointer start = wal.log(new CheckpointRecord(cpId, null));
+        WALPointer start = wal.log(new CheckpointRecord(cpId, null));
 
         wal.flush(start, false);
 
@@ -386,7 +386,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         db.enableCheckpoints(false).get();
 
         try (PartitionMetaStateRecordExcludeIterator it = new PartitionMetaStateRecordExcludeIterator(wal.replay(start))) {
-            IgniteBiTuple<FileWALPointer, WALRecord> cpRecordTup = it.next();
+            IgniteBiTuple<WALPointer, WALRecord> cpRecordTup = it.next();
 
             assert cpRecordTup.get2() instanceof CheckpointRecord;
 
@@ -402,7 +402,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
             CacheObjectContext coctx = cctx.cacheObjectContext();
 
             while (idx < entries.size()) {
-                IgniteBiTuple<FileWALPointer, WALRecord> dataRecTup = it.next();
+                IgniteBiTuple<WALPointer, WALRecord> dataRecTup = it.next();
 
                 if (!mvcc)
                     assert dataRecTup.get2() instanceof DataRecord;
@@ -477,7 +477,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         UUID cpId = UUID.randomUUID();
 
-        FileWALPointer start = wal.log(new CheckpointRecord(cpId, null));
+        WALPointer start = wal.log(new CheckpointRecord(cpId, null));
 
         wal.flush(start, false);
 
@@ -506,7 +506,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         db.enableCheckpoints(false);
 
         try (PartitionMetaStateRecordExcludeIterator it = new PartitionMetaStateRecordExcludeIterator(wal.replay(start))) {
-            IgniteBiTuple<FileWALPointer, WALRecord> tup = it.next();
+            IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
             assert tup.get2() instanceof CheckpointRecord : tup.get2();
 
@@ -695,7 +695,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         GridKernalContext ctx,
         Map<FullPageId, Integer> res,
         PageMemory mem,
-        FileWALPointer start,
+        WALPointer start,
         IgniteWriteAheadLogManager wal
     ) throws Exception {
         Map<FullPageId, byte[]> replay = new HashMap<>();
@@ -703,7 +703,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         ByteBuffer buf = ByteBuffer.allocateDirect(mem.pageSize()).order(ByteOrder.nativeOrder());
 
         try (PartitionMetaStateRecordExcludeIterator it = new PartitionMetaStateRecordExcludeIterator(wal.replay(start))) {
-            IgniteBiTuple<FileWALPointer, WALRecord> tup = it.next();
+            IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
             assertTrue("Invalid record: " + tup, tup.get2() instanceof CheckpointRecord);
 
@@ -795,7 +795,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
      * @return Result map of random operations.
      * @throws Exception If failure occurred.
      */
-    private IgniteBiTuple<Map<FullPageId, Integer>, FileWALPointer> runCheckpointing(
+    private IgniteBiTuple<Map<FullPageId, Integer>, WALPointer> runCheckpointing(
         final IgniteEx ig,
         final PageMemoryImpl mem,
         final IgnitePageStoreManager storeMgr,
@@ -840,7 +840,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         // Mark the start position.
         CheckpointRecord cpRec = new CheckpointRecord(null);
 
-        FileWALPointer start = wal.log(cpRec);
+        WALPointer start = wal.log(cpRec);
 
         wal.flush(start, false);
 
@@ -1110,14 +1110,14 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     /**
      *
      */
-    private static class PartitionMetaStateRecordExcludeIterator extends GridFilteredClosableIterator<IgniteBiTuple<FileWALPointer, WALRecord>> {
+    private static class PartitionMetaStateRecordExcludeIterator extends GridFilteredClosableIterator<IgniteBiTuple<WALPointer, WALRecord>> {
         private PartitionMetaStateRecordExcludeIterator(
-            GridCloseableIterator<? extends IgniteBiTuple<FileWALPointer, WALRecord>> it) {
+            GridCloseableIterator<? extends IgniteBiTuple<WALPointer, WALRecord>> it) {
             super(it);
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean accept(IgniteBiTuple<FileWALPointer, WALRecord> tup) {
+        @Override protected boolean accept(IgniteBiTuple<WALPointer, WALRecord> tup) {
             return !(tup.get2() instanceof PartitionMetaStateRecord);
         }
     }

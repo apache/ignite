@@ -37,7 +37,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.lang.IgniteThrowableBiPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -167,7 +167,7 @@ public class CheckpointHistory {
     /**
      * @return First checkpoint WAL pointer if exists. Otherwise {@code null}.
      */
-    public FileWALPointer firstCheckpointPointer() {
+    public WALPointer firstCheckpointPointer() {
         CheckpointEntry entry = firstCheckpoint();
 
         return entry != null ? entry.checkpointMark() : null;
@@ -298,11 +298,11 @@ public class CheckpointHistory {
      *
      * @return List of checkpoint entries removed from history.
      */
-    public List<CheckpointEntry> onWalTruncated(FileWALPointer highBound) {
+    public List<CheckpointEntry> onWalTruncated(WALPointer highBound) {
         List<CheckpointEntry> removed = new ArrayList<>();
 
         for (CheckpointEntry cpEntry : histMap.values()) {
-            FileWALPointer cpPnt = cpEntry.checkpointMark();
+            WALPointer cpPnt = cpEntry.checkpointMark();
 
             if (highBound.compareTo(cpPnt) <= 0)
                 break;
@@ -339,7 +339,7 @@ public class CheckpointHistory {
     public List<CheckpointEntry> onCheckpointFinished(Checkpoint chp) {
         chp.walSegsCoveredRange(calculateWalSegmentsCovered());
 
-        FileWALPointer checkpointMarkUntilDel = isWalHistorySizeParameterEnabled //check for compatibility mode.
+        WALPointer checkpointMarkUntilDel = isWalHistorySizeParameterEnabled //check for compatibility mode.
             ? checkpointMarkUntilDeleteByMemorySize()
             : newerPointer(checkpointMarkUntilDeleteByMemorySize(), checkpointMarkUntilDeleteByArchiveSize());
 
@@ -363,7 +363,7 @@ public class CheckpointHistory {
      * @param secondPointer One of pointers to choose the newest.
      * @return The newest pointer from input ones.
      */
-    private FileWALPointer newerPointer(FileWALPointer firstPointer, FileWALPointer secondPointer) {
+    private WALPointer newerPointer(WALPointer firstPointer, WALPointer secondPointer) {
         if (firstPointer == null)
             return secondPointer;
 
@@ -378,7 +378,7 @@ public class CheckpointHistory {
      *
      * @return Checkpoint mark until which checkpoints can be deleted(not including this pointer).
      */
-    private FileWALPointer checkpointMarkUntilDeleteByMemorySize() {
+    private WALPointer checkpointMarkUntilDeleteByMemorySize() {
         if (histMap.size() <= maxCpHistMemSize)
             return null;
 
@@ -397,7 +397,7 @@ public class CheckpointHistory {
      *
      * @return Checkpoint mark until which checkpoints can be deleted(not including this pointer).
      */
-    @Nullable private FileWALPointer checkpointMarkUntilDeleteByArchiveSize() {
+    @Nullable private WALPointer checkpointMarkUntilDeleteByArchiveSize() {
         long absFileIdxToDel = wal.maxArchivedSegmentToDelete();
 
         if (absFileIdxToDel < 0)
@@ -442,7 +442,7 @@ public class CheckpointHistory {
 
         Map.Entry<Long, CheckpointEntry> previousEntry = histMap.lowerEntry(lastEntry.getKey());
 
-        FileWALPointer lastWALPointer = lastEntry.getValue().checkpointMark();
+        WALPointer lastWALPointer = lastEntry.getValue().checkpointMark();
 
         long lastIdx = lastWALPointer.index();
         long prevIdx = 0;
@@ -465,10 +465,10 @@ public class CheckpointHistory {
      * @param margin Margin pointer.
      * @return Earliest WAL pointer for group specified.
      */
-    @Nullable public FileWALPointer searchEarliestWalPointer(
+    @Nullable public WALPointer searchEarliestWalPointer(
         int grpId,
         Map<Integer, Long> partsCounter,
-        FileWALPointer latestReservedPointer,
+        WALPointer latestReservedPointer,
         long margin
     ) throws IgniteCheckedException {
         if (F.isEmpty(partsCounter))
@@ -476,7 +476,7 @@ public class CheckpointHistory {
 
         Map<Integer, Long> modifiedPartsCounter = new HashMap<>(partsCounter);
 
-        FileWALPointer minPtr = null;
+        WALPointer minPtr = null;
 
         LinkedList<WalPointerCandidate> historyPointerCandidate = new LinkedList<>();
 
@@ -487,7 +487,7 @@ public class CheckpointHistory {
 
             Iterator<Map.Entry<Integer, Long>> iter = modifiedPartsCounter.entrySet().iterator();
 
-            FileWALPointer ptr = cpEntry.checkpointMark();
+            WALPointer ptr = cpEntry.checkpointMark();
 
             while (iter.hasNext()) {
                 Map.Entry<Integer, Long> entry = iter.next();
@@ -542,15 +542,15 @@ public class CheckpointHistory {
      * @param cpEntry Checkpoint entry.
      * @return Minimal WAL pointer.
      */
-    private FileWALPointer getMinimalPointer(
+    private WALPointer getMinimalPointer(
         Map<Integer, Long> partsCounter,
         long margin,
-        FileWALPointer minPtr,
+        WALPointer minPtr,
         LinkedList<WalPointerCandidate> historyPointerCandidate,
         CheckpointEntry cpEntry
     ) {
         while (!F.isEmpty(historyPointerCandidate)) {
-            FileWALPointer ptr = historyPointerCandidate.poll()
+            WALPointer ptr = historyPointerCandidate.poll()
                 .choose(cpEntry, margin, partsCounter);
 
             if (minPtr == null || ptr.compareTo(minPtr) < 0)
@@ -576,7 +576,7 @@ public class CheckpointHistory {
         private final long partContr;
 
         /** WAL pointer. */
-        private final FileWALPointer walPntr;
+        private final WALPointer walPntr;
 
         /** Partition counter at the moment of WAL pointer. */
         private final long walPntrCntr;
@@ -588,7 +588,7 @@ public class CheckpointHistory {
          * @param walPntr WAL pointer.
          * @param walPntrCntr Counter of WAL pointer.
          */
-        public WalPointerCandidate(int grpId, int part, long partContr, FileWALPointer walPntr, long walPntrCntr) {
+        public WalPointerCandidate(int grpId, int part, long partContr, WALPointer walPntr, long walPntrCntr) {
             this.grpId = grpId;
             this.part = part;
             this.partContr = partContr;
@@ -605,7 +605,7 @@ public class CheckpointHistory {
          * @param partCntsForUpdate Collection of partition id by counter.
          * @return Chosen WAL pointer.
          */
-        public FileWALPointer choose(
+        public WALPointer choose(
             CheckpointEntry cpEntry,
             long margin,
             Map<Integer, Long> partCntsForUpdate

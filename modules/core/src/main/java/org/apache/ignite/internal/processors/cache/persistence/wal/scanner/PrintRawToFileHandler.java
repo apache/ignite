@@ -23,8 +23,8 @@ import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -47,7 +47,7 @@ public class PrintRawToFileHandler extends PrintToFileHandler {
     }
 
     /** {@inheritDoc} */
-    @Override protected byte[] getBytes(IgniteBiTuple<FileWALPointer, WALRecord> record) {
+    @Override protected byte[] getBytes(IgniteBiTuple<WALPointer, WALRecord> record) {
         try {
             WALRecord walRec = record.get2();
 

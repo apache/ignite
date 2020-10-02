@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -159,7 +159,7 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
 
         log.info("Corrupted segment with idx:" + corruptedIdx);
 
-        FileWALPointer corruptedPtr = corruptedWAlSegmentFile(
+        WALPointer corruptedPtr = corruptedWAlSegmentFile(
             descs.get(corruptedIdx),
             new RandomAccessFileIOFactory(),
             iteratorFactory
@@ -167,13 +167,13 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
 
         log.info("Should fail on ptr " + corruptedPtr);
 
-        FileWALPointer lastReadPtr = null;
+        WALPointer lastReadPtr = null;
 
         boolean exception = false;
 
         try (WALIterator it0 = it) {
             while (it0.hasNextX()) {
-                IgniteBiTuple<FileWALPointer, WALRecord> tup = it0.nextX();
+                IgniteBiTuple<WALPointer, WALRecord> tup = it0.nextX();
 
                 lastReadPtr = tup.get1();
             }
@@ -200,16 +200,16 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
      * @throws IOException If IO exception.
      * @throws IgniteCheckedException If iterator failed.
      */
-    private FileWALPointer corruptedWAlSegmentFile(
+    private WALPointer corruptedWAlSegmentFile(
         FileDescriptor desc,
         FileIOFactory ioFactory,
         IgniteWalIteratorFactory iteratorFactory
     ) throws IOException, IgniteCheckedException {
-        LinkedList<FileWALPointer> pointers = new LinkedList<>();
+        LinkedList<WALPointer> pointers = new LinkedList<>();
 
         try (WALIterator it = iteratorFactory.iterator(desc.file())) {
             while (it.hasNext()) {
-                IgniteBiTuple<FileWALPointer, WALRecord> tup = it.next();
+                IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
                 pointers.add(tup.get1());
             }
@@ -217,7 +217,7 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
 
         int pointToCorrupt = current().nextInt(pointers.size());
 
-        FileWALPointer ptr = pointers.get(pointToCorrupt);
+        WALPointer ptr = pointers.get(pointToCorrupt);
 
         int offset = ptr.fileOffset();
 

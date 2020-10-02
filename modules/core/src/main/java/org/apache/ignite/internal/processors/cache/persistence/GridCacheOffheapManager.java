@@ -96,7 +96,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
@@ -1087,7 +1087,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
 
-        FileWALPointer latestReservedPointer = database.latestWalPointerReservedForPreloading();
+        WALPointer latestReservedPointer = database.latestWalPointerReservedForPreloading();
 
         if (latestReservedPointer == null)
             throw new IgniteHistoricalIteratorException("Historical iterator wasn't created, because WAL isn't reserved.");
@@ -1101,7 +1101,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             partsCounters.put(p, initCntr);
         }
 
-        FileWALPointer minPtr = database.checkpointHistory().searchEarliestWalPointer(grp.groupId(),
+        WALPointer minPtr = database.checkpointHistory().searchEarliestWalPointer(grp.groupId(),
             partsCounters, latestReservedPointer, grp.hasAtomicCaches() ? walAtomicCacheMargin : 0L);
 
         assert latestReservedPointer.compareTo(minPtr) <= 0
@@ -1488,7 +1488,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     // Search for next DataEntry while applying rollback counters.
                     while (walIt.hasNext()) {
-                        IgniteBiTuple<FileWALPointer, WALRecord> rec = walIt.next();
+                        IgniteBiTuple<WALPointer, WALRecord> rec = walIt.next();
 
                         if (rec.get2() instanceof DataRecord) {
                             DataRecord data = (DataRecord)rec.get2();

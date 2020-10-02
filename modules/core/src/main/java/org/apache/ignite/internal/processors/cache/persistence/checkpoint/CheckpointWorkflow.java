@@ -61,7 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.Checkpoin
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -156,7 +156,7 @@ public class CheckpointWorkflow {
     @Nullable private volatile IgniteThreadPoolExecutor checkpointCollectPagesInfoPool;
 
     /** Pointer to a memory recovery record that should be included into the next checkpoint record. */
-    private volatile FileWALPointer memoryRecoveryRecordPtr;
+    private volatile WALPointer memoryRecoveryRecordPtr;
 
     /**
      * @param logger Logger.
@@ -242,7 +242,7 @@ public class CheckpointWorkflow {
 
         boolean hasPartitionsToDestroy;
 
-        FileWALPointer cpPtr = null;
+        WALPointer cpPtr = null;
 
         CheckpointContextImpl ctx0 = new CheckpointContextImpl(
             curr, new PartitionAllocationMap(), checkpointCollectPagesInfoPool, workProgressDispatcher
@@ -596,7 +596,7 @@ public class CheckpointWorkflow {
     public void finalizeCheckpointOnRecovery(
         long cpTs,
         UUID cpId,
-        FileWALPointer walPtr,
+        WALPointer walPtr,
         StripedExecutor exec,
         CheckpointPagesWriterFactory checkpointPagesWriterFactory
     ) throws IgniteCheckedException {
@@ -682,7 +682,7 @@ public class CheckpointWorkflow {
     /**
      * @param memoryRecoveryRecordPtr Memory recovery record pointer.
      */
-    public void memoryRecoveryRecordPtr(FileWALPointer memoryRecoveryRecordPtr) {
+    public void memoryRecoveryRecordPtr(WALPointer memoryRecoveryRecordPtr) {
         this.memoryRecoveryRecordPtr = memoryRecoveryRecordPtr;
     }
 

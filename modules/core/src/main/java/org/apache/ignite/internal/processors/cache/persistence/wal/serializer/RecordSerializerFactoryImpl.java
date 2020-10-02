@@ -20,7 +20,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +35,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
     private boolean needWritePointer;
 
     /** Read record filter. */
-    private @Nullable IgniteBiPredicate<WALRecord.RecordType, FileWALPointer> recordDeserializeFilter;
+    private @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter;
 
     /**
      * Marshalled mode flag.
@@ -58,7 +58,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
      */
     public RecordSerializerFactoryImpl(
         GridCacheSharedContext cctx,
-        @Nullable IgniteBiPredicate<WALRecord.RecordType, FileWALPointer> readTypeFilter
+        @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
     ) {
         this.cctx = cctx;
         this.recordDeserializeFilter = readTypeFilter;
@@ -110,13 +110,13 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
     /**
      * @return Read type filter.
      */
-    public IgniteBiPredicate<WALRecord.RecordType, FileWALPointer> recordDeserializeFilter() {
+    public IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter() {
         return recordDeserializeFilter;
     }
 
     /** {@inheritDoc} */
     @Override public RecordSerializerFactoryImpl recordDeserializeFilter(
-        @Nullable IgniteBiPredicate<WALRecord.RecordType, FileWALPointer> readTypeFilter
+        @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
     ) {
         this.recordDeserializeFilter = readTypeFilter;
 

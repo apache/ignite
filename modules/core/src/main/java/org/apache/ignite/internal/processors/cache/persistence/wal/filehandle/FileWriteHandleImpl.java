@@ -42,8 +42,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
@@ -228,7 +228,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      * @throws StorageException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    @Override @Nullable public FileWALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException {
+    @Override @Nullable public WALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException {
         assert rec.size() > 0 : rec;
 
         for (; ; ) {
@@ -242,7 +242,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
             else
                 seg = buf.offer(rec.size());
 
-            FileWALPointer ptr = null;
+            WALPointer ptr = null;
 
             if (seg != null) {
                 try {
@@ -253,7 +253,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                     if (buf == null)
                         return null; // Can not write to this segment, need to switch to the next one.
 
-                    ptr = new FileWALPointer(getSegmentId(), pos, rec.size());
+                    ptr = new WALPointer(getSegmentId(), pos, rec.size());
 
                     rec.position(ptr);
 
@@ -293,7 +293,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      *
      * @param ptr Pointer.
      */
-    public void flushOrWait(FileWALPointer ptr) throws IgniteCheckedException {
+    public void flushOrWait(WALPointer ptr) throws IgniteCheckedException {
         if (ptr != null) {
             // If requested obsolete file index, it must be already flushed by close.
             if (ptr.index() != getSegmentId())
@@ -311,7 +311,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
     /**
      * @param ptr Pointer.
      */
-    public void flush(FileWALPointer ptr) throws IgniteCheckedException {
+    public void flush(WALPointer ptr) throws IgniteCheckedException {
         if (ptr == null) { // Unconditional flush.
             walWriter.flushAll();
 
@@ -344,7 +344,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      * @param ptr WAL pointer to check.
      * @return {@code False} if this pointer has been already sync'ed.
      */
-    @Override public boolean needFsync(FileWALPointer ptr) {
+    @Override public boolean needFsync(WALPointer ptr) {
         // If index has changed, it means that the log was rolled over and already sync'ed.
         // If requested position is smaller than last sync'ed, it also means all is good.
         // If position is equal, then our record is the last not synced.
@@ -354,11 +354,11 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
     /**
      * @return Pointer to the end of the last written record (probably not fsync-ed).
      */
-    @Override public FileWALPointer position() {
+    @Override public WALPointer position() {
         lock.lock();
 
         try {
-            return new FileWALPointer(getSegmentId(), (int)written, 0);
+            return new WALPointer(getSegmentId(), (int)written, 0);
         }
         finally {
             lock.unlock();
@@ -369,7 +369,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      * @param ptr Pointer to sync.
      * @throws StorageException If failed.
      */
-    @Override public void fsync(FileWALPointer ptr) throws StorageException, IgniteCheckedException {
+    @Override public void fsync(WALPointer ptr) throws StorageException, IgniteCheckedException {
         lock.lock();
 
         try {
@@ -491,7 +491,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                     if (rollOver && written + switchSegmentRecSize < maxWalSegmentSize) {
                         segmentRecord.size(switchSegmentRecSize);
 
-                        FileWALPointer segRecPtr = addRecord(segmentRecord);
+                        WALPointer segRecPtr = addRecord(segmentRecord);
 
                         if (segRecPtr != null) {
                             fsync(segRecPtr);

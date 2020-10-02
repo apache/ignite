@@ -37,7 +37,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -67,7 +67,7 @@ public class WalScannerTest {
     private static final String TEST_DUMP_FILE = "output.txt";
 
     /** **/
-    private static FileWALPointer ZERO_POINTER = new FileWALPointer(0, 0, 0);
+    private static WALPointer ZERO_POINTER = new WALPointer(0, 0, 0);
 
     /**
      * @throws Exception If failed.
@@ -79,7 +79,7 @@ public class WalScannerTest {
         int grpId = 123;
 
         PageSnapshot expPageSnapshot = new PageSnapshot(new FullPageId(expPageId, grpId), dummyPage(1024, expPageId), 1024);
-        CheckpointRecord expCheckpoint = new CheckpointRecord(new FileWALPointer(5738, 0, 0));
+        CheckpointRecord expCheckpoint = new CheckpointRecord(new WALPointer(5738, 0, 0));
         FixCountRecord expDeltaPage = new FixCountRecord(grpId, expPageId, 4);
 
         WALIterator mockedIter = mockWalIterator(
@@ -129,7 +129,7 @@ public class WalScannerTest {
         int grpId = 123;
 
         PageSnapshot expPageSnapshot = new PageSnapshot(new FullPageId(expPageId1, grpId), dummyPage(1024, expPageId1), 1024);
-        CheckpointRecord expCheckpoint = new CheckpointRecord(new FileWALPointer(5738, 0, 0));
+        CheckpointRecord expCheckpoint = new CheckpointRecord(new WALPointer(5738, 0, 0));
         FixCountRecord expDeltaPage1 = new FixCountRecord(grpId, expPageId2, 4);
         FixCountRecord expDeltaPage2 = new FixCountRecord(grpId, expPageId3, 4);
 
@@ -189,7 +189,7 @@ public class WalScannerTest {
 
         WALIterator mockedIter = mockWalIterator(
             new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expPageId, grpId), dummyPage(1024, expPageId), 1024)),
-            new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new FileWALPointer(5738, 0, 0))),
+            new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new WALPointer(5738, 0, 0))),
             new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(grpId, expPageId, 4))
         );
 
@@ -236,7 +236,7 @@ public class WalScannerTest {
 
         WALIterator mockedIter = mockWalIterator(
             new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expectedPageId, grpId), dummyPage(1024, expectedPageId), 1024)),
-            new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new FileWALPointer(5738, 0, 0))),
+            new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new WALPointer(5738, 0, 0))),
             new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(grpId, expectedPageId, 4))
         );
 
@@ -289,7 +289,7 @@ public class WalScannerTest {
 
         WALIterator mockedIter = mockWalIterator(
             new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expPageId, grpId), dummyPage(1024, expPageId), 1024)),
-            new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new FileWALPointer(5738, 0, 0))),
+            new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new WALPointer(5738, 0, 0))),
             new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(grpId, expPageId, 4))
         );
 
@@ -341,8 +341,8 @@ public class WalScannerTest {
      * @return Mocked WAL iterator.
      */
     private WALIterator mockWalIterator(
-        IgniteBiTuple<FileWALPointer, WALRecord> first,
-        IgniteBiTuple<FileWALPointer, WALRecord>... tail
+        IgniteBiTuple<WALPointer, WALRecord> first,
+        IgniteBiTuple<WALPointer, WALRecord>... tail
     ) {
         Boolean[] hasNextReturn = new Boolean[tail.length + 1];
         Arrays.fill(hasNextReturn, true);

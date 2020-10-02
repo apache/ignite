@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 
 /**
  * Tracks various checkpoint phases and stats.
@@ -236,7 +236,7 @@ public class CheckpointMetricsTracker {
     /**
      * @return Duration of checkpoint entry buffer writing to file.
      *
-     * @see CheckpointMarkersStorage#writeCheckpointEntry(long, UUID, FileWALPointer, CheckpointRecord, CheckpointEntryType, boolean)
+     * @see CheckpointMarkersStorage#writeCheckpointEntry(long, UUID, WALPointer, CheckpointRecord, CheckpointEntryType, boolean)
      */
     public long writeCheckpointEntryDuration() {
         return splitAndSortCpPagesStart - walCpRecordFsyncEnd;

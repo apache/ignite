@@ -30,7 +30,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -156,7 +156,7 @@ public class WALRecordSerializationTest extends GridCommonAbstractTest {
 
         IgniteWriteAheadLogManager wal = ignite.context().cache().context().wal();
 
-        FileWALPointer lastPointer = null;
+        WALPointer lastPointer = null;
 
         ignite.context().cache().context().database().checkpointReadLock();
         try {

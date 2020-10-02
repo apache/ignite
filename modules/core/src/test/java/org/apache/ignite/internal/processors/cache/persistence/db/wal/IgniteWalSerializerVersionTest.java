@@ -32,7 +32,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TimeStampRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV2Serializer;
@@ -249,10 +249,10 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         assertTrue(!recs.isEmpty());
 
-        FileWALPointer p = null;
+        WALPointer p = null;
 
         for (WALRecord rec : recs) {
-            FileWALPointer p0 = wal.log(rec);
+            WALPointer p0 = wal.log(rec);
 
             if (p == null)
                 p = p0;
@@ -264,7 +264,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         try (TimestampRecordIterator it = new TimestampRecordIterator(wal.replay(p))) {
             while (it.hasNext()) {
-                IgniteBiTuple<FileWALPointer, WALRecord> tup0 = it.next();
+                IgniteBiTuple<WALPointer, WALRecord> tup0 = it.next();
 
                 checker.assertRecords(itToCheck.next(), tup0.get2());
             }
@@ -305,16 +305,16 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TimestampRecordIterator extends GridFilteredClosableIterator<IgniteBiTuple<FileWALPointer, WALRecord>> {
+    private static class TimestampRecordIterator extends GridFilteredClosableIterator<IgniteBiTuple<WALPointer, WALRecord>> {
         /**
          * @param it Iterator.
          */
-        private TimestampRecordIterator(GridCloseableIterator<? extends IgniteBiTuple<FileWALPointer, WALRecord>> it) {
+        private TimestampRecordIterator(GridCloseableIterator<? extends IgniteBiTuple<WALPointer, WALRecord>> it) {
             super(it);
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean accept(IgniteBiTuple<FileWALPointer, WALRecord> tup) {
+        @Override protected boolean accept(IgniteBiTuple<WALPointer, WALRecord> tup) {
             return tup.get2() instanceof TimeStampRecord;
         }
     }

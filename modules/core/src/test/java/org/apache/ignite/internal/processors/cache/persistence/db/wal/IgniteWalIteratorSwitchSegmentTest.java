@@ -45,8 +45,8 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
@@ -306,7 +306,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         // Check that switch segment works as expected and all record is reachable.
         try (WALIterator it = walMgr.replay(null)) {
             while (it.hasNext()) {
-                IgniteBiTuple<FileWALPointer, WALRecord> tup = it.next();
+                IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
                 WALRecord rec0 = tup.get2();
 
@@ -372,7 +372,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                     startedIteratorLatch.countDown();
 
                     while (it.hasNext()) {
-                        IgniteBiTuple<FileWALPointer, WALRecord> tup = it.next();
+                        IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
                         WALRecord rec0 = tup.get2();
 

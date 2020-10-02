@@ -30,7 +30,7 @@ import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -65,10 +65,10 @@ public class FilteredWalIteratorTest {
     private static Random random = new Random();
 
     /** **/
-    private static FileWALPointer ZERO_POINTER = new FileWALPointer(0, 0, 0);
+    private static WALPointer ZERO_POINTER = new WALPointer(0, 0, 0);
 
     /** **/
-    private static IgniteBiTuple<FileWALPointer, WALRecord> TEST_RECORD = new IgniteBiTuple<>(
+    private static IgniteBiTuple<WALPointer, WALRecord> TEST_RECORD = new IgniteBiTuple<>(
         ZERO_POINTER, new MetastoreDataRecord("key", new byte[0])
     );
 
@@ -76,10 +76,10 @@ public class FilteredWalIteratorTest {
     private WALIterator mockedIter;
 
     /** Iterator filter for test. */
-    private Predicate<IgniteBiTuple<FileWALPointer, WALRecord>> filter;
+    private Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter;
 
     /** Expected result for iterator and filter. */
-    private List<IgniteBiTuple<FileWALPointer, WALRecord>> expRes;
+    private List<IgniteBiTuple<WALPointer, WALRecord>> expRes;
 
     /**
      * @param nameOfCase Case name. It required only for printing test name.
@@ -90,8 +90,8 @@ public class FilteredWalIteratorTest {
     public FilteredWalIteratorTest(
         String nameOfCase,
         WALIterator mockedIter,
-        Predicate<IgniteBiTuple<FileWALPointer, WALRecord>> filter,
-        List<IgniteBiTuple<FileWALPointer, WALRecord>> expRes) {
+        Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter,
+        List<IgniteBiTuple<WALPointer, WALRecord>> expRes) {
         this.mockedIter = mockedIter;
         this.filter = filter;
         this.expRes = expRes;
@@ -104,7 +104,7 @@ public class FilteredWalIteratorTest {
     public void shouldReturnCorrectlyFilteredRecords() throws IgniteCheckedException {
         FilteredWalIterator filteredIter = new FilteredWalIterator(mockedIter, filter);
 
-        List<IgniteBiTuple<FileWALPointer, WALRecord>> ans = new ArrayList<>();
+        List<IgniteBiTuple<WALPointer, WALRecord>> ans = new ArrayList<>();
         try (WALIterator it = filteredIter) {
             while (it.hasNext())
                 ans.add(it.next());
@@ -136,7 +136,7 @@ public class FilteredWalIteratorTest {
      */
     private static List<Object[]> prepareTestCaseData(
         String testCaseName,
-        Predicate<IgniteBiTuple<FileWALPointer, WALRecord>> filter
+        Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter
     ) {
         ArrayList<Object[]> res = new ArrayList<>(ITERATORS_COUNT_PER_FILTER);
 
@@ -145,7 +145,7 @@ public class FilteredWalIteratorTest {
         hasNextReturn[RECORDS_COUNT_IN_ITERATOR] = false;
 
         for (int i = 0; i < ITERATORS_COUNT_PER_FILTER; i++) {
-            List<IgniteBiTuple<FileWALPointer, WALRecord>> tuples = randomRecords();
+            List<IgniteBiTuple<WALPointer, WALRecord>> tuples = randomRecords();
 
             WALIterator mockedIter = Mockito.mock(WALIterator.class);
             when(mockedIter.hasNext()).thenReturn(true, hasNextReturn);
@@ -160,8 +160,8 @@ public class FilteredWalIteratorTest {
     /**
      * @return Random records list for iteration.
      */
-    private static List<IgniteBiTuple<FileWALPointer, WALRecord>> randomRecords() {
-        ArrayList<IgniteBiTuple<FileWALPointer, WALRecord>> res = new ArrayList<>(RECORDS_COUNT_IN_ITERATOR);
+    private static List<IgniteBiTuple<WALPointer, WALRecord>> randomRecords() {
+        ArrayList<IgniteBiTuple<WALPointer, WALRecord>> res = new ArrayList<>(RECORDS_COUNT_IN_ITERATOR);
 
         for (int i = 0; i < RECORDS_COUNT_IN_ITERATOR; i++)
             res.add(randomRecord());
@@ -172,14 +172,14 @@ public class FilteredWalIteratorTest {
     /**
      * @return Random test record.
      */
-    private static IgniteBiTuple<FileWALPointer, WALRecord> randomRecord() {
+    private static IgniteBiTuple<WALPointer, WALRecord> randomRecord() {
         int recordId = random.nextInt(9);
 
         switch (recordId) {
             case 0:
                 return new IgniteBiTuple<>(ZERO_POINTER, new MetastoreDataRecord("key", new byte[0]));
             case 1:
-                return new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new FileWALPointer(5738, 0, 0)));
+                return new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new WALPointer(5738, 0, 0)));
             case 2:
                 return new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(1, 1), dummyPage(1024, 1), 1024));
             case 3:

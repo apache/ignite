@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,12 +39,12 @@ public class CheckpointRecord extends WALRecord {
     private Map<Integer, CacheState> cacheGrpStates;
 
     /** Safe replay pointer. */
-    private FileWALPointer cpMark;
+    private WALPointer cpMark;
 
     /**
      * @param cpMark Checkpoint mark.
      */
-    public CheckpointRecord(@Nullable FileWALPointer cpMark) {
+    public CheckpointRecord(@Nullable WALPointer cpMark) {
         this(UUID.randomUUID(), cpMark);
     }
 
@@ -52,7 +52,7 @@ public class CheckpointRecord extends WALRecord {
      * @param cpId Checkpoint ID.
      * @param cpMark Checkpoint mark.
      */
-    public CheckpointRecord(UUID cpId, @Nullable FileWALPointer cpMark) {
+    public CheckpointRecord(UUID cpId, @Nullable WALPointer cpMark) {
         this.cpId = cpId;
         this.cpMark = cpMark;
     }
@@ -63,7 +63,7 @@ public class CheckpointRecord extends WALRecord {
      * @param cpMark Checkpoint mark.
      * @param end Checkpoint end flag - deprecated expected to be always false
      */
-    public CheckpointRecord(UUID cpId, @Nullable FileWALPointer cpMark, boolean end) {
+    public CheckpointRecord(UUID cpId, @Nullable WALPointer cpMark, boolean end) {
         this.cpId = cpId;
         this.end = end;
         this.cpMark = cpMark;
@@ -116,7 +116,7 @@ public class CheckpointRecord extends WALRecord {
     /**
      * @return Safe replay pointer.
      */
-    public FileWALPointer checkpointMark() {
+    public WALPointer checkpointMark() {
         return cpMark;
     }
 

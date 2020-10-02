@@ -35,8 +35,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -236,7 +236,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public FileWALPointer flush(FileWALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
+    @Override public WALPointer flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
@@ -246,12 +246,12 @@ public class FileHandleManagerImpl implements FileHandleManager {
         if (cur == null)
             return null;
 
-        FileWALPointer filePtr;
+        WALPointer filePtr;
 
         if (ptr == null) {
             long pos = cur.buf.tail();
 
-            filePtr = new FileWALPointer(cur.getSegmentId(), (int)pos, 0);
+            filePtr = new WALPointer(cur.getSegmentId(), (int)pos, 0);
         }
         else
             filePtr = ptr;

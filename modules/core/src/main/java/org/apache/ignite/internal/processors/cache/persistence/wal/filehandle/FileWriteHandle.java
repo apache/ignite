@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -51,7 +51,7 @@ public interface FileWriteHandle {
      * @throws StorageException if storage was failed.
      * @throws IgniteCheckedException if fail.
      */
-    @Nullable FileWALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException;
+    @Nullable WALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException;
 
     /**
      * Flush all records.
@@ -64,12 +64,12 @@ public interface FileWriteHandle {
      * @param ptr Pointer.
      * @return {@code true} if fsync needed.
      */
-    boolean needFsync(FileWALPointer ptr);
+    boolean needFsync(WALPointer ptr);
 
     /**
      * @return Pointer to the end of the last written record (probably not fsync-ed).
      */
-    FileWALPointer position();
+    WALPointer position();
 
     /**
      * Do fsync.
@@ -78,7 +78,7 @@ public interface FileWriteHandle {
      * @throws StorageException if storage fail.
      * @throws IgniteCheckedException if fail.
      */
-    void fsync(FileWALPointer ptr) throws StorageException, IgniteCheckedException;
+    void fsync(WALPointer ptr) throws StorageException, IgniteCheckedException;
 
     /**
      * Close buffer.

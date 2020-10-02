@@ -129,13 +129,13 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     /**
      *
      */
-    private static class LogicalRecordsFilter implements P2<WALRecord.RecordType, FileWALPointer> {
+    private static class LogicalRecordsFilter implements P2<WALRecord.RecordType, WALPointer> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
 
         /** {@inheritDoc} */
-        @Override public boolean apply(WALRecord.RecordType type, FileWALPointer ptr) {
+        @Override public boolean apply(WALRecord.RecordType type, WALPointer ptr) {
             return type.purpose() == WALRecord.RecordPurpose.LOGICAL || type == WALRecord.RecordType.CHECKPOINT_RECORD;
         }
     }

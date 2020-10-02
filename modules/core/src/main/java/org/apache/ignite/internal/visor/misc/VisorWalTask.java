@@ -40,8 +40,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -185,7 +185,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
             GridCacheDatabaseSharedManager dbMgr,
             FileWriteAheadLogManager wal
         ) throws IgniteCheckedException {
-            FileWALPointer lowBoundForTruncate = dbMgr.checkpointHistory().firstCheckpointPointer();
+            WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().firstCheckpointPointer();
 
             if (lowBoundForTruncate == null)
                 return Collections.emptyList();
@@ -226,7 +226,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
             GridCacheDatabaseSharedManager dbMgr,
             FileWriteAheadLogManager wal
         ) throws IgniteCheckedException {
-            FileWALPointer lowBoundForTruncate = dbMgr.checkpointHistory().firstCheckpointPointer();
+            WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().firstCheckpointPointer();
 
             if (lowBoundForTruncate == null)
                 return Collections.emptyList();
@@ -263,7 +263,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
         /**
          *
          */
-        private int resolveMaxReservedIndex(FileWriteAheadLogManager wal, FileWALPointer lowBoundForTruncate) {
+        private int resolveMaxReservedIndex(FileWriteAheadLogManager wal, WALPointer lowBoundForTruncate) {
             int resCnt = wal.reserved(null, lowBoundForTruncate);
 
             long highIdx = lowBoundForTruncate.index();

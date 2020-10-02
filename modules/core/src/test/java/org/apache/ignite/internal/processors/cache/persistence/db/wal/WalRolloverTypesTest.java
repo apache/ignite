@@ -28,7 +28,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -153,7 +153,7 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
         ig.context().cache().context().database().checkpointReadLock();
 
         try {
-            FileWALPointer ptr = walMgr.log(new AdHocWALRecord(), CURRENT_SEGMENT);
+            WALPointer ptr = walMgr.log(new AdHocWALRecord(), CURRENT_SEGMENT);
 
             assertEquals(0, ptr.index());
         }
@@ -176,7 +176,7 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
         ig.context().cache().context().database().checkpointReadLock();
 
         try {
-            FileWALPointer ptr = walMgr.log(new AdHocWALRecord(), NEXT_SEGMENT);
+            WALPointer ptr = walMgr.log(new AdHocWALRecord(), NEXT_SEGMENT);
 
             assertEquals(1, ptr.index());
         }
@@ -241,8 +241,8 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
         AdHocWALRecord markerRecord = new AdHocWALRecord();
 
-        FileWALPointer ptr0;
-        FileWALPointer ptr1;
+        WALPointer ptr0;
+        WALPointer ptr1;
 
         do {
             try {
@@ -328,8 +328,8 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
         AdHocWALRecord markerRecord = new AdHocWALRecord();
 
-        FileWALPointer ptr0;
-        FileWALPointer ptr1;
+        WALPointer ptr0;
+        WALPointer ptr1;
 
         do {
             try {

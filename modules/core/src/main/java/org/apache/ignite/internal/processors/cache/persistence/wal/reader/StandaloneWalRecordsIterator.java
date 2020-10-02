@@ -42,8 +42,8 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
@@ -94,10 +94,10 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     private boolean keepBinary;
 
     /** Replay from bound include. */
-    private final FileWALPointer lowBound;
+    private final WALPointer lowBound;
 
     /** Replay to bound include */
-    private final FileWALPointer highBound;
+    private final WALPointer highBound;
 
     /**
      * Creates iterator in file-by-file iteration mode. Directory
@@ -115,9 +115,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @NotNull GridCacheSharedContext sharedCtx,
         @NotNull FileIOFactory ioFactory,
         @NotNull List<FileDescriptor> walFiles,
-        IgniteBiPredicate<RecordType, FileWALPointer> readTypeFilter,
-        FileWALPointer lowBound,
-        FileWALPointer highBound,
+        IgniteBiPredicate<RecordType, WALPointer> readTypeFilter,
+        WALPointer lowBound,
+        WALPointer highBound,
         boolean keepBinary,
         int initialReadBufferSize,
         boolean strictBoundsCheck
@@ -161,7 +161,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      *
      * @throws IgniteCheckedException if failed
      */
-    private static void strictCheck(List<FileDescriptor> walFiles, FileWALPointer lowBound, FileWALPointer highBound) throws IgniteCheckedException {
+    private static void strictCheck(List<FileDescriptor> walFiles, WALPointer lowBound, WALPointer highBound) throws IgniteCheckedException {
         int idx = 0;
 
         if (lowBound.index() > Long.MIN_VALUE) {
@@ -260,7 +260,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         curRec = null;
 
         try {
-            FileWALPointer initPtr = null;
+            WALPointer initPtr = null;
 
             if (lowBound.index() == fd.idx())
                 initPtr = lowBound;
@@ -276,17 +276,17 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteBiTuple<FileWALPointer, WALRecord> advanceRecord(
+    @Override protected IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
         @Nullable AbstractReadFileHandle hnd
     ) throws IgniteCheckedException {
-        IgniteBiTuple<FileWALPointer, WALRecord> tup = super.advanceRecord(hnd);
+        IgniteBiTuple<WALPointer, WALRecord> tup = super.advanceRecord(hnd);
 
         if (tup == null)
             return tup;
 
         if (!checkBounds(tup.get1())) {
             if (curRec != null) {
-                FileWALPointer prevRecPtr = curRec.get1();
+                WALPointer prevRecPtr = curRec.get1();
 
                 // Fast stop condition, after high bound reached.
                 if (prevRecPtr != null && prevRecPtr.compareTo(highBound) > 0)
@@ -303,7 +303,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param ptr WAL pointer.
      * @return {@code True} If pointer between low and high bounds. {@code False} if not.
      */
-    private boolean checkBounds(FileWALPointer ptr) {
+    private boolean checkBounds(WALPointer ptr) {
         return ptr.compareTo(lowBound) >= 0 && ptr.compareTo(highBound) <= 0;
     }
 
@@ -318,7 +318,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** {@inheritDoc} */
     @Override protected AbstractReadFileHandle initReadHandle(
         @NotNull AbstractFileDescriptor desc,
-        @Nullable FileWALPointer start
+        @Nullable WALPointer start
     ) throws IgniteCheckedException, FileNotFoundException {
 
         AbstractFileDescriptor fd = desc;
@@ -369,7 +369,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** {@inheritDoc} */
     @Override protected IgniteCheckedException handleRecordException(
         @NotNull Exception e,
-        @Nullable FileWALPointer ptr
+        @Nullable WALPointer ptr
     ) {
         if (e instanceof IgniteCheckedException)
             if (X.hasCause(e, IgniteDataIntegrityViolationException.class))

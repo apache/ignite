@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 import java.util.UUID;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,7 +33,7 @@ public class CheckpointStatus {
     public static final UUID NULL_UUID = new UUID(0L, 0L);
 
     /** Null WAL pointer. */
-    public static final FileWALPointer NULL_PTR = new FileWALPointer(0, 0, 0);
+    public static final WALPointer NULL_PTR = new WALPointer(0, 0, 0);
 
     /** Checkpoint start timestamp. */
     public long cpStartTs;
@@ -43,14 +43,14 @@ public class CheckpointStatus {
 
     /** Checkpoint start pointer. */
     @GridToStringInclude
-    public FileWALPointer startPtr;
+    public WALPointer startPtr;
 
     /** Checkpoint end id. */
     public UUID cpEndId;
 
     /** Checkpoint end pointer. */
     @GridToStringInclude
-    public FileWALPointer endPtr;
+    public WALPointer endPtr;
 
     /**
      * @param cpStartId Checkpoint start ID.
@@ -58,7 +58,7 @@ public class CheckpointStatus {
      * @param cpEndId Checkpoint end ID.
      * @param endPtr Checkpoint end pointer.
      */
-    CheckpointStatus(long cpStartTs, UUID cpStartId, FileWALPointer startPtr, UUID cpEndId, FileWALPointer endPtr) {
+    CheckpointStatus(long cpStartTs, UUID cpStartId, WALPointer startPtr, UUID cpEndId, WALPointer endPtr) {
         this.cpStartTs = cpStartTs;
         this.cpStartId = cpStartId;
         this.startPtr = startPtr;

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
@@ -50,67 +50,67 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLogging(FileWALPointer ptr) throws IgniteCheckedException {
+    @Override public void resumeLogging(WALPointer ptr) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public FileWALPointer log(WALRecord entry) throws IgniteCheckedException, StorageException {
+    @Override public WALPointer log(WALRecord entry) throws IgniteCheckedException, StorageException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public FileWALPointer log(WALRecord entry, RolloverType rollOverType) {
+    @Override public WALPointer log(WALRecord entry, RolloverType rollOverType) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public FileWALPointer flush(FileWALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
+    @Override public WALPointer flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public WALRecord read(FileWALPointer ptr) throws IgniteCheckedException, StorageException {
+    @Override public WALRecord read(WALPointer ptr) throws IgniteCheckedException, StorageException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public WALIterator replay(FileWALPointer start) throws IgniteCheckedException, StorageException {
+    @Override public WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public WALIterator replay(FileWALPointer start, @Nullable IgniteBiPredicate<WALRecord.RecordType, FileWALPointer> recordDeserializeFilter) throws IgniteCheckedException, StorageException {
+    @Override public WALIterator replay(WALPointer start, @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter) throws IgniteCheckedException, StorageException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean reserve(FileWALPointer start) {
+    @Override public boolean reserve(WALPointer start) {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public void release(FileWALPointer start) throws IgniteCheckedException {
+    @Override public void release(WALPointer start) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public int truncate(FileWALPointer low, FileWALPointer high) {
+    @Override public int truncate(WALPointer low, WALPointer high) {
         return 0;
     }
 
     /** {@inheritDoc} */
-    @Override public void notchLastCheckpointPtr(FileWALPointer ptr) {
+    @Override public void notchLastCheckpointPtr(WALPointer ptr) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public boolean reserved(FileWALPointer ptr) {
+    @Override public boolean reserved(WALPointer ptr) {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public int reserved(FileWALPointer low, FileWALPointer high) {
+    @Override public int reserved(WALPointer low, WALPointer high) {
         return 0;
     }
 

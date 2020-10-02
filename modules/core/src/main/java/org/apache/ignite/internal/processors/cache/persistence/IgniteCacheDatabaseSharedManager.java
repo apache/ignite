@@ -77,7 +77,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.TimeBag;
@@ -955,7 +955,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @return Last checkpoint mark WAL pointer.
      */
-    public FileWALPointer lastCheckpointMarkWalPointer() {
+    public WALPointer lastCheckpointMarkWalPointer() {
         return null;
     }
 
@@ -1086,7 +1086,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @return WAL pointer or {@code null} if nothing reserved.
      */
-    public FileWALPointer latestWalPointerReservedForPreloading() {
+    public WALPointer latestWalPointerReservedForPreloading() {
         return null;
     }
 

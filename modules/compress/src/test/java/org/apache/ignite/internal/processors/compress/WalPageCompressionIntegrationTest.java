@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
@@ -88,8 +88,8 @@ public class WalPageCompressionIntegrationTest extends AbstractPageCompressionIn
         }
 
         // Write any WAL record to get current WAL pointers.
-        FileWALPointer ptr0 = ignite0.context().cache().context().wal().log(new CheckpointRecord(null));
-        FileWALPointer ptr1 = ignite1.context().cache().context().wal().log(new CheckpointRecord(null));
+        WALPointer ptr0 = ignite0.context().cache().context().wal().log(new CheckpointRecord(null));
+        WALPointer ptr1 = ignite1.context().cache().context().wal().log(new CheckpointRecord(null));
 
         log.info("Compressed WAL pointer: " + ptr0);
         log.info("Uncompressed WAL pointer: " + ptr1);

@@ -31,7 +31,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -44,7 +44,7 @@ public class CheckpointEntry {
     private final long cpTs;
 
     /** Checkpoint end mark. */
-    private final FileWALPointer cpMark;
+    private final WALPointer cpMark;
 
     /** Checkpoint ID. */
     private final UUID cpId;
@@ -64,7 +64,7 @@ public class CheckpointEntry {
      */
     CheckpointEntry(
         long cpTs,
-        FileWALPointer cpMark,
+        WALPointer cpMark,
         UUID cpId,
         @Nullable Map<Integer, CacheState> cacheGrpStates
     ) {
@@ -91,7 +91,7 @@ public class CheckpointEntry {
     /**
      * @return Checkpoint mark.
      */
-    public FileWALPointer checkpointMark() {
+    public WALPointer checkpointMark() {
         return cpMark;
     }
 
@@ -342,12 +342,12 @@ public class CheckpointEntry {
          */
         private void initIfNeeded(
             IgniteWriteAheadLogManager wal,
-            FileWALPointer ptr
+            WALPointer ptr
         ) throws IgniteCheckedException {
             if (initGuardUpdater.compareAndSet(this, 0, 1)) {
                 try (WALIterator it = wal.replay(ptr)) {
                     if (it.hasNextX()) {
-                        IgniteBiTuple<FileWALPointer, WALRecord> tup = it.nextX();
+                        IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
 
                         CheckpointRecord rec = (CheckpointRecord)tup.get2();
 

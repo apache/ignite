@@ -35,7 +35,7 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.transactions.TransactionState;
@@ -122,7 +122,7 @@ public class WalStat {
      * @param walPointer pointer, used to extract segment index.
      * @param workDir true for work, false for archive folder.
      */
-    void registerRecord(WALRecord record, FileWALPointer walPointer, boolean workDir) {
+    void registerRecord(WALRecord record, WALPointer walPointer, boolean workDir) {
         WALRecord.RecordType type = record.type();
 
         if (type == WALRecord.RecordType.PAGE_RECORD)

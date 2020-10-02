@@ -127,7 +127,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
@@ -258,7 +258,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * If binary memory recovery pefrormed on node start, the checkpoint END pointer will store
      * not the last WAL pointer and can't be used for resumming logging.
      */
-    private volatile FileWALPointer walTail;
+    private volatile WALPointer walTail;
 
     /**
      * Lock holder for compatible folders mode. Null if lock holder was created at start node. <br>
@@ -270,10 +270,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final long lockWaitTime;
 
     /** This is the earliest WAL pointer that was reserved during exchange and would release after exchange completed. */
-    private FileWALPointer reservedForExchange;
+    private WALPointer reservedForExchange;
 
     /** This is the earliest WAL pointer that was reserved during preloading. */
-    private volatile FileWALPointer reservedForPreloading;
+    private volatile WALPointer reservedForPreloading;
 
     /** Snapshot manager. */
     private IgniteCacheSnapshotManager snapshotMgr;
@@ -815,7 +815,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private RestoreBinaryState restoreBinaryMemory(
         IgnitePredicate<Integer> cacheGroupsPredicate,
-        IgniteBiPredicate<WALRecord.RecordType, FileWALPointer> recordTypePredicate
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordTypePredicate
     ) throws IgniteCheckedException {
         long time = System.currentTimeMillis();
 
@@ -836,7 +836,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 true
             );
 
-            FileWALPointer restored = binaryState.lastReadRecordPointer();
+            WALPointer restored = binaryState.lastReadRecordPointer();
 
             if (restored.equals(CheckpointStatus.NULL_PTR))
                 restored = null; // This record is first
@@ -1456,10 +1456,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (F.isEmpty(entries))
             return false;
 
-        FileWALPointer oldestWALPointerToReserve = null;
+        WALPointer oldestWALPointerToReserve = null;
 
         for (GroupPartitionId key : entries.keySet()) {
-            FileWALPointer ptr = entries.get(key).checkpointMark();
+            WALPointer ptr = entries.get(key).checkpointMark();
 
             if (ptr == null)
                 return false;
@@ -1500,7 +1500,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public FileWALPointer latestWalPointerReservedForPreloading() {
+    @Override public WALPointer latestWalPointerReservedForPreloading() {
         return reservedForPreloading;
     }
 
@@ -1533,7 +1533,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public FileWALPointer lastCheckpointMarkWalPointer() {
+    @Override public WALPointer lastCheckpointMarkWalPointer() {
         CheckpointEntry lastCheckpointEntry = checkpointHistory() == null ? null : checkpointHistory().lastCheckpoint();
 
         return lastCheckpointEntry == null ? null : lastCheckpointEntry.checkpointMark();
@@ -1669,14 +1669,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return Tail pointer.
      * @throws IgniteCheckedException If failed.
      */
-    private FileWALPointer tailPointer(RestoreLogicalState logicalState) throws IgniteCheckedException {
+    private WALPointer tailPointer(RestoreLogicalState logicalState) throws IgniteCheckedException {
         // Should flush all data in buffers before read last WAL pointer.
         // Iterator read records only from files.
-        FileWALPointer lastFlushPtr = cctx.wal().flush(null, true);
+        WALPointer lastFlushPtr = cctx.wal().flush(null, true);
 
         // We must return null for NULL_PTR record, because FileWriteAheadLogManager.resumeLogging
         // can't write header without that condition.
-        FileWALPointer lastReadPtr = logicalState.lastReadRecordPointer();
+        WALPointer lastReadPtr = logicalState.lastReadRecordPointer();
 
         if (lastFlushPtr != null && lastReadPtr == null)
             return lastFlushPtr;
@@ -1715,14 +1715,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private RestoreBinaryState performBinaryMemoryRestore(
         CheckpointStatus status,
         IgnitePredicate<Integer> cacheGroupsPredicate,
-        IgniteBiPredicate<WALRecord.RecordType, FileWALPointer> recordTypePredicate,
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordTypePredicate,
         boolean finalizeState
     ) throws IgniteCheckedException {
         if (log.isInfoEnabled())
             log.info("Checking memory state [lastValidPos=" + status.endPtr + ", lastMarked="
                 + status.startPtr + ", lastCheckpointId=" + status.cpStartId + ']');
 
-        FileWALPointer recPtr = status.endPtr;
+        WALPointer recPtr = status.endPtr;
 
         boolean apply = status.needRestoreMemory();
 
@@ -1757,7 +1757,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     throw new StorageException("Checkpoint marker doesn't point to checkpoint record " +
                         "[ptr=" + status.startPtr + ", rec=" + startRec + "]");
 
-                FileWALPointer cpMark = ((CheckpointRecord)startRec).checkpointMark();
+                WALPointer cpMark = ((CheckpointRecord)startRec).checkpointMark();
 
                 if (cpMark != null) {
                     if (log.isInfoEnabled())
@@ -1923,7 +1923,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (!finalizeState)
             return null;
 
-        FileWALPointer lastReadPtr = restoreBinaryState.lastReadRecordPointer();
+        WALPointer lastReadPtr = restoreBinaryState.lastReadRecordPointer();
 
         if (status.needRestoreMemory()) {
             if (restoreBinaryState.needApplyBinaryUpdate())
@@ -2167,7 +2167,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     public void applyUpdatesOnRecovery(
         @Nullable WALIterator it,
-        IgniteBiPredicate<FileWALPointer, WALRecord> recPredicate,
+        IgniteBiPredicate<WALPointer, WALRecord> recPredicate,
         IgnitePredicate<DataEntry> entryPredicate
     ) throws IgniteCheckedException {
         if (it == null)
@@ -2175,7 +2175,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         cctx.walState().runWithOutWAL(() -> {
             while (it.hasNext()) {
-                IgniteBiTuple<FileWALPointer, WALRecord> next = it.next();
+                IgniteBiTuple<WALPointer, WALRecord> next = it.next();
 
                 WALRecord rec = next.get2();
 
@@ -2251,7 +2251,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private RestoreLogicalState applyLogicalUpdates(
         CheckpointStatus status,
         IgnitePredicate<Integer> cacheGroupsPredicate,
-        IgniteBiPredicate<WALRecord.RecordType, FileWALPointer> recordTypePredicate,
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordTypePredicate,
         boolean skipFieldLookup
     ) throws IgniteCheckedException {
         if (log.isInfoEnabled())
@@ -2461,7 +2461,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      * @param highBound FileWALPointer.
      */
-    public void onWalTruncated(FileWALPointer highBound) throws IgniteCheckedException {
+    public void onWalTruncated(WALPointer highBound) throws IgniteCheckedException {
         checkpointManager.removeCheckpointsUntil(highBound);
     }
 
@@ -2541,7 +2541,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private void finalizeCheckpointOnRecovery(
         long cpTs,
         UUID cpId,
-        FileWALPointer walPtr,
+        WALPointer walPtr,
         StripedExecutor exec
     ) throws IgniteCheckedException {
         assert checkpointManager != null : "Checkpoint is null";
@@ -3102,14 +3102,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @return WAL records predicate that passes only Metastorage and encryption data records.
      */
-    private IgniteBiPredicate<WALRecord.RecordType, FileWALPointer> onlyMetastorageAndEncryptionRecords() {
+    private IgniteBiPredicate<WALRecord.RecordType, WALPointer> onlyMetastorageAndEncryptionRecords() {
         return (type, ptr) -> type == METASTORE_DATA_RECORD || type == MASTER_KEY_CHANGE_RECORD;
     }
 
     /**
      * @return WAL records predicate that passes only physical and mixed WAL records.
      */
-    private IgniteBiPredicate<WALRecord.RecordType, FileWALPointer> physicalRecords() {
+    private IgniteBiPredicate<WALRecord.RecordType, WALPointer> physicalRecords() {
         return (type, ptr) -> type.purpose() == WALRecord.RecordPurpose.PHYSICAL
             || type.purpose() == WALRecord.RecordPurpose.MIXED;
     }
@@ -3118,7 +3118,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return WAL records predicate that passes only logical and mixed WAL records +
      * CP record (used for restoring initial partition states).
      */
-    private IgniteBiPredicate<WALRecord.RecordType, FileWALPointer> logicalRecords() {
+    private IgniteBiPredicate<WALRecord.RecordType, WALPointer> logicalRecords() {
         return (type, ptr) -> type.purpose() == WALRecord.RecordPurpose.LOGICAL
             || type.purpose() == WALRecord.RecordPurpose.MIXED || type == CHECKPOINT_RECORD;
     }
@@ -3169,14 +3169,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (!iterator.hasNextX())
                         return null;
 
-                    IgniteBiTuple<FileWALPointer, WALRecord> tup = iterator.nextX();
+                    IgniteBiTuple<WALPointer, WALRecord> tup = iterator.nextX();
 
                     if (tup == null)
                         return null;
 
                     WALRecord rec = tup.get2();
 
-                    FileWALPointer ptr = tup.get1();
+                    WALPointer ptr = tup.get1();
 
                     rec.position(ptr);
 
@@ -3233,8 +3233,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          * @return Last read WAL record pointer.
          */
-        public FileWALPointer lastReadRecordPointer() {
-            assert status.startPtr instanceof FileWALPointer;
+        public WALPointer lastReadRecordPointer() {
+            assert status.startPtr instanceof WALPointer;
 
             return iterator.lastRead()
                 .orElseGet(() -> status.startPtr);

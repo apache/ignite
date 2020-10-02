@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleSegmentFileInputFactory;
@@ -119,7 +119,7 @@ public class IgniteWalIteratorFactory {
      * @throws IllegalArgumentException If parameter validation failed.
      */
     public WALIterator iterator(
-        @NotNull FileWALPointer replayFrom,
+        @NotNull WALPointer replayFrom,
         @NotNull File... filesOrDirs
     ) throws IgniteCheckedException, IllegalArgumentException {
         return iterator(new IteratorParametersBuilder().from(replayFrom).filesOrDirs(filesOrDirs));
@@ -157,7 +157,7 @@ public class IgniteWalIteratorFactory {
      * @throws IllegalArgumentException If parameter validation failed.
      */
     public WALIterator iterator(
-        @NotNull FileWALPointer replayFrom,
+        @NotNull WALPointer replayFrom,
         @NotNull String... filesOrDirs
     ) throws IgniteCheckedException, IllegalArgumentException {
         return iterator(new IteratorParametersBuilder().from(replayFrom).filesOrDirs(filesOrDirs));
@@ -347,7 +347,7 @@ public class IgniteWalIteratorFactory {
                 return null;
             }
 
-            FileWALPointer ptr = readPosition(in);
+            WALPointer ptr = readPosition(in);
 
             return new FileDescriptor(file, ptr.index());
         }
@@ -389,10 +389,10 @@ public class IgniteWalIteratorFactory {
         private IgniteLogger log;
 
         /** */
-        public static final FileWALPointer DFLT_LOW_BOUND = new FileWALPointer(Long.MIN_VALUE, 0, 0);
+        public static final WALPointer DFLT_LOW_BOUND = new WALPointer(Long.MIN_VALUE, 0, 0);
 
         /** */
-        public static final FileWALPointer DFLT_HIGH_BOUND = new FileWALPointer(Long.MAX_VALUE, Integer.MAX_VALUE, 0);
+        public static final WALPointer DFLT_HIGH_BOUND = new WALPointer(Long.MAX_VALUE, Integer.MAX_VALUE, 0);
 
         /** */
         private File[] filesOrDirs;
@@ -431,13 +431,13 @@ public class IgniteWalIteratorFactory {
         @Nullable private GridCacheSharedContext sharedCtx;
 
         /** */
-        @Nullable private IgniteBiPredicate<RecordType, FileWALPointer> filter;
+        @Nullable private IgniteBiPredicate<RecordType, WALPointer> filter;
 
         /** */
-        private FileWALPointer lowBound = DFLT_LOW_BOUND;
+        private WALPointer lowBound = DFLT_LOW_BOUND;
 
         /** */
-        private FileWALPointer highBound = DFLT_HIGH_BOUND;
+        private WALPointer highBound = DFLT_HIGH_BOUND;
 
         /** Use strict bounds check for WAL segments. */
         private boolean strictBoundsCheck;
@@ -561,7 +561,7 @@ public class IgniteWalIteratorFactory {
          * @param filter Record filter for skip records during iteration.
          * @return IteratorParametersBuilder Self reference.
          */
-        public IteratorParametersBuilder filter(IgniteBiPredicate<RecordType, FileWALPointer> filter) {
+        public IteratorParametersBuilder filter(IgniteBiPredicate<RecordType, WALPointer> filter) {
             this.filter = filter;
 
             return this;
@@ -571,7 +571,7 @@ public class IgniteWalIteratorFactory {
          * @param filter Record filter for skip records during iteration.
          * @return IteratorParametersBuilder Self reference.
          */
-        public IteratorParametersBuilder addFilter(IgniteBiPredicate<RecordType, FileWALPointer> filter) {
+        public IteratorParametersBuilder addFilter(IgniteBiPredicate<RecordType, WALPointer> filter) {
             this.filter = this.filter == null ? filter : this.filter.and(filter);
 
             return this;
@@ -581,7 +581,7 @@ public class IgniteWalIteratorFactory {
          * @param lowBound WAL pointer to start from.
          * @return IteratorParametersBuilder Self reference.
          */
-        public IteratorParametersBuilder from(FileWALPointer lowBound) {
+        public IteratorParametersBuilder from(WALPointer lowBound) {
             this.lowBound = lowBound;
 
             return this;
@@ -591,7 +591,7 @@ public class IgniteWalIteratorFactory {
          * @param highBound WAL pointer to end of.
          * @return IteratorParametersBuilder Self reference.
          */
-        public IteratorParametersBuilder to(FileWALPointer highBound) {
+        public IteratorParametersBuilder to(WALPointer highBound) {
             this.highBound = highBound;
 
             return this;

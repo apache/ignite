@@ -23,14 +23,14 @@ import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
- * Decorator of {@link WALIterator} which allow filter record by {@link FileWALPointer} and {@link WALRecord}.
+ * Decorator of {@link WALIterator} which allow filter record by {@link WALPointer} and {@link WALRecord}.
  */
-public class FilteredWalIterator extends GridIteratorAdapter<IgniteBiTuple<FileWALPointer, WALRecord>>
+public class FilteredWalIterator extends GridIteratorAdapter<IgniteBiTuple<WALPointer, WALRecord>>
     implements WALIterator {
     /** */
     private static final long serialVersionUID = 0L;
@@ -39,17 +39,17 @@ public class FilteredWalIterator extends GridIteratorAdapter<IgniteBiTuple<FileW
     private final WALIterator delegateWalIter;
 
     /** Filter for filtering iterated data. */
-    private final Predicate<IgniteBiTuple<FileWALPointer, WALRecord>> filter;
+    private final Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter;
 
     /** Next record in iterator for supporting iterator pattern. */
-    private IgniteBiTuple<FileWALPointer, WALRecord> next;
+    private IgniteBiTuple<WALPointer, WALRecord> next;
 
     /**
      * @param walIterator Source WAL iterator which provide data for filtering.
      * @param filter Filter for filtering iterated data.
      */
     public FilteredWalIterator(WALIterator walIterator,
-        Predicate<IgniteBiTuple<FileWALPointer, WALRecord>> filter) throws IgniteCheckedException {
+        Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter) throws IgniteCheckedException {
         this.filter = filter == null ? (r) -> true : filter;
         this.delegateWalIter = walIterator;
 
@@ -58,16 +58,16 @@ public class FilteredWalIterator extends GridIteratorAdapter<IgniteBiTuple<FileW
     }
 
     /** {@inheritDoc} **/
-    @Override public Optional<FileWALPointer> lastRead() {
+    @Override public Optional<WALPointer> lastRead() {
         return Optional.ofNullable(next == null ? null : next.get1());
     }
 
     /**
      * @return Next filtered record.
      */
-    private IgniteBiTuple<FileWALPointer, WALRecord> nextFilteredRecord() {
+    private IgniteBiTuple<WALPointer, WALRecord> nextFilteredRecord() {
         while (delegateWalIter.hasNext()) {
-            IgniteBiTuple<FileWALPointer, WALRecord> next = delegateWalIter.next();
+            IgniteBiTuple<WALPointer, WALRecord> next = delegateWalIter.next();
 
             if (filter.test(next))
                 return next;
@@ -77,11 +77,11 @@ public class FilteredWalIterator extends GridIteratorAdapter<IgniteBiTuple<FileW
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBiTuple<FileWALPointer, WALRecord> nextX() throws IgniteCheckedException {
+    @Override public IgniteBiTuple<WALPointer, WALRecord> nextX() throws IgniteCheckedException {
         if (!hasNextX())
             throw new NoSuchElementException();
 
-        IgniteBiTuple<FileWALPointer, WALRecord> cur = next;
+        IgniteBiTuple<WALPointer, WALRecord> cur = next;
 
         next = nextFilteredRecord();
 

@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 
 /**
  * Internal interface to provide size, read and write operations of WAL records
@@ -47,7 +47,7 @@ public interface RecordIO {
      * @throws IOException In case of I/O problems.
      * @throws IgniteCheckedException If it's unable to read record.
      */
-    WALRecord readWithHeaders(ByteBufferBackedDataInput in, FileWALPointer expPtr) throws IOException, IgniteCheckedException;
+    WALRecord readWithHeaders(ByteBufferBackedDataInput in, WALPointer expPtr) throws IOException, IgniteCheckedException;
 
     /**
      * Writes record data with headers to {@code buf}.

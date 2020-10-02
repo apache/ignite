@@ -78,7 +78,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
@@ -985,7 +985,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             ByteBuffer lastValidPage = null;
 
             try (WALIterator it = walMgr.replay(null)) {
-                for (IgniteBiTuple<FileWALPointer, WALRecord> tuple : it) {
+                for (IgniteBiTuple<WALPointer, WALRecord> tuple : it) {
                     switch (tuple.getValue().type()) {
                         case PAGE_RECORD:
                             PageSnapshot snapshot = (PageSnapshot)tuple.getValue();

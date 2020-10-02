@@ -65,7 +65,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -1228,7 +1228,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         long cntr = 0;
 
         while (iter.hasNext()) {
-            IgniteBiTuple<FileWALPointer, WALRecord> tup = iter.next();
+            IgniteBiTuple<WALPointer, WALRecord> tup = iter.next();
 
             if (tup.get2() instanceof DataRecord) {
                 T2<Integer, GridCacheOperation> op = ops.poll();

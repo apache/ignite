@@ -27,7 +27,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.X;
@@ -88,7 +88,7 @@ public class IgniteWalIteratorExceptionDuringReadTest extends GridCommonAbstract
 
         IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory(log);
 
-        FileWALPointer failOnPtr = new FileWALPointer(3, 1024 * 1024 * 5, 0);
+        WALPointer failOnPtr = new WALPointer(3, 1024 * 1024 * 5, 0);
 
         String failMessage = "test fail message";
 
@@ -102,13 +102,13 @@ public class IgniteWalIteratorExceptionDuringReadTest extends GridCommonAbstract
             });
 
         try (WALIterator it = iteratorFactory.iterator(builder)) {
-            FileWALPointer ptr = null;
+            WALPointer ptr = null;
 
             boolean failed = false;
 
             while (it.hasNext()) {
                 try {
-                    IgniteBiTuple<FileWALPointer, WALRecord> tup = it.next();
+                    IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
                     ptr = tup.get1();
                 }
