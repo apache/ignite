@@ -194,27 +194,27 @@ tab:Spring XML[]
 [source,xml]
 ----
 <bean class="org.apache.ignite.configuration.IgniteConfiguration" id="ignite.cfg">
-<property name="clientConnectorConfiguration">
-<bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
-<property name="thinClientConfiguration">
-<bean class="org.apache.ignite.configuration.ThinClientConfiguration">
-<property name="maxActiveComputeTasksPerConnection" value="100" />
-</bean>
-</property>
-</bean>
-</property>
+  <property name="clientConnectorConfiguration">
+    <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+      <property name="thinClientConfiguration">
+        <bean class="org.apache.ignite.configuration.ThinClientConfiguration">
+          <property name="maxActiveComputeTasksPerConnection" value="100" />
+        </bean>
+      </property>
+    </bean>
+  </property>
 </bean>
 ----
-tab:Java[]
+tab:C#[]
 [source,csharp]
 ----
 include::{sourceCodeFile}[tag=client-compute-setup,indent=0]
 ----
 --
 
-Compute tasks execution functionality provided by `ClientCompute` interface, which can be obtained from `IgniteClient` instance.
+Compute functionality is provided by `IComputeClient` interface, which can be obtained from `IIgniteClient` instance.
 
-Currently, thin client only have an ability to run already deployed tasks by task name. To run some custom task users should deploy classes related to this task to the server manually.
+Currently, thin clients can run already deployed tasks by class name. Task classes should be depoyed in advance to the server nodes.
 [source, java]
 -------------------------------------------------------------------------------
 include::{sourceCodeFile}[tag=client-compute-task,indent=0]
