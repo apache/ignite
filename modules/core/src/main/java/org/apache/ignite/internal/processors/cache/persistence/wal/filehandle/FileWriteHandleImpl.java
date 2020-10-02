@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -229,7 +228,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      * @throws StorageException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    @Override @Nullable public WALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException {
+    @Override @Nullable public FileWALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException {
         assert rec.size() > 0 : rec;
 
         for (; ; ) {
@@ -492,14 +491,12 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                     if (rollOver && written + switchSegmentRecSize < maxWalSegmentSize) {
                         segmentRecord.size(switchSegmentRecSize);
 
-                        WALPointer segRecPtr = addRecord(segmentRecord);
+                        FileWALPointer segRecPtr = addRecord(segmentRecord);
 
                         if (segRecPtr != null) {
-                            FileWALPointer filePtr = (FileWALPointer)segRecPtr;
+                            fsync(segRecPtr);
 
-                            fsync(filePtr);
-
-                            switchSegmentRecordOffset = filePtr.fileOffset() + switchSegmentRecSize;
+                            switchSegmentRecordOffset = segRecPtr.fileOffset() + switchSegmentRecSize;
                         }
                     }
 

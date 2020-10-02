@@ -25,7 +25,6 @@ import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -69,7 +68,7 @@ public class FilteredWalIteratorTest {
     private static FileWALPointer ZERO_POINTER = new FileWALPointer(0, 0, 0);
 
     /** **/
-    private static IgniteBiTuple<WALPointer, WALRecord> TEST_RECORD = new IgniteBiTuple<>(
+    private static IgniteBiTuple<FileWALPointer, WALRecord> TEST_RECORD = new IgniteBiTuple<>(
         ZERO_POINTER, new MetastoreDataRecord("key", new byte[0])
     );
 
@@ -77,10 +76,10 @@ public class FilteredWalIteratorTest {
     private WALIterator mockedIter;
 
     /** Iterator filter for test. */
-    private Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter;
+    private Predicate<IgniteBiTuple<FileWALPointer, WALRecord>> filter;
 
     /** Expected result for iterator and filter. */
-    private List<IgniteBiTuple<WALPointer, WALRecord>> expRes;
+    private List<IgniteBiTuple<FileWALPointer, WALRecord>> expRes;
 
     /**
      * @param nameOfCase Case name. It required only for printing test name.
@@ -91,8 +90,8 @@ public class FilteredWalIteratorTest {
     public FilteredWalIteratorTest(
         String nameOfCase,
         WALIterator mockedIter,
-        Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter,
-        List<IgniteBiTuple<WALPointer, WALRecord>> expRes) {
+        Predicate<IgniteBiTuple<FileWALPointer, WALRecord>> filter,
+        List<IgniteBiTuple<FileWALPointer, WALRecord>> expRes) {
         this.mockedIter = mockedIter;
         this.filter = filter;
         this.expRes = expRes;
@@ -105,7 +104,7 @@ public class FilteredWalIteratorTest {
     public void shouldReturnCorrectlyFilteredRecords() throws IgniteCheckedException {
         FilteredWalIterator filteredIter = new FilteredWalIterator(mockedIter, filter);
 
-        List<IgniteBiTuple<WALPointer, WALRecord>> ans = new ArrayList<>();
+        List<IgniteBiTuple<FileWALPointer, WALRecord>> ans = new ArrayList<>();
         try (WALIterator it = filteredIter) {
             while (it.hasNext())
                 ans.add(it.next());
@@ -137,7 +136,7 @@ public class FilteredWalIteratorTest {
      */
     private static List<Object[]> prepareTestCaseData(
         String testCaseName,
-        Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter
+        Predicate<IgniteBiTuple<FileWALPointer, WALRecord>> filter
     ) {
         ArrayList<Object[]> res = new ArrayList<>(ITERATORS_COUNT_PER_FILTER);
 
@@ -146,7 +145,7 @@ public class FilteredWalIteratorTest {
         hasNextReturn[RECORDS_COUNT_IN_ITERATOR] = false;
 
         for (int i = 0; i < ITERATORS_COUNT_PER_FILTER; i++) {
-            List<IgniteBiTuple<WALPointer, WALRecord>> tuples = randomRecords();
+            List<IgniteBiTuple<FileWALPointer, WALRecord>> tuples = randomRecords();
 
             WALIterator mockedIter = Mockito.mock(WALIterator.class);
             when(mockedIter.hasNext()).thenReturn(true, hasNextReturn);
@@ -161,8 +160,8 @@ public class FilteredWalIteratorTest {
     /**
      * @return Random records list for iteration.
      */
-    private static List<IgniteBiTuple<WALPointer, WALRecord>> randomRecords() {
-        ArrayList<IgniteBiTuple<WALPointer, WALRecord>> res = new ArrayList<>(RECORDS_COUNT_IN_ITERATOR);
+    private static List<IgniteBiTuple<FileWALPointer, WALRecord>> randomRecords() {
+        ArrayList<IgniteBiTuple<FileWALPointer, WALRecord>> res = new ArrayList<>(RECORDS_COUNT_IN_ITERATOR);
 
         for (int i = 0; i < RECORDS_COUNT_IN_ITERATOR; i++)
             res.add(randomRecord());
@@ -173,7 +172,7 @@ public class FilteredWalIteratorTest {
     /**
      * @return Random test record.
      */
-    private static IgniteBiTuple<WALPointer, WALRecord> randomRecord() {
+    private static IgniteBiTuple<FileWALPointer, WALRecord> randomRecord() {
         int recordId = random.nextInt(9);
 
         switch (recordId) {

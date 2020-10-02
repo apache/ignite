@@ -22,7 +22,6 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
@@ -137,7 +136,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public WALPointer flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
+    @Override public FileWALPointer flush(FileWALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
@@ -155,10 +154,10 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
             if (rec instanceof FsyncFileWriteHandle.FakeRecord)
                 return null;
 
-            filePtr = (FileWALPointer)rec.position();
+            filePtr = rec.position();
         }
         else
-            filePtr = (FileWALPointer)ptr;
+            filePtr = ptr;
 
         // No need to sync if was rolled over.
         if (!cur.needFsync(filePtr))

@@ -27,11 +27,11 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -44,7 +44,7 @@ public class CheckpointEntry {
     private final long cpTs;
 
     /** Checkpoint end mark. */
-    private final WALPointer cpMark;
+    private final FileWALPointer cpMark;
 
     /** Checkpoint ID. */
     private final UUID cpId;
@@ -64,7 +64,7 @@ public class CheckpointEntry {
      */
     CheckpointEntry(
         long cpTs,
-        WALPointer cpMark,
+        FileWALPointer cpMark,
         UUID cpId,
         @Nullable Map<Integer, CacheState> cacheGrpStates
     ) {
@@ -91,7 +91,7 @@ public class CheckpointEntry {
     /**
      * @return Checkpoint mark.
      */
-    public WALPointer checkpointMark() {
+    public FileWALPointer checkpointMark() {
         return cpMark;
     }
 
@@ -342,12 +342,12 @@ public class CheckpointEntry {
          */
         private void initIfNeeded(
             IgniteWriteAheadLogManager wal,
-            WALPointer ptr
+            FileWALPointer ptr
         ) throws IgniteCheckedException {
             if (initGuardUpdater.compareAndSet(this, 0, 1)) {
                 try (WALIterator it = wal.replay(ptr)) {
                     if (it.hasNextX()) {
-                        IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
+                        IgniteBiTuple<FileWALPointer, WALRecord> tup = it.nextX();
 
                         CheckpointRecord rec = (CheckpointRecord)tup.get2();
 

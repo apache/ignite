@@ -36,7 +36,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -144,9 +143,9 @@ public class CheckpointMarkersStorage {
     /**
      * Wal truncate callBack.
      *
-     * @param highBound WALPointer.
+     * @param highBound FileWALPointer.
      */
-    public void removeCheckpointsUntil(WALPointer highBound) throws IgniteCheckedException {
+    public void removeCheckpointsUntil(FileWALPointer highBound) throws IgniteCheckedException {
         List<CheckpointEntry> removedFromHistory = history().onWalTruncated(highBound);
 
         for (CheckpointEntry cp : removedFromHistory)
@@ -178,8 +177,8 @@ public class CheckpointMarkersStorage {
         File startFile = null;
         File endFile = null;
 
-        WALPointer startPtr = CheckpointStatus.NULL_PTR;
-        WALPointer endPtr = CheckpointStatus.NULL_PTR;
+        FileWALPointer startPtr = CheckpointStatus.NULL_PTR;
+        FileWALPointer endPtr = CheckpointStatus.NULL_PTR;
 
         File dir = cpDir;
 
@@ -279,7 +278,7 @@ public class CheckpointMarkersStorage {
         long cpTs = Long.parseLong(matcher.group(1));
         UUID cpId = UUID.fromString(matcher.group(2));
 
-        WALPointer ptr = readPointer(file, buf);
+        FileWALPointer ptr = readPointer(file, buf);
 
         return createCheckPointEntry(cpTs, ptr, cpId, null, CheckpointEntryType.START);
     }
@@ -291,7 +290,7 @@ public class CheckpointMarkersStorage {
      * @return WAL pointer.
      * @throws IgniteCheckedException If failed to read mignite-put-get-exampleark file.
      */
-    private WALPointer readPointer(File cpMarkerFile, ByteBuffer buf) throws IgniteCheckedException {
+    private FileWALPointer readPointer(File cpMarkerFile, ByteBuffer buf) throws IgniteCheckedException {
         buf.position(0);
 
         try (FileIO io = ioFactory.create(cpMarkerFile, READ)) {
@@ -317,7 +316,7 @@ public class CheckpointMarkersStorage {
      */
     private CheckpointEntry createCheckPointEntry(
         long cpTs,
-        WALPointer ptr,
+        FileWALPointer ptr,
         UUID cpId,
         @Nullable CheckpointRecord rec,
         CheckpointEntryType type
@@ -412,7 +411,7 @@ public class CheckpointMarkersStorage {
     public CheckpointEntry writeCheckpointEntry(
         long cpTs,
         UUID cpId,
-        WALPointer ptr,
+        FileWALPointer ptr,
         @Nullable CheckpointRecord rec,
         CheckpointEntryType type,
         boolean skipSync
@@ -450,21 +449,17 @@ public class CheckpointMarkersStorage {
         ByteBuffer entryBuf,
         long cpTs,
         UUID cpId,
-        WALPointer ptr,
+        FileWALPointer ptr,
         @Nullable CheckpointRecord rec,
         CheckpointEntryType type
     ) {
-        assert ptr instanceof FileWALPointer;
-
-        FileWALPointer filePtr = (FileWALPointer)ptr;
-
         entryBuf.rewind();
 
-        entryBuf.putLong(filePtr.index());
+        entryBuf.putLong(ptr.index());
 
-        entryBuf.putInt(filePtr.fileOffset());
+        entryBuf.putInt(ptr.fileOffset());
 
-        entryBuf.putInt(filePtr.length());
+        entryBuf.putInt(ptr.length());
 
         entryBuf.flip();
 

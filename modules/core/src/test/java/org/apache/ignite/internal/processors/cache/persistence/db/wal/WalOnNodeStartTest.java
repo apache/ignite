@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -94,7 +93,7 @@ public class WalOnNodeStartTest extends GridCommonAbstractTest {
         // Graceful caches shutdown with the final checkpoint.
         ignite.cluster().state(ClusterState.INACTIVE);
 
-        WALPointer lastWalPtr = ignite.context().cache().context().database().lastCheckpointMarkWalPointer();
+        FileWALPointer lastWalPtr = ignite.context().cache().context().database().lastCheckpointMarkWalPointer();
 
         stopGrid(0);
 
@@ -111,7 +110,7 @@ public class WalOnNodeStartTest extends GridCommonAbstractTest {
         stopGrid(0);
 
         WALIterator replayIter = new IgniteWalIteratorFactory(log).iterator(
-            (FileWALPointer)lastWalPtr.next(),
+            lastWalPtr.next(),
             new File(walArchivePath),
             new File(walPath)
         );

@@ -38,7 +38,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
@@ -186,7 +185,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
             GridCacheDatabaseSharedManager dbMgr,
             FileWriteAheadLogManager wal
         ) throws IgniteCheckedException {
-            WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().firstCheckpointPointer();
+            FileWALPointer lowBoundForTruncate = dbMgr.checkpointHistory().firstCheckpointPointer();
 
             if (lowBoundForTruncate == null)
                 return Collections.emptyList();
@@ -227,7 +226,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
             GridCacheDatabaseSharedManager dbMgr,
             FileWriteAheadLogManager wal
         ) throws IgniteCheckedException {
-            WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().firstCheckpointPointer();
+            FileWALPointer lowBoundForTruncate = dbMgr.checkpointHistory().firstCheckpointPointer();
 
             if (lowBoundForTruncate == null)
                 return Collections.emptyList();
@@ -264,12 +263,10 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
         /**
          *
          */
-        private int resolveMaxReservedIndex(FileWriteAheadLogManager wal, WALPointer lowBoundForTruncate) {
-            FileWALPointer low = (FileWALPointer)lowBoundForTruncate;
-
+        private int resolveMaxReservedIndex(FileWriteAheadLogManager wal, FileWALPointer lowBoundForTruncate) {
             int resCnt = wal.reserved(null, lowBoundForTruncate);
 
-            long highIdx = low.index();
+            long highIdx = lowBoundForTruncate.index();
 
             return (int)(highIdx - resCnt + 1);
         }

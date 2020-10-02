@@ -44,7 +44,6 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -62,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -172,15 +172,15 @@ public class PageMemoryTracker implements IgnitePlugin {
     IgniteWriteAheadLogManager createWalManager() {
         if (isEnabled()) {
             return new FileWriteAheadLogManager(gridCtx) {
-                @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
-                    WALPointer res = super.log(record);
+                @Override public FileWALPointer log(WALRecord record) throws IgniteCheckedException {
+                    FileWALPointer res = super.log(record);
 
                     applyWalRecord(record);
 
                     return res;
                 }
 
-                @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+                @Override public void resumeLogging(FileWALPointer lastPtr) throws IgniteCheckedException {
                     super.resumeLogging(lastPtr);
 
                     if (lastPtr == null)

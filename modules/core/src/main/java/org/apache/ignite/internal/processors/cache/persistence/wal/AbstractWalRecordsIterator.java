@@ -26,7 +26,6 @@ import java.util.Optional;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -51,7 +50,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * are to override segment switching functionality
  */
 public abstract class AbstractWalRecordsIterator
-    extends GridCloseableIteratorAdapter<IgniteBiTuple<WALPointer, WALRecord>> implements WALIterator {
+    extends GridCloseableIteratorAdapter<IgniteBiTuple<FileWALPointer, WALRecord>> implements WALIterator {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -59,7 +58,7 @@ public abstract class AbstractWalRecordsIterator
      * Current record preloaded, to be returned on next()<br> Normally this should be not null because advance() method
      * should already prepare some value<br>
      */
-    protected IgniteBiTuple<WALPointer, WALRecord> curRec;
+    protected IgniteBiTuple<FileWALPointer, WALRecord> curRec;
 
     /**
      * The exception which can be thrown during reading next record. It holds until the next calling of next record.
@@ -99,7 +98,7 @@ public abstract class AbstractWalRecordsIterator
     private final SegmentFileInputFactory segmentFileInputFactory;
 
     /** Position of last read valid record. */
-    private WALPointer lastRead;
+    private FileWALPointer lastRead;
 
     /**
      * @param log Logger.
@@ -126,11 +125,11 @@ public abstract class AbstractWalRecordsIterator
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteBiTuple<WALPointer, WALRecord> onNext() throws IgniteCheckedException {
+    @Override protected IgniteBiTuple<FileWALPointer, WALRecord> onNext() throws IgniteCheckedException {
         if (curException != null)
             throw curException;
 
-        IgniteBiTuple<WALPointer, WALRecord> ret = curRec;
+        IgniteBiTuple<FileWALPointer, WALRecord> ret = curRec;
 
         try {
             advance();
@@ -203,7 +202,7 @@ public abstract class AbstractWalRecordsIterator
     }
 
     /** {@inheritDoc} */
-    @Override public Optional<WALPointer> lastRead() {
+    @Override public Optional<FileWALPointer> lastRead() {
         return Optional.ofNullable(lastRead);
     }
 
@@ -255,7 +254,7 @@ public abstract class AbstractWalRecordsIterator
      * @param hnd currently opened read handle.
      * @return next advanced record.
      */
-    protected IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
+    protected IgniteBiTuple<FileWALPointer, WALRecord> advanceRecord(
         @Nullable final AbstractReadFileHandle hnd
     ) throws IgniteCheckedException {
         if (hnd == null)
@@ -269,7 +268,7 @@ public abstract class AbstractWalRecordsIterator
             actualFilePtr.length(rec.size());
 
             // cast using diamond operator here can break compile for 7
-            return new IgniteBiTuple<>((WALPointer)actualFilePtr, postProcessRecord(rec));
+            return new IgniteBiTuple<>(actualFilePtr, postProcessRecord(rec));
         }
         catch (IOException | IgniteCheckedException e) {
             if (e instanceof WalSegmentTailReachedException) {
@@ -450,7 +449,7 @@ public abstract class AbstractWalRecordsIterator
     /**
      * Filter that drops all records until given start pointer is reached.
      */
-    private static class StartSeekingFilter implements P2<WALRecord.RecordType, WALPointer> {
+    private static class StartSeekingFilter implements P2<WALRecord.RecordType, FileWALPointer> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -468,8 +467,8 @@ public abstract class AbstractWalRecordsIterator
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(WALRecord.RecordType type, WALPointer pointer) {
-            if (start.fileOffset() == ((FileWALPointer)pointer).fileOffset())
+        @Override public boolean apply(WALRecord.RecordType type, FileWALPointer pointer) {
+            if (start.fileOffset() == pointer.fileOffset())
                 startReached = true;
 
             return startReached;

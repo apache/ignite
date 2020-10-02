@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Random;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -61,8 +60,8 @@ public class WalTestUtils {
         List<FileWALPointer> pointers = new ArrayList<>();
 
         try (WALIterator it = iterFactory.iterator(desc.file())) {
-            for (IgniteBiTuple<WALPointer, WALRecord> tuple : it)
-                pointers.add((FileWALPointer)tuple.get1());
+            for (IgniteBiTuple<FileWALPointer, WALRecord> tuple : it)
+                pointers.add(tuple.get1());
         }
 
         // Should have a previous record to return and another value before that to ensure that "lastReadPtr"
@@ -113,9 +112,9 @@ public class WalTestUtils {
         List<FileWALPointer> cpPointers = new ArrayList<>();
 
         try (WALIterator it = iterFactory.iterator(desc.file())) {
-            for (IgniteBiTuple<WALPointer, WALRecord> tuple : it) {
+            for (IgniteBiTuple<FileWALPointer, WALRecord> tuple : it) {
                 if (recordType.equals(tuple.get2().type()))
-                    cpPointers.add((FileWALPointer)tuple.get1());
+                    cpPointers.add(tuple.get1());
             }
         }
 
@@ -136,9 +135,9 @@ public class WalTestUtils {
         List<FileWALPointer> cpPointers = new ArrayList<>();
 
         try (WALIterator it = iterFactory.iterator(desc.file())) {
-            for (IgniteBiTuple<WALPointer, WALRecord> tuple : it) {
+            for (IgniteBiTuple<FileWALPointer, WALRecord> tuple : it) {
                 if (recordPurpose.equals(tuple.get2().type().purpose()))
-                    cpPointers.add((FileWALPointer)tuple.get1());
+                    cpPointers.add(tuple.get1());
             }
         }
 

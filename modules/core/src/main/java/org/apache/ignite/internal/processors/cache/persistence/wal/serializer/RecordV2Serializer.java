@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -87,7 +86,7 @@ public class RecordV2Serializer implements RecordSerializer {
      * Record type filter.
      * {@link FilteredRecord} is deserialized instead of original record if type doesn't match filter.
      */
-    private final IgniteBiPredicate<RecordType, WALPointer> recordFilter;
+    private final IgniteBiPredicate<RecordType, FileWALPointer> recordFilter;
 
     /** Record read/write functional interface. */
     private final RecordIO recordIO = new RecordIO() {
@@ -106,7 +105,7 @@ public class RecordV2Serializer implements RecordSerializer {
         /** {@inheritDoc} */
         @Override public WALRecord readWithHeaders(
             ByteBufferBackedDataInput in,
-            WALPointer expPtr
+            FileWALPointer expPtr
         ) throws IOException, IgniteCheckedException {
             WALRecord.RecordType recType = RecordV1Serializer.readRecordType(in);
 
@@ -116,10 +115,8 @@ public class RecordV2Serializer implements RecordSerializer {
             FileWALPointer ptr = readPositionAndCheckPoint(in, expPtr, skipPositionCheck, recType);
 
             if (recType == null) {
-                FileWALPointer exp = (FileWALPointer)expPtr;
-
                 throw new IOException("Unknown record type: " + recType +
-                    ", expected pointer [idx=" + exp.index() + ", offset=" + exp.fileOffset() + "]");
+                    ", expected pointer [idx=" + expPtr.index() + ", offset=" + expPtr.fileOffset() + "]");
             }
 
             if (recType.purpose() != WALRecord.RecordPurpose.INTERNAL
@@ -203,7 +200,7 @@ public class RecordV2Serializer implements RecordSerializer {
         boolean writePointer,
         boolean marshalledMode,
         boolean skipPositionCheck,
-        IgniteBiPredicate<RecordType, WALPointer> recordFilter
+        IgniteBiPredicate<RecordType, FileWALPointer> recordFilter
     ) {
         this.dataSerializer = dataSerializer;
         this.writePointer = writePointer;
@@ -233,7 +230,7 @@ public class RecordV2Serializer implements RecordSerializer {
     }
 
     /** {@inheritDoc} */
-    @Override public WALRecord readRecord(FileInput in, WALPointer expPtr) throws IOException, IgniteCheckedException {
+    @Override public WALRecord readRecord(FileInput in, FileWALPointer expPtr) throws IOException, IgniteCheckedException {
         return RecordV1Serializer.readWithCrc(in, expPtr, recordIO);
     }
 
@@ -246,7 +243,7 @@ public class RecordV2Serializer implements RecordSerializer {
     @SuppressWarnings("UnusedReturnValue")
     private static FileWALPointer readPositionAndCheckPoint(
         DataInput in,
-        WALPointer expPtr,
+        FileWALPointer expPtr,
         boolean skipPositionCheck,
         WALRecord.RecordType type
     ) throws IgniteCheckedException, IOException {
@@ -254,12 +251,10 @@ public class RecordV2Serializer implements RecordSerializer {
         int fileOff = in.readInt();
         int len = in.readInt();
 
-        FileWALPointer p = (FileWALPointer)expPtr;
-
-        if (!F.eq(idx, p.index()) || (!skipPositionCheck && !F.eq(fileOff, p.fileOffset())))
+        if (!F.eq(idx, expPtr.index()) || (!skipPositionCheck && !F.eq(fileOff, expPtr.fileOffset())))
             throw new WalSegmentTailReachedException(
                 "WAL segment tail reached. [ " +
-                    "Expected next state: {Index=" + p.index() + ",Offset=" + p.fileOffset() + "}, " +
+                    "Expected next state: {Index=" + expPtr.index() + ",Offset=" + expPtr.fileOffset() + "}, " +
                     "Actual state : {Index=" + idx + ",Offset=" + fileOff + "} ] recordType=" + type, null);
 
         return new FileWALPointer(idx, fileOff, len);
@@ -272,7 +267,7 @@ public class RecordV2Serializer implements RecordSerializer {
      * @param rec WAL rec.
      */
     private static void putPositionOfRecord(ByteBuffer buf, WALRecord rec) {
-        FileWALPointer p = (FileWALPointer)rec.position();
+        FileWALPointer p = rec.position();
 
         buf.putLong(p.index());
         buf.putInt(p.fileOffset());

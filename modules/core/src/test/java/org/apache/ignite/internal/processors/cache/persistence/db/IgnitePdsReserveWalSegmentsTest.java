@@ -99,7 +99,7 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
 
         assertTrue("Expected that at least resIdx greater than 0, real is " + resIdx, resIdx > 0);
 
-            FileWALPointer lowPtr = (FileWALPointer)dbMgr.checkpointHistory().firstCheckpointPointer();
+        FileWALPointer lowPtr = dbMgr.checkpointHistory().firstCheckpointPointer();
 
         assertTrue("Expected that dbMbr returns valid resIdx", lowPtr.index() == resIdx);
 
@@ -129,7 +129,7 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
 
         assertTrue("Expected that at least resIdx greater than 0, real is " + resIdx, resIdx > 0);
 
-            FileWALPointer lowPtr = (FileWALPointer) dbMgr.checkpointHistory().firstCheckpointPointer();
+        FileWALPointer lowPtr = dbMgr.checkpointHistory().firstCheckpointPointer();
 
         assertTrue("Expected that dbMbr returns valid resIdx", lowPtr.index() == resIdx);
 
@@ -151,7 +151,7 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private IgniteEx prepareGrid(int cnt) throws Exception {
-        IgniteEx ig0 = (IgniteEx)startGrids(cnt);
+        IgniteEx ig0 = startGrids(cnt);
 
         ig0.cluster().active(true);
 
@@ -173,8 +173,6 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
      * @param dbMgr Database shared manager.
      */
     private long getReservedWalSegmentIndex(GridCacheDatabaseSharedManager dbMgr) {
-        CheckpointHistory cpHist = dbMgr.checkpointHistory();
-
-        return ((FileWALPointer) cpHist.firstCheckpointPointer()).index();
+        return dbMgr.checkpointHistory().firstCheckpointPointer().index();
     }
 }

@@ -49,7 +49,6 @@ import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -1088,7 +1087,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
 
-        FileWALPointer latestReservedPointer = (FileWALPointer)database.latestWalPointerReservedForPreloading();
+        FileWALPointer latestReservedPointer = database.latestWalPointerReservedForPreloading();
 
         if (latestReservedPointer == null)
             throw new IgniteHistoricalIteratorException("Historical iterator wasn't created, because WAL isn't reserved.");
@@ -1489,7 +1488,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     // Search for next DataEntry while applying rollback counters.
                     while (walIt.hasNext()) {
-                        IgniteBiTuple<WALPointer, WALRecord> rec = walIt.next();
+                        IgniteBiTuple<FileWALPointer, WALRecord> rec = walIt.next();
 
                         if (rec.get2() instanceof DataRecord) {
                             DataRecord data = (DataRecord)rec.get2();

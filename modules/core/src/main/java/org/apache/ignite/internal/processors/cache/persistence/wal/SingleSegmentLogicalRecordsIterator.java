@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -130,13 +129,13 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     /**
      *
      */
-    private static class LogicalRecordsFilter implements P2<WALRecord.RecordType, WALPointer> {
+    private static class LogicalRecordsFilter implements P2<WALRecord.RecordType, FileWALPointer> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
 
         /** {@inheritDoc} */
-        @Override public boolean apply(WALRecord.RecordType type, WALPointer ptr) {
+        @Override public boolean apply(WALRecord.RecordType type, FileWALPointer ptr) {
             return type.purpose() == WALRecord.RecordPurpose.LOGICAL || type == WALRecord.RecordType.CHECKPOINT_RECORD;
         }
     }

@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
@@ -154,9 +153,9 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
         ig.context().cache().context().database().checkpointReadLock();
 
         try {
-            WALPointer ptr = walMgr.log(new AdHocWALRecord(), CURRENT_SEGMENT);
+            FileWALPointer ptr = walMgr.log(new AdHocWALRecord(), CURRENT_SEGMENT);
 
-            assertEquals(0, ((FileWALPointer)ptr).index());
+            assertEquals(0, ptr.index());
         }
         finally {
             ig.context().cache().context().database().checkpointReadUnlock();
@@ -177,9 +176,9 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
         ig.context().cache().context().database().checkpointReadLock();
 
         try {
-            WALPointer ptr = walMgr.log(new AdHocWALRecord(), NEXT_SEGMENT);
+            FileWALPointer ptr = walMgr.log(new AdHocWALRecord(), NEXT_SEGMENT);
 
-            assertEquals(1, ((FileWALPointer)ptr).index());
+            assertEquals(1, ptr.index());
         }
         finally {
             ig.context().cache().context().database().checkpointReadUnlock();
@@ -242,8 +241,8 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
         AdHocWALRecord markerRecord = new AdHocWALRecord();
 
-        WALPointer ptr0;
-        WALPointer ptr1;
+        FileWALPointer ptr0;
+        FileWALPointer ptr1;
 
         do {
             try {
@@ -260,12 +259,9 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
                     dbMgr.checkpointReadUnlock();
                 }
 
-                assertTrue(ptr0 instanceof FileWALPointer);
-                assertTrue(ptr1 instanceof FileWALPointer);
+                assertTrue(ptr0.index() < ptr1.index());
 
-                assertTrue(((FileWALPointer)ptr0).index() < ((FileWALPointer)ptr1).index());
-
-                assertEquals(HEADER_RECORD_SIZE, ((FileWALPointer)ptr1).fileOffset());
+                assertEquals(HEADER_RECORD_SIZE, ptr1.fileOffset());
             }
             catch (IgniteCheckedException e) {
                 log.error(e.getMessage(), e);
@@ -332,8 +328,8 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
         AdHocWALRecord markerRecord = new AdHocWALRecord();
 
-        WALPointer ptr0;
-        WALPointer ptr1;
+        FileWALPointer ptr0;
+        FileWALPointer ptr1;
 
         do {
             try {
@@ -350,10 +346,7 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
                 ptr1 = walMgr.log(markerRecord);
 
-                assertTrue(ptr0 instanceof FileWALPointer);
-                assertTrue(ptr1 instanceof FileWALPointer);
-
-                assertTrue(((FileWALPointer)ptr0).index() < ((FileWALPointer)ptr1).index());
+                assertTrue(ptr0.index() < ptr1.index());
             }
             catch (IgniteCheckedException e) {
                 log.error(e.getMessage(), e);

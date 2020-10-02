@@ -19,15 +19,16 @@ package org.apache.ignite.internal.pagemem.wal;
 
 import java.util.Optional;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  *
  */
-public interface WALIterator extends GridCloseableIterator<IgniteBiTuple<WALPointer, WALRecord>> {
+public interface WALIterator extends GridCloseableIterator<IgniteBiTuple<FileWALPointer, WALRecord>> {
     /**
      * @return Pointer of last read valid record. Empty if no records were read.
      */
-    public Optional<WALPointer> lastRead();
+    public Optional<FileWALPointer> lastRead();
 }

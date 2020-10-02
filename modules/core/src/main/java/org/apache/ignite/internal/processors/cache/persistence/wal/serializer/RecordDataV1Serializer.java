@@ -363,12 +363,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case CHECKPOINT_RECORD:
                 CheckpointRecord cpRec = (CheckpointRecord)record;
 
-                assert cpRec.checkpointMark() == null || cpRec.checkpointMark() instanceof FileWALPointer :
-                        "Invalid WAL record: " + cpRec;
-
                 int cacheStatesSize = cacheStatesSize(cpRec.cacheGroupStates());
 
-                FileWALPointer walPtr = (FileWALPointer)cpRec.checkpointMark();
+                FileWALPointer walPtr = cpRec.checkpointMark();
 
                 return 18 + cacheStatesSize + (walPtr == null ? 0 : 16);
 
@@ -1276,11 +1273,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case CHECKPOINT_RECORD:
                 CheckpointRecord cpRec = (CheckpointRecord)rec;
-
-                assert cpRec.checkpointMark() == null || cpRec.checkpointMark() instanceof FileWALPointer :
-                        "Invalid WAL record: " + cpRec;
-
-                FileWALPointer walPtr = (FileWALPointer)cpRec.checkpointMark();
+                FileWALPointer walPtr = cpRec.checkpointMark();
                 UUID cpId = cpRec.checkpointId();
 
                 buf.putLong(cpId.getMostSignificantBits());

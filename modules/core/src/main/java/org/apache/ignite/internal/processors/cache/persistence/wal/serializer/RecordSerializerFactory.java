@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
@@ -51,7 +51,7 @@ public interface RecordSerializerFactory {
      *
      * @param readTypeFilter Read type filter.
      */
-    public RecordSerializerFactory recordDeserializeFilter(IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter);
+    public RecordSerializerFactory recordDeserializeFilter(IgniteBiPredicate<WALRecord.RecordType, FileWALPointer> readTypeFilter);
 
     /**
      * If marshalledMode is on, created serializer will read {@link MarshalledRecord} with raw binary data instead of
@@ -64,7 +64,7 @@ public interface RecordSerializerFactory {
 
     /**
      * If skipPositionCheck is true, created serializer won't check that actual position of record in file is equal to
-     * position in saved record's WALPointer.
+     * position in saved record's FileWALPointer.
      * Must be true if we are reading from compacted WAL segment.
      *
      * @param skipPositionCheck Skip position check.

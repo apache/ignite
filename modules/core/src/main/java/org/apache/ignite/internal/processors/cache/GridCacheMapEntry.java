@@ -44,7 +44,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
@@ -68,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -1103,7 +1103,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         final GridCacheVersion newVer;
 
-        WALPointer logPtr = null;
+        FileWALPointer logPtr = null;
 
         ensureFreeSpace();
 
@@ -1288,7 +1288,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         final GridCacheVersion newVer;
 
-        WALPointer logPtr = null;
+        FileWALPointer logPtr = null;
 
         lockEntry();
 
@@ -1389,7 +1389,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         final GridCacheVersion newVer;
 
-        WALPointer logPtr = null;
+        FileWALPointer logPtr = null;
 
         lockEntry();
 
@@ -1473,7 +1473,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         Object key0 = null;
         Object val0 = null;
-        WALPointer logPtr = null;
+        FileWALPointer logPtr = null;
 
         long updateCntr0;
 
@@ -1692,7 +1692,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         long updateCntr0;
 
-        WALPointer logPtr = null;
+        FileWALPointer logPtr = null;
 
         boolean deferred;
 
@@ -4354,7 +4354,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param updCntr Update counter.
      * @throws IgniteCheckedException In case of log failure.
      */
-    protected WALPointer logTxUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr)
+    protected FileWALPointer logTxUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr)
         throws IgniteCheckedException {
         assert cctx.transactional() && !cctx.transactionalSnapshot();
 
@@ -4388,7 +4388,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param mvccVer Mvcc version.
      * @throws IgniteCheckedException In case of log failure.
      */
-    protected WALPointer logMvccUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr,
+    protected FileWALPointer logMvccUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr,
         MvccSnapshot mvccVer)
         throws IgniteCheckedException {
         assert mvccVer != null;
@@ -5221,7 +5221,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         /** {@inheritDoc} */
         @Override public void apply(IgniteInternalFuture lockFut) {
-            WALPointer logPtr = null;
+            FileWALPointer logPtr = null;
             boolean valid;
 
             GridCacheContext cctx = entry.context();
@@ -5367,7 +5367,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         /** {@inheritDoc} */
         @Override public void apply(IgniteInternalFuture lockFut) {
-            WALPointer logPtr = null;
+            FileWALPointer logPtr = null;
             boolean valid;
 
             GridCacheContext cctx = entry.context();
@@ -5528,7 +5528,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         /** {@inheritDoc} */
         @Override public void apply(IgniteInternalFuture lockFut) {
-            WALPointer logPtr = null;
+            FileWALPointer logPtr = null;
             boolean valid;
 
             GridCacheContext cctx = entry.context();
@@ -6815,7 +6815,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             MvccUtils.mvccVersionIsValid(mvccVer.coordinatorVersion(), mvccVer.counter(), mvccVer.operationCounter());
         assert !F.isEmpty(entries);
 
-        WALPointer logPtr = null;
+        FileWALPointer logPtr = null;
 
         ensureFreeSpace();
 
@@ -6920,7 +6920,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert !entryHist.isEmpty();
 
-        WALPointer logPtr = null;
+        FileWALPointer logPtr = null;
 
         ensureFreeSpace();
 

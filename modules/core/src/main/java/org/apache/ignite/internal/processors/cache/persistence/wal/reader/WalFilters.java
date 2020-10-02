@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import java.util.Set;
 import java.util.function.Predicate;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -37,7 +37,7 @@ public class WalFilters {
      *
      * @return Predicate for filtering checkpoint records.
      */
-    public static Predicate<IgniteBiTuple<WALPointer, WALRecord>> checkpoint() {
+    public static Predicate<IgniteBiTuple<FileWALPointer, WALRecord>> checkpoint() {
         return record -> record.get2() instanceof CheckpointRecord;
     }
 
@@ -47,7 +47,7 @@ public class WalFilters {
      * @param pageOwnerIds Page id for filtering.
      * @return Predicate for filtering record from pageOwnerIds.
      */
-    public static Predicate<IgniteBiTuple<WALPointer, WALRecord>> pageOwner(Set<T2<Integer, Long>> pageOwnerIds) {
+    public static Predicate<IgniteBiTuple<FileWALPointer, WALRecord>> pageOwner(Set<T2<Integer, Long>> pageOwnerIds) {
         return record -> {
             WALRecord walRecord = record.get2();
 
@@ -72,7 +72,7 @@ public class WalFilters {
      * @param partsMetaupdate Partition id for filtering.
      * @return Predicate for filtering record from pageOwnerIds.
      */
-    public static Predicate<IgniteBiTuple<WALPointer, WALRecord>> partitionMetaStateUpdate(
+    public static Predicate<IgniteBiTuple<FileWALPointer, WALRecord>> partitionMetaStateUpdate(
         Set<T2<Integer, Integer>> partsMetaupdate
     ) {
         return record -> {

@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
@@ -96,9 +95,7 @@ public class IgniteWalIteratorExceptionDuringReadTest extends GridCommonAbstract
         IteratorParametersBuilder builder = new IteratorParametersBuilder()
             .filesOrDirs(U.defaultWorkDirectory())
             .filter((r, ptr) -> {
-                FileWALPointer ptr0 = (FileWALPointer)ptr;
-
-                if (ptr0.compareTo(failOnPtr) >= 0)
+                if (ptr.compareTo(failOnPtr) >= 0)
                     throw new TestRuntimeException(failMessage);
 
                 return true;
@@ -111,9 +108,9 @@ public class IgniteWalIteratorExceptionDuringReadTest extends GridCommonAbstract
 
             while (it.hasNext()) {
                 try {
-                    IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
+                    IgniteBiTuple<FileWALPointer, WALRecord> tup = it.next();
 
-                    ptr = (FileWALPointer)tup.get1();
+                    ptr = tup.get1();
                 }
                 catch (IgniteException e) {
                     Assert.assertNotNull(ptr);

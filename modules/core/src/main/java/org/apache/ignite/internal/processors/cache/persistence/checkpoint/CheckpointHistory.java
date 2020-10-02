@@ -36,7 +36,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.util.lang.IgniteThrowableBiPredicate;
@@ -168,7 +167,7 @@ public class CheckpointHistory {
     /**
      * @return First checkpoint WAL pointer if exists. Otherwise {@code null}.
      */
-    public WALPointer firstCheckpointPointer() {
+    public FileWALPointer firstCheckpointPointer() {
         CheckpointEntry entry = firstCheckpoint();
 
         return entry != null ? entry.checkpointMark() : null;
@@ -299,13 +298,11 @@ public class CheckpointHistory {
      *
      * @return List of checkpoint entries removed from history.
      */
-    public List<CheckpointEntry> onWalTruncated(WALPointer ptr) {
+    public List<CheckpointEntry> onWalTruncated(FileWALPointer highBound) {
         List<CheckpointEntry> removed = new ArrayList<>();
 
-        FileWALPointer highBound = (FileWALPointer)ptr;
-
         for (CheckpointEntry cpEntry : histMap.values()) {
-            FileWALPointer cpPnt = (FileWALPointer)cpEntry.checkpointMark();
+            FileWALPointer cpPnt = cpEntry.checkpointMark();
 
             if (highBound.compareTo(cpPnt) <= 0)
                 break;
@@ -342,7 +339,7 @@ public class CheckpointHistory {
     public List<CheckpointEntry> onCheckpointFinished(Checkpoint chp) {
         chp.walSegsCoveredRange(calculateWalSegmentsCovered());
 
-        WALPointer checkpointMarkUntilDel = isWalHistorySizeParameterEnabled //check for compatibility mode.
+        FileWALPointer checkpointMarkUntilDel = isWalHistorySizeParameterEnabled //check for compatibility mode.
             ? checkpointMarkUntilDeleteByMemorySize()
             : newerPointer(checkpointMarkUntilDeleteByMemorySize(), checkpointMarkUntilDeleteByArchiveSize());
 
@@ -366,17 +363,14 @@ public class CheckpointHistory {
      * @param secondPointer One of pointers to choose the newest.
      * @return The newest pointer from input ones.
      */
-    private FileWALPointer newerPointer(WALPointer firstPointer, WALPointer secondPointer) {
-        FileWALPointer first = (FileWALPointer)firstPointer;
-        FileWALPointer second = (FileWALPointer)secondPointer;
-
+    private FileWALPointer newerPointer(FileWALPointer firstPointer, FileWALPointer secondPointer) {
         if (firstPointer == null)
-            return second;
+            return secondPointer;
 
         if (secondPointer == null)
-            return first;
+            return firstPointer;
 
-        return first.index() > second.index() ? first : second;
+        return firstPointer.index() > secondPointer.index() ? firstPointer : secondPointer;
     }
 
     /**
@@ -384,7 +378,7 @@ public class CheckpointHistory {
      *
      * @return Checkpoint mark until which checkpoints can be deleted(not including this pointer).
      */
-    private WALPointer checkpointMarkUntilDeleteByMemorySize() {
+    private FileWALPointer checkpointMarkUntilDeleteByMemorySize() {
         if (histMap.size() <= maxCpHistMemSize)
             return null;
 
@@ -403,7 +397,7 @@ public class CheckpointHistory {
      *
      * @return Checkpoint mark until which checkpoints can be deleted(not including this pointer).
      */
-    @Nullable private WALPointer checkpointMarkUntilDeleteByArchiveSize() {
+    @Nullable private FileWALPointer checkpointMarkUntilDeleteByArchiveSize() {
         long absFileIdxToDel = wal.maxArchivedSegmentToDelete();
 
         if (absFileIdxToDel < 0)
@@ -430,7 +424,7 @@ public class CheckpointHistory {
      * @return absolute file index for given checkpoint entry.
      */
     private long absFileIdx(CheckpointEntry pointer) {
-        return ((FileWALPointer)pointer.checkpointMark()).index();
+        return pointer.checkpointMark().index();
     }
 
     /**
@@ -448,18 +442,13 @@ public class CheckpointHistory {
 
         Map.Entry<Long, CheckpointEntry> previousEntry = histMap.lowerEntry(lastEntry.getKey());
 
-        WALPointer lastWALPointer = lastEntry.getValue().checkpointMark();
+        FileWALPointer lastWALPointer = lastEntry.getValue().checkpointMark();
 
-        long lastIdx = 0;
-
+        long lastIdx = lastWALPointer.index();
         long prevIdx = 0;
 
-        if (lastWALPointer instanceof FileWALPointer) {
-            lastIdx = ((FileWALPointer)lastWALPointer).index();
-
-            if (previousEntry != null)
-                prevIdx = ((FileWALPointer)previousEntry.getValue().checkpointMark()).index();
-        }
+        if (previousEntry != null)
+            prevIdx = previousEntry.getValue().checkpointMark().index();
 
         tup.set1(prevIdx);
         tup.set2(lastIdx - 1);
@@ -498,7 +487,7 @@ public class CheckpointHistory {
 
             Iterator<Map.Entry<Integer, Long>> iter = modifiedPartsCounter.entrySet().iterator();
 
-            FileWALPointer ptr = (FileWALPointer)cpEntry.checkpointMark();
+            FileWALPointer ptr = cpEntry.checkpointMark();
 
             while (iter.hasNext()) {
                 Map.Entry<Integer, Long> entry = iter.next();
@@ -631,7 +620,7 @@ public class CheckpointHistory {
 
             partCntsForUpdate.put(part, Math.max(foundCntr, partContr - margin));
 
-            return (FileWALPointer)cpEntry.checkpointMark();
+            return cpEntry.checkpointMark();
         }
     }
 

@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 
 /**
@@ -54,7 +54,7 @@ public interface RecordSerializer {
      * @param expPtr expected WAL pointer for record. Used to validate actual position against expected from the file
      * @return Read entry.
      */
-    public WALRecord readRecord(FileInput in, WALPointer expPtr) throws IOException, IgniteCheckedException;
+    public WALRecord readRecord(FileInput in, FileWALPointer expPtr) throws IOException, IgniteCheckedException;
 
     /**
      * Flag to write (or not) wal pointer to record

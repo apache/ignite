@@ -36,7 +36,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -432,7 +431,7 @@ public class IgniteWalIteratorFactory {
         @Nullable private GridCacheSharedContext sharedCtx;
 
         /** */
-        @Nullable private IgniteBiPredicate<RecordType, WALPointer> filter;
+        @Nullable private IgniteBiPredicate<RecordType, FileWALPointer> filter;
 
         /** */
         private FileWALPointer lowBound = DFLT_LOW_BOUND;
@@ -562,7 +561,7 @@ public class IgniteWalIteratorFactory {
          * @param filter Record filter for skip records during iteration.
          * @return IteratorParametersBuilder Self reference.
          */
-        public IteratorParametersBuilder filter(IgniteBiPredicate<RecordType, WALPointer> filter) {
+        public IteratorParametersBuilder filter(IgniteBiPredicate<RecordType, FileWALPointer> filter) {
             this.filter = filter;
 
             return this;
@@ -572,7 +571,7 @@ public class IgniteWalIteratorFactory {
          * @param filter Record filter for skip records during iteration.
          * @return IteratorParametersBuilder Self reference.
          */
-        public IteratorParametersBuilder addFilter(IgniteBiPredicate<RecordType, WALPointer> filter) {
+        public IteratorParametersBuilder addFilter(IgniteBiPredicate<RecordType, FileWALPointer> filter) {
             this.filter = this.filter == null ? filter : this.filter.and(filter);
 
             return this;

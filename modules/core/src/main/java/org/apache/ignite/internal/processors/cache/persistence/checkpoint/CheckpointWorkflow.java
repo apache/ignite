@@ -51,7 +51,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -62,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.Checkpoin
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -156,7 +156,7 @@ public class CheckpointWorkflow {
     @Nullable private volatile IgniteThreadPoolExecutor checkpointCollectPagesInfoPool;
 
     /** Pointer to a memory recovery record that should be included into the next checkpoint record. */
-    private volatile WALPointer memoryRecoveryRecordPtr;
+    private volatile FileWALPointer memoryRecoveryRecordPtr;
 
     /**
      * @param logger Logger.
@@ -242,7 +242,7 @@ public class CheckpointWorkflow {
 
         boolean hasPartitionsToDestroy;
 
-        WALPointer cpPtr = null;
+        FileWALPointer cpPtr = null;
 
         CheckpointContextImpl ctx0 = new CheckpointContextImpl(
             curr, new PartitionAllocationMap(), checkpointCollectPagesInfoPool, workProgressDispatcher
@@ -596,7 +596,7 @@ public class CheckpointWorkflow {
     public void finalizeCheckpointOnRecovery(
         long cpTs,
         UUID cpId,
-        WALPointer walPtr,
+        FileWALPointer walPtr,
         StripedExecutor exec,
         CheckpointPagesWriterFactory checkpointPagesWriterFactory
     ) throws IgniteCheckedException {
@@ -682,7 +682,7 @@ public class CheckpointWorkflow {
     /**
      * @param memoryRecoveryRecordPtr Memory recovery record pointer.
      */
-    public void memoryRecoveryRecordPtr(WALPointer memoryRecoveryRecordPtr) {
+    public void memoryRecoveryRecordPtr(FileWALPointer memoryRecoveryRecordPtr) {
         this.memoryRecoveryRecordPtr = memoryRecoveryRecordPtr;
     }
 

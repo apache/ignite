@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
@@ -116,7 +115,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @NotNull GridCacheSharedContext sharedCtx,
         @NotNull FileIOFactory ioFactory,
         @NotNull List<FileDescriptor> walFiles,
-        IgniteBiPredicate<RecordType, WALPointer> readTypeFilter,
+        IgniteBiPredicate<RecordType, FileWALPointer> readTypeFilter,
         FileWALPointer lowBound,
         FileWALPointer highBound,
         boolean keepBinary,
@@ -277,17 +276,17 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
+    @Override protected IgniteBiTuple<FileWALPointer, WALRecord> advanceRecord(
         @Nullable AbstractReadFileHandle hnd
     ) throws IgniteCheckedException {
-        IgniteBiTuple<WALPointer, WALRecord> tup = super.advanceRecord(hnd);
+        IgniteBiTuple<FileWALPointer, WALRecord> tup = super.advanceRecord(hnd);
 
         if (tup == null)
             return tup;
 
         if (!checkBounds(tup.get1())) {
             if (curRec != null) {
-                FileWALPointer prevRecPtr = (FileWALPointer)curRec.get1();
+                FileWALPointer prevRecPtr = curRec.get1();
 
                 // Fast stop condition, after high bound reached.
                 if (prevRecPtr != null && prevRecPtr.compareTo(highBound) > 0)
@@ -304,10 +303,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param ptr WAL pointer.
      * @return {@code True} If pointer between low and high bounds. {@code False} if not.
      */
-    private boolean checkBounds(WALPointer ptr) {
-        FileWALPointer ptr0 = (FileWALPointer)ptr;
-
-        return ptr0.compareTo(lowBound) >= 0 && ptr0.compareTo(highBound) <= 0;
+    private boolean checkBounds(FileWALPointer ptr) {
+        return ptr.compareTo(lowBound) >= 0 && ptr.compareTo(highBound) <= 0;
     }
 
     /**

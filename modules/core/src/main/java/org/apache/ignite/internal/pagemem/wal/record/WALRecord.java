@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointStatus;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -350,7 +350,7 @@ public abstract class WALRecord {
     private WALRecord prev;
 
     /** */
-    private WALPointer pos;
+    private FileWALPointer pos;
 
     /**
      * @param chainSize Chain size in bytes.
@@ -383,14 +383,14 @@ public abstract class WALRecord {
     /**
      * @return Position in file.
      */
-    public WALPointer position() {
+    public FileWALPointer position() {
         return pos;
     }
 
     /**
      * @param pos Position in file.
      */
-    public void position(WALPointer pos) {
+    public void position(FileWALPointer pos) {
         assert pos != null;
 
         this.pos = pos;

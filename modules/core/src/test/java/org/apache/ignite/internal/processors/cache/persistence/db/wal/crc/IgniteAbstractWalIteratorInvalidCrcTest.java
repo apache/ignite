@@ -33,7 +33,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
@@ -202,8 +201,8 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
 
             IgniteException igniteException = (IgniteException) GridTestUtils.assertThrows(log, () -> {
                 try (WALIterator iter = getWalIterator(walMgr, ignoreArchiveDir)) {
-                    for (IgniteBiTuple<WALPointer, WALRecord> tuple : iter) {
-                        FileWALPointer ptr = (FileWALPointer)tuple.get1();
+                    for (IgniteBiTuple<FileWALPointer, WALRecord> tuple : iter) {
+                        FileWALPointer ptr = tuple.get1();
                         lastReadPtrRef[0] = ptr;
                     }
                 }

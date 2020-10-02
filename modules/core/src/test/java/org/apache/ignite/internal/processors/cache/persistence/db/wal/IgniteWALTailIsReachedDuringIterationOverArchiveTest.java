@@ -33,7 +33,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -174,9 +173,9 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
 
         try (WALIterator it0 = it) {
             while (it0.hasNextX()) {
-                IgniteBiTuple<WALPointer, WALRecord> tup = it0.nextX();
+                IgniteBiTuple<FileWALPointer, WALRecord> tup = it0.nextX();
 
-                lastReadPtr = (FileWALPointer)tup.get1();
+                lastReadPtr = tup.get1();
             }
         }
         catch (IgniteCheckedException e) {
@@ -210,9 +209,9 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
 
         try (WALIterator it = iteratorFactory.iterator(desc.file())) {
             while (it.hasNext()) {
-                IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
+                IgniteBiTuple<FileWALPointer, WALRecord> tup = it.next();
 
-                pointers.add((FileWALPointer)tup.get1());
+                pointers.add(tup.get1());
             }
         }
 

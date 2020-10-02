@@ -88,8 +88,8 @@ public class WalPageCompressionIntegrationTest extends AbstractPageCompressionIn
         }
 
         // Write any WAL record to get current WAL pointers.
-        FileWALPointer ptr0 = (FileWALPointer)ignite0.context().cache().context().wal().log(new CheckpointRecord(null));
-        FileWALPointer ptr1 = (FileWALPointer)ignite1.context().cache().context().wal().log(new CheckpointRecord(null));
+        FileWALPointer ptr0 = ignite0.context().cache().context().wal().log(new CheckpointRecord(null));
+        FileWALPointer ptr1 = ignite1.context().cache().context().wal().log(new CheckpointRecord(null));
 
         log.info("Compressed WAL pointer: " + ptr0);
         log.info("Uncompressed WAL pointer: " + ptr1);

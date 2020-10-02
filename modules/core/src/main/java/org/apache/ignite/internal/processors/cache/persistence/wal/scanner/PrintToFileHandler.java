@@ -22,10 +22,10 @@ import java.io.IOException;
 import java.nio.file.StandardOpenOption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,7 +58,7 @@ class PrintToFileHandler implements ScannerHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public final void handle(IgniteBiTuple<WALPointer, WALRecord> record) {
+    @Override public final void handle(IgniteBiTuple<FileWALPointer, WALRecord> record) {
         initIfRequired();
 
         writeFully(getBytes(record));
@@ -68,7 +68,7 @@ class PrintToFileHandler implements ScannerHandler {
      * @param record WAL record with its pointer.
      * @return Bytes repersentation of data to be written in dump file.
      */
-    protected byte[] getBytes(IgniteBiTuple<WALPointer, WALRecord> record) {
+    protected byte[] getBytes(IgniteBiTuple<FileWALPointer, WALRecord> record) {
         return (DEFAULT_WAL_RECORD_PREFIX + toStringRecord(record.get2()) + System.lineSeparator()).getBytes(UTF_8);
     }
 

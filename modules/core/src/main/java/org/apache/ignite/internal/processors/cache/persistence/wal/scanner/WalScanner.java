@@ -25,8 +25,8 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.FilteredWalIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
@@ -106,7 +106,7 @@ public class WalScanner {
             .collect(Collectors.toSet());
 
         // Build WAL filter. (Checkoint, Page, Partition meta)
-        Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter = checkpoint()
+        Predicate<IgniteBiTuple<FileWALPointer, WALRecord>> filter = checkpoint()
             .or(pageOwner(groupAndPageIds0))
             .or(partitionMetaStateUpdate(groupAndParts));
 

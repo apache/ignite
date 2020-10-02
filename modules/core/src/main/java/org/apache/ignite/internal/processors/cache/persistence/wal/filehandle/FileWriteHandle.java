@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
@@ -52,7 +51,7 @@ public interface FileWriteHandle {
      * @throws StorageException if storage was failed.
      * @throws IgniteCheckedException if fail.
      */
-    @Nullable WALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException;
+    @Nullable FileWALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException;
 
     /**
      * Flush all records.

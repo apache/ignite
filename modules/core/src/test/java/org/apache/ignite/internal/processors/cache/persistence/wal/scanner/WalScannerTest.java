@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -342,8 +341,8 @@ public class WalScannerTest {
      * @return Mocked WAL iterator.
      */
     private WALIterator mockWalIterator(
-        IgniteBiTuple<WALPointer, WALRecord> first,
-        IgniteBiTuple<WALPointer, WALRecord>... tail
+        IgniteBiTuple<FileWALPointer, WALRecord> first,
+        IgniteBiTuple<FileWALPointer, WALRecord>... tail
     ) {
         Boolean[] hasNextReturn = new Boolean[tail.length + 1];
         Arrays.fill(hasNextReturn, true);

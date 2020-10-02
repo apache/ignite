@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -237,7 +236,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public WALPointer flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
+    @Override public FileWALPointer flush(FileWALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
@@ -255,7 +254,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
             filePtr = new FileWALPointer(cur.getSegmentId(), (int)pos, 0);
         }
         else
-            filePtr = (FileWALPointer)ptr;
+            filePtr = ptr;
 
         if (mode == LOG_ONLY)
             cur.flushOrWait(filePtr);

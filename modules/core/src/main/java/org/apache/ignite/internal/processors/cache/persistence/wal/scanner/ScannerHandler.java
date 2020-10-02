@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.scanner;
 
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
@@ -30,7 +30,7 @@ public interface ScannerHandler {
      *
      * @param record One more record from WAL.
      */
-    void handle(IgniteBiTuple<WALPointer, WALRecord> record);
+    void handle(IgniteBiTuple<FileWALPointer, WALRecord> record);
 
     /**
      * Method which called after all iteration would be finished.
@@ -48,7 +48,7 @@ public interface ScannerHandler {
         ScannerHandler thiz = this;
 
         return new ScannerHandler() {
-            @Override public void handle(IgniteBiTuple<WALPointer, WALRecord> record) {
+            @Override public void handle(IgniteBiTuple<FileWALPointer, WALRecord> record) {
                 try {
                     thiz.handle(record);
                 }

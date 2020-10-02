@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * File WAL pointer.
  */
-public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
+public class FileWALPointer implements Serializable, Comparable<FileWALPointer> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -79,8 +79,10 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
         this.len = len;
     }
 
-    /** {@inheritDoc} */
-    @Override public FileWALPointer next() {
+    /**
+     * Pointer to the next record. Can be used only for original pointers obtained from WAL manager.
+     */
+    public FileWALPointer next() {
         if (len == 0)
             throw new IllegalStateException("Failed to calculate next WAL pointer " +
                 "(this pointer is a terminal): " + this);

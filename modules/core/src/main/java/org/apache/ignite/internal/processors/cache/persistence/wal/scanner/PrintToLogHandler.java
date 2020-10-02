@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.scanner;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandler.toStringRecord;
@@ -46,7 +46,7 @@ class PrintToLogHandler implements ScannerHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void handle(IgniteBiTuple<WALPointer, WALRecord> record) {
+    @Override public void handle(IgniteBiTuple<FileWALPointer, WALRecord> record) {
         ensureNotFinished();
 
         resultString

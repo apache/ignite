@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -87,7 +86,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * Record type filter.
      * {@link FilteredRecord} is deserialized instead of original record if type doesn't match filter.
      */
-    private final IgniteBiPredicate<RecordType, WALPointer> recordFilter;
+    private final IgniteBiPredicate<RecordType, FileWALPointer> recordFilter;
 
     /** Skip position check flag. Should be set for reading compacted wal file with skipped physical records. */
     private final boolean skipPositionCheck;
@@ -124,7 +123,7 @@ public class RecordV1Serializer implements RecordSerializer {
         }
 
         /** {@inheritDoc} */
-        @Override public WALRecord readWithHeaders(ByteBufferBackedDataInput in, WALPointer expPtr) throws IOException, IgniteCheckedException {
+        @Override public WALRecord readWithHeaders(ByteBufferBackedDataInput in, FileWALPointer expPtr) throws IOException, IgniteCheckedException {
             RecordType recType = readRecordType(in);
 
             if (recType == RecordType.SWITCH_SEGMENT_RECORD)
@@ -198,7 +197,7 @@ public class RecordV1Serializer implements RecordSerializer {
         boolean writePointer,
         boolean marshalledMode,
         boolean skipPositionCheck,
-        IgniteBiPredicate<RecordType, WALPointer> recordFilter
+        IgniteBiPredicate<RecordType, FileWALPointer> recordFilter
     ) {
         this.dataSerializer = dataSerializer;
         this.writePointer = writePointer;
@@ -223,7 +222,7 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /** {@inheritDoc} */
-    @Override public WALRecord readRecord(FileInput in0, WALPointer expPtr) throws IOException, IgniteCheckedException {
+    @Override public WALRecord readRecord(FileInput in0, FileWALPointer expPtr) throws IOException, IgniteCheckedException {
         return readWithCrc(in0, expPtr, recordIO);
     }
 
@@ -318,7 +317,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @param rec WAL record.
      */
     private static void putPositionOfRecord(ByteBuffer buf, WALRecord rec) {
-        putPosition(buf, (FileWALPointer)rec.position());
+        putPosition(buf, rec.position());
     }
 
     /**
@@ -360,7 +359,7 @@ public class RecordV1Serializer implements RecordSerializer {
      */
     static WALRecord readWithCrc(
         FileInput in0,
-        WALPointer expPtr,
+        FileWALPointer expPtr,
         RecordIO reader
     ) throws EOFException, IgniteCheckedException {
         long startPos = -1;

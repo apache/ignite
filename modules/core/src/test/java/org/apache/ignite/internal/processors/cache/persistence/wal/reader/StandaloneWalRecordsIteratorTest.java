@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -146,11 +145,11 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         FileWALPointer lowBound = null, highBound = null;
 
-        for (IgniteBiTuple<WALPointer, WALRecord> p : createWalIterator(dir, null, null, false)) {
+        for (IgniteBiTuple<FileWALPointer, WALRecord> p : createWalIterator(dir, null, null, false)) {
             if (lowBound == null)
-                lowBound = (FileWALPointer) p.get1();
+                lowBound = p.get1();
 
-            highBound = (FileWALPointer) p.get1();
+            highBound = p.get1();
         }
 
         assertNotNull(lowBound);

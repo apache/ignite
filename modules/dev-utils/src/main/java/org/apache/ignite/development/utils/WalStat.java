@@ -29,7 +29,6 @@ import java.util.TreeMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -123,7 +122,7 @@ public class WalStat {
      * @param walPointer pointer, used to extract segment index.
      * @param workDir true for work, false for archive folder.
      */
-    void registerRecord(WALRecord record, WALPointer walPointer, boolean workDir) {
+    void registerRecord(WALRecord record, FileWALPointer walPointer, boolean workDir) {
         WALRecord.RecordType type = record.type();
 
         if (type == WALRecord.RecordType.PAGE_RECORD)
@@ -134,13 +133,8 @@ public class WalStat {
             registerTxRecord((TxRecord)record);
 
         incrementStat(type.toString(), record, recTypeSizes);
-
-        if (walPointer instanceof FileWALPointer) {
-            final FileWALPointer fPtr = (FileWALPointer)walPointer;
-
-            incrementStat(Long.toString(fPtr.index()), record, segmentsIndexes);
-            incrementStat(workDir ? "work" : "archive", record, segmentsFolder);
-        }
+        incrementStat(Long.toString(walPointer.index()), record, segmentsIndexes);
+        incrementStat(workDir ? "work" : "archive", record, segmentsFolder);
     }
 
     /**

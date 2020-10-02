@@ -33,7 +33,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -247,7 +246,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public WALPointer addRecord(WALRecord rec) throws StorageException {
+    @Nullable @Override public FileWALPointer addRecord(WALRecord rec) throws StorageException {
         assert rec.size() > 0 || rec.getClass() == FakeRecord.class;
 
         boolean flushed = false;
@@ -315,7 +314,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
      * @return File offset.
      */
     private static int recordOffset(WALRecord rec) {
-        FileWALPointer ptr = (FileWALPointer)rec.position();
+        FileWALPointer ptr = rec.position();
 
         assert ptr != null;
 
@@ -855,11 +854,6 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
         /** {@inheritDoc} */
         @Override public RecordType type() {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileWALPointer position() {
-            return (FileWALPointer)super.position();
         }
 
         /** {@inheritDoc} */
