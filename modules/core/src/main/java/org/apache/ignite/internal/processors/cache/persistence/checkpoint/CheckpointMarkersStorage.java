@@ -143,7 +143,7 @@ public class CheckpointMarkersStorage {
     /**
      * Wal truncate callBack.
      *
-     * @param highBound FileWALPointer.
+     * @param highBound WALPointer.
      */
     public void removeCheckpointsUntil(WALPointer highBound) throws IgniteCheckedException {
         List<CheckpointEntry> removedFromHistory = history().onWalTruncated(highBound);

@@ -64,7 +64,7 @@ public interface RecordSerializerFactory {
 
     /**
      * If skipPositionCheck is true, created serializer won't check that actual position of record in file is equal to
-     * position in saved record's FileWALPointer.
+     * position in saved record's {@link WALPointer}.
      * Must be true if we are reading from compacted WAL segment.
      *
      * @param skipPositionCheck Skip position check.

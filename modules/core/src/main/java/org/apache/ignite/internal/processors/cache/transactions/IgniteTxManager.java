@@ -2876,7 +2876,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * Logs Tx state to WAL if needed.
      *
      * @param tx Transaction.
-     * @return FileWALPointer or {@code null} if nothing was logged.
+     * @return WALPointer or {@code null} if nothing was logged.
      */
     @Nullable WALPointer logTxRecord(IgniteTxAdapter tx) {
         BaselineTopology baselineTop;

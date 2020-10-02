@@ -331,8 +331,8 @@ class ProgressWatchdog {
             walWorkSegments = idx - lastArchIdx;
 
             /* // uncomment when currentWritePointer is available
-             FileWALPointer ptr = wal.currentWritePointer();
-               FileWALPointer prevWalPtr = this.prevWalPtrRef.getAndSet(ptr);
+             WALPointer ptr = wal.currentWritePointer();
+               WALPointer prevWalPtr = this.prevWalPtrRef.getAndSet(ptr);
 
                if (prevWalPtr != null) {
                    long idxDiff = ptr.index() - prevWalPtr.index();
