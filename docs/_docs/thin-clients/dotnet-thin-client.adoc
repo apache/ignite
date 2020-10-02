@@ -220,8 +220,6 @@ Currently, thin clients can run already deployed tasks by class name. Task class
 include::{sourceCodeFile}[tag=client-compute-task,indent=0]
 -------------------------------------------------------------------------------
 
-Nodes set to execute compute tasks can be limited using cluster groups and corresponding `IgniteClient.compute(ClientClusterGroup)` method.
-
 See link:distributed-computing/distributed-computing[distributed computing] for more information about compute grid functionality.
 
 
