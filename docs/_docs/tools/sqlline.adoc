@@ -1,4 +1,4 @@
-= SQLLine
+= Using SQLLine With Apache Ignite
 
 
 Command line tool for SQL connectivity.

@@ -367,10 +367,6 @@
       url: SQL/ODBC/error-codes
 - title: REST API
   url: restapi
-- title: Control Script
-  url: control-script
-- title: SQLLine
-  url: sqlline
 - title: Extensions and Integrations
   items:
     - title: Spring
@@ -473,6 +469,22 @@
       url: cpp-specific/cpp-platform-interoperability
     - title: Objects Lifetime
       url: cpp-specific/cpp-objects-lifetime
+- title: Tools
+  items:
+    - title: Control Script
+      url: tools/control-script
+    - title: Visor CMD
+      url: tools/visor-cmd
+    - title: GridGain Control Center
+      url: tools/gg-control-center
+    - title: SQLLine
+      url: tools/sqlline
+    - title: Tableau
+      url: tools/tableau
+    - title: Informatica
+      url: tools/informatica
+    - title: Pentaho
+      url: tools/pentaho
 - title: Plugins
   url: plugins
 - title: SQL Reference
