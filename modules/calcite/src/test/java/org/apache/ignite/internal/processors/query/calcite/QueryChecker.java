@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.QueryEngine;
@@ -83,7 +84,22 @@ public abstract class QueryChecker {
      * @return Matcher.
      */
     public static Matcher<String> containsProject(String schema, String tblName, int... requiredColunms) {
-        return matchesString(".*IgniteTableScan\\(table=\\[\\[" + schema + ", " +
+        return matches(".*IgniteTableScan\\(table=\\[\\[" + schema + ", " +
+            tblName + "\\]\\], " + "requiredColunms=\\[\\{" +
+            Arrays.toString(requiredColunms)
+                .replaceAll("\\[", "")
+                .replaceAll("]", "") + "\\}\\]\\).*");
+    }
+
+    /**
+     * Ignite table scan with projects unmatcher.
+     *
+     * @param schema  Schema name.
+     * @param tblName Table name.
+     * @return Matcher.
+     */
+    public static Matcher<String> containsOneProject(String schema, String tblName, int... requiredColunms) {
+        return matchesOnce(".*IgniteTableScan\\(table=\\[\\[" + schema + ", " +
             tblName + "\\]\\], " + "requiredColunms=\\[\\{" +
             Arrays.toString(requiredColunms)
                 .replaceAll("\\[", "")
@@ -113,7 +129,7 @@ public abstract class QueryChecker {
     }
 
     /** */
-    public static Matcher<String> matchesString(final String substring) {
+    public static Matcher<String> matches(final String substring) {
         return new SubstringMatcher(substring) {
             /** {@inheritDoc} */
             @Override protected boolean evalSubstringOf(String sIn) {
@@ -127,6 +143,34 @@ public abstract class QueryChecker {
                 return null;
             }
         };
+    }
+
+    /** */
+    public static Matcher<String> matchesOnce(final String substring) {
+        return new SubstringMatcher(substring) {
+            /** {@inheritDoc} */
+            @Override protected boolean evalSubstringOf(String sIn) {
+                sIn = sIn.replaceAll("\n", "");
+
+                return containsOnce(sIn, substring);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected String relationship() {
+                return null;
+            }
+        };
+    }
+
+    /** Check only single matching. */
+    public static boolean containsOnce(final String s, final CharSequence substring) {
+        Pattern pattern = Pattern.compile(substring.toString());
+        java.util.regex.Matcher matcher = pattern.matcher(s);
+
+        if (matcher.find())
+            return !matcher.find();
+
+        return false;
     }
 
     /**

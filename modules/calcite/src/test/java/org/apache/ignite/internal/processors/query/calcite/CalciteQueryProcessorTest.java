@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import com.google.common.collect.ImmutableMap;

@@ -79,9 +79,8 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
      */
     private ProjectScanMergeRule(Class<? extends RelNode> projectionClazz, Class<T> tableClass, String desc) {
         super(operand(projectionClazz,
-            operand(tableClass, none())),
-            RelFactories.LOGICAL_BUILDER,
-            desc);
+                operand(tableClass, none())),
+                    RelFactories.LOGICAL_BUILDER, desc);
     }
 
     /** {@inheritDoc} */

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rules;
 
-import static java.util.Collections.singletonList;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -29,8 +28,8 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsAnyProject;
-import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsProject;
+import static java.util.Collections.singletonList;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsOneProject;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.notContainsProject;
 import static org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest.Product;
@@ -93,8 +92,7 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
     public void testProjects() {
         checkQuery("SELECT NAME FROM products d;")
             .matches(containsScan("PUBLIC", "PRODUCTS"))
-            .matches(containsAnyProject("PUBLIC", "PRODUCTS"))
-            .matches(containsProject("PUBLIC", "PRODUCTS", 7))
+            .matches(containsOneProject("PUBLIC", "PRODUCTS", 7))
             .returns("noname1")
             .returns("noname2")
             .returns("noname3")
@@ -102,8 +100,7 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
 
         checkQuery("SELECT SUBCAT_ID, NAME FROM products d;")
             .matches(containsScan("PUBLIC", "PRODUCTS"))
-            .matches(containsAnyProject("PUBLIC", "PRODUCTS"))
-            .matches(containsProject("PUBLIC", "PRODUCTS", 6, 7))
+            .matches(containsOneProject("PUBLIC", "PRODUCTS", 6, 7))
             .returns(11, "noname1")
             .returns(11, "noname2")
             .returns(12, "noname3")
