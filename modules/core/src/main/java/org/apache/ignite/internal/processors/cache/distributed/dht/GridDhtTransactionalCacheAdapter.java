@@ -337,7 +337,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.isInvalidate(),
                                     req.timeout(),
                                     req.txSize(),
-                                    req.subjectId(),
+                                    securitySubjectId(ctx),
                                     req.taskNameHash(),
                                     !req.skipStore() && req.storeUsed(),
                                     req.txLabel());
@@ -1124,7 +1124,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             false,
                             req.txSize(),
                             null,
-                            req.subjectId(),
+                            securitySubjectId(ctx),
                             req.taskNameHash(),
                             req.txLabel(),
                             null);
@@ -1150,8 +1150,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     }
                 }
                 else {
-                    assert F.eq(req.subjectId(), securitySubjectId(ctx));
-
                     fut = new GridDhtLockFuture(ctx,
                         nearNode.id(),
                         req.version(),

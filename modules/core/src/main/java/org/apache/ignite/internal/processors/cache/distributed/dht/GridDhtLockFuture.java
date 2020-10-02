@@ -962,7 +962,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             cnt,
                             0,
                             inTx() ? tx.size() : cnt,
-                            securitySubjectId(),
                             inTx() ? tx.taskNameHash() : 0,
                             read ? accessTtl : -1L,
                             skipStore,

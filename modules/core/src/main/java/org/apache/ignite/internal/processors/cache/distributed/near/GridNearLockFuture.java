@@ -1136,7 +1136,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                 mappedKeys.size(),
                                                 inTx() ? tx.size() : mappedKeys.size(),
                                                 inTx() && tx.syncMode() == FULL_SYNC,
-                                                securitySubjectId(),
                                                 inTx() ? tx.taskNameHash() : 0,
                                                 read ? createTtl : -1L,
                                                 read ? accessTtl : -1L,
