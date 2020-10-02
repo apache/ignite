@@ -47,12 +47,11 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
  * Node left a topology when a one phase transaction committing.
  */
 public class OnePhaseCommitAndNodeLeftTest extends GridCommonAbstractTest {
-
     /** Message appears when all owner partition was lost so a cluster do an operation cannot execute over them. */
     public static final String LOST_ALL_QWNERS_MSG = "all partition owners have left the grid, partition data has been lost";
 
     /** Chache backup count. */
-    private int backups = 0;
+    private int backups;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -77,7 +76,7 @@ public class OnePhaseCommitAndNodeLeftTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testImplicitlyTxZiroBackups() throws Exception {
+    public void testImplicitlyTxZeroBackups() throws Exception {
         backups = 0;
 
         startTransactionAndFailPrimary((ignite, key, val) -> ignite.cache(DEFAULT_CACHE_NAME).put(key, val));
@@ -101,7 +100,7 @@ public class OnePhaseCommitAndNodeLeftTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testTxZiroBackups() throws Exception {
+    public void testTxZeroBackups() throws Exception {
         backups = 0;
 
         for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
