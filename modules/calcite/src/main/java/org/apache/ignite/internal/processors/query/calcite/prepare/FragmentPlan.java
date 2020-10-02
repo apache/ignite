@@ -17,23 +17,31 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.jetbrains.annotations.NotNull;
 
-/**
- *
- */
-public interface QueryPlan {
-    /** Query type */
-    enum Type { QUERY, FRAGMENT, DML, DDL, EXPLAIN }
+/** */
+public class FragmentPlan implements QueryPlan {
+    /** */
+    private final IgniteRel root;
 
-    /**
-     * @return Query type.
-     */
-    Type type();
+    /** */
+    public FragmentPlan(IgniteRel root) {
+        this.root = root;
+    }
 
-    /**
-     * Clones this plan.
-     * @param ctx Planner context.
-     */
-    QueryPlan clone(@NotNull PlanningContext ctx);
+    /** */
+    public IgniteRel root() {
+        return root;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Type type() {
+        return Type.FRAGMENT;
+    }
+
+    /** {@inheritDoc} */
+    @Override public QueryPlan clone(@NotNull PlanningContext ctx) {
+        return new FragmentPlan(new Cloner(ctx.cluster()).visit(root));
+    }
 }
