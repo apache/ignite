@@ -7,6 +7,15 @@ Ignite provides `TcpDiscoverySpi` as a default implementation of `DiscoverySpi` 
 Discovery SPI can be configured for Multicast and Static IP based node
 discovery.
 
+[NOTE]
+====
+[discrete]
+You should configure multiple node addresses only if they represent some real connections which can give you more
+reliability. Setting several addresses may prolong detection of node failure. Parameters like `failureDetectionTimeout`
+work per address sequentially. If you assign, for example, two ip addresses a node, TcpDiscovery takes up to
+'failureDetectionTimeout * 2' to detect failure of this node.
+====
+
 == Multicast IP Finder
 
 `TcpDiscoveryMulticastIpFinder` uses Multicast to discover other nodes
