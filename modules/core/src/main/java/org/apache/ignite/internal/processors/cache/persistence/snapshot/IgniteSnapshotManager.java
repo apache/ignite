@@ -791,13 +791,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 clusterSnpFut = snpFut0;
                 lastSeenSnpFut = snpFut0;
-
-                snpFut0.listen(f -> {
-                    if (f.error() == null)
-                        recordSnapshotEvent(name, SNAPSHOT_FINISHED_MSG, EVT_CLUSTER_SNAPSHOT_FINISHED);
-                    else
-                        recordSnapshotEvent(name, SNAPSHOT_FAILED_MSG + f.error().getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
-                });
             }
 
             List<Integer> grps = cctx.cache().persistentGroups().stream()
@@ -807,6 +800,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .collect(Collectors.toList());
 
             List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
+
+            snpFut0.listen(f -> {
+                if (f.error() == null)
+                    recordSnapshotEvent(name, SNAPSHOT_FINISHED_MSG + grps, EVT_CLUSTER_SNAPSHOT_FINISHED);
+                else
+                    recordSnapshotEvent(name, SNAPSHOT_FAILED_MSG + f.error().getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
+            });
 
             startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(snpFut0.rqId,
                 cctx.localNodeId(),
@@ -1000,7 +1000,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param type Snapshot event type.
      */
     private void recordSnapshotEvent(String snpName, String msg, int type) {
-        if (!cctx.gridEvents().isRecordable(type))
+        if (!cctx.gridEvents().isRecordable(type) || !cctx.gridEvents().hasListener(type))
             return;
 
         cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
