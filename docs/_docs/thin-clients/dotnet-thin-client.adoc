@@ -178,10 +178,6 @@ include::{sourceCodeFile}[tag=client-cluster-groups,indent=0]
 
 Refer to link:distributed-computing/cluster-groups[Cluster groups] to get more information about logical nodes grouping.
 
-////
-*TODO: fix class names, add snippets below*
-////
-
 
 == Executing compute tasks
 
