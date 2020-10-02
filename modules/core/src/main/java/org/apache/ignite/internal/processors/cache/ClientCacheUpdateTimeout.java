@@ -39,7 +39,7 @@ class ClientCacheUpdateTimeout extends GridTimeoutObjectAdapter implements Cache
         super(timeout);
 
         this.cctx = cctx;
-        secSubjId = SecurityUtils.securitySubjectId(cctx.kernalContext());
+        secSubjId = SecurityUtils.securitySubjectId(cctx);
     }
 
     /** {@inheritDoc} */

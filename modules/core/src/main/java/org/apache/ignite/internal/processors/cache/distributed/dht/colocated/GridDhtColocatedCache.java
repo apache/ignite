@@ -728,7 +728,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         assert tx == null || !ctx.kernalContext().security().enabled() ||
-            F.eq(tx.subjectId(), securitySubjectId(ctx.kernalContext()));
+            F.eq(tx.subjectId(), securitySubjectId(ctx));
 
         GridDhtColocatedLockFuture fut = new GridDhtColocatedLockFuture(ctx,
             keys,
@@ -742,7 +742,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery(),
-            securitySubjectId(ctx.kernalContext()));
+            securitySubjectId(ctx));
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();
@@ -1109,7 +1109,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 filter,
                 skipStore,
                 keepBinary,
-                securitySubjectId(ctx.kernalContext()));
+                securitySubjectId(ctx));
 
             // Add before mapping.
             if (!ctx.mvcc().addFuture(fut))

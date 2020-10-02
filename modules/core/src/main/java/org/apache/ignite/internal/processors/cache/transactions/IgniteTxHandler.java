@@ -545,7 +545,7 @@ public class IgniteTxHandler {
                     req.onePhaseCommit(),
                     req.txSize(),
                     req.transactionNodes(),
-                    securitySubjectId(ctx.kernalContext()),
+                    securitySubjectId(ctx),
                     req.taskNameHash(),
                     req.txLabel(),
                     originTx
@@ -1732,7 +1732,7 @@ public class IgniteTxHandler {
                     req.writes() != null ? Math.max(req.writes().size(), req.txSize()) : req.txSize(),
                     req.nearXidVersion(),
                     req.transactionNodes(),
-                    securitySubjectId(ctx.kernalContext()),
+                    securitySubjectId(ctx),
                     req.taskNameHash(),
                     single,
                     req.storeWriteThrough(),
@@ -1837,7 +1837,7 @@ public class IgniteTxHandler {
                                             }
 
                                             assert tx == null || !ctx.kernalContext().security().enabled() ||
-                                                F.eq(tx.subjectId(), securitySubjectId(ctx.kernalContext()));
+                                                F.eq(tx.subjectId(), securitySubjectId(ctx));
 
                                             CacheObject val = cached.innerGet(
                                                 /*ver*/null,
@@ -2117,7 +2117,7 @@ public class IgniteTxHandler {
                     req.timeout(),
                     req.nearWrites(),
                     req.txSize(),
-                    securitySubjectId(ctx.kernalContext()),
+                    securitySubjectId(ctx),
                     req.taskNameHash(),
                     req.txLabel()
                 );

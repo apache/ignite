@@ -267,7 +267,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 final int stripe = curThread instanceof IgniteThread ? ((IgniteThread)curThread).stripe() : -1;
 
-                final UUID secSubjId = SecurityUtils.securitySubjectId(cctx.kernalContext());
+                final UUID secSubjId = SecurityUtils.securitySubjectId(cctx);
 
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {

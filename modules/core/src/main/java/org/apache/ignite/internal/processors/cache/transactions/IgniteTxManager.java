@@ -793,7 +793,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             storeEnabled,
             mvccOp,
             txSize,
-            SecurityUtils.securitySubjectId(cctx.kernalContext()),
+            SecurityUtils.securitySubjectId(cctx),
             taskNameHash,
             lb,
             txDumpsThrottling,

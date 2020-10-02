@@ -150,7 +150,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                 ClusterNode node = mapping.getKey();
 
                 assert tx == null || !ctx.kernalContext().security().enabled() ||
-                    F.eq(tx.subjectId(), securitySubjectId(ctx.kernalContext()));
+                    F.eq(tx.subjectId(), securitySubjectId(ctx));
 
                 GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut =
                     new GridPartitionedGetFuture<>(

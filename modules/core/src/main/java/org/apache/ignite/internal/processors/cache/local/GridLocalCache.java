@@ -152,10 +152,10 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             return new GridFinishedFuture<>(true);
 
         assert tx == null || !ctx.kernalContext().security().enabled() ||
-            F.eq(tx.subjectId(), securitySubjectId(ctx.kernalContext()));
+            F.eq(tx.subjectId(), securitySubjectId(ctx));
 
         GridLocalLockFuture<K, V> fut = new GridLocalLockFuture<>(ctx, keys, tx, this, timeout, filter,
-            securitySubjectId(ctx.kernalContext()));
+            securitySubjectId(ctx));
 
         try {
             if (!fut.addEntries(keys))

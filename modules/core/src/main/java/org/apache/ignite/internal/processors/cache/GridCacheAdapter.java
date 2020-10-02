@@ -4993,7 +4993,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         Supplier<IgniteInternalFuture<R>> retry) {
         final GridNearTxLocal tx = checkCurrentTx();
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
-        final UUID secSubjId = securitySubjectId(ctx.kernalContext());
+        final UUID secSubjId = securitySubjectId(ctx);
 
         GridFutureAdapter<R> fut = new GridFutureAdapter<>();
 

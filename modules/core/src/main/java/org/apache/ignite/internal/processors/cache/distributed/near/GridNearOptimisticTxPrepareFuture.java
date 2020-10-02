@@ -889,7 +889,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             this.m = m;
             this.futId = futId;
             this.mappings = mappings;
-            secSubjId = SecurityUtils.securitySubjectId(parent.cctx.kernalContext());
+            secSubjId = SecurityUtils.securitySubjectId(parent.cctx);
         }
 
         /**

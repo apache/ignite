@@ -340,7 +340,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 hasNewVal,
                 oldVal0,
                 hasOldVal,
-                securitySubjectId(cctx.kernalContext()),
+                securitySubjectId(cctx),
                 cloClsName,
                 taskName));
         }

@@ -965,7 +965,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         assert tx != null;
 
-        assert !ctx.kernalContext().security().enabled() || F.eq(tx.subjectId(), securitySubjectId(ctx.kernalContext()));
+        assert !ctx.kernalContext().security().enabled() || F.eq(tx.subjectId(), securitySubjectId(ctx));
 
         GridDhtLockFuture fut = new GridDhtLockFuture(
             ctx,
@@ -983,7 +983,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             filter,
             skipStore,
             keepBinary,
-            securitySubjectId(ctx.kernalContext()));
+            securitySubjectId(ctx));
 
         if (fut.isDone()) // Possible in case of cancellation or timeout or rollback.
             return fut;
@@ -1150,7 +1150,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     }
                 }
                 else {
-                    assert F.eq(req.subjectId(), securitySubjectId(ctx.kernalContext()));
+                    assert F.eq(req.subjectId(), securitySubjectId(ctx));
 
                     fut = new GridDhtLockFuture(ctx,
                         nearNode.id(),
@@ -1167,7 +1167,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         filter,
                         req.skipStore(),
                         req.keepBinary(),
-                        securitySubjectId(cacheCtx.kernalContext()));
+                        securitySubjectId(cacheCtx));
 
                     // Add before mapping.
                     if (!ctx.mvcc().addFuture(fut))
@@ -2175,7 +2175,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     false,
                     -1,
                     null,
-                    securitySubjectId(ctx.kernalContext()),
+                    securitySubjectId(ctx),
                     txTaskNameHash,
                     null,
                     null);
@@ -2284,7 +2284,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     false,
                     req0.timeout(),
                     -1,
-                    securitySubjectId(ctx.kernalContext()),
+                    securitySubjectId(ctx),
                     req0.taskNameHash(),
                     false,
                     null);

@@ -2121,7 +2121,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
              but possibly we can safely optimize this. */
 
             GridNearTxEnlistFuture fut = new GridNearTxEnlistFuture(cacheCtx, this,
-                timeout, it, 0, sequential, filter, retval, keepBinary, securitySubjectId(cacheCtx.kernalContext()));
+                timeout, it, 0, sequential, filter, retval, keepBinary, securitySubjectId(cacheCtx));
 
             fut.init();
 
@@ -2303,7 +2303,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 final ExpiryPolicy expiryPlc0 = expiryPlc;
 
-                final UUID secSubjId = securitySubjectId(cacheCtx.kernalContext());
+                final UUID secSubjId = securitySubjectId(cacheCtx);
 
                 PLC2<Map<K, V>> plc2 = new PLC2<Map<K, V>>() {
                     @Override public IgniteInternalFuture<Map<K, V>> postLock() throws IgniteCheckedException {
