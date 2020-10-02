@@ -16,11 +16,14 @@
 """
 This module contains the base class to build services aware of Ignite.
 """
-
+import signal
 from abc import abstractmethod, ABCMeta
 
 from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
+import time
+from datetime import datetime
+from time import monotonic
 
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
@@ -136,3 +139,45 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         for node in self.nodes:
             self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
                                      backoff_sec=backoff_sec)
+    # pylint: disable=W0221
+    def stop_node(self, node, clean_shutdown=True, timeout_sec=60):
+        pids = self.pids(node)
+        sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
+
+        for pid in pids:
+            self.__stop_node(node, pid, sig)
+
+        try:
+            wait_until(lambda: len(self.pids(node)) == 0, timeout_sec=timeout_sec,
+                       err_msg="Ignite node failed to stop in %d seconds" % timeout_sec)
+        except Exception:
+            self.thread_dump(node)
+            raise
+
+    @staticmethod
+    def __stop_node(node, pid, sig, start_waiter=None, delay_ms=0, time_holder=None):
+        if start_waiter:
+            start_waiter.count_down()
+            start_waiter.wait()
+
+        if delay_ms > 0:
+            time.sleep(delay_ms / 1000.0)
+
+        if time_holder:
+            mono = monotonic()
+            timestamp = datetime.now()
+
+            time_holder.compare_and_set(None, (mono, timestamp))
+
+        node.account.signal(pid, sig, False)
+
+    def thread_dump(self, node):
+        """
+        Generate thread dump on node.
+        :param node: Ignite service node.
+        """
+        for pid in self.pids(node):
+            try:
+                node.account.signal(pid, signal.SIGQUIT, allow_fail=True)
+            except RemoteCommandError:
+                self.logger.warn("Could not dump threads on node")

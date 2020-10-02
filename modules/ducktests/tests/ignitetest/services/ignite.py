@@ -21,11 +21,8 @@ import functools
 import operator
 import os
 import signal
-import time
-from datetime import datetime
-from threading import Thread
 
-from time import monotonic
+from threading import Thread
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
@@ -64,20 +61,7 @@ class IgniteService(IgniteAwareService):
         if len(self.pids(node)) == 0:
             raise Exception("No process ids recorded on node %s" % node.account.hostname)
 
-    # pylint: disable=W0221
-    def stop_node(self, node, clean_shutdown=True, timeout_sec=60):
-        pids = self.pids(node)
-        sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
 
-        for pid in pids:
-            self.__stop_node(node, pid, sig)
-
-        try:
-            wait_until(lambda: len(self.pids(node)) == 0, timeout_sec=timeout_sec,
-                       err_msg="Ignite node failed to stop in %d seconds" % timeout_sec)
-        except Exception:
-            self.thread_dump(node)
-            raise
 
     def stop_nodes_async(self, nodes, delay_ms=0, clean_shutdown=True, timeout_sec=20, wait_for_stop=False):
         """
@@ -115,37 +99,10 @@ class IgniteService(IgniteAwareService):
 
         return time_holder.get()
 
-    @staticmethod
-    def __stop_node(node, pid, sig, start_waiter=None, delay_ms=0, time_holder=None):
-        if start_waiter:
-            start_waiter.count_down()
-            start_waiter.wait()
-
-        if delay_ms > 0:
-            time.sleep(delay_ms / 1000.0)
-
-        if time_holder:
-            mono = monotonic()
-            timestamp = datetime.now()
-
-            time_holder.compare_and_set(None, (mono, timestamp))
-
-        node.account.signal(pid, sig, False)
-
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
         node.account.ssh("sudo rm -rf -- %s" % self.PERSISTENT_ROOT, allow_fail=False)
 
-    def thread_dump(self, node):
-        """
-        Generate thread dump on node.
-        :param node: Ignite service node.
-        """
-        for pid in self.pids(node):
-            try:
-                node.account.signal(pid, signal.SIGQUIT, allow_fail=True)
-            except RemoteCommandError:
-                self.logger.warn("Could not dump threads on node")
 
     def pids(self, node):
         try:
