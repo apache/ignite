@@ -62,11 +62,11 @@ class ClientTest(IgniteTest):
         """
         # prepare servers
         servers_count = self.CLUSTER_NODES - self.STATIC_CLIENTS_NUM - self.TEMP_CLIENTS_NUM
+        # calculate final topology version after test
         server_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version))
         ignite = IgniteService(self.test_context, server_cfg, num_nodes=servers_count)
         # build client config
         client_cfg = server_cfg._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite))
-
         # prepare client services
         static_clients = IgniteApplicationService(
             self.test_context,
@@ -108,13 +108,14 @@ class ClientTest(IgniteTest):
                                      from_the_beginning=True,
                                      backoff_sec=1)
             temp_clients.stop()
+
             ignite.await_event("clients=" + str(self.STATIC_CLIENTS_NUM),
-                               timeout_sec=60,
+                               timeout_sec=80,
                                from_the_beginning=False,
                                backoff_sec=1)
             ignite.await_event("servers=" + str(servers_count),
                                timeout_sec=60,
-                               from_the_beginning=True,
+                               from_the_beginning=False,
                                backoff_sec=1)
             i = i + 1
 
@@ -124,7 +125,8 @@ class ClientTest(IgniteTest):
                            backoff_sec=1)
         ignite.await_event("servers=" + str(servers_count),
                            timeout_sec=60,
-                           from_the_beginning=True,
+                           from_the_beginning=False,
                            backoff_sec=1)
         static_clients.stop()
+
         ignite.stop()
