@@ -4583,7 +4583,7 @@ public class ZookeeperDiscoveryImpl {
     /** */
     public UUID getCoordinator() {
         return rtState.top.nodesByOrder.values().stream()
-                .filter(n -> !n.isClient())
+                .filter(n -> !n.isClient() && !n.isDaemon())
                 .map(ZookeeperClusterNode::id)
                 .findFirst()
                 .orElse(null);
