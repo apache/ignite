@@ -255,8 +255,8 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
 
         stopGrid(0);
 
-        assertEquals(mbean.getCoordinatorNodeFormatted(), String.valueOf(srv2.localNode()));
         assertEquals(mbean.getCoordinator(), srv2.localNode().id());
+        assertEquals(mbean.getCoordinatorNodeFormatted(), String.valueOf(srv2.localNode()));
     }
 
     /**
