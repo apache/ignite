@@ -4582,9 +4582,11 @@ public class ZookeeperDiscoveryImpl {
 
     /** */
     public UUID getCoordinator() {
-        Map.Entry<Long, ZookeeperClusterNode> e = rtState.top.nodesByOrder.firstEntry();
-
-        return e != null ? e.getValue().id() : null;
+        return rtState.top.nodesByOrder.values().stream()
+                .filter(n -> !n.isClient())
+                .map(ZookeeperClusterNode::id)
+                .findFirst()
+                .orElse(null);
     }
 
     /** */
