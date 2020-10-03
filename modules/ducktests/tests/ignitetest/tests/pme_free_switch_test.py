@@ -86,9 +86,11 @@ class PmeFreeSwitchTest(IgniteTest):
 
         time.sleep(30)  # keeping txs alive for 30 seconds.
 
-        long_tx_streamer.stop()
+        long_tx_streamer.stop_async()
+        single_key_tx_streamer.stop_async()
 
-        single_key_tx_streamer.stop()
+        long_tx_streamer.await_stopped(60)
+        single_key_tx_streamer.await_stopped(60)
 
         data["Worst latency (ms)"] = single_key_tx_streamer.extract_result("WORST_LATENCY")
         data["Streamed txs"] = single_key_tx_streamer.extract_result("STREAMED")

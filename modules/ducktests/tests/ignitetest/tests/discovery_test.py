@@ -72,7 +72,9 @@ class DiscoveryTest(IgniteTest):
     """
     NUM_NODES = 7
 
-    FAILURE_DETECTION_TIMEOUT = 1000
+    FAILURE_DETECTION_TIMEOUT_TCP = 1000
+
+    FAILURE_DETECTION_TIMEOUT_ZK = 3000
 
     DATA_AMOUNT = 5_000_000
 
@@ -145,7 +147,8 @@ class DiscoveryTest(IgniteTest):
         ignite_config = IgniteConfiguration(
             version=test_config.version,
             discovery_spi=discovery_spi,
-            failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT,
+            failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT_ZK if test_config.with_zk
+            else self.FAILURE_DETECTION_TIMEOUT_ZK,
             caches=[CacheConfiguration(
                 name='test-cache',
                 backups=1,
@@ -299,8 +302,8 @@ def start_zookeeper(test_context, num_nodes):
     """
     Start zookeeper cluster.
     """
-    zk_settings = ZookeeperSettings(min_session_timeout=DiscoveryTest.FAILURE_DETECTION_TIMEOUT,
-                                    tick_time=DiscoveryTest.FAILURE_DETECTION_TIMEOUT // 2)
+    zk_settings = ZookeeperSettings(min_session_timeout=DiscoveryTest.FAILURE_DETECTION_TIMEOUT_ZK,
+                                    tick_time=DiscoveryTest.FAILURE_DETECTION_TIMEOUT_ZK // 3)
 
     zk_quorum = ZookeeperService(test_context, num_nodes, settings=zk_settings)
     zk_quorum.start()
@@ -324,18 +327,14 @@ def start_load_app(test_context, ignite_config, params, modules=None):
     """
     Start loader application.
     """
-    loader = IgniteApplicationService(
+    IgniteApplicationService(
         test_context,
         config=ignite_config,
         java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
         modules=modules,
         # mute spam in log.
         jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"],
-        params=params)
-
-    loader.start()
-
-    return loader.nodes
+        params=params).start()
 
 
 def failed_pattern(failed_node_id=None):
