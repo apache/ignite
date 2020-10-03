@@ -6,33 +6,40 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
+import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Simple client node. Tx-put operation.
+ */
 public class SingleClientNode  extends IgniteAwareApplication {
-
-    private IgniteCache<String, String> cache;
+    /** */
     private String cacheName;
-    private String reportName;
+
+    /** */
     private long pacing = 0;
 
-    @Override
-    protected void run(JsonNode jsonNode) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void run(JsonNode jsonNode) throws Exception {
         cacheName = jsonNode.get("cacheName").asText();
-        reportName = jsonNode.get("reportName").asText();
-        pacing = jsonNode.get("pacing").asLong();
 
-        log.info("test props: " + "cacheName=" + cacheName + " reportName=" + reportName + " pacing=" + pacing);
+        pacing = Optional.ofNullable(jsonNode.get("pacing"))
+                .map(JsonNode::asLong)
+                .orElse(0l);
 
-        cache = ignite.getOrCreateCache(prepareCacheConfiguration(cacheName));
+        log.info("test props: cacheName=" + cacheName + " pacing=" + pacing);
+
+        IgniteCache<String, String> cache = ignite.getOrCreateCache(prepareCacheConfiguration(cacheName));
         log.info("nodeId: " + ignite.name() + " starting cache operations");
 
         markInitialized();
         while (!terminated()){
-            cacheOperation();
+            cacheOperation(cache);
         }
         markFinished();
     }
 
+    /** */
     private CacheConfiguration prepareCacheConfiguration(String cacheName){
         CacheConfiguration cfg = new CacheConfiguration();
         cfg.setBackups(2);
@@ -41,7 +48,8 @@ public class SingleClientNode  extends IgniteAwareApplication {
         return cfg;
     }
 
-    private long cacheOperation() throws InterruptedException {
+    /** */
+    private long cacheOperation(IgniteCache<String, String> cache) throws InterruptedException {
         String key = UUID.randomUUID().toString();
         String value = UUID.randomUUID().toString();
         long startTime = System.nanoTime();

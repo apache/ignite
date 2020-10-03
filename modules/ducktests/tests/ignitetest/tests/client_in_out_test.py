@@ -21,11 +21,12 @@ from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, V_2_8_1, IgniteVersion
 
 
 # pylint: disable=W0223
@@ -44,7 +45,6 @@ class ClientTest(IgniteTest):
     """
 
     CACHE_NAME = "simple-tx-cache"
-    REPORT_NAME = "put-tx"
     PACING = 10
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.start_stop_client.SingleClientNode"
 
@@ -62,9 +62,11 @@ class ClientTest(IgniteTest):
         """
         # prepare servers
         servers_count = self.CLUSTER_NODES - self.STATIC_CLIENTS_NUM - self.TEMP_CLIENTS_NUM
-        # calculate final topology version after test
+        # topology version after test
+        fin_topology_ver = servers_count + 2 * self.STATIC_CLIENTS_NUM + 2 * self.ITERATION_COUNT * self.TEMP_CLIENTS_NUM
         server_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version))
         ignite = IgniteService(self.test_context, server_cfg, num_nodes=servers_count)
+        control_utility = ControlUtility(ignite, self.test_context)
         # build client config
         client_cfg = server_cfg._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite))
         # prepare client services
@@ -74,19 +76,18 @@ class ClientTest(IgniteTest):
             java_class_name=self.JAVA_CLIENT_CLASS_NAME,
             num_nodes=self.STATIC_CLIENTS_NUM,
             params={"cacheName": self.CACHE_NAME,
-                    "reportName": self.REPORT_NAME,
                     "pacing": self.PACING})
+
         temp_clients = IgniteApplicationService(
             self.test_context,
             client_cfg,
             java_class_name=self.JAVA_CLIENT_CLASS_NAME,
             num_nodes=self.TEMP_CLIENTS_NUM,
             params={"cacheName": self.CACHE_NAME,
-                    "reportName": self.REPORT_NAME,
                     "pacing": self.PACING})
         # start servers and check cluster
         ignite.start()
-        ignite.await_event("servers=" + str(servers_count),
+        ignite.await_event(f'servers={servers_count}',
                            timeout_sec=60,
                            from_the_beginning=True,
                            backoff_sec=1)
@@ -102,17 +103,20 @@ class ClientTest(IgniteTest):
         i = 0
         while i < self.ITERATION_COUNT:
             temp_clients.start()
-            time.sleep(self.CLIENTS_WORK_TIME_S)
+
             temp_clients.await_event("clients=" + str(self.STATIC_CLIENTS_NUM + self.TEMP_CLIENTS_NUM),
                                      timeout_sec=60,
                                      from_the_beginning=True,
                                      backoff_sec=1)
+
+            time.sleep(self.CLIENTS_WORK_TIME_S)
             temp_clients.stop()
 
-            ignite.await_event("clients=" + str(self.STATIC_CLIENTS_NUM),
-                               timeout_sec=80,
-                               from_the_beginning=False,
-                               backoff_sec=1)
+            static_clients.await_event("clients=" + str(self.STATIC_CLIENTS_NUM),
+                                       timeout_sec=80,
+                                       from_the_beginning=False,
+                                       backoff_sec=1)
+
             ignite.await_event("servers=" + str(servers_count),
                                timeout_sec=60,
                                from_the_beginning=False,
@@ -120,13 +124,12 @@ class ClientTest(IgniteTest):
             i = i + 1
 
         ignite.await_event("clients=" + str(self.STATIC_CLIENTS_NUM),
-                           timeout_sec=60,
+                           timeout_sec=80,
                            from_the_beginning=False,
                            backoff_sec=1)
+        baseline = control_utility.cluster_state().topology_version
+        assert baseline, 7
         ignite.await_event("servers=" + str(servers_count),
                            timeout_sec=60,
                            from_the_beginning=False,
                            backoff_sec=1)
-        static_clients.stop()
-
-        ignite.stop()

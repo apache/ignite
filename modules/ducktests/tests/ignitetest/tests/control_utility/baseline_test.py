@@ -91,7 +91,7 @@ class BaselineTests(IgniteTest):
         control_utility.add_to_baseline(new_node.nodes)
         blt_size += 1
 
-        baseline = control_utility.baseline()
+        baseline = control_utility.baseline().topology_version
         self.__check_baseline_size(baseline, blt_size)
         self.__check_nodes_in_baseline(new_node.nodes, baseline)
 
