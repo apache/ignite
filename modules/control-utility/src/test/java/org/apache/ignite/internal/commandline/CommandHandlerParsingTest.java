@@ -1030,6 +1030,8 @@ public class CommandHandlerParsingTest {
             cmd == CommandList.SNAPSHOT ||
             cmd == CommandList.CLUSTER_CHANGE_TAG ||
             cmd == CommandList.METADATA ||
-            cmd == CommandList.WARM_UP;
+            cmd == CommandList.WARM_UP ||
+            cmd == CommandList.PROPERTY ||
+            cmd == CommandList.SYSTEM_VIEW;
     }
 }

@@ -28,23 +28,23 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Extension to standard {@link Runnable} interface. Adds proper details to be used
- * with {@link Executor} implementations. Only for internal use.
+ * Extension to standard {@link Runnable} interface. Adds proper details to be used with {@link Executor}
+ * implementations. Only for internal use.
  */
-public abstract class GridWorker implements Runnable {
+public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
     /** Ignite logger. */
     protected final IgniteLogger log;
 
     /** Thread name. */
     private final String name;
 
-    /** */
+    /** Ignite instance name. */
     private final String igniteInstanceName;
 
-    /** */
+    /** Listener. */
     private final GridWorkerListener lsnr;
 
-    /** */
+    /** Finish mark. */
     private volatile boolean finished;
 
     /** Whether or not this runnable is cancelled. */
@@ -56,16 +56,16 @@ public abstract class GridWorker implements Runnable {
     /** Timestamp to be updated by this worker periodically to indicate it's up and running. */
     private volatile long heartbeatTs;
 
-    /** */
+    /** Mutex for finish awaiting. */
     private final Object mux = new Object();
 
     /**
      * Creates new grid worker with given parameters.
      *
      * @param igniteInstanceName Name of the Ignite instance this runnable is used in.
-     * @param name Worker name. Note that in general thread name and worker (runnable) name are two
-     *      different things. The same worker can be executed by multiple threads and therefore
-     *      for logging and debugging purposes we separate the two.
+     * @param name Worker name. Note that in general thread name and worker (runnable) name are two different things.
+     * The same worker can be executed by multiple threads and therefore for logging and debugging purposes we separate
+     * the two.
      * @param log Grid logger to be used.
      * @param lsnr Listener for life-cycle events.
      */
@@ -88,9 +88,9 @@ public abstract class GridWorker implements Runnable {
      * Creates new grid worker with given parameters.
      *
      * @param igniteInstanceName Name of the Ignite instance this runnable is used in.
-     * @param name Worker name. Note that in general thread name and worker (runnable) name are two
-     *      different things. The same worker can be executed by multiple threads and therefore
-     *      for logging and debugging purposes we separate the two.
+     * @param name Worker name. Note that in general thread name and worker (runnable) name are two different things.
+     * The same worker can be executed by multiple threads and therefore for logging and debugging purposes we separate
+     * the two.
      * @param log Grid logger to be used.
      */
     protected GridWorker(@Nullable String igniteInstanceName, String name, IgniteLogger log) {
@@ -177,8 +177,7 @@ public abstract class GridWorker implements Runnable {
     protected abstract void body() throws InterruptedException, IgniteInterruptedCheckedException;
 
     /**
-     * Optional method that will be called after runnable is finished. Default
-     * implementation is no-op.
+     * Optional method that will be called after runnable is finished. Default implementation is no-op.
      */
     protected void cleanup() {
         /* No-op. */
@@ -265,29 +264,23 @@ public abstract class GridWorker implements Runnable {
         return finished;
     }
 
-    /** */
-    public long heartbeatTs() {
+    /** {@inheritDoc} */
+    @Override public long heartbeatTs() {
         return heartbeatTs;
     }
 
-    /** */
-    public void updateHeartbeat() {
+    /** {@inheritDoc} */
+    @Override public void updateHeartbeat() {
         heartbeatTs = U.currentTimeMillis();
     }
 
-    /**
-     * Protects the worker from timeout penalties if subsequent instructions in the calling thread does not update
-     * heartbeat timestamp timely, e.g. due to blocking operations, up to the nearest {@link #blockingSectionEnd()}
-     * call. Nested calls are not supported.
-     */
-    public void blockingSectionBegin() {
+    /** {@inheritDoc} */
+    @Override public void blockingSectionBegin() {
         heartbeatTs = Long.MAX_VALUE;
     }
 
-    /**
-     * Closes the protection section previously opened by {@link #blockingSectionBegin()}.
-     */
-    public void blockingSectionEnd() {
+    /** {@inheritDoc} */
+    @Override public void blockingSectionEnd() {
         updateHeartbeat();
     }
 

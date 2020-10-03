@@ -15,19 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp;
+package org.apache.ignite.internal.commandline.systemview;
 
-import org.apache.ignite.spi.discovery.AbstractDiscoveryRandomStartStopTest;
-import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.apache.ignite.internal.commandline.argument.CommandArg;
 
-/**
- * Random start stop test for {@link TcpDiscoverySpi}.
- */
-@GridSpiTest(spi = TcpDiscoverySpi.class, group = "Discovery SPI")
-public class TcpDiscoverySpiRandomStartStopTest extends
-        AbstractDiscoveryRandomStartStopTest<TcpDiscoverySpi> {
+/** Represents all possible arguments for {@link SystemViewCommand}. */
+public enum SystemViewCommandArg implements CommandArg {
+    /** Id of the node to get the system view from. */
+    NODE_ID("--node-id");
+
+    /** Name of the argument. */
+    private final String name;
+
+    /** @param name Name of the argument. */
+    SystemViewCommandArg(String name) {
+        this.name = name;
+    }
+
     /** {@inheritDoc} */
-    @Override protected int getMaxInterval() {
-        return 10;
+    @Override public String argName() {
+        return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return name;
     }
 }
