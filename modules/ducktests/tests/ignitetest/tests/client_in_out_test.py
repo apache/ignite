@@ -55,7 +55,7 @@ class ClientTest(IgniteTest):
     TEMP_CLIENTS_NUM = 7
 
     @cluster(num_nodes=CLUSTER_NODES)
-    @ignite_versions(str(DEV_BRANCH))
+    @ignite_versions(str(DEV_BRANCH), str(V_2_8_1))
     def test_ignite_start_stop(self, ignite_version):
         """
         test scenario
@@ -63,7 +63,7 @@ class ClientTest(IgniteTest):
         # prepare servers
         servers_count = self.CLUSTER_NODES - self.STATIC_CLIENTS_NUM - self.TEMP_CLIENTS_NUM
         # topology version after test
-        fin_topology_ver = servers_count + 2 * self.STATIC_CLIENTS_NUM + 2 * self.ITERATION_COUNT * self.TEMP_CLIENTS_NUM
+        fin_top_ver = servers_count + 2 * self.STATIC_CLIENTS_NUM + 2 * self.ITERATION_COUNT * self.TEMP_CLIENTS_NUM
         server_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version))
         ignite = IgniteService(self.test_context, server_cfg, num_nodes=servers_count)
         control_utility = ControlUtility(ignite, self.test_context)
@@ -128,7 +128,7 @@ class ClientTest(IgniteTest):
                            from_the_beginning=False,
                            backoff_sec=1)
         baseline = control_utility.cluster_state().topology_version
-        assert baseline, fin_topology_ver
+        assert baseline, fin_top_ver
         ignite.await_event("servers=" + str(servers_count),
                            timeout_sec=60,
                            from_the_beginning=False,

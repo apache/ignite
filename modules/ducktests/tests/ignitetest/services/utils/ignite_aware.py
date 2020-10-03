@@ -19,13 +19,11 @@ This module contains the base class to build services aware of Ignite.
 import signal
 import time
 from abc import abstractmethod, ABCMeta
-
+from datetime import datetime
+from time import monotonic
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
-
-from datetime import datetime
-from time import monotonic
 
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
