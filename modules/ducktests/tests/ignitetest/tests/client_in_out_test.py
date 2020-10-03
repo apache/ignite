@@ -128,7 +128,7 @@ class ClientTest(IgniteTest):
                            from_the_beginning=False,
                            backoff_sec=1)
         baseline = control_utility.cluster_state().topology_version
-        assert baseline, 7
+        assert baseline, fin_topology_ver
         ignite.await_event("servers=" + str(servers_count),
                            timeout_sec=60,
                            from_the_beginning=False,

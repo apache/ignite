@@ -39,7 +39,7 @@ public class SingleClientNode  extends IgniteAwareApplication {
         markFinished();
     }
 
-    /** */
+    /** {@inheritDoc} */
     private CacheConfiguration prepareCacheConfiguration(String cacheName){
         CacheConfiguration cfg = new CacheConfiguration();
         cfg.setBackups(2);
@@ -48,7 +48,7 @@ public class SingleClientNode  extends IgniteAwareApplication {
         return cfg;
     }
 
-    /** */
+    /** {@inheritDoc} */
     private long cacheOperation(IgniteCache<String, String> cache) throws InterruptedException {
         String key = UUID.randomUUID().toString();
         String value = UUID.randomUUID().toString();
