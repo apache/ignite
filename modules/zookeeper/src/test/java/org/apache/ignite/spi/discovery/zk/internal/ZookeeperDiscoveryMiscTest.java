@@ -253,9 +253,10 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         ZookeeperDiscoverySpiMBean mbean = getMxBean(srv2.context().igniteInstanceName(), "SPIs",
                 ZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
 
-        grid(0).close();
+        stopGrid(0);
 
         assertEquals(mbean.getCoordinatorNodeFormatted(), String.valueOf(srv2.localNode()));
+        assertEquals(mbean.getCoordinator(), srv2.localNode().id());
     }
 
     /**
