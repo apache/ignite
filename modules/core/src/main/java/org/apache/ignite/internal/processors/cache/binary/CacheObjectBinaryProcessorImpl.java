@@ -239,7 +239,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 metadataFileStore = new BinaryMetadataFileStore(metadataLocCache,
                     ctx,
                     log,
-                    binaryMetadataFileStoreDir == null ?
+                    CU.isPersistenceEnabled(ctx.config()) && binaryMetadataFileStoreDir == null ?
                         resolveBinaryWorkDir(ctx.config().getWorkDirectory(),
                             ctx.pdsFolderResolver().resolveFolders().folderName()) :
                         binaryMetadataFileStoreDir);
