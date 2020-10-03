@@ -137,12 +137,12 @@ public class SystemViewCommand implements Command<VisorSystemViewTaskArg> {
         Logger log
     ) {
         Iterator<SimpleType> typeIter = types.iterator();
-        Iterator<Integer> lenIter = colSzs.iterator();
+        Iterator<Integer> colSzsIter = colSzs.iterator();
 
         log.info(row.stream().map(colVal -> {
             SimpleType colType = typeIter.next();
 
-            int colSz = lenIter.next();
+            int colSz = colSzsIter.next();
 
             String format = colType == DATE || colType == NUMBER ?
                 "%" + colSz + "s" :
