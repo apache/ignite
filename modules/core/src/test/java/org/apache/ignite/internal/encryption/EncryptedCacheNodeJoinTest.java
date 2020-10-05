@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.encryption;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -98,7 +99,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setName(cacheName());
-        ccfg.setEncryptionEnabled(gridName.equals(GRID_0));
+        ccfg.setEncryptionEnabled(gridName.equals(GRID_0) || gridName.equals(CLIENT));
 
         return ccfg;
     }
@@ -202,6 +203,25 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         IgniteEx client = startClientGrid(CLIENT);
 
         createEncryptedCache(client, grid0, cacheName(), null);
+    }
+
+    /** */
+    @Test
+    public void testClientNodeJoinWithPreconfiguredCache() throws Exception {
+        configureCache = true;
+
+        IgniteEx grid0 = startGrid(GRID_0);
+
+        grid0.cluster().active(true);
+
+        IgniteEx client = startClientGrid(CLIENT);
+
+        IgniteCache<Object, Object> cache = client.cache(cacheName());
+
+        for (long i = 0; i < 100; i++)
+            cache.put(i, String.valueOf(i));
+
+        checkData(grid0);
     }
 
     /** */
