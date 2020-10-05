@@ -182,7 +182,7 @@ Refer to the main link:distributed-computing/cluster-groups[cluster groups] docu
 
 == Executing Compute Tasks
 
-Presently, the Java thin client supports basic link:distributed-computing/distributed-computing[compute capabilities]
+Presently, the .NET thin client supports basic link:distributed-computing/distributed-computing[compute capabilities]
 by letting you execute those compute tasks that are *already deployed* in the cluster. You can either run a task across all
 cluster nodes or a specific link:thin-clients/dotnet-thin-client#logical-nodes-grouping[cluster group].
 
@@ -216,7 +216,7 @@ include::{sourceCodeFile}[tag=client-compute-setup,indent=0]
 
 The example below shows how to get access to the compute APIs via the `IComputeClient` interface and execute the compute
 task named `org.foo.bar.AddOneTask` passing `1` as an input parameter:
-[source, java]
+[source, csharp]
 -------------------------------------------------------------------------------
 include::{sourceCodeFile}[tag=client-compute-task,indent=0]
 -------------------------------------------------------------------------------
