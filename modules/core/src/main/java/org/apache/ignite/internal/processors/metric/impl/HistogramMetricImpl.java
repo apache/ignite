@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.internal.util.typedef.F;
@@ -87,6 +88,11 @@ public class HistogramMetricImpl extends AbstractMetric implements HistogramMetr
             res[i] = h.measurements.get(i);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable String getAsString() {
+        return Arrays.toString(value());
     }
 
     /** {@inheritDoc} */
