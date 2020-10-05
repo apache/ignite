@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * File WAL pointer.
  */
-public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
+public class WALPointer implements Serializable, Comparable<WALPointer> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -45,7 +45,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
      * @param fileOff Offset in file, from the beginning.
      * @param len Record length.
      */
-    public FileWALPointer(long idx, int fileOff, int len) {
+    public WALPointer(long idx, int fileOff, int len) {
         this.idx = idx;
         this.fileOff = fileOff;
         this.len = len;
@@ -79,14 +79,16 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
         this.len = len;
     }
 
-    /** {@inheritDoc} */
-    @Override public FileWALPointer next() {
+    /**
+     * Pointer to the next record. Can be used only for original pointers obtained from WAL manager.
+     */
+    public WALPointer next() {
         if (len == 0)
             throw new IllegalStateException("Failed to calculate next WAL pointer " +
                 "(this pointer is a terminal): " + this);
 
         // Return a terminal pointer.
-        return new FileWALPointer(idx, fileOff + len, 0);
+        return new WALPointer(idx, fileOff + len, 0);
     }
 
     /** {@inheritDoc} */
@@ -94,10 +96,10 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
         if (this == o)
             return true;
 
-        if (!(o instanceof FileWALPointer))
+        if (!(o instanceof WALPointer))
             return false;
 
-        FileWALPointer that = (FileWALPointer)o;
+        WALPointer that = (WALPointer)o;
 
         return idx == that.idx && fileOff == that.fileOff;
     }
@@ -112,7 +114,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull FileWALPointer o) {
+    @Override public int compareTo(@NotNull WALPointer o) {
         int res = Long.compare(idx, o.idx);
 
         return res == 0 ? Integer.compare(fileOff, o.fileOff) : res;
@@ -120,6 +122,6 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(FileWALPointer.class, this);
+        return S.toString(WALPointer.class, this);
     }
 }
