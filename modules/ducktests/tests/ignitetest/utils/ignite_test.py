@@ -29,10 +29,10 @@ class IgniteTest(Test):
     """
     Basic ignite test.
     """
-    tmp_path_root: str
-
     def __init__(self, test_context):
         super().__init__(test_context=test_context)
+
+        self.tmp_path_root = None
 
     def setup(self):
         super().setup()

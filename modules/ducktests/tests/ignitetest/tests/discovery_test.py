@@ -80,7 +80,10 @@ class DiscoveryTest(IgniteTest):
 
     WARMUP_DATA_AMOUNT = 10_000
 
-    netfilter_store_path: str
+    def __init__(self, test_context):
+        super().__init__(test_context=test_context)
+
+        self.netfilter_store_path = None
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
