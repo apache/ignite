@@ -28,7 +28,7 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  *
  */
 public class SingleClientNode  extends IgniteAwareApplication {
-    /* params**/
+    /* params **/
     private IgniteCache<String, String> cache;
 
     private String cacheName;
@@ -53,8 +53,8 @@ public class SingleClientNode  extends IgniteAwareApplication {
         markFinished();
     }
 
-    /* cache config**/
-    private CacheConfiguration prepareCacheConfiguration(String cacheName){
+    /* cache config **/
+    private CacheConfiguration prepareCacheConfiguration(String cacheName) {
         CacheConfiguration cfg = new CacheConfiguration();
         cfg.setBackups(2);
         cfg.setName(cacheName);
@@ -62,8 +62,8 @@ public class SingleClientNode  extends IgniteAwareApplication {
         return cfg;
     }
 
-    /* single cache operation**/
-    private long cacheOperation() throws InterruptedException{
+    /* single cache operation **/
+    private long cacheOperation() throws InterruptedException {
         String key = UUID.randomUUID().toString();
         String value = UUID.randomUUID().toString();
         long startTime = System.nanoTime();
