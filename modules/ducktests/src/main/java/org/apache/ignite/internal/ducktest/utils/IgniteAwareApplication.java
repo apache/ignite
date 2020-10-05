@@ -168,7 +168,7 @@ public abstract class IgniteAwareApplication {
      *
      */
     private void terminate() {
-        log.info("Marking as initialized.");
+        log.info("Marking as terminated.");
 
         synchronized (stateMux) {
             assert !terminated;
