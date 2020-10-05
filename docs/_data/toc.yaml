@@ -336,6 +336,8 @@
   url: key-value-api/continuous-queries
 - title: Using Ignite Services
   url: services/services
+- title: Using Ignite Messaging
+  url: messaging
 - title: Distributed Data Structures
   items:
     - title: Queue and Set
@@ -348,6 +350,10 @@
       url: data-structures/atomic-sequence
     - title:  Semaphore 
       url: data-structures/semaphore
+    - title: ID Generator
+      url: data-structures/id-generator
+- title: Distributed Locks
+  url: distributed-locks
 - title: REST API
   url: restapi
 - title: .NET Specific
@@ -535,3 +541,5 @@
       url: /perf-and-troubleshooting/troubleshooting
     - title: Handling Exceptions
       url: /perf-and-troubleshooting/handling-exceptions
+    - title: Benchmarking With Yardstick
+      url: /perf-and-troubleshooting/yardstick-benchmarking
