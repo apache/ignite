@@ -88,8 +88,10 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
             executors.submit(new UuidDataStreamer(ignite, cacheName, latch, iterCore, dataSize));
 
         try {
-            while (!terminated()
-                    && !latch.await(1, TimeUnit.SECONDS));
+            while (true) {
+                if (terminated() || latch.await(1, TimeUnit.SECONDS))
+                    break;
+            }
         }
         catch (InterruptedException e) {
             e.printStackTrace();
