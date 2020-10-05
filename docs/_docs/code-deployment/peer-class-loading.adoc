@@ -6,6 +6,14 @@ Peer class loading refers to loading classes from a local node where they are de
 With peer class loading enabled, you don't have to manually deploy your Java code on each node in the cluster and re-deploy it each time it changes.
 Ignite automatically loads the classes from the node where they are defined to the nodes where they are used.
 
+[CAUTION]
+====
+[discrete]
+=== Automatic Assemblies Loading in .NET
+If you develop C# and .NET applications, then refer to the link:net-specific/net-remote-assembly-loading[Remote Assembly Loading]
+page for details on how to set up and use the peer-class-loading feature with that type of applications.
+====
+
 For example, when link:key-value-api/using-scan-queries[querying data] with a custom transformer, you only need to define your tasks on the client node that initiates the computation, and Ignite loads the classes to the server nodes.
 
 When enabled, peer class loading is used to deploy the following classes:

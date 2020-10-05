@@ -105,7 +105,11 @@ cd ./put-get-example
 
 From here, you may want to:
 
+* Check out the link:thin-clients/cpp-thin-client[C++ thin client] that provides a lightweight form of connectivity
+to Ignite clusters
 * Explore the link:{githubUrl}/modules/platforms/cpp/examples[additional C++ examples] included with Ignite
+* Refer to the link:cpp-specific[C{plus}{plus} specific section] of the documentation to learn more about capabilities
+that are available for C++ applications
 
 
 

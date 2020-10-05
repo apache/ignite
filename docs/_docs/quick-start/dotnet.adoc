@@ -72,6 +72,10 @@ And that's it! You should see a node launch and then display "Hello, World".
 
 From here, you may want to:
 
-* Explore the link:{githubUrl}/modules/platforms/dotnet/examples[additional examples^] included with Ignite
+* Check out the link:thin-clients/dotnet-thin-client[.NET thin client] that provides a lightweight form of connectivity
+to Ignite clusters
+* Explore the link:{githubUrl}/modules/platforms/dotnet/examples[additional examples] included with Ignite
+* Refer to the link:net-specific[NET-specific section] of the documentation to learn more about capabilities
+that are available for C# and .NET applications.
 
 
