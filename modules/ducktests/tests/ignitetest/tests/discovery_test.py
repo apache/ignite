@@ -20,7 +20,6 @@ Module contains discovery tests.
 import os
 import random
 import re
-import tempfile
 import sys
 from enum import IntEnum
 from datetime import datetime
@@ -81,7 +80,7 @@ class DiscoveryTest(IgniteTest):
 
     WARMUP_DATA_AMOUNT = 10_000
 
-    netfilter_saved_settings: str
+    netfilter_store_path: str
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
@@ -260,16 +259,14 @@ class DiscoveryTest(IgniteTest):
 
         self.netfilter_store_path = os.path.join(self.tmp_path_root, "iptables.bak")
 
-        self.netfilter_saved_settings = tempfile.mkdtemp()
-
         # Store current network filter settings.
         for node in self.test_context.cluster.nodes:
-            cmd = "sudo iptables-save | tee " + self.netfilter_saved_settings
+            cmd = "sudo iptables-save | tee " + self.netfilter_store_path
 
             exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
 
             if "Warning: iptables-legacy tables present" in exec_error:
-                cmd = "sudo iptables-legacy-save | tee " + self.netfilter_saved_settings
+                cmd = "sudo iptables-legacy-save | tee " + self.netfilter_store_path
 
                 exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
 
@@ -279,7 +276,7 @@ class DiscoveryTest(IgniteTest):
 
     def teardown(self):
         # Restore previous network filter settings.
-        cmd = "sudo iptables-restore < " + self.netfilter_saved_settings
+        cmd = "sudo iptables-restore < " + self.netfilter_store_path
 
         errors = []
 
@@ -290,8 +287,6 @@ class DiscoveryTest(IgniteTest):
                 errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, exec_error))
             else:
                 self.logger.debug("Netfilter after launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
-
-            node.account.ssh_client.exec_command("rm " + self.netfilter_saved_settings)
 
         if len(errors) > 0:
             self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))

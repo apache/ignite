@@ -29,6 +29,8 @@ class IgniteTest(Test):
     """
     Basic ignite test.
     """
+    tmp_path_root: str
+
     def __init__(self, test_context):
         super().__init__(test_context=test_context)
 
@@ -39,6 +41,19 @@ class IgniteTest(Test):
                                           self.test_context.cls_name)
 
         self.clear_tmp_dir(True)
+
+    def teardown(self):
+        self.clear_tmp_dir()
+
+        super().teardown()
+
+    def clear_tmp_dir(self, recreate=False):
+        """Creates temporary directory for current test."""
+        for node in self.test_context.cluster.nodes:
+            node.account.ssh_client.exec_command("rm -drf " + self.tmp_path_root)
+
+            if recreate:
+                node.account.ssh_client.exec_command("mkdir -p " + self.tmp_path_root)
 
     @staticmethod
     def monotonic():
