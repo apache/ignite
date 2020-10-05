@@ -258,7 +258,7 @@ class DiscoveryTest(IgniteTest):
     def setup(self):
         super().setup()
 
-        self.netfilter_saved_settings = tempfile.mkdtemp()
+        self.netfilter_saved_settings = tempfile.mktemp()
 
         # Store current network filter settings.
         for node in self.test_context.cluster.nodes:
