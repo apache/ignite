@@ -1,13 +1,12 @@
 package org.apache.ignite.internal.ducktest.tests.start_stop_client;
 
+import java.util.Optional;
+import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Simple client node. Tx-put operation.
@@ -39,7 +38,7 @@ public class SingleClientNode  extends IgniteAwareApplication {
         markFinished();
     }
 
-    /** {@inheritDoc} */
+    /** */
     private CacheConfiguration prepareCacheConfiguration(String cacheName){
         CacheConfiguration cfg = new CacheConfiguration();
         cfg.setBackups(2);
@@ -48,7 +47,7 @@ public class SingleClientNode  extends IgniteAwareApplication {
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     private long cacheOperation(IgniteCache<String, String> cache) throws InterruptedException {
         String key = UUID.randomUUID().toString();
         String value = UUID.randomUUID().toString();
