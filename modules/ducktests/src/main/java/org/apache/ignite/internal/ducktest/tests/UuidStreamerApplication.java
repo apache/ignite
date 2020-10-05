@@ -89,7 +89,7 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
 
         try {
             while (true) {
-                if (latch.await(1, TimeUnit.SECONDS) && terminated())
+                if (latch.await(1, TimeUnit.SECONDS) || terminated())
                     break;
             }
         }
