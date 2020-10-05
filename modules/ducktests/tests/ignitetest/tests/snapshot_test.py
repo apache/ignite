@@ -190,23 +190,23 @@ def await_snapshot(service: IgniteApplicationService, time_out=60, logger=None):
     while datetime.now() < delta_time:
         for node in service.nodes:
             mbean = JmxClient(node).find_mbean('snapshot')
-            star_time = int(list(mbean.__getattr__('LastSnapshotStartTime'))[0])
+            start_time = int(list(mbean.__getattr__('LastSnapshotStartTime'))[0])
             end_time = int(list(mbean.__getattr__('LastSnapshotEndTime'))[0])
             err_msg = list(mbean.__getattr__('LastSnapshotErrorMessage'))[0]
 
             if logger is not None:
                 logger.debug(f'Hostname={node.account.hostname}, '
-                             f'LastSnapshotStartTime={star_time}, '
+                             f'LastSnapshotStartTime={start_time}, '
                              f'LastSnapshotEndTime={end_time}, '
                              f'LastSnapshotErrorMessage={err_msg}'
                              )
 
-            if (0 < star_time < end_time) & (err_msg == ''):
+            if (0 < start_time < end_time) & (err_msg == ''):
                 return
 
         time.sleep(1)
 
-    raise TimeoutError(f'LastSnapshotStartTime={star_time}, '
+    raise TimeoutError(f'LastSnapshotStartTime={start_time}, '
                        f'LastSnapshotEndTime={end_time}, '
                        f'LastSnapshotErrorMessage={err_msg}')
 
