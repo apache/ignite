@@ -1,4 +1,4 @@
-= Setting Up
+= Setting Up Ignite for Java
 
 [NOTE]
 ====
@@ -249,8 +249,6 @@ by the Pax Logging API - the logging framework used by Apache Karaf.
 |ignite-spring-data_2.0 | Ignite Spring Data 2.0 provides an integration with Spring Data 2.0 framework.
 
 |ignite-ssh | The Ignite SSH module provides capabilities to start Ignite nodes on remote machines via SSH.
-
-|ignite-tensorflow | The Ignite TensorFlow Integration Module allows using TensorFlow with Ignite. In this scenario Ignite will be a datasource for any TensorFlow model training.
 
 |ignite-urideploy | Ignite URI Deploy module provides capabilities to deploy tasks from different sources such as File System, HTTP, or even Email.
 
