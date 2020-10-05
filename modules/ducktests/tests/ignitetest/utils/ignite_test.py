@@ -16,6 +16,9 @@
 """
 This module contains basic ignite test.
 """
+import os
+import random
+import string
 from time import monotonic
 
 from ducktape.tests.test import Test
@@ -28,6 +31,14 @@ class IgniteTest(Test):
     """
     def __init__(self, test_context):
         super().__init__(test_context=test_context)
+
+    def setup(self):
+        super().setup()
+
+        self.tmp_path_root = os.path.join("/tmp", ''.join(random.choices(string.ascii_letters + string.digits, k=10)),
+                                          self.test_context.cls_name)
+
+        self.clear_tmp_dir(True)
 
     @staticmethod
     def monotonic():

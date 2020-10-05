@@ -258,6 +258,8 @@ class DiscoveryTest(IgniteTest):
     def setup(self):
         super().setup()
 
+        self.netfilter_store_path = os.path.join(self.tmp_path_root, "iptables.bak")
+
         self.netfilter_saved_settings = tempfile.mkdtemp()
 
         # Store current network filter settings.
