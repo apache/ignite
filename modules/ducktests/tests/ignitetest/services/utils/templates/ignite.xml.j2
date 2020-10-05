@@ -38,7 +38,7 @@
         <property name="consistentId" value="{{ config.consistent_id }}"/>
         <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
 
-        {% if config.version.is_dev %}
+        {% if config.version.vstring != '2.7.6' %}
             <property name="metricExporterSpi">
                 <bean class="org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"/>
             </property>
