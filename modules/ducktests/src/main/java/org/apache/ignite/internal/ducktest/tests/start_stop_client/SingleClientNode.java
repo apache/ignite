@@ -28,7 +28,9 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  *
  */
 public class SingleClientNode  extends IgniteAwareApplication {
+
     /* params **/
+
     private IgniteCache<String, String> cache;
 
     private String cacheName;
