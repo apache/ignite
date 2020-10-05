@@ -31,12 +31,12 @@ public class ConsumerState {
     /**
      * @param workDir Work directory.
      */
-    public ConsumerState(File workDir, String consumerId) {
+    public ConsumerState(File workDir) {
         this.stateDir = new File(workDir, CDC_STATE_DIR);
     }
 
     public FileWALPointer get() {
-
+        return null;
     }
 
     public void save(FileWALPointer ptr) {
