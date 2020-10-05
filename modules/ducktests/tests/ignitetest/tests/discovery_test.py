@@ -151,7 +151,7 @@ class DiscoveryTest(IgniteTest):
             version=test_config.version,
             discovery_spi=discovery_spi,
             failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT_ZK if test_config.with_zk
-            else self.FAILURE_DETECTION_TIMEOUT_ZK,
+            else self.FAILURE_DETECTION_TIMEOUT_TCP,
             caches=[CacheConfiguration(
                 name='test-cache',
                 backups=1,
