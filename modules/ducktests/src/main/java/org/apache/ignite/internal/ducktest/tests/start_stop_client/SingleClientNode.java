@@ -28,11 +28,13 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  *
  */
 public class SingleClientNode  extends IgniteAwareApplication {
-
     /* params**/
     private IgniteCache<String, String> cache;
+
     private String cacheName;
+
     private String reportName;
+
     private long pacing = 0;
 
     /** {@inheritDoc} */
@@ -47,9 +49,7 @@ public class SingleClientNode  extends IgniteAwareApplication {
         log.info("nodeId: " + ignite.name() + " starting cache operations");
 
         markInitialized();
-        while (!terminated()){
-            cacheOperation();
-        }
+        while (!terminated()) cacheOperation();
         markFinished();
     }
 
@@ -63,7 +63,7 @@ public class SingleClientNode  extends IgniteAwareApplication {
     }
 
     /* single cache operation**/
-    private long cacheOperation() throws InterruptedException {
+    private long cacheOperation() throws InterruptedException{
         String key = UUID.randomUUID().toString();
         String value = UUID.randomUUID().toString();
         long startTime = System.nanoTime();

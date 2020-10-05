@@ -158,4 +158,3 @@ class MultiNodeService(IgniteAwareService):
             return pid_arr
         except (RemoteCommandError, ValueError):
             return []
-            return []
