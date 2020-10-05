@@ -43,7 +43,7 @@ public interface CDCConsumer {
 
     /**
      * Stops this consumer.
-     * This methods can be invoked only after {@link #start(IgniteConfiguration)}.
+     * This methods can be invoked only after {@link #start(IgniteConfiguration, IgniteLogger)}.
      */
     void stop();
 }
