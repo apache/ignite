@@ -94,10 +94,13 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
             }
         }
         catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+            markBroken(new RuntimeException("Unexpected thread interruption", e));
 
-        executors.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+        finally {
+            executors.shutdownNow();
+        }
     }
 
     /** */
