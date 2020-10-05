@@ -1555,7 +1555,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone())
             masterKeyChangeFut.onDone(new IgniteFutureCancelledException(msg));
 
-        grpKeyChangeProc.cancel(msg);
+        if (grpKeyChangeProc != null)
+            grpKeyChangeProc.cancel(msg);
     }
 
     /** @return {@code True} if the master key change process in progress. */
