@@ -95,7 +95,7 @@ NOTE: Before using JCL, enable the link:setup#enabling-modules[ignite-jcl] modul
 
 NOTE: Note that JCL simply forwards logging messages to an underlying logging system, which needs to be properly configured. Refer to the link:https://commons.apache.org/proper/commons-logging/guide.html#Configuration[JCL official documentation] for more information. For example, if you want to use Log4j, make sure you add the required libraries to your classpath.
 
-To enable Log4j2 logger, set the `gridLogger` property of `IgniteConfiguration`, as shown below:
+To enable JCL logger, set the `gridLogger` property of `IgniteConfiguration`, as shown below:
 
 [tabs]
 --
