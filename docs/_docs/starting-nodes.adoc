@@ -2,10 +2,11 @@
 
 This chapter explains how to start server and client nodes.
 
-There are two types of nodes: _server nodes_ and _client nodes_.
-Server nodes participate in caching, compute execution, stream processing, etc.
-Client nodes provide the ability to connect to the servers remotely.
-Client nodes provide the whole set of Ignite APIs, including near caching, transactions, compute, streaming, services, etc. from the client side.
+There are two types of nodes: _server nodes_ and _client nodes_. The client nodes are also referred as _thick clients_ to
+distinguish from the link:thin-clients/getting-started-with-thin-clients[thin clients]. Server nodes participate in caching, compute execution,
+stream processing, etc. Thick clients provide the ability to connect to the servers remotely.
+The client nodes provide the whole set of Ignite APIs, including near caching, transactions, compute, streaming,
+services, etc. from the client side.
 
 By default, all Ignite nodes are started as server nodes, and you should explicitly enable the client mode.
 
@@ -112,8 +113,8 @@ Non-graceful shutdowns should be used as a last resort when the node is not resp
 
 A graceful shutdown allows the node to finish critical operations and correctly complete its lifecycle.
 The proper procedure to perform a graceful shutdown is as follows:
-//is to use one of the following ways to stop the node and remove it from the link:baseline-topology[baseline topology]:
-//to remove the node from the link:baseline-topology[baseline topology] and
+//is to use one of the following ways to stop the node and remove it from the link:clustering/baseline-topology[baseline topology]:
+//to remove the node from the link:clustering/baseline-topology[baseline topology] and
 
 . Stop the node using one of the following methods:
 //tag::stop-commands[]
@@ -122,7 +123,7 @@ The proper procedure to perform a graceful shutdown is as follows:
 * send a user interrupt signal. Ignite uses a JVM shutdown hook to execute custom logic before the JVM stops.
 If you start the node by running `ignite.sh` and don't detach it from the terminal, you can stop the node by hitting `Ctrl+C`.
 //end::stop-commands[]
-. Remove the node from the link:baseline-topology[baseline topology]. This step may not be necessary if link:baseline-topology#baseline-topology-autoadjustment[baseline auto-adjustment] is enabled.
+. Remove the node from the link:clustering/baseline-topology[baseline topology]. This step may not be necessary if link:clustering/baseline-topology#baseline-topology-autoadjustment[baseline auto-adjustment] is enabled.
 
 
 
@@ -165,7 +166,7 @@ To enable partition loss prevention, set the `IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOW
 
 CAUTION: If you have a cache without partition backups and you stop a node (even with this property set), you will lose the portion of the cache that was kept on this node.
 
-//The behavior of the node depend on whether the baseline topology is configured to be link:baseline-topology#baseline-topology-autoadjustment[adjusted automatically].
+//The behavior of the node depend on whether the baseline topology is configured to be link:clustering/baseline-topology#baseline-topology-autoadjustment[adjusted automatically].
 
 When this property is set, the last node in the cluster will not stop gracefully.
 You will have to terminate the process by sending the `kill -9` signal.

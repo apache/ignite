@@ -235,7 +235,7 @@ tab:C++[]
 
 == Re-deploying Services
 
-If you want to update the implementation of a service without stopping the cluster, you can do it if you use the Ignite's link:deploying-user-code[DeploymentSPI configuration].
+If you want to update the implementation of a service without stopping the cluster, you can do it if you use the Ignite's link:code-deployment/deploying-user-code[DeploymentSPI configuration].
 
 Use the following procedure to redeploy the service:
 

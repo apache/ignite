@@ -19,7 +19,7 @@ The class definitions of the task to be executed on remote nodes must be availab
 You can ensure this in two ways:
 
 * Add the classes to the classpath of the nodes;
-* Enable link:peer-class-loading[peer class loading].
+* Enable link:code-deployment/peer-class-loading[peer class loading].
 ====
 
 == Colocating by Key

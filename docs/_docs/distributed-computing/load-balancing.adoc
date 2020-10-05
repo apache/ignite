@@ -18,7 +18,7 @@ By default, Ignite uses a round-robin algorithm (`RoundRobinLoadBalancingSpi`), 
 
 [NOTE]
 ====
-Load balancing does not apply to link:collocated-computations[colocated computations].
+Load balancing does not apply to link:distributed-computing/collocated-computations[colocated computations].
 ====
 
 The load balancing algorithm is controlled by the `IgniteConfiguration.loadBalancingSpi` property.

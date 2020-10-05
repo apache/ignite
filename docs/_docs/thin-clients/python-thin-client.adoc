@@ -266,7 +266,7 @@ a|Rebalancing mode:
 
 |PROP_PARTITION_LOSS_POLICY
 |int
-a|link:partition-loss-policy[Partition loss policy]:
+a|link:configuring-caches/partition-loss-policy[Partition loss policy]:
 
 - READ_ONLY_SAFE=0,
 - READ_ONLY_ALL=1,

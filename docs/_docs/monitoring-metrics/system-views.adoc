@@ -138,7 +138,7 @@ The CACHE_GROUPS view contains information about the link:configuring-caches/cac
 |DATA_REGION_NAME | VARCHAR | The name of the link:memory-configuration/data-regions[data region].
 |IS_SHARED|BOOLEAN | If this group contains more than one cache.
 |NODE_FILTER | VARCHAR | The string representation (as returned by the `toString()` method) of the node filter defined for the cache group.
-|PARTITION_LOSS_POLICY | VARCHAR | link:partition-loss-policy[Partition loss policy].
+|PARTITION_LOSS_POLICY | VARCHAR | link:configuring-caches/partition-loss-policy[Partition loss policy].
 |PARTITIONS_COUNT|INT | The number of partitions.
 |REBALANCE_DELAY|LONG | link:data-rebalancing#other-properties[Rebalancing delay].
 |REBALANCE_MODE | VARCHAR  | link:data-rebalancing#configuring-rebalancing-mode[Rebalancing mode].

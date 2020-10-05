@@ -51,12 +51,12 @@ If you want to connect to a node that is running on a remove machine, specify th
 
 == Activation, Deactivation and Topology Management
 
-You can use the control script to activate or deactivate your cluster, and manage the link:baseline-topology[Baseline Topology].
+You can use the control script to activate or deactivate your cluster, and manage the link:clustering/baseline-topology[Baseline Topology].
 
 
 === Getting Cluster State
 
-The cluster can be in one of the three states: active, read only, or inactive. Refer to link:cluster-states[Cluster States] for details.
+The cluster can be in one of the three states: active, read only, or inactive. Refer to link:monitoring-metrics/cluster-states[Cluster States] for details.
 
 To get the state of the cluster, run the following command:
 
@@ -241,7 +241,7 @@ control.bat --baseline version _topologyVersion_ [--yes]
 
 === Enabling Baseline Topology Autoadjustment
 
-link:baseline-topology#baseline-topology-autoadjustment[Baseline topology autoadjustment] refers to automatic update of baseline topology after the topology has been stable for a specific amount of time.
+link:clustering/baseline-topology#baseline-topology-autoadjustment[Baseline topology autoadjustment] refers to automatic update of baseline topology after the topology has been stable for a specific amount of time.
 
 For in-memory clusters, autoadjustment is enabled by default with the timeout set to 0. It means that baseline topology changes immediately after server nodes join or leave the cluster.
 For clusters with persistence, the automatic baseline adjustment is disabled by default.
@@ -410,7 +410,7 @@ control.sh|bat --cache list counter-.* --seq
 == Resetting Lost Partitions
 
 You can use the control script to reset lost partitions for specific caches.
-Refer to link:partition-loss-policy[Partition Loss Policy] for details.
+Refer to link:configuring-caches/partition-loss-policy[Partition Loss Policy] for details.
 
 [source, shell]
 ----

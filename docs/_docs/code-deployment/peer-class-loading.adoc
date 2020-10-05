@@ -13,7 +13,7 @@ When enabled, peer class loading is used to deploy the following classes:
 * Tasks and jobs submitted via the link:distributed-computing/distributed-computing[compute interface].
 * Transformers and filters used with link:key-value-api/using-scan-queries[scan queries] and link:key-value-api/continuous-queries[continuous queries].
 * Stream transformers, receivers and visitors used with link:data-streaming#data-streamers[data streamers].
-* link:collocated-computations#entry-processor[Entry processors].
+* link:distributed-computing/collocated-computations#entry-processor[Entry processors].
 
 When defining the classes listed above, we recommend that each class is created as either a separate class or inner static class and not as a lambda or anonymous inner class. Non-static inner classes are serialized together with its enclosing class. If some fields of the enclosing class cannot be serialized, you will get serialization exceptions.
 

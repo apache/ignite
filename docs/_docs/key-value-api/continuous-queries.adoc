@@ -106,7 +106,7 @@ In order to use remote filters, make sure the class definitions of the filters a
 You can do this in two ways:
 
 * Add the classes to the classpath of every server node;
-* link:peer-class-loading[Enable peer class loading].
+* link:code-deployment/peer-class-loading[Enable peer class loading].
 ====
 
 
@@ -133,7 +133,7 @@ In order to use transformers, make sure the class definitions of the transformer
 You can do this in two ways:
 
 * Add the classes to the classpath of every server node;
-* link:peer-class-loading[Enable peer class loading].
+* link:code-deployment/peer-class-loading[Enable peer class loading].
 ====
 
 

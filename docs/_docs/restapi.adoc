@@ -394,7 +394,7 @@ http://host:port/ignite?cmd=version
 ----
 
 === Cluster State
-Returns the current link:cluster-states[state of the cluster].
+Returns the current link:monitoring-metrics/cluster-states[state of the cluster].
 
 *Request:*::
 +
@@ -420,7 +420,7 @@ Returns `true` if the cluster is active. Returns `false` if the cluster in inact
 
 === Change Cluster State
 
-The `setstate` command changes the link:cluster-states[cluster state].
+The `setstate` command changes the link:monitoring-metrics/cluster-states[cluster state].
 
 *Request:*::
 +

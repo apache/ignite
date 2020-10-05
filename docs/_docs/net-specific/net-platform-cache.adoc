@@ -34,7 +34,7 @@ include::{dotnetCodeFile}[tag=platformCacheConf,indent=0]
 
 === Client Nodes
 
-Platform caches on client nodes require a link:near-cache[Near Cache] to be configured, since client nodes do not store data otherwise. The platform cache on a client node keeps the same set of entries as the near cache on that node. the near cache eviction policy effectively applies to the platform cache.
+Platform caches on client nodes require a link:configuring-caches/near-cache[Near Cache] to be configured, since client nodes do not store data otherwise. The platform cache on a client node keeps the same set of entries as the near cache on that node. the near cache eviction policy effectively applies to the platform cache.
 
 [tabs]
 --

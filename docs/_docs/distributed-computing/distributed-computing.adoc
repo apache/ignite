@@ -34,7 +34,7 @@ include::code-snippets/cpp/src/compute_get.cpp[tag=compute-get,indent=0]
 ----
 --
 
-The compute interface provides methods for distributing different types of tasks over cluster nodes and running link:collocated-computations[colocated computations].
+The compute interface provides methods for distributing different types of tasks over cluster nodes and running link:distributed-computing/collocated-computations[colocated computations].
 
 == Specifying the Set of Nodes for Computations
 
@@ -76,7 +76,7 @@ In order to run tasks on the remote nodes, make sure the class definitions of th
 You can do this in two ways:
 
 - Add the classes to the classpath of the nodes;
-- Enable link:peer-class-loading[peer class loading].
+- Enable link:code-deployment/peer-class-loading[peer class loading].
 ====
 
 === Executing a Runnable Task
@@ -283,7 +283,7 @@ include::code-snippets/cpp/src/compute_acessing_data.cpp[tag=compute-acessing-da
 
 Note that the example shown above may not be the most effective way.
 The reason is that the person object that corresponds to key `1` may be located on a node that is different from the node where the task is executed.
-In this case, the object is fetched via network. This can be avoided by link:collocated-computations[colocating the task with the data].
+In this case, the object is fetched via network. This can be avoided by link:distributed-computing/collocated-computations[colocating the task with the data].
 
 [CAUTION]
 ====

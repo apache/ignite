@@ -9,9 +9,9 @@ When backups are configured, one of the backup copies of the lost partitions bec
 
 [CAUTION]
 ====
-Data rebalancing is triggered by changes in the link:baseline-topology[Baseline Topology].
+Data rebalancing is triggered by changes in the link:clustering/baseline-topology[Baseline Topology].
 In pure in-memory clusters, the default behavior is to start rebalancing immediately when a node leaves or joins the cluster (the baseline topology changes automatically).
-In clusters with persistence, the baseline topology has to be changed manually (default behavior), or can be changed automatically when link:baseline-topology#baseline-topology-autoadjustment[automatic baseline adjustment] is enabled.
+In clusters with persistence, the baseline topology has to be changed manually (default behavior), or can be changed automatically when link:clustering/baseline-topology#baseline-topology-autoadjustment[automatic baseline adjustment] is enabled.
 ====
 
 Rebalancing is configured per cache.

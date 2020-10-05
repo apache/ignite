@@ -15,7 +15,7 @@ Please see the Javadoc _throws_ clause for checked exceptions.
 | `CacheInvalidStateException`
 | Thrown when you try to perform an operation on a cache in which some partitions have been lost. Depending on the partition
 loss policy configured for the cache, this exception is thrown either on read and/or write operations.
-See link:partition-loss-policy[Partition Loss Policy] for details.
+See link:configuring-caches/partition-loss-policy[Partition Loss Policy] for details.
 | Reset lost partitions. You may want to restore the data by returning the nodes that caused the partition loss to the cluster.
 | Yes
 

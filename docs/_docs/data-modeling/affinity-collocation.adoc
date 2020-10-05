@@ -23,7 +23,7 @@ And here is how data is distributed when you colocate persons with the companies
 *TODO image*
 ////
 
-You can also colocate a computation task with the data. See link:collocated-computations[Colocating Computations With Data].
+You can also colocate a computation task with the data. See link:distributed-computing/collocated-computations[Colocating Computations With Data].
 ////
 *TODO: add examples and use cases*
 ////

@@ -169,7 +169,7 @@ If you use link:key-value-api/continuous-queries[Continuous Queries] with an MVC
 === Other Limitations
 The following features are not supported for the MVCC-enabled caches. These limitations may be addressed in future releases.
 
-* link:near-cache[Near Caches]
+* link:configuring-caches/near-cache[Near Caches]
 * link:configuring-caches/expiry-policies[Expiry Policies]
 * link:events/listening-to-events[Events]
 * link:{javadoc_base_url}/org/apache/ignite/cache/CacheInterceptor.html[Cache Interceptors]

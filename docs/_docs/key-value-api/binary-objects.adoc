@@ -33,7 +33,7 @@ There are several restrictions that are implied by the binary object format impl
 By default, when you request entries from a cache, they are returned in the deserialized format.
 To work with the binary format, obtain an instance of the cache using the `withKeepBinary()` method.
 This instance returns objects in the binary format (when possible).
-//and also passes binary objects to link:collocated-computations#entry-processor[entry processors], if any are used.
+//and also passes binary objects to link:distributed-computing/collocated-computations#entry-processor[entry processors], if any are used.
 // and cache interceptors.
 
 

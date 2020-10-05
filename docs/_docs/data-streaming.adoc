@@ -95,7 +95,7 @@ NOTE: Note that a stream receiver does not put data into the cache automatically
 The class definitions of the stream receivers to be executed on remote nodes must be available on the nodes. This can be achieved in two ways:
 
 * Add the classes to the classpath of the nodes;
-* Enable link:peer-class-loading[peer class loading].
+* Enable link:code-deployment/peer-class-loading[peer class loading].
 ====
 
 === Stream Transformer

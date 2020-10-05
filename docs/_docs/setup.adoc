@@ -1,5 +1,16 @@
 = Setting Up
 
+[NOTE]
+====
+[discrete]
+=== Configuring .NET, Python, Node.JS and other programming languages
+
+* .NET developers: refer to the link:net-specific/net-configuration-options[Ignite.NET Configuration] section
+* Developers of Python, Node.JS, and other programming languages: use this page to configure your
+Java-powered Ignite cluster and link:thin-clients/getting-started-with-thin-clients[thin clients] section to set up
+your language-specific applications that will be working with the cluster.
+====
+
 == System Requirements
 
 Ignite was tested on:
