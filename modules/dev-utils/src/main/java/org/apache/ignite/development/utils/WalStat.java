@@ -29,14 +29,13 @@ import java.util.TreeMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.transactions.TransactionState;
@@ -135,10 +134,8 @@ public class WalStat {
 
         incrementStat(type.toString(), record, recTypeSizes);
 
-        if (walPointer instanceof FileWALPointer) {
-            final FileWALPointer fPtr = (FileWALPointer)walPointer;
-
-            incrementStat(Long.toString(fPtr.index()), record, segmentsIndexes);
+        if (walPointer != null) {
+            incrementStat(Long.toString(walPointer.index()), record, segmentsIndexes);
             incrementStat(workDir ? "work" : "archive", record, segmentsFolder);
         }
     }

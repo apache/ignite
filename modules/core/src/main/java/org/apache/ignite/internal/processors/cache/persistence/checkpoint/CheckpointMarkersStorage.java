@@ -36,14 +36,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -213,7 +212,7 @@ public class CheckpointMarkersStorage {
             }
         }
 
-        ByteBuffer buf = ByteBuffer.allocate(FileWALPointer.POINTER_SIZE);
+        ByteBuffer buf = ByteBuffer.allocate(WALPointer.POINTER_SIZE);
         buf.order(ByteOrder.nativeOrder());
 
         if (startFile != null)
@@ -243,7 +242,7 @@ public class CheckpointMarkersStorage {
         ) {
             List<CheckpointEntry> checkpoints = new ArrayList<>();
 
-            ByteBuffer buf = ByteBuffer.allocate(FileWALPointer.POINTER_SIZE);
+            ByteBuffer buf = ByteBuffer.allocate(WALPointer.POINTER_SIZE);
             buf.order(ByteOrder.nativeOrder());
 
             for (Path cpFile : cpFiles) {
@@ -300,7 +299,7 @@ public class CheckpointMarkersStorage {
 
             buf.flip();
 
-            return new FileWALPointer(buf.getLong(), buf.getInt(), buf.getInt());
+            return new WALPointer(buf.getLong(), buf.getInt(), buf.getInt());
         }
         catch (IOException e) {
             throw new IgniteCheckedException(
@@ -455,17 +454,15 @@ public class CheckpointMarkersStorage {
         @Nullable CheckpointRecord rec,
         CheckpointEntryType type
     ) {
-        assert ptr instanceof FileWALPointer;
-
-        FileWALPointer filePtr = (FileWALPointer)ptr;
+        assert ptr != null;
 
         entryBuf.rewind();
 
-        entryBuf.putLong(filePtr.index());
+        entryBuf.putLong(ptr.index());
 
-        entryBuf.putInt(filePtr.fileOffset());
+        entryBuf.putInt(ptr.fileOffset());
 
-        entryBuf.putInt(filePtr.length());
+        entryBuf.putInt(ptr.length());
 
         entryBuf.flip();
 

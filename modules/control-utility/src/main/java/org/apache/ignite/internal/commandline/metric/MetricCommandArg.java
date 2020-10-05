@@ -15,16 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal;
+package org.apache.ignite.internal.commandline.metric;
 
-import java.io.Serializable;
+import org.apache.ignite.internal.commandline.argument.CommandArg;
 
-/**
- *
- */
-public interface WALPointer extends Serializable {
-    /**
-     * Pointer to the next record. Can be used only for original pointers obtained from WAL manager.
-     */
-    public WALPointer next();
+/** Represents all possible arguments for {@link MetricCommand}. */
+public enum MetricCommandArg implements CommandArg {
+    /** Id of the node to get metric values from. */
+    NODE_ID("--node-id");
+
+    /** Name of the argument. */
+    private final String name;
+
+    /** @param name Name of the argument. */
+    MetricCommandArg(String name) {
+        this.name = name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String argName() {
+        return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return name;
+    }
 }
