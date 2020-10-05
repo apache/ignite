@@ -69,7 +69,7 @@ class BaselineTests(IgniteTest):
         control_utility.set_baseline(version)
         blt_size += 1
 
-        baseline = control_utility.baseline()
+        baseline = control_utility
         self.__check_baseline_size(baseline, blt_size)
         self.__check_nodes_in_baseline(new_node.nodes, baseline)
 
