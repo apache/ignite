@@ -48,26 +48,36 @@ public interface MaintenanceRegistry {
      *                                     to be stored to maintenance registry.
      *
      * @throws IgniteCheckedException If handling or storing maintenance record failed.
+     *
+     * @return Previously registered {@link MaintenanceRecord} with the same ID
+     * or null if no records were registered for this ID.
      */
-    public void registerMaintenanceRecord(MaintenanceRecord rec) throws IgniteCheckedException;
+    public @Nullable MaintenanceRecord registerMaintenanceRecord(MaintenanceRecord rec) throws IgniteCheckedException;
 
     /**
      * Deletes {@link MaintenanceRecord} of given ID from maintenance registry.
      *
      * @param mntcId
      */
-    public void clearMaintenanceRecord(UUID mntcId);
+    public void unregisterMaintenanceRecord(UUID mntcId);
 
     /**
+     * Returns active {@link MaintenanceRecord} by its ID.
+     * There are active records only when node entered Maintenance Mode.
+     *
+     * {@link MaintenanceRecord} becomes active when node enters Maintenance Mode and doesn't resolve the record
+     * during maintenance prepare phase.
+     *
      * @return {@link MaintenanceRecord} object for given maintenance ID or null if no maintenance record was found.
      */
-    @Nullable public MaintenanceRecord maintenanceRecord(UUID maitenanceId);
+    @Nullable public MaintenanceRecord activeMaintenanceRecord(UUID maitenanceId);
 
     /**
+     * @param id UUID of {@link MaintenanceRecord} this callback is registered for.
      * @param cb {@link MaintenanceWorkflowCallback} interface used by MaintenanceRegistry to execute
      *                                              maintenance steps by workflow.
      */
-    public void registerWorkflowCallback(@NotNull MaintenanceWorkflowCallback cb);
+    public void registerWorkflowCallback(@NotNull UUID id, @NotNull MaintenanceWorkflowCallback cb);
 
     /**
      * @param maintenanceId
@@ -83,15 +93,12 @@ public interface MaintenanceRegistry {
      *
      * {@link MaintenanceRecord Maintenance records} for these components are removed
      * and their {@link MaintenanceAction maintenance actions} are not executed.
-     *
-     * @return {@code True} if at least one unresolved {@link MaintenanceRecord} was found
-     * and {@code false} if all registered {@link MaintenanceRecord}s are already resolved.
      */
-    public boolean prepareMaintenance();
+    public void prepareAndExecuteMaintenance();
 
     /**
      * Handles all {@link MaintenanceRecord maintenance records} left
-     * after {@link MaintenanceRegistry#prepareMaintenance()} check.
+     * after {@link MaintenanceRegistry#prepareAndExecuteMaintenance()} check.
      *
      * If a record defines an action that should be started automatically (e.g. defragmentation starts automatically,
      * no additional confirmation from user is required), it is executed.

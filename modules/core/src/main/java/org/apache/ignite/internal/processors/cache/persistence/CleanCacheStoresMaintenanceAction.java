@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  */
 public class CleanCacheStoresMaintenanceAction implements MaintenanceAction<Void> {
     /** */
-    private static final String ACTION_NAME = "clean_data_files";
+    public static final String ACTION_NAME = "clean_data_files";
 
     /** */
     private final File rootStoreDir;

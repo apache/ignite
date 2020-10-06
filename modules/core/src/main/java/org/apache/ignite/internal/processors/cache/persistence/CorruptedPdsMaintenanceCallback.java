@@ -24,7 +24,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 
@@ -33,31 +32,20 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  */
 public class CorruptedPdsMaintenanceCallback implements MaintenanceWorkflowCallback {
     /** */
-    private final UUID mntcId;
-
-    /** */
     private final File workDir;
 
     /** */
     private final List<String> cacheStoreDirs;
 
     /**
-     * @param mntcId
      * @param workDir
      * @param cacheStoreDirs
      */
-    public CorruptedPdsMaintenanceCallback(@NotNull UUID mntcId,
-                                           @NotNull File workDir,
+    public CorruptedPdsMaintenanceCallback(@NotNull File workDir,
                                            @NotNull List<String> cacheStoreDirs)
     {
-        this.mntcId = mntcId;
         this.workDir = workDir;
         this.cacheStoreDirs = cacheStoreDirs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID maintenanceId() {
-        return mntcId;
     }
 
     /** {@inheritDoc} */

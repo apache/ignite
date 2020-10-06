@@ -65,9 +65,11 @@ import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -727,6 +729,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         assertEquals(1, ig0.cluster().nodes().size());
         assertEquals(1, ig1.cluster().nodes().size());
 
+        AtomicBoolean actionNotFound = new AtomicBoolean(false);
+
         ig1.compute().run(new IgniteRunnable() {
             @IgniteInstanceResource
             private Ignite ig;
@@ -738,13 +742,20 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
                 List<MaintenanceAction> actions = mntcRegistry.actionsForMaintenanceRecord(mntcActionId);
 
-                MaintenanceAction action = actions.get(0);
+                Optional<MaintenanceAction> optional = actions
+                    .stream()
+                    .filter(a -> a.name().equals(CleanCacheStoresMaintenanceAction.ACTION_NAME)).findFirst();
 
-                action.execute();
+                if (!optional.isPresent())
+                    actionNotFound.set(true);
+                else
+                    optional.get().execute();
 
-                mntcRegistry.clearMaintenanceRecord(mntcActionId);
+                mntcRegistry.unregisterMaintenanceRecord(mntcActionId);
             }
         });
+
+        assertFalse("Action to clear corrupted PDS is not found", actionNotFound.get());
 
         stopAllGrids();
 

@@ -1581,16 +1581,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         MaintenanceRegistry mntcRegistry = kctx.maintenanceRegistry();
 
-        MaintenanceRecord mntcRecord = mntcRegistry.maintenanceRecord(CORRUPTED_DATA_FILES_MNTC_RECORD_ID);
+        MaintenanceRecord mntcRecord = mntcRegistry.activeMaintenanceRecord(CORRUPTED_DATA_FILES_MNTC_RECORD_ID);
 
         if (mntcRecord != null) {
             log.warning("Maintenance record found, stop restoring memory");
 
             File workDir = ((FilePageStoreManager) cctx.pageStore()).workDir();
 
-            mntcRegistry.registerWorkflowCallback(
-                new CorruptedPdsMaintenanceCallback(CORRUPTED_DATA_FILES_MNTC_RECORD_ID,
-                    workDir,
+            mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_RECORD_ID,
+                new CorruptedPdsMaintenanceCallback(workDir,
                     Arrays.asList(mntcRecord.parameters().split(File.separator)))
             );
 
