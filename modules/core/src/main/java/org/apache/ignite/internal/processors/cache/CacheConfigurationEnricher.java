@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.lang.reflect.Field;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.SerializeSeparately;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -38,13 +40,18 @@ public class CacheConfigurationEnricher {
     /** Class loader. */
     private final ClassLoader clsLdr;
 
+    /** Ignite logger. */
+    private final IgniteLogger log;
+
     /**
      * Creates a new instance of enricher.
      *
+     * @param ctx Kernal context.
      * @param marshaller Marshaller to be used for deserializing parts on {@link CacheConfiguration}.
      * @param clsLdr Class loader to be used for deserializing parts on {@link CacheConfiguration}.
      */
-    public CacheConfigurationEnricher(Marshaller marshaller, ClassLoader clsLdr) {
+    public CacheConfigurationEnricher(GridKernalContext ctx, Marshaller marshaller, ClassLoader clsLdr) {
+        this.log = ctx.log(CacheConfigurationEnricher.class);
         this.marshaller = marshaller;
         this.clsLdr = clsLdr;
     }
@@ -115,18 +122,24 @@ public class CacheConfigurationEnricher {
         CacheConfiguration<?, ?> enrichedCp = new CacheConfiguration<>(ccfg);
 
         try {
-            for (Field field : CacheConfiguration.class.getDeclaredFields())
-                if (field.getDeclaredAnnotation(SerializeSeparately.class) != null) {
-                    if (!affinityNode && skipDeserialization(ccfg, field))
+            for (String filedName : enrichment.fields()) {
+                try {
+                    if (!affinityNode && skipDeserialization(ccfg, filedName))
                         continue;
+
+                    Field field = CacheConfiguration.class.getDeclaredField(filedName);
 
                     field.setAccessible(true);
 
                     Object enrichedVal = deserialize(
-                        field.getName(), enrichment.getFieldSerializedValue(field.getName()));
+                        field.getName(), enrichment.getFieldSerializedValue(filedName));
 
                     field.set(enrichedCp, enrichedVal);
                 }
+                catch (NoSuchFieldException e) {
+                    log.warning("Field of cache configuration was not found [name=" + filedName + ']');
+                }
+            }
         }
         catch (Exception e) {
             throw new IgniteException("Failed to enrich cache configuration [cacheName=" + ccfg.getName() + "]", e);
@@ -168,14 +181,12 @@ public class CacheConfigurationEnricher {
      * Skips deserialization for some fields.
      *
      * @param ccfg Cache configuration.
-     * @param field Field to check.
+     * @param field Field's name to check.
      *
      * @return {@code true} if deserialization for given field should be skipped.
      */
-    private static boolean skipDeserialization(CacheConfiguration<?, ?> ccfg, Field field) {
-        if ("storeFactory".equals(field.getName()) && ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC)
-            return true;
-
-        return false;
+    private static boolean skipDeserialization(CacheConfiguration<?, ?> ccfg, String field) {
+        return ("storeFactory".equals(field) && ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC) ||
+            "interceptor".equals(field);
     }
 }
