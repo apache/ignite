@@ -232,7 +232,6 @@ public final class CommandLineStartup {
                 "    ?, /help, -help, - show this message.",
                 "    -v               - verbose mode (quiet by default).",
                 "    -np              - no pause on exit (pause by default)",
-                "    -nojmx           - disable JMX monitoring (enabled by default)",
                 "    " + PRINT_PROPS_COMMAND + "     - prints Ignite system properties info.");
 
             if (ignite) {
