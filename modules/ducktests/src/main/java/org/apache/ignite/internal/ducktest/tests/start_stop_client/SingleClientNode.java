@@ -42,7 +42,6 @@ public class SingleClientNode  extends IgniteAwareApplication {
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
         cacheName = jsonNode.get("cacheName").asText();
-        reportName = jsonNode.get("reportName").asText();
         pacing = jsonNode.get("pacing").asLong();
 
         log.info("test props: " + "cacheName=" + cacheName + " reportName=" + reportName + " pacing=" + pacing);
