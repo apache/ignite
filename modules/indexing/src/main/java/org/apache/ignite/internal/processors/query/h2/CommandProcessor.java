@@ -1051,7 +1051,7 @@ public class CommandProcessor {
                 sqlCode = IgniteQueryErrorCode.UNKNOWN;
         }
 
-        return new IgniteSQLException(e.getMessage(), sqlCode);
+        return new IgniteSQLException(e.getMessage(), sqlCode, e);
     }
 
     /**

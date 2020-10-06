@@ -577,6 +577,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         msg.deploymentId(cacheDesc.deploymentId());
 
                     assert F.eq(cacheDesc.deploymentId(), msg.deploymentId());
+
+                    if (msg.operation() instanceof SchemaAlterTableAddColumnOperation) {
+                        SchemaAlterTableAddColumnOperation alterOp = (SchemaAlterTableAddColumnOperation) msg.operation();
+
+                        try {
+                            for (QueryField field : alterOp.columns()) {
+                                if (!field.isNullable())
+                                    QueryUtils.checkNotNullAllowed(ccfg);
+                            }
+                        } catch (IgniteSQLException ex) {
+                            msg.onError(new SchemaOperationException("Received schema propose discovery message, but " +
+                                "cache doesn't applicable for this modification", ex));
+                        }
+                    }
                 }
             }
         }
