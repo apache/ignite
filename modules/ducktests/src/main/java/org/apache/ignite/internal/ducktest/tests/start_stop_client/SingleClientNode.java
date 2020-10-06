@@ -51,7 +51,10 @@ public class SingleClientNode  extends IgniteAwareApplication {
         log.info("nodeId: " + ignite.name() + " starting cache operations");
 
         markInitialized();
-        while (!terminated()) cacheOperation();
+        while (!terminated()) {
+            cacheOperation();
+            Thread.sleep(pacing);
+        }
         markFinished();
     }
 
@@ -67,12 +70,10 @@ public class SingleClientNode  extends IgniteAwareApplication {
     /* single cache operation **/
     private long cacheOperation() throws InterruptedException {
         String key = UUID.randomUUID().toString();
-        String value = UUID.randomUUID().toString();
         long startTime = System.nanoTime();
-        cache.put(key,value);
+        cache.put(key,key);
         long resultTime = System.nanoTime() - startTime;
-        log.info("success put key=" + key + " value=" + value + " latency: " + resultTime + "ns");
-        Thread.sleep(pacing);
+        log.info("success put key=" + key + " value=" + key + " latency: " + resultTime + "ns");
         return resultTime;
     }
 }
