@@ -81,8 +81,8 @@ import org.apache.ignite.internal.processors.cache.persistence.defragmentation.C
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPageManager;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPageManagerImpl;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManagerImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridStripedReadWriteLock;
@@ -167,7 +167,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** Marshaller. */
     private final Marshaller marshaller;
 
-    private final PageMemoryPageManager pmPageMgr;
+    private final PageReadWriteManager pmPageMgr;
 
     /**
      * Executor to disallow running code that modifies data in idxCacheStores concurrently with cleanup of file page
@@ -227,7 +227,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
 
-        pmPageMgr = new PageMemoryPageManagerImpl(ctx, this, FilePageStoreManager.class.getSimpleName());
+        pmPageMgr = new PageReadWriteManagerImpl(ctx, this, FilePageStoreManager.class.getSimpleName());
     }
 
     /** {@inheritDoc} */

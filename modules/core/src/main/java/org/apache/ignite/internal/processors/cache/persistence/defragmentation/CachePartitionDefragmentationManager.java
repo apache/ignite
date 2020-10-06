@@ -731,6 +731,7 @@ public class CachePartitionDefragmentationManager {
         public LinkMap createLinkMapTree(boolean initNew) throws IgniteCheckedException {
             partitionsCheckpoint.checkpointTimeoutLock().checkpointReadLock();
 
+            //TODO Store link in meta page and remove META_PAGE_IDX constant?
             try {
                 long mappingMetaPageId = initNew
                     ? mappingPageMemory.allocatePage(grpId, partId, FLAG_DATA)

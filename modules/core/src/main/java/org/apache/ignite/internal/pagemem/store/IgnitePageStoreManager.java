@@ -28,13 +28,13 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPageManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
  *
  */
-public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteChangeGlobalStateSupport, PageMemoryPageManager {
+public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteChangeGlobalStateSupport, PageReadWriteManager {
     /**
      * Invoked before starting checkpoint recover.
      */

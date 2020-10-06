@@ -196,7 +196,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private final ExecutorService asyncRunner;
 
     /** Page manager. */
-    private final PageMemoryPageManager pmPageMgr;
+    private final PageReadWriteManager pmPageMgr;
 
     /** */
     private IgniteWriteAheadLogManager walMgr;
@@ -288,7 +288,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         DirectMemoryProvider directMemoryProvider,
         long[] sizes,
         GridCacheSharedContext<?, ?> ctx,
-        PageMemoryPageManager pmPageMgr,
+        PageReadWriteManager pmPageMgr,
         int pageSize,
         PageStoreWriter flushDirtyPage,
         @Nullable GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker,
@@ -1183,7 +1183,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public PageMemoryPageManager pageManager() {
+    @Override public PageReadWriteManager pageManager() {
         return pmPageMgr;
     }
 

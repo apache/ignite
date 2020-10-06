@@ -26,8 +26,8 @@ import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPageManager;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPageManagerImpl;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManagerImpl;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.collection.BitSetIntSet;
 import org.apache.ignite.internal.util.collection.IntHashMap;
@@ -132,15 +132,15 @@ public class CacheDefragmentationContext {
     /**
      * @return Page manager for defragmentable partitions.
      */
-    public PageMemoryPageManager partPageManager() {
-        return new PageMemoryPageManagerImpl(ctx, partPageStoresMap, "defrgPartitionsStore");
+    public PageReadWriteManager partPageManager() {
+        return new PageReadWriteManagerImpl(ctx, partPageStoresMap, "defrgPartitionsStore");
     }
 
     /**
      * @return Page manager for mapping.
      */
-    public PageMemoryPageManager mappingPageManager() {
-        return new PageMemoryPageManagerImpl(ctx, mappingPageStoresMap, "defrgLinkMappingStore");
+    public PageReadWriteManager mappingPageManager() {
+        return new PageReadWriteManagerImpl(ctx, mappingPageStoresMap, "defrgLinkMappingStore");
     }
 
     /**

@@ -77,7 +77,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFre
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPageManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
@@ -421,7 +421,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataStorageConfiguration dataStorageCfg,
         DataRegionConfiguration dataRegionCfg,
         boolean trackable,
-        PageMemoryPageManager pmPageMgr
+        PageReadWriteManager pmPageMgr
     ) throws IgniteCheckedException {
         String dataRegionName = dataRegionCfg.getName();
 
@@ -1213,7 +1213,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataRegionConfiguration plcCfg,
         DataRegionMetricsImpl memMetrics,
         boolean trackable,
-        PageMemoryPageManager pmPageMgr
+        PageReadWriteManager pmPageMgr
     ) throws IgniteCheckedException {
         PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics, trackable, pmPageMgr);
 
@@ -1323,7 +1323,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataRegionConfiguration memPlcCfg,
         DataRegionMetricsImpl memMetrics,
         boolean trackable,
-        PageMemoryPageManager pmPageMgr
+        PageReadWriteManager pmPageMgr
     ) {
         memMetrics.persistenceEnabled(false);
 

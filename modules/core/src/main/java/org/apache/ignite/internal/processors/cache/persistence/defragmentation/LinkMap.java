@@ -44,45 +44,59 @@ public class LinkMap {
     /** Tree meta page index. */
     public static final int META_PAGE_IDX = 2;
 
+    /** */
+    public static final IOVersions<? extends BPlusLeafIO<?>> LEAF_IO_VERSIONS = new IOVersions<>(
+        new LinkMappingLeafIO()
+    );
+
+    /** */
+    public static final IOVersions<? extends BPlusInnerIO<?>> INNER_IO_VERSIONS = new IOVersions<>(
+        new LinkMappingInnerIO()
+    );
+
     /** Mapping tree. */
-    private LinkTree tree;
+    private final LinkTree tree;
 
     /**
-     * @param context Cache group context.
+     * @param ctx Cache group context.
      * @param pageMem Page memory.
      * @param metaPageId Meta page id.
      * @param initNew If tree should be (re)created.
      */
-    public LinkMap(CacheGroupContext context,
-                   PageMemory pageMem,
-                   long metaPageId,
-                   boolean initNew) throws IgniteCheckedException {
-        this(context.groupId(), context.name(), pageMem, metaPageId, initNew);
+    public LinkMap(
+        CacheGroupContext ctx,
+        PageMemory pageMem,
+        long metaPageId,
+        boolean initNew
+    ) throws IgniteCheckedException {
+        this(ctx.groupId(), ctx.name(), pageMem, metaPageId, initNew);
     }
 
     /**
-     * @param groupId Cache group id.
-     * @param groupName Cache group name.
+     * @param grpId Cache group id.
+     * @param grpName Cache group name.
      * @param pageMem Page memory.
      * @param metaPageId Meta page id.
      * @param initNew If tree should be (re)created.
      */
-    public LinkMap(int groupId,
-                   String groupName,
-                   PageMemory pageMem,
-                   long metaPageId,
-                   boolean initNew) throws IgniteCheckedException {
+    public LinkMap(
+        int grpId,
+        String grpName,
+        PageMemory pageMem,
+        long metaPageId,
+        boolean initNew
+    ) throws IgniteCheckedException {
         tree = new LinkTree(
             "link-map",
-            groupId,
-            groupName,
+            grpId,
+            grpName,
             pageMem,
             null,
             new AtomicLong(),
             metaPageId,
             null,
-            LinkMappingInnerIO.VERSIONS,
-            LinkMappingLeafIO.VERSIONS,
+            (IOVersions<LinkMappingInnerIO>)INNER_IO_VERSIONS,
+            (IOVersions<LinkMappingLeafIO>)LEAF_IO_VERSIONS,
             null,
             null,
             initNew
@@ -107,11 +121,12 @@ public class LinkMap {
     public long get(long oldLink) throws IgniteCheckedException {
         LinkMapping get = new LinkMapping(oldLink, 0);
         LinkMapping found = tree.findOne(get);
+
         return found.getNewLink();
     }
 
+    /** */
     private static class LinkTree extends BPlusTree<LinkMapping, LinkMapping> {
-
         /**
          * @param name Tree name.
          * @param cacheGrpId Cache group ID.
@@ -172,7 +187,6 @@ public class LinkMap {
      * Class holding mapping from old link to new link.
      */
     private static class LinkMapping {
-
         /** Old link. */
         private final long oldLink;
 
@@ -188,27 +202,19 @@ public class LinkMap {
             this.newLink = newLink;
         }
 
-        /**
-         *
-         */
+        /** */
         public long getOldLink() {
             return oldLink;
         }
 
-        /**
-         *
-         */
+        /** */
         public long getNewLink() {
             return newLink;
         }
     }
 
-    public static class LinkMappingInnerIO extends BPlusInnerIO<LinkMapping> {
-
-        public static final IOVersions<LinkMappingInnerIO> VERSIONS = new IOVersions<>(
-                new LinkMappingInnerIO()
-        );
-
+    /** */
+    private static class LinkMappingInnerIO extends BPlusInnerIO<LinkMapping> {
         /** */
         protected LinkMappingInnerIO() {
             super(PageIO.T_DEFRAG_LINK_MAPPING_INNER, 1, true, Long.BYTES * 2);
@@ -229,21 +235,16 @@ public class LinkMap {
         }
 
         /** {@inheritDoc} */
-        @Override public LinkMapping getLookupRow(BPlusTree<LinkMapping,?> tree, long pageAddr, int idx) {
+        @Override public LinkMapping getLookupRow(BPlusTree<LinkMapping, ?> tree, long pageAddr, int idx) {
             long oldLink = PageUtils.getLong(pageAddr, offset(idx));
             long newLink = PageUtils.getLong(pageAddr, offset(idx) + Long.BYTES);
+
             return new LinkMapping(oldLink, newLink);
         }
-
     }
 
     /** */
-    public static class LinkMappingLeafIO extends BPlusLeafIO<LinkMapping> {
-        /** */
-        public static final IOVersions<LinkMappingLeafIO> VERSIONS = new IOVersions<>(
-                new LinkMappingLeafIO()
-        );
-
+    private static class LinkMappingLeafIO extends BPlusLeafIO<LinkMapping> {
         /** */
         protected LinkMappingLeafIO() {
             super(PageIO.T_DEFRAG_LINK_MAPPING_LEAF, 1, Long.BYTES * 2);
@@ -264,9 +265,10 @@ public class LinkMap {
         }
 
         /** {@inheritDoc} */
-        @Override public LinkMapping getLookupRow(BPlusTree<LinkMapping,?> tree, long pageAddr, int idx) {
+        @Override public LinkMapping getLookupRow(BPlusTree<LinkMapping, ?> tree, long pageAddr, int idx) {
             long oldLink = PageUtils.getLong(pageAddr, offset(idx));
             long newLink = PageUtils.getLong(pageAddr, offset(idx) + Long.BYTES);
+
             return new LinkMapping(oldLink, newLink);
         }
     }

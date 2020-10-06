@@ -145,7 +145,7 @@ public interface PageMemoryEx extends PageMemory {
      ) throws IgniteCheckedException;
 
      /** */
-     public PageMemoryPageManager pageManager();
+     public PageReadWriteManager pageManager();
 
     /**
      * Marks partition as invalid / outdated.

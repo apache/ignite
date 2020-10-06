@@ -807,10 +807,10 @@ public abstract class PageIO {
                 return (Q)MetastorageBPlusIO.LEAF_IO_VERSIONS.forVersion(ver);
 
             case T_DEFRAG_LINK_MAPPING_INNER:
-                return (Q) LinkMap.LinkMappingInnerIO.VERSIONS.forVersion(ver);
+                return (Q) LinkMap.INNER_IO_VERSIONS.forVersion(ver);
 
             case T_DEFRAG_LINK_MAPPING_LEAF:
-                return (Q) LinkMap.LinkMappingLeafIO.VERSIONS.forVersion(ver);
+                return (Q) LinkMap.LEAF_IO_VERSIONS.forVersion(ver);
 
             default:
                 // For tests.

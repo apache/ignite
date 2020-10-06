@@ -130,7 +130,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPageManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -709,7 +709,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     @Override
     protected DataRegion addDataRegion(DataStorageConfiguration dataStorageCfg, DataRegionConfiguration dataRegionCfg,
-        boolean trackable, PageMemoryPageManager pmPageMgr) throws IgniteCheckedException {
+        boolean trackable, PageReadWriteManager pmPageMgr) throws IgniteCheckedException {
         DataRegion region = super.addDataRegion(dataStorageCfg, dataRegionCfg, trackable, pmPageMgr);
 
         checkpointedDataRegions.add(region);
@@ -1065,7 +1065,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         DataRegionConfiguration plcCfg,
         DataRegionMetricsImpl memMetrics,
         final boolean trackable,
-        PageMemoryPageManager pmPageMgr
+        PageReadWriteManager pmPageMgr
     ) {
         if (!plcCfg.isPersistenceEnabled())
             return super.createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable, pmPageMgr);

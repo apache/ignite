@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 
 /** */
-public class PageMemoryPageManagerImpl implements PageMemoryPageManager {
+public class PageReadWriteManagerImpl implements PageReadWriteManager {
     /** */
     private final GridKernalContext ctx;
 
@@ -51,7 +51,7 @@ public class PageMemoryPageManagerImpl implements PageMemoryPageManager {
      * @param ctx Kernal context.
      * @param pageStores Page stores.
      */
-    public PageMemoryPageManagerImpl(
+    public PageReadWriteManagerImpl(
         GridKernalContext ctx,
         PageStoreCollection pageStores,
         String name
@@ -141,6 +141,6 @@ public class PageMemoryPageManagerImpl implements PageMemoryPageManager {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PageMemoryPageManagerImpl.class, this);
+        return S.toString(PageReadWriteManagerImpl.class, this);
     }
 }

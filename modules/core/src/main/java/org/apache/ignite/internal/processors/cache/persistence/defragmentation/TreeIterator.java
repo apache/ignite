@@ -76,8 +76,8 @@ public class TreeIterator {
     }
 
     /** */
-    @SuppressWarnings("PackageVisibleInnerClass")
-    enum PageAccessType {
+    @SuppressWarnings("PublicInnerClass")
+    public enum PageAccessType {
         /** Read access. */
         ACCESS_READ,
 
