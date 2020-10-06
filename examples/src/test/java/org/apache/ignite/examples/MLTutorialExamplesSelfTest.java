@@ -17,8 +17,26 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.ml.tutorial.*;
-import org.apache.ignite.examples.ml.tutorial.hyperparametertuning.*;
+import org.apache.ignite.examples.ml.tutorial.Step_10_Bagging;
+import org.apache.ignite.examples.ml.tutorial.Step_11_Boosting;
+import org.apache.ignite.examples.ml.tutorial.Step_12_Model_Update;
+import org.apache.ignite.examples.ml.tutorial.Step_1_Read_and_Learn;
+import org.apache.ignite.examples.ml.tutorial.Step_2_Imputing;
+import org.apache.ignite.examples.ml.tutorial.Step_3_Categorial;
+import org.apache.ignite.examples.ml.tutorial.Step_3_Categorial_with_One_Hot_Encoder;
+import org.apache.ignite.examples.ml.tutorial.Step_4_Add_age_fare;
+import org.apache.ignite.examples.ml.tutorial.Step_5_Scaling;
+import org.apache.ignite.examples.ml.tutorial.Step_6_KNN;
+import org.apache.ignite.examples.ml.tutorial.Step_7_Split_train_test;
+import org.apache.ignite.examples.ml.tutorial.Step_8_CV;
+import org.apache.ignite.examples.ml.tutorial.Step_8_CV_with_Param_Grid;
+import org.apache.ignite.examples.ml.tutorial.Step_8_CV_with_Param_Grid_and_pipeline;
+import org.apache.ignite.examples.ml.tutorial.Step_9_Scaling_With_Stacking;
+import org.apache.ignite.examples.ml.tutorial.hyperparametertuning.Step_13_RandomSearch;
+import org.apache.ignite.examples.ml.tutorial.hyperparametertuning.Step_14_Parallel_Brute_Force_Search;
+import org.apache.ignite.examples.ml.tutorial.hyperparametertuning.Step_15_Parallel_Random_Search;
+import org.apache.ignite.examples.ml.tutorial.hyperparametertuning.Step_16_Genetic_Programming_Search;
+import org.apache.ignite.examples.ml.tutorial.hyperparametertuning.Step_17_Parallel_Genetic_Programming_Search;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 import org.junit.Test;
 
