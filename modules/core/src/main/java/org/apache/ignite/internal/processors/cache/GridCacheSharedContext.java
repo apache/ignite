@@ -923,7 +923,7 @@ public class GridCacheSharedContext<K, V> {
      * @param cls Class to get logger for.
      * @return IgniteLogger instance.
      */
-    public IgniteLogger logger(Class<?> cls) {
+    public <T> IgniteLogger logger(Class<T> cls) {
         return kernalCtx.log(cls);
     }
 

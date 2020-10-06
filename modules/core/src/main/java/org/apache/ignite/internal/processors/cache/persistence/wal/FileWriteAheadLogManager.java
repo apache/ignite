@@ -248,7 +248,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * Number of WAL compressor worker threads.
      */
-    private final int WAL_COMPRESSOR_WORKER_THREAD_CNT =
+    private static final int WAL_COMPRESSOR_WORKER_THREAD_CNT =
             IgniteSystemProperties.getInteger(IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT,
                 DFLT_WAL_COMPRESSOR_WORKER_THREAD_CNT);
 
@@ -262,7 +262,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private final boolean alwaysWriteFullPages;
 
-    /** WAL segment size in bytes. . This is maximum value, actual segments may be shorter. */
+    /** WAL segment size in bytes. This is maximum value, actual segments may be shorter. */
     private final long maxWalSegmentSize;
 
     /**
@@ -1988,7 +1988,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          *
          * @param absIdx Absolute index to archive.
          */
-        public SegmentArchiveResult archiveSegment(long absIdx) throws StorageException {
+        private SegmentArchiveResult archiveSegment(long absIdx) throws StorageException {
             long segIdx = absIdx % dsCfg.getWalSegments();
 
             File origFile = new File(walWorkDir, FileDescriptor.fileName(segIdx));
@@ -2006,23 +2006,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             try {
                 Files.deleteIfExists(dstTmpFile.toPath());
 
-                boolean copied = false;
+                long offs = switchSegmentRecordOffset.get((int)segIdx);
 
-                if (switchSegmentRecordOffset != null) {
-                    long offs = switchSegmentRecordOffset.get((int)segIdx);
+                if (offs > 0) {
+                    switchSegmentRecordOffset.set((int)segIdx, 0);
 
-                    if (offs > 0) {
-                        switchSegmentRecordOffset.set((int)segIdx, 0);
+                    if (offs < origFile.length()) {
+                        GridFileUtils.copy(ioFactory, origFile, ioFactory, dstTmpFile, offs);
 
-                        if (offs < origFile.length()) {
-                            GridFileUtils.copy(ioFactory, origFile, ioFactory, dstTmpFile, offs);
-
-                            copied = true;
-                        }
                     }
                 }
-
-                if (!copied)
+                else
                     Files.copy(origFile.toPath(), dstTmpFile.toPath());
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
