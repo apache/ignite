@@ -410,14 +410,15 @@ class TcpClientChannel implements ClientChannel {
      * Process next message from the input stream and complete corresponding future.
      */
     private void processNextMessage() throws ClientProtocolError, ClientConnectionException {
-        int msgSize = dataInput.readInt();
+        // blocking read a message header not to fall into a busy loop
+        int msgSize = dataInput.readInt(2048);
 
         if (msgSize <= 0)
             throw new ClientProtocolError(String.format("Invalid message size: %s", msgSize));
 
         long bytesReadOnStartMsg = dataInput.totalBytesRead();
 
-        long resId = dataInput.readLong();
+        long resId = dataInput.spinReadLong();
 
         int status = 0;
 
@@ -426,11 +427,11 @@ class TcpClientChannel implements ClientChannel {
         BinaryInputStream resIn;
 
         if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
-            short flags = dataInput.readShort();
+            short flags = dataInput.spinReadShort();
 
             if ((flags & ClientFlag.AFFINITY_TOPOLOGY_CHANGED) != 0) {
-                long topVer = dataInput.readLong();
-                int minorTopVer = dataInput.readInt();
+                long topVer = dataInput.spinReadLong();
+                int minorTopVer = dataInput.spinReadInt();
 
                 srvTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
 
@@ -439,7 +440,7 @@ class TcpClientChannel implements ClientChannel {
             }
 
             if ((flags & ClientFlag.NOTIFICATION) != 0) {
-                short notificationCode = dataInput.readShort();
+                short notificationCode = dataInput.spinReadShort();
 
                 notificationOp = ClientOperation.fromCode(notificationCode);
 
@@ -448,10 +449,10 @@ class TcpClientChannel implements ClientChannel {
             }
 
             if ((flags & ClientFlag.ERROR) != 0)
-                status = dataInput.readInt();
+                status = dataInput.spinReadInt();
         }
         else
-            status = dataInput.readInt();
+            status = dataInput.spinReadInt();
 
         int hdrSize = (int)(dataInput.totalBytesRead() - bytesReadOnStartMsg);
 
@@ -460,12 +461,12 @@ class TcpClientChannel implements ClientChannel {
 
         if (status == 0) {
             if (msgSize > hdrSize)
-                res = dataInput.read(msgSize - hdrSize);
+                res = dataInput.spinRead(msgSize - hdrSize);
         }
         else if (status == ClientStatus.SECURITY_VIOLATION)
             err = new ClientAuthorizationException();
         else {
-            resIn = new BinaryHeapInputStream(dataInput.read(msgSize - hdrSize));
+            resIn = new BinaryHeapInputStream(dataInput.spinRead(msgSize - hdrSize));
 
             String errMsg = ClientUtils.createBinaryReader(null, resIn).readString();
 
@@ -713,47 +714,81 @@ class TcpClientChannel implements ClientChannel {
             this.in = in;
         }
 
+        /** Read bytes from the input stream. */
+        public byte[] read(int len) throws ClientConnectionException {
+            byte[] bytes = new byte[len];
+
+            read(bytes, len, 0);
+
+            return bytes;
+        }
+
+        /** Read bytes from the input stream. */
+        public byte[] spinRead(int len) {
+            byte[] bytes = new byte[len];
+
+            read(bytes, len, Integer.MAX_VALUE);
+
+            return bytes;
+        }
+
         /**
          * Read bytes from the input stream to the buffer.
          *
          * @param bytes Bytes buffer.
          * @param len Length.
+         * @param tryReadCnt Number of reads before falling into blocking read.
          */
-        private void read(byte[] bytes, int len) throws ClientConnectionException {
-            int bytesNum;
-            int readBytesNum = 0;
+        public void read(byte[] bytes, int len, int tryReadCnt) throws ClientConnectionException {
+            int offset = 0;
 
-            while (readBytesNum < len) {
-                try {
-                    bytesNum = in.read(bytes, readBytesNum, len - readBytesNum);
+            try {
+                while (offset < len) {
+                    int toRead;
+
+                    if (tryReadCnt == 0)
+                        toRead = len - offset;
+                    else if ((toRead = Math.min(in.available(), len - offset)) == 0) {
+                        tryReadCnt--;
+
+                        continue;
+                    }
+
+                    int read = in.read(bytes, offset, toRead);
+
+                    if (read < 0)
+                        throw handleIOError(null);
+
+                    offset += read;
+                    totalBytesRead += read;
                 }
-                catch (IOException e) {
-                    throw handleIOError(e);
-                }
-
-                if (bytesNum < 0)
-                    throw handleIOError(null);
-
-                readBytesNum += bytesNum;
             }
-
-            totalBytesRead += readBytesNum;
-        }
-
-        /** Read bytes from the input stream. */
-        public byte[] read(int len) throws ClientConnectionException {
-            byte[] bytes = new byte[len];
-
-            read(bytes, len);
-
-            return bytes;
+            catch (IOException e) {
+                throw handleIOError(e);
+            }
         }
 
         /**
          * Read long value from the input stream.
          */
         public long readLong() throws ClientConnectionException {
-            read(tmpBuf, Long.BYTES);
+            return readLong(0);
+        }
+
+        /**
+         * Read long value from the input stream.
+         */
+        public long spinReadLong() throws ClientConnectionException {
+            return readLong(Integer.MAX_VALUE);
+        }
+
+        /**
+         * Read long value from the input stream.
+         *
+         * @param tryReadCnt Number of reads before falling into blocking read.
+         */
+        private long readLong(int tryReadCnt) throws ClientConnectionException {
+            read(tmpBuf, Long.BYTES, tryReadCnt);
 
             return BinaryPrimitives.readLong(tmpBuf, 0);
         }
@@ -762,7 +797,23 @@ class TcpClientChannel implements ClientChannel {
          * Read int value from the input stream.
          */
         public int readInt() throws ClientConnectionException {
-            read(tmpBuf, Integer.BYTES);
+            return readInt(0);
+        }
+
+        /**
+         * Read int value from the input stream.
+         */
+        public int spinReadInt() throws ClientConnectionException {
+            return readInt(Integer.MAX_VALUE);
+        }
+
+        /**
+         * Read int value from the input stream.
+         *
+         * @param tryReadCnt Number of reads before falling into blocking read.
+         */
+        private int readInt(int tryReadCnt) throws ClientConnectionException {
+            read(tmpBuf, Integer.BYTES, tryReadCnt);
 
             return BinaryPrimitives.readInt(tmpBuf, 0);
         }
@@ -771,7 +822,23 @@ class TcpClientChannel implements ClientChannel {
          * Read short value from the input stream.
          */
         public short readShort() throws ClientConnectionException {
-            read(tmpBuf, Short.BYTES);
+            return readShort(0);
+        }
+
+        /**
+         * Read short value from the input stream.
+         */
+        public short spinReadShort() throws ClientConnectionException {
+            return readShort(Integer.MAX_VALUE);
+        }
+
+        /**
+         * Read short value from the input stream.
+         *
+         * @param tryReadCnt Number of reads before falling into blocking read.
+         */
+        public short readShort(int tryReadCnt) throws ClientConnectionException {
+            read(tmpBuf, Short.BYTES, tryReadCnt);
 
             return BinaryPrimitives.readShort(tmpBuf, 0);
         }
