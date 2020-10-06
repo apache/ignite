@@ -28,6 +28,7 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 /**
  * Java client. Tx put operation
  */
+
 public class SingleClientNode  extends IgniteAwareApplication {
 
     /** {@inheritDoc} */
