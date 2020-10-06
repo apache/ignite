@@ -47,7 +47,6 @@ def resolve_spec(service, context, config, **kwargs):
 
     if is_impl("IgniteService"):
         return _resolve_spec("NodeSpec", ApacheIgniteNodeSpec)(config=config, **kwargs)
-
     if is_impl("IgniteApplicationService"):
         return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(context=context, config=config, **kwargs)
     if is_impl("MultiNodeService"):
@@ -215,7 +214,7 @@ class CustomIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
     Implementation IgniteApplicationSpec for Apache Ignite project
     """
     # pylint: disable=too-many-arguments
-    def __init__(self, context, modules, servicejava_class_name, java_class_name, params, **kwargs):
+    def __init__(self, context, modules, servicejava_class_name, java_class_name, start_ignite, params, **kwargs):
         super().__init__(project="ignite", **kwargs)
         self.context = context
 
@@ -241,7 +240,7 @@ class CustomIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
         ])
 
         self.args = [
-            str("True"),
+            str(start_ignite),
             java_class_name,
             self.CONFIG_FILE,
             str(base64.b64encode(json.dumps(params).encode('utf-8')), 'utf-8')

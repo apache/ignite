@@ -96,6 +96,7 @@ class ClientTest(IgniteTest):
 
         # start static clients
         static_clients.start()
+
         current_top_v += self.STATIC_CLIENTS_NUM
         check_topology(control_utility, current_top_v)
 
