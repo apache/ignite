@@ -35,8 +35,6 @@ public class SingleClientNode  extends IgniteAwareApplication {
 
     private String cacheName;
 
-    private String reportName;
-
     private long pacing = 0;
 
     /** {@inheritDoc} */
@@ -44,7 +42,9 @@ public class SingleClientNode  extends IgniteAwareApplication {
         cacheName = jsonNode.get("cacheName").asText();
         pacing = jsonNode.get("pacing").asLong();
 
-        log.info("test props: " + "cacheName=" + cacheName + " reportName=" + reportName + " pacing=" + pacing);
+        log.info("test props:" +
+                " cacheName=" + cacheName +
+                " pacing=" + pacing);
 
         cache = ignite.getOrCreateCache(prepareCacheConfiguration(cacheName));
         log.info("nodeId: " + ignite.name() + " starting cache operations");
