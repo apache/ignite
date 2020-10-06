@@ -47,8 +47,10 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Simple unit test to cover basic MaintenanceRegistry functionality like action validations,
@@ -109,6 +111,67 @@ public class MaintenanceRegistrySimpleTest {
     }
 
     /**
+     * {@link MaintenanceRecord} could be replaced with new parameters after registration, old record is deleted.
+     *
+     * @throws IgniteCheckedException If initialization failed.
+     */
+    @Test
+    public void testMaintenanceRecordReplacement() throws IgniteCheckedException {
+        UUID id0 = UUID.randomUUID();
+        String descr = "description";
+        String oldParams = "oldParams";
+        String newParams = "newParams";
+
+        MaintenanceProcessor proc = new MaintenanceProcessor(initContext(true));
+
+        proc.start();
+
+        assertFalse(proc.isMaintenanceMode());
+
+        proc.registerMaintenanceRecord(new MaintenanceRecord(id0, descr, oldParams));
+        proc.registerMaintenanceRecord(new MaintenanceRecord(id0, descr, newParams));
+
+        proc.stop(false);
+
+        proc.start();
+
+        assertTrue(proc.isMaintenanceMode());
+        MaintenanceRecord rec = proc.activeMaintenanceRecord(id0);
+
+        assertNotNull(rec);
+        assertEquals(newParams, rec.parameters());
+    }
+
+    /**
+     * Registered {@link MaintenanceRecord} can be deleted before node entered Maintenance Mode (before node restart).
+     *
+     * @throws IgniteCheckedException If initialization failed.
+     */
+    @Test
+    public void testDeleteMaintenanceRecord() throws IgniteCheckedException {
+        UUID id = UUID.randomUUID();
+
+        MaintenanceRecord rec = new MaintenanceRecord(id, "description", null);
+
+        MaintenanceProcessor proc = new MaintenanceProcessor(initContext(true));
+
+        proc.start();
+
+        proc.registerMaintenanceRecord(rec);
+
+        assertFalse(proc.isMaintenanceMode());
+
+        proc.unregisterMaintenanceRecord(id);
+
+        proc.stop(false);
+
+        proc.start();
+
+        assertNull(proc.activeMaintenanceRecord(id));
+        assertFalse(proc.isMaintenanceMode());
+    }
+
+    /**
      * Maintenance actions provided by maintenance callback should all have unique names.
      *
      * @throws IgniteCheckedException If initialization failed.
@@ -125,17 +188,13 @@ public class MaintenanceRegistrySimpleTest {
 
         // attempt to register callback with actions with non-unique names throws exception
         GridTestUtils.assertThrows(log, () ->
-                proc.registerWorkflowCallback(new SimpleMaintenanceCallback(id0,
-                    Arrays.asList(new SimpleAction(actionName0), new SimpleAction(actionName0))
+                proc.registerWorkflowCallback(id0, new SimpleMaintenanceCallback(Arrays.asList(new SimpleAction(actionName0), new SimpleAction(actionName0))
                 )),
             IgniteException.class,
             "unique names: " + actionName0 + ", " + actionName0);
 
         // Attempt to register callback with actions with unique names finishes succesfully
-        proc.registerWorkflowCallback(new SimpleMaintenanceCallback(id1,
-            Arrays.asList(new SimpleAction(actionName0), new SimpleAction(actionName1))
-            )
-        );
+        proc.registerWorkflowCallback(id1, new SimpleMaintenanceCallback(Arrays.asList(new SimpleAction(actionName0), new SimpleAction(actionName1))));
     }
 
     /**
@@ -161,10 +220,12 @@ public class MaintenanceRegistrySimpleTest {
         proc.registerMaintenanceRecord(new MaintenanceRecord(rec0Id, desc0, params0));
         proc.registerMaintenanceRecord(new MaintenanceRecord(rec1Id, desc1, params1));
 
+        proc.stop(false);
+
         proc.start();
 
-        MaintenanceRecord rec0 = proc.maintenanceRecord(rec0Id);
-        MaintenanceRecord rec1 = proc.maintenanceRecord(rec1Id);
+        MaintenanceRecord rec0 = proc.activeMaintenanceRecord(rec0Id);
+        MaintenanceRecord rec1 = proc.activeMaintenanceRecord(rec1Id);
 
         assertNotNull(rec0);
         assertNotNull(rec1);
@@ -198,11 +259,13 @@ public class MaintenanceRegistrySimpleTest {
         proc.registerMaintenanceRecord(new MaintenanceRecord(rec0Id, desc0, params0));
         proc.registerMaintenanceRecord(new MaintenanceRecord(rec1Id, desc1, null));
 
+        proc.stop(false);
+
         // call to force Maintenance Processor to read that file and fill internal collection of maintenance records
         proc.start();
 
-        MaintenanceRecord rec0 = proc.maintenanceRecord(rec0Id);
-        MaintenanceRecord rec1 = proc.maintenanceRecord(rec1Id);
+        MaintenanceRecord rec0 = proc.activeMaintenanceRecord(rec0Id);
+        MaintenanceRecord rec1 = proc.activeMaintenanceRecord(rec1Id);
 
         assertNotNull(rec0);
         assertNotNull(rec1);
@@ -224,10 +287,7 @@ public class MaintenanceRegistrySimpleTest {
         String wrongName = "wrong*Name";
 
         GridTestUtils.assertThrows(log,
-            () -> {
-            proc.registerWorkflowCallback(new SimpleMaintenanceCallback(id0,
-                Arrays.asList(new SimpleAction(wrongName))));
-            },
+            () -> proc.registerWorkflowCallback(id0, new SimpleMaintenanceCallback(Arrays.asList(new SimpleAction(wrongName)))),
             IgniteException.class,
             "alphanumeric");
 
@@ -236,20 +296,10 @@ public class MaintenanceRegistrySimpleTest {
     /** */
     private final class SimpleMaintenanceCallback implements MaintenanceWorkflowCallback {
         /** */
-        private final UUID id;
-
-        /** */
         private final List<MaintenanceAction> actions = new ArrayList<>();
 
-        SimpleMaintenanceCallback(UUID id, List<MaintenanceAction> actions) {
-            this.id = id;
+        SimpleMaintenanceCallback(List<MaintenanceAction> actions) {
             this.actions.addAll(actions);
-        }
-
-
-        /** {@inheritDoc} */
-        @Override public @NotNull UUID maintenanceId() {
-            return id;
         }
 
         /** {@inheritDoc} */

@@ -29,20 +29,13 @@ import java.util.UUID;
  * and components that may require maintenance.
  *
  * If a component may cause node to enter maintenance mode, it should register this callback
- * in {@link MaintenanceRegistry} using method {@link MaintenanceRegistry#registerWorkflowCallback(MaintenanceWorkflowCallback)}
+ * in {@link MaintenanceRegistry} using method {@link MaintenanceRegistry#registerWorkflowCallback(UUID, MaintenanceWorkflowCallback)}
  *
  * {@link MaintenanceRegistry} during its workflow will collect necessary information about maintenance for components
  * without knowing implementation details of the components.
  */
 @IgniteExperimental
 public interface MaintenanceWorkflowCallback {
-    /**
-     * Unique ID of corresponding {@link MaintenanceRecord}. Should not be null.
-     *
-     * @return {@link UUID} of {@link MaintenanceRecord} this callback provides information about.
-     */
-    @NotNull public UUID maintenanceId();
-
     /**
      * Called by {@link MaintenanceRegistry} and enables it to check if maintenance is still needed
      * for component that provided this callback.

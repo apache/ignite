@@ -21,8 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceAction;
@@ -32,15 +30,7 @@ import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,32 +41,27 @@ import java.util.stream.Collectors;
 /** */
 public class MaintenanceProcessor extends GridProcessorAdapter implements MaintenanceRegistry {
     /** */
-    private static final String MAINTENANCE_FILE_NAME = "maintenance_records.mntc";
-
-    /** */
-    private static final String DELIMITER = "\t";
-
-    /** Maintenance record consists of two or three parts: ID, description (user-readable part)
-     * and optional record parameters. */
-    private static final int MAX_MNTC_RECORD_PARTS_COUNT = 3;
-
-    /** */
     private static final String IN_MEMORY_MODE_ERR_MSG = "Maintenance Mode is not supported for in-memory clusters";
 
-    /** */
-    private final Map<UUID, MaintenanceRecord> registeredRecords = new ConcurrentHashMap<>();
+    /**
+     * Active {@link MaintenanceRecord}s are the ones that were read from disk when node entered Maintenance Mode.
+     */
+    private final Map<UUID, MaintenanceRecord> activeRecords = new ConcurrentHashMap<>();
+
+    /**
+     * Requested {@link MaintenanceRecord}s are collection of records requested by user
+     * or other components when node operates normally (not in Maintenance Mode).
+     */
+    private final Map<UUID, MaintenanceRecord> requestedRecords = new ConcurrentHashMap<>();
 
     /** */
     private final Map<UUID, MaintenanceWorkflowCallback> workflowCallbacks = new ConcurrentHashMap<>();
 
     /** */
-    private volatile File mntcRecordsFile;
+    private final MaintenanceFileStorage fileStorage;
 
     /** */
     private final boolean inMemoryMode;
-
-    /** */
-    private final PdsFoldersResolver pdsFolderResolver;
 
     /**
      * @param ctx Kernal context.
@@ -84,44 +69,62 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     public MaintenanceProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        pdsFolderResolver = ctx.pdsFolderResolver();
-
         inMemoryMode = !CU.isPersistenceEnabled(ctx.config());
-    }
 
-    /** {@inheritDoc} */
-    @Override public void registerMaintenanceRecord(MaintenanceRecord rec) throws IgniteCheckedException {
-        if (inMemoryMode)
-            throw new IgniteCheckedException(IN_MEMORY_MODE_ERR_MSG);
-
-        if (mntcRecordsFile == null) {
-            log.warning("Maintenance records file not found, record won't be stored: "
-                + rec.description());
+        if (inMemoryMode) {
+            fileStorage = new MaintenanceFileStorage(true,
+                null,
+                null,
+                null);
 
             return;
         }
 
-        try (FileOutputStream out = new FileOutputStream(mntcRecordsFile, true)) {
-            try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
-                writeMaintenanceRecord(rec, writer);
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to register maintenance record "
-                + rec
-                , e);
-        }
+        fileStorage = new MaintenanceFileStorage(false,
+            ctx.pdsFolderResolver(),
+            ctx.config().getDataStorageConfiguration().getFileIOFactory(),
+            log);
     }
 
-    /** */
-    private void writeMaintenanceRecord(MaintenanceRecord rec, Writer writer) throws IOException {
-        writer.write(rec.id().toString() + DELIMITER);
-        writer.write(rec.description() + DELIMITER);
+    /** {@inheritDoc} */
+    @Override public @Nullable MaintenanceRecord registerMaintenanceRecord(MaintenanceRecord rec) throws IgniteCheckedException {
+        if (inMemoryMode)
+            throw new IgniteCheckedException(IN_MEMORY_MODE_ERR_MSG);
 
-        if (rec.parameters() != null)
-            writer.write(rec.parameters());
+        if (isMaintenanceMode())
+            throw new IgniteCheckedException("Node is already in Maintenance Mode, " +
+                "registering additional maintenance record is not allowed in Maintenance Mode.");
 
-        writer.write(System.lineSeparator());
+        MaintenanceRecord oldRec = requestedRecords.put(rec.id(), rec);
+
+        if (oldRec != null) {
+            log.info(
+                "Maintenance Record for id " + rec.id() +
+                    " is already registered" +
+                    oldRec.parameters() != null ? " with parameters " + oldRec.parameters() : "" + "." +
+                    " It will be replaced with new record" +
+                    rec.parameters() != null ? " with parameters " + rec.parameters() : "" + "."
+            );
+        }
+
+        try {
+            fileStorage.writeMaintenanceRecord(rec);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to register maintenance record " + rec, e);
+        }
+
+        return oldRec;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        try {
+            fileStorage.stop();
+        }
+        catch (IOException e) {
+            log.warning("Failed to free maintenance file resources", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -130,79 +133,49 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             return;
 
         try {
-            PdsFolderSettings folderSettings = pdsFolderResolver.resolveFolders();
-            File storeDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
-            U.ensureDirectory(storeDir, "store directory for node persistent data", log);
+            fileStorage.init();
 
-            mntcRecordsFile = new File(storeDir, MAINTENANCE_FILE_NAME);
-
-            if (!mntcRecordsFile.exists()) {
-                mntcRecordsFile.createNewFile();
-
-                return;
-            }
-
-            try (FileInputStream in = new FileInputStream(mntcRecordsFile)) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    reader.lines().forEach(s -> {
-                        String[] subStrs = s.split(DELIMITER);
-
-                        int partsNum = subStrs.length;
-
-                        if (partsNum < MAX_MNTC_RECORD_PARTS_COUNT - 1) {
-                            log.info("Corrupted maintenance record found and will be skipped, " +
-                                "mandatory parts are missing: " + s);
-
-                            return;
-                        }
-
-                        if (partsNum > MAX_MNTC_RECORD_PARTS_COUNT ) {
-                            log.info("Corrupted maintenance record found and will be skipped, " +
-                                "too many parts in record: " + s);
-
-                            return;
-                        }
-
-                        UUID id = UUID.fromString(subStrs[0]);
-                        MaintenanceRecord rec = new MaintenanceRecord(id, subStrs[1], partsNum == 3 ? subStrs[2] : null);
-
-                        registeredRecords.put(id, rec);
-                    });
-                }
-            }
+            activeRecords.putAll(fileStorage.getAllRecords());
         }
         catch (Throwable t) {
             log.warning("Caught exception when starting MaintenanceProcessor," +
                 " maintenance mode won't be entered", t);
 
-            registeredRecords.clear();
+            activeRecords.clear();
 
-            if (mntcRecordsFile != null)
-                mntcRecordsFile.delete();
+            fileStorage.clear();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean prepareMaintenance() {
-        workflowCallbacks.values().removeIf(cb ->
-            {
-                if (!cb.proceedWithMaintenance()) {
-                    clearMaintenanceRecord(cb.maintenanceId());
+    @Override public void prepareAndExecuteMaintenance() {
+        if (isMaintenanceMode()) {
+            workflowCallbacks.entrySet().removeIf(cbE ->
+                {
+                    if (!cbE.getValue().proceedWithMaintenance()) {
+                        unregisterMaintenanceRecord(cbE.getKey());
 
-                    return true;
+                        return true;
+                    }
+
+                    return false;
                 }
+            );
+        }
 
-                return false;
-            }
-        );
-
-        return !workflowCallbacks.isEmpty();
+        if (!workflowCallbacks.isEmpty())
+            proceedWithMaintenance();
+        else {
+            if (log.isInfoEnabled())
+                log.info("All maintenance records are fixed, no need to enter maintenance mode. " +
+                    "Restart the node to get it back to normal operations.");
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void proceedWithMaintenance() {
-        for (MaintenanceWorkflowCallback cb : workflowCallbacks.values()) {
-            MaintenanceAction mntcAction = cb.automaticAction();
+        for (Map.Entry<UUID, MaintenanceWorkflowCallback> cbE : workflowCallbacks.entrySet()) {
+            MaintenanceAction mntcAction = cbE.getValue().automaticAction();
 
             if (mntcAction != null) {
                 try {
@@ -210,7 +183,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
                 }
                 catch (Throwable t) {
                     log.warning("Failed to execute automatic action for maintenance record: " +
-                        registeredRecords.get(cb.maintenanceId()), t);
+                        activeRecords.get(cbE.getKey()), t);
 
                     throw t;
                 }
@@ -219,44 +192,42 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable MaintenanceRecord maintenanceRecord(UUID maitenanceId) {
-        return registeredRecords.get(maitenanceId);
+    @Override public @Nullable MaintenanceRecord activeMaintenanceRecord(UUID maitenanceId) {
+        return activeRecords.get(maitenanceId);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMaintenanceMode() {
-        return !registeredRecords.isEmpty();
+        return !activeRecords.isEmpty();
     }
 
     /** {@inheritDoc} */
-    @Override public void clearMaintenanceRecord(UUID mntcId) {
-        registeredRecords.remove(mntcId);
+    @Override public void unregisterMaintenanceRecord(UUID mntcId) {
+        if (inMemoryMode)
+            return;
 
-        if (mntcRecordsFile.exists()) {
-            try (FileOutputStream out = new FileOutputStream(mntcRecordsFile, false)) {
-                try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
-                    for (MaintenanceRecord rec : registeredRecords.values()) {
-                        writeMaintenanceRecord(rec, writer);
-                    }
-                }
-            }
-            catch (IOException e) {
-                log.warning("Failed to clear maintenance record with id "
-                    + mntcId
-                    + " from file, whole file will be deleted", e
-                );
+        if (isMaintenanceMode())
+            activeRecords.remove(mntcId);
+        else
+            requestedRecords.remove(mntcId);
 
-                mntcRecordsFile.delete();
-            }
+        try {
+            fileStorage.deleteMaintenanceRecord(mntcId);
+        }
+        catch (IOException e) {
+            log.warning("Failed to clear maintenance record with id "
+                + mntcId
+                + " from file, whole file will be deleted", e
+            );
+
+            fileStorage.clear();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void registerWorkflowCallback(@NotNull MaintenanceWorkflowCallback cb) {
+    @Override public void registerWorkflowCallback(@NotNull UUID mntcId, @NotNull MaintenanceWorkflowCallback cb) {
         if (inMemoryMode)
             throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
-
-        UUID mntcId = cb.maintenanceId();
 
         List<MaintenanceAction> actions = cb.allActions();
 
@@ -289,7 +260,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
         if (inMemoryMode)
             throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
 
-        if (!registeredRecords.containsKey(maintenanceId))
+        if (!activeRecords.containsKey(maintenanceId))
             throw new IgniteException("Maintenance workflow callback for given ID not found, " +
                 "cannot retrieve maintenance actions for it: " + maintenanceId);
 
