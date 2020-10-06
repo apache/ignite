@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.ducktest.tests.start_stop_client;
 
+import java.util.Optional;
 import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
@@ -25,54 +26,46 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- *
+ * Java client. Tx put operation
  */
 public class SingleClientNode  extends IgniteAwareApplication {
-
-    /* params **/
-
-    private IgniteCache<String, String> cache;
-
-    private String cacheName;
-
-    private long pacing = 0;
-
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
-        cacheName = jsonNode.get("cacheName").asText();
-        pacing = jsonNode.get("pacing").asLong();
+        String cacheName = Optional.ofNullable(jsonNode.get("cacheName")).map(JsonNode::asText).orElse("default-cache-name");
+        long pacing = Optional.ofNullable(jsonNode.get("pacing")).map(JsonNode::asLong).orElse(0l);
 
         log.info("test props:" +
                 " cacheName=" + cacheName +
                 " pacing=" + pacing);
 
-        cache = ignite.getOrCreateCache(prepareCacheConfiguration(cacheName));
-        log.info("nodeId: " + ignite.name() + " starting cache operations");
+        IgniteCache<UUID, UUID> cache = ignite.getOrCreateCache(prepareCacheConfiguration(cacheName));
+        log.info("node name: " + ignite.name() + " starting cache operations");
 
         markInitialized();
         while (!terminated()) {
-            cacheOperation();
+            cacheOperation(cache);
             Thread.sleep(pacing);
         }
         markFinished();
     }
 
-    /* cache config **/
+    /** cache config
+     * @param cacheName - name of target cache*/
     private CacheConfiguration prepareCacheConfiguration(String cacheName) {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration<?,?> cfg = new CacheConfiguration();
         cfg.setBackups(2);
         cfg.setName(cacheName);
         cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         return cfg;
     }
 
-    /* single cache operation **/
-    private long cacheOperation() throws InterruptedException {
-        String key = UUID.randomUUID().toString();
+    /** single cache operation.
+     * @param cache - target cache*/
+    private void cacheOperation(IgniteCache<UUID,UUID> cache) throws InterruptedException {
+        UUID key = UUID.randomUUID();
         long startTime = System.nanoTime();
         cache.put(key,key);
         long resultTime = System.nanoTime() - startTime;
         log.info("success put key=" + key + " value=" + key + " latency: " + resultTime + "ns");
-        return resultTime;
     }
 }
