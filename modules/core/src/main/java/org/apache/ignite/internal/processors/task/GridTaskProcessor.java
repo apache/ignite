@@ -95,10 +95,10 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_TASK_CANCEL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TASK_NAME;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
 
@@ -736,14 +736,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             top = nodes != null ? F.nodeIds(nodes) : null;
         }
 
-        UUID subjId = (UUID)map.get(TC_SUBJ_ID);
-
-        if (subjId == null)
-            subjId = getThreadContext(TC_SUBJ_ID);
-
-        if (subjId == null)
-            subjId = ctx.localNodeId();
-
         boolean internal = false;
 
         if (dep == null || taskCls == null)
@@ -766,7 +758,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             Collections.emptyMap(),
             fullSup,
             internal,
-            subjId,
             execName);
 
         ComputeTaskInternalFuture<R> fut = new ComputeTaskInternalFuture<>(ses, ctx);
@@ -796,7 +787,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     dep,
                     new TaskEventListener(),
                     map,
-                    subjId);
+                    securitySubjectId(ctx));
 
                 GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
 
@@ -814,7 +805,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                         taskCls == null ? null : taskCls.getSimpleName(),
                         "VisorManagementTask",
                         false,
-                        subjId
+                        securitySubjectId(ctx)
                     );
 
                     ctx.event().record(evt);

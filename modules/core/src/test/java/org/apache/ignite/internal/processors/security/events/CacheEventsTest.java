@@ -737,7 +737,7 @@ public class CacheEventsTest extends AbstractSecurityTest {
     /**
      * Test event's adapter.
      */
-    class TestEventAdapter {
+    static class TestEventAdapter {
         /** CacheEvent. */
         private final CacheEvent cacheEvt;
 

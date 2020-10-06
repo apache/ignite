@@ -80,6 +80,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_JOB;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  * Job worker.
@@ -512,13 +513,15 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         isStarted = true;
 
-        // Event notification.
-        evtLsnr.onJobStarted(this);
+        try (OperationSecurityContext c = ctx.security().withContext(secCtx)) {
+            // Event notification.
+            evtLsnr.onJobStarted(this);
 
-        if (!internal && ctx.event().isRecordable(EVT_JOB_STARTED))
-            recordEvent(EVT_JOB_STARTED, /*no message for success*/null);
+            if (!internal && ctx.event().isRecordable(EVT_JOB_STARTED))
+                recordEvent(EVT_JOB_STARTED, /*no message for success*/null);
 
-        execute0(true);
+            execute0(true);
+        }
     }
 
     /**
@@ -736,7 +739,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param sys System flag.
      */
     public void cancel(boolean sys) {
-        try {
+        try (OperationSecurityContext c = ctx.security().withContext(secCtx)) {
             super.cancel();
 
             final ComputeJob job0 = job;
@@ -750,9 +753,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
                 U.wrapThreadLoader(dep.classLoader(), new IgniteRunnable() {
                     @Override public void run() {
-                        try (OperationSecurityContext c = ctx.security().withContext(secCtx)) {
-                            job0.cancel();
-                        }
+                        job0.cancel();
                     }
                 });
             }
@@ -795,7 +796,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         evt.taskSessionId(ses.getId());
         evt.type(evtType);
         evt.taskNode(taskNode);
-        evt.taskSubjectId(ses.subjectId());
+        evt.taskSubjectId(securitySubjectId(ctx));
 
         ctx.event().record(evt);
     }

@@ -78,7 +78,6 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NOOP;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.RESULT;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
@@ -219,7 +218,6 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 final IgniteInternalFuture<Object> taskFut;
 
                 if (locExec) {
-                    ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, clientId);
                     ctx.task().setThreadContext(TC_TIMEOUT, timeout);
 
                     Object arg = !F.isEmpty(params) ? params.size() == 1 ? params.get(0) : params.toArray() : null;

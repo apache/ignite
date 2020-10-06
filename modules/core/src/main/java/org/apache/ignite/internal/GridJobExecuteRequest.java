@@ -46,9 +46,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Subject ID. */
-    private UUID subjId;
-
     /** */
     private IgniteUuid sesId;
 
@@ -191,7 +188,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
      * @param forceLocDep {@code True} If remote node should ignore deployment settings.
      * @param sesFullSup {@code True} if session attributes are disabled.
      * @param internal {@code True} if internal job.
-     * @param subjId Subject ID.
      * @param cacheIds Caches' identifiers to reserve partition.
      * @param part Partition to lock.
      * @param topVer Affinity topology version of job mapping.
@@ -224,7 +220,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
             boolean forceLocDep,
             boolean sesFullSup,
             boolean internal,
-            UUID subjId,
             @Nullable int[] cacheIds,
             int part,
             @Nullable AffinityTopologyVersion topVer,
@@ -267,7 +262,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
         this.forceLocDep = forceLocDep;
         this.sesFullSup = sesFullSup;
         this.internal = internal;
-        this.subjId = subjId;
         this.idsOfCaches = cacheIds;
         this.part = part;
         this.topVer = topVer;
@@ -470,13 +464,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * @return Subject ID.
-     */
-    public UUID getSubjectId() {
-        return subjId;
-    }
-
-    /**
      * @return Caches' identifiers to reserve specified partition for job execution.
      */
     public int[] getCacheIds() {
@@ -628,48 +615,42 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 19:
                 if (!writer.writeString("taskClsName", taskClsName))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
+            case 19:
                 if (!writer.writeString("taskName", taskName))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 20:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
+            case 21:
                 if (!writer.writeCollection("top", top, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 22:
                 if (!writer.writeByteArray("topPredBytes", topPredBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 23:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 25:
+            case 24:
                 if (!writer.writeString("userVer", userVer))
                     return false;
 
@@ -837,14 +818,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 18:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 19:
                 taskClsName = reader.readString("taskClsName");
 
                 if (!reader.isLastRead())
@@ -852,7 +825,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
                 reader.incrementState();
 
-            case 20:
+            case 19:
                 taskName = reader.readString("taskName");
 
                 if (!reader.isLastRead())
@@ -860,7 +833,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
                 reader.incrementState();
 
-            case 21:
+            case 20:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -868,7 +841,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
                 reader.incrementState();
 
-            case 22:
+            case 21:
                 top = reader.readCollection("top", MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
@@ -876,7 +849,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
                 reader.incrementState();
 
-            case 23:
+            case 22:
                 topPredBytes = reader.readByteArray("topPredBytes");
 
                 if (!reader.isLastRead())
@@ -884,7 +857,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
                 reader.incrementState();
 
-            case 24:
+            case 23:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -892,7 +865,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
                 reader.incrementState();
 
-            case 25:
+            case 24:
                 userVer = reader.readString("userVer");
 
                 if (!reader.isLastRead())
@@ -912,7 +885,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 26;
+        return 25;
     }
 
     /** {@inheritDoc} */

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.util.UUID;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -60,9 +59,4 @@ public interface GridTaskSessionInternal extends ComputeTaskSession {
      * @return {@code True} if checkpoints and attributes are enabled.
      */
     public boolean isFullSupport();
-
-    /**
-     * @return Subject ID.
-     */
-    public UUID subjectId();
 }
