@@ -18,49 +18,47 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class GenericRowMessage implements MarshalableMessage {
+public final class GenericValueMessage implements ValueMessage {
     /** */
     @GridDirectTransient
-    private Object row;
+    private Object val;
 
     /** */
-    private byte[] serRow;
+    private byte[] serialized;
 
     /** */
-    public GenericRowMessage() {
+    public GenericValueMessage() {
 
     }
 
     /** */
-    public GenericRowMessage(Object row) {
-        this.row = row;
-    }
-
-    /** */
-    public Object row() {
-        return row;
+    public GenericValueMessage(Object val) {
+        this.val = val;
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
-        if (row != null && serRow == null)
-            serRow = marshaller.marshal(row);
+    @Override public Object value() {
+        return val;
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
-        if (serRow != null && row == null)
-            row = marshaller.unmarshal(serRow, loader);
+    @Override public void prepareMarshal(MarshallingContext ctx) throws IgniteCheckedException {
+        if (val != null && serialized == null)
+            serialized = ctx.marshal(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareUnmarshal(MarshallingContext ctx) throws IgniteCheckedException {
+        if (serialized != null && val == null)
+            val = ctx.unmarshal(serialized);
     }
 
     /** {@inheritDoc} */
@@ -76,7 +74,7 @@ public class GenericRowMessage implements MarshalableMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("serRow", serRow))
+                if (!writer.writeByteArray("serialized", serialized))
                     return false;
 
                 writer.incrementState();
@@ -95,7 +93,7 @@ public class GenericRowMessage implements MarshalableMessage {
 
         switch (reader.state()) {
             case 0:
-                serRow = reader.readByteArray("serRow");
+                serialized = reader.readByteArray("serialized");
 
                 if (!reader.isLastRead())
                     return false;
@@ -104,12 +102,12 @@ public class GenericRowMessage implements MarshalableMessage {
 
         }
 
-        return reader.afterMessageRead(GenericRowMessage.class);
+        return reader.afterMessageRead(GenericValueMessage.class);
     }
 
     /** {@inheritDoc} */
     @Override public MessageType type() {
-        return MessageType.GENERIC_ROW_MESSAGE;
+        return MessageType.GENERIC_VALUE_MESSAGE;
     }
 
     /** {@inheritDoc} */

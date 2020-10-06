@@ -19,21 +19,20 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import org.apache.ignite.IgniteCheckedException;
 
-/**
- *
- */
-public interface MarshalableMessage extends CalciteMessage {
+/** */
+public interface ValueMessage extends MarshalableMessage {
     /**
-     * Prepares the message before sending.
-     *
-     * @param ctx Marshaling context.
+     * @return Wrapped value.
      */
-    void prepareMarshal(MarshallingContext ctx) throws IgniteCheckedException;
+    Object value();
 
-    /**
-     * Prepares the message before processing.
-     *
-     * @param ctx Marshaling context.
-     */
-    void prepareUnmarshal(MarshallingContext ctx) throws IgniteCheckedException;
+    /** {@inheritDoc} */
+    @Override default void prepareMarshal(MarshallingContext ctx) throws IgniteCheckedException {
+        // No-op
+    }
+
+    /** {@inheritDoc} */
+    @Override default void prepareUnmarshal(MarshallingContext ctx) throws IgniteCheckedException {
+        // No-op
+    }
 }

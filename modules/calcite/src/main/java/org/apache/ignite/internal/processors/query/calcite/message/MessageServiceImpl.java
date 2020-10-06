@@ -21,7 +21,6 @@ import java.util.EnumMap;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -45,20 +44,26 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  *
  */
-public class MessageServiceImpl extends AbstractService implements MessageService {
+public class MessageServiceImpl extends AbstractService implements MessageService, MarshallingContext {
     /** */
     private final GridMessageListener msgLsnr;
 
+    /** */
     private UUID localNodeId;
 
+    /** */
     private GridIoManager ioManager;
 
+    /** */
     private ClassLoader classLoader;
 
+    /** */
     private QueryTaskExecutor taskExecutor;
 
+    /** */
     private FailureProcessor failureProcessor;
 
+    /** */
     private Marshaller marsh;
 
     /** */
@@ -222,9 +227,9 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     protected void prepareMarshal(Message msg) throws IgniteCheckedException {
         try {
             if (msg instanceof MarshalableMessage)
-                ((MarshalableMessage) msg).prepareMarshal(marshaller());
+                ((MarshalableMessage) msg).prepareMarshal(this);
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
@@ -235,7 +240,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     protected void prepareUnmarshal(Message msg) throws IgniteCheckedException {
         try {
             if (msg instanceof MarshalableMessage)
-                ((MarshalableMessage) msg).prepareUnmarshal(marshaller(), classLoader());
+                ((MarshalableMessage) msg).prepareUnmarshal(this);
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));

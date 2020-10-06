@@ -23,12 +23,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.MarshallingContext;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -36,7 +36,6 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -367,13 +366,13 @@ public class NodesMapping implements MarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marshaller) {
+    @Override public void prepareMarshal(MarshallingContext ctx) {
         if (assignments != null && assignments0 == null)
             assignments0 = Commons.transform(assignments, this::transform);
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) {
+    @Override public void prepareUnmarshal(MarshallingContext ctx) {
         if (assignments0 != null && assignments == null)
             assignments = Commons.transform(assignments0, this::transform);
     }

@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.function.Supplier;
-
 import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /**
@@ -35,23 +33,12 @@ public class CalciteMessageFactory implements MessageFactoryProvider {
     }
 
     /**
-     * Produces a row message.
-     *
-     * TODO In future a row is expected to implement Message interface.
+     * Produces a value message.
      */
-    public static Message asMessage(Object row) {
-        return new GenericRowMessage(row);
-    }
+    public static ValueMessage asMessage(Object val) {
+        if (val == null)
+            return null;
 
-    /**
-     * Produces a row from a message.
-     *
-     * TODO In future a row is expected to implement Message interface.
-     */
-    public static Object asRow(Message mRow) {
-        if (mRow instanceof GenericRowMessage)
-            return ((GenericRowMessage) mRow).row();
-
-        throw new AssertionError("Unexpected message type. [message=" + mRow + "]");
+        return new GenericValueMessage(val);
     }
 }

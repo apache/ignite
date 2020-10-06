@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -115,19 +114,19 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
+    @Override public void prepareMarshal(MarshallingContext ctx) throws IgniteCheckedException {
         if (paramsBytes == null && params != null)
-            paramsBytes = marshaller.marshal(params);
+            paramsBytes = ctx.marshal(params);
 
-        fragmentDesc.prepareMarshal(marshaller);
+        fragmentDesc.prepareMarshal(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void prepareUnmarshal(MarshallingContext ctx) throws IgniteCheckedException {
         if (params == null && paramsBytes != null)
-            params = marshaller.unmarshal(paramsBytes, ldr);
+            params = ctx.unmarshal(paramsBytes);
 
-        fragmentDesc.prepareUnmarshal(marshaller, ldr);
+        fragmentDesc.prepareUnmarshal(ctx);
     }
 
     /** {@inheritDoc} */

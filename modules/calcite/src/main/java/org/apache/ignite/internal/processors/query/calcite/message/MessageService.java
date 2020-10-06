@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.UUID;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
-import org.apache.ignite.marshaller.Marshaller;
 
 /**
  *
@@ -50,14 +48,4 @@ public interface MessageService extends Service {
      * @param type Message type.
      */
     void register(MessageListener lsnr, MessageType type);
-
-    /**
-     * @return Message marshaller.
-     */
-    Marshaller marshaller();
-
-    /**
-     * @return Message class loader.
-     */
-    ClassLoader classLoader();
 }

@@ -22,15 +22,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.MarshallingContext;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -208,7 +207,7 @@ public class FragmentDescription implements MarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marshaller) {
+    @Override public void prepareMarshal(MarshallingContext ctx) {
         if (remoteSources0 == null && remoteSources != null) {
             remoteSources0 = U.newHashMap(remoteSources.size());
 
@@ -217,11 +216,11 @@ public class FragmentDescription implements MarshalableMessage {
         }
 
         if (targetMapping != null)
-            targetMapping.prepareMarshal(marshaller);
+            targetMapping.prepareMarshal(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) {
+    @Override public void prepareUnmarshal(MarshallingContext ctx) {
         if (remoteSources == null && remoteSources0 != null) {
             remoteSources = U.newHashMap(remoteSources0.size());
 
@@ -230,6 +229,6 @@ public class FragmentDescription implements MarshalableMessage {
         }
 
         if (targetMapping != null)
-            targetMapping.prepareUnmarshal(marshaller, loader);
+            targetMapping.prepareUnmarshal(ctx);
     }
 }

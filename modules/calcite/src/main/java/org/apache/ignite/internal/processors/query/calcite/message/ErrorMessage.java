@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -163,12 +161,12 @@ public class ErrorMessage implements MarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
-        errBytes = marshaller.marshal(err);
+    @Override public void prepareMarshal(MarshallingContext ctx) throws IgniteCheckedException {
+        errBytes = ctx.marshal(err);
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
-        err = marshaller.unmarshal(errBytes, loader);
+    @Override public void prepareUnmarshal(MarshallingContext ctx) throws IgniteCheckedException {
+        err = ctx.unmarshal(errBytes);
     }
 }

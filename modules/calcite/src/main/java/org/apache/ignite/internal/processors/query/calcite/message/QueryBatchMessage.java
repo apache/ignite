@@ -21,12 +21,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -55,8 +52,8 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     private List<Object> rows;
 
     /** */
-    @GridDirectCollection(Message.class)
-    private List<Message> mRows;
+    @GridDirectCollection(ValueMessage.class)
+    private List<ValueMessage> mRows;
 
     /** */
     public QueryBatchMessage() {
@@ -111,36 +108,36 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
+    @Override public void prepareMarshal(MarshallingContext ctx) throws IgniteCheckedException {
         if (mRows != null || rows == null)
             return;
 
         mRows = new ArrayList<>(rows.size());
 
         for (Object row : rows) {
-            Message mRow = CalciteMessageFactory.asMessage(row);
+            ValueMessage mRow = CalciteMessageFactory.asMessage(row);
 
-            if (mRow instanceof MarshalableMessage)
-                ((MarshalableMessage) mRow).prepareMarshal(marshaller);
+            assert mRow != null;
+
+            mRow.prepareMarshal(ctx);
 
             mRows.add(mRow);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
+    @Override public void prepareUnmarshal(MarshallingContext ctx) throws IgniteCheckedException {
         if (rows != null || mRows == null)
             return;
 
         rows = new ArrayList<>(mRows.size());
 
-        for (Message mRow : mRows) {
-            if (mRow instanceof MarshalableMessage)
-                ((MarshalableMessage) mRow).prepareUnmarshal(marshaller, loader);
+        for (ValueMessage mRow : mRows) {
+            assert mRow != null;
 
-            Object row = CalciteMessageFactory.asRow(mRow);
+            mRow.prepareUnmarshal(ctx);
 
-            rows.add(row);
+            rows.add(mRow.value());
         }
     }
 
