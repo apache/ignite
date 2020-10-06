@@ -61,18 +61,23 @@ public class LongTxStreamerApplication extends IgniteAwareApplication {
                     if (tx.state() != TransactionState.ACTIVE) {
                         log.info("Transaction broken. [key=" + finalI + "]");
 
-                        break;
+                        markBroken(new IllegalStateException(
+                            "Illegal Tx state [key=" + finalI + " state=" + tx.state() + "]"));
                     }
 
                     try {
-                        U.sleep(1000);
+                        U.sleep(10);
                     }
                     catch (IgniteInterruptedCheckedException ignored) {
                         // No-op.
                     }
                 }
 
-                log.info("Stopping tx thread [state=" + tx.state() + "]");
+                log.info("Stopping tx thread [key=" + finalI + " state=" + tx.state() + "]");
+
+                tx.rollback();
+
+                log.info("Finishing tx thread [key=" + finalI + " state=" + tx.state() + "]");
 
             }).start();
         }
@@ -91,9 +96,17 @@ public class LongTxStreamerApplication extends IgniteAwareApplication {
                 U.sleep(100); // Keeping node/txs alive.
             }
             catch (IgniteInterruptedCheckedException ignored) {
-                log.info("Waiting interrupted.");
+                log.info("Waiting for interrupted.");
             }
         }
+
+        while (!((IgniteEx)ignite).context().cache().context().tm().activeTransactions().isEmpty())
+            try {
+                U.sleep(100); // Keeping node alive.
+            }
+            catch (IgniteInterruptedCheckedException ignored) {
+                log.info("Waiting for tx rollback.");
+            }
 
         markFinished();
     }

@@ -128,10 +128,10 @@ class CellularAffinity(IgniteTest):
         ControlUtility(cell1, self.test_context).activate()
 
         for loader in loaders:
-            loader.await_event("All transactions prepared", 180, from_the_beginning=True)
+            loader.await_event("ALL_TRANSACTIONS_PREPARED", 180, from_the_beginning=True)
 
         for streamer in streamers:
-            streamer.await_event("Warmup finished", 180, from_the_beginning=True)
+            streamer.await_event("WARMUP_FINISHED", 180, from_the_beginning=True)
 
         failed_loader.stop_async()  # node left with prepared txs.
 
@@ -142,7 +142,7 @@ class CellularAffinity(IgniteTest):
             streamer.await_event("exchangeFreeSwitch=true", 60, from_the_beginning=True)
 
         for streamer in streamers:  # waiting for streaming continuation.
-            streamer.await_event("Application streamed", 60)
+            streamer.await_event("APPICATION_STREAMED", 60)
 
         for streamer in streamers:  # stops streaming and records results.
             streamer.stop_async()
