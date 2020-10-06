@@ -17,9 +17,6 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.datagrid.*;
-import org.apache.ignite.examples.datagrid.starschema.CacheStarSchemaExample;
-import org.apache.ignite.examples.datastructures.*;
 import org.apache.ignite.examples.ml.tutorial.*;
 import org.apache.ignite.examples.ml.tutorial.hyperparametertuning.*;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
