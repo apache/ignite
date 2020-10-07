@@ -532,7 +532,7 @@ public final class IgniteSystemProperties {
     /**
      * System property to specify per thread binary allocator chunk pool size. Default value is {@code 32}.
      */
-    @SystemProperty(value = "Per thread binary allocator chunk pool size.",
+    @SystemProperty(value = "Per thread binary allocator chunk pool size",
         type = Integer.class, defaults = "" + DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE)
     public static final String IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = "IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE";
 
