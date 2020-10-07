@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.security.events;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -118,10 +118,10 @@ public class TaskAndJobEventsTest extends AbstractSecurityTest {
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
-        for (String l : Arrays.asList(SRV, CLNT, "thin", "rest")) {
-            res.add(new Object[] {l, false});
-            res.add(new Object[] {l, true});
-        }
+        Stream.of(SRV, CLNT, "thin", "rest").forEach(login -> {
+            res.add(new Object[] {login, false});
+            res.add(new Object[] {login, true});
+        });
 
         return res;
     }
