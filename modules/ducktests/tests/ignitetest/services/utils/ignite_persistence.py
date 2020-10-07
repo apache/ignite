@@ -28,7 +28,8 @@ class PersistenceAware:
     """
     # Root directory for persistent output
     PERSISTENT_ROOT = "/mnt/service"
-    STDOUT_STDERR_CAPTURE = os.path.join(PERSISTENT_ROOT, "console.log")
+    LOG_FILE_NAME = "console.log"
+    STDOUT_STDERR_CAPTURE = os.path.join(PERSISTENT_ROOT, LOG_FILE_NAME)
 
     logs = {
         "console_log": {

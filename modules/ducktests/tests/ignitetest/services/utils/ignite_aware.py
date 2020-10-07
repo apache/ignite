@@ -137,7 +137,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
             self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
                                      backoff_sec=backoff_sec)
 
-    def ssh_output_all(self, cmd: str):
+    def ssh_output_on_all_nodes(self, cmd: str):
         """
         Execute ssh command on all nodes.
         """

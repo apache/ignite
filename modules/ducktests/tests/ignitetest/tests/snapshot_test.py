@@ -97,7 +97,7 @@ class SnapshotTest(IgniteTest):
         check_validate_indexes(control_utility)
         dump_1 = get_dump_path(control_utility, node)
 
-        self.logger.warn(f'Path to dump_1 on {node.account.externally_routable_ip}={dump_1}')
+        self.logger.info(f'Path to dump_1 on {node.account.externally_routable_ip}={dump_1}')
 
         data = control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
@@ -109,7 +109,7 @@ class SnapshotTest(IgniteTest):
 
         dump_2 = get_dump_path(control_utility, node)
 
-        self.logger.warn(f'Path to dump_2 on {node.account.externally_routable_ip}={dump_2}')
+        self.logger.info(f'Path to dump_2 on {node.account.externally_routable_ip}={dump_2}')
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
         assert len(diff) != 0
@@ -117,7 +117,7 @@ class SnapshotTest(IgniteTest):
         service.stop()
 
         service.rename_db(new_db_name='old_db')
-        service.copy_snap_to_db(self.SNAPSHOT_NAME)
+        service.restore_from_snapshot(self.SNAPSHOT_NAME)
 
         service.restart()
 
@@ -127,7 +127,7 @@ class SnapshotTest(IgniteTest):
         check_validate_indexes(control_utility)
         dump_3 = get_dump_path(control_utility, node)
 
-        self.logger.warn(f'Path to dump_3 on {node.account.externally_routable_ip}={dump_3}')
+        self.logger.info(f'Path to dump_3 on {node.account.externally_routable_ip}={dump_3}')
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
         assert len(diff) == 0, diff
@@ -183,9 +183,9 @@ def load(service_load: IgniteApplicationService, duration: int = 60):
 
 def print_snapshot_size(service: IgniteService, snapshot_name: str, logger):
     """
-    Print size snapshot dir on service nodes.
+    Print the snapshot directory size on the service nodes.
     """
-    res = service.ssh_output_all(f'du -hs {IgnitePersistenceAware.SNAPSHOT}/{snapshot_name} | ' + "awk '{print $1}'")
+    res = service.ssh_output_on_all_nodes(f'du -hs {IgnitePersistenceAware.SNAPSHOT}/{snapshot_name} | ' + "awk '{print $1}'")
 
     for items in res.items():
         data = items[1].decode("utf-8")

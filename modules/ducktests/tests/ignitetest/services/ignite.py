@@ -76,10 +76,14 @@ class IgniteService(IgniteAwareService):
         Rotate log file.
         """
         date_string = f'{datetime.now():%Y%m%d_%H%M%S}'
+
+        new_log_file = os.path.join(self.PERSISTENT_ROOT,
+                                    self.LOG_FILE_NAME.replace('.log', f'_{date_string}.log'))
+
         for node in self.nodes:
             node.account.ssh(f'if [ -e {self.STDOUT_STDERR_CAPTURE} ]; '
                              f'then '
-                             f'mv {self.STDOUT_STDERR_CAPTURE} {self.PERSISTENT_ROOT}/console_{date_string}.log; '
+                             f'mv {self.STDOUT_STDERR_CAPTURE} {new_log_file};'
                              f'fi')
 
     def await_node_started(self, node, timeout_sec):
@@ -180,7 +184,7 @@ class IgniteService(IgniteAwareService):
 
         node.account.ssh(f"mv {self.WORK_DIR}/db {self.WORK_DIR}/{new_db_name}", allow_fail=False)
 
-    def copy_snap_to_db(self, snapshot_name: str):
+    def restore_from_snapshot(self, snapshot_name: str):
         """
         Copy from snapshot to db.
         """
