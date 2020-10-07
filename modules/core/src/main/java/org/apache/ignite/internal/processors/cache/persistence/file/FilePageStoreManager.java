@@ -52,6 +52,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -371,8 +372,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 "To cleanup them maintenance is needed, node will enter maintenance mode on next restart. " +
                 "Cleanup cache group folders manually or trigger maintenance action to do that and restart the node. " +
                 "Corrupted files are located in subdirectories " + groupsWithWalDisabled +
-                " in a work dir " + storeWorkDir
-                ;
+                " in a work dir " + storeWorkDir;
 
             log.warning(errorMsg);
 

@@ -17,11 +17,11 @@
 
 package org.apache.ignite.maintenance;
 
+import java.util.UUID;
+
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * Maintenance action interface enables user to execute operations related to a particular {@link MaintenanceRecord}.

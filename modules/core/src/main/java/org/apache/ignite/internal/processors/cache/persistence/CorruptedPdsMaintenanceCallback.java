@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.maintenance.MaintenanceAction;
-import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
-import org.jetbrains.annotations.NotNull;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+
+import org.apache.ignite.maintenance.MaintenanceAction;
+import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 

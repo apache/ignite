@@ -17,11 +17,11 @@
 
 package org.apache.ignite.maintenance;
 
+import java.util.UUID;
+
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * Represents request to handle maintenance situation stored on disk.
@@ -37,7 +37,7 @@ import java.util.UUID;
  *
  * Components that may need to perform maintenance actions as part of their recovery workflow should check
  * maintenance status on startup and supply {@link MaintenanceWorkflowCallback} implementation to
- * {@link MaintenanceRegistry#registerWorkflowCallback(MaintenanceWorkflowCallback)} to allow Maintenance Registry
+ * {@link MaintenanceRegistry#registerWorkflowCallback(UUID, MaintenanceWorkflowCallback)} to allow Maintenance Registry
  * to find maintenance actions and start them automatically or by user request.
  *
  * Matching between {@link MaintenanceRecord} and {@link MaintenanceWorkflowCallback} is performed based on

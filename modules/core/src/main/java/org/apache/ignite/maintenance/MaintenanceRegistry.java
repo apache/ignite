@@ -17,13 +17,13 @@
 
 package org.apache.ignite.maintenance;
 
+import java.util.List;
+import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
-import java.util.UUID;
 
 /**
  * {@link MaintenanceRegistry} is a service local to each Ignite node
