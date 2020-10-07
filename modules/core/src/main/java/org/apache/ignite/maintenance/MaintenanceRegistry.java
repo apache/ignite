@@ -39,41 +39,41 @@ import org.jetbrains.annotations.Nullable;
 @IgniteExperimental
 public interface MaintenanceRegistry {
     /**
-     * @return {@code True} if any maintenance record was found.
+     * @return {@code True} if any maintenance task was found.
      */
     public boolean isMaintenanceMode();
 
     /**
-     * @param rec {@link MaintenanceRecord} object with maintenance information that needs
+     * @param task {@link MaintenanceTask} object with maintenance information that needs
      *                                     to be stored to maintenance registry.
      *
-     * @throws IgniteCheckedException If handling or storing maintenance record failed.
+     * @throws IgniteCheckedException If handling or storing maintenance task failed.
      *
-     * @return Previously registered {@link MaintenanceRecord} with the same ID
-     * or null if no records were registered for this ID.
+     * @return Previously registered {@link MaintenanceTask} with the same ID
+     * or null if no tasks were registered for this ID.
      */
-    public @Nullable MaintenanceRecord registerMaintenanceRecord(MaintenanceRecord rec) throws IgniteCheckedException;
+    public @Nullable MaintenanceTask registerMaintenanceTask(MaintenanceTask task) throws IgniteCheckedException;
 
     /**
-     * Deletes {@link MaintenanceRecord} of given ID from maintenance registry.
+     * Deletes {@link MaintenanceTask} of given ID from maintenance registry.
      *
      * @param mntcId
      */
-    public void unregisterMaintenanceRecord(UUID mntcId);
+    public void unregisterMaintenanceTask(UUID mntcId);
 
     /**
-     * Returns active {@link MaintenanceRecord} by its ID.
-     * There are active records only when node entered Maintenance Mode.
+     * Returns active {@link MaintenanceTask} by its ID.
+     * There are active tasks only when node entered Maintenance Mode.
      *
-     * {@link MaintenanceRecord} becomes active when node enters Maintenance Mode and doesn't resolve the record
+     * {@link MaintenanceTask} becomes active when node enters Maintenance Mode and doesn't resolve the task
      * during maintenance prepare phase.
      *
-     * @return {@link MaintenanceRecord} object for given maintenance ID or null if no maintenance record was found.
+     * @return {@link MaintenanceTask} object for given maintenance ID or null if no maintenance task was found.
      */
-    @Nullable public MaintenanceRecord activeMaintenanceRecord(UUID maitenanceId);
+    @Nullable public MaintenanceTask activeMaintenanceTask(UUID maitenanceId);
 
     /**
-     * @param id UUID of {@link MaintenanceRecord} this callback is registered for.
+     * @param id UUID of {@link MaintenanceTask} this callback is registered for.
      * @param cb {@link MaintenanceWorkflowCallback} interface used by MaintenanceRegistry to execute
      *                                              maintenance steps by workflow.
      */
@@ -83,7 +83,7 @@ public interface MaintenanceRegistry {
      * @param maintenanceId
      * @return
      */
-    public List<MaintenanceAction> actionsForMaintenanceRecord(UUID maintenanceId);
+    public List<MaintenanceAction> actionsForMaintenanceTask(UUID maintenanceId);
 
     /**
      * Examine all components if they need to execute maintenance actions.
@@ -91,19 +91,19 @@ public interface MaintenanceRegistry {
      * As user may resolve some maintenance situations by hand when the node was turned off,
      * component may find out that no maintenance is needed anymore.
      *
-     * {@link MaintenanceRecord Maintenance records} for these components are removed
+     * {@link MaintenanceTask Maintenance tasks} for these components are removed
      * and their {@link MaintenanceAction maintenance actions} are not executed.
      */
     public void prepareAndExecuteMaintenance();
 
     /**
-     * Handles all {@link MaintenanceRecord maintenance records} left
+     * Handles all {@link MaintenanceTask maintenance tasks} left
      * after {@link MaintenanceRegistry#prepareAndExecuteMaintenance()} check.
      *
-     * If a record defines an action that should be started automatically (e.g. defragmentation starts automatically,
+     * If a task defines an action that should be started automatically (e.g. defragmentation starts automatically,
      * no additional confirmation from user is required), it is executed.
      *
-     * Otherwise waits for user to trigger actions for maintenance records.
+     * Otherwise waits for user to trigger actions for maintenance tasks.
      */
     public void proceedWithMaintenance();
 }

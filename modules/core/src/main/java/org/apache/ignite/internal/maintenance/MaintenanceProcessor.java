@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceAction;
-import org.apache.ignite.maintenance.MaintenanceRecord;
+import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
 import org.jetbrains.annotations.NotNull;
@@ -44,15 +44,15 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     private static final String IN_MEMORY_MODE_ERR_MSG = "Maintenance Mode is not supported for in-memory clusters";
 
     /**
-     * Active {@link MaintenanceRecord}s are the ones that were read from disk when node entered Maintenance Mode.
+     * Active {@link MaintenanceTask}s are the ones that were read from disk when node entered Maintenance Mode.
      */
-    private final Map<UUID, MaintenanceRecord> activeRecords = new ConcurrentHashMap<>();
+    private final Map<UUID, MaintenanceTask> activeTasks = new ConcurrentHashMap<>();
 
     /**
-     * Requested {@link MaintenanceRecord}s are collection of records requested by user
+     * Requested {@link MaintenanceTask}s are collection of tasks requested by user
      * or other components when node operates normally (not in Maintenance Mode).
      */
-    private final Map<UUID, MaintenanceRecord> requestedRecords = new ConcurrentHashMap<>();
+    private final Map<UUID, MaintenanceTask> requestedTasks = new ConcurrentHashMap<>();
 
     /** */
     private final Map<UUID, MaintenanceWorkflowCallback> workflowCallbacks = new ConcurrentHashMap<>();
@@ -87,34 +87,34 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable MaintenanceRecord registerMaintenanceRecord(MaintenanceRecord rec) throws IgniteCheckedException {
+    @Override public @Nullable MaintenanceTask registerMaintenanceTask(MaintenanceTask task) throws IgniteCheckedException {
         if (inMemoryMode)
             throw new IgniteCheckedException(IN_MEMORY_MODE_ERR_MSG);
 
         if (isMaintenanceMode())
             throw new IgniteCheckedException("Node is already in Maintenance Mode, " +
-                "registering additional maintenance record is not allowed in Maintenance Mode.");
+                "registering additional maintenance task is not allowed in Maintenance Mode.");
 
-        MaintenanceRecord oldRec = requestedRecords.put(rec.id(), rec);
+        MaintenanceTask oldTask = requestedTasks.put(task.id(), task);
 
-        if (oldRec != null) {
+        if (oldTask != null) {
             log.info(
-                "Maintenance Record for id " + rec.id() +
+                "Maintenance Task for id " + task.id() +
                     " is already registered" +
-                    oldRec.parameters() != null ? " with parameters " + oldRec.parameters() : "" + "." +
-                    " It will be replaced with new record" +
-                    rec.parameters() != null ? " with parameters " + rec.parameters() : "" + "."
+                    oldTask.parameters() != null ? " with parameters " + oldTask.parameters() : "" + "." +
+                    " It will be replaced with new task" +
+                    task.parameters() != null ? " with parameters " + task.parameters() : "" + "."
             );
         }
 
         try {
-            fileStorage.writeMaintenanceRecord(rec);
+            fileStorage.writeMaintenanceTask(task);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to register maintenance record " + rec, e);
+            throw new IgniteCheckedException("Failed to register maintenance task " + task, e);
         }
 
-        return oldRec;
+        return oldTask;
     }
 
     /** {@inheritDoc} */
@@ -135,13 +135,13 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
         try {
             fileStorage.init();
 
-            activeRecords.putAll(fileStorage.getAllRecords());
+            activeTasks.putAll(fileStorage.getAllTasks());
         }
         catch (Throwable t) {
             log.warning("Caught exception when starting MaintenanceProcessor," +
                 " maintenance mode won't be entered", t);
 
-            activeRecords.clear();
+            activeTasks.clear();
 
             fileStorage.clear();
         }
@@ -153,7 +153,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             workflowCallbacks.entrySet().removeIf(cbE ->
                 {
                     if (!cbE.getValue().proceedWithMaintenance()) {
-                        unregisterMaintenanceRecord(cbE.getKey());
+                        unregisterMaintenanceTask(cbE.getKey());
 
                         return true;
                     }
@@ -167,7 +167,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             proceedWithMaintenance();
         else {
             if (log.isInfoEnabled())
-                log.info("All maintenance records are fixed, no need to enter maintenance mode. " +
+                log.info("All maintenance tasks are fixed, no need to enter maintenance mode. " +
                     "Restart the node to get it back to normal operations.");
         }
     }
@@ -182,8 +182,8 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
                     mntcAction.execute();
                 }
                 catch (Throwable t) {
-                    log.warning("Failed to execute automatic action for maintenance record: " +
-                        activeRecords.get(cbE.getKey()), t);
+                    log.warning("Failed to execute automatic action for maintenance task: " +
+                        activeTasks.get(cbE.getKey()), t);
 
                     throw t;
                 }
@@ -192,30 +192,30 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable MaintenanceRecord activeMaintenanceRecord(UUID maitenanceId) {
-        return activeRecords.get(maitenanceId);
+    @Override public @Nullable MaintenanceTask activeMaintenanceTask(UUID maitenanceId) {
+        return activeTasks.get(maitenanceId);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMaintenanceMode() {
-        return !activeRecords.isEmpty();
+        return !activeTasks.isEmpty();
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterMaintenanceRecord(UUID mntcId) {
+    @Override public void unregisterMaintenanceTask(UUID mntcId) {
         if (inMemoryMode)
             return;
 
         if (isMaintenanceMode())
-            activeRecords.remove(mntcId);
+            activeTasks.remove(mntcId);
         else
-            requestedRecords.remove(mntcId);
+            requestedTasks.remove(mntcId);
 
         try {
-            fileStorage.deleteMaintenanceRecord(mntcId);
+            fileStorage.deleteMaintenanceTask(mntcId);
         }
         catch (IOException e) {
-            log.warning("Failed to clear maintenance record with id "
+            log.warning("Failed to clear maintenance task with id "
                 + mntcId
                 + " from file, whole file will be deleted", e
             );
@@ -256,11 +256,11 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     }
 
     /** {@inheritDoc} */
-    @Override public List<MaintenanceAction> actionsForMaintenanceRecord(UUID maintenanceId) {
+    @Override public List<MaintenanceAction> actionsForMaintenanceTask(UUID maintenanceId) {
         if (inMemoryMode)
             throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
 
-        if (!activeRecords.containsKey(maintenanceId))
+        if (!activeTasks.containsKey(maintenanceId))
             throw new IgniteException("Maintenance workflow callback for given ID not found, " +
                 "cannot retrieve maintenance actions for it: " + maintenanceId);
 

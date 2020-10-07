@@ -24,16 +24,16 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Maintenance action interface enables user to execute operations related to a particular {@link MaintenanceRecord}.
+ * Maintenance action interface enables user to execute operations related to a particular {@link MaintenanceTask}.
  *
  * These operations may resolve maintenance situation (e.g. remove corrupted data files), get information
  * about other ongoing maintenance action (e.g. if some action requires a lot of time and user wants to know
  * current progress of the action) or cancel other ongoing action.
  *
- * List of maintenance actions available for each record is defined by {@link MaintenanceWorkflowCallback}.
+ * List of maintenance actions available for each task is defined by {@link MaintenanceWorkflowCallback}.
  *
- * {@link MaintenanceRegistry} provides an access to maintenance actions for a {@link MaintenanceRecord} with
- * call {@link MaintenanceRegistry#actionsForMaintenanceRecord(UUID)}
+ * {@link MaintenanceRegistry} provides an access to maintenance actions for a {@link MaintenanceTask} with
+ * call {@link MaintenanceRegistry#actionsForMaintenanceTask(UUID)}
  *
  */
 @IgniteExperimental

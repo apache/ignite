@@ -32,38 +32,38 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.maintenance.MaintenanceRecord;
+import org.apache.ignite.maintenance.MaintenanceTask;
 
 /**
- * Provides API for durable storage of {@link MaintenanceRecord}s and hides implementation details from higher levels.
+ * Provides API for durable storage of {@link MaintenanceTask}s and hides implementation details from higher levels.
  *
  * Human-readable storage format is rigid but simple.
  * <ol>
  *     <li>
- *         Maintenance file with recordsis stored in work directory of node
+ *         Maintenance file with tasks is stored in work directory of node
  *         under persistent store root defined by consistentId of node.
  *     </li>
  *     <li>
- *         Each record is written to disk as a {@link String} on a separate line.
+ *         Each task is written to disk as a {@link String} on a separate line.
  *     </li>
  *     <li>
- *         Record consists of two or three parts: record UUID, record description and optional parameters.
+ *         Task consists of two or three parts: task UUID, task description and optional parameters.
  *     </li>
  * </ol>
  */
 public class MaintenanceFileStorage {
     /** */
-    private static final String MAINTENANCE_FILE_NAME = "maintenance_records.mntc";
+    private static final String MAINTENANCE_FILE_NAME = "maintenance_tasks.mntc";
 
     /** */
-    private static final String RECORDS_SEPARATOR = System.lineSeparator();
+    private static final String TASKS_SEPARATOR = System.lineSeparator();
 
     /** */
-    private static final String REC_PARTS_SEPARATOR = "\t";
+    private static final String TASK_PARTS_SEPARATOR = "\t";
 
-    /** Maintenance record consists of two or three parts: ID, description (user-readable part)
-     * and optional record parameters. */
-    private static final int MAX_MNTC_RECORD_PARTS_COUNT = 3;
+    /** Maintenance task consists of two or three parts: ID, description (user-readable part)
+     * and optional task parameters. */
+    private static final int MAX_MNTC_TASK_PARTS_COUNT = 3;
 
     /** */
     private final boolean inMemoryMode;
@@ -72,16 +72,16 @@ public class MaintenanceFileStorage {
     private final PdsFoldersResolver pdsFoldersResolver;
 
     /** */
-    private volatile File mntcRecordsFile;
+    private volatile File mntcTasksFile;
 
     /** */
-    private volatile FileIO mntcRecordsFileIO;
+    private volatile FileIO mntcTasksFileIO;
 
     /** */
     private final FileIOFactory ioFactory;
 
     /** */
-    private final Map<UUID, MaintenanceRecord> recordsInSync = new ConcurrentHashMap<>();
+    private final Map<UUID, MaintenanceTask> tasksInSync = new ConcurrentHashMap<>();
 
     /** */
     private final IgniteLogger log;
@@ -106,22 +106,22 @@ public class MaintenanceFileStorage {
         File storeDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
         U.ensureDirectory(storeDir, "store directory for node persistent data", log);
 
-        mntcRecordsFile = new File(storeDir, MAINTENANCE_FILE_NAME);
+        mntcTasksFile = new File(storeDir, MAINTENANCE_FILE_NAME);
 
-        if (!mntcRecordsFile.exists())
-            mntcRecordsFile.createNewFile();
+        if (!mntcTasksFile.exists())
+            mntcTasksFile.createNewFile();
 
-        mntcRecordsFileIO = ioFactory.create(mntcRecordsFile);
+        mntcTasksFileIO = ioFactory.create(mntcTasksFile);
 
-        readRecordsFromFile();
+        readTasksFromFile();
     }
 
     /**
-     * Deletes file with maintenance records.
+     * Deletes file with maintenance tasks.
      */
     public void clear() {
-        if (mntcRecordsFile != null)
-            mntcRecordsFile.delete();
+        if (mntcTasksFile != null)
+            mntcTasksFile.delete();
     }
 
     /**
@@ -131,38 +131,38 @@ public class MaintenanceFileStorage {
         if (inMemoryMode)
             return;
 
-        if (mntcRecordsFileIO != null)
-            mntcRecordsFileIO.close();
+        if (mntcTasksFileIO != null)
+            mntcTasksFileIO.close();
     }
 
     /** */
-    private void readRecordsFromFile() throws IOException {
-        int len = (int) mntcRecordsFileIO.size();
+    private void readTasksFromFile() throws IOException {
+        int len = (int) mntcTasksFileIO.size();
 
         if (len == 0)
             return;
 
         byte[] allBytes = new byte[len];
 
-        mntcRecordsFileIO.read(allBytes, 0, len);
+        mntcTasksFileIO.read(allBytes, 0, len);
 
-        String[] allRecords = new String(allBytes).split(RECORDS_SEPARATOR);
+        String[] allTasks = new String(allBytes).split(TASKS_SEPARATOR);
 
-        for (String recStr : allRecords) {
-            String[] subStrs = recStr.split(REC_PARTS_SEPARATOR);
+        for (String taskStr : allTasks) {
+            String[] subStrs = taskStr.split(TASK_PARTS_SEPARATOR);
 
             int partsNum = subStrs.length;
 
-            if (partsNum < MAX_MNTC_RECORD_PARTS_COUNT - 1) {
-                log.info("Corrupted maintenance record found and will be skipped, " +
-                    "mandatory parts are missing: " + recStr);
+            if (partsNum < MAX_MNTC_TASK_PARTS_COUNT - 1) {
+                log.info("Corrupted maintenance task found and will be skipped, " +
+                    "mandatory parts are missing: " + taskStr);
 
                 continue;
             }
 
-            if (partsNum > MAX_MNTC_RECORD_PARTS_COUNT) {
-                log.info("Corrupted maintenance record found and will be skipped, " +
-                    "too many parts in record: " + recStr);
+            if (partsNum > MAX_MNTC_TASK_PARTS_COUNT) {
+                log.info("Corrupted maintenance task found and will be skipped, " +
+                    "too many parts in task: " + taskStr);
 
                 continue;
             }
@@ -173,68 +173,68 @@ public class MaintenanceFileStorage {
                 id = UUID.fromString(subStrs[0]);
             }
             catch (IllegalArgumentException e) {
-                log.info("Corrupted maintenance record found and will be skipped, " +
-                    "record id is unreadable: " + recStr);
+                log.info("Corrupted maintenance task found and will be skipped, " +
+                    "task id is unreadable: " + taskStr);
 
                 continue;
             }
 
-            MaintenanceRecord rec = new MaintenanceRecord(id, subStrs[1], partsNum == 3 ? subStrs[2] : null);
+            MaintenanceTask task = new MaintenanceTask(id, subStrs[1], partsNum == 3 ? subStrs[2] : null);
 
-            recordsInSync.put(id, rec);
+            tasksInSync.put(id, task);
         }
     }
 
     /** */
-    private void writeRecordsToFile() throws IOException {
-        mntcRecordsFileIO.clear();
+    private void writeTasksToFile() throws IOException {
+        mntcTasksFileIO.clear();
 
-        String allRecs = recordsInSync.values().stream()
+        String allTasks = tasksInSync.values().stream()
             .map(
-                rec -> rec.id().toString() +
-                    REC_PARTS_SEPARATOR +
-                    rec.description() +
-                    REC_PARTS_SEPARATOR +
-                    (rec.parameters() != null ? rec.parameters() : "")
+                t -> t.id().toString() +
+                    TASK_PARTS_SEPARATOR +
+                    t.description() +
+                    TASK_PARTS_SEPARATOR +
+                    (t.parameters() != null ? t.parameters() : "")
             )
             .collect(Collectors.joining(System.lineSeparator()));
 
-        byte[] allRecsBytes = allRecs.getBytes();
+        byte[] allTasksBytes = allTasks.getBytes();
 
-        int left = allRecsBytes.length;
-        int len = allRecsBytes.length;
+        int left = allTasksBytes.length;
+        int len = allTasksBytes.length;
 
-        while ((left -= mntcRecordsFileIO.writeFully(allRecsBytes, len - left, left)) > 0)
+        while ((left -= mntcTasksFileIO.writeFully(allTasksBytes, len - left, left)) > 0)
             ;
 
-        mntcRecordsFileIO.force();
+        mntcTasksFileIO.force();
     }
 
     /** */
-    public Map<UUID, MaintenanceRecord> getAllRecords() {
+    public Map<UUID, MaintenanceTask> getAllTasks() {
         if (inMemoryMode)
             return null;
 
-        return Collections.unmodifiableMap(recordsInSync);
+        return Collections.unmodifiableMap(tasksInSync);
     }
 
     /** */
-    public void writeMaintenanceRecord(MaintenanceRecord rec) throws IOException {
+    public void writeMaintenanceTask(MaintenanceTask task) throws IOException {
         if (inMemoryMode)
             return;
 
-        recordsInSync.put(rec.id(), rec);
+        tasksInSync.put(task.id(), task);
 
-        writeRecordsToFile();
+        writeTasksToFile();
     }
 
     /** */
-    public void deleteMaintenanceRecord(UUID recId) throws IOException {
+    public void deleteMaintenanceTask(UUID taskId) throws IOException {
         if (inMemoryMode)
             return;
 
-        recordsInSync.remove(recId);
+        tasksInSync.remove(taskId);
 
-        writeRecordsToFile();
+        writeTasksToFile();
     }
 }
