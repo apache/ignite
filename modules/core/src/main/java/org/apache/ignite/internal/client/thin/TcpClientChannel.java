@@ -37,8 +37,11 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -157,6 +160,9 @@ class TcpClientChannel implements ClientChannel {
     /** Closed flag. */
     private final AtomicBoolean closed = new AtomicBoolean();
 
+    /** Executor for async operation listeners. */
+    private final Executor asyncContinuationExecutor;
+
     /** Receiver thread (processes incoming messages). */
     private Thread receiverThread;
 
@@ -164,6 +170,9 @@ class TcpClientChannel implements ClientChannel {
     TcpClientChannel(ClientChannelConfiguration cfg)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         validateConfiguration(cfg);
+
+        Executor cfgExec = cfg.getAsyncContinuationExecutor();
+        asyncContinuationExecutor = cfgExec != null ? cfgExec : ForkJoinPool.commonPool();
 
         try {
             sock = createSocket(cfg);
@@ -217,6 +226,24 @@ class TcpClientChannel implements ClientChannel {
         long id = send(op, payloadWriter);
 
         return receive(id, payloadReader);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> CompletableFuture<T> serviceAsync(
+            ClientOperation op,
+            Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T> payloadReader
+    ) {
+        try {
+            long id = send(op, payloadWriter);
+
+            return receiveAsync(id, payloadReader);
+        } catch (Throwable t) {
+            CompletableFuture<T> fut = new CompletableFuture<>();
+            fut.completeExceptionally(t);
+
+            return fut;
+        }
     }
 
     /**
@@ -285,16 +312,71 @@ class TcpClientChannel implements ClientChannel {
         }
         catch (IgniteCheckedException e) {
             if (e.getCause() instanceof ClientError)
-                throw (ClientError)e.getCause();
+                throw new ClientException(e.getMessage(), e.getCause());
+
+            if (e.getCause() instanceof ClientConnectionException)
+                throw new ClientConnectionException(e.getMessage(), e.getCause());
 
             if (e.getCause() instanceof ClientException)
-                throw (ClientException)e.getCause();
+                throw new ClientException(e.getMessage(), e.getCause());
 
             throw new ClientException(e.getMessage(), e);
         }
         finally {
             pendingReqs.remove(reqId);
         }
+    }
+
+    /**
+     * Receives the response asynchronously.
+     *
+     * @param reqId ID of the request to receive the response for.
+     * @param payloadReader Payload reader from stream.
+     * @return Future for the operation.
+     */
+    private <T> CompletableFuture<T> receiveAsync(long reqId, Function<PayloadInputChannel, T> payloadReader) {
+        ClientRequestFuture pendingReq = pendingReqs.get(reqId);
+
+        assert pendingReq != null : "Pending request future not found for request " + reqId;
+
+        CompletableFuture<T> fut = new CompletableFuture<>();
+
+        pendingReq.listen(payloadFut -> asyncContinuationExecutor.execute(() -> {
+            try {
+                byte[] payload = payloadFut.get();
+
+                if (payload == null || payloadReader == null) {
+                    fut.complete(null);
+                } else {
+                    T res = payloadReader.apply(new PayloadInputChannel(this, payload));
+                    fut.complete(res);
+                }
+            } catch (Throwable t) {
+                fut.completeExceptionally(convertException(t));
+            } finally {
+                pendingReqs.remove(reqId);
+            }
+        }));
+
+        return fut;
+    }
+
+    /**
+     * Converts exception to {@link org.apache.ignite.internal.processors.platform.client.IgniteClientException}.
+     * @param e Exception to convert.
+     * @return Resulting exception.
+     */
+    private RuntimeException convertException(Throwable e) {
+        if (e.getCause() instanceof ClientError)
+            return new ClientException(e.getMessage(), e.getCause());
+
+        if (e.getCause() instanceof ClientConnectionException)
+            return new ClientConnectionException(e.getMessage(), e.getCause());
+
+        if (e.getCause() instanceof ClientException)
+            return new ClientException(e.getMessage(), e.getCause());
+
+        return new ClientException(e.getMessage(), e);
     }
 
     /**
@@ -328,14 +410,15 @@ class TcpClientChannel implements ClientChannel {
      * Process next message from the input stream and complete corresponding future.
      */
     private void processNextMessage() throws ClientProtocolError, ClientConnectionException {
-        int msgSize = dataInput.readInt();
+        // blocking read a message header not to fall into a busy loop
+        int msgSize = dataInput.readInt(2048);
 
         if (msgSize <= 0)
             throw new ClientProtocolError(String.format("Invalid message size: %s", msgSize));
 
         long bytesReadOnStartMsg = dataInput.totalBytesRead();
 
-        long resId = dataInput.readLong();
+        long resId = dataInput.spinReadLong();
 
         int status = 0;
 
@@ -344,11 +427,11 @@ class TcpClientChannel implements ClientChannel {
         BinaryInputStream resIn;
 
         if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
-            short flags = dataInput.readShort();
+            short flags = dataInput.spinReadShort();
 
             if ((flags & ClientFlag.AFFINITY_TOPOLOGY_CHANGED) != 0) {
-                long topVer = dataInput.readLong();
-                int minorTopVer = dataInput.readInt();
+                long topVer = dataInput.spinReadLong();
+                int minorTopVer = dataInput.spinReadInt();
 
                 srvTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
 
@@ -357,7 +440,7 @@ class TcpClientChannel implements ClientChannel {
             }
 
             if ((flags & ClientFlag.NOTIFICATION) != 0) {
-                short notificationCode = dataInput.readShort();
+                short notificationCode = dataInput.spinReadShort();
 
                 notificationOp = ClientOperation.fromCode(notificationCode);
 
@@ -366,10 +449,10 @@ class TcpClientChannel implements ClientChannel {
             }
 
             if ((flags & ClientFlag.ERROR) != 0)
-                status = dataInput.readInt();
+                status = dataInput.spinReadInt();
         }
         else
-            status = dataInput.readInt();
+            status = dataInput.spinReadInt();
 
         int hdrSize = (int)(dataInput.totalBytesRead() - bytesReadOnStartMsg);
 
@@ -378,12 +461,12 @@ class TcpClientChannel implements ClientChannel {
 
         if (status == 0) {
             if (msgSize > hdrSize)
-                res = dataInput.read(msgSize - hdrSize);
+                res = dataInput.spinRead(msgSize - hdrSize);
         }
         else if (status == ClientStatus.SECURITY_VIOLATION)
             err = new ClientAuthorizationException();
         else {
-            resIn = new BinaryHeapInputStream(dataInput.read(msgSize - hdrSize));
+            resIn = new BinaryHeapInputStream(dataInput.spinRead(msgSize - hdrSize));
 
             String errMsg = ClientUtils.createBinaryReader(null, resIn).readString();
 
@@ -622,7 +705,7 @@ class TcpClientChannel implements ClientChannel {
         private long totalBytesRead;
 
         /** Temporary buffer to read long, int and short values. */
-        private byte[] tmpBuf = new byte[Long.BYTES];
+        private final byte[] tmpBuf = new byte[Long.BYTES];
 
         /**
          * @param in Input stream.
@@ -631,47 +714,81 @@ class TcpClientChannel implements ClientChannel {
             this.in = in;
         }
 
+        /** Read bytes from the input stream. */
+        public byte[] read(int len) throws ClientConnectionException {
+            byte[] bytes = new byte[len];
+
+            read(bytes, len, 0);
+
+            return bytes;
+        }
+
+        /** Read bytes from the input stream. */
+        public byte[] spinRead(int len) {
+            byte[] bytes = new byte[len];
+
+            read(bytes, len, Integer.MAX_VALUE);
+
+            return bytes;
+        }
+
         /**
          * Read bytes from the input stream to the buffer.
          *
          * @param bytes Bytes buffer.
          * @param len Length.
+         * @param tryReadCnt Number of reads before falling into blocking read.
          */
-        private void read(byte[] bytes, int len) throws ClientConnectionException {
-            int bytesNum;
-            int readBytesNum = 0;
+        public void read(byte[] bytes, int len, int tryReadCnt) throws ClientConnectionException {
+            int offset = 0;
 
-            while (readBytesNum < len) {
-                try {
-                    bytesNum = in.read(bytes, readBytesNum, len - readBytesNum);
+            try {
+                while (offset < len) {
+                    int toRead;
+
+                    if (tryReadCnt == 0)
+                        toRead = len - offset;
+                    else if ((toRead = Math.min(in.available(), len - offset)) == 0) {
+                        tryReadCnt--;
+
+                        continue;
+                    }
+
+                    int read = in.read(bytes, offset, toRead);
+
+                    if (read < 0)
+                        throw handleIOError(null);
+
+                    offset += read;
+                    totalBytesRead += read;
                 }
-                catch (IOException e) {
-                    throw handleIOError(e);
-                }
-
-                if (bytesNum < 0)
-                    throw handleIOError(null);
-
-                readBytesNum += bytesNum;
             }
-
-            totalBytesRead += readBytesNum;
-        }
-
-        /** Read bytes from the input stream. */
-        public byte[] read(int len) throws ClientConnectionException {
-            byte[] bytes = new byte[len];
-
-            read(bytes, len);
-
-            return bytes;
+            catch (IOException e) {
+                throw handleIOError(e);
+            }
         }
 
         /**
          * Read long value from the input stream.
          */
         public long readLong() throws ClientConnectionException {
-            read(tmpBuf, Long.BYTES);
+            return readLong(0);
+        }
+
+        /**
+         * Read long value from the input stream.
+         */
+        public long spinReadLong() throws ClientConnectionException {
+            return readLong(Integer.MAX_VALUE);
+        }
+
+        /**
+         * Read long value from the input stream.
+         *
+         * @param tryReadCnt Number of reads before falling into blocking read.
+         */
+        private long readLong(int tryReadCnt) throws ClientConnectionException {
+            read(tmpBuf, Long.BYTES, tryReadCnt);
 
             return BinaryPrimitives.readLong(tmpBuf, 0);
         }
@@ -680,7 +797,23 @@ class TcpClientChannel implements ClientChannel {
          * Read int value from the input stream.
          */
         public int readInt() throws ClientConnectionException {
-            read(tmpBuf, Integer.BYTES);
+            return readInt(0);
+        }
+
+        /**
+         * Read int value from the input stream.
+         */
+        public int spinReadInt() throws ClientConnectionException {
+            return readInt(Integer.MAX_VALUE);
+        }
+
+        /**
+         * Read int value from the input stream.
+         *
+         * @param tryReadCnt Number of reads before falling into blocking read.
+         */
+        private int readInt(int tryReadCnt) throws ClientConnectionException {
+            read(tmpBuf, Integer.BYTES, tryReadCnt);
 
             return BinaryPrimitives.readInt(tmpBuf, 0);
         }
@@ -689,7 +822,23 @@ class TcpClientChannel implements ClientChannel {
          * Read short value from the input stream.
          */
         public short readShort() throws ClientConnectionException {
-            read(tmpBuf, Short.BYTES);
+            return readShort(0);
+        }
+
+        /**
+         * Read short value from the input stream.
+         */
+        public short spinReadShort() throws ClientConnectionException {
+            return readShort(Integer.MAX_VALUE);
+        }
+
+        /**
+         * Read short value from the input stream.
+         *
+         * @param tryReadCnt Number of reads before falling into blocking read.
+         */
+        public short readShort(int tryReadCnt) throws ClientConnectionException {
+            read(tmpBuf, Short.BYTES, tryReadCnt);
 
             return BinaryPrimitives.readShort(tmpBuf, 0);
         }
@@ -718,7 +867,7 @@ class TcpClientChannel implements ClientChannel {
     /** SSL Socket Factory. */
     private static class ClientSslSocketFactory {
         /** Trust manager ignoring all certificate checks. */
-        private static TrustManager ignoreErrorsTrustMgr = new X509TrustManager() {
+        private static final TrustManager ignoreErrorsTrustMgr = new X509TrustManager() {
             @Override public X509Certificate[] getAcceptedIssuers() {
                 return null;
             }

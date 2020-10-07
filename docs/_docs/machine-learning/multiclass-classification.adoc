@@ -1,0 +1,41 @@
+= Multiclass Classification
+
+In machine learning, multiclass or multinomial classification is the problem of classifying instances into one of three or more classes.
+
+Currently, Apache Ignite ML support the most popular method of Multiclass classification known as One-vs-Rest.
+
+One-vs-Rest strategy involves training a single classifier per class, with the samples of that class as positive samples and all other samples as negatives.
+
+Internally it uses one dataset but with the different changed labels for each trained classifier. If you have N classes, the N classifiers will be trained to become a MultiClassModel.
+
+MultiClassModel uses soft-margin technique to predict the real label. It means that the MultiClassModel returns the label of the class which is better suited for the predicted vector.
+
+
+== Example
+
+To see how One-vs-Rest trainer parametrized by binary SVM classifier can be used in practice, try this https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/ml/multiclass/OneVsRestClassificationExample.java[example] that is available on GitHub and delivered with every Apache Ignite distribution.
+
+The preprocessed Glass dataset is from the https://archive.ics.uci.edu/ml/datasets/Glass+Identification[UCI Machine Learning Repository].
+
+There are 3 classes with labels: 1 (building_windows_float_processed), 3 (vehicle_windows_float_processed), 7 (headlamps) and feature names: 'Na-Sodium', 'Mg-Magnesium', 'Al-Aluminum', 'Ba-Barium', 'Fe-Iron'.
+
+
+[source, java]
+----
+OneVsRestTrainer<SVMLinearClassificationModel> trainer
+                    = new OneVsRestTrainer<>(new SVMLinearClassificationTrainer()
+                    .withAmountOfIterations(20)
+                    .withAmountOfLocIterations(50)
+                    .withLambda(0.2)
+                    .withSeed(1234L)
+                );
+
+MultiClassModel<SVMLinearClassificationModel> mdl = trainer.fit(
+                    ignite,
+                    dataCache,
+                    new DummyVectorizer<Integer>().labeled(0)
+                );
+
+double prediction = mdl.predict(inputVector);
+----
+

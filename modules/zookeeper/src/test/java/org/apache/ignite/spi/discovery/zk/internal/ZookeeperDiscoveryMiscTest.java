@@ -245,6 +245,24 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
      * @throws Exception If failed.
      */
     @Test
+    public void testMbeanGetCoordinator() throws Exception {
+        startGrid(0);
+        startClientGrid(1);
+        IgniteEx srv2 = startGrid(2);
+
+        ZookeeperDiscoverySpiMBean mbean = getMxBean(srv2.context().igniteInstanceName(), "SPIs",
+                ZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
+
+        stopGrid(0);
+
+        assertEquals(mbean.getCoordinator(), srv2.localNode().id());
+        assertEquals(mbean.getCoordinatorNodeFormatted(), String.valueOf(srv2.localNode()));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testClientNodesStatus() throws Exception {
         startGrid(0);
 

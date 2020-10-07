@@ -82,6 +82,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest.checkPartitionMapExchangeFinished;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
@@ -135,6 +139,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().state(ACTIVE);
+
+        ignite.events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
 
         // Start node not in baseline.
         IgniteEx notBltIgnite = startGrid(grids);
@@ -206,6 +212,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             U.await(loadLatch, 10, TimeUnit.SECONDS);
 
             fut.get();
+
+            waitForEvents(Arrays.asList(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED));
         }
         finally {
             loadFut.cancel();
@@ -546,6 +554,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
 
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
+
+        waitForEvents(Arrays.asList(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED));
     }
 
     /** @throws Exception If fails. */
@@ -579,6 +589,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             fut::get,
             IgniteCheckedException.class,
             "Execution of local snapshot tasks fails");
+
+        waitForEvents(Arrays.asList(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED));
 
         assertTrue("Snapshot directory must be empty for node 0 due to snapshot future fail: " + dirNameIgnite0,
             !searchDirectoryRecursively(locSnpDir.toPath(), dirNameIgnite0).isPresent());
@@ -679,6 +691,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         commSpi.stopBlock(true);
 
         fut.get();
+
+        waitForEvents(Arrays.asList(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED));
 
         stopAllGrids();
 
@@ -852,6 +866,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(3, CACHE_KEYS_RANGE, Integer::new, ccfg1, ccfg2);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        waitForEvents(Arrays.asList(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED));
 
         stopAllGrids();
 
@@ -1053,6 +1069,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
+        waitForEvents(Arrays.asList(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED));
+
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
@@ -1110,6 +1128,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), srv.cache(dfltCacheCfg.getName()),
             snpName -> killCli.snapshot().cancelSnapshot(snpName).get());
+
+        waitForEvents(Arrays.asList(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED));
     }
 
     /** @throws Exception If fails. */
