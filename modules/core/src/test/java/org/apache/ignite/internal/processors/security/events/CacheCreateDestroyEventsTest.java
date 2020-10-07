@@ -21,7 +21,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +41,7 @@ import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
@@ -103,33 +103,33 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
 
     /** */
     @Parameterized.Parameter(3)
-    public int opNum;
+    public TestOperation op;
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "cacheCnt={0},evtNode={1},evtType={2},opNum={3}")
+    @Parameterized.Parameters(name = "cacheCnt={0}, evtNode={1}, evtType={2}, op={3}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(
-            new Object[] {1, SRV, EVT_CACHE_STARTED, 0},
-            new Object[] {1, CLNT, EVT_CACHE_STARTED, 0},
-            new Object[] {1, SRV, EVT_CACHE_STARTED, 1},
-            new Object[] {1, CLNT, EVT_CACHE_STARTED, 1},
-            new Object[] {1, SRV, EVT_CACHE_STOPPED, 2},
-            new Object[] {1, CLNT, EVT_CACHE_STOPPED, 2},
-            new Object[] {2, SRV, EVT_CACHE_STARTED, 3},
-            new Object[] {2, CLNT, EVT_CACHE_STARTED, 3},
-            new Object[] {2, SRV, EVT_CACHE_STOPPED, 4},
-            new Object[] {2, CLNT, EVT_CACHE_STOPPED, 4},
-            new Object[] {1, "thin", EVT_CACHE_STARTED, 5},
-            new Object[] {1, "thin", EVT_CACHE_STARTED, 6},
-            new Object[] {1, "thin", EVT_CACHE_STOPPED, 7},
-            new Object[] {3, "new_client_node", EVT_CACHE_STARTED, 8},
-            new Object[] {3, "new_server_node", EVT_CACHE_STARTED, 8},
-            new Object[] {2, SRV, EVT_CACHE_STARTED, 9},
-            new Object[] {2, CLNT, EVT_CACHE_STARTED, 9},
-            new Object[] {2, SRV, EVT_CACHE_STOPPED, 9},
-            new Object[] {2, CLNT, EVT_CACHE_STOPPED, 9},
-            new Object[] {1, "rest", EVT_CACHE_STARTED, 10},
-            new Object[] {1, "rest", EVT_CACHE_STOPPED, 11}
+            new Object[] {1, SRV, EVT_CACHE_STARTED, TestOperation.GET_OR_CREATE_CACHE},
+            new Object[] {1, CLNT, EVT_CACHE_STARTED, TestOperation.GET_OR_CREATE_CACHE},
+            new Object[] {1, SRV, EVT_CACHE_STARTED, TestOperation.CREATE_CACHE},
+            new Object[] {1, CLNT, EVT_CACHE_STARTED, TestOperation.CREATE_CACHE},
+            new Object[] {1, SRV, EVT_CACHE_STOPPED, TestOperation.DESTROY_CACHE},
+            new Object[] {1, CLNT, EVT_CACHE_STOPPED, TestOperation.DESTROY_CACHE},
+            new Object[] {2, SRV, EVT_CACHE_STARTED, TestOperation.CREATE_CACHES},
+            new Object[] {2, CLNT, EVT_CACHE_STARTED, TestOperation.CREATE_CACHES},
+            new Object[] {2, SRV, EVT_CACHE_STOPPED, TestOperation.DESTROY_CACHES},
+            new Object[] {2, CLNT, EVT_CACHE_STOPPED, TestOperation.DESTROY_CACHES},
+            new Object[] {1, "thin", EVT_CACHE_STARTED, TestOperation.THIN_CLIENT_CREATE_CACHE},
+            new Object[] {1, "thin", EVT_CACHE_STARTED, TestOperation.THIN_CLIENT_GET_OR_CREATE},
+            new Object[] {1, "thin", EVT_CACHE_STOPPED, TestOperation.THIN_CLIENT_DESTROY_CACHE},
+            new Object[] {3, "new_client_node", EVT_CACHE_STARTED, TestOperation.START_NODE},
+            new Object[] {3, "new_server_node", EVT_CACHE_STARTED, TestOperation.START_NODE},
+            new Object[] {2, SRV, EVT_CACHE_STARTED, TestOperation.CHANGE_CLUSTER_STATE},
+            new Object[] {2, CLNT, EVT_CACHE_STARTED, TestOperation.CHANGE_CLUSTER_STATE},
+            new Object[] {2, SRV, EVT_CACHE_STOPPED, TestOperation.CHANGE_CLUSTER_STATE},
+            new Object[] {2, CLNT, EVT_CACHE_STOPPED, TestOperation.CHANGE_CLUSTER_STATE},
+            new Object[] {1, "rest", EVT_CACHE_STARTED, TestOperation.REST_GET_OR_CREATE_CACHE},
+            new Object[] {1, "rest", EVT_CACHE_STOPPED, TestOperation.REST_DESTROY_CACHE}
         );
     }
 
@@ -148,78 +148,99 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
         stopGrid("new_server_node");
     }
 
+    /**
+     *
+     */
+    private Consumer<Collection<CacheConfiguration>> operation() {
+        switch (op) {
+            case GET_OR_CREATE_CACHE:
+                return ccfgs -> grid(login).getOrCreateCache(ccfgs.iterator().next());
+
+            case CREATE_CACHE:
+                return ccfgs -> grid(login).createCache(ccfgs.iterator().next());
+
+            case DESTROY_CACHE:
+                return ccfgs -> grid(login).destroyCache(ccfgs.iterator().next().getName());
+
+            case CREATE_CACHES:
+                return ccfgs -> grid(login).createCaches(ccfgs);
+
+            case DESTROY_CACHES:
+                return ccfgs -> grid(login).destroyCaches(ccfgs.stream().map(CacheConfiguration::getName).collect(Collectors.toSet()));
+
+            case THIN_CLIENT_GET_OR_CREATE:
+                return ccfgs -> startClient().getOrCreateCache(ccfgs.iterator().next().getName());
+
+            case THIN_CLIENT_CREATE_CACHE:
+                return ccfgs -> startClient().createCache(ccfgs.iterator().next().getName());
+
+            case THIN_CLIENT_DESTROY_CACHE:
+                return ccfgs -> startClient().destroyCache(ccfgs.iterator().next().getName());
+
+            case START_NODE:
+                return ccfgs -> {
+                    try {
+                        startGrid(getConfiguration(login,
+                            new TestSecurityPluginProvider(login, "", ALLOW_ALL, false))
+                            .setClientMode(login.contains("client"))
+                            .setCacheConfiguration(ccfgs.toArray(
+                                new CacheConfiguration[] {new CacheConfiguration("test_cache_" + COUNTER.incrementAndGet())}))
+                        );
+                    }
+                    catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                };
+
+            case CHANGE_CLUSTER_STATE:
+                return ccfgs -> {
+                    grid(login).cluster().state(ClusterState.INACTIVE);
+
+                    grid(login).cluster().state(ClusterState.ACTIVE);
+                };
+
+            case REST_GET_OR_CREATE_CACHE:
+                return ccfgs -> handleRestRequest(GET_OR_CREATE_CACHE, ccfgs.iterator().next().getName());
+
+            case REST_DESTROY_CACHE:
+                return ccfgs -> handleRestRequest(DESTROY_CACHE, ccfgs.iterator().next().getName());
+
+            default:
+                throw new IllegalArgumentException("Unknown operation " + op);
+        }
+    }
+
     /** */
-    private List<Consumer<Collection<CacheConfiguration>>> operations() {
-        return Arrays.asList(
-            ccfgs -> grid(login).getOrCreateCache(ccfgs.iterator().next()), //0
-            ccfgs -> grid(login).createCache(ccfgs.iterator().next()), //1
-            ccfgs -> grid(login).destroyCache(ccfgs.iterator().next().getName()), //2
-            ccfgs -> grid(login).createCaches(ccfgs), //3
-            ccfgs -> grid(login).destroyCaches(ccfgs.stream().map(CacheConfiguration::getName).collect(Collectors.toSet())),//4
-            ccfgs -> startClient().createCache(ccfgs.iterator().next().getName()), //5
-            ccfgs -> startClient().getOrCreateCache(ccfgs.iterator().next().getName()), //6
-            ccfgs -> startClient().destroyCache(ccfgs.iterator().next().getName()), //7
-            ccfgs -> { //8
-                try {
-                    startGrid(getConfiguration(login,
-                        new TestSecurityPluginProvider(login, "", ALLOW_ALL, false))
-                        .setClientMode(login.contains("client"))
-                        .setCacheConfiguration(ccfgs.toArray(
-                            new CacheConfiguration[] {new CacheConfiguration("test_cache_" + COUNTER.incrementAndGet())}))
-                    );
-                }
-                catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            },
-            ccfgs -> { //9
-                grid(login).cluster().state(ClusterState.INACTIVE);
+    private void handleRestRequest(GridRestCommand cmd, String cacheName) {
+        final GridRestCacheRequest req = new GridRestCacheRequest();
 
-                grid(login).cluster().state(ClusterState.ACTIVE);
-            },
-            ccfgs -> { //10 rest client starts a cache
-                final GridRestCacheRequest req = new GridRestCacheRequest();
+        req.command(cmd);
+        req.credentials(new SecurityCredentials("rest", ""));
+        req.cacheName(cacheName);
 
-                req.command(GET_OR_CREATE_CACHE);
-                req.credentials(new SecurityCredentials("rest", ""));
-                req.cacheName(ccfgs.iterator().next().getName());
-
-                try {
-                    restProtocolHandler().handle(req);
-                } catch (Exception e){
-                    throw new IgniteException(e);
-                }
-            },
-            ccfgs -> { //11 rest client stops a cache
-                final GridRestCacheRequest req = new GridRestCacheRequest();
-
-                req.command(DESTROY_CACHE);
-                req.credentials(new SecurityCredentials("rest", ""));
-                req.cacheName(ccfgs.iterator().next().getName());
-
-                try {
-                    restProtocolHandler().handle(req);
-                } catch (Exception e){
-                    throw new IgniteException(e);
-                }
-            }
-        );
+        try {
+            restProtocolHandler().handle(req);
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** */
     @Test
     public void testDynamicCreateDestroyCache() throws Exception {
-        int expTimes = cacheCnt * (opNum != 9 && (SRV.equals(login) || "thin".equals(login) || "rest".equals(login)) ? 2 : 3);
+        int expTimes = cacheCnt * (op != TestOperation.CHANGE_CLUSTER_STATE &&
+            (SRV.equals(login) || "thin".equals(login) || "rest".equals(login)) ? 2 : 3);
 
         Collection<CacheConfiguration> ccfgs = new ArrayList<>(cacheCnt);
 
         for (int i = 0; i < cacheCnt; i++)
             ccfgs.add(new CacheConfiguration("test_cache_" + COUNTER.incrementAndGet()));
 
-        if (opNum == 9 || evtType == EVT_CACHE_STOPPED) {
+        if (op == TestOperation.CHANGE_CLUSTER_STATE || evtType == EVT_CACHE_STOPPED) {
             ccfgs.forEach(c -> grid(LISTENER_NODE).createCache(c.getName()));
 
-            if (opNum == 9 || CLNT.equals(login))
+            if (op == TestOperation.CHANGE_CLUSTER_STATE || CLNT.equals(login))
                 ccfgs.forEach(c -> grid(CLNT).cache(c.getName()));
         }
 
@@ -244,7 +265,7 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
 
         try {
             // Execute tested operation.
-            operations().get(opNum).accept(ccfgs);
+            operation().accept(ccfgs);
 
             // Waiting for events.
             evtsLatch.await(10, TimeUnit.SECONDS);
@@ -268,9 +289,7 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
         );
     }
 
-    /**
-     *
-     */
+    /** */
     private GridRestProtocolHandler restProtocolHandler() throws Exception {
         Object restPrc = grid(SRV).context().components().stream()
             .filter(c -> c instanceof GridRestProcessor).findFirst()
@@ -290,9 +309,7 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
             .setIncludeEventTypes(EventType.EVTS_CACHE_LIFECYCLE);
     }
 
-    /**
-     *
-     */
+    /** */
     private static void onEvent(CacheEvent evt, AtomicInteger cntr, Collection<CacheConfiguration> ccfgs, String expLogin) {
         if (ccfgs.stream().noneMatch(ccfg -> ccfg.getName().equals(evt.cacheName())))
             return;
@@ -312,5 +329,44 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** Test operations. */
+    enum TestOperation {
+        /** Get or create cache. */
+        GET_OR_CREATE_CACHE,
+
+        /** Create cache. */
+        CREATE_CACHE,
+
+        /** Destroy cache. */
+        DESTROY_CACHE,
+
+        /** Create caches. */
+        CREATE_CACHES,
+
+        /** Destroy caches. */
+        DESTROY_CACHES,
+
+        /** Thin client get or create. */
+        THIN_CLIENT_GET_OR_CREATE,
+
+        /** Thin client create cache. */
+        THIN_CLIENT_CREATE_CACHE,
+
+        /** Thin client destroy cache. */
+        THIN_CLIENT_DESTROY_CACHE,
+
+        /** Start node. */
+        START_NODE,
+
+        /** Change cluster state. */
+        CHANGE_CLUSTER_STATE,
+
+        /** Rest get or create cache. */
+        REST_GET_OR_CREATE_CACHE,
+
+        /** Rest destroy cache. */
+        REST_DESTROY_CACHE;
     }
 }

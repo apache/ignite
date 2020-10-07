@@ -74,11 +74,14 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_TASK_REDUCED;
 import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
 
+/**
+ * Tests that an event's local listener and an event's remote filter get correct subjectId when task's or job's
+ * operations are performed.
+ */
 @RunWith(Parameterized.class)
-public class TaskEventTest extends AbstractSecurityTest {
+public class TaskAndJobEventsTest extends AbstractSecurityTest {
     /** Array types of events. */
-    private static final int[] EVENT_TYPES = new int[] {
-        EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_TASK_REDUCED,
+    private static final int[] EVENT_TYPES = new int[] {EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_TASK_REDUCED,
         EVT_JOB_MAPPED, EVT_JOB_RESULTED, EVT_JOB_STARTED, EVT_JOB_FINISHED, EVT_JOB_QUEUED};
 
     /** Remote counter. */
@@ -132,6 +135,7 @@ public class TaskEventTest extends AbstractSecurityTest {
         startClientAllowAll(CLNT);
     }
 
+    /** */
     @Test
     public void test() throws Exception {
         int expTimes = EVENT_TYPES.length;
@@ -174,6 +178,7 @@ public class TaskEventTest extends AbstractSecurityTest {
         assertEquals(expTimes, locCnt.get());
     }
 
+    /** */
     private GridTestUtils.RunnableX operation() {
         if (SRV.equals(expLogin) || CLNT.equals(expLogin)) {
             return () -> {
@@ -211,9 +216,7 @@ public class TaskEventTest extends AbstractSecurityTest {
         throw new IllegalArgumentException("Uncknown login " + expLogin);
     }
 
-    /**
-     *
-     */
+    /** */
     private static void onEvent(IgniteEx ign, AtomicInteger cntr, Event evt, String expLogin) {
         assert evt instanceof TaskEvent || evt instanceof JobEvent;
 
@@ -281,9 +284,7 @@ public class TaskEventTest extends AbstractSecurityTest {
             .setIncludeEventTypes(EVENT_TYPES);
     }
 
-    /**
-     *
-     */
+    /** */
     private IgniteClient startClient(String expLogin) {
         return Ignition.startClient(
             new ClientConfiguration()
@@ -293,9 +294,7 @@ public class TaskEventTest extends AbstractSecurityTest {
         );
     }
 
-    /**
-     *
-     */
+    /** */
     private GridRestProtocolHandler restProtocolHandler() throws Exception {
         Object restPrc = grid(LISTENER_NODE).context().components().stream()
             .filter(c -> c instanceof GridRestProcessor).findFirst()

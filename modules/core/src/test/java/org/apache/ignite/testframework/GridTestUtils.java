@@ -65,6 +65,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.management.Attribute;
