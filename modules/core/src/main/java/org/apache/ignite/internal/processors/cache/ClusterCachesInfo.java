@@ -2003,6 +2003,12 @@ public class ClusterCachesInfo {
             if (!registeredCaches.containsKey(cfg.getName())) {
                 String conflictErr = checkCacheConflict(cfg);
 
+                if (conflictErr == null && cfg.isEncryptionEnabled() && !locJoin &&
+                    ctx.encryption().groupKey(CU.cacheGroupId(cfg.getName(), cfg.getGroupName())) == null) {
+                    conflictErr = "Encryption key has not been generated. " +
+                        "The client node must dynamically start this cache [cacheName=" + cfg.getName() + "]";
+                }
+
                 if (conflictErr != null) {
                     if (locJoin)
                         return conflictErr;

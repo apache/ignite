@@ -480,7 +480,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (dataBag.isJoiningNodeClient() || dataBag.commonDataCollectedFor(ENCRYPTION_MGR.ordinal()))
+        if (dataBag.isJoiningNodeClient() || ctx.clientNode() ||
+            dataBag.commonDataCollectedFor(ENCRYPTION_MGR.ordinal()))
             return;
 
         HashMap<Integer, byte[]> knownEncKeys = knownEncryptionKeys();
