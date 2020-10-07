@@ -100,7 +100,7 @@ public class CellularTxStreamer extends IgniteAwareApplication {
             }
 
             if (cnt % 1000 == 0)
-                log.info("APPICATION_STREAMED " + cnt + " transactions [worst_latency=" + Arrays.toString(max) + "]");
+                log.info("APPLICATION_STREAMED " + cnt + " transactions [worst_latency=" + Arrays.toString(max) + "]");
         }
 
         recordResult("WORST_LATENCY", Arrays.toString(max));

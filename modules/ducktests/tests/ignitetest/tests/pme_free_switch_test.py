@@ -87,7 +87,7 @@ class PmeFreeSwitchTest(IgniteTest):
 
         long_tx_streamer.stop()
 
-        single_key_tx_streamer.await_event("APPICATION_STREAMED", 60)  # waiting for streaming continuation.
+        single_key_tx_streamer.await_event("APPLICATION_STREAMED", 60)  # waiting for streaming continuation.
 
         single_key_tx_streamer.stop()
 

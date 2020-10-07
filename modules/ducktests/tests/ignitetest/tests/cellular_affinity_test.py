@@ -142,7 +142,7 @@ class CellularAffinity(IgniteTest):
             streamer.await_event("exchangeFreeSwitch=true", 60, from_the_beginning=True)
 
         for streamer in streamers:  # waiting for streaming continuation.
-            streamer.await_event("APPICATION_STREAMED", 60)
+            streamer.await_event("APPLICATION_STREAMED", 60)
 
         for streamer in streamers:  # stops streaming and records results.
             streamer.stop_async()
