@@ -39,6 +39,7 @@ class PmeFreeSwitchTest(IgniteTest):
     Tests PME free switch scenarios.
     """
     NUM_NODES = 3
+    CACHES_AMOUNT = 100
 
     @cluster(num_nodes=NUM_NODES + 2)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_7))
@@ -55,7 +56,7 @@ class PmeFreeSwitchTest(IgniteTest):
         # focusing on switch duration (which depends on caches amount) when long_txs is false and
         # on waiting for previously started txs before the switch (which depends on txs duration) when long_txs of true.
         if not long_txs:
-            for idx in range(1, 100):
+            for idx in range(1, self.CACHES_AMOUNT):
                 caches.append(CacheConfiguration(name="cache-%d" % idx, backups=2, atomicity_mode='TRANSACTIONAL'))
 
         config = IgniteConfiguration(
