@@ -49,8 +49,6 @@ def resolve_spec(service, context, config, **kwargs):
         return _resolve_spec("NodeSpec", ApacheIgniteNodeSpec)(config=config, **kwargs)
     if is_impl("IgniteApplicationService"):
         return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(context=context, config=config, **kwargs)
-    if is_impl("MultiNodeService"):
-        return _resolve_spec("CustomAppSpec", CustomIgniteApplicationSpec)(context=context, config=config, **kwargs)
 
     raise Exception("There is no specification for class %s" % type(service))
 
@@ -191,52 +189,6 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
             "-Xmx1G",
             "-ea",
             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"
-        ])
-
-        self.args = [
-            str(start_ignite),
-            java_class_name,
-            self.CONFIG_FILE,
-            str(base64.b64encode(json.dumps(params).encode('utf-8')), 'utf-8')
-        ]
-
-    def __jackson(self):
-        if not self.version.is_dev:
-            aws = self.path.module("aws")
-            return self.context.cluster.nodes[0].account.ssh_capture(
-                "ls -d %s/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % aws)
-
-        return []
-
-
-class CustomIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware):
-    """
-    Implementation IgniteApplicationSpec for Apache Ignite project
-    """
-    # pylint: disable=too-many-arguments
-    def __init__(self, context, modules, servicejava_class_name, java_class_name, start_ignite, params, **kwargs):
-        super().__init__(project="ignite", **kwargs)
-        self.context = context
-
-        libs = modules or []
-        libs.extend(["log4j"])
-
-        libs = [self.path.module(m) + "/*" for m in libs]
-        libs.append(IgnitePath(DEV_BRANCH).module("ducktests") + "/*")
-        libs.extend(self.__jackson())
-
-        self.envs = {
-            "MAIN_CLASS": servicejava_class_name,
-            "EXCLUDE_TEST_CLASSES": "true",
-            "IGNITE_LOG_DIR": self.PERSISTENT_ROOT,
-            "USER_LIBS": ":".join(libs)
-        }
-
-        self.jvm_opts.extend([
-            "-DIGNITE_SUCCESS_FILE=" + self.PERSISTENT_ROOT + "/success_file",
-            "-Dlog4j.configDebug=true",
-            "-Xmx1G",
-            "-ea"
         ])
 
         self.args = [

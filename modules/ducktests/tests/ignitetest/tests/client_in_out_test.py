@@ -19,8 +19,8 @@ This module contains client tests
 import time
 from ducktape.mark.resource import cluster
 
-from ignitetest.services.custom_ignite_service import MultiNodeService
 from ignitetest.services.ignite import IgniteService
+from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
@@ -72,7 +72,7 @@ class ClientTest(IgniteTest):
         # build client config
         client_cfg = server_cfg._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite))
         # prepare client services
-        static_clients = MultiNodeService(
+        static_clients = IgniteApplicationService(
             self.test_context,
             client_cfg,
             java_class_name=self.JAVA_CLIENT_CLASS_NAME,
@@ -80,7 +80,7 @@ class ClientTest(IgniteTest):
             params={"cacheName": self.CACHE_NAME,
                     "pacing": self.PACING})
 
-        temp_clients = MultiNodeService(
+        temp_clients = IgniteApplicationService(
             self.test_context,
             client_cfg,
             java_class_name=self.JAVA_CLIENT_CLASS_NAME,
