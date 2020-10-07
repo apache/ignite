@@ -87,6 +87,8 @@ class PmeFreeSwitchTest(IgniteTest):
 
         long_tx_streamer.stop()
 
+        single_key_tx_streamer.await_event("APPICATION_STREAMED", 60)  # waiting for streaming continuation.
+
         single_key_tx_streamer.stop()
 
         data["Worst latency (ms)"] = single_key_tx_streamer.extract_result("WORST_LATENCY")

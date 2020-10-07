@@ -84,7 +84,7 @@ public class CellularTxStreamer extends IgniteAwareApplication {
 
                 initTime = System.currentTimeMillis();
 
-                log.info("Warmup finished");
+                log.info("WARMUP_FINISHED");
             }
 
             if (record) {
@@ -100,7 +100,7 @@ public class CellularTxStreamer extends IgniteAwareApplication {
             }
 
             if (cnt % 1000 == 0)
-                log.info("Application streamed " + cnt + " transactions [worst_latency=" + Arrays.toString(max) + "]");
+                log.info("APPICATION_STREAMED " + cnt + " transactions [worst_latency=" + Arrays.toString(max) + "]");
         }
 
         recordResult("WORST_LATENCY", Arrays.toString(max));
