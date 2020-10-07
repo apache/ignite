@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:util="http://www.springframework.org/schema/util" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="         http://www.springframework.org/schema/beans         http://www.springframework.org/schema/beans/spring-beans.xsd         http://www.springframework.org/schema/util         http://www.springframework.org/schema/util/spring-util.xsd">
+    <!-- tag::ignite-config[] -->
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="deploymentSpi">
+            <bean class="org.apache.ignite.spi.deployment.uri.UriDeploymentSpi">
+                <property name="temporaryDirectoryPath" value="/tmp/temp_ignite_libs"/>
+                <property name="uriList">
+                    <list>
+                        <!--tag::from-local-dir[] -->
+                        <value>file://freq=2000@localhost/home/username/user_libs</value>
+                        <!--end::from-local-dir[] -->
+                        <!--tag::from-url[] -->
+                        <value>http://username:password;freq=10000@www.mysite.com:110/ignite/user_libs</value>
+                        <!--end::from-url[] -->
+                    </list>
+                </property>
+            </bean>
+        </property>
+        <!-- tag::discovery[] -->
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <!-- prevent this client from reconnecting on connection loss -->
+                <property name="clientReconnectDisabled" value="true"/>
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>127.0.0.1:47500..47509</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+        <!-- end::discovery[] -->
+    </bean>
+    <!-- end::ignite-config[] -->
+</beans>

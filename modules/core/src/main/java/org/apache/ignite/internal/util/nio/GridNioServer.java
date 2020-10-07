@@ -1401,16 +1401,7 @@ public class GridNioServer<T> {
 
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
-            MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
-
-            if (writer == null) {
-                try {
-                    ses.addMeta(MSG_WRITER.ordinal(), writer = writerFactory.writer(ses));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IOException("Failed to create message writer.", e);
-                }
-            }
+            MessageWriter writer = messageWriter(ses);
 
             boolean handshakeFinished = sslFilter.lock(ses);
 
@@ -1659,16 +1650,7 @@ public class GridNioServer<T> {
             ByteBuffer buf = ses.writeBuffer();
             SessionWriteRequest req = ses.removeMeta(NIO_OPERATION.ordinal());
 
-            MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
-
-            if (writer == null) {
-                try {
-                    ses.addMeta(MSG_WRITER.ordinal(), writer = writerFactory.writer(ses));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IOException("Failed to create message writer.", e);
-                }
-            }
+            MessageWriter writer = messageWriter(ses);
 
             if (req == null) {
                 req = systemMessage(ses);
@@ -1737,6 +1719,25 @@ public class GridNioServer<T> {
             }
             else
                 buf.clear();
+        }
+
+        /** */
+        @Nullable private MessageWriter messageWriter(GridSelectorNioSessionImpl ses) throws IOException {
+            if (writerFactory == null)
+                return null;
+
+            MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
+
+            if (writer == null) {
+                try {
+                    ses.addMeta(MSG_WRITER.ordinal(), writer = writerFactory.writer(ses));
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IOException("Failed to create message writer.", e);
+                }
+            }
+
+            return writer;
         }
 
         /**

@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.IgniteNearClientCacheCloseTes
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitNearReadersTest;
 import org.apache.ignite.internal.processors.cache.MemoryPolicyConfigValidationTest;
+import org.apache.ignite.internal.processors.cache.NoPresentCacheInterceptorOnClientTest;
 import org.apache.ignite.internal.processors.cache.NonAffinityCoordinatorDynamicStartStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheDetectLostPartitionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTest;
@@ -380,6 +381,7 @@ public class IgniteCacheTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, CacheComparatorTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CachePartitionPartialCountersMapSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteReflectionFactorySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, NoPresentCacheInterceptorOnClientTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheDetectLostPartitionsTest.class, ignoredTests);
 
         return suite;

@@ -1,0 +1,12 @@
+= Introduction
+
+Apache Ignite since 2.8 supports importing Machine Learning models from external platforms including Apache Spark ML and XGBoost. By working with imported models, you can:
+
+- store imported models in Ignite for further inference,
+- use imported models as part of pipelines,
+- apply ensembling methods such as boosting, bagging, or stacking to those models.
+
+Also, imported pre-trained models can be updated inside Apache Ignite.
+
+Apache Ignite provides an API for distributed inference for models trained in [Apache Spark ML], [XGBoost], and [H2O].
+

@@ -1,0 +1,32 @@
+exclude: [guidelines.md,  "Gemfile", "Gemfile.lock", README.adoc, "_docs/code-snippets", "_docs/includes", '*.sh']
+attrs: &asciidoc_attributes
+  version: 2.9.0 
+  base_url: /docs
+  stylesdir: /docs/assets/css
+  imagesdir: /docs
+  source-highlighter: rouge
+  table-stripes: even
+  javadoc_base_url: https://ignite.apache.org/releases/{version}/javadoc
+  javaCodeDir: code-snippets/java/src/main/java/org/apache/ignite/snippets
+  csharpCodeDir: code-snippets/dotnet
+  githubUrl: https://github.com/apache/ignite/tree/master
+  docSourceUrl: https://github.com/apache/ignite/tree/IGNITE-7595/docs
+collections:
+  docs:
+    permalink: /docs/:path:output_ext
+    output: true
+defaults:
+  -
+    scope:
+      path: ''
+    values:
+      layout: 'doc'
+  -
+    scope:
+      path: '_docs'
+    values:
+      toc: ignite 
+asciidoctor:
+  base_dir: _docs/ 
+  attributes: *asciidoc_attributes
+   
