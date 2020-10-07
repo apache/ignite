@@ -22,7 +22,7 @@ package org.apache.ignite.client;
  * route user requests. There are cases when the list is not static, for example in cloud environment. In such cases
  * addresses of nodes and/or number of server nodes can change. Implementation of this interface should handle these.
  *
- * Ignite waites for a topology change to trigger {@link #getAddresses()}. There are two modes of how soon Ignite calls
+ * Ignite waits for a topology change to trigger {@link #getAddresses()}. There are two modes of how soon Ignite calls
  * it, lazy and eager, depending on whether the partition awareness feature is enabled. If the feature is enabled then
  * Ignite calls the method for every topology change. Otherwise Ignite uses previous addresses until a first failure.
  *
