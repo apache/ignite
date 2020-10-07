@@ -107,7 +107,7 @@ class ClientTest(IgniteTest):
                            backoff_sec=1)
 
         # start stop temp_clients node. Check cluster.
-        i = 0
+
         for i in range(self.ITERATION_COUNT):
             temp_clients.start()
 
