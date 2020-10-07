@@ -139,6 +139,10 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
+     * Set addresses of Ignite server nodes within a cluster. An address can be IPv4 address or hostname, with or
+     * without port. If port is not set then Ignite will generate multiple addresses for default port range. See
+     * {@link ClientConnectorConfiguration#DFLT_PORT}, {@link ClientConnectorConfiguration#DFLT_PORT_RANGE}.
+     *
      * @param addrs Host addresses.
      */
     public ClientConfiguration setAddresses(String... addrs) {

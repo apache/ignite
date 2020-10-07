@@ -59,7 +59,7 @@ public class ThinClientKubernetesAddressFinder implements ClientAddressFinder {
     }
 
     /** {@inheritDoc} */
-    @Override public String[] getServerAddresses() {
+    @Override public String[] getAddresses() {
         return resolver
             .getServiceAddresses()
             .stream().map(a -> a.getHostAddress() + ":" + port)

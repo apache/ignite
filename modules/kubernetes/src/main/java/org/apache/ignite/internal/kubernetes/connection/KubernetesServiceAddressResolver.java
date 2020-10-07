@@ -87,7 +87,9 @@ public class KubernetesServiceAddressResolver {
         this.cfg = cfg;
     }
 
-    /** Return IP addresses of pods that runs the service. */
+    /**
+     * Return IP addresses of pods that runs the service.
+     */
     public Collection<InetAddress> getServiceAddresses() {
         init();
 

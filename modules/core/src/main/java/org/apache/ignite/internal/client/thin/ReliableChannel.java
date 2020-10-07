@@ -603,7 +603,9 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         chFailLsnrs.add(chFailLsnr);
     }
 
-    /** Should the channel initialization be stopped. */
+    /**
+     * Should the channel initialization be stopped.
+     */
     private boolean shouldStopChannelsReinit() {
         return scheduledChannelsReinit.get() || closed;
     }
@@ -627,7 +629,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         Map<InetSocketAddress, Integer> newAddrs = null;
 
         if (clientCfg.getAddressesFinder() != null) {
-            String[] hostAddrs = clientCfg.getAddressesFinder().getServerAddresses();
+            String[] hostAddrs = clientCfg.getAddressesFinder().getAddresses();
 
             if (hostAddrs.length == 0)
                 throw new ClientException("Empty addresses");
@@ -964,7 +966,9 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             }
         }
 
-        /** Close holder. */
+        /**
+         * Close holder.
+         */
         void close() {
             close = true;
 
@@ -974,28 +978,38 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             closeChannel();
         }
 
-        /** Wheteher the holder is closed. For test purposes. */
+        /**
+         * Wheteher the holder is closed. For test purposes.
+         */
         boolean isClosed() {
             return close;
         }
 
-        /** Get address of the channel. For test purposes. */
+        /**
+         * Get address of the channel. For test purposes.
+         */
         InetSocketAddress getAddress() {
             return chCfg.getAddress();
         }
     }
 
-    /** Get holders reference. For test purposes. */
+    /**
+     * Get holders reference. For test purposes.
+     */
     List<ClientChannelHolder> getChannelHolders() {
         return channels;
     }
 
-    /** Get node channels reference. For test purposes. */
+    /**
+     * Get node channels reference. For test purposes.
+     */
     Map<UUID, ClientChannelHolder> getNodeChannels() {
         return nodeChannels;
     }
 
-    /** Get scheduledChannelsReinit reference. For test purposes. */
+    /**
+     * Get scheduledChannelsReinit reference. For test purposes.
+     */
     AtomicBoolean getScheduledChannelsReinit() {
         return scheduledChannelsReinit;
     }

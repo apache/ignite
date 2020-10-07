@@ -52,7 +52,9 @@ public class KubernetesConnectionConfiguration {
         return this;
     }
 
-    /** Get Kubernetes service name */
+    /**
+     * Get Kubernetes service name.
+     */
     public String getServiceName() {
         return srvcName;
     }
@@ -70,7 +72,9 @@ public class KubernetesConnectionConfiguration {
         return this;
     }
 
-    /** Get Kubernetes namespace */
+    /**
+     * Get Kubernetes namespace.
+     */
     public String getNamespace() {
         return namespace;
     }
@@ -88,7 +92,9 @@ public class KubernetesConnectionConfiguration {
         return this;
     }
 
-    /** Get Kubernetes master url */
+    /**
+     * Get Kubernetes master url.
+     */
     public String getMaster() {
         return master;
     }
@@ -106,7 +112,9 @@ public class KubernetesConnectionConfiguration {
         return this;
     }
 
-    /** Get Kubernetes account token */
+    /**
+     * Get Kubernetes account token.
+     */
     public String getAccountToken() {
         return accountToken;
     }
@@ -123,12 +131,16 @@ public class KubernetesConnectionConfiguration {
         return this;
     }
 
-    /** Get flag include not ready addresses */
+    /**
+     * Get flag include not ready addresses.
+     */
     public boolean getIncludeNotReadyAddresses() {
         return includeNotReadyAddresses;
     }
 
-    /** Verify that configuration is valid */
+    /**
+     * Verify that configuration is valid.
+     */
     public void verify() {
         if (paramIsNotSet(srvcName) || paramIsNotSet(namespace)
             || paramIsNotSet(master) || paramIsNotSet(accountToken))
@@ -138,7 +150,9 @@ public class KubernetesConnectionConfiguration {
                     master + ", setAccountToken=" + accountToken + "]");
     }
 
-    /** Check that param value is not set */
+    /**
+     * Check that param value is not set.
+     */
     private boolean paramIsNotSet(String param) {
         return param == null || param.isEmpty();
     }

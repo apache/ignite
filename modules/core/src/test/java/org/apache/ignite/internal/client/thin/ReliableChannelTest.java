@@ -56,7 +56,9 @@ public class ReliableChannelTest {
     /** */
     private final String[] dfltAddrs = new String[]{"127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"};
 
-    /** Checks that it is possible configure addresses with duplication (for load balancing). */
+    /**
+     * Checks that it is possible configure addresses with duplication (for load balancing).
+     */
     @Test
     public void testDuplicatedAddressesAreValid() {
         ClientConfiguration ccfg = new ClientConfiguration().setAddresses(
@@ -69,7 +71,9 @@ public class ReliableChannelTest {
         assertEquals(3, rc.getChannelHolders().size());
     }
 
-    /** Checks that reinitialization of duplicated address is correct. */
+    /**
+     * Checks that reinitialization of duplicated address is correct.
+     */
     @Test
     public void testReinitDuplicatedAddress() {
         TestAddressFinder finder = new TestAddressFinder()
@@ -113,7 +117,9 @@ public class ReliableChannelTest {
         assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"));
     }
 
-    /** Checks that channel holders are not reinited for static address configuration. */
+    /**
+     * Checks that channel holders are not reinited for static address configuration.
+     */
     @Test
     public void testChannelsNotReinitForStaticAddressConfiguration() {
         ClientConfiguration ccfg = new ClientConfiguration().setAddresses(dfltAddrs);
@@ -121,7 +127,9 @@ public class ReliableChannelTest {
         checkDoesNotReinit(ccfg);
     }
 
-    /** Checks that channel holders are not reinited if address finder return the same list of addresses. */
+    /**
+     * Checks that channel holders are not reinited if address finder return the same list of addresses.
+     */
     @Test
     public void testChannelsNotReinitForStableDynamicAddressConfiguration() {
         TestAddressFinder finder = new TestAddressFinder()
@@ -157,7 +165,9 @@ public class ReliableChannelTest {
         assertEquals(3, newChannels.size());
     }
 
-    /** Checks that node channels are persisted if channels are reinit with static address configuration. */
+    /**
+     * Checks that node channels are persisted if channels are reinit with static address configuration.
+     */
     @Test
     public void testNodeChannelsAreNotCleaned() {
         ClientConfiguration ccfg = new ClientConfiguration().setAddresses(dfltAddrs);
@@ -177,7 +187,9 @@ public class ReliableChannelTest {
         assertEquals(1, rc.getNodeChannels().size());
     }
 
-    /** Checks that channels are changed (add new, remove old) and close channels if reinitialization performed. */
+    /**
+     * Checks that channels are changed (add new, remove old) and close channels if reinitialization performed.
+     */
     @Test
     public void testDynamicAddressReinitializedCorrectly() {
         TestAddressFinder finder = new TestAddressFinder()
@@ -212,7 +224,9 @@ public class ReliableChannelTest {
         newChannels.forEach(c -> assertFalse(c.isClosed()));
     }
 
-    /** Check that node channels are cleaned in case of full reinitialization. */
+    /**
+     * Check that node channels are cleaned in case of full reinitialization.
+     */
     @Test
     public void testThatNodeChannelsCleanFullReinitialization() {
         TestAddressFinder finder = new TestAddressFinder()
@@ -236,7 +250,9 @@ public class ReliableChannelTest {
         assertEquals(0, rc.getNodeChannels().size());
     }
 
-    /** Should fail if default channel is not initialized. */
+    /**
+     * Should fail if default channel is not initialized.
+     */
     @Test(expected = TestChannelException.class)
     public void testFailOnInitIfDefaultChannelFailed() {
         ClientConfiguration ccfg = new ClientConfiguration()
@@ -248,7 +264,9 @@ public class ReliableChannelTest {
         rc.channelsInit(false);
     }
 
-    /** Async operation should fail if cluster is down after send operation. */
+    /**
+     * Async operation should fail if cluster is down after send operation.
+     */
     @Test
     @SuppressWarnings("unchecked")
     public void testFailOnAsyncAfterSendOperation() {
@@ -261,7 +279,9 @@ public class ReliableChannelTest {
         }, false);
     }
 
-    /** Async operation should fail if cluster is down after send operation and handle topology change. */
+    /**
+     * Async operation should fail if cluster is down after send operation and handle topology change.
+     */
     @Test
     @SuppressWarnings("unchecked")
     public void testFailOnAsyncTopologyChangeAfterSendOperation() {
@@ -301,7 +321,9 @@ public class ReliableChannelTest {
         GridTestUtils.assertThrowsWithCause(() -> op.accept(cache), TestChannelException.class);
     }
 
-    /** Mock for client channel. */
+    /**
+     * Mock for client channel.
+     */
     private static class TestClientChannel implements ClientChannel {
         /** */
         private final UUID serverNodeId = UUID.randomUUID();
@@ -356,7 +378,9 @@ public class ReliableChannelTest {
         }
     }
 
-    /** Mock client channel that fails on initialization. */
+    /**
+     * Mock client channel that fails on initialization.
+     */
     private static class TestFailureClientChannel extends TestClientChannel {
         /** Constructor that fails. */
         private TestFailureClientChannel() {
@@ -364,7 +388,9 @@ public class ReliableChannelTest {
         }
     }
 
-    /** Mock client channel that fails on initialization. */
+    /**
+     * Mock client channel that fails on initialization.
+     */
     private static class TestAsyncServiceFailureClientChannel extends TestClientChannel {
         /** {@inheritDoc} */
         @Override public <T> CompletableFuture<T> serviceAsync(ClientOperation op,
@@ -379,7 +405,9 @@ public class ReliableChannelTest {
         }
     }
 
-    /** TestFailureClientChannel failed with this Exception. */
+    /**
+     * TestFailureClientChannel failed with this Exception.
+     */
     private static class TestChannelException extends RuntimeException {}
 
     /**
@@ -395,7 +423,9 @@ public class ReliableChannelTest {
             addrResQueue = new LinkedList<>();
         }
 
-        /** Configure result for every next {@link #getServerAddresses()} request. */
+        /**
+         * Configure result for every next {@link #getAddresses()} request.
+         */
         private TestAddressFinder nextAddresesResponse(String... addrs) {
             addrResQueue.add(addrs);
 
@@ -403,7 +433,7 @@ public class ReliableChannelTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String[] getServerAddresses() {
+        @Override public String[] getAddresses() {
             if (addrResQueue.isEmpty())
                 throw new IllegalStateException("Server address request is not expected.");
 
