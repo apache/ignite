@@ -149,7 +149,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.maintenance.MaintenanceRecord;
+import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
@@ -174,7 +174,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointReadWriteLock.CHECKPOINT_LOCK_HOLD_COUNT;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_RECORD_ID;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_ID;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 
 /**
@@ -1581,16 +1581,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         MaintenanceRegistry mntcRegistry = kctx.maintenanceRegistry();
 
-        MaintenanceRecord mntcRecord = mntcRegistry.activeMaintenanceRecord(CORRUPTED_DATA_FILES_MNTC_RECORD_ID);
+        MaintenanceTask mntcTask = mntcRegistry.activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID);
 
-        if (mntcRecord != null) {
-            log.warning("Maintenance record found, stop restoring memory");
+        if (mntcTask != null) {
+            log.warning("Maintenance task found, stop restoring memory");
 
             File workDir = ((FilePageStoreManager) cctx.pageStore()).workDir();
 
-            mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_RECORD_ID,
+            mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_TASK_ID,
                 new CorruptedPdsMaintenanceCallback(workDir,
-                    Arrays.asList(mntcRecord.parameters().split(File.separator)))
+                    Arrays.asList(mntcTask.parameters().split(File.separator)))
             );
 
             return;

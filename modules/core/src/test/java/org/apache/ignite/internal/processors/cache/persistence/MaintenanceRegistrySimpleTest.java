@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceAction;
-import org.apache.ignite.maintenance.MaintenanceRecord;
+import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
@@ -54,7 +54,7 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * Simple unit test to cover basic MaintenanceRegistry functionality like action validations,
- * maintenance records structure etc.
+ * maintenance tasks structure etc.
  */
 public class MaintenanceRegistrySimpleTest {
     /** */
@@ -111,12 +111,12 @@ public class MaintenanceRegistrySimpleTest {
     }
 
     /**
-     * {@link MaintenanceRecord} could be replaced with new parameters after registration, old record is deleted.
+     * {@link MaintenanceTask} could be replaced with new parameters after registration, old task is deleted.
      *
      * @throws IgniteCheckedException If initialization failed.
      */
     @Test
-    public void testMaintenanceRecordReplacement() throws IgniteCheckedException {
+    public void testMaintenanceTaskReplacement() throws IgniteCheckedException {
         UUID id0 = UUID.randomUUID();
         String descr = "description";
         String oldParams = "oldParams";
@@ -128,46 +128,46 @@ public class MaintenanceRegistrySimpleTest {
 
         assertFalse(proc.isMaintenanceMode());
 
-        proc.registerMaintenanceRecord(new MaintenanceRecord(id0, descr, oldParams));
-        proc.registerMaintenanceRecord(new MaintenanceRecord(id0, descr, newParams));
+        proc.registerMaintenanceTask(new MaintenanceTask(id0, descr, oldParams));
+        proc.registerMaintenanceTask(new MaintenanceTask(id0, descr, newParams));
 
         proc.stop(false);
 
         proc.start();
 
         assertTrue(proc.isMaintenanceMode());
-        MaintenanceRecord rec = proc.activeMaintenanceRecord(id0);
+        MaintenanceTask task = proc.activeMaintenanceTask(id0);
 
-        assertNotNull(rec);
-        assertEquals(newParams, rec.parameters());
+        assertNotNull(task);
+        assertEquals(newParams, task.parameters());
     }
 
     /**
-     * Registered {@link MaintenanceRecord} can be deleted before node entered Maintenance Mode (before node restart).
+     * Registered {@link MaintenanceTask} can be deleted before node entered Maintenance Mode (before node restart).
      *
      * @throws IgniteCheckedException If initialization failed.
      */
     @Test
-    public void testDeleteMaintenanceRecord() throws IgniteCheckedException {
+    public void testDeleteMaintenanceTask() throws IgniteCheckedException {
         UUID id = UUID.randomUUID();
 
-        MaintenanceRecord rec = new MaintenanceRecord(id, "description", null);
+        MaintenanceTask task = new MaintenanceTask(id, "description", null);
 
         MaintenanceProcessor proc = new MaintenanceProcessor(initContext(true));
 
         proc.start();
 
-        proc.registerMaintenanceRecord(rec);
+        proc.registerMaintenanceTask(task);
 
         assertFalse(proc.isMaintenanceMode());
 
-        proc.unregisterMaintenanceRecord(id);
+        proc.unregisterMaintenanceTask(id);
 
         proc.stop(false);
 
         proc.start();
 
-        assertNull(proc.activeMaintenanceRecord(id));
+        assertNull(proc.activeMaintenanceTask(id));
         assertFalse(proc.isMaintenanceMode());
     }
 
@@ -198,43 +198,43 @@ public class MaintenanceRegistrySimpleTest {
     }
 
     /**
-     * Smoke test for writing and restoring back maintenance records to/from file.
+     * Smoke test for writing and restoring back maintenance tasks to/from file.
      *
      * @throws IgniteCheckedException If initialization of Maintenance Processor failed.
      */
     @Test
-    public void testMultipleMaintenanceRecords() throws IgniteCheckedException {
+    public void testMultipleMaintenanceTasks() throws IgniteCheckedException {
         MaintenanceProcessor proc = new MaintenanceProcessor(initContext(true));
 
-        UUID rec0Id = UUID.randomUUID();
-        UUID rec1Id = UUID.randomUUID();
+        UUID task0Id = UUID.randomUUID();
+        UUID task1Id = UUID.randomUUID();
 
-        String desc0 = "record0";
-        String desc1 = "record1";
+        String desc0 = "task0";
+        String desc1 = "task1";
 
-        String params0 = "rec0_param";
-        String params1 = "rec1_param";
+        String params0 = "task0_param";
+        String params1 = "task1_param";
 
         proc.start();
 
-        proc.registerMaintenanceRecord(new MaintenanceRecord(rec0Id, desc0, params0));
-        proc.registerMaintenanceRecord(new MaintenanceRecord(rec1Id, desc1, params1));
+        proc.registerMaintenanceTask(new MaintenanceTask(task0Id, desc0, params0));
+        proc.registerMaintenanceTask(new MaintenanceTask(task1Id, desc1, params1));
 
         proc.stop(false);
 
         proc.start();
 
-        MaintenanceRecord rec0 = proc.activeMaintenanceRecord(rec0Id);
-        MaintenanceRecord rec1 = proc.activeMaintenanceRecord(rec1Id);
+        MaintenanceTask task0 = proc.activeMaintenanceTask(task0Id);
+        MaintenanceTask task1 = proc.activeMaintenanceTask(task1Id);
 
-        assertNotNull(rec0);
-        assertNotNull(rec1);
+        assertNotNull(task0);
+        assertNotNull(task1);
 
-        assertEquals(desc0, rec0.description());
-        assertEquals(desc1, rec1.description());
+        assertEquals(desc0, task0.description());
+        assertEquals(desc1, task1.description());
 
-        assertEquals(params0, rec0.parameters());
-        assertEquals(params1, rec1.parameters());
+        assertEquals(params0, task0.parameters());
+        assertEquals(params1, task1.parameters());
     }
 
     /**
@@ -242,36 +242,36 @@ public class MaintenanceRegistrySimpleTest {
      * @throws IgniteCheckedException If initialization of Maintenance Processor failed.
      */
     @Test
-    public void testMaintenanceRecordsWithoutParameters() throws IgniteCheckedException {
+    public void testMaintenanceTasksWithoutParameters() throws IgniteCheckedException {
         MaintenanceProcessor proc = new MaintenanceProcessor(initContext(true));
 
-        UUID rec0Id = UUID.randomUUID();
-        UUID rec1Id = UUID.randomUUID();
+        UUID task0Id = UUID.randomUUID();
+        UUID task1Id = UUID.randomUUID();
 
-        String desc0 = "record0";
-        String desc1 = "record1";
+        String desc0 = "task0";
+        String desc1 = "task1";
 
-        String params0 = "rec0_param";
+        String params0 = "task0_param";
 
-        // call to initialize file for maintenance records
+        // call to initialize file for maintenance tasks
         proc.start();
 
-        proc.registerMaintenanceRecord(new MaintenanceRecord(rec0Id, desc0, params0));
-        proc.registerMaintenanceRecord(new MaintenanceRecord(rec1Id, desc1, null));
+        proc.registerMaintenanceTask(new MaintenanceTask(task0Id, desc0, params0));
+        proc.registerMaintenanceTask(new MaintenanceTask(task1Id, desc1, null));
 
         proc.stop(false);
 
-        // call to force Maintenance Processor to read that file and fill internal collection of maintenance records
+        // call to force Maintenance Processor to read that file and fill internal collection of maintenance tasks
         proc.start();
 
-        MaintenanceRecord rec0 = proc.activeMaintenanceRecord(rec0Id);
-        MaintenanceRecord rec1 = proc.activeMaintenanceRecord(rec1Id);
+        MaintenanceTask task0 = proc.activeMaintenanceTask(task0Id);
+        MaintenanceTask task1 = proc.activeMaintenanceTask(task1Id);
 
-        assertNotNull(rec0);
-        assertNotNull(rec1);
+        assertNotNull(task0);
+        assertNotNull(task1);
 
-        assertEquals(params0, rec0.parameters());
-        assertNull(rec1.parameters());
+        assertEquals(params0, task0.parameters());
+        assertNull(task1.parameters());
     }
 
     /**

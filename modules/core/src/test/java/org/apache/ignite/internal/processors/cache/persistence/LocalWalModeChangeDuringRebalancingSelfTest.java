@@ -740,7 +740,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
                 MaintenanceRegistry mntcRegistry = ((IgniteEx) ig).context().maintenanceRegistry();
 
-                List<MaintenanceAction> actions = mntcRegistry.actionsForMaintenanceRecord(mntcActionId);
+                List<MaintenanceAction> actions = mntcRegistry.actionsForMaintenanceTask(mntcActionId);
 
                 Optional<MaintenanceAction> optional = actions
                     .stream()
@@ -751,7 +751,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                 else
                     optional.get().execute();
 
-                mntcRegistry.unregisterMaintenanceRecord(mntcActionId);
+                mntcRegistry.unregisterMaintenanceTask(mntcActionId);
             }
         });
 

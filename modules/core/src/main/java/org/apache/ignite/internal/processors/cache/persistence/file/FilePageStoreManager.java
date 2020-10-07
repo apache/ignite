@@ -88,7 +88,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.maintenance.MaintenanceRecord;
+import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.thread.IgniteThread;
@@ -147,7 +147,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         FileSystems.getDefault().getPathMatcher("glob:**" + TMP_SUFFIX);
 
     /** Unique identifier for corrupted data files maintenance records. */
-    public static final UUID CORRUPTED_DATA_FILES_MNTC_RECORD_ID = UUID
+    public static final UUID CORRUPTED_DATA_FILES_MNTC_TASK_ID = UUID
         .fromString("607fcd84-03a0-4da5-b779-7bb082e5f6b7");
 
     /** Listeners of configuration changes e.g. overwrite or remove actions. */
@@ -378,8 +378,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             try {
                 cctx.kernalContext().maintenanceRegistry()
-                    .registerMaintenanceRecord(
-                        new MaintenanceRecord(CORRUPTED_DATA_FILES_MNTC_RECORD_ID,
+                    .registerMaintenanceTask(
+                        new MaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID,
                             "Corrupted cache groups found",
                             groupsWithWalDisabled.stream().collect(Collectors.joining(File.separator)))
                     );
