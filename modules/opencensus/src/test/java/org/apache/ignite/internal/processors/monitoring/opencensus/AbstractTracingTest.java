@@ -109,6 +109,10 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
         DFLT_CONFIG_MAP.put(
             new TracingConfigurationCoordinates.Builder(Scope.DISCOVERY).build(),
             TracingConfigurationManager.DEFAULT_DISCOVERY_CONFIGURATION);
+
+        DFLT_CONFIG_MAP.put(
+            new TracingConfigurationCoordinates.Builder(Scope.SQL).build(),
+            TracingConfigurationManager.DEFAULT_SQL_CONFIGURATION);
     }
 
     /** Test trace exporter handler. */
@@ -222,6 +226,39 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
         });
 
         return spanIds;
+    }
+
+    /**
+     * Checks that there's at least one span with given spanType and attributes.
+     *
+     * @param spanType Span type to be found.
+     * @param expAttrs Expected attributes.
+     * @return {@code true} if Span with given type and attributes was found, false otherwise.
+     */
+    boolean checkSpanExistences(
+        SpanType spanType,
+        /* tagName: tagValue*/ Map<String, String> expAttrs
+    ) {
+        java.util.List<SpanData> gotSpans = hnd.allSpans()
+            .filter(span -> spanType.spanName().equals(span.getName())).collect(Collectors.toList());
+
+        for (SpanData specificTypeSpans : gotSpans) {
+            Map<String, AttributeValue> attrs = specificTypeSpans.getAttributes().getAttributeMap();
+
+            boolean matchFound = true;
+
+            for (Map.Entry<String, String> entry : expAttrs.entrySet()) {
+                if (!entry.getValue().equals(attributeValueToString(attrs.get(entry.getKey())))) {
+                    matchFound = false;
+
+                    break;
+                }
+            }
+            if (matchFound && expAttrs.size() == attrs.size())
+                return true;
+        }
+
+        return false;
     }
 
     /**

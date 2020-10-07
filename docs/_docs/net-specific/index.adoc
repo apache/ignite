@@ -1,0 +1,8 @@
+---
+layout: toc
+---
+
+= Ignite.NET Specific Capabilities of Ignite
+
+This section covers Ignite features, configuration approaches and architectural nuances that are specific for C# and .NET
+applications.

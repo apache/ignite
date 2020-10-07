@@ -1,0 +1,9 @@
+= Introduction
+
+Regression is a ML algorithm that can be trained to predict real numbered outputs, like temperature, stock price, etc. Regression is based on a hypothesis that can be linear, quadratic, polynomial, non-linear, etc. The hypothesis is a function that is based on some hidden parameters and the input values.
+
+All existing training algorithms presented in this section are designed to solve regression tasks:
+
+* Linear Regression
+* Decision Trees Regression
+* k-NN Regression

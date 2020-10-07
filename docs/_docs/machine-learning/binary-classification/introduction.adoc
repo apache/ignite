@@ -1,0 +1,20 @@
+---
+layout: toc
+---
+= Introduction
+
+In machine learning and statistics, classification is the problem of identifying to which of a set of categories (sub-populations) a new observation belongs, on the basis of a training set of data containing observations (or instances) whose category membership is known.
+
+All existing training algorithms presented in this section are designed to solve binary classification tasks:
+
+
+*  Linear SVM (Support Vector Machines)
+*  Decision Trees
+*    Multilayer perceptron
+*    Logistic Regression
+*    k-NN Classification
+*    ANN (Approximate Nearest Neighbor)
+*    Naive Bayes
+
+
+Binary or binomial classification is the task of classifying the elements of a given set into two groups (predicting which group each one belongs to) on the basis of a classification rule.

@@ -646,7 +646,7 @@ public interface CacheMetrics {
     public long getRebalancingStartTime();
 
     /**
-     * @return Number of partitions need to be cleared before actual rebalance start.
+     * @return The number of partitions need to be cleared before actual rebalance start.
      */
     public long getRebalanceClearingPartitionsLeft();
 
@@ -720,4 +720,19 @@ public interface CacheMetrics {
      * @return Key collisions and appropriate queue size string representation.
      */
     @NotNull public String getTxKeyCollisions();
+
+    /**
+     * Return {@code true} if index rebuild is in progress.
+     *
+     * @return {@code true} if index rebuild is in progress.
+     */
+    public boolean isIndexRebuildInProgress();
+
+    /**
+     * Return number of keys processed during index rebuilding.
+     * To get remaining number of keys for rebuilding, subtract current value from {@link #getCacheSize}.
+     *
+     * @return Number of keys processed during index rebuilding.
+     */
+    public long getIndexRebuildKeysProcessed();
 }

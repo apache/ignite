@@ -26,8 +26,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -171,7 +171,8 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "1")
     public void testFullRebalanceWithShortCpHistoryLogMsgs() throws Exception {
         LogListener expMsgsLsnr = LogListener.
-            matches(str -> str.startsWith("Partitions were reserved, but maximum available counter is greater than demanded: ") &&
+            matches(str -> str.startsWith("Partitions were reserved, but maximum available counter is greater than " +
+                "demanded or WAL contains too many updates: ") &&
                 str.contains("grp=cache_group1") && str.contains("grp=cache_group2")).
             andMatches(str -> str.startsWith("Starting rebalance routine") &&
                 (str.contains("cache_group1") || str.contains("cache_group2")) &&

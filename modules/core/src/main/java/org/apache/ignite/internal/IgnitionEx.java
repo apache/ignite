@@ -87,6 +87,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
+import org.apache.ignite.internal.processors.resource.DependencyResolver;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -131,7 +132,6 @@ import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
-import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.spi.tracing.NoopTracingSpi;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
@@ -195,9 +195,6 @@ public class IgnitionEx {
     private static final String GRACEFUL_SHUTDOWN_METASTORE_KEY =
         DistributedMetaStorageImpl.IGNITE_INTERNAL_KEY_PREFIX + "graceful.shutdown";
 
-    /** Class name for a SQL view exporter of system views. */
-    public static final String SYSTEM_VIEW_SQL_SPI = "org.apache.ignite.spi.systemview.SqlViewExporterSpi";
-
     /** Map of named Ignite instances. */
     private static final ConcurrentMap<Object, IgniteNamedInstance> grids = new ConcurrentHashMap<>();
 
@@ -225,6 +222,9 @@ public class IgnitionEx {
 
     /** */
     private static ThreadLocal<Boolean> clientMode = new ThreadLocal<>();
+
+    /** Dependency container. */
+    private static ThreadLocal<DependencyResolver> dependencyResolver = new ThreadLocal<>();
 
     /**
      * Enforces singleton.
@@ -1459,6 +1459,24 @@ public class IgnitionEx {
     }
 
     /**
+     * Sets custom dependency resolver which provides overridden dependencies
+     *
+     * @param rslvr Dependency resolver.
+     */
+    public static void dependencyResolver(DependencyResolver rslvr) {
+        dependencyResolver.set(rslvr);
+    }
+
+    /**
+     * Custom dependency resolver.
+     *
+     * @return Returns {@code null} if resolver wasn't added.
+     */
+    public static DependencyResolver dependencyResolver() {
+        return dependencyResolver.get();
+    }
+
+    /**
      * Start context encapsulates all starting parameters.
      */
     private static final class GridStartContext {
@@ -2135,7 +2153,7 @@ public class IgnitionEx {
             // Do NOT set it up only if IGNITE_NO_SHUTDOWN_HOOK=TRUE is provided.
             if (!IgniteSystemProperties.getBoolean(IGNITE_NO_SHUTDOWN_HOOK, false)) {
                 try {
-                    Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {
+                    Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread("shutdown-hook") {
                         @Override public void run() {
                             if (log.isInfoEnabled())
                                 log.info("Invoking shutdown hook...");
@@ -2489,21 +2507,6 @@ public class IgnitionEx {
 
             if (F.isEmpty(cfg.getMetricExporterSpi()))
                 cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
-
-            if (F.isEmpty(cfg.getSystemViewExporterSpi())) {
-                if (IgniteComponentType.INDEXING.inClassPath()) {
-                    try {
-                        cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi(),
-                            U.newInstance(SYSTEM_VIEW_SQL_SPI));
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-
-                }
-                else
-                    cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
-            }
 
             if (cfg.getTracingSpi() == null)
                 cfg.setTracingSpi(new NoopTracingSpi());

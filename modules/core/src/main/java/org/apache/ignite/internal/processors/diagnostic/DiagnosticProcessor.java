@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_PAGE_LOCK_ON_FAILURE;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_FILE;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_LOG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_RAW_FILE;
@@ -43,9 +44,13 @@ import static org.apache.ignite.internal.util.IgniteStopwatch.logTime;
  * Processor which contained helper methods for different diagnostic cases.
  */
 public class DiagnosticProcessor extends GridProcessorAdapter {
+    /** @see IgniteSystemProperties#IGNITE_DUMP_PAGE_LOCK_ON_FAILURE */
+    public static final boolean DFLT_DUMP_PAGE_LOCK_ON_FAILURE = true;
+
     /** Value of the system property that enables page locks dumping on failure. */
     private static final boolean IGNITE_DUMP_PAGE_LOCK_ON_FAILURE =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DUMP_PAGE_LOCK_ON_FAILURE, true);
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DUMP_PAGE_LOCK_ON_FAILURE,
+            DFLT_DUMP_PAGE_LOCK_ON_FAILURE);
 
     /** Time formatter for dump file name. */
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss_SSS");

@@ -75,6 +75,9 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -105,6 +108,12 @@ import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_NOT_FOUND;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_OK;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_IDX;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_IDX_RANGE_ROWS;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_TABLE;
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_IDX_RANGE_REQ;
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_IDX_RANGE_RESP;
 import static org.h2.result.Row.MEMORY_CALCULATE;
 
 /**
@@ -732,85 +741,109 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param msg Request message.
      */
     private void onIndexRangeRequest(final ClusterNode node, final GridH2IndexRangeRequest msg) {
-        GridH2IndexRangeResponse res = new GridH2IndexRangeResponse();
+        // We don't use try with resources on purpose - the catch block must also be executed in the context of this span.
+        TraceSurroundings trace = MTC.support(ctx.tracing().create(SQL_IDX_RANGE_REQ, MTC.span()));
 
-        res.originNodeId(msg.originNodeId());
-        res.queryId(msg.queryId());
-        res.originSegmentId(msg.originSegmentId());
-        res.segment(msg.segment());
-        res.batchLookupId(msg.batchLookupId());
+        Span span = MTC.span();
 
-        QueryContext qctx = qryCtxRegistry.getShared(
-            msg.originNodeId(),
-            msg.queryId(),
-            msg.originSegmentId()
-        );
+        try {
+            span.addTag(SQL_IDX, () -> idxName);
+            span.addTag(SQL_TABLE, () -> tblName);
 
-        if (qctx == null)
-            res.status(STATUS_NOT_FOUND);
-        else {
-            DistributedJoinContext joinCtx = qctx.distributedJoinContext();
+            GridH2IndexRangeResponse res = new GridH2IndexRangeResponse();
 
-            assert joinCtx != null;
+            res.originNodeId(msg.originNodeId());
+            res.queryId(msg.queryId());
+            res.originSegmentId(msg.originSegmentId());
+            res.segment(msg.segment());
+            res.batchLookupId(msg.batchLookupId());
 
-            try {
-                RangeSource src;
+            QueryContext qctx = qryCtxRegistry.getShared(
+                msg.originNodeId(),
+                msg.queryId(),
+                msg.originSegmentId()
+            );
 
-                if (msg.bounds() != null) {
-                    // This is the first request containing all the search rows.
-                    assert !msg.bounds().isEmpty() : "empty bounds";
+            if (qctx == null)
+                res.status(STATUS_NOT_FOUND);
+            else {
+                DistributedJoinContext joinCtx = qctx.distributedJoinContext();
 
-                    src = new RangeSource(this, msg.bounds(), msg.segment(), filter(qctx));
+                assert joinCtx != null;
+
+                try {
+                    RangeSource src;
+
+                    if (msg.bounds() != null) {
+                        // This is the first request containing all the search rows.
+                        assert !msg.bounds().isEmpty() : "empty bounds";
+
+                        src = new RangeSource(this, msg.bounds(), msg.segment(), filter(qctx));
+                    }
+                    else {
+                        // This is request to fetch next portion of data.
+                        src = joinCtx.getSource(node.id(), msg.segment(), msg.batchLookupId());
+
+                        assert src != null;
+                    }
+
+                    List<GridH2RowRange> ranges = new ArrayList<>();
+
+                    int maxRows = joinCtx.pageSize();
+
+                    assert maxRows > 0 : maxRows;
+
+                    while (maxRows > 0) {
+                        GridH2RowRange range = src.next(maxRows);
+
+                        if (range == null)
+                            break;
+
+                        ranges.add(range);
+
+                        if (range.rows() != null)
+                            maxRows -= range.rows().size();
+                    }
+
+                    assert !ranges.isEmpty();
+
+                    if (src.hasMoreRows()) {
+                        // Save source for future fetches.
+                        if (msg.bounds() != null)
+                            joinCtx.putSource(node.id(), msg.segment(), msg.batchLookupId(), src);
+                    }
+                    else if (msg.bounds() == null) {
+                        // Drop saved source.
+                        joinCtx.putSource(node.id(), msg.segment(), msg.batchLookupId(), null);
+                    }
+
+                    res.ranges(ranges);
+                    res.status(STATUS_OK);
+
+                    span.addTag(SQL_IDX_RANGE_ROWS, () ->
+                        Integer.toString(ranges.stream().mapToInt(GridH2RowRange::rowsSize).sum()));
                 }
-                else {
-                    // This is request to fetch next portion of data.
-                    src = joinCtx.getSource(node.id(), msg.segment(), msg.batchLookupId());
+                catch (Throwable th) {
+                    span.addTag(ERROR, th::getMessage);
 
-                    assert src != null;
+                    U.error(log, "Failed to process request: " + msg, th);
+
+                    res.error(th.getClass() + ": " + th.getMessage());
+                    res.status(STATUS_ERROR);
                 }
-
-                List<GridH2RowRange> ranges = new ArrayList<>();
-
-                int maxRows = joinCtx.pageSize();
-
-                assert maxRows > 0 : maxRows;
-
-                while (maxRows > 0) {
-                    GridH2RowRange range = src.next(maxRows);
-
-                    if (range == null)
-                        break;
-
-                    ranges.add(range);
-
-                    if (range.rows() != null)
-                        maxRows -= range.rows().size();
-                }
-
-                assert !ranges.isEmpty();
-
-                if (src.hasMoreRows()) {
-                    // Save source for future fetches.
-                    if (msg.bounds() != null)
-                        joinCtx.putSource(node.id(), msg.segment(), msg.batchLookupId(), src);
-                }
-                else if (msg.bounds() == null) {
-                    // Drop saved source.
-                    joinCtx.putSource(node.id(), msg.segment(), msg.batchLookupId(), null);
-                }
-
-                res.ranges(ranges);
-                res.status(STATUS_OK);
             }
-            catch (Throwable th) {
-                U.error(log, "Failed to process request: " + msg, th);
 
-                res.error(th.getClass() + ": " + th.getMessage());
-                res.status(STATUS_ERROR);
-            }
+            send(singletonList(node), res);
         }
+        catch (Throwable th) {
+            span.addTag(ERROR, th::getMessage);
 
-        send(singletonList(node), res);
+            throw th;
+        }
+        finally {
+            if (trace != null)
+                trace.close();
+        }
     }
 
     /**
@@ -818,29 +851,31 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param msg Response message.
      */
     private void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
-        QueryContext qctx = qryCtxRegistry.getShared(
-            msg.originNodeId(),
-            msg.queryId(),
-            msg.originSegmentId()
-        );
+        try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_IDX_RANGE_RESP, MTC.span()))) {
+            QueryContext qctx = qryCtxRegistry.getShared(
+                msg.originNodeId(),
+                msg.queryId(),
+                msg.originSegmentId()
+            );
 
-        if (qctx == null)
-            return;
+            if (qctx == null)
+                return;
 
-        DistributedJoinContext joinCtx = qctx.distributedJoinContext();
+            DistributedJoinContext joinCtx = qctx.distributedJoinContext();
 
-        assert joinCtx != null;
+            assert joinCtx != null;
 
-        Map<SegmentKey, RangeStream> streams = joinCtx.getStreams(msg.batchLookupId());
+            Map<SegmentKey, RangeStream> streams = joinCtx.getStreams(msg.batchLookupId());
 
-        if (streams == null)
-            return;
+            if (streams == null)
+                return;
 
-        RangeStream stream = streams.get(new SegmentKey(node, msg.segment()));
+            RangeStream stream = streams.get(new SegmentKey(node, msg.segment()));
 
-        assert stream != null;
+            assert stream != null;
 
-        stream.onResponse(msg);
+            stream.onResponse(msg);
+        }
     }
 
     /**

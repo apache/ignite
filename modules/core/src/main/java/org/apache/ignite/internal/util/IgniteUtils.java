@@ -113,6 +113,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
@@ -264,6 +265,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
@@ -322,6 +324,9 @@ public abstract class IgniteUtils {
 
     /** Default minimum checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE = 2 * GB;
+
+    /** @see IgniteSystemProperties#IGNITE_MBEAN_APPEND_CLASS_LOADER_ID */
+    public static final boolean DFLT_MBEAN_APPEND_CLASS_LOADER_ID = true;
 
     /** {@code True} if {@code unsafe} should be used for array copy. */
     private static final boolean UNSAFE_BYTE_ARR_CP = unsafeByteArrayCopyAvailable();
@@ -623,6 +628,9 @@ public abstract class IgniteUtils {
 
     /** JDK9: URLClassPath#getURLs. */
     private static Method mthdURLClassPathGetUrls;
+
+    /** Byte count prefixes. */
+    private static String BYTE_CNT_PREFIXES = " KMGTPE";
 
     /*
      * Initializes enterprise check.
@@ -2130,7 +2138,8 @@ public abstract class IgniteUtils {
 
         Collection<Future<?>> futs = new ArrayList<>(addrs.size());
 
-        ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()));
+        ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()),
+            new IgniteThreadFactory("utils", "reachable"));
 
         try {
             for (final InetAddress addr : addrs) {
@@ -4776,7 +4785,7 @@ public abstract class IgniteUtils {
      * @param sb Sb.
      */
     private static void appendClassLoaderHash(SB sb) {
-        if (getBoolean(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, true)) {
+        if (getBoolean(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, DFLT_MBEAN_APPEND_CLASS_LOADER_ID)) {
             String clsLdrHash = Integer.toHexString(Ignite.class.getClassLoader().hashCode());
 
             sb.a("clsLdr=").a(clsLdrHash).a(',');
@@ -9535,8 +9544,8 @@ public abstract class IgniteUtils {
                         "    Ignite nodes need in order to function normally.\n" +
                         "Don't delete it unless you're sure you know what you're doing.\n\n" +
                         "You can change the location of working directory with \n" +
-                        "    igniteConfiguration.setWorkingDirectory(location) or \n" +
-                        "    <property name=\"workingDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
+                        "    igniteConfiguration.setWorkDirectory(location) or \n" +
+                        "    <property name=\"workDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
                 }
             }
             catch (Exception e) {
@@ -11486,12 +11495,12 @@ public abstract class IgniteUtils {
 
         /**
          * @param delegate RWLock delegate.
-         * @param kctx Kernal context.
+         * @param log Ignite logger.
          * @param readLockThreshold ReadLock threshold timeout.
          *
          */
-        public ReentrantReadWriteLockTracer(ReentrantReadWriteLock delegate, GridKernalContext kctx, long readLockThreshold) {
-            log = kctx.cache().context().logger(getClass());
+        public ReentrantReadWriteLockTracer(ReentrantReadWriteLock delegate, IgniteLogger log, long readLockThreshold) {
+            this.log = log;
 
             readLock = new ReadLockTracer(delegate, log, readLockThreshold);
 
@@ -12062,5 +12071,73 @@ public abstract class IgniteUtils {
     public interface InterfaceSupplier {
         /** Return collection of local network interfaces. */
         Enumeration<NetworkInterface> getInterfaces() throws SocketException;
+    }
+
+    /**
+     * Converts count of bytes to a human-readable format.
+     * Examples: 10 -> 10.0 B, 2048 -> 2.0 KB, etc.
+     *
+     * @param bytes Byte count.
+     * @return Human readable format for count of bytes.
+     */
+    public static String humanReadableByteCount(long bytes) {
+        long base = 1024L;
+
+        int exponent = max((int)(Math.log(bytes) / Math.log(base)), 0);
+        String unit = String.valueOf(BYTE_CNT_PREFIXES.charAt(exponent)).trim();
+
+        return String.format((Locale)null, "%.1f %sB", (bytes / Math.pow(base, exponent)), unit);
+    }
+
+    /**
+     * Converts duration to a human-readable format.
+     * Examples: 10 -> 10ms, 6_0000 -> 6s, 65_000 -> 1m5s, (65 * 60_000 + 32_000) -> 1h5m32s, etc.
+     *
+     * @param millis Duration in milliseconds.
+     * @return Human readable format for duration.
+     */
+    public static String humanReadableDuration(long millis) {
+        StringBuilder sb = new StringBuilder();
+
+        if (millis < 0) {
+            sb.append('-');
+
+            millis = -millis;
+        }
+
+        if (millis < 1_000)
+            sb.append(millis).append("ms");
+        else {
+            long days = TimeUnit.MILLISECONDS.toDays(millis);
+
+            if (days > 0) {
+                sb.append(days).append('d');
+
+                millis -= TimeUnit.DAYS.toMillis(days);
+            }
+
+            long hours = TimeUnit.MILLISECONDS.toHours(millis);
+
+            if (hours > 0) {
+                sb.append(hours).append('h');
+
+                millis -= TimeUnit.HOURS.toMillis(hours);
+            }
+
+            long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
+
+            if (minutes > 0) {
+                sb.append(minutes).append('m');
+
+                millis -= TimeUnit.MINUTES.toMillis(minutes);
+            }
+
+            long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
+
+            if (seconds > 0)
+                sb.append(seconds).append('s');
+        }
+
+        return sb.toString();
     }
 }

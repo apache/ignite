@@ -1,0 +1,11 @@
+= Introduction
+
+In statistics and machine learning, ensemble methods use multiple learning algorithms to obtain better predictive performance than could be obtained from any of the constituent learning algorithms alone.  Typically, ML ensemble consists of only a concrete finite set of alternative models.
+
+Ensemble methods are meta-algorithms that combine several machine learning techniques into one predictive model in order to decrease variance (bagging), bias (boosting), or improve predictions (stacking).
+
+The most popular ensemble models are supported in Apache Ignite ML:
+
+* Stacking
+* Boosting via GradientBoosting
+* Bagging (Bootstrap aggregating) and RandomForest as a special case

@@ -35,6 +35,7 @@ import java.util.logging.Logger;
 import java.util.logging.StreamHandler;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientClosedException;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -57,6 +58,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
@@ -64,6 +66,7 @@ import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.errorMessage;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_ENABLE_EXPERIMENTAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
@@ -229,8 +232,8 @@ public class CommandHandler {
         boolean verbose = false;
 
         try {
-            if (F.isEmpty(rawArgs) || (rawArgs.size() == 1 && CMD_HELP.equalsIgnoreCase(rawArgs.get(0)))) {
-                printHelp();
+            if (isHelp(rawArgs)) {
+                printHelp(rawArgs);
 
                 return EXIT_CODE_OK;
             }
@@ -379,6 +382,29 @@ public class CommandHandler {
                   .filter(handler -> handler instanceof FileHandler)
                   .forEach(Handler::close);
         }
+    }
+
+    /** @return {@code True} if arguments means "print help" command. */
+    private boolean isHelp(List<String> rawArgs) {
+        if (F.isEmpty(rawArgs))
+            return true;
+
+        if (rawArgs.size() > 2)
+            return false;
+
+        boolean help = false;
+        boolean experimental = false;
+
+        for (String arg : rawArgs) {
+            if (CMD_HELP.equalsIgnoreCase(arg))
+                help = true;
+            else if (CMD_ENABLE_EXPERIMENTAL.equalsIgnoreCase(arg))
+                experimental = true;
+            else
+                return false;
+        }
+
+        return help || experimental;
     }
 
     /**
@@ -671,8 +697,11 @@ public class CommandHandler {
             .collect(Collectors.toList());
     }
 
-    /** */
-    private void printHelp() {
+    /** @param rawArgs Arguments. */
+    private void printHelp(List<String> rawArgs) {
+        boolean experimentalEnabled = rawArgs.stream().anyMatch(CMD_ENABLE_EXPERIMENTAL::equalsIgnoreCase) ||
+            IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+
         logger.info("Control utility script is used to execute admin commands on cluster or get common cluster info. " +
             "The command has the following syntax:");
         logger.info("");
@@ -684,7 +713,9 @@ public class CommandHandler {
 
         logger.info("This utility can do the following commands:");
 
-        Arrays.stream(CommandList.values()).forEach(c -> c.command().printUsage(logger));
+        Arrays.stream(CommandList.values())
+            .filter(c -> experimentalEnabled || !c.command().experimental())
+            .forEach(c -> c.command().printUsage(logger));
 
         logger.info("");
         logger.info("By default commands affecting the cluster require interactive confirmation.");

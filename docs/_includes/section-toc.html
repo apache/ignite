@@ -1,0 +1,14 @@
+{% assign s = include.section %}
+
+{% if include.title %}
+<a {% if s.url %} href="{{site.attrs.base_url}}/{{s.url}}" {% endif %}>{{s.title}}</a>
+{% endif %}
+
+{% if s.items %}
+    <ul class='sub_pages'>
+    {% for subpage in s.items %}
+        <li><a href="{{site.attrs.base_url}}/{{subpage.url}}" class=''>{{subpage.title}}</a></li>
+    {% endfor %}
+    </ul>
+{% endif %}
+

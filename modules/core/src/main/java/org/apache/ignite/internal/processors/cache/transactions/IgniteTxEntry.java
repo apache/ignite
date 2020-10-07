@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -945,7 +946,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
             if (cacheCtx == null)
                 throw new CacheInvalidStateException(
                     "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
-            
+
             if (cacheCtx.isNear() && !near)
                 cacheCtx = cacheCtx.near().dht().context();
             else if (!cacheCtx.isNear() && near)
@@ -953,6 +954,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
             this.ctx = cacheCtx;
         }
+
+        CacheObjectValueContext coctx = this.ctx.cacheObjectContext();
+
+        if (coctx == null)
+            throw new CacheInvalidStateException(
+                "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
 
         // Unmarshal transform closure anyway if it exists.
         if (transformClosBytes != null && entryProcessorsCol == null)
