@@ -57,25 +57,29 @@ class IgniteApplicationService(IgniteAwareService):
         """
         Stops node in async way.
         """
-        self.logger.info("%s Stopping node %s" % (self.__class__.__name__, str(self.nodes[0].account)))
-        self.nodes[0].account.kill_java_processes(self.servicejava_class_name, clean_shutdown=clean_shutdown,
-                                                  allow_fail=True)
+        for node in self.nodes:
+            self.logger.info("%s Stopping node %s" % (self.__class__.__name__, str(node.account)))
+            node.account.kill_java_processes(self.servicejava_class_name, clean_shutdown=clean_shutdown,
+                                             allow_fail=True)
 
     def await_stopped(self, timeout_sec=10):
         """
         Awaits node stop finish.
         """
-        stopped = self.wait_node(self.nodes[0], timeout_sec=timeout_sec)
-        assert stopped, "Node %s: did not stop within the specified timeout of %s seconds" % \
-                        (str(self.nodes[0].account), str(timeout_sec))
+
+        for node in self.nodes:
+            stopped = self.wait_node(node, timeout_sec=timeout_sec)
+            assert stopped, "Node %s: did not stop within the specified timeout of %s seconds" % \
+                            (str(node.account), str(timeout_sec))
 
         self.__check_status("IGNITE_APPLICATION_FINISHED", timeout=timeout_sec)
 
     # pylint: disable=W0221
     def stop_node(self, node, clean_shutdown=True, timeout_sec=10):
-        assert node == self.nodes[0]
-        self.stop_async(clean_shutdown)
-        self.await_stopped(timeout_sec)
+        for tgt_node in self.nodes:
+            if node == tgt_node:
+                self.stop_async(clean_shutdown)
+                self.await_stopped(timeout_sec)
 
     def __check_status(self, desired, timeout=1):
         self.await_event("%s\\|IGNITE_APPLICATION_BROKEN" % desired, timeout, from_the_beginning=True)
@@ -121,10 +125,10 @@ class IgniteApplicationService(IgniteAwareService):
         """
         res = []
 
-        output = self.nodes[0].account.ssh_capture(
-            "grep '%s' %s" % (name + "->", self.STDOUT_STDERR_CAPTURE), allow_fail=False)
-
-        for line in output:
-            res.append(re.search("%s(.*)%s" % (name + "->", "<-"), line).group(1))
+        for node in self.nodes:
+            output = node.account.ssh_capture(
+                "grep '%s' %s" % (name + "->", self.STDOUT_STDERR_CAPTURE), allow_fail=False)
+            for line in output:
+                res.append(re.search("%s(.*)%s" % (name + "->", "<-"), line).group(1))
 
         return res
