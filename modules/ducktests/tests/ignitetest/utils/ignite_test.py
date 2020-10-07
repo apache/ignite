@@ -81,8 +81,9 @@ class IgniteTest(Test):
 
 
 def compress_cmd(src_path, dest_tgz):
-    """Return bash command which compresses the given path to a tarball."""
-
+    """
+    Return bash command which compresses the given path to a tarball.
+    """
     compres_cmd = f'cd {src_path} ; tar czf "{dest_tgz}" *;'
 
     return compres_cmd

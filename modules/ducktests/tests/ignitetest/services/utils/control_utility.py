@@ -20,9 +20,12 @@ This module contains control utility wrapper.
 import random
 import re
 import time
+from datetime import datetime, timedelta
 from typing import NamedTuple
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
+
+from ignitetest.services.utils.jmx_utils import JmxClient
 
 
 class ControlUtility:
@@ -145,11 +148,16 @@ class ControlUtility:
         """
         return self.__run("--cache idle_verify --dump", node=node)
 
-    def snapshot_create(self, snapshot_name: str):
+    def snapshot_create(self, snapshot_name: str, sync_mode: bool = True, time_out: int = 60):
         """
         Create snapshot.
         """
-        return self.__run(f"--snapshot create {snapshot_name}")
+        res = self.__run(f"--snapshot create {snapshot_name}")
+
+        if ("Command [SNAPSHOT] finished with code: 0" in res) & sync_mode:
+            self.await_snapshot(time_out=time_out)
+
+        return res
 
     def snapshot_cancel(self, snapshot_name: str):
         """
@@ -162,6 +170,34 @@ class ControlUtility:
         Kill snapshot.
         """
         return self.__run(f"--kill SNAPSHOT {snapshot_name}")
+
+    def await_snapshot(self, time_out=60):
+        """
+        Waiting for the snapshot to complete.
+        """
+        delta_time = datetime.now() + timedelta(seconds=time_out)
+
+        while datetime.now() < delta_time:
+            for node in self._cluster.nodes:
+                mbean = JmxClient(node).find_mbean('snapshot')
+                start_time = int(list(mbean.__getattr__('LastSnapshotStartTime'))[0])
+                end_time = int(list(mbean.__getattr__('LastSnapshotEndTime'))[0])
+                err_msg = list(mbean.__getattr__('LastSnapshotErrorMessage'))[0]
+
+                self.logger.debug(f'Hostname={node.account.hostname}, '
+                                  f'LastSnapshotStartTime={start_time}, '
+                                  f'LastSnapshotEndTime={end_time}, '
+                                  f'LastSnapshotErrorMessage={err_msg}'
+                                  )
+
+                if (0 < start_time < end_time) & (err_msg == ''):
+                    return
+
+            time.sleep(1)
+
+        raise TimeoutError(f'LastSnapshotStartTime={start_time}, '
+                           f'LastSnapshotEndTime={end_time}, '
+                           f'LastSnapshotErrorMessage={err_msg}')
 
     @staticmethod
     def __tx_command(**kwargs):

@@ -18,8 +18,6 @@ Module contains discovery tests.
 """
 
 import re
-import time
-from datetime import datetime, timedelta
 from ducktape.mark.resource import cluster
 from ducktape.tests.status import FAIL
 
@@ -28,8 +26,8 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
-from ignitetest.services.utils.jmx_utils import JmxClient
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -52,21 +50,21 @@ class SnapshotTest(IgniteTest):
         1. Start of ignite cluster.
         2. Activate cluster.
         3. Load.
-        4. Idle verify dump1.
+        4. Idle verify dump_1.
         5. Snapshot.
         6. Load.
-        7. Idle verify dump2.
-        8. Сhecking that dump1 and dump2 are different.
+        7. Idle verify dump_2.
+        8. Сhecking that dump_1 and dump_2 are different.
         9. Stop ignite and replace db from snapshot.
         10. Run ignite cluster.
-        11. Idle verify dump3.
-        12. Checking the equality of dump1 and dump3.
+        11. Idle verify dump_3.
+        12. Checking the equality of dump_1 and dump_3.
         """
-        data_cfg = DataStorageConfiguration(default=DataRegionConfiguration(persistent=True))
+        data_storage = DataStorageConfiguration(default=DataRegionConfiguration(persistent=True))
 
         ignite_config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
-            data_storage=data_cfg,
+            data_storage=data_storage
         )
 
         service = IgniteService(self.test_context, ignite_config, num_nodes=self.NUM_NODES - 1)
@@ -75,7 +73,11 @@ class SnapshotTest(IgniteTest):
         control_utility = ControlUtility(service, self.test_context)
         control_utility.activate()
 
-        client_config = ignite_config._replace(client_mode=True, data_storage=None)
+        client_config = IgniteConfiguration(
+            client_mode=True,
+            version=IgniteVersion(ignite_version),
+            discovery_spi=from_ignite_cluster(service),
+        )
 
         streamer = IgniteApplicationService(
             self.test_context,
@@ -100,8 +102,6 @@ class SnapshotTest(IgniteTest):
         data = control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
         self.logger.debug(data)
-
-        await_snapshot(service, logger=self.logger)
 
         print_snapshot_size(service, self.SNAPSHOT_NAME, self.logger)
 
@@ -181,41 +181,12 @@ def load(service_load: IgniteApplicationService, duration: int = 60):
         service_load.stop()
 
 
-def await_snapshot(service: IgniteApplicationService, time_out=60, logger=None):
-    """
-    Waiting for the snapshot to complete.
-    """
-    delta_time = datetime.now() + timedelta(seconds=time_out)
-
-    while datetime.now() < delta_time:
-        for node in service.nodes:
-            mbean = JmxClient(node).find_mbean('snapshot')
-            start_time = int(list(mbean.__getattr__('LastSnapshotStartTime'))[0])
-            end_time = int(list(mbean.__getattr__('LastSnapshotEndTime'))[0])
-            err_msg = list(mbean.__getattr__('LastSnapshotErrorMessage'))[0]
-
-            if logger is not None:
-                logger.debug(f'Hostname={node.account.hostname}, '
-                             f'LastSnapshotStartTime={start_time}, '
-                             f'LastSnapshotEndTime={end_time}, '
-                             f'LastSnapshotErrorMessage={err_msg}'
-                             )
-
-            if (0 < start_time < end_time) & (err_msg == ''):
-                return
-
-        time.sleep(1)
-
-    raise TimeoutError(f'LastSnapshotStartTime={start_time}, '
-                       f'LastSnapshotEndTime={end_time}, '
-                       f'LastSnapshotErrorMessage={err_msg}')
-
-
-def print_snapshot_size(service: IgniteApplicationService, snapshot_name: str, logger):
+def print_snapshot_size(service: IgniteService, snapshot_name: str, logger):
     """
     Print size snapshot dir on service nodes.
     """
     res = service.ssh_output_all(f'du -hs {IgnitePersistenceAware.SNAPSHOT}/{snapshot_name} | ' + "awk '{print $1}'")
+
     for items in res.items():
         data = items[1].decode("utf-8")
         logger.info(f'Snapshot {snapshot_name} on {items[0]}: {data}')
