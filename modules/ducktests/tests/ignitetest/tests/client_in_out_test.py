@@ -110,7 +110,7 @@ class ClientTest(IgniteTest):
 
         for i in range(self.ITERATION_COUNT):
             temp_clients.start()
-
+            print("Starting iteration: " + str(i))
             temp_clients.await_event(f'clients={self.STATIC_CLIENTS_NUM + self.TEMP_CLIENTS_NUM}',
                                      timeout_sec=80,
                                      from_the_beginning=True,
