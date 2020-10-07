@@ -19,11 +19,15 @@ package org.apache.ignite.internal.encryption;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -53,6 +57,9 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     private static final String KEYSTORE_PATH_2 =
         IgniteUtils.resolveIgnitePath("modules/core/src/test/resources/other_tde_keystore.jks").getAbsolutePath();
 
+    /** */
+    private ListeningTestLogger listeningLog;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
@@ -72,6 +79,9 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         IgniteConfiguration cfg = super.getConfiguration(grid);
 
         cfg.setConsistentId(grid);
+
+        if (listeningLog != null)
+            cfg.setGridLogger(listeningLog);
 
         if (grid.equals(GRID_0) ||
             grid.equals(GRID_2) ||
@@ -207,12 +217,12 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
     /** */
     @Test
-    public void testClientNodeJoinWithPreconfiguredCache() throws Exception {
+    public void testClientNodeJoinWithStaticCacheConfig() throws Exception {
         configureCache = true;
 
         IgniteEx grid0 = startGrid(GRID_0);
 
-        grid0.cluster().active(true);
+        grid0.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx client = startClientGrid(CLIENT);
 
@@ -221,7 +231,52 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         for (long i = 0; i < 100; i++)
             cache.put(i, String.valueOf(i));
 
+        forceCheckpoint();
+
         checkData(grid0);
+    }
+
+    /** */
+    @Test
+    public void testClientNodeJoinWithNewStaticCacheConfig() throws Exception {
+        listeningLog = new ListeningTestLogger(log);
+
+        startGrid(GRID_0);
+        startGrid(GRID_3);
+
+        IgniteEx client1 = startClientGrid("client1");
+
+        configureCache = true;
+
+        LogListener lsnr = LogListener.matches(s -> s.contains("Ignore cache received from joining node. " +
+            "Encryption key has not been generated. The client node must dynamically start " +
+            "this cache [cacheName=" + cacheName() + "]")).times(3).build();
+
+        listeningLog.registerListener(lsnr);
+
+        grid(GRID_0).cluster().state(ClusterState.ACTIVE);
+
+        IgniteEx client = startClientGrid(CLIENT);
+
+        awaitPartitionMapExchange();
+
+        // An encrypted cache statically defined on the client must be dynamically started.
+        assertTrue(lsnr.check());
+
+        GridTestUtils.waitForCondition(() -> client.cache(cacheName()) != null, 2_000);
+
+        IgniteCache<Object, Object> cache = client.cache(cacheName());
+
+        assertNotNull(cache);
+
+        for (long i = 0; i < 100; i++)
+            cache.put(i, String.valueOf(i));
+
+        forceCheckpoint();
+
+        checkEncryptedCaches(grid(GRID_0), grid(GRID_3));
+        checkEncryptedCaches(grid(GRID_0), client);
+        checkEncryptedCaches(grid(GRID_0), client1);
     }
 
     /** */
