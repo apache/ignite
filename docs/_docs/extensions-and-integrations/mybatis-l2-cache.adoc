@@ -1,0 +1,41 @@
+= Apache Ignite as MyBatis L2 Cache
+
+Apache Ignite can be used as a MyBatis L2 cache that distributes and caches data across a cluster of machines.
+
+If you are an Apache Maven user, simply add the following dependency to the `pom.xml`:
+
+[tabs]
+--
+tab:pom.xml[]
+[source,xml]
+----
+<dependencies>
+  ...
+  <dependency>
+    <groupId>org.mybatis.caches</groupId>
+    <artifactId>mybatis-ignite</artifactId>
+    <version>1.0.5</version>
+  </dependency>
+  ...
+</dependencies>
+----
+--
+
+Alternatively, you can also download the https://github.com/mybatis/ignite-cache/releases[zip bundle, window=_blank],
+decompress it and add the jars in the classpath.
+
+Then, just specify it in the mapper XML as follows:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<mapper namespace="org.acme.FooMapper">
+  <cache type="org.mybatis.caches.ignite.IgniteCacheAdapter" />
+</mapper>
+----
+--
+
+and configure your Ignite cache in `config/default-config.xml`. (Simple reference configurations are available on
+https://github.com/mybatis/ignite-cache/tree/master/config[Github, window=_blank])
