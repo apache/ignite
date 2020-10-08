@@ -231,9 +231,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         for (long i = 0; i < 100; i++)
             cache.put(i, String.valueOf(i));
 
-        forceCheckpoint();
-
-        checkData(grid0);
+        checkEncryptedCaches(grid(GRID_0), client);
     }
 
     /** */
@@ -246,8 +244,6 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         IgniteEx client1 = startClientGrid("client1");
 
-        configureCache = true;
-
         LogListener lsnr = LogListener.matches(s -> s.contains("Ignore cache received from joining node. " +
             "Encryption key for the cache cannot be generated on the client node, this node will dynamically start " +
             "this cache after join to topology [cacheName=" + cacheName() + ']')).times(3).build();
@@ -255,6 +251,8 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         listeningLog.registerListener(lsnr);
 
         grid(GRID_0).cluster().state(ClusterState.ACTIVE);
+
+        configureCache = true;
 
         IgniteEx client = startClientGrid(CLIENT);
 
@@ -271,8 +269,6 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         for (long i = 0; i < 100; i++)
             cache.put(i, String.valueOf(i));
-
-        forceCheckpoint();
 
         checkEncryptedCaches(grid(GRID_0), grid(GRID_3));
         checkEncryptedCaches(grid(GRID_0), client);
