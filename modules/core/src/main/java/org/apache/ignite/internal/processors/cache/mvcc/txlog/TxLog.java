@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIndexMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
@@ -122,9 +123,9 @@ public class TxLog implements CheckpointListener {
                     long pageAddr = pageMemory.writeLock(TX_LOG_CACHE_ID, metaId, metaPage);
 
                     try {
-                        if (PageIO.getType(pageAddr) != PageIO.T_META) {
+                        if (PageIO.getType(pageAddr) != PageIO.T_INDEX_META) {
                             // Initialize new page.
-                            PageMetaIO io = PageMetaIO.VERSIONS.latest();
+                            PageMetaIO io = PageIndexMetaIO.VERSIONS.latest();
 
                             io.initNewPage(pageAddr, metaId, pageMemory.pageSize());
 
@@ -138,7 +139,7 @@ public class TxLog implements CheckpointListener {
                             io.setReuseListRoot(pageAddr, reuseListRoot);
 
                             if (PageHandler.isWalDeltaRecordNeeded(pageMemory, TX_LOG_CACHE_ID, metaId, metaPage, wal, null))
-                                assert io.getType() == PageIO.T_META;
+                                assert io.getType() == PageIO.T_INDEX_META;
 
                                 wal.log(new MetaPageInitRecord(
                                     TX_LOG_CACHE_ID,
