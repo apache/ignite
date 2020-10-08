@@ -19,12 +19,15 @@ package org.apache.ignite.internal.processors.security.events;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
@@ -38,6 +41,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -47,15 +51,25 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientCompute;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
+import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskResultBean;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -65,14 +79,21 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static java.util.Collections.singletonList;
+import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
+import static org.apache.ignite.events.EventType.EVT_JOB_FAILED;
 import static org.apache.ignite.events.EventType.EVT_JOB_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_JOB_QUEUED;
 import static org.apache.ignite.events.EventType.EVT_JOB_RESULTED;
 import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
+import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_TASK_REDUCED;
 import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
+import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests that an event's local listener and an event's remote filter get correct subjectId when task's or job's
@@ -80,18 +101,31 @@ import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
  */
 @RunWith(Parameterized.class)
 public class TaskAndJobEventsTest extends AbstractSecurityTest {
-    /** Array types of events. */
-    private static final int[] EVENT_TYPES = new int[] {EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_TASK_REDUCED,
+    /** Types of events. */
+    private static final int[] EVENT_TYPES = new int[] {
+        EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_TASK_REDUCED,
         EVT_JOB_MAPPED, EVT_JOB_RESULTED, EVT_JOB_STARTED, EVT_JOB_FINISHED, EVT_JOB_QUEUED};
 
-    /** Remote counter. */
-    private static final AtomicInteger rmtCnt = new AtomicInteger();
+    /** Types of events. */
+    private static final int[] TIMEDOUT_EVENT_TYPES = new int[] {
+        EVT_TASK_STARTED, EVT_TASK_TIMEDOUT, EVT_TASK_FAILED, EVT_JOB_MAPPED,
+        EVT_JOB_QUEUED, EVT_JOB_STARTED, EVT_JOB_CANCELLED, EVT_JOB_FAILED
+    };
 
-    /** Local counter. */
-    private static final AtomicInteger locCnt = new AtomicInteger();
+    /** Job's sleep time. */
+    private static final long TIME_TO_SLEEP = 2000L;
+
+    /** Timeout. */
+    private static final long TIMEOUT = 1000L;
+
+    /** Remote events. */
+    private static final Set<Integer> rmtSet = Collections.synchronizedSet(new HashSet<>());
+
+    /** Local events. */
+    private static final Set<Integer> locSet = Collections.synchronizedSet(new HashSet<>());
 
     /** Test task name. */
-    private static final String TASK_NAME = "org.apache.ignite.internal.processors.security.events.TaskEventTest$TestComputeTask";
+    private static final String TASK_NAME = "org.apache.ignite.internal.processors.security.events.TaskAndJobEventsTest$TestComputeTask";
 
     /** Node that registers event listeners. */
     private static final String LISTENER_NODE = "listener_node";
@@ -102,9 +136,6 @@ public class TaskAndJobEventsTest extends AbstractSecurityTest {
     /** Server node. */
     private static final String SRV = "server";
 
-    /** Events latch. */
-    private static CountDownLatch evtsLatch;
-
     /** Expected login. */
     @Parameterized.Parameter
     public String expLogin;
@@ -113,14 +144,23 @@ public class TaskAndJobEventsTest extends AbstractSecurityTest {
     @Parameterized.Parameter(1)
     public Boolean async;
 
+    /** Task should be timed out. */
+    @Parameterized.Parameter(2)
+    public boolean timedout;
+
     /** Parameters. */
-    @Parameterized.Parameters(name = "expLogin={0}, async={1}")
+    @Parameterized.Parameters(name = "expLogin={0}, async={1}, timedout={2}")
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
-        Stream.of(SRV, CLNT, "thin", "rest").forEach(login -> {
-            res.add(new Object[] {login, false});
-            res.add(new Object[] {login, true});
+        Stream.of(SRV, CLNT, "thin", "rest", "grid").forEach(login -> {
+            res.add(new Object[] {login, false, false});
+            res.add(new Object[] {login, true, false});
+
+            if (!"grid".equals(login)) {
+                res.add(new Object[] {login, false, true});
+                res.add(new Object[] {login, true, true});
+            }
         });
 
         return res;
@@ -138,19 +178,21 @@ public class TaskAndJobEventsTest extends AbstractSecurityTest {
     /** */
     @Test
     public void test() throws Exception {
-        int expTimes = EVENT_TYPES.length;
+        int[] evtTypes = timedout ? TIMEDOUT_EVENT_TYPES : EVENT_TYPES;
 
-        evtsLatch = new CountDownLatch(2 * expTimes);
-
-        locCnt.set(0);
-        rmtCnt.set(0);
+        Arrays.stream(evtTypes).forEach(type -> {
+            locSet.add(type);
+            rmtSet.add(type);
+        });
 
         UUID taskLsnrId = grid(LISTENER_NODE).events().remoteListen(
             new IgniteBiPredicate<UUID, Event>() {
                 @IgniteInstanceResource IgniteEx ign;
 
                 @Override public boolean apply(UUID uuid, Event evt) {
-                    onEvent(ign, locCnt, evt, expLogin);
+                    locSet.remove(evt.type());
+
+                    onEvent(ign, evt, expLogin);
 
                     return true;
                 }
@@ -159,45 +201,76 @@ public class TaskAndJobEventsTest extends AbstractSecurityTest {
                 @IgniteInstanceResource IgniteEx ign;
 
                 @Override public boolean apply(Event evt) {
-                    onEvent(ign, rmtCnt, evt, expLogin);
+                    rmtSet.remove(evt.type());
+
+                    onEvent(ign, evt, expLogin);
 
                     return true;
                 }
-            }, EVENT_TYPES);
+            }, evtTypes);
 
         try {
-            operation().run();
+            if (timedout) {
+                assertThrowsWithCause(operation(),
+                    "thin".equals(expLogin) ? ClientServerError.class : ComputeTaskTimeoutException.class);
+            }
+            else
+                operation().run();
 
-            evtsLatch.await(10, TimeUnit.SECONDS);
+            waitForCondition(locSet::isEmpty, 10_000);
         }
         finally {
             grid(LISTENER_NODE).events().stopRemoteListen(taskLsnrId);
         }
 
-        assertEquals(expTimes, rmtCnt.get());
-        assertEquals(expTimes, locCnt.get());
+        assertTrue("Remote filter. Events that are not happen: " + rmtSet.stream().map(U::gridEventName),
+            rmtSet.isEmpty());
+        assertTrue("Local listener. Events that are not happen: " + locSet.stream().map(U::gridEventName),
+            locSet.isEmpty());
     }
 
     /** */
     private GridTestUtils.RunnableX operation() {
+        final Long timeToSleep = timedout ? TIME_TO_SLEEP : null;
+
         if (SRV.equals(expLogin) || CLNT.equals(expLogin)) {
             return () -> {
                 IgniteCompute cmp = grid(expLogin).compute();
 
+                if (timedout)
+                    cmp = cmp.withTimeout(TIMEOUT);
+
                 if (async)
-                    cmp.executeAsync(TASK_NAME, "");
+                    cmp.executeAsync(TASK_NAME, timeToSleep).get();
                 else
-                    cmp.execute(TASK_NAME, "");
+                    cmp.execute(TASK_NAME, timeToSleep);
             };
         }
         else if ("thin".equals(expLogin)) {
             return () -> {
-                ClientCompute cmp = startClient("thin").compute();
+                try (IgniteClient clnt = startClient()) {
+                    ClientCompute cmp = clnt.compute();
 
-                if (async)
-                    cmp.executeAsync(TASK_NAME, "").get();
-                else
-                    cmp.execute(TASK_NAME, "");
+                    if (timedout)
+                        cmp = cmp.withTimeout(TIMEOUT);
+
+                    if (async)
+                        cmp.executeAsync(TASK_NAME, timeToSleep).get();
+                    else
+                        cmp.execute(TASK_NAME, timeToSleep);
+                }
+            };
+        }
+        else if ("grid".equals(expLogin)) {
+            return () -> {
+                try (GridClient client = startGridClient()) {
+                    GridClientCompute cmp = client.compute();
+
+                    if (async)
+                        cmp.executeAsync(TASK_NAME, null).get();
+                    else
+                        cmp.execute(TASK_NAME, null);
+                }
             };
         }
         else if ("rest".equals(expLogin)) {
@@ -208,23 +281,36 @@ public class TaskAndJobEventsTest extends AbstractSecurityTest {
                 req.command(GridRestCommand.EXE);
                 req.taskName(TASK_NAME);
                 req.async(async);
+                req.timeout(timedout ? TIMEOUT : 0L);
+                req.params(singletonList(timeToSleep));
 
-                restProtocolHandler().handle(req);
+                GridRestResponse res = restProtocolHandler().handle(req);
+
+                if (async && timedout) {
+                    GridRestTaskRequest resReq = new GridRestTaskRequest();
+
+                    resReq.credentials(new SecurityCredentials("rest", ""));
+                    resReq.command(GridRestCommand.RESULT);
+                    resReq.taskId(((GridClientTaskResultBean)res.getResponse()).getId());
+
+                    TimeUnit.MILLISECONDS.sleep(timeToSleep);
+
+                    res = restProtocolHandler().handle(resReq);
+                }
+
+                if (res.getError() != null && res.getError().contains("Task timed out"))
+                    throw new ComputeTaskTimeoutException("Task timed out");
             };
         }
 
-        throw new IllegalArgumentException("Uncknown login " + expLogin);
+        throw new IllegalArgumentException("Unknown login " + expLogin);
     }
 
     /** */
-    private static void onEvent(IgniteEx ign, AtomicInteger cntr, Event evt, String expLogin) {
+    private static void onEvent(IgniteEx ign, Event evt, String expLogin) {
         assert evt instanceof TaskEvent || evt instanceof JobEvent;
 
         UUID actualSubjId = evt instanceof TaskEvent ? ((TaskEvent)evt).subjectId() : ((JobEvent)evt).taskSubjectId();
-
-        cntr.incrementAndGet();
-
-        evtsLatch.countDown();
 
         try {
             SecuritySubject subj = ign.context().security().authenticatedSubject(actualSubjId);
@@ -237,7 +323,7 @@ public class TaskAndJobEventsTest extends AbstractSecurityTest {
     }
 
     /** Test compute task. */
-    public static class TestComputeTask implements ComputeTask<String, String> {
+    public static class TestComputeTask implements ComputeTask<Long, String> {
         /** Default constructor. */
         public TestComputeTask() {
             // No-op.
@@ -245,7 +331,7 @@ public class TaskAndJobEventsTest extends AbstractSecurityTest {
 
         /** {@inheritDoc} */
         @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable String arg) throws IgniteException {
+            @Nullable Long arg) throws IgniteException {
             assert !subgrid.isEmpty();
 
             return F.asMap(new ComputeJob() {
@@ -254,6 +340,14 @@ public class TaskAndJobEventsTest extends AbstractSecurityTest {
                 }
 
                 @Override public Object execute() throws IgniteException {
+                    try {
+                        if (arg != null)
+                            TimeUnit.MILLISECONDS.sleep(arg);
+                    }
+                    catch (InterruptedException e) {
+                        throw new IgniteException(e);
+                    }
+
                     return null;
                 }
             }, subgrid.get(0));
@@ -281,16 +375,29 @@ public class TaskAndJobEventsTest extends AbstractSecurityTest {
             .setClientConnectorConfiguration(
                 new ClientConnectorConfiguration().setThinClientConfiguration(
                     new ThinClientConfiguration().setMaxActiveComputeTasksPerConnection(1)))
-            .setIncludeEventTypes(EVENT_TYPES);
+            .setIncludeEventTypes(EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_TASK_FAILED, EVT_TASK_TIMEDOUT,
+                EVT_TASK_REDUCED, EVT_JOB_MAPPED, EVT_JOB_RESULTED, EVT_JOB_STARTED, EVT_JOB_FINISHED, EVT_JOB_FAILED,
+                EVT_JOB_QUEUED, EVT_JOB_CANCELLED);
     }
 
     /** */
-    private IgniteClient startClient(String expLogin) {
+    private IgniteClient startClient() {
         return Ignition.startClient(
             new ClientConfiguration()
                 .setAddresses(Config.SERVER)
                 .setUserName(expLogin)
                 .setUserPassword("")
+        );
+    }
+
+    /** */
+    private GridClient startGridClient() throws GridClientException {
+        return GridClientFactory.start(
+            new GridClientConfiguration()
+                .setServers(singletonList("127.0.0.1:11211"))
+                .setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(new SecurityCredentials("grid", "")))
+                .setBalancer(nodes ->
+                    nodes.stream().findFirst().orElseThrow(NoSuchElementException::new))
         );
     }
 

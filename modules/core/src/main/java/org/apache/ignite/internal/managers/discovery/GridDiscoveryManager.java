@@ -530,8 +530,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
                 discoNtfWrk.submit(notificationFut, () -> {
-                    if (notification.type() != EVT_NODE_JOINED &&
-                        notification.getCustomMsgData() != null &&
+                    if (notification.getCustomMsgData() != null &&
                         notification.getCustomMsgData() instanceof SecurityAwareCustomMessageWrapper) {
                         UUID secSubjId = ((SecurityAwareCustomMessageWrapper)notification.getCustomMsgData()).securitySubjectId();
 
@@ -869,7 +868,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     return;
                 }
 
-                if (type == EVT_CLIENT_NODE_DISCONNECTED || type == EVT_NODE_SEGMENTED || !ctx.clientDisconnected())
+                if (type == EVT_CLIENT_NODE_DISCONNECTED || type == EVT_NODE_SEGMENTED || !ctx.clientDisconnected()) {
+                    try {
+                        securitySubjectId(ctx);
+                    }
+                    catch (Exception e) {
+                        System.out.println(
+                            "MY_DEBUG loc=" + ctx.igniteInstanceName() +
+                                ", type=" + U.gridEventName(type)
+                        );
+
+                        e.printStackTrace();
+                    }
+
                     discoWrk.addEvent(
                         new NotificationEvent(
                             type,
@@ -881,6 +892,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             securitySubjectId(ctx)
                         )
                     );
+                }
 
                 if (stateFinishMsg != null)
                     discoWrk.addEvent(
