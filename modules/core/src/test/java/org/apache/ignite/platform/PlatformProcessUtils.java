@@ -76,6 +76,10 @@ public class PlatformProcessUtils {
 
                 throw new Exception("Failed to wait for specified output: '" + waitForOutput + "'", e);
             }
+
+            if (!process.isAlive()) {
+                throw new Exception("Process has exited unexpectedly: " + process.exitValue());
+            }
         }
     }
 
