@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.ExchangeMergeStal
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheMultiClientsStartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
+import org.apache.ignite.internal.processors.cache.distributed.OnePhaseCommitAndNodeLeftTest;
 import org.apache.ignite.internal.processors.cache.distributed.PartitionsExchangeAwareTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManagerTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocalDhtMixedCacheModesTest;
@@ -92,6 +93,7 @@ public class IgniteCacheMvccTestSuite6 {
         ignoredTests.add(CacheParallelStartTest.class);
         ignoredTests.add(IgniteCacheMultiClientsStartTest.class);
         ignoredTests.add(CacheIgniteOutOfMemoryExceptionTest.class);
+        ignoredTests.add(OnePhaseCommitAndNodeLeftTest.class);
 
         // Mixed local/dht tx test.
         ignoredTests.add(TxLocalDhtMixedCacheModesTest.class);

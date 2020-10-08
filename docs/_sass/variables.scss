@@ -1,0 +1,19 @@
+:root {
+    --gg-red: #ec1c24;
+    --gg-orange: #ec1c24;
+    --gg-orange-dark: #bc440b;
+    --gg-orange-filter: invert(47%) sepia(61%) saturate(1950%) hue-rotate(345deg) brightness(100%) contrast(95%);
+    --gg-dark-gray: #333333;
+    --orange-line-thickness: 3px;
+    --block-code-background: rgba(241, 241, 241, 20%);
+    --inline-code-background: rgba(241, 241, 241, 90%);
+    --padding-top: 25px; 
+    --link-color: #ec1c24;
+}
+
+@font-face {
+    font-family: 'Open Sans';
+    font-weight: 300;
+    font-display: swap;
+    font-style: normal;
+}
