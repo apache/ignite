@@ -619,7 +619,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridTracingManager)
             tracingMgr = (GridTracingManager) comp;
 
-
         /*
          * Processors.
          * ==========
