@@ -713,7 +713,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                         prop.type().getSimpleName() + "', actual type '" +
                         ((BinaryObject)propVal).type().typeName() + "'");
                 }
-
             }
         }
     }
