@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -162,6 +163,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** Group encryption keys. */
     private final ConcurrentHashMap<Integer, Serializable> grpEncKeys = new ConcurrentHashMap<>();
+
+    /** Cache groups for which the key has been generated (updates on client node). */
+    private final Set<Integer> readyToStartOnClientGrps = new GridConcurrentHashSet<>();
 
     /** Pending generate encryption key futures. */
     private ConcurrentMap<IgniteUuid, GenerateEncryptionKeyFuture> genEncKeyFuts = new ConcurrentHashMap<>();
@@ -461,8 +465,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
         NodeEncryptionKeys nodeEncryptionKeys = (NodeEncryptionKeys)data.joiningNodeData();
 
-        if (nodeEncryptionKeys == null || nodeEncryptionKeys.newKeys == null || ctx.clientNode())
+        if (nodeEncryptionKeys == null || nodeEncryptionKeys.newKeys == null)
             return;
+
+        if (ctx.clientNode()) {
+            readyToStartOnClientGrps.addAll(nodeEncryptionKeys.newKeys.keySet());
+
+            return;
+        }
 
         for (Map.Entry<Integer, byte[]> entry : nodeEncryptionKeys.newKeys.entrySet()) {
             if (groupKey(entry.getKey()) == null) {
@@ -504,13 +514,16 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        if (ctx.clientNode())
-            return;
-
         Map<Integer, byte[]> encKeysFromCluster = (Map<Integer, byte[]>)data.commonData();
 
         if (F.isEmpty(encKeysFromCluster))
             return;
+
+        if (ctx.clientNode()) {
+            readyToStartOnClientGrps.addAll(encKeysFromCluster.keySet());
+
+            return;
+        }
 
         for (Map.Entry<Integer, byte[]> entry : encKeysFromCluster.entrySet()) {
             if (groupKey(entry.getKey()) == null) {
@@ -523,6 +536,17 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     entry.getKey() + "]");
             }
         }
+    }
+
+    /**
+     * @param grpId Cache group ID.
+     * @return {@code True} if for specified cache group encryption key has been generated.
+     */
+    public boolean hasEncryptionKeyForGroup(int grpId) {
+        if (ctx.clientNode())
+            return readyToStartOnClientGrps.contains(grpId);
+
+        return groupKey(grpId) != null;
     }
 
     /**
