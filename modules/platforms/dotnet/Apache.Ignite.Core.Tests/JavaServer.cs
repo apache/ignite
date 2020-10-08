@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
 
     /// <summary>
     /// Starts Java server nodes.
@@ -64,6 +65,8 @@ namespace Apache.Ignite.Core.Tests
             var pomWrapper =
                 ReplaceIgniteVersionInPomFile(groupId, version, Path.Combine(JavaServerSourcePath, "pom.xml"));
 
+            EnsureJvmCreated();
+
             TestUtilsJni.StartProcess(
                 file: Os.IsWindows ? "cmd.exe" : "/bin/bash",
                 arg: Os.IsWindows
@@ -77,6 +80,19 @@ namespace Apache.Ignite.Core.Tests
                 TestUtilsJni.DestroyProcess();
                 pomWrapper.Dispose();
             });
+        }
+
+        /// <summary>
+        /// Ensures that JVM is created.
+        /// When corresponding test runs individually we have to start/stop Ignite node to create the JVM,
+        /// otherwise it already exists.
+        /// </summary>
+        private static void EnsureJvmCreated()
+        {
+            if (Jvm.Get(ignoreMissing: true) == null)
+            {
+                Ignition.Start(TestUtils.GetTestConfiguration()).Dispose();
+            }
         }
 
         /// <summary>
