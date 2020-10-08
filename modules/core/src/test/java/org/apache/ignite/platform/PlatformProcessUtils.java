@@ -30,15 +30,16 @@ public class PlatformProcessUtils {
     /**
      * Starts a new process.
      *
-     * @param args Process name and arguments.
+     * @param file Executable name.
+     * @param arg Argument.
      * @param workDir Work directory.
      * @param waitForOutput A string to look for in the output.
      */
-    public static void startProcess(String[] args, String workDir, String waitForOutput) throws Exception {
+    public static void startProcess(String file, String arg, String workDir, String waitForOutput) throws Exception {
         if (process != null)
             throw new Exception("PlatformProcessUtils can't start more than one process at a time.");
 
-        ProcessBuilder pb = new ProcessBuilder(args);
+        ProcessBuilder pb = new ProcessBuilder(file, arg);
         pb.directory(new File(workDir));
         process = pb.start();
 

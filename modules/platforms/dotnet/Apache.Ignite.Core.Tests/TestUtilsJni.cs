@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System.Diagnostics;
     using Apache.Ignite.Core.Impl.Unmanaged.Jni;
 
     /// <summary>
@@ -49,26 +50,36 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Starts a new process.
         /// </summary>
-        /// <param name="args">Process name and arguments.</param>
+        /// <param name="file">Executable name.</param>
+        /// <param name="arg">Argument.</param>
         /// <param name="workDir">Work directory.</param>
         /// <param name="waitForOutput">A string to look for in the output.</param>
-        public static unsafe void StartProcess(string[] args, string workDir, string waitForOutput)
+        public static unsafe void StartProcess(string file, string arg, string workDir, string waitForOutput)
         {
+            Debug.Assert(file != null);
+            Debug.Assert(arg != null);
+            Debug.Assert(workDir != null);
+
             var env = Jvm.Get().AttachCurrentThread();
             using (var cls = env.FindClass(ClassPlatformProcessUtils))
             {
-                var methodId = env.GetStaticMethodId(cls, "startProcess", "TODO");
+                var methodId = env.GetStaticMethodId(
+                    cls, "startProcess", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+
+                using (var fileRef = env.NewStringUtf(file))
+                using (var argRef = env.NewStringUtf(arg))
                 using (var workDirRef = env.NewStringUtf(workDir))
-                using (var waitForOutputRef = env.NewStringUtf(waitForOutput)) // TODO: Null
+                using (var waitForOutputRef = env.NewStringUtf(waitForOutput))
                 {
-                    var methodArgs = stackalloc long[3];
-                    methodArgs[1] = workDirRef.Target.ToInt64();
-                    methodArgs[2] = waitForOutputRef.Target.ToInt64();
+                    var methodArgs = stackalloc long[4];
+                    methodArgs[0] = fileRef.Target.ToInt64();
+                    methodArgs[1] = argRef.Target.ToInt64();
+                    methodArgs[2] = workDirRef.Target.ToInt64();
+                    methodArgs[3] = waitForOutputRef == null ? 0 : waitForOutputRef.Target.ToInt64();
 
                     env.CallStaticVoidMethod(cls, methodId, methodArgs);
                 }
             }
-
         }
 
         /// <summary>
