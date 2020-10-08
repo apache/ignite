@@ -17,20 +17,20 @@
 
 package org.apache.ignite.platform;
 
-import org.apache.ignite.internal.util.IgniteStopwatch;
+import com.google.common.util.concurrent.SimpleTimeLimiter;
+import org.apache.ignite.IgniteException;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
-import java.time.Duration;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Platform process utils for tests.
  */
 public class PlatformProcessUtils {
-    /** */
-    private static final Duration MAX_WAIT = Duration.ofMinutes(3);
-
     /** */
     private static volatile Process process;
 
@@ -42,6 +42,7 @@ public class PlatformProcessUtils {
      * @param workDir Work directory.
      * @param waitForOutput A string to look for in the output.
      */
+    @SuppressWarnings("UnstableApiUsage")
     public static void startProcess(String file, String arg, String workDir, String waitForOutput) throws Exception {
         if (process != null)
             throw new Exception("PlatformProcessUtils can't start more than one process at a time.");
@@ -53,20 +54,27 @@ public class PlatformProcessUtils {
         if (waitForOutput != null) {
             InputStreamReader isr = new InputStreamReader(process.getInputStream());
             BufferedReader br = new BufferedReader(isr);
-            IgniteStopwatch sw = IgniteStopwatch.createStarted();
 
-            String line;
-            while ((line = br.readLine()) != null && sw.elapsed().compareTo(MAX_WAIT) < 0) {
-                System.out.println("PlatformProcessUtils >> " + line);
+            try {
+                SimpleTimeLimiter.create(ForkJoinPool.commonPool()).runWithTimeout(() -> {
+                    try {
+                        String line;
+                        while ((line = br.readLine()) != null) {
+                            System.out.println("PlatformProcessUtils >> " + line);
 
-                if (line.contains(waitForOutput))
-                    return;
+                            if (line.contains(waitForOutput))
+                                return;
+                        }
+                    }  catch (IOException ioException) {
+                        throw new IgniteException(ioException);
+                    }
+                }, 3, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                process.destroyForcibly();
+                process = null;
+
+                throw new Exception("Failed to wait for specified output: '" + waitForOutput + "'", e);
             }
-
-            process.destroyForcibly();
-            process = null;
-
-            throw new Exception("Failed to wait for specified output: '" + waitForOutput + "'");
         }
     }
 

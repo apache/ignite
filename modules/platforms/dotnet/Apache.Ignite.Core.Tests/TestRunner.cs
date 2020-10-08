@@ -136,6 +136,8 @@ namespace Apache.Ignite.Core.Tests
 #else
 namespace Apache.Ignite.Core.Tests
 {
+    using Apache.Ignite.Core.Tests.Client.Compatibility;
+
     /// <summary>
     /// Test runner.
     /// </summary>
@@ -146,7 +148,10 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void Main()
         {
-            new IgniteStartStopTest().TestStartDefault();
+            var t = new ClientServerCompatibilityTest(JavaServer.GroupIdIgnite, "2.4.0", 0);
+            t.FixtureSetUp();
+            t.TestCacheOperationsAreSupportedOnAllVersions();
+            t.FixtureTearDown();
         }
     }
 }
