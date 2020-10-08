@@ -249,8 +249,8 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         configureCache = true;
 
         LogListener lsnr = LogListener.matches(s -> s.contains("Ignore cache received from joining node. " +
-            "Encryption key has not been generated. The client node must dynamically start " +
-            "this cache [cacheName=" + cacheName() + "]")).times(3).build();
+            "Encryption key for the cache cannot be generated on the client node, this node will dynamically start " +
+            "this cache after join to topology [cacheName=" + cacheName() + ']')).times(3).build();
 
         listeningLog.registerListener(lsnr);
 
