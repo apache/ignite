@@ -64,6 +64,8 @@ public class PlatformProcessUtils {
             }
 
             process.destroyForcibly();
+            process = null;
+
             throw new Exception("Failed to wait for specified output: '" + waitForOutput + "'");
         }
     }
