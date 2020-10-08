@@ -2005,8 +2005,8 @@ public class ClusterCachesInfo {
 
                 if (conflictErr == null && cfg.isEncryptionEnabled() && !locJoin &&
                     ctx.encryption().groupKey(CU.cacheGroupId(cfg.getName(), cfg.getGroupName())) == null) {
-                    conflictErr = "Encryption key has not been generated. " +
-                        "The client node must dynamically start this cache [cacheName=" + cfg.getName() + "]";
+                    conflictErr = "Encryption key for the cache cannot be generated on the client node, this node " +
+                        "will dynamically start this cache after join to topology [cacheName=" + cfg.getName() + ']';
                 }
 
                 if (conflictErr != null) {
