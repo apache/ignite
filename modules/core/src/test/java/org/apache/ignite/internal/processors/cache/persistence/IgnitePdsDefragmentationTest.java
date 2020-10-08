@@ -163,7 +163,6 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         return cfg;
     }
-    //.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU)
 
     /**
      * Basic test scenario. Does following steps:
