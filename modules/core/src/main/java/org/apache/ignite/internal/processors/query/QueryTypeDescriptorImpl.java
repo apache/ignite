@@ -589,7 +589,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         validateIndexes(key, val);
     }
 
-    /** Validate properies */
+    /** Validate properties. */
     private void validateProps(Object key, Object val) throws IgniteCheckedException {
         if (F.isEmpty(validateProps))
             return;
