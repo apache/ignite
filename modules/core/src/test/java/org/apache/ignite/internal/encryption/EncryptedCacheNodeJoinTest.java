@@ -48,6 +48,9 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     private static final String GRID_5 = "grid-5";
 
     /** */
+    private static final String GRID_6 = "grid-6";
+
+    /** */
     public static final String CLIENT = "client";
 
     /** */
@@ -87,7 +90,8 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
             grid.equals(GRID_2) ||
             grid.equals(GRID_3) ||
             grid.equals(GRID_4) ||
-            grid.equals(GRID_5)) {
+            grid.equals(GRID_5) ||
+            grid.equals(GRID_6)) {
             KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
 
             encSpi.setKeyStorePath(grid.equals(GRID_2) ? KEYSTORE_PATH_2 : KEYSTORE_PATH);
@@ -109,7 +113,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setName(cacheName());
-        ccfg.setEncryptionEnabled(gridName.equals(GRID_0) || gridName.equals(CLIENT));
+        ccfg.setEncryptionEnabled(gridName.equals(GRID_0) || gridName.equals(CLIENT) || gridName.equals(GRID_6));
 
         return ccfg;
     }
@@ -239,31 +243,44 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     public void testClientNodeJoinWithNewStaticCacheConfig() throws Exception {
         listeningLog = new ListeningTestLogger(log);
 
-        startGrid(GRID_0);
-        startGrid(GRID_3);
-
-        IgniteEx client1 = startClientGrid("client1");
-
         LogListener lsnr = LogListener.matches(s -> s.contains("Ignore cache received from joining node. " +
             "Encryption key for the cache cannot be generated on the client node, this node will dynamically start " +
             "this cache after join to topology [cacheName=" + cacheName() + ']')).times(3).build();
 
         listeningLog.registerListener(lsnr);
 
+        checkNodeJoinWithNewStaticCacheConfig(true);
+
+        // An encrypted cache statically defined on the client must be dynamically started.
+        assertTrue(lsnr.check());
+    }
+
+    /** */
+    @Test
+    public void testServerNodeJoinWithNewStaticCacheConfig() throws Exception {
+        checkNodeJoinWithNewStaticCacheConfig(false);
+    }
+
+    /**
+     * @param client {@code True} to test client node join, {@code False} to test server node join.
+     */
+    public void checkNodeJoinWithNewStaticCacheConfig(boolean client) throws Exception {
+        startGrid(GRID_0);
+        startGrid(GRID_3);
+
+        IgniteEx client1 = startClientGrid("client1");
+
         grid(GRID_0).cluster().state(ClusterState.ACTIVE);
 
         configureCache = true;
 
-        IgniteEx client = startClientGrid(CLIENT);
+        IgniteEx node = client ? startClientGrid(CLIENT) : startGrid(GRID_6);
 
         awaitPartitionMapExchange();
 
-        // An encrypted cache statically defined on the client must be dynamically started.
-        assertTrue(lsnr.check());
+        GridTestUtils.waitForCondition(() -> node.cache(cacheName()) != null, 2_000);
 
-        GridTestUtils.waitForCondition(() -> client.cache(cacheName()) != null, 2_000);
-
-        IgniteCache<Object, Object> cache = client.cache(cacheName());
+        IgniteCache<Object, Object> cache = node.cache(cacheName());
 
         assertNotNull(cache);
 
@@ -271,8 +288,17 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
             cache.put(i, String.valueOf(i));
 
         checkEncryptedCaches(grid(GRID_0), grid(GRID_3));
-        checkEncryptedCaches(grid(GRID_0), client);
         checkEncryptedCaches(grid(GRID_0), client1);
+        checkData(client1);
+
+        if (client) {
+            checkEncryptedCaches(grid(GRID_0), node);
+            checkData(node);
+
+            return;
+        }
+
+        checkEncryptedCaches(node, grid(GRID_0));
     }
 
     /** */

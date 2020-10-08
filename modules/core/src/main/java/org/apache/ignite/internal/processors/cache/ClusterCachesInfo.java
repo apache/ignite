@@ -2003,8 +2003,8 @@ public class ClusterCachesInfo {
             if (!registeredCaches.containsKey(cfg.getName())) {
                 String conflictErr = checkCacheConflict(cfg);
 
-                if (conflictErr == null && cfg.isEncryptionEnabled() && !locJoin &&
-                    ctx.encryption().groupKey(CU.cacheGroupId(cfg.getName(), cfg.getGroupName())) == null) {
+                if (conflictErr == null && !locJoin && cfg.isEncryptionEnabled() &&
+                    !ctx.encryption().hasEncryptionKeyForGroup(CU.cacheGroupId(cfg.getName(), cfg.getGroupName()))) {
                     conflictErr = "Encryption key for the cache cannot be generated on the client node, this node " +
                         "will dynamically start this cache after join to topology [cacheName=" + cfg.getName() + ']';
                 }
