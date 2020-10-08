@@ -42,10 +42,10 @@ public class IgniteQueryGenerator {
      */
     public static IgniteQuery generateSql(Method mtd, RepositoryMetadata metadata) {
         PartTree parts;
-        try{
+        try {
             parts = new PartTree(mtd.getName(), metadata.getDomainType());
         }
-        catch (PropertyReferenceException e){
+        catch (PropertyReferenceException e) {
             parts = new PartTree(mtd.getName(), metadata.getIdType());
         }
 
@@ -186,9 +186,9 @@ public class IgniteQueryGenerator {
     /**
      * Check and correct table name if using column name from compound key.
      */
-    private static String getColumnName(Part part, Class<?> domainType){
+    private static String getColumnName(Part part, Class<?> domainType) {
         PropertyPath prperty = part.getProperty();
-        if(prperty.getType() != domainType)
+        if (prperty.getType() != domainType)
             return domainType.getSimpleName() + "." + prperty.getSegment();
         else
             return part.toString();
