@@ -109,29 +109,5 @@ namespace Apache.Ignite.Core.Tests
                     outReader.OnOutput(proc, reader.ReadLine(), err);
             }) {IsBackground = true}.Start();
         }
-
-        /// <summary>
-        /// Runs a process and waits for exit.
-        /// </summary>
-        private static void Execute(string file, string args, params IIgniteProcessOutputReader[] readers)
-        {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = file,
-                Arguments = args,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false
-            };
-
-            var process = new System.Diagnostics.Process {StartInfo = startInfo};
-            process.Start();
-
-            process.AttachProcessConsoleReader(readers);
-            if (!process.WaitForExit(1000))
-            {
-                process.Kill();
-            }
-        }
     }
 }
