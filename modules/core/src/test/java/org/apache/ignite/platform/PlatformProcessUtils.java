@@ -17,8 +17,6 @@
 
 package org.apache.ignite.platform;
 
-import org.apache.ignite.IgniteException;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +24,8 @@ import java.io.InputStreamReader;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.ignite.IgniteException;
 
 /**
  * Platform process utils for tests.
