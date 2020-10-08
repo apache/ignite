@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGroupsWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
@@ -140,6 +141,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -247,13 +249,64 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertTrue("Still opened clients: " + new ArrayList<>(clnts.values()), clntsBefore.equals(clntsAfter2));
     }
 
+    private CacheConfiguration cacheConfiguration(String cacheName) {
+        CacheConfiguration ccfg = new CacheConfiguration(cacheName)
+            .setAtomicityMode(TRANSACTIONAL)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1);
+
+        return ccfg;
+    }
+
     /**
      *
      * @throws Exception If failed.
      */
     @Test
     public void testPersistenceCleaningCommand() throws Exception {
-        startGrids(2);
+        IgniteEx ig0 = startGrid(0);
+        IgniteEx ig1 = startGrid(1);
+
+        String ig1Folder = ig1.context().pdsFolderResolver().resolveFolders().folderName();
+        File dbDir = U.resolveWorkDirectory(ig1.configuration().getWorkDirectory(), "db", false);
+
+        File ig1LfsDir = new File(dbDir, ig1Folder);
+        File ig1CpDir = new File(ig1LfsDir, "cp");
+
+        ig0.cluster().baselineAutoAdjustEnabled(false);
+        ig0.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = ig0.getOrCreateCache(cacheConfiguration(DEFAULT_CACHE_NAME));
+
+        for (int k = 0; k < 1000; k++)
+            cache.put(k, k);
+
+        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager) ig0.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager) ig1.context().cache().context().database();
+
+        dbMrg0.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
+        dbMrg1.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
+
+        ig0.cluster().disableWal(DEFAULT_CACHE_NAME);
+
+        for (int k = 1000; k < 2000; k++)
+            cache.put(k, k);
+
+        stopGrid(1);
+
+        ig0.cluster().enableWal(DEFAULT_CACHE_NAME);
+
+        for (int k = 2000; k < 3000; k++)
+            cache.put(k, k);
+
+        File[] cpMarkers = ig1CpDir.listFiles();
+
+        for (File cpMark : cpMarkers) {
+            if (cpMark.getName().contains("-END"))
+                cpMark.delete();
+        }
+
+        assertThrows(log, () -> startGrid(1), Exception.class, null);
     }
 
     /**
