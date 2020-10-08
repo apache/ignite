@@ -581,6 +581,16 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException {
+        if (F.isEmpty(validateProps) && F.isEmpty(idxs))
+            return;
+
+        validateProps(key, val);
+
+        validateIndexes(key, val);
+    }
+
+    /** Validate properies */
+    private void validateProps(Object key, Object val) throws IgniteCheckedException {
         if (F.isEmpty(validateProps))
             return;
 
@@ -656,6 +666,58 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                         "Maximum scale : " + prop.scale() + ", actual scale: " + dec.scale(),
                         isKey ? KEY_SCALE_OUT_OF_RANGE : VALUE_SCALE_OUT_OF_RANGE);
                 }
+            }
+        }
+    }
+
+    /** Validate indexed values. */
+    private void validateIndexes(Object key, Object val) throws IgniteCheckedException {
+        if (F.isEmpty(idxs))
+            return;
+
+        for (Map.Entry<String, QueryIndexDescriptorImpl> idx : idxs.entrySet()) {
+            for (String idxField : idx.getValue().fields()) {
+                GridQueryProperty prop = props.get(idxField);
+
+                QueryTypeDescriptorImpl type = idx.getValue().typeDescriptor();
+
+                Class<?> idxFieldCls = type.fields.get(idxField);
+
+                assert idxFieldCls != null : idxField;
+
+                Object propVal;
+
+                if (F.eq(prop.name(), keyFieldAlias()) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
+                    propVal = key instanceof KeyCacheObject ? ((CacheObject) key).value(coCtx, true) : key;
+                }
+                else if (F.eq(prop.name(), valueFieldAlias()) ||
+                    (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME)))
+                    propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
+                else
+                    propVal = prop.value(key, val);
+
+                if (!(propVal instanceof BinaryObject)) {
+                    if (!U.box(prop.type()).isAssignableFrom(U.box(propVal.getClass()))) {
+                        // Some reference type arrays end up being converted to Object[]
+                        if (!(prop.type().isArray() && Object[].class == propVal.getClass() &&
+                            Arrays.stream((Object[]) propVal).
+                                noneMatch(x -> x != null && !U.box(prop.type().getComponentType()).isAssignableFrom(U.box(x.getClass())))))
+                        {
+                            throw new IgniteSQLException("Type for a column '" + prop.name() +
+                                "' is not compatible with table definition. Expected '" +
+                                prop.type().getSimpleName() + "', actual type '" +
+                                propVal.getClass().getSimpleName() + "'");
+                        }
+                    }
+                }
+                else if (coCtx.kernalContext().cacheObjects().typeId(prop.type().getName()) !=
+                    ((BinaryObject)propVal).type().typeId()) {
+                    throw new IgniteSQLException("Type for a column '" + prop.name() +
+                        "' is not compatible with table definition. Expected '" +
+                        prop.type().getSimpleName() + "', actual type '" +
+                        ((BinaryObject)propVal).type().typeName() + "'");
+                }
+
             }
         }
     }

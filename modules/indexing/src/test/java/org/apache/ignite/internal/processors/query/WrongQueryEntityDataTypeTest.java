@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.function.Consumer;
+import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -33,6 +34,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -40,13 +42,17 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 
 /** */
 @RunWith(Parameterized.class)
@@ -66,15 +72,26 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
     @Parameterized.Parameter(3)
     public String idxFldType;
 
-    @Parameterized.Parameters(name = "cacheMode={0},backups={1},idxFldType={3}")
+    @Parameterized.Parameter(4)
+    public int gridCnt;
+
+    @Parameterized.Parameters(name = "cacheMode={0},backups={1},idxFldType={3},gridCnt={4}")
     public static Collection parameters() {
         Supplier<?> person = WrongQueryEntityDataTypeTest::personInContainer;
         Supplier<?> _float = WrongQueryEntityDataTypeTest::floatInContainer;
 
-        return Arrays.asList(new Object[][] {
-            {TRANSACTIONAL, 1, person, String.class.getName()},
-            {TRANSACTIONAL, 1, _float, Long.class.getName()},
-        });
+        List<Object[]> params = new ArrayList<>();
+
+        for (CacheAtomicityMode m : CacheAtomicityMode.values()) {
+            for (int backups = 0; backups < 4; backups++) {
+                for (int gridCnt = 1; gridCnt < 4; gridCnt++) {
+                    params.add(new Object[] {m, backups, person, String.class.getName(), gridCnt});
+                    params.add(new Object[] {m, backups, _float, Long.class.getName(), gridCnt});
+                }
+            }
+        }
+
+        return params;
     }
 
     /** {@inheritDoc} */
@@ -90,8 +107,8 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testCreateWrongQueryEntityDataTypeThinClient() throws Exception {
-        doWithThinClient(cache -> {
+    public void testPutFromThinClient() throws Exception {
+        doWithThinClient((cli, cache) -> {
             assertThrowsWithCause(() -> cache.put(1, supplier.get()), ClientException.class);
 
             assertNull(cache.withKeepBinary().get(1));
@@ -100,28 +117,79 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testCreateWrongQueryEntityDataTypeClientNode() throws Exception {
-        doWithClientNode(cache -> {
-            assertThrowsWithCause(() -> cache.put(1, supplier.get()), CacheException.class);
+    public void testPutFromThinClientExplicitTx() throws Exception {
+        if (cacheMode == ATOMIC)
+            return;
+
+        doWithThinClient((cli, cache) -> {
+            for (TransactionConcurrency conc : TransactionConcurrency.values()) {
+                for (TransactionIsolation iso: TransactionIsolation.values()) {
+                    assertThrowsWithCause(() -> {
+                        try (ClientTransaction tx = cli.transactions().txStart(conc, iso)) {
+                            cache.put(1, supplier.get());
+
+                            tx.commit();
+                        }
+                    }, ClientException.class);
+
+                    assertNull(cache.withKeepBinary().get(1));
+                }
+            }
+        });
+    }
+
+    /** */
+    @Test
+    public void testPut() throws Exception {
+        doWithNode((ign, cache) -> {
+            Throwable err = assertThrowsWithCause(() -> cache.put(1, supplier.get()), CacheException.class);
+
+            err.printStackTrace();
 
             assertNull(cache.withKeepBinary().get(1));
         });
     }
 
     /** */
-    private void doWithThinClient(Consumer<ClientCache<Integer, Object>> consumer) throws Exception {
+    @Test
+    public void testPutExplicitTx() throws Exception {
+        if (cacheMode == ATOMIC)
+            return;
+
+        doWithNode((ign, cache) -> {
+            for (TransactionConcurrency conc : TransactionConcurrency.values()) {
+                for (TransactionIsolation iso : TransactionIsolation.values()) {
+                    if (conc == OPTIMISTIC && cacheMode == TRANSACTIONAL_SNAPSHOT)
+                        continue;
+
+                    assertThrowsWithCause(() -> {
+                        try (Transaction tx = ign.transactions().txStart(conc, iso)) {
+                            cache.put(1, supplier.get());
+
+                            tx.commit();
+                        }
+                    }, IgniteSQLException.class);
+
+                    assertNull(cache.withKeepBinary().get(1));
+                }
+            }
+        });
+    }
+
+    /** */
+    private void doWithThinClient(BiConsumer<IgniteClient, ClientCache<Integer, Object>> consumer) throws Exception {
         systemThreadFails = false;
 
-        startGrids(2);
+        startGrids(gridCnt);
 
-        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"))) {
-            ClientCache<Integer, Object> cache = client.createCache(new ClientCacheConfiguration()
+        try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"))) {
+            ClientCache<Integer, Object> cache = cli.createCache(new ClientCacheConfiguration()
                 .setName("TEST")
                 .setAtomicityMode(cacheMode)
                 .setBackups(backups)
                 .setQueryEntities(queryEntity()));
 
-            consumer.accept(cache);
+            consumer.accept(cli, cache);
 
             assertFalse(systemThreadFails);
         }
@@ -131,10 +199,10 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void doWithClientNode(Consumer<IgniteCache<Integer, Object>> consumer) throws Exception {
+    private void doWithNode(BiConsumer<Ignite, IgniteCache<Integer, Object>> consumer) throws Exception {
         systemThreadFails = false;
 
-        IgniteEx ign = startGrids(2);
+        IgniteEx ign = startGrids(gridCnt);
 
         try {
             IgniteCache<Integer, Object> cache = ign.createCache(new CacheConfiguration<Integer, Object>()
@@ -143,7 +211,7 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
                 .setBackups(backups)
                 .setQueryEntities(Collections.singleton(queryEntity())));
 
-            consumer.accept(cache);
+            consumer.accept(ign, cache);
 
             assertFalse(systemThreadFails);
         }
@@ -186,7 +254,7 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
     private QueryEntity queryEntity() {
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
-        String indexedField = "head";
+        String indexedField = "field";
 
         fields.put("name", String.class.getName());
         fields.put(indexedField, idxFldType); //Actual type of the field Organization#head is Person.

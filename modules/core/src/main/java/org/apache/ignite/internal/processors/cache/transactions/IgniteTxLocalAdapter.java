@@ -58,12 +58,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.dr.GridDrType;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -942,15 +940,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     return;
                 }
 
-/*
-                if (X.hasCause(ex, IgniteSQLException.class) &&
-                    X.cause(ex, IgniteSQLException.class).statusCode() == IgniteQueryErrorCode.FIELD_TYPE_MISMATCH) {
-                    err = ex instanceof IgniteCheckedException ? (IgniteCheckedException)ex :
-                        new IgniteCheckedException(ex);
-                }
-                else
-*/
-                    err = heuristicException(ex);
+                err = heuristicException(ex);
 
                 COMMIT_ERR_UPD.compareAndSet(this, null, err);
 
