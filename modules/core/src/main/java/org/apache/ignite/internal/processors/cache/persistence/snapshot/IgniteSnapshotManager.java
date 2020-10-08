@@ -55,7 +55,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
-import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -1451,8 +1450,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public Void call() throws Exception {
-            ignite.context().security().authorize(ADMIN_SNAPSHOT);
-
             ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotTask(snpName);
 
             return null;
