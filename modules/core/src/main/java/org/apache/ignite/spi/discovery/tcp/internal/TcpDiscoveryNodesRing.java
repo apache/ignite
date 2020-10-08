@@ -173,6 +173,17 @@ public class TcpDiscoveryNodesRing {
     }
 
     /**
+     * @return Server nodes.
+     */
+    public Collection<TcpDiscoveryNode> serverNodes() {
+        return nodes(new PN() {
+            @Override public boolean apply(ClusterNode node) {
+                return !node.isClient();
+            }
+        });
+    }
+
+    /**
      * Checks whether the topology has remote nodes in.
      *
      * @return {@code true} if the topology has remote nodes in.
@@ -670,7 +681,7 @@ public class TcpDiscoveryNodesRing {
      * @param excluded Nodes to exclude from the search (optional).
      * @return Collection of server nodes.
      */
-    public Collection<TcpDiscoveryNode> serverNodes(@Nullable final Collection<TcpDiscoveryNode> excluded) {
+    private Collection<TcpDiscoveryNode> serverNodes(@Nullable final Collection<TcpDiscoveryNode> excluded) {
         final boolean excludedEmpty = F.isEmpty(excluded);
 
         return F.view(nodes, new P1<TcpDiscoveryNode>() {
