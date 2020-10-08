@@ -67,7 +67,7 @@ public class PlatformProcessUtils {
                             if (line.contains(waitForOutput))
                                 return;
                         }
-                    }  catch (IOException ioException) {
+                    } catch (IOException ioException) {
                         throw new IgniteException(ioException);
                     }
                 });
