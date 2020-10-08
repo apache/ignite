@@ -100,7 +100,6 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -138,6 +137,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.partstate.
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
 
 /**
  * Internal implementation of snapshot operations over persistence caches.
@@ -686,6 +686,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     @Override public IgniteFuture<Void> cancelSnapshot(String name) {
         A.notNullOrEmpty(name, "Snapshot name must be not empty or null");
 
+        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
+
         IgniteInternalFuture<Void> fut0 = cctx.kernalContext().closure()
             .callAsyncNoFailover(BROADCAST,
                 new CancelSnapshotCallable(name),
@@ -743,6 +745,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
         try {
+            cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
+
             if (!IgniteFeatures.allNodesSupports(cctx.discovery().aliveServerNodes(), PERSISTENCE_CACHE_SNAPSHOT))
                 throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
 
@@ -1446,6 +1450,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public Void call() throws Exception {
+            ignite.context().security().authorize(ADMIN_SNAPSHOT);
+
             ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotTask(snpName);
 
             return null;
