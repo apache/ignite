@@ -248,6 +248,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPersistenceCleaningCommand() throws Exception {
+        startGrids(2);
+    }
+
+    /**
      * Test enabling/disabling read-only mode works via control.sh
      *
      * @throws Exception If failed.
