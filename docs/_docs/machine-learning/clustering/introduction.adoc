@@ -1,8 +1,0 @@
-= Introduction
-
-The Apache Ignite Machine Learning module provides K-Means and GMM algorithms to group the unlabeled data into clusters.
-
-All existing training algorithms presented in this section are designed to solve unsupervised (clustering) tasks:
-
-* K-Means Clustering
-* Gaussian mixture (GMM)
