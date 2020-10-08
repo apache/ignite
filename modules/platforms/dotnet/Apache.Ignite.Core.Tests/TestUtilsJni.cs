@@ -22,15 +22,15 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Test utils: JNI calls.
     /// </summary>
-    public class TestUtilsJni
+    public static class TestUtilsJni
     {
         /// <summary>
         /// Suspend Ignite threads for the given grid.
         /// </summary>
         public static void SuspendThreads(string gridName)
         {
-            CallStringMethod(gridName, "org/apache/ignite/platform/PlatformThreadUtils", "suspend",
-                "(Ljava/lang/String;)V");
+            CallStringMethod("org/apache/ignite/platform/PlatformThreadUtils", "suspend",
+                "(Ljava/lang/String;)V", gridName);
         }
 
         /// <summary>
@@ -38,24 +38,54 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public static void ResumeThreads(string gridName)
         {
-            CallStringMethod(gridName, "org/apache/ignite/platform/PlatformThreadUtils", "resume",
-                "(Ljava/lang/String;)V");
+            CallStringMethod("org/apache/ignite/platform/PlatformThreadUtils", "resume",
+                "(Ljava/lang/String;)V", gridName);
+        }
+
+        /// <summary>
+        /// Starts a new process.
+        /// </summary>
+        /// <param name="args">Process name and arguments.</param>
+        /// <param name="workDir">Work directory.</param>
+        /// <param name="waitForOutput">A string to look for in the output.</param>
+        public static void StartProcess(string[] args, string workDir, string waitForOutput)
+        {
+
+        }
+
+        /// <summary>
+        /// Kills the process previously started with <see cref="StartProcess"/>.
+        /// </summary>
+        public static void DestroyProcess()
+        {
+            CallVoidMethod("org/apache/ignite/platform/PlatformProcessUtils", "destroyProcess", "()V");
         }
 
         /** */
-        private static unsafe void CallStringMethod(string gridName, string className, string methodName, string methodSig)
+        private static unsafe void CallStringMethod(string className, string methodName, string methodSig, string arg)
         {
             var env = Jvm.Get().AttachCurrentThread();
             using (var cls = env.FindClass(className))
             {
                 var methodId = env.GetStaticMethodId(cls, methodName, methodSig);
-                using (var gridNameRef = env.NewStringUtf(gridName))
+                using (var gridNameRef = env.NewStringUtf(arg))
                 {
                     var args = stackalloc long[1];
                     args[0] = gridNameRef.Target.ToInt64();
 
                     env.CallStaticVoidMethod(cls, methodId, args);
                 }
+            }
+        }
+
+        /** */
+        private static unsafe void CallVoidMethod(string className, string methodName, string methodSig)
+        {
+            var env = Jvm.Get().AttachCurrentThread();
+            using (var cls = env.FindClass(className))
+            {
+                var methodId = env.GetStaticMethodId(cls, methodName, methodSig);
+                env.CallStaticVoidMethod(cls, methodId);
             }
         }
     }
