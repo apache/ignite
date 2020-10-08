@@ -35,6 +35,40 @@ import org.jetbrains.annotations.Nullable;
  *     In maintenance mode it doesn't join to the rest of the cluster but still allows to connect to it
  *     with control.{sh|bat} script or via JXM interface and perform needed actions.
  * </p>
+ *
+ * <p>
+ *     Implementing new task for maintenance mode requires several pieces of code.
+ *
+ *     <ul>
+ *         <li>
+ *             First, component requiring Maintenance Mode should be able to register new {@link MaintenanceTask}
+ *             with {@link MaintenanceRegistry#registerMaintenanceTask(MaintenanceTask)} method.
+ *
+ *             Registration could happen automatically (e.g. if component detects some emergency situation
+ *             that requires user intervention)
+ *             or by user request (e.g. for a planned maintenance that requires
+ *             detaching node from the rest of the cluster).
+ *         </li>
+ *         <li>
+ *             Component responsible for handling this {@link MaintenanceTask}
+ *             on startup checks if the task is registered (thus it should go to Maintenance Mode).
+ *             If task is found component provides to {@link MaintenanceRegistry} its own implementation
+ *             of {@link MaintenanceWorkflowCallback} interface
+ *             via method {@link MaintenanceRegistry#registerWorkflowCallback(UUID, MaintenanceWorkflowCallback)}.
+ *         </li>
+ *         <li>
+ *             {@link MaintenanceWorkflowCallback} should provide {@link MaintenanceRegistry} with
+ *             {@link MaintenanceAction}s that are able to resolve maintenance task,
+ *             get information about it and so on.
+ *             Logic of these actions is completely up to the component providing it
+ *             and depends only on particular maintenance task.
+ *         </li>
+ *         <li>
+ *             When maintenance task is fixed, it should be removed from {@link MaintenanceRegistry}
+ *             with call {@link MaintenanceRegistry#unregisterMaintenanceTask(UUID)}.
+ *         </li>
+ *     </ul>
+ * </p>
  */
 @IgniteExperimental
 public interface MaintenanceRegistry {

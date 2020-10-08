@@ -673,7 +673,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      *      </li>
      * </ol>
      * </p>
-     * @throws Exception
+     *
+     * @throws Exception If failed.
      */
     @Test
     public void testPdsWithBrokenBinaryConsistencyIsClearedAfterRestartWithDisabledWal() throws Exception {
