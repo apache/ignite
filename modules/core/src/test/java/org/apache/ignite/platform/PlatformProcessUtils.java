@@ -17,20 +17,53 @@
 
 package org.apache.ignite.platform;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStreamReader;
+
 /**
  * Platform process utils for tests.
  */
 public class PlatformProcessUtils {
+    private static volatile Process process;
+
     /**
      * Starts a new process.
      *
-     * @param name Process name.
-     * @param arg Argument.
+     * @param args Process name and arguments.
      * @param workDir Work directory.
      * @param waitForOutput A string to look for in the output.
-     * @return Process id.
      */
-    public static int startProcess(String name, String arg, String workDir, String waitForOutput) {
+    public static void startProcess(String[] args, String workDir, String waitForOutput) throws Exception {
+        if (process != null)
+            throw new Exception("PlatformProcessUtils can't start more than one process at a time.");
 
+        ProcessBuilder pb = new ProcessBuilder(args);
+        pb.directory(new File(workDir));
+        process = pb.start();
+
+        if (waitForOutput != null) {
+            InputStreamReader isr = new InputStreamReader(process.getInputStream());
+            BufferedReader br = new BufferedReader(isr);
+
+            String line;
+            while ((line = br.readLine()) != null) {
+                System.out.println("PlatformProcessUtils >> " + line);
+
+                if (line.contains(waitForOutput))
+                    break;
+            }
+        }
+    }
+
+    /**
+     * Kills the process previously started with {@link #startProcess}.
+     */
+    public static void destroyProcess() throws Exception {
+        if (process == null)
+            throw new Exception("Process has not been started");
+
+        process.destroy();
+        process = null;
     }
 }
