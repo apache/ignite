@@ -56,9 +56,6 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 /** */
 @RunWith(Parameterized.class)
 public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
-    /** */
-    private volatile boolean systemThreadFails;
-
     @Parameterized.Parameter()
     public CacheAtomicityMode cacheMode;
 
@@ -98,6 +95,9 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
         return params;
     }
 
+    /** */
+    private volatile boolean systemThreadFails;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         systemThreadFails = false;
@@ -131,6 +131,18 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testPut() throws Exception {
+        doWithNode((ign, cache) -> {
+            Throwable err = assertThrowsWithCause(() -> cache.put(1, supplier.get()), CacheException.class);
+
+            err.printStackTrace();
+
+            assertNull(cache.withKeepBinary().get(1));
+        });
+    }
+
+    /** */
+    @Test
     public void testPutFromThinClientTx() throws Exception {
         if (cacheMode == ATOMIC)
             return;
@@ -138,6 +150,9 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
         doWithThinClient((cli, cache) -> {
             for (TransactionConcurrency conc : TransactionConcurrency.values()) {
                 for (TransactionIsolation iso: TransactionIsolation.values()) {
+                    if (conc == OPTIMISTIC && cacheMode == TRANSACTIONAL_SNAPSHOT)
+                        continue;
+
                     assertThrowsWithCause(() -> {
                         try (ClientTransaction tx = cli.transactions().txStart(conc, iso)) {
                             cache.put(1, supplier.get());
@@ -149,18 +164,6 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
                     assertNull(cache.withKeepBinary().get(1));
                 }
             }
-        });
-    }
-
-    /** */
-    @Test
-    public void testPut() throws Exception {
-        doWithNode((ign, cache) -> {
-            Throwable err = assertThrowsWithCause(() -> cache.put(1, supplier.get()), CacheException.class);
-
-            err.printStackTrace();
-
-            assertNull(cache.withKeepBinary().get(1));
         });
     }
 
@@ -279,7 +282,6 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
     private QueryEntity queryEntity() {
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
-        fields.put("name", String.class.getName());
         fields.put(idxFld, idxFldType.getName()); //Actual type of the field is different.
 
         return new QueryEntity()

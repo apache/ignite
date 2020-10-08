@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -173,7 +174,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
         try {
             return H2Utils.wrap(desc.indexing().objectContext(), val, type);
         }
-        catch (ClassCastException e) {
+        catch (ClassCastException | BinaryInvalidTypeException e) {
             throw new IgniteSQLException("Failed to wrap object into H2 Value. " + e.getMessage(),
                 IgniteQueryErrorCode.FIELD_TYPE_MISMATCH, e);
         }

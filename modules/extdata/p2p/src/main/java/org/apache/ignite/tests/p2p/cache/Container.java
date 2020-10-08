@@ -17,9 +17,12 @@
 
 package org.apache.ignite.tests.p2p.cache;
 
+/** */
 public class Container {
+    /** */
     private Object field;
 
+    /** */
     public Container(Object field) {
         this.field = field;
     }

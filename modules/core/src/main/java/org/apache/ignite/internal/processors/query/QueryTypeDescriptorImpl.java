@@ -700,7 +700,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                                 noneMatch(x -> x != null && !U.box(prop.type().getComponentType()).isAssignableFrom(U.box(x.getClass())))))
                         {
                             throw new IgniteSQLException("Type for a column '" + prop.name() +
-                                "' is not compatible with table definition. Expected '" +
+                                "' is not compatible with index definition. Expected '" +
                                 prop.type().getSimpleName() + "', actual type '" +
                                 propVal.getClass().getSimpleName() + "'");
                         }
@@ -709,7 +709,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 else if (coCtx.kernalContext().cacheObjects().typeId(prop.type().getName()) !=
                     ((BinaryObject)propVal).type().typeId()) {
                     throw new IgniteSQLException("Type for a column '" + prop.name() +
-                        "' is not compatible with table definition. Expected '" +
+                        "' is not compatible with index definition. Expected '" +
                         prop.type().getSimpleName() + "', actual type '" +
                         ((BinaryObject)propVal).type().typeName() + "'");
                 }
