@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests
                 using (var workDirRef = env.NewStringUtf(workDir))
                 using (var waitForOutputRef = env.NewStringUtf(waitForOutput))
                 {
-                    var methodArgs = stackalloc long[4];
+                    var methodArgs = stackalloc long[5];
                     methodArgs[0] = fileRef.Target.ToInt64();
                     methodArgs[1] = arg1Ref.Target.ToInt64();
                     methodArgs[2] = arg2Ref.Target.ToInt64();
