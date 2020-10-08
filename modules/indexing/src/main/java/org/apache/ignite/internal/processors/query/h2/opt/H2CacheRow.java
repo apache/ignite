@@ -174,7 +174,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
         try {
             return H2Utils.wrap(desc.indexing().objectContext(), val, type);
         }
-        catch (ClassCastException | BinaryInvalidTypeException e) {
+        catch (ClassCastException e) {
             throw new IgniteSQLException("Failed to wrap object into H2 Value. " + e.getMessage(),
                 IgniteQueryErrorCode.FIELD_TYPE_MISMATCH, e);
         }

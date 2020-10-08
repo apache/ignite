@@ -56,24 +56,31 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 /** */
 @RunWith(Parameterized.class)
 public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
+    /** */
     @Parameterized.Parameter()
     public CacheAtomicityMode cacheMode;
 
+    /** */
     @Parameterized.Parameter(1)
     public int backups;
 
+    /** */
     @Parameterized.Parameter(2)
     public Supplier<?> supplier;
 
+    /** */
     @Parameterized.Parameter(3)
     public String idxFld;
 
+    /** */
     @Parameterized.Parameter(4)
     public Class<?> idxFldType;
 
+    /** */
     @Parameterized.Parameter(5)
     public int gridCnt;
 
+    /** */
     @Parameterized.Parameters(name = "cacheMode={0},backups={1},idxFld={3},idxFldType={4},gridCnt={5}")
     public static Collection<Object[]> parameters() {
         Supplier<?> person = WrongQueryEntityFieldTypeTest::personInside;
@@ -185,7 +192,7 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
 
                             tx.commit();
                         }
-                    }, IgniteSQLException.class);
+                    }, cacheMode == TRANSACTIONAL_SNAPSHOT ? CacheException.class : IgniteSQLException.class);
 
                     assertNull(cache.withKeepBinary().get(1));
                 }
