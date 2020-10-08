@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Communication.Tcp;
-    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
     using Apache.Ignite.Core.Lifecycle;
     using NUnit.Framework;
 

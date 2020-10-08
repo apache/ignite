@@ -24,13 +24,18 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public static class TestUtilsJni
     {
+        /** */
+        private const string ClassPlatformProcessUtils = "org/apache/ignite/platform/PlatformProcessUtils";
+
+        /** */
+        private const string ClassPlatformThreadUtils = "org/apache/ignite/platform/PlatformThreadUtils";
+
         /// <summary>
         /// Suspend Ignite threads for the given grid.
         /// </summary>
         public static void SuspendThreads(string gridName)
         {
-            CallStringMethod("org/apache/ignite/platform/PlatformThreadUtils", "suspend",
-                "(Ljava/lang/String;)V", gridName);
+            CallStringMethod(ClassPlatformThreadUtils, "suspend", "(Ljava/lang/String;)V", gridName);
         }
 
         /// <summary>
@@ -38,8 +43,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public static void ResumeThreads(string gridName)
         {
-            CallStringMethod("org/apache/ignite/platform/PlatformThreadUtils", "resume",
-                "(Ljava/lang/String;)V", gridName);
+            CallStringMethod(ClassPlatformThreadUtils, "resume", "(Ljava/lang/String;)V", gridName);
         }
 
         /// <summary>
@@ -48,8 +52,22 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="args">Process name and arguments.</param>
         /// <param name="workDir">Work directory.</param>
         /// <param name="waitForOutput">A string to look for in the output.</param>
-        public static void StartProcess(string[] args, string workDir, string waitForOutput)
+        public static unsafe void StartProcess(string[] args, string workDir, string waitForOutput)
         {
+            var env = Jvm.Get().AttachCurrentThread();
+            using (var cls = env.FindClass(ClassPlatformProcessUtils))
+            {
+                var methodId = env.GetStaticMethodId(cls, "startProcess", "TODO");
+                using (var workDirRef = env.NewStringUtf(workDir))
+                using (var waitForOutputRef = env.NewStringUtf(waitForOutput)) // TODO: Null
+                {
+                    var methodArgs = stackalloc long[3];
+                    methodArgs[1] = workDirRef.Target.ToInt64();
+                    methodArgs[2] = waitForOutputRef.Target.ToInt64();
+
+                    env.CallStaticVoidMethod(cls, methodId, methodArgs);
+                }
+            }
 
         }
 
@@ -58,7 +76,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public static void DestroyProcess()
         {
-            CallVoidMethod("org/apache/ignite/platform/PlatformProcessUtils", "destroyProcess", "()V");
+            CallVoidMethod(ClassPlatformProcessUtils, "destroyProcess", "()V");
         }
 
         /** */
