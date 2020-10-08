@@ -6531,7 +6531,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         // connectionRecoveryTimeout to establish new connection to the ring. We can't spend this timeout wholly on one
         // or two next nodes. We should slice it and try to travers majority of next nodes in the ring.
         if (sndState != null) {
-            int nodesLeft = ring.serverNodes(null).size() - 1 - sndState.failedNodes;
+            int nodesLeft = ring.serverNodes().size() - 1 - sndState.failedNodes;
 
             assert nodesLeft > 0;
 
