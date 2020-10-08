@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.security.events;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +48,12 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientData;
+import org.apache.ignite.internal.client.GridClientDataConfiguration;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
@@ -58,12 +64,15 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_CREATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_DESTROYED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
@@ -134,27 +143,33 @@ public class CacheEventsTest extends AbstractSecurityTest {
             new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.PUT},
             new Object[] {"thin", EVT_CACHE_OBJECT_PUT, TestOperation.PUT},
             new Object[] {"rest", EVT_CACHE_OBJECT_PUT, TestOperation.PUT},
+            new Object[] {"grid", EVT_CACHE_OBJECT_PUT, TestOperation.PUT},
 
             new Object[] {CLNT, EVT_CACHE_ENTRY_CREATED, TestOperation.PUT},
             new Object[] {SRV, EVT_CACHE_ENTRY_CREATED, TestOperation.PUT},
             new Object[] {"thin", EVT_CACHE_ENTRY_CREATED, TestOperation.PUT},
             new Object[] {"rest", EVT_CACHE_ENTRY_CREATED, TestOperation.PUT},
+            new Object[] {"grid", EVT_CACHE_ENTRY_CREATED, TestOperation.PUT},
 
             new Object[] {CLNT, EVT_CACHE_ENTRY_DESTROYED, TestOperation.PUT},
             new Object[] {SRV, EVT_CACHE_ENTRY_DESTROYED, TestOperation.PUT},
             new Object[] {"thin", EVT_CACHE_ENTRY_DESTROYED, TestOperation.PUT},
             new Object[] {"rest", EVT_CACHE_ENTRY_DESTROYED, TestOperation.PUT},
+            new Object[] {"grid", EVT_CACHE_ENTRY_DESTROYED, TestOperation.PUT},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ASYNC},
             new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ASYNC},
+            new Object[] {"grid", EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ASYNC},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ALL},
             new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ALL},
             new Object[] {"thin", EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ALL},
             new Object[] {"rest", EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ALL},
+            new Object[] {"grid", EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ALL},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ALL_ASYNC},
             new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ALL_ASYNC},
+            new Object[] {"grid", EVT_CACHE_OBJECT_PUT, TestOperation.PUT_ALL_ASYNC},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_IF_ABSENT},
             new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.PUT_IF_ABSENT},
@@ -169,9 +184,11 @@ public class CacheEventsTest extends AbstractSecurityTest {
             new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET},
             new Object[] {"thin", EVT_CACHE_OBJECT_READ, TestOperation.GET},
             new Object[] {"rest", EVT_CACHE_OBJECT_READ, TestOperation.GET},
+            new Object[] {"grid", EVT_CACHE_OBJECT_READ, TestOperation.GET},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_ASYNC},
             new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_ASYNC},
+            new Object[] {"grid", EVT_CACHE_OBJECT_READ, TestOperation.GET_ASYNC},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_ENTRY},
             new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_ENTRY},
@@ -189,9 +206,11 @@ public class CacheEventsTest extends AbstractSecurityTest {
             new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL},
             new Object[] {"thin", EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL},
             new Object[] {"rest", EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL},
+            new Object[] {"grid", EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL_ASYNC},
             new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL_ASYNC},
+            new Object[] {"grid", EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL_ASYNC},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL_OUT_TX},
             new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_ALL_OUT_TX},
@@ -249,9 +268,11 @@ public class CacheEventsTest extends AbstractSecurityTest {
             new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE},
             new Object[] {"thin", EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE},
             new Object[] {"rest", EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE},
+            new Object[] {"grid", EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ASYNC},
             new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ASYNC},
+            new Object[] {"grid", EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ASYNC},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_VAL},
             new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_VAL},
@@ -265,25 +286,31 @@ public class CacheEventsTest extends AbstractSecurityTest {
             new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ALL},
             new Object[] {"thin", EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ALL},
             new Object[] {"rest", EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ALL},
+            new Object[] {"grid", EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ALL},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ALL_ASYNC},
             new Object[] {SRV, EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ALL_ASYNC},
+            new Object[] {"grid", EVT_CACHE_OBJECT_REMOVED, TestOperation.REMOVE_ALL_ASYNC},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE},
             new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE},
             new Object[] {"thin", EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE},
             new Object[] {"rest", EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE},
+            new Object[] {"grid", EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_ASYNC},
             new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_ASYNC},
+            new Object[] {"grid", EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_ASYNC},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_VAL},
             new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_VAL},
             new Object[] {"thin", EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_VAL},
             new Object[] {"rest", EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_VAL},
+            new Object[] {"grid", EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_VAL},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_VAL_ASYNC},
             new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_VAL_ASYNC},
+            new Object[] {"grid", EVT_CACHE_OBJECT_PUT, TestOperation.REPLACE_VAL_ASYNC},
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_REPLACE},
             new Object[] {SRV, EVT_CACHE_OBJECT_READ, TestOperation.GET_AND_REPLACE},
@@ -300,6 +327,12 @@ public class CacheEventsTest extends AbstractSecurityTest {
 
             new Object[] {CLNT, EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_REPLACE_ASYNC},
             new Object[] {SRV, EVT_CACHE_OBJECT_PUT, TestOperation.GET_AND_REPLACE_ASYNC},
+
+            new Object[] {"grid", EVT_CACHE_OBJECT_PUT, TestOperation.APPEND},
+            new Object[] {"grid", EVT_CACHE_OBJECT_PUT, TestOperation.APPEND_ASYNC},
+
+            new Object[] {"grid", EVT_CACHE_OBJECT_PUT, TestOperation.PREPEND},
+            new Object[] {"grid", EVT_CACHE_OBJECT_PUT, TestOperation.PREPEND_ASYNC},
 
             new Object[] {SRV, EVT_CACHE_OBJECT_LOCKED, TestOperation.LOCK},
             new Object[] {CLNT, EVT_CACHE_OBJECT_LOCKED, TestOperation.LOCK},
@@ -487,8 +520,20 @@ public class CacheEventsTest extends AbstractSecurityTest {
                 };
             }
         }
-        else if ("thin".equals(expLogin))
-            return n -> op.clntCacheOp.accept(startClient().cache(n));
+        else if ("thin".equals(expLogin)) {
+            return n -> {
+                try(IgniteClient clnt = startClient()) {
+                    op.clntCacheOp.accept(clnt.cache(n));
+                }
+            };
+        }
+        else if ("grid".equals(expLogin)) {
+            return n -> {
+                try (GridClient clnt = startGridClient(n)) {
+                    op.gridClntDataOp.accept(clnt.data(n));
+                }
+            };
+        }
         else
             return n -> op.ignCacheOp.accept(grid(expLogin).cache(n));
     }
@@ -500,6 +545,23 @@ public class CacheEventsTest extends AbstractSecurityTest {
                 .setUserName(expLogin)
                 .setUserPassword("")
         );
+    }
+
+    /** */
+    private GridClient startGridClient(String cacheName) throws GridClientException {
+        GridClientConfiguration cfg = new GridClientConfiguration()
+            .setServers(singletonList("127.0.0.1:11211"))
+            .setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(new SecurityCredentials("grid", "")))
+            .setBalancer(nodes ->
+                nodes.stream().findFirst().orElseThrow(NoSuchElementException::new));
+
+        GridClientDataConfiguration ccfg = new GridClientDataConfiguration();
+
+        ccfg.setName(cacheName);
+
+        cfg.setDataConfigurations(singleton(ccfg));
+
+        return GridClientFactory.start(cfg);
     }
 
     /** */
@@ -518,28 +580,31 @@ public class CacheEventsTest extends AbstractSecurityTest {
     /** Test opeartions. */
     private enum TestOperation {
         /** Put. */
-        PUT(c -> c.put(KEY, VAL), c -> c.put(KEY, VAL), GridRestCommand.CACHE_PUT, false),
+        PUT(c -> c.put(KEY, VAL), c -> c.put(KEY, VAL), d -> d.put(KEY, VAL), GridRestCommand.CACHE_PUT, false),
 
         /** Put async. */
-        PUT_ASYNC(c -> c.putAsync(KEY, VAL).get(), false),
+        PUT_ASYNC(c -> c.putAsync(KEY, VAL).get(), d -> d.putAsync(KEY, VAL).get(), false),
 
         /** Put all. */
-        PUT_ALL(c -> c.putAll(F.asMap(KEY, VAL)), c -> c.putAll(F.asMap(KEY, VAL)), GridRestCommand.CACHE_PUT_ALL, false),
+        PUT_ALL(c -> c.putAll(F.asMap(KEY, VAL)), c -> c.putAll(F.asMap(KEY, VAL)), d -> d.putAll(F.asMap(KEY, VAL)),
+            GridRestCommand.CACHE_PUT_ALL, false),
 
         /** Put all async. */
-        PUT_ALL_ASYNC(c -> c.putAll(F.asMap(KEY, VAL)), false),
+        PUT_ALL_ASYNC(c -> c.putAll(F.asMap(KEY, VAL)), d -> d.putAllAsync(F.asMap(KEY, VAL)), false),
 
         /** Put if absent. */
-        PUT_IF_ABSENT(c -> c.putIfAbsent(KEY, VAL), c -> c.putIfAbsent(KEY, VAL), GridRestCommand.CACHE_PUT_IF_ABSENT, false),
+        PUT_IF_ABSENT(c -> c.putIfAbsent(KEY, VAL), c -> c.putIfAbsent(KEY, VAL),
+            null, GridRestCommand.CACHE_PUT_IF_ABSENT, false),
 
         /** Put if absent async. */
-        PUT_IF_ABSENT_ASYNC(c -> c.putIfAbsentAsync(KEY, VAL), null, GridRestCommand.CACHE_ADD, false),
+        PUT_IF_ABSENT_ASYNC(c -> c.putIfAbsentAsync(KEY, VAL), null, null,
+            GridRestCommand.CACHE_ADD, false),
 
         /** Get. */
-        GET(c -> c.get(KEY), c -> c.get(KEY), GridRestCommand.CACHE_GET),
+        GET(c -> c.get(KEY), c -> c.get(KEY), d -> d.get(KEY), GridRestCommand.CACHE_GET),
 
         /** Get async. */
-        GET_ASYNC(c -> c.getAsync(KEY).get()),
+        GET_ASYNC(c -> c.getAsync(KEY).get(), d -> d.getAsync(KEY).get(), true),
 
         /** Get entry. */
         GET_ENTRY(c -> c.getEntry(KEY)),
@@ -548,82 +613,98 @@ public class CacheEventsTest extends AbstractSecurityTest {
         GET_ENTRY_ASYNC(c -> c.getEntryAsync(KEY).get()),
 
         /** Get entries. */
-        GET_ENTRIES(c -> c.getEntries(Collections.singleton(KEY))),
+        GET_ENTRIES(c -> c.getEntries(singleton(KEY))),
 
         /** Get entries async. */
-        GET_ENTRIES_ASYNC(c -> c.getEntriesAsync(Collections.singleton(KEY))),
+        GET_ENTRIES_ASYNC(c -> c.getEntriesAsync(singleton(KEY))),
 
         /** Get all. */
-        GET_ALL(c -> c.getAll(Collections.singleton(KEY)), c -> c.getAll(Collections.singleton(KEY)), GridRestCommand.CACHE_GET_ALL),
+        GET_ALL(c -> c.getAll(singleton(KEY)), c -> c.getAll(singleton(KEY)),
+            d -> d.getAll(singleton(KEY)), GridRestCommand.CACHE_GET_ALL),
 
         /** Get all async. */
-        GET_ALL_ASYNC(c -> c.getAllAsync(Collections.singleton(KEY)).get()),
+        GET_ALL_ASYNC(c -> c.getAllAsync(singleton(KEY)).get(), d -> d.getAllAsync(singleton(KEY)).get(), true),
 
         /** Get all out tx. */
-        GET_ALL_OUT_TX(c -> c.getAllOutTx(Collections.singleton(KEY))),
+        GET_ALL_OUT_TX(c -> c.getAllOutTx(singleton(KEY))),
 
         /** Get all out tx async. */
-        GET_ALL_OUT_TX_ASYNC(c -> c.getAllOutTxAsync(Collections.singleton(KEY)).get()),
+        GET_ALL_OUT_TX_ASYNC(c -> c.getAllOutTxAsync(singleton(KEY)).get()),
 
         /** Get and put. */
-        GET_AND_PUT(c -> c.getAndPut(KEY, VAL), c -> c.getAndPut(KEY, VAL), GridRestCommand.CACHE_GET_AND_PUT),
+        GET_AND_PUT(c -> c.getAndPut(KEY, VAL), c -> c.getAndPut(KEY, VAL), null, GridRestCommand.CACHE_GET_AND_PUT),
 
         /** Get and put async. */
         GET_AND_PUT_ASYNC(c -> c.getAndPutAsync(KEY, VAL).get()),
 
         /** Get and put if absent. */
-        GET_AND_PUT_IF_ABSENT(c -> c.getAndPutIfAbsent(KEY, VAL), null, GridRestCommand.CACHE_GET_AND_PUT_IF_ABSENT),
+        GET_AND_PUT_IF_ABSENT(c -> c.getAndPutIfAbsent(KEY, VAL), null, null, GridRestCommand.CACHE_GET_AND_PUT_IF_ABSENT),
 
         /** Get and put if absent async. */
         GET_AND_PUT_IF_ABSENT_ASYNC(c -> c.getAndPutIfAbsentAsync(KEY, VAL).get()),
 
         /** Get and put if absent put case. */
-        GET_AND_PUT_IF_ABSENT_PUT_CASE(c -> c.getAndPutIfAbsent(KEY, VAL), null, GridRestCommand.CACHE_GET_AND_PUT_IF_ABSENT, false),
+        GET_AND_PUT_IF_ABSENT_PUT_CASE(c -> c.getAndPutIfAbsent(KEY, VAL), null, null, GridRestCommand.CACHE_GET_AND_PUT_IF_ABSENT, false),
 
         /** Get and put if absent put case async. */
         GET_AND_PUT_IF_ABSENT_PUT_CASE_ASYNC(c -> c.getAndPutIfAbsentAsync(KEY, VAL).get(), false),
 
         /** Remove. */
-        REMOVE(c -> c.remove(KEY), c -> c.remove(KEY), GridRestCommand.CACHE_REMOVE),
+        REMOVE(c -> c.remove(KEY), c -> c.remove(KEY), d -> d.remove(KEY), GridRestCommand.CACHE_REMOVE),
 
         /** Remove async. */
-        REMOVE_ASYNC(c -> c.removeAsync(KEY).get()),
+        REMOVE_ASYNC(c -> c.removeAsync(KEY).get(), d -> d.removeAsync(KEY).get(), true),
 
         /** Remove value. */
-        REMOVE_VAL(c -> c.remove(KEY, INIT_VAL), c -> c.remove(KEY, INIT_VAL), GridRestCommand.CACHE_REMOVE_VALUE),
+        REMOVE_VAL(c -> c.remove(KEY, INIT_VAL), c -> c.remove(KEY, INIT_VAL), null, GridRestCommand.CACHE_REMOVE_VALUE),
 
         /** Remove value async. */
         REMOVE_VAL_ASYNC(c -> c.removeAsync(KEY, INIT_VAL).get()),
 
         /** Get and remove. */
-        GET_AND_REMOVE(c -> c.getAndRemove(KEY), c -> c.getAndRemove(KEY), GridRestCommand.CACHE_GET_AND_REMOVE),
+        GET_AND_REMOVE(c -> c.getAndRemove(KEY), c -> c.getAndRemove(KEY), null, GridRestCommand.CACHE_GET_AND_REMOVE),
 
         /** Get and remove async. */
         GET_AND_REMOVE_ASYNC(c -> c.getAndRemoveAsync(KEY).get()),
 
         /** Remove all. */
-        REMOVE_ALL(c -> c.removeAll(Collections.singleton(KEY)), c -> c.removeAll(Collections.singleton(KEY)), GridRestCommand.CACHE_REMOVE_ALL),
+        REMOVE_ALL(c -> c.removeAll(singleton(KEY)), c -> c.removeAll(singleton(KEY)),
+            d -> d.removeAll(singleton(KEY)), GridRestCommand.CACHE_REMOVE_ALL),
 
         /** Remove all async. */
-        REMOVE_ALL_ASYNC(c -> c.removeAllAsync(Collections.singleton(KEY)).get()),
+        REMOVE_ALL_ASYNC(c -> c.removeAllAsync(singleton(KEY)).get(), d -> d.removeAllAsync(singleton(KEY)).get(), true),
 
         /** Replace. */
-        REPLACE(c -> c.replace(KEY, VAL), c -> c.replace(KEY, VAL), GridRestCommand.CACHE_REPLACE, true),
+        REPLACE(c -> c.replace(KEY, VAL), c -> c.replace(KEY, VAL),
+            d -> d.replace(KEY, VAL), GridRestCommand.CACHE_REPLACE, true),
 
         /** Replace async. */
-        REPLACE_ASYNC(c -> c.replaceAsync(KEY, VAL).get(), true),
+        REPLACE_ASYNC(c -> c.replaceAsync(KEY, VAL).get(), d -> d.replaceAsync(KEY, VAL).get(), true),
 
         /** Replace value. */
-        REPLACE_VAL(c -> c.replace(KEY, INIT_VAL, VAL), c -> c.replace(KEY, INIT_VAL, VAL), GridRestCommand.CACHE_REPLACE_VALUE),
+        REPLACE_VAL(c -> c.replace(KEY, INIT_VAL, VAL), c -> c.replace(KEY, INIT_VAL, VAL),
+            d -> d.cas(KEY, VAL, INIT_VAL), GridRestCommand.CACHE_REPLACE_VALUE),
 
         /** Replace value async. */
-        REPLACE_VAL_ASYNC(c -> c.replaceAsync(KEY, INIT_VAL, VAL).get()),
+        REPLACE_VAL_ASYNC(c -> c.replaceAsync(KEY, INIT_VAL, VAL).get(), d -> d.casAsync(KEY, VAL, INIT_VAL).get(), true),
 
         /** Get and replace. */
-        GET_AND_REPLACE(c -> c.getAndReplace(KEY, VAL), c -> c.getAndReplace(KEY, VAL), GridRestCommand.CACHE_GET_AND_REPLACE),
+        GET_AND_REPLACE(c -> c.getAndReplace(KEY, VAL), c -> c.getAndReplace(KEY, VAL), null, GridRestCommand.CACHE_GET_AND_REPLACE),
 
         /** Get and replace async. */
         GET_AND_REPLACE_ASYNC(c -> c.getAndReplaceAsync(KEY, VAL).get()),
+
+        /** Append. */
+        APPEND(null, d -> d.append(KEY, VAL), true),
+
+        /** Append async. */
+        APPEND_ASYNC(null, d -> d.appendAsync(KEY, VAL).get(), true),
+
+        /** Prepend. */
+        PREPEND(null, d -> d.prepend(KEY, VAL), true),
+
+        /** Prepend async. */
+        PREPEND_ASYNC(null, d -> d.prependAsync(KEY, VAL), true),
 
         /** Lock. */
         LOCK(c -> {
@@ -635,7 +716,7 @@ public class CacheEventsTest extends AbstractSecurityTest {
 
         /** Lock all. */
         LOCK_ALL(c -> {
-            Lock lock = c.lockAll(Collections.singleton(KEY));
+            Lock lock = c.lockAll(singleton(KEY));
 
             lock.lock();
             lock.unlock();
@@ -653,13 +734,17 @@ public class CacheEventsTest extends AbstractSecurityTest {
                     cursor.getAll();
                 }
             },
+            null,
             GridRestCommand.EXECUTE_SCAN_QUERY);
 
         /** IgniteCache operation. */
-        final Consumer<IgniteCache<String, String>> ignCacheOp;
+        final ConsumerX<IgniteCache<String, String>> ignCacheOp;
 
         /** ClientCache operation. */
-        final Consumer<ClientCache<String, String>> clntCacheOp;
+        final ConsumerX<ClientCache<String, String>> clntCacheOp;
+
+        /** GridClient operation. */
+        final ConsumerX<GridClientData> gridClntDataOp;
 
         /** Rest client command. */
         final GridRestCommand restCmd;
@@ -672,15 +757,24 @@ public class CacheEventsTest extends AbstractSecurityTest {
         /**
          * @param ignCacheOp IgniteCache operation.
          */
-        TestOperation(Consumer<IgniteCache<String, String>> ignCacheOp) {
-            this(ignCacheOp, null, null, true);
+        TestOperation(ConsumerX<IgniteCache<String, String>> ignCacheOp) {
+            this(ignCacheOp, null, null, null, true);
         }
 
         /**
          * @param ignCacheOp IgniteCache operation.
          */
-        TestOperation(Consumer<IgniteCache<String, String>> ignCacheOp, boolean valIsRequired) {
-            this(ignCacheOp, null, null, valIsRequired);
+        TestOperation(ConsumerX<IgniteCache<String, String>> ignCacheOp, boolean valIsRequired) {
+            this(ignCacheOp, null, null, null, valIsRequired);
+        }
+
+        /**
+         * @param ignCacheOp IgniteCache operation.
+         */
+        TestOperation(ConsumerX<IgniteCache<String, String>> ignCacheOp,
+            ConsumerX<GridClientData> gridClntDataOp,
+            boolean valIsRequired) {
+            this(ignCacheOp, null, gridClntDataOp, null, valIsRequired);
         }
 
         /**
@@ -688,10 +782,11 @@ public class CacheEventsTest extends AbstractSecurityTest {
          * @param clntCacheOp ClientCache operation.
          * @param restCmd Rest client command.
          */
-        TestOperation(Consumer<IgniteCache<String, String>> ignCacheOp,
-            Consumer<ClientCache<String, String>> clntCacheOp,
+        TestOperation(ConsumerX<IgniteCache<String, String>> ignCacheOp,
+            ConsumerX<ClientCache<String, String>> clntCacheOp,
+            ConsumerX<GridClientData> gridClntDataOp,
             GridRestCommand restCmd) {
-            this(ignCacheOp, clntCacheOp, restCmd, true);
+            this(ignCacheOp, clntCacheOp, gridClntDataOp, restCmd, true);
         }
 
         /**
@@ -700,12 +795,14 @@ public class CacheEventsTest extends AbstractSecurityTest {
          * @param restCmd Rest client command.
          * @param valIsRequired Test operation requires existence of value in a cache.
          */
-        TestOperation(Consumer<IgniteCache<String, String>> ignCacheOp,
-            Consumer<ClientCache<String, String>> clntCacheOp,
+        TestOperation(ConsumerX<IgniteCache<String, String>> ignCacheOp,
+            ConsumerX<ClientCache<String, String>> clntCacheOp,
+            ConsumerX<GridClientData> gridClntDataOp,
             GridRestCommand restCmd,
             boolean valIsRequired) {
             this.ignCacheOp = ignCacheOp;
             this.clntCacheOp = clntCacheOp;
+            this.gridClntDataOp = gridClntDataOp;
             this.restCmd = restCmd;
             this.valIsRequired = valIsRequired;
         }
