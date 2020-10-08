@@ -120,6 +120,7 @@ import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
@@ -770,7 +771,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     throw new IgniteException("There is no alive server nodes in the cluster");
 
                 return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
-                    .callAsyncNoFailover(GridClosureCallMode.BALANCE,
+                    .callAsyncNoFailover(BALANCE,
                         new CreateSnapshotCallable(name),
                         Collections.singletonList(crd),
                         false,
