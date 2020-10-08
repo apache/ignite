@@ -696,6 +696,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 else
                     propVal = prop.value(key, val);
 
+                if (propVal == null)
+                    continue;
+
                 if (!(propVal instanceof BinaryObject)) {
                     if (!U.box(prop.type()).isAssignableFrom(U.box(propVal.getClass()))) {
                         // Some reference type arrays end up being converted to Object[]

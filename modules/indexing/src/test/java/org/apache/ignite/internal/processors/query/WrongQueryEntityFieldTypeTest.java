@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import javax.cache.CacheException;
@@ -56,7 +55,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 
 /** */
 @RunWith(Parameterized.class)
-public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
+public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean systemThreadFails;
 
@@ -70,28 +69,43 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
     public Supplier<?> supplier;
 
     @Parameterized.Parameter(3)
-    public String idxFldType;
+    public String idxFld;
 
     @Parameterized.Parameter(4)
+    public Class<?> idxFldType;
+
+    @Parameterized.Parameter(5)
     public int gridCnt;
 
-    @Parameterized.Parameters(name = "cacheMode={0},backups={1},idxFldType={3},gridCnt={4}")
-    public static Collection parameters() {
-        Supplier<?> person = WrongQueryEntityDataTypeTest::personInContainer;
-        Supplier<?> _float = WrongQueryEntityDataTypeTest::floatInContainer;
+    @Parameterized.Parameters(name = "cacheMode={0},backups={1},idxFld={3},idxFldType={4},gridCnt={5}")
+    public static Collection<Object[]> parameters() {
+        Supplier<?> person = WrongQueryEntityFieldTypeTest::personInside;
+        Supplier<?> floatInsteadLong = WrongQueryEntityFieldTypeTest::floatInside;
+        Supplier<?> organization = WrongQueryEntityFieldTypeTest::personInsideOrganization;
 
-        List<Object[]> params = new ArrayList<>();
+        Collection<Object[]> params = new ArrayList<>();
 
-        for (CacheAtomicityMode m : CacheAtomicityMode.values()) {
+        for (CacheAtomicityMode cacheMode : CacheAtomicityMode.values()) {
             for (int backups = 0; backups < 4; backups++) {
                 for (int gridCnt = 1; gridCnt < 4; gridCnt++) {
-                    params.add(new Object[] {m, backups, person, String.class.getName(), gridCnt});
-                    params.add(new Object[] {m, backups, _float, Long.class.getName(), gridCnt});
+                    params.add(new Object[] {cacheMode, backups, person, "field", String.class, gridCnt});
+                    params.add(new Object[] {cacheMode, backups, floatInsteadLong, "field", Long.class, gridCnt});
+                    params.add(new Object[] {cacheMode, backups, organization, "head", String.class, gridCnt});
                 }
             }
         }
 
         return params;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        systemThreadFails = false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -117,7 +131,7 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testPutFromThinClientExplicitTx() throws Exception {
+    public void testPutFromThinClientTx() throws Exception {
         if (cacheMode == ATOMIC)
             return;
 
@@ -152,7 +166,7 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testPutExplicitTx() throws Exception {
+    public void testPutTx() throws Exception {
         if (cacheMode == ATOMIC)
             return;
 
@@ -176,7 +190,7 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
         });
     }
 
-    /** */
+    /** Perform action with Thin client. */
     private void doWithThinClient(BiConsumer<IgniteClient, ClientCache<Integer, Object>> consumer) throws Exception {
         systemThreadFails = false;
 
@@ -193,35 +207,45 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
 
             assertFalse(systemThreadFails);
         }
-        finally {
-            stopAllGrids();
-        }
     }
 
-    /** */
+    /** Perform action with Ignite node. */
     private void doWithNode(BiConsumer<Ignite, IgniteCache<Integer, Object>> consumer) throws Exception {
         systemThreadFails = false;
 
         IgniteEx ign = startGrids(gridCnt);
 
+        IgniteCache<Integer, Object> cache = ign.createCache(new CacheConfiguration<Integer, Object>()
+            .setName("TEST")
+            .setAtomicityMode(cacheMode)
+            .setBackups(backups)
+            .setQueryEntities(Collections.singleton(queryEntity())));
+
+        consumer.accept(ign, cache);
+
+        assertFalse(systemThreadFails);
+    }
+
+    /** @return Organization with the Person inside. */
+    public static Object personInsideOrganization() {
         try {
-            IgniteCache<Integer, Object> cache = ign.createCache(new CacheConfiguration<Integer, Object>()
-                .setName("TEST")
-                .setAtomicityMode(cacheMode)
-                .setBackups(backups)
-                .setQueryEntities(Collections.singleton(queryEntity())));
+            ClassLoader ldr = getExternalClassLoader();
 
-            consumer.accept(ign, cache);
+            Class<?> organization = ldr.loadClass("org.apache.ignite.tests.p2p.cache.Organization");
+            Class<?> person = ldr.loadClass("org.apache.ignite.tests.p2p.cache.Person");
+            Class<?> address = ldr.loadClass("org.apache.ignite.tests.p2p.cache.Address");
 
-            assertFalse(systemThreadFails);
+            Object p = person.getConstructor(String.class).newInstance("test");
+
+            return organization.getConstructor(String.class, person, address).newInstance("org", p, null);
         }
-        finally {
-            stopAllGrids();
+        catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     /** @return Container with the Person inside. */
-    public static Object personInContainer() {
+    public static Object personInside() {
         try {
             ClassLoader ldr = getExternalClassLoader();
 
@@ -238,7 +262,7 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
     }
 
     /** @return Container with the float inside. */
-    public static Object floatInContainer() {
+    public static Object floatInside() {
         try {
             ClassLoader ldr = getExternalClassLoader();
 
@@ -251,18 +275,17 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
         }
     }
 
+    /** @return Query entity. */
     private QueryEntity queryEntity() {
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
-        String indexedField = "field";
-
         fields.put("name", String.class.getName());
-        fields.put(indexedField, idxFldType); //Actual type of the field Organization#head is Person.
+        fields.put(idxFld, idxFldType.getName()); //Actual type of the field is different.
 
         return new QueryEntity()
             .setKeyType(Integer.class.getName())
             .setValueType(supplier.get().getClass().getName())
             .setFields(fields)
-            .setIndexes(Collections.singleton(new QueryIndex(indexedField)));
+            .setIndexes(Collections.singleton(new QueryIndex(idxFld)));
     }
 }
