@@ -679,17 +679,10 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             for (String idxField : idx.getValue().fields()) {
                 GridQueryProperty prop = props.get(idxField);
 
-                QueryTypeDescriptorImpl type = idx.getValue().typeDescriptor();
-
-                Class<?> idxFieldCls = type.fields.get(idxField);
-
-                assert idxFieldCls != null : idxField;
-
                 Object propVal;
 
-                if (F.eq(prop.name(), keyFieldAlias()) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
+                if (F.eq(prop.name(), keyFieldAlias()) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME)))
                     propVal = key instanceof KeyCacheObject ? ((CacheObject) key).value(coCtx, true) : key;
-                }
                 else if (F.eq(prop.name(), valueFieldAlias()) ||
                     (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME)))
                     propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
