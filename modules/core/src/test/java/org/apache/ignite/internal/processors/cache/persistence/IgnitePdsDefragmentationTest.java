@@ -77,7 +77,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     public static final int PARTS = 5;
 
     /** */
-    public static final int ADDED_KEYS_COUNT = 100;
+    public static final int ADDED_KEYS_COUNT = 1000;
 
     /** */
     protected static final String GRP_NAME = "group";
@@ -156,13 +156,14 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         CacheConfiguration<?, ?> cache2Cfg = new CacheConfiguration<>(CACHE_2_NAME)
             .setAtomicityMode(TRANSACTIONAL)
             .setGroupName(GRP_NAME)
-//            .setExpiryPolicyFactory(new PolicyFactory())
+            .setExpiryPolicyFactory(new PolicyFactory())
             .setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
         cfg.setCacheConfiguration(cache1Cfg, cache2Cfg);
 
         return cfg;
     }
+    //.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU)
 
     /**
      * Basic test scenario. Does following steps:

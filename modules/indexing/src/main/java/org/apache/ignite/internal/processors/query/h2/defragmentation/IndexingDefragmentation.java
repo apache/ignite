@@ -123,47 +123,49 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
             AtomicLong lastCpLockTs = new AtomicLong(System.currentTimeMillis());
 
             for (GridH2Table table : tables) {
-                GridH2RowDescriptor rowDescriptor = table.rowDescriptor();
+                GridH2RowDescriptor rowDesc = table.rowDescriptor();
 
-                ArrayList<Index> indexes = table.getIndexes();
-                H2TreeIndex index = (H2TreeIndex)indexes.get(2);
+                List<Index> indexes = table.getIndexes();
+                H2TreeIndex oldH2Idx = (H2TreeIndex)indexes.get(2);
 
-                GridCacheContext cctx = table.cacheContext();
+                GridCacheContext<?, ?> cctx = table.cacheContext();
 
-                int segments = index.segmentsCount();
+                int segments = oldH2Idx.segmentsCount();
 
-                H2Tree firstTree = index.treeForRead(0);
+                H2Tree firstTree = oldH2Idx.treeForRead(0);
 
-                //TODO Create new proper GridCacheContext for it.
-                H2TreeIndex newIndex = H2TreeIndex.createIndex(
+                PageIoResolver pageIoRslvr = pageAddr -> {
+                    PageIO io = PageIoResolver.DEFAULT_PAGE_IO_RESOLVER.resolve(pageAddr);
+
+                    if (io instanceof BPlusMetaIO)
+                        return io;
+
+                    //noinspection unchecked,rawtypes,rawtypes
+                    return wrap((BPlusIO)io);
+                };
+
+                //TODO Create new proper GridCacheContext for it?
+                H2TreeIndex newIdx = H2TreeIndex.createIndex(
                     cctx,
                     null,
                     table,
-                    index.getName(),
+                    oldH2Idx.getName(),
                     firstTree.getPk(),
                     firstTree.getAffinityKey(),
                     Arrays.asList(firstTree.cols()),
                     Arrays.asList(firstTree.cols()),
-                    index.inlineSize(),
+                    oldH2Idx.inlineSize(),
                     segments,
                     newCachePageMemory,
                     newCtx.offheap(),
-                    pageAddr -> {
-                        PageIO io = PageIoResolver.DEFAULT_PAGE_IO_RESOLVER.resolve(pageAddr);
-
-                        if (io instanceof BPlusMetaIO)
-                            return io;
-
-                        //noinspection unchecked,rawtypes,rawtypes
-                        return wrap((BPlusIO)io);
-                    },
+                    pageIoRslvr,
                     log
                 );
 
                 tracker.complete(INIT_TREE);
 
                 for (int i = 0; i < segments; i++) {
-                    H2Tree tree = index.treeForRead(i);
+                    H2Tree tree = oldH2Idx.treeForRead(i);
 
                     treeIterator.iterate(tree, oldCachePageMem, (theTree, io, pageAddr, idx) -> {
                         tracker.complete(ITERATE);
@@ -201,13 +203,13 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
                             tracker.complete(READ_MAP);
 
                             H2CacheRowWithIndex newRow = H2CacheRowWithIndex.create(
-                                rowDescriptor,
+                                rowDesc,
                                 newLink,
                                 h2CacheRow,
                                 ((H2RowLinkIO)io).storeMvccInfo()
                             );
 
-                            newIndex.putx(newRow);
+                            newIdx.putx(newRow);
 
                             tracker.complete(INSERT_ROW);
                         }

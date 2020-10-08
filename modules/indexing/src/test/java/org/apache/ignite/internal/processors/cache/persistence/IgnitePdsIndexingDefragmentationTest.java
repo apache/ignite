@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -62,38 +63,37 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         dsCfg.setWalSegmentSize(4 * 1024 * 1024);
 
         dsCfg.setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration()
-                        .setInitialSize(100L * 1024 * 1024)
-                        .setMaxSize(1024L * 1024 * 1024)
-                        .setPersistenceEnabled(true)
+            new DataRegionConfiguration()
+                .setInitialSize(100L * 1024 * 1024)
+                .setMaxSize(1024L * 1024 * 1024)
+                .setPersistenceEnabled(true)
         );
 
         cfg.setDataStorageConfiguration(dsCfg);
 
         CacheConfiguration<?, ?> cache1Cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-                .setAtomicityMode(TRANSACTIONAL)
-                .setGroupName(GRP_NAME)
-                .setIndexedTypes(
-                    ObjKey.class, byte[].class,
-                    Integer.class, byte[].class
-                )
-                .setAffinity(new RendezvousAffinityFunction(false, PARTS));
+            .setAtomicityMode(TRANSACTIONAL)
+            .setGroupName(GRP_NAME)
+            .setIndexedTypes(
+                ObjKey.class, byte[].class,
+                Integer.class, byte[].class
+            )
+            .setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
         CacheConfiguration<?, ?> cache2Cfg = new CacheConfiguration<>(CACHE_2_NAME)
-                .setAtomicityMode(TRANSACTIONAL)
-                .setGroupName(GRP_NAME)
-                .setIndexedTypes(
-                    ObjKey.class, byte[].class,
-                    Integer.class, byte[].class
-                )
-                .setAffinity(new RendezvousAffinityFunction(false, PARTS));
+            .setAtomicityMode(TRANSACTIONAL)
+            .setGroupName(GRP_NAME)
+            .setIndexedTypes(
+                ObjKey.class, byte[].class,
+                Integer.class, byte[].class
+            )
+            .setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
         if (Boolean.TRUE.toString().equals(System.getProperty(USE_MVCC))) {
             cache1Cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
             cache2Cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-        } else {
+        } else
             cache2Cfg.setExpiryPolicyFactory(new PolicyFactory());
-        }
 
         cfg.setCacheConfiguration(cache1Cfg, cache2Cfg);
 

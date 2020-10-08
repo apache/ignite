@@ -23,7 +23,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 
 /** */
-//TODO Rename.
 public interface PageReadWriteManager {
     /**
      * Reads a page for the given cache ID. Cache ID may be {@code 0} if the page is a meta page.
