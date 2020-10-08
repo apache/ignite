@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -38,13 +39,14 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
 @RunWith(Parameterized.class)
@@ -64,24 +66,14 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
     @Parameterized.Parameter(3)
     public String idxFldType;
 
-
-    @Parameterized.Parameters(name = "cacheMode={0},backups={1}")
+    @Parameterized.Parameters(name = "cacheMode={0},backups={1},idxFldType={3}")
     public static Collection parameters() {
         Supplier<?> person = WrongQueryEntityDataTypeTest::personInContainer;
         Supplier<?> _float = WrongQueryEntityDataTypeTest::floatInContainer;
 
         return Arrays.asList(new Object[][] {
-/*
-            {ATOMIC, 0},
-            {ATOMIC, 1},
-*/
-            {TRANSACTIONAL, 0, person, String.class.getName()},
-            {TRANSACTIONAL, 0, _float, Long.class.getName()},
-/*
-            {TRANSACTIONAL, 1},
-            {TRANSACTIONAL_SNAPSHOT, 0},
-            {TRANSACTIONAL_SNAPSHOT, 1}
-*/
+            {TRANSACTIONAL, 1, person, String.class.getName()},
+            {TRANSACTIONAL, 1, _float, Long.class.getName()},
         });
     }
 
@@ -98,37 +90,38 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testWrongQueryEntityDataTypeThinClient() throws Exception {
+    public void testCreateWrongQueryEntityDataTypeThinClient() throws Exception {
+        doWithThinClient(cache -> {
+            assertThrowsWithCause(() -> cache.put(1, supplier.get()), ClientException.class);
+
+            assertNull(cache.withKeepBinary().get(1));
+        });
+    }
+
+    /** */
+    @Test
+    public void testCreateWrongQueryEntityDataTypeClientNode() throws Exception {
+        doWithClientNode(cache -> {
+            assertThrowsWithCause(() -> cache.put(1, supplier.get()), CacheException.class);
+
+            assertNull(cache.withKeepBinary().get(1));
+        });
+    }
+
+    /** */
+    private void doWithThinClient(Consumer<ClientCache<Integer, Object>> consumer) throws Exception {
         systemThreadFails = false;
 
         startGrids(2);
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"))) {
-            LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+            ClientCache<Integer, Object> cache = client.createCache(new ClientCacheConfiguration()
+                .setName("TEST")
+                .setAtomicityMode(cacheMode)
+                .setBackups(backups)
+                .setQueryEntities(queryEntity()));
 
-            String indexedField = "field";
-
-            fields.put("name", String.class.getName());
-            fields.put(indexedField, idxFldType); //Error here: actual type of the `indexedField` different.
-
-            Object val = supplier.get();
-
-            ClientCache<Integer, Object> cache = client
-                .createCache(new ClientCacheConfiguration()
-                    .setName("TEST")
-                    .setAtomicityMode(cacheMode)
-                    .setBackups(backups)
-                    .setQueryEntities(new QueryEntity()
-                        .setKeyType(Integer.class.getName())
-                        .setValueType(val.getClass().getName())
-                        .setFields(fields)
-                        .setIndexes(Collections.singleton(new QueryIndex(indexedField)))
-                    )
-                );
-
-            GridTestUtils.assertThrowsWithCause(() -> cache.put(1, val), ClientException.class);
-
-            assertNull(cache.withKeepBinary().get(1));
+            consumer.accept(cache);
 
             assertFalse(systemThreadFails);
         }
@@ -138,36 +131,25 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testWrongQueryEntityDataTypeClientNode() throws Exception {
+    private void doWithClientNode(Consumer<IgniteCache<Integer, Object>> consumer) throws Exception {
         systemThreadFails = false;
 
         IgniteEx ign = startGrids(2);
 
-        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+        try {
+            IgniteCache<Integer, Object> cache = ign.createCache(new CacheConfiguration<Integer, Object>()
+                .setName("TEST")
+                .setAtomicityMode(cacheMode)
+                .setBackups(backups)
+                .setQueryEntities(Collections.singleton(queryEntity())));
 
-        String indexedField = "head";
+            consumer.accept(cache);
 
-        fields.put("name", String.class.getName());
-        fields.put(indexedField, String.class.getName()); //Actual type of the field Organization#head is Person.
-
-        IgniteCache<Integer, Object> cache = ign.createCache(new CacheConfiguration<Integer, Object>("TEST")
-            .setAtomicityMode(cacheMode)
-            .setBackups(backups)
-            .setQueryEntities(Collections.singleton(new QueryEntity()
-                .setKeyType(Integer.class.getName())
-                .setValueType(personInContainer().getClass().getName())
-                .setFields(fields)
-                .setIndexes(Collections.singleton(new QueryIndex(indexedField)))
-            )));
-
-        GridTestUtils.assertThrowsWithCause(() -> cache.put(1, personInContainer()), CacheException.class);
-
-        assertNull(cache.withKeepBinary().get(1));
-
-        assertFalse(systemThreadFails);
-
-        stopAllGrids();
+            assertFalse(systemThreadFails);
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /** @return Container with the Person inside. */
@@ -179,6 +161,7 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
             Class<?> personCls = ldr.loadClass("org.apache.ignite.tests.p2p.cache.Person");
 
             Object person = personCls.getConstructor().newInstance();
+
             return container.getConstructor(Object.class).newInstance(person);
         }
         catch (Exception e) {
@@ -198,5 +181,20 @@ public class WrongQueryEntityDataTypeTest extends GridCommonAbstractTest {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private QueryEntity queryEntity() {
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+
+        String indexedField = "head";
+
+        fields.put("name", String.class.getName());
+        fields.put(indexedField, idxFldType); //Actual type of the field Organization#head is Person.
+
+        return new QueryEntity()
+            .setKeyType(Integer.class.getName())
+            .setValueType(supplier.get().getClass().getName())
+            .setFields(fields)
+            .setIndexes(Collections.singleton(new QueryIndex(indexedField)));
     }
 }
