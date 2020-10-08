@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteException;
 /**
  * Platform process utils for tests.
  */
+@SuppressWarnings("unused") // Called from Platform.
 public class PlatformProcessUtils {
     /** */
     private static volatile Process process;
@@ -53,10 +54,10 @@ public class PlatformProcessUtils {
         pb.redirectErrorStream(true);
         process = pb.start();
 
-        if (waitForOutput != null) {
-            InputStreamReader isr = new InputStreamReader(process.getInputStream());
-            BufferedReader br = new BufferedReader(isr);
+        InputStreamReader isr = new InputStreamReader(process.getInputStream());
+        BufferedReader br = new BufferedReader(isr);
 
+        if (waitForOutput != null) {
             try {
                 Future<?> f = ForkJoinPool.commonPool().submit(() -> {
                     try {
@@ -84,6 +85,17 @@ public class PlatformProcessUtils {
                 throw new Exception("Process has exited unexpectedly: " + process.exitValue());
             }
         }
+
+        // Read output continuously in the background.
+        ForkJoinPool.commonPool().submit(() -> {
+            try {
+                String line;
+                while ((line = br.readLine()) != null)
+                    System.out.println("PlatformProcessUtils >> " + line);
+            } catch (IOException ioException) {
+                throw new IgniteException(ioException);
+            }
+        });
     }
 
     /**
@@ -93,7 +105,7 @@ public class PlatformProcessUtils {
         if (process == null)
             throw new Exception("Process has not been started");
 
-        process.destroy();
+        process.destroyForcibly();
         process = null;
     }
 }
