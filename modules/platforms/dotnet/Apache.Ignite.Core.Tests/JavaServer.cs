@@ -69,9 +69,8 @@ namespace Apache.Ignite.Core.Tests
 
             TestUtilsJni.StartProcess(
                 file: Os.IsWindows ? "cmd.exe" : "/bin/bash",
-                arg: Os.IsWindows
-                         ? string.Format("/c \"{0} {1}\"", MavenPath, MavenCommandExec)
-                         : string.Format("-c \"{0} {1}\"", MavenPath, MavenCommandExec.Replace("\"", "\\\"")),
+                arg1: Os.IsWindows ? "/c" : "-c",
+                arg2: string.Format("{0} {1}", MavenPath, MavenCommandExec),
                 workDir: JavaServerSourcePath,
                 waitForOutput: "Ignite node started OK");
 

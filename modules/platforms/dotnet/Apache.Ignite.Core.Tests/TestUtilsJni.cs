@@ -66,8 +66,8 @@ namespace Apache.Ignite.Core.Tests
             var env = Jvm.Get().AttachCurrentThread();
             using (var cls = env.FindClass(ClassPlatformProcessUtils))
             {
-                var methodId = env.GetStaticMethodId(
-                    cls, "startProcess", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+                var methodId = env.GetStaticMethodId(cls, "startProcess",
+                    "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
 
                 using (var fileRef = env.NewStringUtf(file))
                 using (var arg1Ref = env.NewStringUtf(arg1))
