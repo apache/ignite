@@ -46,7 +46,7 @@ class PmeFreeSwitchTest(IgniteTest):
     @matrix(long_txs=[False, True])
     def test(self, ignite_version, long_txs):
         """
-        Tests PME free scenario (node stop).
+        Tests PME-free switch scenario (node stop).
         """
         data = {}
 
