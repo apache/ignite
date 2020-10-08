@@ -76,6 +76,7 @@ namespace Apache.Ignite.Core.Tests
                 workDir: JavaServerSourcePath,
                 waitForOutput: "Ignite node started OK");
 
+            // Java can not end process tree on Windows - detect the process manually and use taskkill.
             var serverProc = Os.IsWindows
                 ? System.Diagnostics.Process
                     .GetProcesses()
