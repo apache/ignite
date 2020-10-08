@@ -55,6 +55,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
+import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -105,7 +106,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -120,6 +121,7 @@ import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
@@ -685,17 +687,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.notNullOrEmpty(name, "Snapshot name must be not empty or null");
 
         IgniteInternalFuture<Void> fut0 = cctx.kernalContext().closure()
-            .broadcast(new CancelSnapshotClosure(),
-                name,
+            .callAsyncNoFailover(BROADCAST,
+                new CancelSnapshotCallable(name),
                 cctx.discovery().aliveServerNodes(),
-                null)
-            .chain(new CX1<IgniteInternalFuture<Collection<Void>>, Void>() {
-                @Override public Void applyx(IgniteInternalFuture<Collection<Void>> f) throws IgniteCheckedException {
-                    f.get();
-
-                    return null;
-                }
-            });
+                false,
+                0,
+                true);
 
         return new IgniteFutureImpl<>(fut0);
     }
@@ -769,10 +766,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     throw new IgniteException("There is no alive server nodes in the cluster");
 
                 return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
-                    .callAsync(new CreateSnapshotClosure(),
-                        name,
+                    .callAsyncNoFailover(GridClosureCallMode.BALANCE,
+                        new CreateSnapshotCallable(name),
                         Collections.singletonList(crd),
-                        null));
+                        false,
+                        0,
+                        true));
             }
 
             ClusterSnapshotFuture snpFut0;
@@ -1399,17 +1398,27 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Start creation of cluster snapshot closure. */
     @GridInternal
-    private static class CreateSnapshotClosure implements IgniteClosure<String, Void> {
+    private static class CreateSnapshotCallable implements IgniteCallable<Void> {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
+
+        /** Snapshot name. */
+        private final String snpName;
 
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
 
+        /**
+         * @param snpName Snapshot name.
+         */
+        public CreateSnapshotCallable(String snpName) {
+            this.snpName = snpName;
+        }
+
         /** {@inheritDoc} */
-        @Override public Void apply(String name) {
-            ignite.snapshot().createSnapshot(name).get();
+        @Override public Void call() throws Exception {
+            ignite.snapshot().createSnapshot(snpName).get();
 
             return null;
         }
@@ -1417,16 +1426,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Cancel snapshot operation closure. */
     @GridInternal
-    private static class CancelSnapshotClosure implements IgniteClosure<String, Void> {
+    private static class CancelSnapshotCallable implements IgniteCallable<Void> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
+
+        /** Snapshot name. */
+        private final String snpName;
 
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
 
+        /**
+         * @param snpName Snapshot name.
+         */
+        public CancelSnapshotCallable(String snpName) {
+            this.snpName = snpName;
+        }
+
         /** {@inheritDoc} */
-        @Override public Void apply(String snpName) {
+        @Override public Void call() throws Exception {
             ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotTask(snpName);
 
             return null;
