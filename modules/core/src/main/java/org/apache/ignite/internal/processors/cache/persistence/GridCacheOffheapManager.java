@@ -1055,7 +1055,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         try {
             final long pageAddr = pageMem.writeLock(grpId, metaId, metaPage);
 
-            boolean allocated = false;
+            boolean markDirty = false;
 
             try {
                 long metastoreRoot, reuseListRoot;
@@ -1084,7 +1084,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         ));
                     }
 
-                    allocated = true;
+                    markDirty = true;
                 }
                 else {
                     // Upgrade meta page.
@@ -1095,6 +1095,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         pageIO.setEncryptedPageIndex(pageAddr, 0);
                         pageIO.setEncryptedPageCount(pageAddr, 0);
+
+                        markDirty = true;
                     }
 
                     PageIndexMetaIO pageIO = PageIO.getPageIO(pageAddr);
@@ -1113,13 +1115,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
 
                 return new Metas(
-                    new RootPage(new FullPageId(metastoreRoot, grpId), allocated),
-                    new RootPage(new FullPageId(reuseListRoot, grpId), allocated),
+                    new RootPage(new FullPageId(metastoreRoot, grpId), markDirty),
+                    new RootPage(new FullPageId(reuseListRoot, grpId), markDirty),
                     null,
                     null);
             }
             finally {
-                pageMem.writeUnlock(grpId, metaId, metaPage, null, allocated);
+                pageMem.writeUnlock(grpId, metaId, metaPage, null, markDirty);
             }
         }
         finally {
