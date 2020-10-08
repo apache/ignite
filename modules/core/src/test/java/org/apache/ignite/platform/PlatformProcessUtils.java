@@ -17,14 +17,21 @@
 
 package org.apache.ignite.platform;
 
+import org.apache.ignite.internal.util.IgniteStopwatch;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.time.Duration;
 
 /**
  * Platform process utils for tests.
  */
 public class PlatformProcessUtils {
+    /** */
+    private static final Duration MAX_WAIT = Duration.ofMinutes(3);
+
+    /** */
     private static volatile Process process;
 
     /**
@@ -46,14 +53,18 @@ public class PlatformProcessUtils {
         if (waitForOutput != null) {
             InputStreamReader isr = new InputStreamReader(process.getInputStream());
             BufferedReader br = new BufferedReader(isr);
+            IgniteStopwatch sw = IgniteStopwatch.createStarted();
 
             String line;
-            while ((line = br.readLine()) != null) {
+            while ((line = br.readLine()) != null && sw.elapsed().compareTo(MAX_WAIT) < 0) {
                 System.out.println("PlatformProcessUtils >> " + line);
 
                 if (line.contains(waitForOutput))
-                    break;
+                    return;
             }
+
+            process.destroyForcibly();
+            throw new Exception("Failed to wait for specified output: '" + waitForOutput + "'");
         }
     }
 
