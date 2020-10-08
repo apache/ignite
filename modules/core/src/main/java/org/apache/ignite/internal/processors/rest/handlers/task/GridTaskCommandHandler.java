@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskR
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -641,9 +642,10 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return g.compute(g.cluster().forSubjectId(clientId)).execute(
-                name,
-                !params.isEmpty() ? params.size() == 1 ? params.get(0) : params.toArray() : null);
+            return SecurityUtils.withContextIfNeed(clientId, g.context().security(),
+                () -> g.compute(g.cluster()).execute(name,
+                    !params.isEmpty() ? params.size() == 1 ? params.get(0) : params.toArray() : null)
+            );
         }
 
         /** {@inheritDoc} */

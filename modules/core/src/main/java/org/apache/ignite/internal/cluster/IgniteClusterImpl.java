@@ -135,7 +135,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      * @param ctx Kernal context.
      */
     public IgniteClusterImpl(GridKernalContext ctx) {
-        super(ctx, null, (IgnitePredicate<ClusterNode>)null);
+        super(ctx, (IgnitePredicate<ClusterNode>)null);
 
         cfg = ctx.config();
 
@@ -161,7 +161,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            return new ClusterGroupAdapter(ctx, null, Collections.singleton(cfg.getNodeId()));
+            return new ClusterGroupAdapter(ctx, Collections.singleton(cfg.getNodeId()));
         }
         finally {
             unguard();

@@ -143,9 +143,6 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
         ClusterGroupAdapter grp = ctx.kernalContext().cluster().get();
 
-        if (ctx.securityContext() != null)
-            grp = (ClusterGroupAdapter)grp.forSubjectId(ctx.securityContext().subject().id());
-
         grp = (ClusterGroupAdapter)(nodeIds.isEmpty() ? grp.forServers() : grp.forNodeIds(nodeIds));
 
         IgniteServices services = grp.services();
