@@ -19,6 +19,7 @@ This module contains PME free switch tests.
 
 import time
 
+from ducktape.mark import matrix
 from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
@@ -38,18 +39,29 @@ class PmeFreeSwitchTest(IgniteTest):
     Tests PME free switch scenarios.
     """
     NUM_NODES = 3
+    CACHES_AMOUNT = 100
 
     @cluster(num_nodes=NUM_NODES + 2)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_7))
-    def test(self, ignite_version):
+    @matrix(long_txs=[False, True])
+    def test(self, ignite_version, long_txs):
         """
-        Tests PME free scenario (node stop).
+        Tests PME-free switch scenario (node stop).
         """
         data = {}
 
+        caches = [CacheConfiguration(name='test-cache', backups=2, atomicity_mode='TRANSACTIONAL')]
+
+        # Checking PME (before 2.8) vs PME-free (2.8+) switch duration, but
+        # focusing on switch duration (which depends on caches amount) when long_txs is false and
+        # on waiting for previously started txs before the switch (which depends on txs duration) when long_txs of true.
+        if not long_txs:
+            for idx in range(1, self.CACHES_AMOUNT):
+                caches.append(CacheConfiguration(name="cache-%d" % idx, backups=2, atomicity_mode='TRANSACTIONAL'))
+
         config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
-            caches=[CacheConfiguration(name='test-cache', backups=2, atomicity_mode='TRANSACTIONAL')]
+            caches=caches
         )
 
         ignites = IgniteService(self.test_context, config, num_nodes=self.NUM_NODES)
@@ -65,7 +77,8 @@ class PmeFreeSwitchTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test.LongTxStreamerApplication",
             params={"cacheName": "test-cache"})
 
-        long_tx_streamer.start()
+        if long_txs:
+            long_tx_streamer.start()
 
         single_key_tx_streamer = IgniteApplicationService(
             self.test_context,
@@ -81,11 +94,12 @@ class PmeFreeSwitchTest(IgniteTest):
 
         ignites.stop_node(ignites.nodes[self.NUM_NODES - 1])
 
-        long_tx_streamer.await_event("Node left topology", 60, from_the_beginning=True)
+        if long_txs:
+            long_tx_streamer.await_event("Node left topology", 60, from_the_beginning=True)
 
-        time.sleep(30)  # keeping txs alive for 30 seconds.
+            time.sleep(30)  # keeping txs alive for 30 seconds.
 
-        long_tx_streamer.stop()
+            long_tx_streamer.stop()
 
         single_key_tx_streamer.await_event("APPLICATION_STREAMED", 60)  # waiting for streaming continuation.
 
