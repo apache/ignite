@@ -17,7 +17,6 @@
 
 package org.apache.ignite.platform;
 
-import com.google.common.util.concurrent.SimpleTimeLimiter;
 import org.apache.ignite.IgniteException;
 
 import java.io.BufferedReader;
@@ -25,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -42,7 +42,6 @@ public class PlatformProcessUtils {
      * @param workDir Work directory.
      * @param waitForOutput A string to look for in the output.
      */
-    @SuppressWarnings("UnstableApiUsage")
     public static void startProcess(String file, String arg, String workDir, String waitForOutput) throws Exception {
         if (process != null)
             throw new Exception("PlatformProcessUtils can't start more than one process at a time.");
@@ -56,7 +55,7 @@ public class PlatformProcessUtils {
             BufferedReader br = new BufferedReader(isr);
 
             try {
-                SimpleTimeLimiter.create(ForkJoinPool.commonPool()).runWithTimeout(() -> {
+                Future<?> f = ForkJoinPool.commonPool().submit(() -> {
                     try {
                         String line;
                         while ((line = br.readLine()) != null) {
@@ -68,7 +67,9 @@ public class PlatformProcessUtils {
                     }  catch (IOException ioException) {
                         throw new IgniteException(ioException);
                     }
-                }, 3, TimeUnit.SECONDS);
+                });
+
+                f.get(3, TimeUnit.MINUTES);
             } catch (Exception e) {
                 process.destroyForcibly();
                 process = null;
