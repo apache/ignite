@@ -67,15 +67,24 @@ namespace Apache.Ignite.Core.Tests
 
             EnsureJvmCreated();
 
+            var time = DateTime.Now;
+
             TestUtilsJni.StartProcess(
                 file: Os.IsWindows ? "cmd.exe" : "/bin/bash",
                 arg1: Os.IsWindows ? "/c" : "-c",
                 arg2: string.Format("{0} {1}", MavenPath, MavenCommandExec),
                 workDir: JavaServerSourcePath,
                 waitForOutput: "Ignite node started OK");
+            
+            var serverProc = System.Diagnostics.Process
+                .GetProcesses()
+                .Single(p => p.ProcessName == "java" && p.StartTime > time);
+            
+            Console.WriteLine("Process detected: " + serverProc.Id);
 
             return new DisposeAction(() =>
             {
+                serverProc.KillProcessTree();
                 TestUtilsJni.DestroyProcess();
                 pomWrapper.Dispose();
             });
