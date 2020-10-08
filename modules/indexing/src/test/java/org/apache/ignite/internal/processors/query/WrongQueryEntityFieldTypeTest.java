@@ -58,7 +58,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
     /** */
     @Parameterized.Parameter()
-    public CacheAtomicityMode cacheMode;
+    public CacheAtomicityMode mode;
 
     /** */
     @Parameterized.Parameter(1)
@@ -66,7 +66,7 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
 
     /** */
     @Parameterized.Parameter(2)
-    public Supplier<?> supplier;
+    public Supplier<?> val;
 
     /** */
     @Parameterized.Parameter(3)
@@ -103,11 +103,11 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private volatile boolean systemThreadFails;
+    private volatile boolean sysThreadFail;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        systemThreadFails = false;
+        sysThreadFail = false;
     }
 
     /** {@inheritDoc} */
@@ -119,7 +119,7 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
         return new FailureHandler() {
             @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
-                systemThreadFails = true;
+                sysThreadFail = true;
 
                 return false;
             }
@@ -129,8 +129,8 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testPutFromThinClient() throws Exception {
-        doWithThinClient((cli, cache) -> {
-            assertThrowsWithCause(() -> cache.put(1, supplier.get()), ClientException.class);
+        withThinClient((cli, cache) -> {
+            assertThrowsWithCause(() -> cache.put(1, val.get()), ClientException.class);
 
             assertNull(cache.withKeepBinary().get(1));
         });
@@ -139,10 +139,8 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testPut() throws Exception {
-        doWithNode((ign, cache) -> {
-            Throwable err = assertThrowsWithCause(() -> cache.put(1, supplier.get()), CacheException.class);
-
-            err.printStackTrace();
+        withNode((ign, cache) -> {
+            assertThrowsWithCause(() -> cache.put(1, val.get()), CacheException.class);
 
             assertNull(cache.withKeepBinary().get(1));
         });
@@ -151,18 +149,18 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testPutFromThinClientTx() throws Exception {
-        if (cacheMode == ATOMIC)
+        if (mode == ATOMIC)
             return;
 
-        doWithThinClient((cli, cache) -> {
+        withThinClient((cli, cache) -> {
             for (TransactionConcurrency conc : TransactionConcurrency.values()) {
                 for (TransactionIsolation iso: TransactionIsolation.values()) {
-                    if (conc == OPTIMISTIC && cacheMode == TRANSACTIONAL_SNAPSHOT)
+                    if (conc == OPTIMISTIC && mode == TRANSACTIONAL_SNAPSHOT)
                         continue;
 
                     assertThrowsWithCause(() -> {
                         try (ClientTransaction tx = cli.transactions().txStart(conc, iso)) {
-                            cache.put(1, supplier.get());
+                            cache.put(1, val.get());
 
                             tx.commit();
                         }
@@ -177,22 +175,22 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testPutTx() throws Exception {
-        if (cacheMode == ATOMIC)
+        if (mode == ATOMIC)
             return;
 
-        doWithNode((ign, cache) -> {
+        withNode((ign, cache) -> {
             for (TransactionConcurrency conc : TransactionConcurrency.values()) {
                 for (TransactionIsolation iso : TransactionIsolation.values()) {
-                    if (conc == OPTIMISTIC && cacheMode == TRANSACTIONAL_SNAPSHOT)
+                    if (conc == OPTIMISTIC && mode == TRANSACTIONAL_SNAPSHOT)
                         continue;
 
                     assertThrowsWithCause(() -> {
                         try (Transaction tx = ign.transactions().txStart(conc, iso)) {
-                            cache.put(1, supplier.get());
+                            cache.put(1, val.get());
 
                             tx.commit();
                         }
-                    }, cacheMode == TRANSACTIONAL_SNAPSHOT ? CacheException.class : IgniteSQLException.class);
+                    }, mode == TRANSACTIONAL_SNAPSHOT ? CacheException.class : IgniteSQLException.class);
 
                     assertNull(cache.withKeepBinary().get(1));
                 }
@@ -201,39 +199,39 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
     }
 
     /** Perform action with Thin client. */
-    private void doWithThinClient(BiConsumer<IgniteClient, ClientCache<Integer, Object>> consumer) throws Exception {
-        systemThreadFails = false;
+    private void withThinClient(BiConsumer<IgniteClient, ClientCache<Integer, Object>> consumer) throws Exception {
+        sysThreadFail = false;
 
         startGrids(gridCnt);
 
         try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"))) {
             ClientCache<Integer, Object> cache = cli.createCache(new ClientCacheConfiguration()
                 .setName("TEST")
-                .setAtomicityMode(cacheMode)
+                .setAtomicityMode(mode)
                 .setBackups(backups)
                 .setQueryEntities(queryEntity()));
 
             consumer.accept(cli, cache);
 
-            assertFalse(systemThreadFails);
+            assertFalse(sysThreadFail);
         }
     }
 
     /** Perform action with Ignite node. */
-    private void doWithNode(BiConsumer<Ignite, IgniteCache<Integer, Object>> consumer) throws Exception {
-        systemThreadFails = false;
+    private void withNode(BiConsumer<Ignite, IgniteCache<Integer, Object>> consumer) throws Exception {
+        sysThreadFail = false;
 
         IgniteEx ign = startGrids(gridCnt);
 
         IgniteCache<Integer, Object> cache = ign.createCache(new CacheConfiguration<Integer, Object>()
             .setName("TEST")
-            .setAtomicityMode(cacheMode)
+            .setAtomicityMode(mode)
             .setBackups(backups)
             .setQueryEntities(Collections.singleton(queryEntity())));
 
         consumer.accept(ign, cache);
 
-        assertFalse(systemThreadFails);
+        assertFalse(sysThreadFail);
     }
 
     /** @return Organization with the Person inside. */
@@ -293,7 +291,7 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
 
         return new QueryEntity()
             .setKeyType(Integer.class.getName())
-            .setValueType(supplier.get().getClass().getName())
+            .setValueType(val.get().getClass().getName())
             .setFields(fields)
             .setIndexes(Collections.singleton(new QueryIndex(idxFld)));
     }
