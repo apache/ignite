@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -151,13 +151,13 @@ public class CacheDetectLostPartitionsTest extends GridCommonAbstractTest {
                 for (int i = 0; i < 1000; i++)
                     cache.get(i);
             },
-            CacheInvalidStateException.class, "partition data has been lost");
+            IgniteException.class, "partition data has been lost");
 
         GridTestUtils.assertThrows(null, () -> {
                 for (int i = 0; i < 1000; i++)
                     cache.put(i, i);
             },
-            CacheInvalidStateException.class, "partition data has been lost");
+            IgniteException.class, "partition data has been lost");
     }
 
     /** Filter by consistent id. */
