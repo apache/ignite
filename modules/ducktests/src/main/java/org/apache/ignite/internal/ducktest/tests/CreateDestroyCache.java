@@ -10,20 +10,18 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  * create and destroy a cache with specific name to check for memory leak
  */
 public class CreateDestroyCache extends IgniteAwareApplication {
+    /** {@inheritDoc} */
+    @Override protected void run(JsonNode jsonNode) {
+        markInitialized();
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void run(JsonNode jsonNode) {
-        for (int i = 0; i < jsonNode.get("caches_number").asInt(); i++) {
+        for (int i = 0; i < jsonNode.get("cacheNumber").asInt(); i++) {
             log.info("Creating cache" + i + "...");
-            IgniteCache<Integer, Integer> cache = ignite.createCache(jsonNode.get("cacheName").asText());
+            ignite.createCache(jsonNode.get("cacheName").asText());
 
             log.info("Destroying cache...");
             ignite.destroyCache(jsonNode.get("cacheName").asText());
-
         }
+
         markFinished();
     }
 }

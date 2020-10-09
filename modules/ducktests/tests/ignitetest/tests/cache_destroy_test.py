@@ -19,17 +19,15 @@ This module contains cache create/destroy tests that checks if
 
 from ducktape.mark.resource import cluster
 
-from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.ignite_execution_exception import IgniteExecutionException
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.spark import SparkService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
-from ignitetest.services.zk.zookeeper import ZookeeperService
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST_2_8
+from ignitetest.services.utils.ignite_persistence import PersistenceAware
+
 
 # pylint: disable=W0223
 class CacheDestroyTest(IgniteTest):
@@ -39,20 +37,32 @@ class CacheDestroyTest(IgniteTest):
     """
     NUM_NODES = 1
     CACHE_NAME = "TEST01"
-    CACHES_AMOUNT = 10
+    CACHES_AMOUNT = 100000000
 
     @cluster(num_nodes=NUM_NODES+1)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
+    @ignite_versions(str(LATEST_2_8))
     def test(self, ignite_version):
+        """
+        https://sbtatlas.sigma.sbrf.ru/jira/browse/IGN-1794
 
+        """
         node_config = IgniteConfiguration(version=IgniteVersion(ignite_version))
 
         ignites = IgniteService(self.test_context, config=node_config, num_nodes=self.NUM_NODES)
         ignites.start()
 
+
+        jvm_opts = [
+            "-DIGNITE_SUCCESS_FILE=" + PersistenceAware.PERSISTENT_ROOT + "/success_file",
+            "-Dlog4j.configDebug=true",
+            "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
+            "-Xmx20M",
+            "-ea",
+            "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"]
+
         # This client just put some data to the cache.
         app_config = node_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites))
         IgniteApplicationService(self.test_context, config=app_config,
                                  java_class_name="org.apache.ignite.internal.ducktest.tests.CreateDestroyCache",
-                                 params={"cacheName": self.CACHE_NAME, "caches_number": self.CACHES_AMOUNT}).run()
-
+                                 params={"cacheName": self.CACHE_NAME, "cacheNumber": self.CACHES_AMOUNT},
+                                 jvm_opts=jvm_opts).start()

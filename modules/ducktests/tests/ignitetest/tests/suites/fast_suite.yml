@@ -29,4 +29,4 @@ rebalance:
   - ../add_node_rebalance_test.py
 
 cache_create_destroy:
-  - ../cache_destroy.py
+  - ../cache_destroy_test.py
