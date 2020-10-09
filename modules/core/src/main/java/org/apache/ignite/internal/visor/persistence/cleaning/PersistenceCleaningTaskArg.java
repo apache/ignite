@@ -1,12 +1,12 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements. See the NOTICE file distributed with
+ * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,22 +15,53 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.persistence.corruption;
+package org.apache.ignite.internal.visor.persistence.cleaning;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-public class PersistenceCleaningTaskResult extends IgniteDataTransferObject {
+/**
+ *
+ */
+public class PersistenceCleaningTaskArg extends IgniteDataTransferObject {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    private PersistenceCleaningOperation op;
+
+    /**
+     * Default constructor.
+     */
+    public PersistenceCleaningTaskArg() {
+        // No-op.
+    }
+
+    /**
+     * @param op
+     */
+    public PersistenceCleaningTaskArg(PersistenceCleaningOperation op) {
+        this.op = op;
+    }
+
+    /**
+     * @return
+     */
+    public PersistenceCleaningOperation operation() {
+        return op;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-
+        U.writeEnum(out, op);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-
+        op = PersistenceCleaningOperation.fromOrdinal(in.readByte());
     }
 }

@@ -15,10 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.persistence.corruption;
+package org.apache.ignite.internal.commandline.persistence.cleaning;
 
 /**
- * Arguments of "clean corrupted pds" command.
+ * Arguments of "persistence cleaning" command.
  */
 public class PersistenceCleaningArguments {
+    /** */
+    private PersistenceCleaningSubcommands cmd;
+
+    /**
+     * @param cmd
+     */
+    public PersistenceCleaningArguments(PersistenceCleaningSubcommands cmd) {
+        this.cmd = cmd;
+    }
+
+    /** */
+    public PersistenceCleaningSubcommands subcommand() {
+        return cmd;
+    }
 }

@@ -15,25 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.persistence.corruption;
+package org.apache.ignite.internal.visor.persistence.cleaning;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.jetbrains.annotations.Nullable;
 
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+/** Persistence cleaning operations. */
+public enum PersistenceCleaningOperation {
+    /** */
+    INFO,
 
-/**
- *
- */
-public class PersistenceCleaningTaskArg extends IgniteDataTransferObject {
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] writing ext data");
-    }
+    /** */
+    CLEAN;
 
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] reading ext data");
+    /** */
+    private static final PersistenceCleaningOperation[] VALS = values();
+
+    /**
+     *
+     * @param ordinal
+     * @return
+     */
+    @Nullable public static PersistenceCleaningOperation fromOrdinal(int ordinal) {
+        return ordinal >= 0 && ordinal < VALS.length ? VALS[ordinal] : null;
     }
 }

@@ -24,14 +24,19 @@ import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
-import org.apache.ignite.internal.commandline.persistence.corruption.PersistenceCleaningArguments;
-import org.apache.ignite.internal.visor.persistence.corruption.PersistenceCleaningTask;
-import org.apache.ignite.internal.visor.persistence.corruption.PersistenceCleaningTaskArg;
+import org.apache.ignite.internal.commandline.persistence.cleaning.PersistenceCleaningArguments;
+import org.apache.ignite.internal.commandline.persistence.cleaning.PersistenceCleaningSubcommands;
+import org.apache.ignite.internal.visor.persistence.cleaning.PersistenceCleaningTask;
+import org.apache.ignite.internal.visor.persistence.cleaning.PersistenceCleaningTaskArg;
 
+import static org.apache.ignite.internal.commandline.CommandList.PERSISTENCE_CLEANING;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 
 /** */
 public class PersistenceCleaningCommand implements Command<PersistenceCleaningArguments> {
+    /** */
+    private PersistenceCleaningArguments cleaningArgs;
+
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
@@ -42,7 +47,7 @@ public class PersistenceCleaningCommand implements Command<PersistenceCleaningAr
 
                 executeTaskByNameOnNode(client,
                     PersistenceCleaningTask.class.getName(),
-                    new PersistenceCleaningTaskArg(),
+                    convertArguments(cleaningArgs),
                     uuid,
                     clientCfg
                     );
@@ -63,7 +68,7 @@ public class PersistenceCleaningCommand implements Command<PersistenceCleaningAr
 
     /** {@inheritDoc} */
     @Override public PersistenceCleaningArguments arg() {
-        return null;
+        return cleaningArgs;
     }
 
     /** {@inheritDoc} */
@@ -72,7 +77,24 @@ public class PersistenceCleaningCommand implements Command<PersistenceCleaningAr
     }
 
     /** {@inheritDoc} */
+    @Override public void parseArguments(CommandArgIterator argIter) {
+        if (!argIter.hasNextSubArg()) {
+            cleaningArgs = new PersistenceCleaningArguments(PersistenceCleaningSubcommands.INFO);
+
+            return;
+        }
+        else
+            System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] something found");
+    }
+
+    /** {@inheritDoc} */
     @Override public String name() {
-        return null;
+        return PERSISTENCE_CLEANING.toCommandName();
+    }
+
+    private PersistenceCleaningTaskArg convertArguments(PersistenceCleaningArguments args) {
+        PersistenceCleaningTaskArg taskArgs = new PersistenceCleaningTaskArg(args.subcommand().cleaningOperation());
+
+        return taskArgs;
     }
 }
