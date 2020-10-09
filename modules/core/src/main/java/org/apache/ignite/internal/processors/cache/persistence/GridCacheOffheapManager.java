@@ -29,9 +29,11 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntConsumer;
 import java.util.function.ToLongFunction;
 import java.util.stream.IntStream;
 import javax.cache.processor.EntryProcessor;
@@ -571,7 +573,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates) throws IgniteCheckedException {
+    @Override public long restorePartitionStates(
+        Map<GroupPartitionId, Integer> partitionRecoveryStates,
+        ForkJoinPool pool
+    ) throws IgniteCheckedException {
         if (grp.isLocal() || !grp.affinityNode() || !grp.dataRegion().config().isPersistenceEnabled())
             return 0;
 
@@ -583,7 +588,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
-        IntStream.range(0, grp.affinity().partitions()).parallel().forEach(p -> {
+        IntConsumer partConsumer = p -> {
             Integer recoverState = partitionRecoveryStates.get(new GroupPartitionId(grp.groupId(), p));
 
             long startTime = U.currentTimeMillis();
@@ -688,7 +693,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 if (!err.compareAndSet(null, e))
                     err.get().addSuppressed(e);
             }
-        });
+        };
+
+        pool.submit(() -> IntStream.range(0, grp.affinity().partitions()).parallel().forEach(partConsumer)).join();
 
         if (err.get() != null)
             throw err.get();

@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
@@ -276,7 +277,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates) throws IgniteCheckedException {
+    @Override public long restorePartitionStates(
+        Map<GroupPartitionId, Integer> partitionRecoveryStates,
+        ForkJoinPool pool
+    ) throws IgniteCheckedException {
         return 0; // No-op.
     }
 

@@ -5488,7 +5488,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (CacheGroupContext grp : forGroups) {
                 restorePartitionsPool.submit(() -> {
                     try {
-                        long processed = grp.offheap().restorePartitionStates(partitionStates);
+                        long processed = grp.offheap().restorePartitionStates(partitionStates, restorePartitionsPool);
 
                         totalProcessed.addAndGet(processed);
                     }
