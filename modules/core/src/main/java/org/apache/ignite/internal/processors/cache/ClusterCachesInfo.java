@@ -1405,6 +1405,15 @@ public class ClusterCachesInfo {
             }
         }
 
+        for (CacheConfiguration<?, ?> cfg : ctx.config().getCacheConfiguration()) {
+            if (!cfg.isEncryptionEnabled() || registeredCaches.containsKey(cfg.getName()))
+                continue;
+
+            log.warning("Encrypted cache statically configured on a client node " +
+                "cannot be started when the node joining to the cluster, it will " +
+                "start dynamically after the node will be joined [cacheName=" + cfg.getName() + ']');
+        }
+
         return conflictErr;
     }
 
@@ -2002,12 +2011,6 @@ public class ClusterCachesInfo {
 
             if (!registeredCaches.containsKey(cfg.getName())) {
                 String conflictErr = checkCacheConflict(cfg);
-
-                if (conflictErr == null && !locJoin && cfg.isEncryptionEnabled() &&
-                    !ctx.encryption().hasEncryptionKeyForGroup(CU.cacheGroupId(cfg.getName(), cfg.getGroupName()))) {
-                    conflictErr = "Encryption key for the cache cannot be generated on the client node, this node " +
-                        "will dynamically start this cache after join to topology [cacheName=" + cfg.getName() + ']';
-                }
 
                 if (conflictErr != null) {
                     if (locJoin)
