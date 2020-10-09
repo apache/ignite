@@ -675,8 +675,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (F.isEmpty(idxs))
             return;
 
-        for (Map.Entry<String, QueryIndexDescriptorImpl> idx : idxs.entrySet()) {
-            for (String idxField : idx.getValue().fields()) {
+        for (QueryIndexDescriptorImpl idx : idxs.values()) {
+            for (String idxField : idx.fields()) {
                 GridQueryProperty prop = props.get(idxField);
 
                 Object propVal;
