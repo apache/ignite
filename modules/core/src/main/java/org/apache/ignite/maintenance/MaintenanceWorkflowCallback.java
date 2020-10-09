@@ -45,7 +45,7 @@ public interface MaintenanceWorkflowCallback {
      *
      * @return {@code True} if maintenance is still needed for the component.
      */
-    public boolean proceedWithMaintenance();
+    public boolean shouldProceedWithMaintenance();
 
     /**
      * Supplies list of {@link MaintenanceAction}s that user can call to fix maintenance situation for the component or

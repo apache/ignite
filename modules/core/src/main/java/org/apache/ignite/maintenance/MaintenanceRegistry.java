@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -78,6 +79,18 @@ public interface MaintenanceRegistry {
     public boolean isMaintenanceMode();
 
     /**
+     * Method to register {@link MaintenanceTask} locally on the node where method is called.
+     * <p>
+     *     For now it is not allowed to register new Maintenance Tasks in Maintenance Mode
+     *     so this method should be called only when node operates normally.
+     *     This may change in the future so it will become possible to create other maintenance tasks
+     *     on node that is already entered Maintenance Mode.
+     * </p>
+     * <p>
+     *     When task is registered node continues to operate normally
+     *     and will enter Maintenance Mode only after restart.
+     * </p>
+     *
      * @param task {@link MaintenanceTask} object with maintenance information that needs
      *                                     to be stored to maintenance registry.
      *
@@ -91,9 +104,9 @@ public interface MaintenanceRegistry {
     /**
      * Deletes {@link MaintenanceTask} of given ID from maintenance registry.
      *
-     * @param mntcId
+     * @param maintenanceId {@link UUID} of {@link MaintenanceTask} to be deleted.
      */
-    public void unregisterMaintenanceTask(UUID mntcId);
+    public void unregisterMaintenanceTask(UUID maintenanceId);
 
     /**
      * Returns active {@link MaintenanceTask} by its ID.
@@ -107,15 +120,26 @@ public interface MaintenanceRegistry {
     @Nullable public MaintenanceTask activeMaintenanceTask(UUID maitenanceId);
 
     /**
-     * @param id UUID of {@link MaintenanceTask} this callback is registered for.
+     * Registers {@link MaintenanceWorkflowCallback} for a {@link MaintenanceTask} with a given ID.
+     *
+     * Component registered {@link MaintenanceTask} automatically or by user request
+     * is responsible for providing {@link MaintenanceRegistry} with an implementation of
+     * {@link MaintenanceWorkflowCallback} where registry obtains {@link MaintenanceAction}s
+     * to be executed for this task and does a preliminary check before starting maintenance.
+     *
+     * @param maintenanceId UUID of {@link MaintenanceTask} this callback is registered for.
      * @param cb {@link MaintenanceWorkflowCallback} interface used by MaintenanceRegistry to execute
      *                                              maintenance steps by workflow.
      */
-    public void registerWorkflowCallback(@NotNull UUID id, @NotNull MaintenanceWorkflowCallback cb);
+    public void registerWorkflowCallback(@NotNull UUID maintenanceId, @NotNull MaintenanceWorkflowCallback cb);
 
     /**
-     * @param maintenanceId
-     * @return
+     * All {@link MaintenanceAction}s provided by a component for {@link MaintenanceTask} with a given ID.
+     *
+     * @param maintenanceId {@link UUID} of Maintenance Task.
+     * @return {@link List} of all available {@link MaintenanceAction}s for given Maintenance Task.
+     *
+     * @throws IgniteException if no Maintenance Tasks are registered for provided ID.
      */
     public List<MaintenanceAction> actionsForMaintenanceTask(UUID maintenanceId);
 

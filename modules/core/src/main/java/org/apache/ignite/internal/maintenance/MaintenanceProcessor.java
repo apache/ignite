@@ -152,7 +152,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
         if (isMaintenanceMode()) {
             workflowCallbacks.entrySet().removeIf(cbE ->
                 {
-                    if (!cbE.getValue().proceedWithMaintenance()) {
+                    if (!cbE.getValue().shouldProceedWithMaintenance()) {
                         unregisterMaintenanceTask(cbE.getKey());
 
                         return true;
@@ -210,21 +210,21 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterMaintenanceTask(UUID mntcId) {
+    @Override public void unregisterMaintenanceTask(UUID maintenanceId) {
         if (inMemoryMode)
             return;
 
         if (isMaintenanceMode())
-            activeTasks.remove(mntcId);
+            activeTasks.remove(maintenanceId);
         else
-            requestedTasks.remove(mntcId);
+            requestedTasks.remove(maintenanceId);
 
         try {
-            fileStorage.deleteMaintenanceTask(mntcId);
+            fileStorage.deleteMaintenanceTask(maintenanceId);
         }
         catch (IOException e) {
             log.warning("Failed to clear maintenance task with id "
-                + mntcId
+                + maintenanceId
                 + " from file, whole file will be deleted", e
             );
 
@@ -233,7 +233,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     }
 
     /** {@inheritDoc} */
-    @Override public void registerWorkflowCallback(@NotNull UUID mntcId, @NotNull MaintenanceWorkflowCallback cb) {
+    @Override public void registerWorkflowCallback(@NotNull UUID maintenanceId, @NotNull MaintenanceWorkflowCallback cb) {
         if (inMemoryMode)
             throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
 
@@ -260,7 +260,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
                 "All actions' names should contain only alphanumeric and underscore symbols: "
                     + wrongActionName.get());
 
-        workflowCallbacks.put(mntcId, cb);
+        workflowCallbacks.put(maintenanceId, cb);
     }
 
     /** {@inheritDoc} */

@@ -24,12 +24,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Represents request to handle maintenance situation stored on disk.
+ * Represents request to handle maintenance situation.
  *
- * Maintenance request can be created programmatically
- * with {@link MaintenanceRegistry#registerMaintenanceRecord(MaintenanceTask)} public API call.
+ * It can be created automatically or by user request by any component needed maintenance and should be registered
+ * in Maintenance Registry with the method {@link MaintenanceRegistry#registerMaintenanceTask(MaintenanceTask)}.
  *
- * Record contains unique ID of maintenance situation (e.g. situation of PDS corruption or defragmentation),
+ * Lifecycle of Maintenance Task is managed by {@link MaintenanceRegistry}.
+ *
+ * Task contains unique ID of maintenance situation (e.g. situation of PDS corruption or defragmentation),
  * description of task and optional parameters.
  *
  * When task is created node should be restarted to enter maintenance mode.
@@ -59,23 +61,29 @@ public class MaintenanceTask {
      * @param description Mandatory description of maintenance situation.
      * @param params Optional parameters that may be needed to perform maintenance actions.
      */
-    public MaintenanceTask(UUID id, String description, String params) {
+    public MaintenanceTask(@NotNull UUID id, @NotNull String description, @Nullable String params) {
         this.id = id;
         this.description = description;
         this.params = params;
     }
 
-    /** */
+    /**
+     * @return Unique not-nullable ID of Maintenance Task.
+     */
     public @NotNull UUID id() {
         return id;
     }
 
-    /** */
+    /**
+     * @return Human-readable not-nullable description of the task.
+     */
     public @NotNull String description() {
         return description;
     }
 
-    /** */
+    /**
+     * @return Optional parameters that could be used by actions associated with this Maintenance Task.
+     */
     public @Nullable String parameters() {
         return params;
     }

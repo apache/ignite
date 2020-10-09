@@ -303,7 +303,7 @@ public class MaintenanceRegistrySimpleTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean proceedWithMaintenance() {
+        @Override public boolean shouldProceedWithMaintenance() {
             return true;
         }
 

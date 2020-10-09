@@ -49,7 +49,7 @@ public class CorruptedPdsMaintenanceCallback implements MaintenanceWorkflowCallb
     }
 
     /** {@inheritDoc} */
-    @Override public boolean proceedWithMaintenance() {
+    @Override public boolean shouldProceedWithMaintenance() {
         for (String cacheStoreDirName : cacheStoreDirs) {
             File cacheStoreDir = new File(workDir, cacheStoreDirName);
 
