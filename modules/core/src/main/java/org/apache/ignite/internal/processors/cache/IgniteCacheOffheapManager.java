@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ForkJoinPool;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -93,14 +92,10 @@ public interface IgniteCacheOffheapManager {
      * Pre-create partitions that resides in page memory or WAL and restores their state.
      *
      * @param partitionRecoveryStates Partition recovery states.
-     * @param pool
      * @return Number of processed partitions.
      * @throws IgniteCheckedException If failed.
      */
-    long restorePartitionStates(
-        Map<GroupPartitionId, Integer> partitionRecoveryStates,
-        ForkJoinPool pool
-    ) throws IgniteCheckedException;
+    long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates) throws IgniteCheckedException;
 
     /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.
