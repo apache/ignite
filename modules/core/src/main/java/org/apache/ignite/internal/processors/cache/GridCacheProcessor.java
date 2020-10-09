@@ -749,6 +749,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopCaches(cancel);
 
+        restorePartitionsPool.shutdownNow();
+
         List<? extends GridCacheSharedManager<?, ?>> mgrs = sharedCtx.managers();
 
         for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = mgrs.listIterator(mgrs.size()); it.hasPrevious(); ) {
