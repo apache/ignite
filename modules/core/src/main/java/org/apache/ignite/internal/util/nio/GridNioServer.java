@@ -3045,7 +3045,7 @@ public class GridNioServer<T> {
                     blockingSectionBegin();
 
                     // Wake up every 2 seconds to check if closed.
-                    int numKeys = selector.select(200);
+                    int numKeys = selector.select(2000);
 
                     blockingSectionEnd();
 
