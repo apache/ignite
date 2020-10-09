@@ -1,3 +1,17 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 = Python Thin Client
 
 :sourceFileDir: code-snippets/python
@@ -71,7 +85,7 @@ The following code snippet shows how to connect to a cluster from the Python thi
 
 [source, python]
 -------------------------------------------------------------------------------
-include::{sourceFileDir}/connect.py[]
+include::{sourceFileDir}/connect.py[tag=example-block,indent=0]
 -------------------------------------------------------------------------------
 
 == Client Failover
@@ -85,7 +99,7 @@ In the following example, the client is given the addresses of three cluster nod
 
 [source, python]
 -------------------------------------------------------------------------------
-include::{sourceFileDir}/client_reconnect.py[]
+include::{sourceFileDir}/client_reconnect.py[tag=example-block,indent=0]
 -------------------------------------------------------------------------------
 
 
@@ -121,14 +135,14 @@ Each method accepts a cache name or a dictionary of properties that represents a
 
 [source, python]
 -------------------------------------------------------------------------------
-include::{sourceFileDir}/create_cache.py[]
+include::{sourceFileDir}/create_cache.py[tag=example-block,indent=0]
 -------------------------------------------------------------------------------
 
 Here is an example of creating a cache with a set of properties:
 
 [source, python]
 -------------------------------------------------------------------------------
-include::{sourceFileDir}/create_cache_with_properties.py[]
+include::{sourceFileDir}/create_cache_with_properties.py[tag=example-block,indent=0]
 -------------------------------------------------------------------------------
 
 See the next section for the list of supported cache properties.
@@ -344,7 +358,7 @@ The following example shows how to do that:
 
 [source, python]
 -------------------------------------------------------------------------------
-include::{sourceFileDir}/basic_operations.py[]
+include::{sourceFileDir}/basic_operations.py[tag=example-block,indent=0]
 -------------------------------------------------------------------------------
 
 === Using type hints
@@ -353,18 +367,19 @@ Nearly any structure element (inside dict or list) can be replaced with a 2-tupl
 
 [source, python]
 ----
-include::{sourceFileDir}/type_hints.py[]
+include::{sourceFileDir}/type_hints.py[tag=example-block,indent=0]
 ----
 
 === Asynchronous Execution
 
 
 == Scan Queries
-The `scan()` method of the cache object can be used to get all objects from the cache. It returns a generator that yields `(key,value)` tuples. You can iterate through the generated pairs as follows:
+The `scan()` method of the cache object can be used to get all objects from the cache. It returns a generator that yields
+`(key,value)` tuples. You can iterate through the generated pairs as follows:
 
 [source, python]
 -------------------------------------------------------------------------------
-include::{sourceFileDir}/scan.py[tag=!dict, indent=0]
+include::{sourceFileDir}/scan.py[tag=!dict, tag=example-block, indent=0]
 -------------------------------------------------------------------------------
 
 Alternatively, you can convert the generator to a dictionary in one go:
@@ -432,7 +447,7 @@ Refer to the link:thin-clients/getting-started-with-thin-clients#enabling-ssltls
 Here is an example configuration for enabling SSL in the thin client:
 [source, python]
 ----
-include::{sourceFileDir}/client_ssl.py[indent=0]
+include::{sourceFileDir}/client_ssl.py[tag=example-block,indent=0]
 ----
 
 Supported parameters:
