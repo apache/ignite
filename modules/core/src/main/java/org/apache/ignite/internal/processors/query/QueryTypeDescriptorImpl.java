@@ -680,37 +680,46 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 GridQueryProperty prop = props.get(idxField);
 
                 Object propVal;
+                Class<?> propType;
 
-                if (F.eq(prop.name(), keyFieldAlias()) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME)))
+                if (F.eq(idxField, keyFieldAlias()) || F.eq(idxField, KEY_FIELD_NAME)) {
                     propVal = key instanceof KeyCacheObject ? ((CacheObject) key).value(coCtx, true) : key;
-                else if (F.eq(prop.name(), valueFieldAlias()) ||
-                    (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME)))
+
+                    propType = propVal == null ? null : propVal.getClass();
+                }
+                else if (F.eq(idxField, valueFieldAlias()) || F.eq(idxField, VAL_FIELD_NAME)) {
                     propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
-                else
+
+                    propType = propVal == null ? null : propVal.getClass();
+                }
+                else {
                     propVal = prop.value(key, val);
+
+                    propType = prop.type();
+                }
 
                 if (propVal == null)
                     continue;
 
                 if (!(propVal instanceof BinaryObject)) {
-                    if (!U.box(prop.type()).isAssignableFrom(U.box(propVal.getClass()))) {
+                    if (!U.box(propType).isAssignableFrom(U.box(propVal.getClass()))) {
                         // Some reference type arrays end up being converted to Object[]
-                        if (!(prop.type().isArray() && Object[].class == propVal.getClass() &&
+                        if (!(propType.isArray() && Object[].class == propVal.getClass() &&
                             Arrays.stream((Object[]) propVal).
-                                noneMatch(x -> x != null && !U.box(prop.type().getComponentType()).isAssignableFrom(U.box(x.getClass())))))
+                                noneMatch(x -> x != null && !U.box(propType.getComponentType()).isAssignableFrom(U.box(x.getClass())))))
                         {
-                            throw new IgniteSQLException("Type for a column '" + prop.name() +
+                            throw new IgniteSQLException("Type for a column '" + idxField +
                                 "' is not compatible with index definition. Expected '" +
-                                prop.type().getSimpleName() + "', actual type '" +
+                                propType.getSimpleName() + "', actual type '" +
                                 propVal.getClass().getSimpleName() + "'");
                         }
                     }
                 }
-                else if (coCtx.kernalContext().cacheObjects().typeId(prop.type().getName()) !=
+                else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
                     ((BinaryObject)propVal).type().typeId()) {
-                    throw new IgniteSQLException("Type for a column '" + prop.name() +
+                    throw new IgniteSQLException("Type for a column '" + idxField +
                         "' is not compatible with index definition. Expected '" +
-                        prop.type().getSimpleName() + "', actual type '" +
+                        propType.getSimpleName() + "', actual type '" +
                         ((BinaryObject)propVal).type().typeName() + "'");
                 }
             }
