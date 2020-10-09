@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-This module contains smoke tests that checks that ducktape works as expected
+This module contains cache create/destroy tests that checks if
 """
 
 from ducktape.mark.resource import cluster
@@ -41,7 +41,7 @@ class CacheDestroyTest(IgniteTest):
     CACHE_NAME = "TEST01"
     CACHES_AMOUNT = 10
 
-    @cluster(num_nodes=NUM_NODES)
+    @cluster(num_nodes=NUM_NODES+1)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     def test(self, ignite_version):
 
