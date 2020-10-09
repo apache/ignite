@@ -139,7 +139,7 @@ class ControlUtility:
         data = self.__run("--cache validate_indexes")
 
         if check_assert is not None:
-            assert ('no issues found.' in data) == check_assert, data
+            assert (('no issues found.' in data) == check_assert), data
 
         return data
 
