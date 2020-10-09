@@ -241,18 +241,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     /** */
     @Test
     public void testClientNodeJoinWithNewStaticCacheConfig() throws Exception {
-        listeningLog = new ListeningTestLogger(log);
-
-        LogListener lsnr = LogListener.matches(s -> s.contains("Ignore cache received from joining node. " +
-            "Encryption key for the cache cannot be generated on the client node, this node will dynamically start " +
-            "this cache after join to topology [cacheName=" + cacheName() + ']')).times(3).build();
-
-        listeningLog.registerListener(lsnr);
-
         checkNodeJoinWithNewStaticCacheConfig(true);
-
-        // An encrypted cache statically defined on the client must be dynamically started.
-        assertTrue(lsnr.check());
     }
 
     /** */
@@ -265,6 +254,14 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
      * @param client {@code True} to test client node join, {@code False} to test server node join.
      */
     public void checkNodeJoinWithNewStaticCacheConfig(boolean client) throws Exception {
+        listeningLog = new ListeningTestLogger(log);
+
+        LogListener lsnr = LogListener.matches(s -> s.contains("Encrypted cache statically configured on a client " +
+            "node cannot be started when the node joining to the cluster, it will start dynamically after the node " +
+            "will be joined [cacheName=" + cacheName() + ']')).times(client ? 1 : 0).build();
+
+        listeningLog.registerListener(lsnr);
+
         startGrid(GRID_0);
         startGrid(GRID_3);
 
@@ -299,6 +296,8 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         }
 
         checkEncryptedCaches(node, grid(GRID_0));
+
+        assertTrue(lsnr.check());
     }
 
     /** */
