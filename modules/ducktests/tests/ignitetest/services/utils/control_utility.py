@@ -131,23 +131,40 @@ class ControlUtility:
         res = self.__parse_tx_list(output)
         return res if res else output
 
-    def validate_indexes(self):
+    def validate_indexes(self, check_assert: bool = None):
         """
         Validate indexes.
+        If check is true, will be return
         """
-        return self.__run("--cache validate_indexes")
+        data = self.__run("--cache validate_indexes")
 
-    def idle_verify(self):
+        if check_assert is not None:
+            assert ('no issues found.' in data) == check_assert, data
+
+        return data
+
+    def idle_verify(self, check_assert: bool = None):
         """
         Idle verify.
         """
-        return self.__run("--cache idle_verify")
+        data = self.__run("--cache idle_verify")
 
-    def idle_verify_dump(self, node=None):
+        if check_assert is not None:
+            assert (('idle_verify check has finished, no conflicts have been found.' in data) == check_assert), data
+
+        return data
+
+    def idle_verify_dump(self, node=None, return_path: bool = False):
         """
         Idle verify dump.
         """
-        return self.__run("--cache idle_verify --dump", node=node)
+        data = self.__run("--cache idle_verify --dump", node=node)
+
+        if return_path & ('VisorIdleVerifyDumpTask successfully' in data):
+            match = re.search(r'/.*.txt', data)
+            return match[0]
+
+        return data
 
     def snapshot_create(self, snapshot_name: str, sync_mode: bool = True, time_out: int = 60):
         """

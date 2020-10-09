@@ -17,7 +17,6 @@
 Module contains discovery tests.
 """
 
-import re
 from ducktape.mark.resource import cluster
 from ducktape.tests.status import FAIL
 
@@ -92,9 +91,9 @@ class SnapshotTest(IgniteTest):
 
         node = service.nodes[0]
 
-        check_idle_verify(control_utility)
-        check_validate_indexes(control_utility)
-        dump_1 = get_dump_path(control_utility, node)
+        control_utility.idle_verify(check_assert=True)
+        control_utility.validate_indexes(check_assert=True)
+        dump_1 = control_utility.idle_verify_dump(node, return_path=True)
 
         self.logger.info(f'Path to dump_1 on {node.account.externally_routable_ip}={dump_1}')
 
@@ -102,7 +101,7 @@ class SnapshotTest(IgniteTest):
 
         load(streamer)
 
-        dump_2 = get_dump_path(control_utility, node)
+        dump_2 = control_utility.idle_verify_dump(node, return_path=True)
 
         self.logger.info(f'Path to dump_2 on {node.account.externally_routable_ip}={dump_2}')
 
@@ -118,9 +117,9 @@ class SnapshotTest(IgniteTest):
 
         control_utility.activate()
 
-        check_idle_verify(control_utility)
-        check_validate_indexes(control_utility)
-        dump_3 = get_dump_path(control_utility, node)
+        control_utility.idle_verify(check_assert=True)
+        control_utility.validate_indexes(check_assert=True)
+        dump_3 = control_utility.idle_verify_dump(node, return_path=True)
 
         self.logger.info(f'Path to dump_3 on {node.account.externally_routable_ip}={dump_3}')
 
@@ -136,33 +135,6 @@ class SnapshotTest(IgniteTest):
 
         if test_status == FAIL:
             self.copy_ignite_root_dir()
-
-
-def get_dump_path(control_utility: ControlUtility, node):
-    """
-    Control utils idle verify dump.
-    @return: path to dump file on node.
-    """
-    data = control_utility.idle_verify_dump(node)
-    assert 'VisorIdleVerifyDumpTask successfully' in data
-    match = re.search(r'/.*.txt', data)
-    return match[0]
-
-
-def check_validate_indexes(control_utility: ControlUtility):
-    """
-    Check indexes.
-    """
-    data = control_utility.validate_indexes()
-    assert 'no issues found.' in data, data
-
-
-def check_idle_verify(control_utility: ControlUtility):
-    """
-    Check idle verify.
-    """
-    data = control_utility.idle_verify()
-    assert 'idle_verify check has finished, no conflicts have been found.' in data, data
 
 
 def load(service_load: IgniteApplicationService, duration: int = 60):
