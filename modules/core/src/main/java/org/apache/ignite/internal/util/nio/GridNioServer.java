@@ -2241,8 +2241,6 @@ public class GridNioServer<T> {
                         blockingSectionEnd();
 
                         if (numKeys > 0) {
-                            updateHeartbeat();
-
                             if (selectedKeys == null)
                                 processSelectedKeys(selector.selectedKeys());
                             else
