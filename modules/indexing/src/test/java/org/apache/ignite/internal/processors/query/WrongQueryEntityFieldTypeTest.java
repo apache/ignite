@@ -106,11 +106,6 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
     private volatile boolean sysThreadFail;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        sysThreadFail = false;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
@@ -200,8 +195,6 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
 
     /** Perform action with Thin client. */
     private void withThinClient(BiConsumer<IgniteClient, ClientCache<Integer, Object>> consumer) throws Exception {
-        sysThreadFail = false;
-
         startGrids(gridCnt);
 
         try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"))) {
@@ -219,8 +212,6 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
 
     /** Perform action with Ignite node. */
     private void withNode(BiConsumer<Ignite, IgniteCache<Integer, Object>> consumer) throws Exception {
-        sysThreadFail = false;
-
         IgniteEx ign = startGrids(gridCnt);
 
         IgniteCache<Integer, Object> cache = ign.createCache(new CacheConfiguration<Integer, Object>()
