@@ -313,7 +313,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
 
-        execute("--corrupted-pds_cleaning", "--host", "localhost", "--port", port);
+        execute("--persistence-cleaning", "--host", "localhost", "--port", port);
     }
 
     /**

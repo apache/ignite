@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.persistence.corruption;
+package org.apache.ignite.internal.visor.persistence.cleaning;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -51,8 +51,6 @@ public class PersistenceCleaningTask extends VisorOneNodeTask<PersistenceCleanin
         /** {@inheritDoc} */
         @Override protected PersistenceCleaningTaskResult run(@Nullable PersistenceCleaningTaskArg arg) throws IgniteException {
             MaintenanceTask t = ignite.context().maintenanceRegistry().activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID);
-
-            System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] " + (t != null ? t.parameters() : "null"));
 
             return null;
         }
