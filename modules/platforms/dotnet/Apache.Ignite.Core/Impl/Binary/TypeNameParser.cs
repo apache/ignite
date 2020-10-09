@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
@@ -130,11 +131,33 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        ///   Removes all assembly info from the specified type name.
+        /// </summary>
+        /// <param name="typeName">Type name to remove assembly info from.</param>
+        /// <returns>Type name without assembly info.</returns>
+        public static string RemoveAssemblyInfo(string typeName)
+        {
+            // Get start of "Version=..., Culture=..., PublicKeyToken=..." string.
+            int versionIndex = typeName.IndexOf("Version=", StringComparison.Ordinal);
+            if (versionIndex >= 0)
+            {
+                // Get end of "Version=..., Culture=..., PublicKeyToken=..." string for generics.
+                int endIndex = typeName.IndexOf(']', versionIndex);
+                // Get end of "Version=..., Culture=..., PublicKeyToken=..." string for non-generics.
+                endIndex = endIndex >= 0 ? endIndex : typeName.Length;
+                // Remove version info.
+                typeName = typeName.Remove(versionIndex - 2, endIndex - versionIndex + 2);
+            }
+
+            return typeName;
+        }
+
+        /// <summary>
         /// Gets the full name (with namespace, generics and arrays).
         /// </summary>
         public string GetFullName()
         {
-            return _typeName.Substring(_start, FullNameEnd - _start + 1);
+            return RemoveAssemblyInfo(_typeName.Substring(_start, FullNameEnd - _start + 1));
         }
 
         /// <summary>
