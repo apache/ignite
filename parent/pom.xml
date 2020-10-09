@@ -975,6 +975,13 @@
                                         <exclude>modules/platforms/python/requirements/**/*.txt</exclude><!--plain text can not be commented-->
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
+                                        <!-- Ignite Documentation-->
+                                        <exclude>docs/_site/**</exclude>
+                                        <exclude>docs/assets/**</exclude>
+                                        <exclude>docs/Gemfile.lock</exclude>
+                                        <exclude>docs/.jekyll-cache/**</exclude>
+                                        <exclude>docs/_docs/images/**</exclude>
+                                        <exclude>docs/Gemfile</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
