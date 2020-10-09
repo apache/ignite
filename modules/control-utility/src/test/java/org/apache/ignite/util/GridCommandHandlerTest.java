@@ -64,6 +64,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.impl.GridClientImpl;
@@ -307,6 +308,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
 
         assertThrows(log, () -> startGrid(1), Exception.class, null);
+
+        ig1 = startGrid(1);
+
+        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+
+        execute("--corrupted-pds_cleaning", "--host", "localhost", "--port", port);
     }
 
     /**

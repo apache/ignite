@@ -17,15 +17,47 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.Optional;
+import java.util.UUID;
 import java.util.logging.Logger;
 
+import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.persistence.corruption.PersistenceCleaningArguments;
+import org.apache.ignite.internal.visor.persistence.corruption.PersistenceCleaningTask;
+import org.apache.ignite.internal.visor.persistence.corruption.PersistenceCleaningTaskArg;
+
+import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 
 /** */
 public class PersistenceCleaningCommand implements Command<PersistenceCleaningArguments> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+        try (GridClient client = Command.startClient(clientCfg)) {
+            Optional<GridClientNode> firstNodeOpt = client.compute().nodes().stream().findFirst();
+
+            if (firstNodeOpt.isPresent()) {
+                UUID uuid = firstNodeOpt.get().nodeId();
+
+                executeTaskByNameOnNode(client,
+                    PersistenceCleaningTask.class.getName(),
+                    new PersistenceCleaningTaskArg(),
+                    uuid,
+                    clientCfg
+                    );
+
+            }
+            else
+                logger.warning("No nodes found in topology, command won't be executed.");
+        }
+        catch (Throwable t) {
+            logger.severe("Failed to execute command");
+            logger.severe(CommandLogger.errorMessage(t));
+
+            throw t;
+        }
+
         return null;
     }
 
