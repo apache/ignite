@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:util="http://www.springframework.org/schema/util" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="         http://www.springframework.org/schema/beans         http://www.springframework.org/schema/beans/spring-beans.xsd         http://www.springframework.org/schema/util         http://www.springframework.org/schema/util/spring-util.xsd">
+    <!-- tag::ignite-config[] -->
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="cacheConfiguration">
+            <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                <property name="name" value="personCache"/>
+                <!-- Configure query entities -->
+                <property name="queryEntities">
+                    <list>
+                        <bean class="org.apache.ignite.cache.QueryEntity">
+                            <!-- Registering key's class. -->
+                            <property name="keyType" value="CustomKey"/>
+                            <!-- Registering value's class. -->
+                            <property name="valueType" value="org.apache.ignite.examples.Person"/>
+                            <!-- Defining all the fields that will be accessible from DML. -->
+                            <property name="fields">
+                                <map>
+                                    <entry key="firstName" value="java.lang.String"/>
+                                    <entry key="lastName" value="java.lang.String"/>
+                                    <entry key="intKeyField" value="java.lang.Integer"/>
+                                    <entry key="strKeyField" value="java.lang.String"/>
+                                </map>
+                            </property>
+                            <!-- Defining the subset of key's fields -->
+                            <property name="keyFields">
+                                <set>
+                                    <value>intKeyField</value>
+                                    <value>strKeyField</value>
+                                </set>
+                            </property>
+                        </bean>
+                    </list>
+                </property>
+            </bean>
+        </property>
+        <!-- tag::discovery[] -->
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>127.0.0.1:47500..47509</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+        <!-- end::discovery[] -->
+    </bean>
+    <!-- end::ignite-config[] -->
+</beans>
