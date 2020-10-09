@@ -74,6 +74,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.failure.BlockedThreadException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -1850,10 +1851,16 @@ public class IgnitionEx {
             WorkersRegistry workerRegistry = new WorkersRegistry(
                 new IgniteBiInClosure<GridWorker, FailureType>() {
                     @Override public void apply(GridWorker deadWorker, FailureType failureType) {
-                        if (grid != null)
-                            grid.context().failure().process(new FailureContext(
-                                failureType,
-                                new IgniteException(S.toString(GridWorker.class, deadWorker))));
+                        if (grid != null) {
+                            Throwable err;
+
+                            if (failureType == FailureType.SYSTEM_WORKER_BLOCKED)
+                                err = new BlockedThreadException(deadWorker);
+                            else
+                                err = new IgniteException(S.toString(GridWorker.class, deadWorker));
+
+                            grid.context().failure().process(new FailureContext(failureType, err));
+                        }
                     }
                 },
                 IgniteSystemProperties.getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT,

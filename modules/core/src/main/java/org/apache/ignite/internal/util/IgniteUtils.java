@@ -1514,7 +1514,7 @@ public abstract class IgniteUtils {
 
         GridStringBuilder sb = new GridStringBuilder();
 
-        printThreadInfo(mxBean.getThreadInfo(t.getId()), sb, Collections.emptySet());
+        printThreadInfo(mxBean.getThreadInfo(t.getId(), Integer.MAX_VALUE), sb, Collections.emptySet());
 
         warn(log, sb.toString());
     }
