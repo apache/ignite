@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockSta
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.lang.Thread.State.TIMED_WAITING;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -155,7 +156,7 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
     public void testBeginOfCp() {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
-        assertTrue(throttle.getParkTime(0.01, 100,400000,
+        assertTrue(throttle.getParkTime(0.01, 100, 400000,
             1,
             20103,
             23103) == 0);
@@ -203,10 +204,10 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
     public void testTooMuchPagesMarkedDirty() {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
-       // 363308	350004	348976	10604
+        // 363308	350004	348976	10604
         long time = throttle.getParkTime(0.75,
             ((350004 + 348976) / 2),
-            350004-10604,
+            350004 - 10604,
             4,
             279,
             23933);
@@ -216,17 +217,77 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
         assertTrue(time == 0);
     }
 
-    /** */
+    /**
+     * @throws IgniteInterruptedCheckedException if fail.
+     */
+    @Test
+    public void testWakeupSpeedBaseThrottledThreadOnCheckpointFinish() throws IgniteInterruptedCheckedException {
+        //given: Enabled throttling with EXPONENTIAL level.
+        CheckpointWriteProgressSupplier cpProgress = mock(CheckpointWriteProgressSupplier.class);
+        when(cpProgress.writtenPagesCounter()).thenReturn(new AtomicInteger(200));
+
+        PagesWriteThrottlePolicy plc = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProgress, stateChecker, log) {
+            @Override protected void doPark(long throttleParkTimeNs) {
+                //Force parking to long time.
+                super.doPark(TimeUnit.SECONDS.toNanos(10));
+            }
+        };
+
+        when(pageMemory2g.checkpointBufferPagesSize()).thenReturn(100);
+        when(pageMemory2g.checkpointBufferPagesCount()).thenAnswer(mock -> new AtomicInteger(70));
+
+        AtomicBoolean stopLoad = new AtomicBoolean();
+        List<Thread> loadThreads = new ArrayList<>();
+
+        for (int i = 0; i < 10; i++) {
+            loadThreads.add(new Thread(
+                () -> {
+                    while (!stopLoad.get())
+                        plc.onMarkDirty(true);
+                },
+                "load-" + i
+            ));
+        }
+
+        try {
+            loadThreads.forEach(Thread::start);
+
+            //and: All load threads are parked.
+            for (Thread t : loadThreads)
+                assertTrue(t.getName(), waitForCondition(() -> t.getState() == TIMED_WAITING, 1000L));
+
+            //when: Disable throttling
+            when(cpProgress.writtenPagesCounter()).thenReturn(null);
+
+            //and: Finish the checkpoint.
+            plc.onFinishCheckpoint();
+
+            //then: All load threads should be unparked.
+            for (Thread t : loadThreads)
+                assertTrue(t.getName(), waitForCondition(() -> t.getState() != TIMED_WAITING, 500L));
+
+            for (Thread t : loadThreads)
+                assertNotEquals(t.getName(), TIMED_WAITING, t.getState());
+        }
+        finally {
+            stopLoad.set(true);
+        }
+    }
+
+    /**
+     *
+     */
+    @Test
     public void testWakeupThrottledThread() throws IgniteInterruptedCheckedException, InterruptedException {
         PagesWriteThrottlePolicy plc = new PagesWriteThrottle(pageMemory2g, null, stateChecker, true, log);
 
         AtomicBoolean stopLoad = new AtomicBoolean();
         List<Thread> loadThreads = new ArrayList<>();
 
-        for (int i=0; i<3; i++) {
+        for (int i = 0; i < 3; i++) {
             loadThreads.add(new Thread(
-                ()->{
-                    while(!stopLoad.get())
+                () -> {
+                    while (!stopLoad.get())
                         plc.onMarkDirty(true);
                 },
                 "load-" + i
@@ -308,7 +369,7 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
 
             throttle.onMarkDirty(false);
 
-            if(warnings.get()>0)
+            if (warnings.get() > 0)
                 break;
         }
 
