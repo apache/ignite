@@ -1,0 +1,125 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= .NET Platform Cache
+
+CAUTION: Experimental API
+
+Ignite.NET provides an additional layer of caching in the link:https://docs.microsoft.com/en-us/dotnet/standard/clr[CLR] heap. The platform cache keeps a deserialized copy of every cache entry that is present on the current node, thus greatly improving cache read performance at the cost of increased memory usage.
+
+[NOTE]
+====
+Platform caches are bypassed within transactions: when a transaction is active, `cache.Get` and the other APIs listed below do not use the platform cache. Transaction support is coming soon.
+====
+
+
+== Configuring Platform Cache
+
+:dotnetCodeFile: code-snippets/dotnet/PlatformCache.cs
+
+
+=== Server Nodes
+
+Platform cache is configured once for all server nodes by setting `CacheConfiguration.PlatformCacheConfiguration` to a non-null value. Platform cache on server nodes stores *all primary and backup cache entries assigned to the given node* in .NET memory.
+Entries are updated in real time and they are guaranteed to be up to date at any given moment, even before user code accesses them.
+
+CAUTION: Platform cache effectively doubles memory usage on server nodes, every cache entry is stored twice: serialized in unmanaged (offheap) memory, and deserialized in CLR heap.
+
+[tabs]
+--
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetCodeFile}[tag=platformCacheConf,indent=0]
+----
+--
+
+
+=== Client Nodes
+
+Platform caches on client nodes require a link:configuring-caches/near-cache[Near Cache] to be configured, since client nodes do not store data otherwise. The platform cache on a client node keeps the same set of entries as the near cache on that node. the near cache eviction policy effectively applies to the platform cache.
+
+[tabs]
+--
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetCodeFile}[tag=platformCacheConfClient,indent=0]
+----
+--
+
+
+== Supported APIs
+
+The following `ICache<K, V>` APIs use a platform cache (including the corresponding async versions):
+
+* `Get`, `TryGet`, indexer (`ICache[k]`)
+* `GetAll` (reads from the platform cache first and falls back to the distributed cache when necessary)
+* `ContainsKey`, `ContainsKeys`
+* `LocalPeek`, `TryLocalPeek`
+* `GetLocalEntries`
+* `GetLocalSize`
+* `Query` with `ScanQuery`
+** Uses the platform cache to pass values to `ScanQuery.Filter`
+** Iterates over the platform cache directly when `ScanQuery.Local` is `true` and `ScanQuery.Partition` is not null
+
+
+== Access Platform Cache Data Directly
+
+You don't need to change your code to take advantage of a Platform Cache. Existing calls to `ICache.Get` and other APIs listed above will be served from the platform cache when possible, improving performance. When a given entry is not present in the platform cache, Ignite falls back to a normal path and retrieves the value from the cluster.
+
+However, in some cases we may wish to access the platform cache exclusively, avoiding Java and network calls. `Local` APIs in combination with `CachePeekMode.Platform` allow us to do just that:
+
+[tabs]
+--
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetCodeFile}[tag=platformCacheAccess,indent=0]
+----
+--
+
+
+== Advanced Configuration
+
+=== Binary Mode
+
+In order to use link:key-value-api/binary-objects[Binary Objects] together with platform cache, set `PlatformCacheConfiguration.KeepBinary` to `true`:
+
+[tabs]
+--
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetCodeFile}[tag=advancedConfigBinaryMode,indent=0]
+----
+--
+
+
+=== Key and Value Types
+
+When using Ignite cache with link:https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/value-types[Value Types], you should set `PlatformCacheConfiguration.KeyTypeName` and `ValueTypeName` accordingly to achieve maximum performance and reduce GC pressure:
+
+[tabs]
+--
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetCodeFile}[tag=advancedConfigKeyValTypes,indent=0]
+----
+--
+
+Ignite uses `ConcurrentDictionary<object, object>` by default to store platform cache data, because the actual types are  unknown beforehand. This results in link:https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/types/boxing-and-unboxing[boxing and unboxing] for value types, reducing performance and allocating more memory. When `KeyTypeName` and `ValueTypeName` are set in `PlatformCacheConfiguration`, Ignite uses those types to create an internal `ConcurrentDictionary` instead of the default `object`.
+
+CAUTION: Incorrect `KeyTypeName` and/or `ValueTypeName` settings can cause runtime cast exceptions.

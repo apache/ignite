@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -282,11 +283,26 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         }
 
         if (!assignments.isEmpty()) {
-            ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
+            if (exchFut != null && exchFut.rebalanced()) {
+                GridDhtPartitionDemandMessage first = assignments.values().iterator().next();
 
-            assert exchFut == null || !exchFut.rebalanced() :
-                "Unexpected rebalance on rebalanced cluster " +
-                    "[top=" + topVer + ", grp=" + grp.groupId() + ", assignments=" + assignments + "]";
+                GridDhtLocalPartition locPart = grp.topology().localPartition(first.partitions().all().iterator().next());
+
+                SB buf = new SB(1024);
+
+                buf.a("Unexpected rebalance on rebalanced cluster: assignments=");
+                buf.a(assignments);
+                buf.a(", locPart=");
+
+                if (locPart != null)
+                    locPart.dumpDebugInfo(buf);
+                else
+                    buf.a("NA");
+
+                throw new AssertionError(buf.toString());
+            }
+
+            ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
         }
 
         return assignments;

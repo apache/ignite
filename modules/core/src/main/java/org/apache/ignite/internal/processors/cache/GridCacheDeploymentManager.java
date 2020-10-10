@@ -948,7 +948,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
          */
         private CachedDeploymentInfo(UUID sndId, IgniteUuid ldrId, String userVer, DeploymentMode depMode,
             Map<UUID, IgniteUuid> participants) {
-            assert sndId.equals(ldrId.globalId()) || participants != null;
+            assert sndId.equals(ldrId.globalId()) || participants != null : "[senderId=" + sndId +
+                ", loaderGlobalId=" + ldrId.globalId() + ", participants is null]";
 
             this.sndId = sndId;
             this.ldrId = ldrId;

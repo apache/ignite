@@ -216,9 +216,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                     if (log.isDebugEnabled())
                         log.debug("Async response: [resp=" + resp.status() + ']');
 
-                    byte[] outMsg = parser.encode(resp);
-
-                    ses.send(outMsg);
+                    ses.send(parser.encode(resp));
                 }
             }
         };
