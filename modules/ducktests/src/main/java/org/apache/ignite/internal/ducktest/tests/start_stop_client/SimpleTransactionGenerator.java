@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.ducktest.tests.start_stop_client;
 
+import java.util.Optional;
+import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -25,13 +27,9 @@ import org.apache.ignite.internal.ducktest.tests.start_stop_client.node.ActionNo
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
-import java.util.Optional;
-import java.util.UUID;
-
 /**
  * Java client. Tx put operation
  */
-
 
 public class SimpleTransactionGenerator extends ActionNode {
 
@@ -45,8 +43,7 @@ public class SimpleTransactionGenerator extends ActionNode {
     private static final String VALUE = "Client start stop simple test.";
 
     /** {@inheritDoc} */
-    @Override
-    public long singleAction() {
+    @Override public long singleAction() {
         UUID key = UUID.randomUUID();
         long startTime = System.nanoTime();
         cache.put(key,VALUE);
@@ -55,8 +52,7 @@ public class SimpleTransactionGenerator extends ActionNode {
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void scriptInit(JsonNode jsonNode) {
+    @Override protected void scriptInit(JsonNode jsonNode) {
         String cacheName = Optional.ofNullable(jsonNode.get("cacheName")).map(JsonNode::asText).orElse("default-cache-name");
         log.info("test props:" + " cacheName=" + cacheName );
         cache = ignite.getOrCreateCache(prepareCacheConfiguration(cacheName));

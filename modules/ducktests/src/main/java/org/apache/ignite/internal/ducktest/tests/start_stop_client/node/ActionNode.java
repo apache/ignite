@@ -134,7 +134,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
                 " pacing=" + pacing +
                 " threads=" + threads
         );
-        executor = Executors.newFixedThreadPool(threads+2);
+        executor = Executors.newFixedThreadPool(threads + 2);
         scriptInit(jsonNode);
     }
 

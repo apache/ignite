@@ -104,11 +104,11 @@ public class OperationThread extends Thread {
 
         long batch = 0;
         long st_time_r = System.currentTimeMillis();
-        while (!terminated && batch < (count)){
+        while (!terminated && batch < (count)) {
             latency = actionNode.singleAction();
             tx_count++;
 
-            if (min_latency == -1){
+            if (min_latency == -1) {
                 min_latency = latency;
             } else {
                 if (min_latency > latency){
@@ -128,7 +128,7 @@ public class OperationThread extends Thread {
         for (Long s_latency : reports){
             sum += s_latency;
         }
-        if (!reports.isEmpty()){
+        if (!reports.isEmpty()) {
             avg_latency = sum / reports.size();
             Collections.sort(reports);
             percentile99 = percentile99(reports);
@@ -136,7 +136,7 @@ public class OperationThread extends Thread {
 
         //calc dispersion
         long x = 0;
-        for (Long report : reports){
+        for (Long report : reports) {
             x = x + (report - avg_latency) ^ (2);
         }
         logger.info("dispersion debug: " + x);
