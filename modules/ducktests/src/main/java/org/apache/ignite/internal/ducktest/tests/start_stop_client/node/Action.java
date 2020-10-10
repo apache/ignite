@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
 
 /**
- * Java client. Tx put operation
+ * Base interface
  */
 
 public interface Action {
