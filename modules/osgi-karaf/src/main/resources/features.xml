@@ -38,7 +38,7 @@
         <feature>ignite-jcl</feature>
         <feature>ignite-jms11</feature>
         <feature>ignite-jta</feature>
-        <feature>ignite-kafka</feature>
+        <feature>ignite-kafka-ext</feature>
         <feature>ignite-mqtt</feature>
         <!-- KARAF-4129 Karaf feature containing a fragment that attaches to pax-logging-api cannot be installed
         <feature>ignite-log4j</feature>-->
@@ -159,7 +159,7 @@
         <bundle start="true">mvn:org.apache.ignite/ignite-jta/${project.version}</bundle>
     </feature>
 
-    <feature name="ignite-kafka" version="${project.version}" description="Apache Ignite :: Kafka">
+    <feature name="ignite-kafka-ext" version="${ignite-kafka-ext.version}" description="Apache Ignite :: Kafka">
         <details>
             <![CDATA[The Apache Ignite Kafka module + dependencies. This module installs the Scala 2.11 library bundle.]]>
         </details>
@@ -170,7 +170,7 @@
         <bundle start="true" dependency="true">wrap:mvn:org.apache.kafka/connect-api/${kafka.version}$Bundle-SymbolicName=connect-api&amp;Bundle-Version=${kafka.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:org.apache.kafka/kafka_2.11/${kafka.version}$Bundle-SymbolicName=kafka_2.11&amp;Bundle-Version=${kafka.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:org.apache.kafka/kafka-clients/${kafka.version}$Bundle-SymbolicName=kafka-clients&amp;Bundle-Version=${kafka.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-kafka/${project.version}</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-kafka-ext/${ignite-kafka-ext.version}</bundle>
     </feature>
 
     <feature name="ignite-log4j" version="${project.version}" description="Apache Ignite :: log4j">
