@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
 
-import org.apache.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
+import org.apache.log4j.Logger;
 
 /**
  * single action thread
