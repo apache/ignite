@@ -111,7 +111,7 @@ public class OperationThread extends Thread {
             if (min_latency == -1) {
                 min_latency = latency;
             } else {
-                if (min_latency > latency){
+                if (min_latency > latency) {
                     min_latency = latency;
                 }
             }
@@ -124,8 +124,8 @@ public class OperationThread extends Thread {
         }
         end_time = System.currentTimeMillis();
 
-        long sum=0;
-        for (Long s_latency : reports){
+        long sum = 0;
+        for (Long s_latency : reports) {
             sum += s_latency;
         }
         if (!reports.isEmpty()) {

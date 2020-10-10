@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
 
 import java.util.ArrayList;
-import java.util.UUID;
-import java.util.Optional;
 import java.util.Date;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
@@ -106,7 +106,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
         markInitialized();
 
         for (int i = 0; i < threads; i++) {
-            operation_threads.add(new OperationThread(this, log, pacing, "action-thread-"+i));
+            operation_threads.add(new OperationThread(this, log, pacing, "action-thread-" + i));
         }
         for (OperationThread thread : operation_threads) {
             executor.execute(thread);
@@ -144,11 +144,12 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
     /** {@inheritDoc} */
     @Override public void publishInterimReport(Report report) {
         executor.execute(new Runnable() {
-            @Override
-            public void run() {
+
+            @Override public void run() {
                 queue.add(report);
                 printReportIntoLog(report);
             }
+
         });
     }
 
@@ -175,7 +176,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
         ArrayList<Report> reports = new ArrayList(Arrays.asList(queue.stream().toArray()));
         builder.append("\n<report start>\n");
         builder.append("<meansured agent-name>" + this.nodeId + "</meansured agent-name>" + "\n");
-        builder.append("<action name>" + actionName + "</action name>"+ "\n");
+        builder.append("<action name>" + actionName + "</action name>" + "\n");
         builder.append("<thread count>" + threads + "<thread count>" + "\n");
         builder.append("<active baseline>" + ignite.cluster().currentBaselineTopology().size() + "</active baseline>" + '\n');
         builder.append("<start agent time>" + start_time.toString() + "</start agent time>" + '\n');
