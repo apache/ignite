@@ -55,17 +55,17 @@ public class OperationThread extends Thread {
     }
 
     /** */
-    public boolean getTerminated(){
+    public boolean getTerminated() {
         return terminated;
     }
 
     /** */
-    public void terminate(){
+    public void terminate() {
         this.terminated = true;
     }
 
     /** */
-    public OperationThread(Action actionNode, Logger logger, long pacing, String name){
+    public OperationThread(Action actionNode, Logger logger, long pacing, String name) {
         this.actionNode = actionNode;
         this.logger = logger;
         this.pacing = pacing;
@@ -128,10 +128,10 @@ public class OperationThread extends Thread {
 
         long sum=0;
         for (Long s_latency : reports){
-            sum +=s_latency;
+            sum += s_latency;
         }
         if (!reports.isEmpty()){
-            avg_latency = sum/reports.size();
+            avg_latency = sum / reports.size();
             Collections.sort(reports);
             percentile99 = percentile99(reports);
         }
@@ -139,11 +139,10 @@ public class OperationThread extends Thread {
         //calc dispersion
         long x = 0;
         for (Long report : reports){
-            x = x + (report - avg_latency)^(2);
+            x = x + (report - avg_latency) ^ (2);
         }
         logger.info("dispersion debug: " + x);
-        double dispersion = (double) (x/(reports.size()-1));
-        logger.info("dispersion/n debug: " + x);
+        double dispersion = (double) (x / (reports.size() - 1));
 
         Report report = new Report();
 
@@ -163,7 +162,7 @@ public class OperationThread extends Thread {
     /** percentile 99 calculate*/
     private long percentile99(ArrayList<Long> reports){
         int size = reports.size();
-        int index = (int) (size*0.99);
+        int index = (int) (size * 0.99);
         return reports.get(index);
     }
 

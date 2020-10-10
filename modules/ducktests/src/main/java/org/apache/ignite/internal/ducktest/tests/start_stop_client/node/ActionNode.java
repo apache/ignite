@@ -17,21 +17,21 @@
 
 package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 /**
  * The base class agent
  */
 
-public abstract class ActionNode extends IgniteAwareApplication implements Action{
+public abstract class ActionNode extends IgniteAwareApplication implements Action {
 
     /** report Queue */
     protected ConcurrentLinkedQueue queue = new ConcurrentLinkedQueue();
@@ -105,13 +105,13 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
         for (int i = 0; i < threads; i++) {
             operation_threads.add(new OperationThread(this, log, pacing, "action-thread-"+i));
         }
-        for (OperationThread thread : operation_threads){
+        for (OperationThread thread : operation_threads) {
             executor.execute(thread);
         }
 
         while (!terminated()) {
         }
-        for (OperationThread thread : operation_threads){
+        for (OperationThread thread : operation_threads) {
             thread.terminate();//останавливаем потоки
         }
         end_time = new Date();
@@ -120,7 +120,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
     }
 
     /** init method */
-    protected void init(JsonNode jsonNode){
+    protected void init(JsonNode jsonNode) {
         threads = Optional.ofNullable(jsonNode.get("threads")).map(JsonNode::asInt).orElse(1);
         pacing = Optional.ofNullable(jsonNode.get("pacing")).map(JsonNode::asLong).orElse(0l);
         actionName = Optional.ofNullable(jsonNode.get("action")).map(JsonNode::asText).orElse("default-action-name");
@@ -140,7 +140,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
 
     /** {@inheritDoc} */
     @Override
-    public void publishInterimReport(Report report){
+    public void publishInterimReport(Report report) {
         executor.execute(new Runnable() {
             @Override
             public void run() {
@@ -151,7 +151,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
     }
 
     /** report print */
-    private void printReportIntoLog(Report report){
+    private void printReportIntoLog(Report report) {
         String message = String.format(LOG_TX_REPORT,
                 report.getThreadName(),
                 this.actionName,
@@ -178,7 +178,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
         builder.append("<active baseline>" + ignite.cluster().currentBaselineTopology().size() + "</active baseline>" + '\n');
         builder.append("<start agent time>" + start_time.toString() + "</start agent time>" + '\n');
         builder.append("<end agent work time>" + end_time.toString() + "</end agent work time>" + '\n');
-        builder.append("<total work>" + ((end_time.getTime() - start_time.getTime())/(1000)) + "</total work>");
+        builder.append("<total work>" + ((end_time.getTime() - start_time.getTime()) / (1000)) + "</total work>");
         builder.append(FINAL_REPORT_HEADER);
         builder.append("<data>\n");
         for (int i = 0; i < reports.size() - 1; i++) {

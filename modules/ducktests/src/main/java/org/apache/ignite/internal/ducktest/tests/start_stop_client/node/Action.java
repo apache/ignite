@@ -22,8 +22,10 @@ package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
  */
 
 public interface Action {
+
     /* target action **/
     public long singleAction();
+
     /* method for publishing an internal report **/
     public void publishInterimReport(Report report);
 }

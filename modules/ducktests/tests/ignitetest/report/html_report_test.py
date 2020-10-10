@@ -15,7 +15,7 @@
 
 from ignitetest.report.plotter.report_builder import ReportBuilder
 
-LOG_FILE = "log/console.log"
+LOG_FILE = "/home/ponchick/IdeaProjects/ignite-ducktape/results/2020-10-10--003/ClientTest/test_ignite_start_stop/ignite_version=dev/1/IgniteApplicationService-0-140014446505712/ducker04/console.log"
 REPORT_FOLDER = "put-tx"
 
 builder = ReportBuilder(LOG_FILE, REPORT_FOLDER)
