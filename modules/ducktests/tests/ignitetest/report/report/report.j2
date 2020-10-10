@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>Ignite Ducktape mini report</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+        <!-- JS, Popper.js, and jQuery -->
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+    </head>
+<body>
+    <div>
+        <nav class="navbar fixed-top navbar-light bg-light">
+            <a class="navbar-brand" href="#">Ignite Ducktape latency report</a>
+        </nav>
+    </div>
+    <div class="container" style="margin-top: 100px">
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center">
+                    <img src="latency_plot.png" class="img-fluid" alt="Responsive image">
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <h5 class="card-header">Report short info</h5>
+                    <div class="card-body">
+                        <p>This graph was built based on the analysis of the java agent log. To see more information click the button below</p>
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
+                            show details
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Data details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div id="DataModal" class="modal-body">
+                    <div id="data-table">
+                      <table class="table table-dark" cellspacing="2" border="1" cellpadding="5" class="mx-auto">
+                        <thead>
+                          <tr>
+                            <th scope="col">№</th>
+                            <th scope="col">report timestamp (ms)</th>
+                            <th scope="col">transactions</th>
+                            <th scope="col">min latency (ns)</th>
+                            <th scope="col">avg latency (ns)</th>
+                            <th scope="col">max latency (ns)</th>
+                            <th scope="col">percentile 99% (ns)</th>
+                          </tr>
+                        </thead>
+                        {% for row in relations_table %}
+                        <tbody>
+                            <tr>
+                            {% for value in row %}
+                                <td>{{ value }}</td>
+                                    {% endfor %}
+                            </tr>
+                                {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+</body>
+</html>

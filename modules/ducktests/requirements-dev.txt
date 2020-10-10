@@ -1,0 +1,5 @@
+pytest~=6.0.1
+ducktape~=0.8.0
+setuptools~=50.3.0
+Jinja2~=2.11.2
+matplotlib~=3.3.2

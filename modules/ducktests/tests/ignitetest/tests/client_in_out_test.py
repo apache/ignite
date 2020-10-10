@@ -30,7 +30,6 @@ from ignitetest.utils.version import DEV_BRANCH, V_2_8_1, IgniteVersion
 
 
 # pylint: disable=W0223
-
 class ClientTest(IgniteTest):
     """
     CACHE_NAME - name of the cache to create for the test.
@@ -38,6 +37,7 @@ class ClientTest(IgniteTest):
     PACING - the frequency of the operation on clients (ms).
     JAVA_CLIENT_CLASS_NAME - running classname.
     CLIENTS_WORK_TIME_S - clients working time (s).
+    STATIC_CLIENT_WORK_TIME_S - static client work time (s)
     ITERATION_COUNT - the number of iterations of starting and stopping client nodes (s).
     CLUSTER_NODES - cluster size.
     STATIC_CLIENTS_NUM - the number of permanently employed clients.
@@ -46,13 +46,16 @@ class ClientTest(IgniteTest):
 
     CACHE_NAME = "simple-tx-cache"
     PACING = 10
-    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.start_stop_client.SingleClientNode"
+    THREADS = 1
+    ACTION = "put-tx"
+    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.start_stop_client.SimpleTransactionGenerator"
 
     CLIENTS_WORK_TIME_S = 30
+    STATIC_CLIENT_WORK_TIME_S = 30
     ITERATION_COUNT = 1
-    CLUSTER_NODES = 12
-    STATIC_CLIENTS_NUM = 2
-    TEMP_CLIENTS_NUM = 7
+    CLUSTER_NODES = 7
+    STATIC_CLIENTS_NUM = 1
+    TEMP_CLIENTS_NUM = 4
 
     @cluster(num_nodes=CLUSTER_NODES)
     @ignite_versions(str(DEV_BRANCH), str(V_2_8_1))
@@ -78,7 +81,9 @@ class ClientTest(IgniteTest):
             java_class_name=self.JAVA_CLIENT_CLASS_NAME,
             num_nodes=self.STATIC_CLIENTS_NUM,
             params={"cacheName": self.CACHE_NAME,
-                    "pacing": self.PACING})
+                    "pacing": self.PACING,
+                    "action": self.ACTION,
+                    "threads": self.THREADS})
 
         temp_clients = IgniteApplicationService(
             self.test_context,
@@ -96,7 +101,6 @@ class ClientTest(IgniteTest):
 
         # start static clients
         static_clients.start()
-
         current_top_v += self.STATIC_CLIENTS_NUM
         check_topology(control_utility, current_top_v)
 
@@ -108,7 +112,10 @@ class ClientTest(IgniteTest):
 
         # start stop temp_clients node. Check cluster.
 
+        time.sleep(self.STATIC_CLIENT_WORK_TIME_S)
+
         for i in range(self.ITERATION_COUNT):
+            time.sleep(self.CLIENTS_WORK_TIME_S)
             temp_clients.start()
             print("Starting iteration: " + str(i))
             temp_clients.await_event(f'clients={self.STATIC_CLIENTS_NUM + self.TEMP_CLIENTS_NUM}',

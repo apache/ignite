@@ -17,38 +17,50 @@
 
 package org.apache.ignite.internal.ducktest.tests.start_stop_client;
 
-import java.util.Optional;
-import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
+import org.apache.ignite.internal.ducktest.tests.start_stop_client.node.ActionNode;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Java client. Tx put operation
  */
 
-public class SingleClientNode extends IgniteAwareApplication {
+
+public class SimpleTransactionGenerator extends ActionNode {
+
+    /** target cache*/
+    private IgniteCache cache;
+
+    /** logger*/
+    protected static final Logger log = LogManager.getLogger(SimpleTransactionGenerator.class.getName());
+
+    /** value for test*/
+    private static final String VALUE = "Client start stop simple test.";
 
     /** {@inheritDoc} */
-    @Override protected void run(JsonNode jsonNode) throws Exception {
+    @Override
+    public long singleAction() {
+        UUID key = UUID.randomUUID();
+        long startTime = System.nanoTime();
+        cache.put(key,VALUE);
+        long resultTime = System.nanoTime() - startTime;
+        return resultTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    protected void scriptInit(JsonNode jsonNode) {
         String cacheName = Optional.ofNullable(jsonNode.get("cacheName")).map(JsonNode::asText).orElse("default-cache-name");
-        long pacing = Optional.ofNullable(jsonNode.get("pacing")).map(JsonNode::asLong).orElse(0l);
-
-        log.info("test props:" +
-                " cacheName=" + cacheName +
-                " pacing=" + pacing);
-
-        IgniteCache<UUID, UUID> cache = ignite.getOrCreateCache(prepareCacheConfiguration(cacheName));
+        log.info("test props:" + " cacheName=" + cacheName );
+        cache = ignite.getOrCreateCache(prepareCacheConfiguration(cacheName));
         log.info("node name: " + ignite.name() + " starting cache operations");
-
-        markInitialized();
-        while (!terminated()) {
-            cacheOperation(cache);
-            Thread.sleep(pacing);
-        }
-        markFinished();
     }
 
     /** cache config
@@ -61,15 +73,4 @@ public class SingleClientNode extends IgniteAwareApplication {
         return cfg;
     }
 
-
-    /** single cache operation.
-     * @param cache - target cache*/
-    public long cacheOperation(IgniteCache cache) throws InterruptedException {
-        UUID key = UUID.randomUUID();
-        long startTime = System.nanoTime();
-        cache.put(key,key);
-        long resultTime = System.nanoTime() - startTime;
-        log.info("success put key=" + key + " value=" + key + " latency: " + resultTime + "ns");
-        return resultTime;
-    }
 }
