@@ -61,7 +61,6 @@ public class SingleClientNode extends IgniteAwareApplication {
         return cfg;
     }
 
-
     /** single cache operation.
      * @param cache - target cache*/
     public long cacheOperation(IgniteCache cache) throws InterruptedException {

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
 
 import org.apache.log4j.Logger;
-
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -41,7 +40,7 @@ public class OperationThread extends Thread {
     private long pacing;
 
     /** batch*/
-    private static final long count=1000;
+    private static final long count = 1000;
 
     /** */
     public Action getActionNode() {
@@ -73,12 +72,11 @@ public class OperationThread extends Thread {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void run() {
+    @Override public void run() {
         logger.info("run single thread name: " + this.getName());
 
         Report temp;
-        while (!terminated){
+        while (!terminated) {
             actionNode.publishInterimReport(calculate_interim_statement());
             try {
                 Thread.sleep(pacing);
@@ -90,7 +88,7 @@ public class OperationThread extends Thread {
     }
 
     /** building an interim report*/
-    private Report calculate_interim_statement(){
+    private Report calculate_interim_statement() {
         long st_time = System.nanoTime();
         long end_time;
         long tx_count = 0;
@@ -160,7 +158,7 @@ public class OperationThread extends Thread {
     }
 
     /** percentile 99 calculate*/
-    private long percentile99(ArrayList<Long> reports){
+    private long percentile99(ArrayList<Long> reports) {
         int size = reports.size();
         int index = (int) (size * 0.99);
         return reports.get(index);

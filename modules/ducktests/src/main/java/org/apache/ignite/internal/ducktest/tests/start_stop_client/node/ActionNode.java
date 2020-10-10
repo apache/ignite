@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.UUID;
+import java.util.Optional;
+import java.util.Date;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -25,7 +29,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-
 
 /**
  * The base class agent
@@ -52,7 +55,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
     private final String LOG_TX_REPORT = "Report from thread=%s action=%s \n" +
             "<st_time>%d</st_time> \n" +
             "<end_time>%d</end_time>\n" +
-            "<total_tx>%d</total_tx>\n"+
+            "<total_tx>%d</total_tx>\n" +
             "<min_latency>%d</min_latency>\n" +
             "<max_latency>%d</max_latency>\n" +
             "<avg_latency>%d</avg_latency>\n" +
@@ -139,8 +142,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
     protected abstract void scriptInit(JsonNode jsonNode);
 
     /** {@inheritDoc} */
-    @Override
-    public void publishInterimReport(Report report) {
+    @Override public void publishInterimReport(Report report) {
         executor.execute(new Runnable() {
             @Override
             public void run() {
@@ -172,7 +174,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
         StringBuilder builder = new StringBuilder();
         ArrayList<Report> reports = new ArrayList(Arrays.asList(queue.stream().toArray()));
         builder.append("\n<report start>\n");
-        builder.append("<meansured agent-name>" + this.nodeId + "</meansured agent-name>"+"\n");
+        builder.append("<meansured agent-name>" + this.nodeId + "</meansured agent-name>" + "\n");
         builder.append("<action name>" + actionName + "</action name>"+ "\n");
         builder.append("<thread count>" + threads + "<thread count>" + "\n");
         builder.append("<active baseline>" + ignite.cluster().currentBaselineTopology().size() + "</active baseline>" + '\n');
