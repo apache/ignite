@@ -150,9 +150,9 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
             }
         };
 
-        Thread.sleep(2 * SYSTEM_WORKER_BLOCKED_TIMEOUT);
-
         runWorker(worker);
+
+        Thread.sleep(2 * SYSTEM_WORKER_BLOCKED_TIMEOUT);
 
         workerExecutor.shutdownNow();
 
