@@ -22,7 +22,10 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
@@ -115,7 +118,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
         }
 
         executor.shutdownNow();
-        if (!executor.isShutdown()){
+        if (!executor.isShutdown()) {
             TimeUnit.MILLISECONDS.sleep(100);
         }
 
@@ -149,8 +152,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
     @Override public void publishInterimReport(Report report) {
         if (!executor.isShutdown()) {
             executor.execute(new Runnable() {
-                @Override
-                public void run() {
+                @Override public void run() {
                     queue.add(report);
                     printReportIntoLog(report);
                 }
