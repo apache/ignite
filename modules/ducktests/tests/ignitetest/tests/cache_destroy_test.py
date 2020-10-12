@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-This module contains cache create/destroy tests that checks if
+This module contains cache create/destroy tests that checks if we have memory leak
 """
 
 from ducktape.mark.resource import cluster
@@ -32,18 +32,18 @@ from ignitetest.services.utils.ignite_persistence import PersistenceAware
 # pylint: disable=W0223
 class CacheDestroyTest(IgniteTest):
     """
-    https://sbtatlas.sigma.sbrf.ru/jira/browse/IGN-1794
+    This test checke if we have memory leak when create/destroy cache with the same name.
 
     """
     NUM_NODES = 1
     CACHE_NAME = "TEST01"
-    CACHES_AMOUNT = 100000000
+    CACHES_AMOUNT = 3000
 
     @cluster(num_nodes=NUM_NODES+1)
-    @ignite_versions(str(LATEST_2_8))
+    @ignite_versions(str(DEV_BRANCH))
     def test(self, ignite_version):
         """
-        https://sbtatlas.sigma.sbrf.ru/jira/browse/IGN-1794
+        This test checke if we have memory leak when create/destroy cache with the same name.
 
         """
         node_config = IgniteConfiguration(version=IgniteVersion(ignite_version))
@@ -65,4 +65,4 @@ class CacheDestroyTest(IgniteTest):
         IgniteApplicationService(self.test_context, config=app_config,
                                  java_class_name="org.apache.ignite.internal.ducktest.tests.CreateDestroyCache",
                                  params={"cacheName": self.CACHE_NAME, "cacheNumber": self.CACHES_AMOUNT},
-                                 jvm_opts=jvm_opts).start()
+                                 jvm_opts=jvm_opts).run()

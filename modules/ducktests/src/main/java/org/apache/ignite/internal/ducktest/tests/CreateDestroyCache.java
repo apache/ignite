@@ -15,10 +15,10 @@ public class CreateDestroyCache extends IgniteAwareApplication {
         markInitialized();
 
         for (int i = 0; i < jsonNode.get("cacheNumber").asInt(); i++) {
-            log.info("Creating cache" + i + "...");
+            log.info("Creating cache " + i + "...");
             ignite.createCache(jsonNode.get("cacheName").asText());
 
-            log.info("Destroying cache...");
+            log.info("Destroying cache " + i + "...");
             ignite.destroyCache(jsonNode.get("cacheName").asText());
         }
 
