@@ -2181,10 +2181,19 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         startServerNodes(1);
         startClientNodes(1);
 
-        Map<UUID, Boolean> joiningNodesClientFlag =
-            ((TestTcpDiscoverySpi)grid("client-0").context().config().getDiscoverySpi()).joiningNodesClientFlag;
+        IgniteEx srv = grid("server-0");
+        IgniteEx client = grid("client-0");
 
-        assertTrue(joiningNodesClientFlag.get(grid("client-0").localNode().id()));
+        Map<UUID, Boolean> joiningNodesClientFlag =
+            ((TestTcpDiscoverySpi)srv.context().config().getDiscoverySpi()).joiningNodesClientFlag;
+
+        assertFalse(joiningNodesClientFlag.get(srv.localNode().id()));
+        assertTrue(joiningNodesClientFlag.get(client.localNode().id()));
+
+        joiningNodesClientFlag =
+            ((TestTcpDiscoverySpi)client.context().config().getDiscoverySpi()).joiningNodesClientFlag;
+
+        assertTrue(joiningNodesClientFlag.get(client.localNode().id()));
     }
 
     /**
