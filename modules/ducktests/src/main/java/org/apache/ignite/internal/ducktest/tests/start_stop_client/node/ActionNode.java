@@ -33,25 +33,23 @@ import org.apache.log4j.Logger;
 /**
  * The base class agent
  */
-
 public abstract class ActionNode extends IgniteAwareApplication implements Action {
-
-    /** report Queue */
+    /** Report Queue. */
     protected ConcurrentLinkedQueue queue = new ConcurrentLinkedQueue();
 
-    /** the unique name of the agent */
+    /** The unique name of the agent. */
     private String nodeId = UUID.randomUUID().toString();
 
-    /** start time */
+    /** Start test time. */
     protected Date start_time;
 
-    /** end time */
+    /** End test time. */
     protected Date end_time;
 
-    /** thread count */
+    /** Thread count. */
     private int threads;
 
-    /** the unique name of the agent */
+    /** The unique name of the agent. */
     private final String LOG_TX_REPORT = "Report from thread=%s action=%s \n" +
             "<st_time>%d</st_time> \n" +
             "<end_time>%d</end_time>\n" +
@@ -62,7 +60,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
             "<percentile99>%d</percentile99>\n" +
             "<dispersion>%.2f</dispersion>\n";
 
-    /** title of the final report */
+    /** Title of the final report. */
     private final String FINAL_REPORT_HEADER = "\n" +
             "<start_time>end_time</start_time>" +
             "<end_t>end_time</end_t>" +
@@ -74,7 +72,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
             "<disp>dispersion</disp>" +
             "\n";
 
-    /** template for the final report line */
+    /** Template for the final report line. */
     private final String FINAL_REPORT_TEMPLATE = "" +
             "<start_time>%d</start_time>" +
             "<end_t>%d</end_t>" +
@@ -85,20 +83,20 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
             "<percentile>%d</percentile>" +
             "<disp>%.2f</disp>";
 
-    /** the delay between iterations of the action */
+    /** The delay between iterations of the action. */
     protected long pacing;
 
-    /** current action name */
+    /** Current action name. */
     protected String actionName;
 
-    /** */
+    /** Thread executer. */
     protected Executor executor;
 
-    /** threads */
+    /** Threads. */
     private ArrayList<OperationThread> operation_threads = new ArrayList();
 
     /**  */
-    Logger log = LogManager.getLogger(ActionNode.class.getName());
+    private Logger log = LogManager.getLogger(ActionNode.class.getName());
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
@@ -122,23 +120,26 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
         markFinished();
     }
 
-    /** init method */
+    /** */
     protected void init(JsonNode jsonNode) {
+
         threads = Optional.ofNullable(jsonNode.get("threads")).map(JsonNode::asInt).orElse(1);
         pacing = Optional.ofNullable(jsonNode.get("pacing")).map(JsonNode::asLong).orElse(0l);
         actionName = Optional.ofNullable(jsonNode.get("action")).map(JsonNode::asText).orElse("default-action-name");
         start_time = new Date();
+
         log.info(
                 "test props:" +
                 " action=" + actionName +
                 " pacing=" + pacing +
                 " threads=" + threads
         );
+
         executor = Executors.newFixedThreadPool(threads + 2);
         scriptInit(jsonNode);
     }
 
-    /** init method */
+    /** Init method. */
     protected abstract void scriptInit(JsonNode jsonNode);
 
     /** {@inheritDoc} */
@@ -153,27 +154,28 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
         });
     }
 
-    /** report print */
+    /** */
     private void printReportIntoLog(Report report) {
         String message = String.format(LOG_TX_REPORT,
                 report.getThreadName(),
                 this.actionName,
-                report.getSt_time(),
-                report.getEnd_time(),
-                report.getTx_count(),
-                report.getMin_latency(),
-                report.getMax_latency(),
-                report.getAvg_latency(),
+                report.getStartTime(),
+                report.getEndTime(),
+                report.getTxCount(),
+                report.getMinLatency(),
+                report.getMaxLatency(),
+                report.getAvgLatency(),
                 report.getPercentile99(),
                 report.getDispersion()
         );
         log.info(message);
     }
 
-    /** publishing the final report in the log  */
+    /** Publishing the final report in the log.  */
     private void calculateFinalReport() {
         StringBuilder builder = new StringBuilder();
         ArrayList<Report> reports = new ArrayList(Arrays.asList(queue.stream().toArray()));
+
         builder.append("\n<report start>\n");
         builder.append("<meansured agent-name>" + this.nodeId + "</meansured agent-name>" + "\n");
         builder.append("<action name>" + actionName + "</action name>" + "\n");
@@ -184,15 +186,16 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
         builder.append("<total work>" + ((end_time.getTime() - start_time.getTime()) / (1000)) + "</total work>");
         builder.append(FINAL_REPORT_HEADER);
         builder.append("<data>\n");
+
         for (int i = 0; i < reports.size() - 1; i++) {
             Report report = reports.get(i);
             builder.append(String.format(FINAL_REPORT_TEMPLATE,
-                    report.getSt_time(),
-                    report.getEnd_time(),
-                    report.getTx_count(),
-                    report.getMin_latency(),
-                    report.getAvg_latency(),
-                    report.getMax_latency(),
+                    report.getStartTime(),
+                    report.getEndTime(),
+                    report.getTxCount(),
+                    report.getMinLatency(),
+                    report.getAvgLatency(),
+                    report.getMaxLatency(),
                     report.getPercentile99(),
                     report.getDispersion()
             ));
@@ -200,6 +203,7 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
         }
         builder.append("</data>\n");
         builder.append("<report end>\n");
+
         log.info(builder.toString());
     }
 }

@@ -13,9 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
--r requirements.txt
-pytest==6.0.1
-pylint==2.6.0
-flake8==3.8.3
-Jinja2~=2.11.2
-matplotlib~=3.3.2
+from ignitetest.report.plotter.report_builder import ReportBuilder
+
+LOG_FILE = "log/console.log"
+REPORT_FOLDER = "put-tx"
+
+builder = ReportBuilder(LOG_FILE, REPORT_FOLDER)
+builder.build_html_report()

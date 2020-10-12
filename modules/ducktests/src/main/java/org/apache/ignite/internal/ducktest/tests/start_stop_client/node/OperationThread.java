@@ -22,11 +22,9 @@ import java.util.Collections;
 import org.apache.log4j.Logger;
 
 /**
- * single action thread
+ * Single action thread.
  */
-
 public class OperationThread extends Thread {
-
     /**  */
     private Action actionNode;
 
@@ -87,9 +85,8 @@ public class OperationThread extends Thread {
         logger.info("single thread name: " + this.getName() + " terminated");
     }
 
-    /** building an interim report*/
+    /** Building an interim report. */
     private Report calculate_interim_statement() {
-        long st_time = System.nanoTime();
         long end_time;
         long tx_count = 0;
         long min_latency = -1;
@@ -101,9 +98,9 @@ public class OperationThread extends Thread {
         ArrayList<Long> reports = new ArrayList();
 
         long latency = 0;
-
         long batch = 0;
         long st_time_r = System.currentTimeMillis();
+
         while (!terminated && batch < (count)) {
             latency = actionNode.singleAction();
             tx_count++;
@@ -144,12 +141,12 @@ public class OperationThread extends Thread {
 
         Report report = new Report();
 
-        report.setAvg_latency(avg_latency);
-        report.setSt_time(st_time_r);
-        report.setEnd_time(end_time);
-        report.setMin_latency(min_latency);
-        report.setMax_latency(max_latency);
-        report.setTx_count(tx_count);
+        report.setAvgLatency(avg_latency);
+        report.setStartTime(st_time_r);
+        report.setEndTime(end_time);
+        report.setMinLatency(min_latency);
+        report.setMaxLatency(max_latency);
+        report.setTxCount(tx_count);
         report.setThreadName(thread);
         report.setPercentile99(percentile99);
         report.setDispersion(dispersion);
@@ -157,7 +154,7 @@ public class OperationThread extends Thread {
         return report;
     }
 
-    /** percentile 99 calculate*/
+    /** Percentile 99 calculate. */
     private long percentile99(ArrayList<Long> reports) {
         int size = reports.size();
         int index = (int) (size * 0.99);

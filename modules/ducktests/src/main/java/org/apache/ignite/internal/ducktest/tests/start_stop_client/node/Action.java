@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
 
 /**
- * Base interface
+ * Base interface.
  */
 
 public interface Action {
 
-    /* target action **/
+    /* Target action. **/
     public long singleAction();
 
-    /* method for publishing an internal report **/
+    /* Method for publishing an internal report. **/
     public void publishInterimReport(Report report);
 }

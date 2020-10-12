@@ -28,39 +28,45 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 /**
- * Java client. Tx put operation
+ * Java client. Tx put operation.
  */
 
 public class SimpleTransactionGenerator extends ActionNode {
 
-    /** target cache*/
+    /** Target cache. */
     private IgniteCache cache;
 
-    /** logger*/
-    protected static final Logger log = LogManager.getLogger(SimpleTransactionGenerator.class.getName());
+    /** Logger. */
+    private static final Logger log = LogManager.getLogger(SimpleTransactionGenerator.class.getName());
 
-    /** value for test*/
+    /** Value for test. */
     private static final String VALUE = "Client start stop simple test.";
 
     /** {@inheritDoc} */
     @Override public long singleAction() {
+
         UUID key = UUID.randomUUID();
         long startTime = System.nanoTime();
         cache.put(key,VALUE);
         long resultTime = System.nanoTime() - startTime;
+
         return resultTime;
     }
 
     /** {@inheritDoc} */
     @Override protected void scriptInit(JsonNode jsonNode) {
+
         String cacheName = Optional.ofNullable(jsonNode.get("cacheName")).map(JsonNode::asText).orElse("default-cache-name");
         log.info("test props:" + " cacheName=" + cacheName );
         cache = ignite.getOrCreateCache(prepareCacheConfiguration(cacheName));
         log.info("node name: " + ignite.name() + " starting cache operations");
+
     }
 
-    /** cache config
-     * @param cacheName - name of target cache*/
+    /**
+     * Cache config.
+     * @param cacheName - name of target cache.
+     * */
     private CacheConfiguration prepareCacheConfiguration(String cacheName) {
         CacheConfiguration<?,?> cfg = new CacheConfiguration();
         cfg.setBackups(2);

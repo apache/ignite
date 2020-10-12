@@ -20,34 +20,32 @@ package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
 /**
  * Java client. Tx put operation
  */
-
 public class Report {
-
     /** */
     private String threadName;
 
-    /** measurement start time */
-    private long st_time;
+    /** Measurement start time. */
+    private long startTime;
 
-    /** the time of completion of measurement */
-    private long end_time;
+    /** The time of completion of measurement. */
+    private long endTime;
 
-    /** transaction count */
-    private long tx_count;
+    /** Transaction count. */
+    private long txCount;
 
-    /** the minimum duration of the operation */
-    private long min_latency;
+    /** The minimum duration of the operation. */
+    private long minLatency;
 
-    /** the maximum duration of the operation */
-    private long max_latency;
+    /** The maximum duration of the operation. */
+    private long maxLatency;
 
-    /** the average duration of the operations */
-    private long avg_latency;
+    /** The average duration of the operations. */
+    private long avgLatency;
 
-    /** percentile 99 % */
+    /** Percentile 99 %. */
     private long percentile99;
 
-    /** measurement variance */
+    /** Measurement variance. */
     private double dispersion;
 
     /** */
@@ -86,62 +84,62 @@ public class Report {
     }
 
     /** */
-    public long getSt_time() {
-        return st_time;
+    public long getStartTime() {
+        return this.startTime;
     }
 
     /** */
-    public void setSt_time(long st_time) {
-        this.st_time = st_time;
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
     }
 
     /** */
-    public long getEnd_time() {
-        return end_time;
+    public long getEndTime() {
+        return this.endTime;
     }
 
     /** */
-    public void setEnd_time(long end_time) {
-        this.end_time = end_time;
+    public void setEndTime(long endTime) {
+        this.endTime = endTime;
     }
 
     /** */
-    public long getTx_count() {
-        return tx_count;
+    public long getTxCount() {
+        return txCount;
     }
 
     /** */
-    public void setTx_count(long tx_count) {
-        this.tx_count = tx_count;
+    public void setTxCount(long txCount) {
+        this.txCount = txCount;
     }
 
     /** */
-    public long getMin_latency() {
-        return min_latency;
+    public long getMinLatency() {
+        return this.minLatency;
     }
 
     /** */
-    public void setMin_latency(long min_latency) {
-        this.min_latency = min_latency;
+    public void setMinLatency(long minLatency) {
+        this.minLatency = minLatency;
     }
 
     /** */
-    public long getMax_latency() {
-        return max_latency;
+    public long getMaxLatency() {
+        return this.maxLatency;
     }
 
     /** */
-    public void setMax_latency(long max_latency) {
-        this.max_latency = max_latency;
+    public void setMaxLatency(long maxLatency) {
+        this.maxLatency = maxLatency;
     }
 
     /** */
-    public long getAvg_latency() {
-        return avg_latency;
+    public long getAvgLatency() {
+        return avgLatency;
     }
 
     /** */
-    public void setAvg_latency(long avg_latency) {
-        this.avg_latency = avg_latency;
+    public void setAvgLatency(long avgLatency) {
+        this.avgLatency = avgLatency;
     }
 }
