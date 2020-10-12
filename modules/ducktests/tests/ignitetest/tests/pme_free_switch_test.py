@@ -93,9 +93,6 @@ class PmeFreeSwitchTest(IgniteTest):
 
         single_key_tx_streamer.start()
 
-        if IgniteVersion(ignite_version) >= V_2_8_0:
-            ControlUtility(ignites, self.test_context).disable_baseline_auto_adjust()
-
         ignites.stop_node(ignites.nodes[self.NUM_NODES - 1])
 
         if long_txs:
