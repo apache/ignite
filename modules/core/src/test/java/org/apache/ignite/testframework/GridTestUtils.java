@@ -2495,6 +2495,29 @@ public final class GridTestUtils {
     }
 
     /**
+     * Consumer that can throw exceptions.
+     */
+    @FunctionalInterface
+    public static interface ConsumerX<T> extends Consumer<T> {
+        /**
+         * Consumer body.
+         *
+         * @throws Exception If failed.
+         */
+        void acceptX(T t) throws Exception;
+
+        /** {@inheritDoc} */
+        @Override default void accept(T t) {
+            try {
+                acceptX(t);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
+
+    /**
      * IgniteRunnable that can throw exceptions.
      */
     @FunctionalInterface

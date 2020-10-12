@@ -87,6 +87,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
@@ -165,6 +166,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_US
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMPATIBILITY_MODE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
@@ -567,6 +569,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
 
             /**
+             * @return Current security subject id if security is enabled and the local node is authenticated
+             * otherwise null.
+             */
+            private UUID securitySubjectId() {
+                IgniteSecurity security = ctx.security();
+
+                return security.enabled() && locNode != null && locNode.attribute(ATTR_SECURITY_SUBJECT_V2) != null
+                    ? security.securityContext().subject().id() : null;
+            }
+
+            /**
              * @param notification Notification.
              */
             private void onDiscovery0(DiscoveryNotification notification) {
@@ -855,7 +868,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                                         notification.getTopSnapshot(),
                                         null,
                                         notification.getSpanContainer(),
-                                        securitySubjectId(ctx)
+                                        securitySubjectId()
                                     )
                                 );
                             }
@@ -868,19 +881,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     return;
                 }
 
-                if (type == EVT_CLIENT_NODE_DISCONNECTED || type == EVT_NODE_SEGMENTED || !ctx.clientDisconnected()) {
-                    try {
-                        securitySubjectId(ctx);
-                    }
-                    catch (Exception e) {
-                        System.out.println(
-                            "MY_DEBUG loc=" + ctx.igniteInstanceName() +
-                                ", type=" + U.gridEventName(type)
-                        );
-
-                        e.printStackTrace();
-                    }
-
+                if (type == EVT_CLIENT_NODE_DISCONNECTED || type == EVT_NODE_SEGMENTED || !ctx.clientDisconnected())
                     discoWrk.addEvent(
                         new NotificationEvent(
                             type,
@@ -889,10 +890,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             notification.getTopSnapshot(),
                             customMsg,
                             notification.getSpanContainer(),
-                            securitySubjectId(ctx)
+                            securitySubjectId()
                         )
                     );
-                }
 
                 if (stateFinishMsg != null)
                     discoWrk.addEvent(
@@ -904,7 +904,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             notification.getTopSnapshot(),
                             stateFinishMsg,
                             notification.getSpanContainer(),
-                            securitySubjectId(ctx)
+                            securitySubjectId()
                         )
                     );
 

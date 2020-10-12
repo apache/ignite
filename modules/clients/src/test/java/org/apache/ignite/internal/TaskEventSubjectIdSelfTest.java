@@ -40,10 +40,13 @@ import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -58,7 +61,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
 /**
  * Tests for security subject ID in task events.
  */
-public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
+public class TaskEventSubjectIdSelfTest extends AbstractSecurityTest {
     /** */
     private static final Collection<TaskEvent> evts = new ArrayList<>();
 
@@ -72,19 +75,16 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     private static GridClient client;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setConnectorConfiguration(new ConnectorConfiguration());
-
-        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
-
-        return cfg;
+    @Override protected IgniteConfiguration getConfiguration(String instanceName,
+        AbstractTestSecurityPluginProvider pluginProv) throws Exception {
+        return super.getConfiguration(instanceName, pluginProv)
+            .setConnectorConfiguration(new ConnectorConfiguration())
+            .setIncludeEventTypes(EventType.EVTS_ALL);
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        Ignite g = startGrid();
+        Ignite g = startGridAllowAll(getTestIgniteInstanceName());
 
         g.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -100,9 +100,9 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         nodeId = g.cluster().localNode().id();
 
-        GridClientConfiguration cfg = new GridClientConfiguration();
-
-        cfg.setServers(Collections.singleton("127.0.0.1:11211"));
+        GridClientConfiguration cfg = new GridClientConfiguration()
+            .setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(new SecurityCredentials("grid", "")))
+            .setServers(Collections.singleton("127.0.0.1:11211"));
 
         client = GridClientFactory.start(cfg);
     }

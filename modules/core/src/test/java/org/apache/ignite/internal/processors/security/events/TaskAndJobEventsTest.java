@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.security.events;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,8 +57,6 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.processors.rest.GridRestProcessor;
-import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskResultBean;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
@@ -284,7 +281,7 @@ public class TaskAndJobEventsTest extends AbstractSecurityTest {
                 req.timeout(timedout ? TIMEOUT : 0L);
                 req.params(singletonList(timeToSleep));
 
-                GridRestResponse res = restProtocolHandler().handle(req);
+                GridRestResponse res = restProtocolHandler(grid(LISTENER_NODE)).handle(req);
 
                 if (async && timedout) {
                     GridRestTaskRequest resReq = new GridRestTaskRequest();
@@ -295,7 +292,7 @@ public class TaskAndJobEventsTest extends AbstractSecurityTest {
 
                     TimeUnit.MILLISECONDS.sleep(timeToSleep);
 
-                    res = restProtocolHandler().handle(resReq);
+                    res = restProtocolHandler(grid(LISTENER_NODE)).handle(resReq);
                 }
 
                 if (res.getError() != null && res.getError().contains("Task timed out"))
@@ -399,18 +396,5 @@ public class TaskAndJobEventsTest extends AbstractSecurityTest {
                 .setBalancer(nodes ->
                     nodes.stream().findFirst().orElseThrow(NoSuchElementException::new))
         );
-    }
-
-    /** */
-    private GridRestProtocolHandler restProtocolHandler() throws Exception {
-        Object restPrc = grid(LISTENER_NODE).context().components().stream()
-            .filter(c -> c instanceof GridRestProcessor).findFirst()
-            .orElseThrow(RuntimeException::new);
-
-        Field fld = GridRestProcessor.class.getDeclaredField("protoHnd");
-
-        fld.setAccessible(true);
-
-        return (GridRestProtocolHandler)fld.get(restPrc);
     }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.security.events;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -25,7 +24,6 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -42,8 +40,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.processors.rest.GridRestProcessor;
-import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
@@ -51,6 +47,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecuritySubject;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -148,10 +145,8 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
         stopGrid("new_server_node");
     }
 
-    /**
-     *
-     */
-    private Consumer<Collection<CacheConfiguration>> operation() {
+    /** */
+    private GridTestUtils.ConsumerX<Collection<CacheConfiguration>> operation() {
         switch (op) {
             case GET_OR_CREATE_CACHE:
                 return ccfgs -> grid(login).getOrCreateCache(ccfgs.iterator().next());
@@ -169,13 +164,25 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
                 return ccfgs -> grid(login).destroyCaches(ccfgs.stream().map(CacheConfiguration::getName).collect(Collectors.toSet()));
 
             case THIN_CLIENT_GET_OR_CREATE:
-                return ccfgs -> startClient().getOrCreateCache(ccfgs.iterator().next().getName());
+                return ccfgs -> {
+                    try (IgniteClient clnt = startClient()) {
+                        clnt.getOrCreateCache(ccfgs.iterator().next().getName());
+                    }
+                };
 
             case THIN_CLIENT_CREATE_CACHE:
-                return ccfgs -> startClient().createCache(ccfgs.iterator().next().getName());
+                return ccfgs -> {
+                    try (IgniteClient clnt = startClient()) {
+                        clnt.createCache(ccfgs.iterator().next().getName());
+                    }
+                };
 
             case THIN_CLIENT_DESTROY_CACHE:
-                return ccfgs -> startClient().destroyCache(ccfgs.iterator().next().getName());
+                return ccfgs -> {
+                    try(IgniteClient clnt = startClient()) {
+                        clnt.destroyCache(ccfgs.iterator().next().getName());
+                    }
+                };
 
             case START_NODE:
                 return ccfgs -> {
@@ -219,7 +226,7 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
         req.cacheName(cacheName);
 
         try {
-            restProtocolHandler().handle(req);
+            restProtocolHandler(grid(SRV)).handle(req);
         }
         catch (Exception e) {
             throw new IgniteException(e);
@@ -287,19 +294,6 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
                 .setUserName(login)
                 .setUserPassword("")
         );
-    }
-
-    /** */
-    private GridRestProtocolHandler restProtocolHandler() throws Exception {
-        Object restPrc = grid(SRV).context().components().stream()
-            .filter(c -> c instanceof GridRestProcessor).findFirst()
-            .orElseThrow(RuntimeException::new);
-
-        Field fld = GridRestProcessor.class.getDeclaredField("protoHnd");
-
-        fld.setAccessible(true);
-
-        return (GridRestProtocolHandler)fld.get(restPrc);
     }
 
     /** {@inheritDoc} */

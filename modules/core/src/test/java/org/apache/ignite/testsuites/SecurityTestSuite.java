@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.security.client.ThinClientPermissio
 import org.apache.ignite.internal.processors.security.client.ThinClientSecurityContextOnRemoteNodeTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientSslPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
+import org.apache.ignite.internal.processors.security.compute.closure.ClientsComputeTaskRemoteSecurityContextTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskCancelRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.DistributedClosureRemoteSecurityContextCheckTest;
@@ -101,6 +102,7 @@ import org.junit.runners.Suite;
     MessagingRemoteSecurityContextCheckTest.class,
     EventsRemoteSecurityContextCheckTest.class,
     SchedulerRemoteSecurityContextCheckTest.class,
+    ClientsComputeTaskRemoteSecurityContextTest.class,
 
     InvalidServerTest.class,
     AdditionalSecurityCheckTest.class,

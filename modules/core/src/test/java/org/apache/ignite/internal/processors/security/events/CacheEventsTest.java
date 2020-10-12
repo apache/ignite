@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.security.events;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,7 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Consumer;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -55,8 +53,6 @@ import org.apache.ignite.internal.client.GridClientDataConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.processors.rest.GridRestProcessor;
-import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
@@ -67,6 +63,7 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -479,7 +476,7 @@ public class CacheEventsTest extends AbstractSecurityTest {
     }
 
     /** */
-    private ConsumerX<String> operation() {
+    private GridTestUtils.ConsumerX<String> operation() {
         if ("rest".equals(expLogin)) {
             if (op == TestOperation.SCAN_QUERY) {
                 RestQueryRequest req = new RestQueryRequest();
@@ -492,7 +489,7 @@ public class CacheEventsTest extends AbstractSecurityTest {
                 return n -> {
                     req.cacheName(n);
 
-                    restProtocolHandler().handle(req);
+                    restProtocolHandler(grid(LISTENER_NODE)).handle(req);
                 };
             }
             else {
@@ -516,7 +513,7 @@ public class CacheEventsTest extends AbstractSecurityTest {
                 return n -> {
                     req.cacheName(n);
 
-                    restProtocolHandler().handle(req);
+                    restProtocolHandler(grid(LISTENER_NODE)).handle(req);
                 };
             }
         }
@@ -562,19 +559,6 @@ public class CacheEventsTest extends AbstractSecurityTest {
         cfg.setDataConfigurations(singleton(ccfg));
 
         return GridClientFactory.start(cfg);
-    }
-
-    /** */
-    private GridRestProtocolHandler restProtocolHandler() throws Exception {
-        Object restPrc = grid(LISTENER_NODE).context().components().stream()
-            .filter(c -> c instanceof GridRestProcessor).findFirst()
-            .orElseThrow(RuntimeException::new);
-
-        Field fld = GridRestProcessor.class.getDeclaredField("protoHnd");
-
-        fld.setAccessible(true);
-
-        return (GridRestProtocolHandler)fld.get(restPrc);
     }
 
     /** Test opeartions. */
@@ -738,13 +722,13 @@ public class CacheEventsTest extends AbstractSecurityTest {
             GridRestCommand.EXECUTE_SCAN_QUERY);
 
         /** IgniteCache operation. */
-        final ConsumerX<IgniteCache<String, String>> ignCacheOp;
+        final GridTestUtils.ConsumerX<IgniteCache<String, String>> ignCacheOp;
 
         /** ClientCache operation. */
-        final ConsumerX<ClientCache<String, String>> clntCacheOp;
+        final GridTestUtils.ConsumerX<ClientCache<String, String>> clntCacheOp;
 
         /** GridClient operation. */
-        final ConsumerX<GridClientData> gridClntDataOp;
+        final GridTestUtils.ConsumerX<GridClientData> gridClntDataOp;
 
         /** Rest client command. */
         final GridRestCommand restCmd;
@@ -757,22 +741,22 @@ public class CacheEventsTest extends AbstractSecurityTest {
         /**
          * @param ignCacheOp IgniteCache operation.
          */
-        TestOperation(ConsumerX<IgniteCache<String, String>> ignCacheOp) {
+        TestOperation(GridTestUtils.ConsumerX<IgniteCache<String, String>> ignCacheOp) {
             this(ignCacheOp, null, null, null, true);
         }
 
         /**
          * @param ignCacheOp IgniteCache operation.
          */
-        TestOperation(ConsumerX<IgniteCache<String, String>> ignCacheOp, boolean valIsRequired) {
+        TestOperation(GridTestUtils.ConsumerX<IgniteCache<String, String>> ignCacheOp, boolean valIsRequired) {
             this(ignCacheOp, null, null, null, valIsRequired);
         }
 
         /**
          * @param ignCacheOp IgniteCache operation.
          */
-        TestOperation(ConsumerX<IgniteCache<String, String>> ignCacheOp,
-            ConsumerX<GridClientData> gridClntDataOp,
+        TestOperation(GridTestUtils.ConsumerX<IgniteCache<String, String>> ignCacheOp,
+            GridTestUtils.ConsumerX<GridClientData> gridClntDataOp,
             boolean valIsRequired) {
             this(ignCacheOp, null, gridClntDataOp, null, valIsRequired);
         }
@@ -782,9 +766,9 @@ public class CacheEventsTest extends AbstractSecurityTest {
          * @param clntCacheOp ClientCache operation.
          * @param restCmd Rest client command.
          */
-        TestOperation(ConsumerX<IgniteCache<String, String>> ignCacheOp,
-            ConsumerX<ClientCache<String, String>> clntCacheOp,
-            ConsumerX<GridClientData> gridClntDataOp,
+        TestOperation(GridTestUtils.ConsumerX<IgniteCache<String, String>> ignCacheOp,
+            GridTestUtils.ConsumerX<ClientCache<String, String>> clntCacheOp,
+            GridTestUtils.ConsumerX<GridClientData> gridClntDataOp,
             GridRestCommand restCmd) {
             this(ignCacheOp, clntCacheOp, gridClntDataOp, restCmd, true);
         }
@@ -795,9 +779,9 @@ public class CacheEventsTest extends AbstractSecurityTest {
          * @param restCmd Rest client command.
          * @param valIsRequired Test operation requires existence of value in a cache.
          */
-        TestOperation(ConsumerX<IgniteCache<String, String>> ignCacheOp,
-            ConsumerX<ClientCache<String, String>> clntCacheOp,
-            ConsumerX<GridClientData> gridClntDataOp,
+        TestOperation(GridTestUtils.ConsumerX<IgniteCache<String, String>> ignCacheOp,
+            GridTestUtils.ConsumerX<ClientCache<String, String>> clntCacheOp,
+            GridTestUtils.ConsumerX<GridClientData> gridClntDataOp,
             GridRestCommand restCmd,
             boolean valIsRequired) {
             this.ignCacheOp = ignCacheOp;
@@ -805,29 +789,6 @@ public class CacheEventsTest extends AbstractSecurityTest {
             this.gridClntDataOp = gridClntDataOp;
             this.restCmd = restCmd;
             this.valIsRequired = valIsRequired;
-        }
-    }
-
-    /**
-     * Consumer that can throw exceptions.
-     */
-    @FunctionalInterface
-    static interface ConsumerX<T> extends Consumer<T> {
-        /**
-         * Consumer body.
-         *
-         * @throws Exception If failed.
-         */
-        void acceptX(T t) throws Exception;
-
-        /** {@inheritDoc} */
-        @Override default void accept(T t) {
-            try {
-                acceptX(t);
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
         }
     }
 

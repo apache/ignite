@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -135,7 +136,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** {@inheritDoc} */
     @Override public Collection<SecuritySubject> authenticatedSubjects() {
-        return Collections.emptyList();
+        return SECURITY_CONTEXTS.values().stream().map(SecurityContext::subject).collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.lang.reflect.Field;
 import java.security.Permissions;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -27,6 +28,8 @@ import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.rest.GridRestProcessor;
+import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -91,6 +94,22 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
         return startGrid(getConfiguration(login,
             new TestSecurityPluginProvider(login, "", prmSet, sandboxPerms, globalAuth))
             .setClientMode(isClient));
+    }
+
+    /**
+     * @param node Node that executes rest requests.
+     * @return GridRestProtocolHandler.
+     */
+    protected GridRestProtocolHandler restProtocolHandler(IgniteEx node) throws Exception {
+        Object restPrc = node.context().components().stream()
+            .filter(c -> c instanceof GridRestProcessor).findFirst()
+            .orElseThrow(RuntimeException::new);
+
+        Field fld = GridRestProcessor.class.getDeclaredField("protoHnd");
+
+        fld.setAccessible(true);
+
+        return (GridRestProtocolHandler)fld.get(restPrc);
     }
 
     /** */

@@ -298,9 +298,16 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
 
         /** */
         public Verifier initiator(IgniteEx initiator) {
+            return initiator(secSubjectId(initiator));
+        }
+
+        /** */
+        public Verifier initiator(UUID secSubjId) {
+            assert secSubjId != null;
+
             clear();
 
-            expSecSubjId = secSubjectId(initiator);
+            expSecSubjId = secSubjId;
 
             return this;
         }
