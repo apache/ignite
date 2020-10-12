@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.io.Externalizable;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
@@ -67,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.LockedEntriesInfo;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -154,9 +153,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** @see IgniteSystemProperties#IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT */
     public static final int DFLT_ATOMIC_DEFERRED_ACK_TIMEOUT = 500;
 
-    /** Deadlock detection timeout in milliseconds. */
-    private static final int DEADLOCK_DETECTION_TIMEOUT = 100;
-
     /** Deferred update response buffer size. */
     private static final int DEFERRED_UPDATE_RESPONSE_BUFFER_SIZE =
         Integer.getInteger(IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE, DFLT_ATOMIC_DEFERRED_ACK_BUFFER_SIZE);
@@ -174,7 +170,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         };
 
     /** Locked entries info for each thread. */
-    private final Map<Long, LockedEntriesInfo> lockedEntriesPerThread = new ConcurrentHashMap<>();
+    private final LockedEntriesInfo lockedEntriesInfo = new LockedEntriesInfo();
 
     /** Update reply closure. */
     @GridToStringExclude
@@ -3121,104 +3117,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         else {
             GridDhtCacheEntry[] locked = new GridDhtCacheEntry[req.size()];
 
-            LockedEntriesInfo lockedEntriesInfo = new LockedEntriesInfo(locked);
-
-            lockedEntriesPerThread.put(Thread.currentThread().getId(), lockedEntriesInfo);
-
             while (true) {
                 for (int i = 0; i < req.size(); i++) {
-                    try {
-                        GridDhtCacheEntry entry = entryExx(req.key(i), topVer);
+                    GridDhtCacheEntry entry = entryExx(req.key(i), topVer);
 
-                        locked[i] = entry;
-                    }
-                    catch (GridDhtInvalidPartitionException e) {
-                        lockedEntriesPerThread.remove(Thread.currentThread().getId());
-
-                        throw e;
-                    }
+                    locked[i] = entry;
                 }
 
-                boolean retry = false;
-
-                for (int i = 0; i < locked.length; i++) {
-                    GridDhtCacheEntry entry = locked[i];
-
-                    if (entry == null)
-                        continue;
-
-                    while (true) {
-                        if (entry.tryLockEntry(DEADLOCK_DETECTION_TIMEOUT))
-                            break; // Successfully locked.
-                        else {
-                            if (hasLockCollisions(entry, lockedEntriesInfo)) {
-                                // Possible deadlock detected, unlock all locked entries and retry again.
-                                retry = true;
-
-                                break;
-                            }
-                            // Possible deadlock not detected, just retry lock on current entry.
-                        }
-                    }
-
-                    if (!retry && entry.obsolete()) {
-                        entry.unlockEntry();
-
-                        retry = true;
-                    }
-
-                    if (retry) {
-                        lockedEntriesInfo.lockedIdx = -1;
-
-                        // Unlock all previously locked.
-                        for (int j = 0; j < i; j++) {
-                            if (locked[j] != null)
-                                locked[j].unlockEntry();
-                        }
-
-                        break;
-                    }
-
-                    lockedEntriesInfo.lockedIdx = i;
-                }
-
-                if (!retry)
+                if (lockedEntriesInfo.tryLockEntries(locked))
                     return Arrays.asList(locked);
             }
         }
-    }
-
-    /**
-     * @param entry Entry.
-     * @param curEntriesInfo Current locked entries info.
-     * @return {@code True} if another thread holds lock for this entry and started to lock entries earlier.
-     */
-    private boolean hasLockCollisions(GridDhtCacheEntry entry, LockedEntriesInfo curEntriesInfo) {
-        for (Map.Entry<Long, LockedEntriesInfo> other : lockedEntriesPerThread.entrySet()) {
-            LockedEntriesInfo otherEntriesInfo = other.getValue();
-
-            if (otherEntriesInfo == curEntriesInfo || otherEntriesInfo.ts > curEntriesInfo.ts)
-                // Skip current thread and threads started to lock after the current thread.
-                continue;
-
-            GridCacheMapEntry[] otherThreadLocks = otherEntriesInfo.entries.get();
-
-            int otherThreadLockedIdx = otherEntriesInfo.lockedIdx;
-
-            if (otherThreadLocks == null) { // In case of thread fail.
-                lockedEntriesPerThread.remove(other.getKey());
-
-                continue;
-            }
-
-            // Visibility guarantees provided by volatile lockedIdx field.
-            for (int i = 0; i <= otherThreadLockedIdx; i++) {
-                if (otherThreadLocks[i] == entry)
-                    return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -3249,8 +3158,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
         finally {
-            if (size > 1) // Single-entry operations are not published to lockedEntriesPerThread map.
-                lockedEntriesPerThread.remove(Thread.currentThread().getId());
+            if (size > 1) // Single-entry operations are not published to lockedEntriesInfo.
+                lockedEntriesInfo.removeForCurrentThread();
 
             // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
             // an attempt to use cleaned resources.
@@ -3987,23 +3896,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /** {@inheritDoc} */
         @Override public void onTimeout() {
             ctx.kernalContext().getStripedExecutorService().execute(part, this);
-        }
-    }
-
-    /** Per-thread locked entries info. */
-    private static class LockedEntriesInfo {
-        /** Timestamp of lock. */
-        private final long ts = System.nanoTime();
-
-        /** Entries to lock. */
-        private final WeakReference<GridDhtCacheEntry[]> entries;
-
-        /** Current locked entry index. */
-        private volatile int lockedIdx = -1;
-
-        /** */
-        private LockedEntriesInfo(GridDhtCacheEntry[] entries) {
-            this.entries = new WeakReference<>(entries);
         }
     }
 }

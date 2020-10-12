@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtC
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheTxNodeFailureSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteAtomicLongChangingTopologySelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.AtomicConcurrentUnorderedPutAllTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.AtomicConcurrentUnorderedUpdateAllTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.AtomicPutAllChangingTopologyTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicClientInvalidPartitionHandlingSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicClientRemoveFailureTest;
@@ -76,7 +76,7 @@ import org.junit.runners.Suite;
     GridCacheTxNodeFailureSelfTest.class,
 
     AtomicPutAllChangingTopologyTest.class,
-    AtomicConcurrentUnorderedPutAllTest.class
+    AtomicConcurrentUnorderedUpdateAllTest.class
 })
 public class IgniteCacheFailoverTestSuite {
 }

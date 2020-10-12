@@ -17,22 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
-/** */
-public class AtomicConcurrentUnorderedPutAllTest extends GridCommonAbstractTest {
+/** Test concurrent putAll/removeAll operations with unordered set of keys on atomic caches. */
+@RunWith(Parameterized.class)
+public class AtomicConcurrentUnorderedUpdateAllTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_CNT = 3;
 
@@ -45,15 +53,47 @@ public class AtomicConcurrentUnorderedPutAllTest extends GridCommonAbstractTest 
     /** */
     private static final int CACHE_SIZE = 1_000;
 
+    /** Parameters. */
+    @Parameterized.Parameters(name = "cacheMode={0}, writeThrough={1}")
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(
+            new Object[] {CacheMode.PARTITIONED, Boolean.FALSE},
+            new Object[] {CacheMode.PARTITIONED, Boolean.TRUE},
+            new Object[] {CacheMode.REPLICATED, Boolean.FALSE},
+            new Object[] {CacheMode.REPLICATED, Boolean.TRUE},
+            new Object[] {CacheMode.LOCAL, Boolean.FALSE},
+            new Object[] {CacheMode.LOCAL, Boolean.TRUE}
+        );
+    }
+
+    /** Cache mode. */
+    @Parameterized.Parameter()
+    public CacheMode cacheMode;
+
+    /** Write through. */
+    @Parameterized.Parameter(1)
+    public Boolean writeThrough;
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testConcurrentPutAll() throws Exception {
+    public void testConcurrentUpdateAll() throws Exception {
         Ignite ignite = startGridsMultiThreaded(NODES_CNT);
 
+        Factory<CacheStore<Object, Object>> cacheStoreFactory = writeThrough ?
+                new MapCacheStoreStrategy.MapStoreFactory() : null;
+
         IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(CACHE_NAME)
-                .setAtomicityMode(ATOMIC).setBackups(1));
+            .setWriteThrough(writeThrough).setCacheStoreFactory(cacheStoreFactory)
+            .setCacheMode(cacheMode).setAtomicityMode(ATOMIC).setBackups(1));
 
         CyclicBarrier barrier = new CyclicBarrier(THREADS_CNT);
 
@@ -83,11 +123,12 @@ public class AtomicConcurrentUnorderedPutAllTest extends GridCommonAbstractTest 
 
                 cache0.putAll(map);
 
+                cache0.removeAll(map.keySet());
+
                 log.info("Thread " + threadIdx + " iteration " + i + " finished");
             }
-        }, THREADS_CNT, "put-all-runner");
+        }, THREADS_CNT, "update-all-runner");
 
-        for (int i = 0; i < CACHE_SIZE; i++)
-            assertEquals(i, cache.get(i));
+        assertEquals(0, cache.size());
     }
 }
