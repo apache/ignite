@@ -51,7 +51,7 @@ namespace ignite
                     {
                         BROADCAST = 2,
 
-                        UNICAST = 5,
+                        UNICAST = 5
                     };
                 };
 

@@ -267,7 +267,7 @@ namespace ignite
                 /** Whether this instance is owner of memory chunk. */
                 bool owning; 
 
-                IGNITE_NO_COPY_ASSIGNMENT(InteropUnpooledMemory)
+                IGNITE_NO_COPY_ASSIGNMENT(InteropUnpooledMemory);
             };
         }
     }

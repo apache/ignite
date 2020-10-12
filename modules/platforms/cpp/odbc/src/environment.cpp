@@ -131,6 +131,9 @@ namespace ignite
 
         SqlResult::Type Environment::InternalSetAttribute(int32_t attr, void* value, int32_t len)
         {
+            // Unused.
+            (void) len;
+
             EnvironmentAttribute::Type attribute = EnvironmentAttributeToInternal(attr);
 
             switch (attribute)

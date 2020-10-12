@@ -204,22 +204,11 @@ namespace ignite
         }
 
         /**
-         * Check if the predicate returns true for all the elements of the
-         * sequence.
+         * Check if all characters are digits.
          *
-         * @return True if the predicate returns true for all the elements
-         *     of the sequence and false otherwise.
+         * @param val Value to check.
          */
-        template<typename Iter, typename Pred>
-        bool AllOf(Iter begin, Iter end, Pred pred)
-        {
-            Iter i = begin;
-
-            while (i != end && pred(*i))
-                ++i;
-
-            return i == end;
-        }
+        bool AllDigits(const std::string& val);
 
         /**
          * Converts 32-bit integer to big endian format

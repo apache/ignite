@@ -49,6 +49,6 @@
  */
 #define IGNITE_NO_COPY_ASSIGNMENT(cls) \
     cls(const cls& src); \
-    cls& operator= (const cls& other);
+    cls& operator= (const cls& other)
 
 #endif

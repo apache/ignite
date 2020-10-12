@@ -163,7 +163,7 @@ namespace ignite
                     OP_TX_START = 4000,
 
                     /** Commit transaction. */
-                    OP_TX_END = 4001,
+                    OP_TX_END = 4001
                 };
             };
 
@@ -199,7 +199,7 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+                virtual void Write(binary::BinaryWriterImpl&, const ProtocolVersion&) const
                 {
                     // No-op.
                 }
@@ -690,9 +690,10 @@ namespace ignite
                  * @param comm Need to commit flag.
                  */
                 TxEndRequest(int32_t id, bool comm) :
-                    commited(comm),
-                    txId(id)
+                    txId(id),
+                    commited(comm)
                 {
+                    // No-op.
                 }
 
                 /**

@@ -448,6 +448,9 @@ SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC     conn,
 
 SQLRETURN SQL_API SQLCancel(SQLHSTMT stmt)
 {
+    // Unused.
+    (void) stmt;
+
     LOG_MSG("SQLCancel called");
     return SQL_SUCCESS;
 }
@@ -460,6 +463,15 @@ SQLRETURN SQL_API SQLColAttributes(SQLHSTMT     stmt,
                                    SQLSMALLINT* strAttrResLen,
                                    SQLLEN*      numAttrBuf)
 {
+    // Unused.
+    (void) stmt;
+    (void) colNum;
+    (void) fieldId;
+    (void) strAttrBuf;
+    (void) strAttrBufLen;
+    (void) strAttrResLen;
+    (void) numAttrBuf;
+
     LOG_MSG("SQLColAttributes called");
     return SQL_SUCCESS;
 }
@@ -469,6 +481,12 @@ SQLRETURN SQL_API SQLGetCursorName(SQLHSTMT     stmt,
                                    SQLSMALLINT  nameBufLen,
                                    SQLSMALLINT* nameResLen)
 {
+    // Unused.
+    (void) stmt;
+    (void) nameBuf;
+    (void) nameBufLen;
+    (void) nameResLen;
+
     LOG_MSG("SQLGetCursorName called");
     return SQL_SUCCESS;
 }
@@ -477,6 +495,11 @@ SQLRETURN SQL_API SQLSetCursorName(SQLHSTMT     stmt,
                                    SQLCHAR*     name,
                                    SQLSMALLINT  nameLen)
 {
+    // Unused.
+    (void) stmt;
+    (void) name;
+    (void) nameLen;
+
     LOG_MSG("SQLSetCursorName called");
     return SQL_SUCCESS;
 }
@@ -485,6 +508,11 @@ SQLRETURN SQL_API SQLGetConnectOption(SQLHDBC       conn,
                                       SQLUSMALLINT  option,
                                       SQLPOINTER    value)
 {
+    // Unused.
+    (void) conn;
+    (void) option;
+    (void) value;
+
     LOG_MSG("SQLGetConnectOption called");
     return SQL_SUCCESS;
 }
@@ -493,6 +521,11 @@ SQLRETURN SQL_API SQLGetStmtOption(SQLHSTMT     stmt,
                                    SQLUSMALLINT option,
                                    SQLPOINTER   value)
 {
+    // Unused.
+    (void) stmt;
+    (void) option;
+    (void) value;
+
     LOG_MSG("SQLGetStmtOption called");
     return SQL_SUCCESS;
 }
@@ -501,6 +534,11 @@ SQLRETURN SQL_API SQLSetConnectOption(SQLHDBC       conn,
                                       SQLUSMALLINT  option,
                                       SQLULEN       value)
 {
+    // Unused.
+    (void) conn;
+    (void) option;
+    (void) value;
+
     LOG_MSG("SQLSetConnectOption called");
     return SQL_SUCCESS;
 }
@@ -509,6 +547,11 @@ SQLRETURN SQL_API SQLSetStmtOption(SQLHSTMT     stmt,
                                    SQLUSMALLINT option,
                                    SQLULEN      value)
 {
+    // Unused.
+    (void) stmt;
+    (void) option;
+    (void) value;
+
     LOG_MSG("SQLSetStmtOption called");
     return SQL_SUCCESS;
 }
@@ -523,6 +566,17 @@ SQLRETURN SQL_API SQLStatistics(SQLHSTMT        stmt,
                                 SQLUSMALLINT    unique,
                                 SQLUSMALLINT    reserved)
 {
+    // Unused.
+    (void) stmt;
+    (void) catalogName;
+    (void) catalogNameLen;
+    (void) schemaName;
+    (void) schemaNameLen;
+    (void) tableName;
+    (void) tableNameLen;
+    (void) unique;
+    (void) reserved;
+
     LOG_MSG("SQLStatistics called");
     return SQL_SUCCESS;
 }
@@ -534,6 +588,14 @@ SQLRETURN SQL_API SQLBrowseConnect(SQLHDBC      conn,
                                    SQLSMALLINT  outConnectionStrBufLen,
                                    SQLSMALLINT* outConnectionStrResLen)
 {
+    // Unused.
+    (void) conn;
+    (void) inConnectionStr;
+    (void) inConnectionStrLen;
+    (void) outConnectionStrBuf;
+    (void) outConnectionStrBufLen;
+    (void) outConnectionStrResLen;
+
     LOG_MSG("SQLBrowseConnect called");
     return SQL_SUCCESS;
 }
@@ -548,6 +610,17 @@ SQLRETURN SQL_API SQLProcedureColumns(SQLHSTMT      stmt,
                                       SQLCHAR *     columnName,
                                       SQLSMALLINT   columnNameLen)
 {
+    // Unused.
+    (void) stmt;
+    (void) catalogName;
+    (void) catalogNameLen;
+    (void) schemaName;
+    (void) schemaNameLen;
+    (void) procName;
+    (void) procNameLen;
+    (void) columnName;
+    (void) columnNameLen;
+
     LOG_MSG("SQLProcedureColumns called");
     return SQL_SUCCESS;
 }
@@ -557,6 +630,12 @@ SQLRETURN SQL_API SQLSetPos(SQLHSTMT        stmt,
                             SQLUSMALLINT    operation,
                             SQLUSMALLINT    lockType)
 {
+    // Unused.
+    (void) stmt;
+    (void) rowNum;
+    (void) operation;
+    (void) lockType;
+
     LOG_MSG("SQLSetPos called");
     return SQL_SUCCESS;
 }
@@ -566,6 +645,12 @@ SQLRETURN SQL_API SQLSetScrollOptions(SQLHSTMT      stmt,
                                       SQLLEN        crowKeyset,
                                       SQLUSMALLINT  crowRowset)
 {
+    // Unused.
+    (void) stmt;
+    (void) concurrency;
+    (void) crowKeyset;
+    (void) crowRowset;
+
     LOG_MSG("SQLSetScrollOptions called");
     return SQL_SUCCESS;
 }
@@ -573,6 +658,10 @@ SQLRETURN SQL_API SQLSetScrollOptions(SQLHSTMT      stmt,
 SQLRETURN SQL_API SQLBulkOperations(SQLHSTMT       stmt,
                                     SQLUSMALLINT   operation)
 {
+    // Unused.
+    (void) stmt;
+    (void) operation;
+
     LOG_MSG("SQLBulkOperations called");
     return SQL_SUCCESS;
 }
@@ -585,12 +674,25 @@ SQLRETURN SQL_API SQLTablePrivileges(SQLHSTMT      stmt,
                                      SQLCHAR*      tableName,
                                      SQLSMALLINT   tableNameLen)
 {
+    // Unused.
+    (void) stmt;
+    (void) catalogName;
+    (void) catalogNameLen;
+    (void) schemaName;
+    (void) schemaNameLen;
+    (void) tableName;
+    (void) tableNameLen;
+
     LOG_MSG("SQLTablePrivileges called");
     return SQL_SUCCESS;
 }
 
 SQLRETURN SQL_API SQLCopyDesc(SQLHDESC src, SQLHDESC dst)
 {
+    // Unused.
+    (void) src;
+    (void) dst;
+
     LOG_MSG("SQLCopyDesc called");
     return SQL_SUCCESS;
 }
@@ -602,6 +704,14 @@ SQLRETURN SQL_API SQLGetDescField(SQLHDESC      descr,
                                   SQLINTEGER    bufferLen,
                                   SQLINTEGER*   resLen)
 {
+    // Unused.
+    (void) descr;
+    (void) recNum;
+    (void) fieldId;
+    (void) buffer;
+    (void) bufferLen;
+    (void) resLen;
+
     LOG_MSG("SQLGetDescField called");
     return SQL_SUCCESS;
 }
@@ -618,6 +728,19 @@ SQLRETURN SQL_API SQLGetDescRec(SQLHDESC        DescriptorHandle,
                                 SQLSMALLINT*    scale,
                                 SQLSMALLINT*    nullable)
 {
+    // Unused.
+    (void) DescriptorHandle;
+    (void) RecNumber;
+    (void) nameBuffer;
+    (void) nameBufferLen;
+    (void) strLen;
+    (void) type;
+    (void) subType;
+    (void) len;
+    (void) precision;
+    (void) scale;
+    (void) nullable;
+
     LOG_MSG("SQLGetDescRec called");
     return SQL_SUCCESS;
 }
@@ -628,6 +751,13 @@ SQLRETURN SQL_API SQLSetDescField(SQLHDESC      descr,
                                   SQLPOINTER    buffer,
                                   SQLINTEGER    bufferLen)
 {
+    // Unused.
+    (void) descr;
+    (void) recNum;
+    (void) fieldId;
+    (void) buffer;
+    (void) bufferLen;
+
     LOG_MSG("SQLSetDescField called");
     return SQL_SUCCESS;
 }
@@ -643,6 +773,18 @@ SQLRETURN SQL_API SQLSetDescRec(SQLHDESC      descr,
                                 SQLLEN*       resLen,
                                 SQLLEN*       id)
 {
+    // Unused.
+    (void) descr;
+    (void) recNum;
+    (void) type;
+    (void) subType;
+    (void) len;
+    (void) precision;
+    (void) scale;
+    (void) buffer;
+    (void) resLen;
+    (void) id;
+
     LOG_MSG("SQLSetDescRec called");
     return SQL_SUCCESS;
 }
@@ -657,6 +799,17 @@ SQLRETURN SQL_API SQLColumnPrivileges(SQLHSTMT      stmt,
                                       SQLCHAR*      columnName,
                                       SQLSMALLINT   columnNameLen)
 {
+    // Unused.
+    (void) stmt;
+    (void) catalogName;
+    (void) catalogNameLen;
+    (void) schemaName;
+    (void) schemaNameLen;
+    (void) tableName;
+    (void) tableNameLen;
+    (void) columnName;
+    (void) columnNameLen;
+
     LOG_MSG("SQLColumnPrivileges called");
     return SQL_SUCCESS;
 }
@@ -665,6 +818,11 @@ SQLRETURN SQL_API SQLParamOptions(SQLHSTMT  stmt,
                                   SQLULEN   paramSetSize,
                                   SQLULEN*  paramsProcessed)
 {
+    // Unused.
+    (void) stmt;
+    (void) paramSetSize;
+    (void) paramsProcessed;
+
     LOG_MSG("SQLParamOptions called");
     return SQL_SUCCESS;
 }
@@ -677,6 +835,15 @@ SQLRETURN SQL_API SQLProcedures(SQLHSTMT        stmt,
                                 SQLCHAR*        tableName,
                                 SQLSMALLINT     tableNameLen)
 {
+    // Unused.
+    (void) stmt;
+    (void) catalogName;
+    (void) catalogNameLen;
+    (void) schemaName;
+    (void) schemaNameLen;
+    (void) tableName;
+    (void) tableNameLen;
+
     LOG_MSG("SQLProcedures called");
     return SQL_SUCCESS;
 }

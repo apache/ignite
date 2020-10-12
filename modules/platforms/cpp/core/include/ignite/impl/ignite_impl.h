@@ -44,7 +44,7 @@ namespace ignite
                 CREATE_CACHE = 2,
                 GET_OR_CREATE_CACHE = 3,
                 GET_TRANSACTIONS = 9,
-                GET_CLUSTER_GROUP = 10,
+                GET_CLUSTER_GROUP = 10
             };
         };
 
@@ -222,7 +222,7 @@ namespace ignite
             /** Projection implementation. */
             common::Lazy<cluster::ClusterGroupImpl> prjImpl;
 
-            IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
+            IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl);
 
             /**
             * Get or create cache.

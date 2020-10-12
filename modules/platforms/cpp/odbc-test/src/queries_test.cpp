@@ -95,7 +95,7 @@ struct QueriesTestSuiteFixture : odbc::OdbcTestSuite
         cache1.Put(1, in1);
         cache1.Put(2, in2);
 
-        const size_t columnsCnt = 12;
+        const SQLSMALLINT columnsCnt = 12;
 
         T columns[columnsCnt] = { 0 };
 
@@ -290,7 +290,7 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     cache1.Put(1, in1);
     cache1.Put(2, in2);
 
-    const size_t columnsCnt = 12;
+    const SQLSMALLINT columnsCnt = 12;
 
     SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
 
@@ -389,7 +389,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 
     cache1.Put(1, in);
 
-    const size_t columnsCnt = 12;
+    const SQLSMALLINT columnsCnt = 12;
 
     SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
 
@@ -457,7 +457,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 
     cache1.Put(1, in);
 
-    const size_t columnsCnt = 12;
+    const SQLSMALLINT columnsCnt = 12;
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
@@ -570,7 +570,7 @@ BOOST_AUTO_TEST_CASE(TestDataAtExecution)
     cache1.Put(1, in1);
     cache1.Put(2, in2);
 
-    const size_t columnsCnt = 12;
+    const SQLSMALLINT columnsCnt = 12;
 
     SQLLEN columnLens[columnsCnt] = { 0 };
     SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
@@ -697,7 +697,7 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
     cache1.Put(2, inNull);
     cache1.Put(3, in);
 
-    const size_t columnsCnt = 11;
+    const SQLSMALLINT columnsCnt = 11;
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
@@ -822,7 +822,7 @@ BOOST_AUTO_TEST_CASE(TestDistributedJoins)
 
     SQLRETURN ret;
 
-    const size_t columnsCnt = 2;
+    const SQLSMALLINT columnsCnt = 2;
 
     SQLBIGINT columns[columnsCnt] = { 0 };
 
@@ -1633,10 +1633,6 @@ BOOST_AUTO_TEST_CASE(TestAffectedRows)
 
     // Inserting values.
     InsertTestStrings(recordsNum);
-
-    int64_t key = 0;
-    char strField[1024] = { 0 };
-    SQLLEN strFieldLen = 0;
 
     SQLCHAR updateReq[] = "UPDATE TestType SET strField = 'Updated value' WHERE _key > 20 AND _key < 40";
 

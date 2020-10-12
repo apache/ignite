@@ -75,7 +75,7 @@ namespace ignite
             private:
                 pthread_mutex_t mux;
                 
-                IGNITE_NO_COPY_ASSIGNMENT(CriticalSection)
+                IGNITE_NO_COPY_ASSIGNMENT(CriticalSection);
             };
 
             class IGNITE_IMPORT_EXPORT ReadWriteLock
@@ -115,7 +115,7 @@ namespace ignite
                 /** Lock. */
                 pthread_rwlock_t lock;
 
-                IGNITE_NO_COPY_ASSIGNMENT(ReadWriteLock)
+                IGNITE_NO_COPY_ASSIGNMENT(ReadWriteLock);
             };
 
             /**
@@ -153,7 +153,7 @@ namespace ignite
                 /** Ready flag. */
                 bool ready;
                 
-                IGNITE_NO_COPY_ASSIGNMENT(SingleLatch)
+                IGNITE_NO_COPY_ASSIGNMENT(SingleLatch);
             };
 
             /**
