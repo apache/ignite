@@ -54,7 +54,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
@@ -95,7 +94,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfiguration;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -625,7 +623,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-
         { // non verbose mode
             assertEquals(EXIT_CODE_OK, execute("--baseline"));
 
@@ -726,7 +723,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         List<String> nodesInfo = new ArrayList<>();
 
-        while ((beginOfNodeDescription = outStr.indexOf("ConsistentId=", j) )!= -1) {
+        while ((beginOfNodeDescription = outStr.indexOf("ConsistentId=", j) ) != -1) {
             j = outStr.indexOf("\n", beginOfNodeDescription);
             nodesInfo.add(outStr.substring(beginOfNodeDescription, j).trim());
         }

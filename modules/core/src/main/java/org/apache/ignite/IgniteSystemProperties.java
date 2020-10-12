@@ -1935,7 +1935,6 @@ public final class IgniteSystemProperties {
         defaults = "" + DFLT_DUMP_TX_COLLISIONS_INTERVAL)
     public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
 
-
     /**
      * Set to true only during the junit tests.
      *

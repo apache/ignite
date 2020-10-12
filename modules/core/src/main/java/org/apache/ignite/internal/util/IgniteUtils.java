@@ -11675,6 +11675,7 @@ public abstract class IgniteUtils {
             throw new IgniteException(e);
         }
     }
+
     /**
      *  Safely write buffer fully to blocking socket channel.
      *  Will throw assert if non blocking channel passed.
