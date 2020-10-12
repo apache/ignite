@@ -117,7 +117,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         :param backoff_sec: Number of seconds to back off between each failure to meet the condition
                 before checking again.
         """
-        with node.account.monitor_log(self.STDOUT_STDERR_CAPTURE) as monitor:
+        with node.account.monitor_log(self.PATH_TO_LOG_FILE) as monitor:
             if from_the_beginning:
                 monitor.offset = 0
 

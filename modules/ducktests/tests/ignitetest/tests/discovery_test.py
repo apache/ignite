@@ -239,7 +239,7 @@ def simulate_nodes_failure(servers, failed_nodes, survived_node):
                                     from_the_beginning=True, backoff_sec=0.1)
 
         _, stdout, _ = survived_node.account.ssh_client.exec_command(
-            "grep '%s' %s" % (failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
+            "grep '%s' %s" % (failed_pattern(failed_id), IgniteAwareService.PATH_TO_LOG_FILE))
 
         logged_timestamps.append(
             datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
