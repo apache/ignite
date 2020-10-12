@@ -57,7 +57,7 @@ class CellularAffinity(IgniteTest):
                             </bean>
                         </property>
                         <property name="name" value="{{ cacheName }}"/>
-                        <property name="backups" value="{{ nodes }}"/>
+                        <property name="backups" value="{{ backups }}"/>
                         <property name="atomicityMode" value="TRANSACTIONAL"/>
                     </bean>
                 </list>
@@ -65,14 +65,14 @@ class CellularAffinity(IgniteTest):
         """  # noqa: E501
 
     @staticmethod
-    def properties():
+    def properties(backups: int = NUM_NODES, attr: str = ATTRIBUTE, cacheName: str = CACHE_NAME):
         """
         :return: Configuration properties.
         """
         return Template(CellularAffinity.CONFIG_TEMPLATE) \
-            .render(nodes=CellularAffinity.NUM_NODES,  # bigger than cell capacity (to handle single cell useless test)
-                    attr=CellularAffinity.ATTRIBUTE,
-                    cacheName=CellularAffinity.CACHE_NAME)
+            .render(backups=backups,  # bigger than cell capacity (to handle single cell useless test)
+                    attr=attr,
+                    cacheName=cacheName)
 
     @cluster(num_nodes=NUM_NODES * 3 + 1)
     @version_if(lambda version: version >= DEV_BRANCH)
@@ -81,9 +81,10 @@ class CellularAffinity(IgniteTest):
         """
         Tests Cellular Affinity scenario (partition distribution).
         """
-        cell1 = self.start_cell(ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=1'])
-        self.start_cell(ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=2'], joined_cluster=cell1)
-        self.start_cell(ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=XXX', '-DRANDOM=42'],
+        cell1 = start_cell(self.test_context, ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=1'])
+        start_cell(self.test_context, ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=2'],
+                        joined_cluster=cell1)
+        start_cell(self.test_context, ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=XXX', '-DRANDOM=42'],
                         joined_cluster=cell1)
 
         ControlUtility(cell1, self.test_context).activate()
@@ -178,8 +179,8 @@ class CellularAffinity(IgniteTest):
         """
         Starts cell with prepared transactions.
         """
-        nodes = self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=' + cell_id],
-                                CellularAffinity.NUM_NODES - 1, joined_cluster)
+        nodes = start_cell(self.test_context, version, ['-D' + CellularAffinity.ATTRIBUTE + '=' + cell_id],
+                           nodes_cnt=self.NUM_NODES - 1, joined_cluster=joined_cluster)
 
         prepared_tx_streamer = IgniteApplicationService(  # last server node at the cell.
             self.test_context,
@@ -198,18 +199,29 @@ class CellularAffinity(IgniteTest):
 
         return nodes, prepared_tx_streamer
 
-    def start_cell(self, version, jvm_opts, nodes_cnt=NUM_NODES, joined_cluster=None):
-        """
-        Starts cell.
-        """
-        config = IgniteConfiguration(version=IgniteVersion(version), properties=self.properties(),
-                                     cluster_state="INACTIVE")
 
-        if joined_cluster:
-            config = config._replace(discovery_spi=from_ignite_cluster(joined_cluster))
+def start_cell(
+        test_context,
+        version: str,
+        jvm_opts: [],
+        nodes_cnt: int = CellularAffinity.NUM_NODES,
+        joined_cluster: IgniteService = None,
+        backups: int = CellularAffinity.NUM_NODES,
+        attr: str = CellularAffinity.ATTRIBUTE,
+        cacheName: str = CellularAffinity.CACHE_NAME):
 
-        ignites = IgniteService(self.test_context, config, num_nodes=nodes_cnt, jvm_opts=jvm_opts)
+    """
+    Starts cell.
+    """
+    config = IgniteConfiguration(version=IgniteVersion(version),
+                                 properties=CellularAffinity.properties(backups, attr, cacheName),
+                                 cluster_state="INACTIVE")
 
-        ignites.start()
+    if joined_cluster:
+        config = config._replace(discovery_spi=from_ignite_cluster(joined_cluster))
 
-        return ignites
+    ignites = IgniteService(test_context, config, num_nodes=nodes_cnt, jvm_opts=jvm_opts)
+
+    ignites.start()
+
+    return ignites
