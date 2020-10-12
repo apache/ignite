@@ -231,7 +231,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                         // Also note that we don't remove future here if it is done.
                         // The removal is initiated from within future itself.
                         if (cctx.kernalContext().security().enabled()) {
-                            try(OperationSecurityContext c = cctx.kernalContext().security().withContext(mvccFut.securitySubjectId())){
+                            try (OperationSecurityContext c = cctx.kernalContext().security().withContext(mvccFut.securitySubjectId())) {
                                 if (mvccFut.onOwnerChanged(entry, owner))
                                     return;
                             }

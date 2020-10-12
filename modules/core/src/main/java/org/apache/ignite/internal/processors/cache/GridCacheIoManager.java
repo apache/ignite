@@ -288,8 +288,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                                     log.debug(msg0.toString());
                                 }
 
-                                SecurityUtils.withContextIfNeed(secSubjId, cctx.kernalContext().security()
-                                    , () -> handleMessage(nodeId, cacheMsg, plc));
+                                SecurityUtils.withContextIfNeed(secSubjId, cctx.kernalContext().security(),
+                                    () -> handleMessage(nodeId, cacheMsg, plc));
                             }
                         };
 

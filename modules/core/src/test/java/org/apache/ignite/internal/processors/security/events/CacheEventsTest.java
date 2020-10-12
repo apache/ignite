@@ -519,7 +519,7 @@ public class CacheEventsTest extends AbstractSecurityTest {
         }
         else if ("thin".equals(expLogin)) {
             return n -> {
-                try(IgniteClient clnt = startClient()) {
+                try (IgniteClient clnt = startClient()) {
                     op.clntCacheOp.accept(clnt.cache(n));
                 }
             };

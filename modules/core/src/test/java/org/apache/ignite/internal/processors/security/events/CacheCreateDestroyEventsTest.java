@@ -179,7 +179,7 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
 
             case THIN_CLIENT_DESTROY_CACHE:
                 return ccfgs -> {
-                    try(IgniteClient clnt = startClient()) {
+                    try (IgniteClient clnt = startClient()) {
                         clnt.destroyCache(ccfgs.iterator().next().getName());
                     }
                 };

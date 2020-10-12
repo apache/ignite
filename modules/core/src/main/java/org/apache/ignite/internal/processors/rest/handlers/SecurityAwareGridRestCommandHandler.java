@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 public class SecurityAwareGridRestCommandHandler implements GridRestCommandHandler {
     /** */
     private final GridKernalContext ctx;
+
     /** */
     private final GridRestCommandHandler original;
 
@@ -50,7 +51,7 @@ public class SecurityAwareGridRestCommandHandler implements GridRestCommandHandl
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
-        try(OperationSecurityContext c = ctx.security().withContext(req.clientId())){
+        try (OperationSecurityContext c = ctx.security().withContext(req.clientId())) {
             return original.handleAsync(req);
         }
     }
@@ -64,7 +65,7 @@ public class SecurityAwareGridRestCommandHandler implements GridRestCommandHandl
     @Override public boolean equals(Object obj) {
         Object hnd = obj;
 
-        if(obj instanceof SecurityAwareGridRestCommandHandler)
+        if (obj instanceof SecurityAwareGridRestCommandHandler)
             hnd = ((SecurityAwareGridRestCommandHandler)obj).original;
 
         return original.equals(hnd);
