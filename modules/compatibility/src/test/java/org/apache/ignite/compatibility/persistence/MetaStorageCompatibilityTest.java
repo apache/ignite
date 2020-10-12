@@ -38,8 +38,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 
 /**
  * Tests migration of metastorage.
@@ -100,6 +103,7 @@ public class MetaStorageCompatibilityTest extends IgnitePersistenceCompatibility
      * Tests that BLT can be changed and persisted after metastorage migration.
      */
     @Test
+    @WithSystemProperty(key=IGNITE_DISABLE_WAL_DURING_REBALANCING, value="false")
     public void testMigrationToNewBaselineSetNewBaselineAfterMigration() throws Exception {
         try {
             U.delete(new File(U.defaultWorkDirectory()));
@@ -132,6 +136,7 @@ public class MetaStorageCompatibilityTest extends IgnitePersistenceCompatibility
      *
      */
     @Test
+    @WithSystemProperty(key=IGNITE_DISABLE_WAL_DURING_REBALANCING, value="false")
     public void testMigrationWithExceptionDuringTheProcess() throws Exception {
         try {
             U.delete(new File(U.defaultWorkDirectory()));
