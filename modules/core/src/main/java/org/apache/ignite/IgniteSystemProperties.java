@@ -1935,6 +1935,15 @@ public final class IgniteSystemProperties {
         defaults = "" + DFLT_DUMP_TX_COLLISIONS_INTERVAL)
     public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
 
+
+    /**
+     * Set to true only during the junit tests.
+     *
+     * Can be used for changing behaviour of tightly coupled code pieces during the tests.
+     * Use it as a last resort only, prefer another toolchain like DI, mocks and etc. if possible
+     */
+    public static final String IGNITE_TEST_ENV = "IGNITE_TEST_ENV";
+
     /**
      * Enforces singleton.
      */

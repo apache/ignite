@@ -269,7 +269,7 @@ public class CommandHandler {
                     logger.info("Arguments: " + String.join(" ", rawArgs));
                     logger.info(DELIM);
 
-                    lastOperationRes = command.execute(clientCfg, logger);
+                    lastOperationRes = command.execute(clientCfg, logger, args.verbose());
 
                     break;
                 }

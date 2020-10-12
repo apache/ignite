@@ -18,12 +18,18 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -37,6 +43,8 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
+import org.apache.ignite.internal.visor.util.VisorTaskUtils;
+import org.jetbrains.annotations.NotNull;
 
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
@@ -53,6 +61,11 @@ import static org.apache.ignite.internal.commandline.baseline.BaselineSubcommand
 public class BaselineCommand implements Command<BaselineArguments> {
     /** Arguments. */
     private BaselineArguments baselineArgs;
+
+    /**
+     * Use verbose mode for command output
+     */
+    private @NotNull boolean verbose = false;
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
@@ -77,6 +90,19 @@ public class BaselineCommand implements Command<BaselineArguments> {
             return "Warning: the command will perform changes in baseline.";
 
         return null;
+    }
+
+    /**
+     * @see #execute(GridClientConfiguration, Logger)
+     * @param clientCfg Thin client configuration if connection to cluster is necessary.
+     * @param logger Logger to use.
+     * @param verbose Use verbose mode or not
+     *
+     * @throws Exception If failed to execute baseline action.
+     */
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger, boolean verbose) throws Exception {
+        this.verbose = verbose;
+        return execute(clientCfg, logger);
     }
 
     /**
@@ -166,13 +192,34 @@ public class BaselineCommand implements Command<BaselineArguments> {
         Map<String, VisorBaselineNode> srvs = res.getServers();
 
         // if task runs on a node with VisorBaselineNode of old version (V1) we'll get order=null for all nodes.
+        Function<VisorBaselineNode, String> extractFormattedAddrs = node -> {
+            Stream<String> sortedByIpHosts =
+                Optional.ofNullable(node)
+                    .map(addrs -> node.getAddrs())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .sorted(Comparator.comparing(tuple -> new VisorTaskUtils.SortableAddress(tuple.getKey())))
+                .map(addr -> {
+                    if (!addr.getKey().equals(addr.getValue()))
+                        return addr.getValue() + "/" + addr.getKey();
+                    else return addr.getKey();
+                });
+
+            if (verbose) {
+                String hosts = String.join(",", sortedByIpHosts.collect(Collectors.toList()));
+                if (!hosts.isEmpty())
+                    return ", Addresses=" + hosts;
+                else return "";
+            } else
+                return sortedByIpHosts.findFirst().map(ip -> ", Address=" + ip).orElse("");
+        };
 
         String crdStr = srvs.values().stream()
             // check for not null
             .filter(node -> node.getOrder() != null)
             .min(Comparator.comparing(VisorBaselineNode::getOrder))
             // format
-            .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + ", Order=" + crd.getOrder() + ")")
+            .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + extractFormattedAddrs.apply(crd) + ", Order=" + crd.getOrder() + ")")
             .orElse("");
 
         logger.info("Current topology version: " + res.getTopologyVersion() + crdStr);
@@ -190,7 +237,7 @@ public class BaselineCommand implements Command<BaselineArguments> {
 
                 String order = srvNode != null ? ", Order=" + srvNode.getOrder() : "";
 
-                logger.info(DOUBLE_INDENT + "ConsistentId=" + node.getConsistentId() + state + order);
+                logger.info(DOUBLE_INDENT + "ConsistentId=" + node.getConsistentId() + extractFormattedAddrs.apply(srvNode) + state + order);
             }
 
             logger.info(DELIM);

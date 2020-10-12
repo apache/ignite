@@ -21,13 +21,21 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.BaselineNode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Result for {@link VisorBaselineTask}.
@@ -75,7 +83,38 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         Map<String, VisorBaselineNode> map = new TreeMap<>();
 
         for (BaselineNode node : nodes) {
-            VisorBaselineNode dto = new VisorBaselineNode(node);
+
+            VisorBaselineNode dto = new VisorBaselineNode(node, Collections.emptyList());
+
+            map.put(dto.getConsistentId(), dto);
+        }
+
+        return map;
+    }
+
+    /**
+     * @param nodes Nodes to process.
+     * @return Map of DTO objects, with resolved ip->hostname pairs.
+     */
+    private static Map<String, VisorBaselineNode> toMapWithResolvedAddresses(Collection<? extends BaselineNode> nodes) {
+        if (F.isEmpty(nodes))
+            return null;
+
+        Map<String, VisorBaselineNode> map = new TreeMap<>();
+
+        for (BaselineNode node : nodes) {
+            Collection<IgniteBiTuple<String, String>> addrs = Collections.emptyList();
+            if (node instanceof IgniteClusterNode) {
+                try {
+                    addrs = IgniteUtils.toInetAddresses((ClusterNode)node).stream()
+                        .map(addr -> new IgniteBiTuple<>(addr.getHostAddress(), addr.getHostName()))
+                        .collect(Collectors.toList());
+                } catch (IgniteCheckedException ex) {
+                    throw IgniteUtils.convertException(ex);
+                }
+            }
+
+            VisorBaselineNode dto = new VisorBaselineNode(node, addrs);
 
             map.put(dto.getConsistentId(), dto);
         }
@@ -104,7 +143,7 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         this.active = active;
         this.topVer = topVer;
         this.baseline = toMap(baseline);
-        this.servers = toMap(servers);
+        this.servers = toMapWithResolvedAddresses(servers);
         this.autoAdjustSettings = autoAdjustSettings;
         this.remainingTimeToBaselineAdjust = remainingTimeToBaselineAdjust;
         this.baselineAdjustInProgress = baselineAdjustInProgress;
