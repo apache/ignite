@@ -22,11 +22,10 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
+import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.log4j.LogManager;
