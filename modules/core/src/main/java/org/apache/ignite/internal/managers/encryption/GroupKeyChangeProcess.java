@@ -238,7 +238,8 @@ class GroupKeyChangeProcess {
                 }
 
                 for (int i = 0; i < req.groupIds().length; i++) {
-                    // Store new key as inactive.
+                    // Store the new key as inactive because the master key may change later
+                    // and will not be able to decrypt the received keys.
                     GroupKeyEncrypted grpKey = new GroupKeyEncrypted(req.keyIds()[i] & 0xff, req.keys()[i]);
 
                     ctx.encryption().addGroupKey(req.groupIds()[i], grpKey);
