@@ -38,7 +38,7 @@ class PmeFreeSwitchTest(IgniteTest):
     """
     Tests PME free switch scenarios.
     """
-    NUM_NODES = 3
+    NUM_NODES = 9
     CACHES_AMOUNT = 100
 
     @cluster(num_nodes=NUM_NODES + 2)
@@ -59,14 +59,16 @@ class PmeFreeSwitchTest(IgniteTest):
             for idx in range(1, self.CACHES_AMOUNT):
                 caches.append(CacheConfiguration(name="cache-%d" % idx, backups=2, atomicity_mode='TRANSACTIONAL'))
 
-        config = IgniteConfiguration(
-            version=IgniteVersion(ignite_version),
-            caches=caches
-        )
+        config = IgniteConfiguration(version=IgniteVersion(ignite_version), caches=caches, cluster_state="INACTIVE")
 
         ignites = IgniteService(self.test_context, config, num_nodes=self.NUM_NODES)
 
         ignites.start()
+
+        if IgniteVersion(ignite_version) >= V_2_8_0:
+            ControlUtility(ignites, self.test_context).disable_baseline_auto_adjust()
+
+        ControlUtility(ignites, self.test_context).activate()
 
         client_config = config._replace(client_mode=True,
                                         discovery_spi=from_ignite_cluster(ignites, slice(0, self.NUM_NODES - 1)))
@@ -88,9 +90,6 @@ class PmeFreeSwitchTest(IgniteTest):
             params={"cacheName": "test-cache", "warmup": 1000})
 
         single_key_tx_streamer.start()
-
-        if IgniteVersion(ignite_version) >= V_2_8_0:
-            ControlUtility(ignites, self.test_context).disable_baseline_auto_adjust()
 
         ignites.stop_node(ignites.nodes[self.NUM_NODES - 1])
 
