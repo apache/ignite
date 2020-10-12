@@ -42,7 +42,6 @@ public class SimpleTransactionGenerator extends ActionNode {
 
     /** {@inheritDoc} */
     @Override public long singleAction() {
-
         UUID key = UUID.randomUUID();
         long startTime = System.nanoTime();
         cache.put(key,VALUE);
@@ -53,7 +52,6 @@ public class SimpleTransactionGenerator extends ActionNode {
 
     /** {@inheritDoc} */
     @Override protected void scriptInit(JsonNode jsonNode) {
-
         String cacheName = Optional.ofNullable(jsonNode.get("cacheName")).map(JsonNode::asText).orElse("default-cache-name");
         log.info("test props:" + " cacheName=" + cacheName );
         cache = ignite.getOrCreateCache(prepareCacheConfiguration(cacheName));
