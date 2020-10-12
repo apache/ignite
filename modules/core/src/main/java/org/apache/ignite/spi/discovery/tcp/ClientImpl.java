@@ -764,11 +764,11 @@ class ClientImpl extends TcpDiscoveryImpl {
                     }
 
                     if (discoveryData == null) {
-                        DiscoveryDataPacket discoveryDataPacket = new DiscoveryDataPacket(getLocalNodeId());
+                        DiscoveryDataPacket dataPacket = new DiscoveryDataPacket(getLocalNodeId());
 
-                        discoveryDataPacket.joiningNodeClient(true);
+                        dataPacket.joiningNodeClient(true);
 
-                        discoveryData = spi.collectExchangeData(discoveryDataPacket);
+                        discoveryData = spi.collectExchangeData(dataPacket);
                     }
 
                     TcpDiscoveryJoinRequestMessage joinReqMsg = new TcpDiscoveryJoinRequestMessage(node, discoveryData);
