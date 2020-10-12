@@ -691,7 +691,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         };
 
-        ctx.cache().restorePartitionsPool.submit(
+        ctx.cache().restorePartitionsPool().submit(
             () -> IntStream.range(0, grp.affinity().partitions()).parallel().forEach(partConsumer)
         ).join();
 

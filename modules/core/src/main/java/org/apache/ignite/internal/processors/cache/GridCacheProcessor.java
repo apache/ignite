@@ -312,7 +312,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final CacheConfigurationEnricher enricher;
 
     /** */
-    public final ForkJoinPool restorePartitionsPool;
+    private final ForkJoinPool restorePartitionsPool;
 
     /**
      * @param ctx Kernal context.
@@ -748,8 +748,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopCaches(cancel);
 
-        restorePartitionsPool.shutdownNow();
-
         List<? extends GridCacheSharedManager<?, ?>> mgrs = sharedCtx.managers();
 
         for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = mgrs.listIterator(mgrs.size()); it.hasPrevious(); ) {
@@ -761,6 +759,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CU.stopStoreSessionListeners(ctx, sharedCtx.storeSessionListeners());
 
         sharedCtx.cleanup();
+
+        restorePartitionsPool.shutdownNow();
 
         if (log.isDebugEnabled())
             log.debug("Stopped cache processor.");
@@ -5298,6 +5298,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public CacheConfigurationEnricher enricher() {
         return enricher;
+    }
+
+    /** */
+    public ForkJoinPool restorePartitionsPool() {
+        return restorePartitionsPool;
     }
 
     /**
