@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import os
+import re
 
 import jinja2
 
@@ -22,21 +23,14 @@ from ignitetest.report.plotter.report import Report
 
 
 class ReportBuilder:
-
     LOG_FILE = "../log/console.log"
     REPORT_FOLDER = "result"
     REPORT_NAME = "report.html"
     TEMPLATE_FILE = "../report/report.j2"
 
-    START_REPORT_MARKER = "<report start>\n"
-    DATA_START_MARKER = "<data>\n"
-    DATA_STOP_MARKER = "</data>\n"
-    END_REPORT_MARKER = "<report end>\n"
+    # pylint: disable=W605
+    DATA_MARKER = "<start_time>.*</percentile>"
 
-    data_s_marker = 0
-    data_end_marker = 0
-
-    data_s_not_trigger = True
     final_report_data = []
 
     # pylint: disable=R0913
@@ -49,20 +43,12 @@ class ReportBuilder:
         f = open(self.LOG_FILE)
         report_data = []
 
-        index = 0
-        for line in f:
-            if self.data_s_not_trigger:
-                if line == self.DATA_START_MARKER:
-                    self.data_s_marker = index
-                    self.data_s_not_trigger = False
-            else:
-                if line == self.DATA_STOP_MARKER:
-                    self.data_end_marker = index
-                    self.data_s_not_trigger = True
-                else:
-                    report_data.append(line)
+        reg_exp = re.compile(self.DATA_MARKER)
 
-            index = index + 1
+        for line in f:
+            if reg_exp.match(line) is not None:
+                report_data.append(line)
+
         f.close()
 
         for report in report_data:

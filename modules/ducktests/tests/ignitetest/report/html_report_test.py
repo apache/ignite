@@ -15,7 +15,7 @@
 
 from ignitetest.report.plotter.report_builder import ReportBuilder
 
-LOG_FILE = "log/console.log"
+LOG_FILE = "ducker04/console.log"
 REPORT_FOLDER = "put-tx"
 
 builder = ReportBuilder(LOG_FILE, REPORT_FOLDER)

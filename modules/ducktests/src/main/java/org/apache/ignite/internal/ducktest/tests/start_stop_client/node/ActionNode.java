@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -35,9 +34,6 @@ import org.apache.log4j.Logger;
  * The base class agent
  */
 public abstract class ActionNode extends IgniteAwareApplication implements Action {
-    /** Report Queue. */
-    protected ConcurrentLinkedQueue queue = new ConcurrentLinkedQueue();
-
     /** The unique name of the agent. */
     private String nodeId = UUID.randomUUID().toString();
 
@@ -49,29 +45,6 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
 
     /** Thread count. */
     private int threads;
-
-    /** The unique name of the agent. */
-    private final String LOG_TX_REPORT = "Report from thread=%s action=%s \n" +
-            "<st_time>%d</st_time> \n" +
-            "<end_time>%d</end_time>\n" +
-            "<total_tx>%d</total_tx>\n" +
-            "<min_latency>%d</min_latency>\n" +
-            "<max_latency>%d</max_latency>\n" +
-            "<avg_latency>%d</avg_latency>\n" +
-            "<percentile99>%d</percentile99>\n" +
-            "<dispersion>%.2f</dispersion>\n";
-
-    /** Title of the final report. */
-    private final String FINAL_REPORT_HEADER = "\n" +
-            "<start_time>end_time</start_time>" +
-            "<end_t>end_time</end_t>" +
-            "<tx_c>tx_count</tx_c>" +
-            "<min_l>min_latency</min_l>" +
-            "<avg_l>avg_latency</avg_l>" +
-            "<max_l>max_latency</max_l>" +
-            "<percentile>percentile99</percentile>" +
-            "<disp>dispersion</disp>" +
-            "\n";
 
     /** Template for the final report line. */
     private final String FINAL_REPORT_TEMPLATE = "" +
@@ -122,7 +95,6 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
         }
 
         endTime = new Date();
-        calculateFinalReport();
         markFinished();
     }
 
@@ -152,7 +124,6 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
         if (!executor.isShutdown()) {
             executor.execute(new Runnable() {
                 @Override public void run() {
-                    queue.add(report);
                     printReportIntoLog(report);
                 }
             });
@@ -161,54 +132,20 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
 
     /** */
     private void printReportIntoLog(Report report) {
-        String message = String.format(LOG_TX_REPORT,
-                report.getThreadName(),
-                this.actionName,
+        StringBuilder builder = new StringBuilder();
+        builder.append("\n");
+        builder.append("<data>\n");
+        builder.append(String.format(FINAL_REPORT_TEMPLATE,
                 report.getStartTime(),
                 report.getEndTime(),
                 report.getTxCount(),
                 report.getMinLatency(),
-                report.getMaxLatency(),
                 report.getAvgLatency(),
+                report.getMaxLatency(),
                 report.getPercentile99(),
                 report.getDispersion()
-        );
-        log.info(message);
-    }
-
-    /** Publishing the final report in the log.  */
-    private void calculateFinalReport() {
-        ArrayList<Report> reports = new ArrayList(Arrays.asList(queue.stream().toArray()));
-
-        StringBuilder builder = new StringBuilder();
-        builder.append("\n<report start>\n");
-        builder.append("<meansured agent-name>" + this.nodeId + "</meansured agent-name>" + "\n");
-        builder.append("<action name>" + actionName + "</action name>" + "\n");
-        builder.append("<thread count>" + threads + "<thread count>" + "\n");
-        builder.append("<active baseline>" + ignite.cluster().currentBaselineTopology().size() + "</active baseline>" + '\n');
-        builder.append("<start agent time>" + startTime.toString() + "</start agent time>" + '\n');
-        builder.append("<end agent work time>" + endTime.toString() + "</end agent work time>" + '\n');
-        builder.append("<total work>" + ((endTime.getTime() - startTime.getTime()) / (1000)) + "</total work>");
-        builder.append(FINAL_REPORT_HEADER);
-        builder.append("<data>\n");
-
-        for (int i = 0; i < reports.size() - 1; i++) {
-            Report report = reports.get(i);
-            builder.append(String.format(FINAL_REPORT_TEMPLATE,
-                    report.getStartTime(),
-                    report.getEndTime(),
-                    report.getTxCount(),
-                    report.getMinLatency(),
-                    report.getAvgLatency(),
-                    report.getMaxLatency(),
-                    report.getPercentile99(),
-                    report.getDispersion()
-            ));
-            builder.append("\n");
-        }
+        ));
         builder.append("</data>\n");
-        builder.append("<report end>\n");
-
         log.info(builder.toString());
     }
 }
