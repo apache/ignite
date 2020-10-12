@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.ToLongFunction;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -75,6 +77,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
@@ -123,7 +127,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 /**
  * Used when persistence enabled.
  */
-public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl implements DbCheckpointListener {
+public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl implements CheckpointListener {
     /** @see #WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE */
     public static final int DFLT_WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE = 5;
 
@@ -162,6 +166,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /** Flag indicates that all group partitions have restored their state from page memory / disk. */
     private volatile boolean partitionStatesRestored;
 
+    /** */
+    private DataStorageMetricsImpl persStoreMetrics;
+
     /** {@inheritDoc} */
     @Override protected void initPendingTree(GridCacheContext cctx) throws IgniteCheckedException {
         // No-op. Per-partition PendingTree should be used.
@@ -180,7 +187,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         RootPage reuseListRoot = metas.reuseListRoot;
 
-        pageListCacheLimit = ((GridCacheDatabaseSharedManager)ctx.database()).pageListCacheLimitHolder(grp.dataRegion());
+        GridCacheDatabaseSharedManager databaseSharedManager = (GridCacheDatabaseSharedManager)ctx.database();
+
+        pageListCacheLimit = databaseSharedManager.pageListCacheLimitHolder(grp.dataRegion());
 
         reuseList = new ReuseListImpl(
             grp.groupId(),
@@ -211,7 +220,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             diagnosticMgr.pageLockTracker().createPageLockTracker(indexStorageTreeName)
         );
 
-        ((GridCacheDatabaseSharedManager)ctx.database()).addCheckpointListener(this);
+        persStoreMetrics = databaseSharedManager.persistentStoreMetricsImpl();
+
+        databaseSharedManager.addCheckpointListener(this);
     }
 
     /**
@@ -248,6 +259,47 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
         if (!ctx.nextSnapshot())
             syncMetadata(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterCheckpointEnd(Context ctx) throws IgniteCheckedException {
+        persStoreMetrics.onStorageSizeChanged(
+            forAllPageStores(PageStore::size),
+            forAllPageStores(PageStore::getSparseSize)
+        );
+    }
+
+    /**
+     * @param f Consumer.
+     * @return Accumulated result for all page stores.
+     */
+    private long forAllPageStores(ToLongFunction<PageStore> f) {
+        return forGroupPageStores(grp, f);
+    }
+
+    /**
+     * @param gctx Group context.
+     * @param f Consumer.
+     * @return Accumulated result for all page stores.
+     */
+    private long forGroupPageStores(CacheGroupContext gctx, ToLongFunction<PageStore> f) {
+        int groupId = gctx.groupId();
+
+        long res = 0;
+
+        try {
+            Collection<PageStore> stores = ((FilePageStoreManager)ctx.cache().context().pageStore()).getStores(groupId);
+
+            if (stores != null) {
+                for (PageStore store : stores)
+                    res += f.applyAsLong(store);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+
+        return res;
     }
 
     /**

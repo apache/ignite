@@ -79,7 +79,7 @@ public class CellularPreparedTxStreamer extends IgniteAwareApplication {
             i--;
         }
 
-        log.info("All transactions prepared (" + cnt + ")");
+        log.info("ALL_TRANSACTIONS_PREPARED (" + cnt + ")");
 
         while (!terminated()) {
             log.info("Waiting for SIGTERM.");

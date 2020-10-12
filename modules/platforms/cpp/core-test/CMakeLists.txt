@@ -19,11 +19,11 @@ project(ignite-tests)
 
 set(TARGET ${PROJECT_NAME})
 
-find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread system)
-
 if (WIN32)
     set(Boost_USE_STATIC_LIBS ON)
 endif()
+
+find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread system)
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
 
