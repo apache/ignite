@@ -46,8 +46,6 @@ class IgniteService(IgniteAwareService):
 
     # pylint: disable=W0221
     def start(self, timeout_sec=180):
-        self._rotate_log()
-
         super().start()
 
         self.logger.info("Waiting for Ignite(s) to start...")
@@ -61,8 +59,6 @@ class IgniteService(IgniteAwareService):
         """
         self.stop()
 
-        self._rotate_log()
-
         for node in self.nodes:
             self.start_node(node)
 
@@ -70,21 +66,6 @@ class IgniteService(IgniteAwareService):
 
         for node in self.nodes:
             self.await_node_started(node, timeout_sec)
-
-    def _rotate_log(self):
-        """
-        Rotate log file.
-        """
-        date_string = f'{datetime.now():%Y%m%d_%H%M%S}'
-
-        new_log_file = os.path.join(self.PERSISTENT_ROOT,
-                                    self.LOG_FILE_NAME.replace('.log', f'_{date_string}.log'))
-
-        for node in self.nodes:
-            node.account.ssh(f'if [ -e {self.STDOUT_STDERR_CAPTURE} ]; '
-                             f'then '
-                             f'mv {self.STDOUT_STDERR_CAPTURE} {new_log_file};'
-                             f'fi')
 
     def await_node_started(self, node, timeout_sec):
         """

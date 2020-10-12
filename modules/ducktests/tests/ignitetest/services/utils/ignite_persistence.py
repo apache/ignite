@@ -28,12 +28,12 @@ class PersistenceAware:
     """
     # Root directory for persistent output
     PERSISTENT_ROOT = "/mnt/service"
-    LOG_FILE_NAME = "console.log"
-    STDOUT_STDERR_CAPTURE = os.path.join(PERSISTENT_ROOT, LOG_FILE_NAME)
+    IGNITE_LOG_FILE = "ignite.log"
+    PATH_TO_LOG_FILE = os.path.join(PERSISTENT_ROOT, IGNITE_LOG_FILE)
 
     logs = {
-        "console_log": {
-            "path": STDOUT_STDERR_CAPTURE,
+        "ignite_log": {
+            "path": PATH_TO_LOG_FILE,
             "collect_default": True
         }
     }
@@ -68,5 +68,5 @@ class IgnitePersistenceAware(PersistenceAware):
         """
         super().init_persistent(node)
 
-        logger_config = IgniteLoggerConfigTemplate().render(work_dir=self.WORK_DIR)
+        logger_config = IgniteLoggerConfigTemplate().render(log_file=self.PATH_TO_LOG_FILE)
         node.account.create_file(self.LOG4J_CONFIG_FILE, logger_config)

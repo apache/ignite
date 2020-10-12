@@ -30,6 +30,21 @@
         </layout>
     </appender>
 
+    <appender name="FILE" class="org.apache.log4j.RollingFileAppender">
+        <param name="Threshold" value="DEBUG"/>
+        <param name="File" value="{{ log_file }}"/>
+        <param name="Append" value="true"/>
+        <param name="MaxFileSize" value="10MB"/>
+        <param name="MaxBackupIndex" value="10"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+        </layout>
+    </appender>
+
+    <category name="org.apache.ignite">
+        <level value="INFO"/>
+    </category>
+
     <category name="org.springframework">
         <level value="WARN"/>
     </category>
@@ -52,6 +67,8 @@
 
     <root>
         <level value="INFO"/>
+
+        <appender-ref ref="FILE"/>
         <appender-ref ref="CONSOLE_ERR"/>
     </root>
 </log4j:configuration>

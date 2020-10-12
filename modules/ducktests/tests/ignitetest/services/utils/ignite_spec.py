@@ -102,12 +102,11 @@ class IgniteNodeSpec(IgniteSpec, IgnitePersistenceAware):
     """
     @property
     def command(self):
-        cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
+        cmd = "%s %s %s %s > /dev/null 2>&1 &" % \
               (self._envs(),
                self.path.script("ignite.sh"),
                self._jvm_opts(),
-               self.CONFIG_FILE,
-               self.STDOUT_STDERR_CAPTURE)
+               self.CONFIG_FILE)
 
         return cmd
 
@@ -125,12 +124,11 @@ class IgniteApplicationSpec(IgniteSpec, IgnitePersistenceAware):
 
     @property
     def command(self):
-        cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
+        cmd = "%s %s %s %s > /dev/null 2>&1 &" % \
               (self._envs(),
                self.path.script("ignite.sh"),
                self._jvm_opts(),
-               self._app_args(),
-               self.STDOUT_STDERR_CAPTURE)
+               self._app_args())
 
         return cmd
 
