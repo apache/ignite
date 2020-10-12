@@ -22,9 +22,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.log4j.LogManager;
@@ -41,10 +40,10 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
     private String nodeId = UUID.randomUUID().toString();
 
     /** Start test time. */
-    protected Date start_time;
+    protected Date startTime;
 
     /** End test time. */
-    protected Date end_time;
+    protected Date endTime;
 
     /** Thread count. */
     private int threads;
@@ -90,10 +89,10 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
     protected String actionName;
 
     /** Thread executer. */
-    protected Executor executor;
+    protected ExecutorService executor;
 
     /** Threads. */
-    private ArrayList<OperationThread> operation_threads = new ArrayList();
+    private ArrayList<OperationThread> operationThreads = new ArrayList();
 
     /**  */
     private Logger log = LogManager.getLogger(ActionNode.class.getName());
@@ -101,32 +100,36 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
         init(jsonNode);
+
         markInitialized();
 
         for (int i = 0; i < threads; i++) {
-            operation_threads.add(new OperationThread(this, log, pacing, "action-thread-" + i));
+            operationThreads.add(new OperationThread(this, log, pacing));
         }
-        for (OperationThread thread : operation_threads) {
+        for (OperationThread thread : operationThreads) {
             executor.execute(thread);
         }
 
         while (!terminated()) {
+            TimeUnit.MILLISECONDS.sleep(100);
         }
-        for (OperationThread thread : operation_threads) {
-            thread.terminate();//останавливаем потоки
+
+        executor.shutdownNow();
+        if (!executor.isShutdown()){
+            TimeUnit.MILLISECONDS.sleep(100);
         }
-        end_time = new Date();
+
+        endTime = new Date();
         calculateFinalReport();
         markFinished();
     }
 
     /** */
     protected void init(JsonNode jsonNode) {
-
         threads = Optional.ofNullable(jsonNode.get("threads")).map(JsonNode::asInt).orElse(1);
         pacing = Optional.ofNullable(jsonNode.get("pacing")).map(JsonNode::asLong).orElse(0l);
         actionName = Optional.ofNullable(jsonNode.get("action")).map(JsonNode::asText).orElse("default-action-name");
-        start_time = new Date();
+        startTime = new Date();
 
         log.info(
                 "test props:" +
@@ -144,14 +147,15 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
 
     /** {@inheritDoc} */
     @Override public void publishInterimReport(Report report) {
-        executor.execute(new Runnable() {
-
-            @Override public void run() {
-                queue.add(report);
-                printReportIntoLog(report);
-            }
-
-        });
+        if (!executor.isShutdown()) {
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    queue.add(report);
+                    printReportIntoLog(report);
+                }
+            });
+        }
     }
 
     /** */
@@ -181,9 +185,9 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
         builder.append("<action name>" + actionName + "</action name>" + "\n");
         builder.append("<thread count>" + threads + "<thread count>" + "\n");
         builder.append("<active baseline>" + ignite.cluster().currentBaselineTopology().size() + "</active baseline>" + '\n');
-        builder.append("<start agent time>" + start_time.toString() + "</start agent time>" + '\n');
-        builder.append("<end agent work time>" + end_time.toString() + "</end agent work time>" + '\n');
-        builder.append("<total work>" + ((end_time.getTime() - start_time.getTime()) / (1000)) + "</total work>");
+        builder.append("<start agent time>" + startTime.toString() + "</start agent time>" + '\n');
+        builder.append("<end agent work time>" + endTime.toString() + "</end agent work time>" + '\n');
+        builder.append("<total work>" + ((endTime.getTime() - startTime.getTime()) / (1000)) + "</total work>");
         builder.append(FINAL_REPORT_HEADER);
         builder.append("<data>\n");
 

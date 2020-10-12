@@ -24,12 +24,9 @@ import org.apache.log4j.Logger;
 /**
  * Single action thread.
  */
-public class OperationThread extends Thread {
+public class OperationThread implements Runnable {
     /**  */
     private Action actionNode;
-
-    /**  */
-    private boolean terminated = false;
 
     /** */
     private Logger logger;
@@ -52,113 +49,88 @@ public class OperationThread extends Thread {
     }
 
     /** */
-    public boolean getTerminated() {
-        return terminated;
-    }
-
-    /** */
-    public void terminate() {
-        this.terminated = true;
-    }
-
-    /** */
-    public OperationThread(Action actionNode, Logger logger, long pacing, String name) {
+    public OperationThread(Action actionNode, Logger logger, long pacing) {
         this.actionNode = actionNode;
         this.logger = logger;
         this.pacing = pacing;
-        this.setName(name);
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
-        logger.info("run single thread name: " + this.getName());
-
-        Report temp;
-        while (!terminated) {
-            actionNode.publishInterimReport(calculate_interim_statement());
+        while (!Thread.interrupted()) {
             try {
+                actionNode.publishInterimReport(calculateInterimStatement());
                 Thread.sleep(pacing);
             } catch (InterruptedException e) {
-                e.printStackTrace();
             }
         }
-        logger.info("single thread name: " + this.getName() + " terminated");
     }
 
     /** Building an interim report. */
-    private Report calculate_interim_statement() {
-        long end_time;
-        long tx_count = 0;
-        long min_latency = -1;
-        long max_latency = -1;
-        long avg_latency = 0;
+    private Report calculateInterimStatement() {
+        long endTime = 0;
+        long txCount = 0;
+        long minLatency = -1;
+        long maxLatency = -1;
+        long avgLatency = 0;
         long percentile99 = 0;
-        String thread = this.getName();
 
         ArrayList<Long> reports = new ArrayList();
 
         long latency = 0;
         long batch = 0;
-        long st_time_r = System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();
 
-        while (!terminated && batch < (count)) {
-            latency = actionNode.singleAction();
-            tx_count++;
+        try {
+            while (batch < (count)) {
+                latency = actionNode.singleAction();
+                txCount++;
 
-            if (min_latency == -1) {
-                min_latency = latency;
-            } else {
-                if (min_latency > latency) {
-                    min_latency = latency;
+                if (minLatency == -1 || minLatency > latency) {
+                    minLatency = latency;
                 }
+
+                if (maxLatency < latency) {
+                    maxLatency = latency;
+                }
+                reports.add(latency);
+                batch++;
             }
+            endTime = System.currentTimeMillis();
 
-            if (max_latency < latency) {
-                max_latency = latency;
+            long sum = 0;
+            for (Long l : reports) {
+                sum += l;
             }
-            reports.add(latency);
-            batch++;
+            if (!reports.isEmpty()) {
+                avgLatency = sum / reports.size();
+                Collections.sort(reports);
+
+                percentile99 = reports.get((int) (reports.size() * 0.99));
+            }
         }
-        end_time = System.currentTimeMillis();
+        finally {
+            //calc dispersion
+            long x = 0;
+            for (Long report : reports) {
+                x = x + (report - avgLatency) ^ (2);
+            }
+            logger.info("dispersion debug: " + x);
 
-        long sum = 0;
-        for (Long s_latency : reports) {
-            sum += s_latency;
+            double dispersion = (double) (x / (reports.size() - 1));
+
+            Report report = new Report();
+            report.setAvgLatency(avgLatency);
+            report.setStartTime(startTime);
+            report.setEndTime(endTime);
+            report.setMinLatency(minLatency);
+            report.setMaxLatency(maxLatency);
+            report.setTxCount(txCount);
+            report.setThreadName(Thread.currentThread().getName());
+            report.setPercentile99(percentile99);
+            report.setDispersion(dispersion);
+
+            return report;
         }
-        if (!reports.isEmpty()) {
-            avg_latency = sum / reports.size();
-            Collections.sort(reports);
-            percentile99 = percentile99(reports);
-        }
-
-        //calc dispersion
-        long x = 0;
-        for (Long report : reports) {
-            x = x + (report - avg_latency) ^ (2);
-        }
-        logger.info("dispersion debug: " + x);
-        double dispersion = (double) (x / (reports.size() - 1));
-
-        Report report = new Report();
-
-        report.setAvgLatency(avg_latency);
-        report.setStartTime(st_time_r);
-        report.setEndTime(end_time);
-        report.setMinLatency(min_latency);
-        report.setMaxLatency(max_latency);
-        report.setTxCount(tx_count);
-        report.setThreadName(thread);
-        report.setPercentile99(percentile99);
-        report.setDispersion(dispersion);
-
-        return report;
     }
-
-    /** Percentile 99 calculate. */
-    private long percentile99(ArrayList<Long> reports) {
-        int size = reports.size();
-        int index = (int) (size * 0.99);
-        return reports.get(index);
-    }
-
 }

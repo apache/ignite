@@ -22,7 +22,7 @@ package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
  */
 public class Report {
     /** */
-    private String threadName;
+    private String threadName = "default";
 
     /** Measurement start time. */
     private long startTime;

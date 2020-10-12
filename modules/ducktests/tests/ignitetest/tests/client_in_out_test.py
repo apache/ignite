@@ -128,9 +128,10 @@ class ClientTest(IgniteTest):
 
             time.sleep(self.CLIENTS_WORK_TIME_S)
             temp_clients.stop()
+            time.sleep(5)
 
             current_top_v += self.TEMP_CLIENTS_NUM
-            assert current_top_v == control_utility.cluster_state().topology_version
+            check_topology(control_utility, current_top_v)
 
         static_clients.stop()
         check_topology(control_utility, fin_top_ver)
