@@ -77,7 +77,8 @@ class PmeFreeSwitchTest(IgniteTest):
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test.LongTxStreamerApplication",
-            params={"cacheName": "test-cache"})
+            params={"cacheName": "test-cache"},
+            timeout_sec=180)
 
         if long_txs:
             long_tx_streamer.start()
@@ -87,7 +88,8 @@ class PmeFreeSwitchTest(IgniteTest):
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test."
                             "SingleKeyTxStreamerApplication",
-            params={"cacheName": "test-cache", "warmup": 1000})
+            params={"cacheName": "test-cache", "warmup": 1000},
+            timeout_sec=180)
 
         single_key_tx_streamer.start()
 
