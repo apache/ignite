@@ -50,6 +50,6 @@ public class DistributionTraitDef extends RelTraitDef<IgniteDistribution> {
 
     /** {@inheritDoc} */
     @Override public IgniteDistribution getDefault() {
-        return IgniteDistributions.single();
+        return IgniteDistributions.any();
     }
 }

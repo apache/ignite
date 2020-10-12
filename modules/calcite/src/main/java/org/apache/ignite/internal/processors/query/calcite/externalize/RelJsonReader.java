@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -47,6 +46,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /** */
 @SuppressWarnings({"rawtypes", "unchecked"})
@@ -242,7 +242,7 @@ public class RelJsonReader {
         /** {@inheritDoc} */
         @Override public RelDataType getRowType(String tag) {
             Object o = jsonRel.get(tag);
-            return relJson.toType(cluster.getTypeFactory(), o);
+            return relJson.toType(Commons.typeFactory(cluster), o);
         }
 
         /** {@inheritDoc} */
@@ -250,7 +250,7 @@ public class RelJsonReader {
             List<RexNode> expressionList = getExpressionList(expressionsTag);
             List<String> names =
                 (List<String>)get(fieldsTag);
-            return cluster.getTypeFactory().createStructType(
+            return Commons.typeFactory(cluster).createStructType(
                 new AbstractList<Map.Entry<String, RelDataType>>() {
                     @Override public Map.Entry<String, RelDataType> get(int index) {
                         return Pair.of(names.get(index),
@@ -308,7 +308,7 @@ public class RelJsonReader {
             Boolean distinct = (Boolean)jsonAggCall.get("distinct");
             List<Integer> operands = (List<Integer>)jsonAggCall.get("operands");
             Integer filterOperand = (Integer)jsonAggCall.get("filter");
-            RelDataType type = relJson.toType(cluster.getTypeFactory(), jsonAggCall.get("type"));
+            RelDataType type = relJson.toType(Commons.typeFactory(cluster), jsonAggCall.get("type"));
             String name = (String)jsonAggCall.get("name");
             return AggregateCall.create(aggregation, distinct, false, false, operands,
                 filterOperand == null ? -1 : filterOperand,

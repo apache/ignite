@@ -77,6 +77,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -301,7 +302,7 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
             } else if (project.e instanceof RexCall) {
                 final RexCall call = (RexCall) project.e;
                 final RexCallBinding binding =
-                    RexCallBinding.create(input.getCluster().getTypeFactory(), call, inputCollations);
+                    RexCallBinding.create(Commons.typeFactory(input), call, inputCollations);
                 targetsWithMonotonicity.put(project.i, call.getOperator().getMonotonicity(binding));
             }
         }

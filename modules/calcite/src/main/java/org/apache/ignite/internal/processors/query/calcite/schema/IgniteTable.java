@@ -29,8 +29,8 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,9 +52,9 @@ public interface IgniteTable extends TranslatableTable {
      * Returns new type according {@code usedClumns} param.
      *
      * @param typeFactory Factory.
-     * @param usedColumns Used columns enumeration.
+     * @param requiredColumns Used columns enumeration.
      */
-    RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet usedColumns);
+    RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet requiredColumns);
 
     /** {@inheritDoc} */
     @Override default TableScan toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
@@ -68,7 +68,7 @@ public interface IgniteTable extends TranslatableTable {
      * @param relOptTbl Table.
      * @return Table relational expression.
      */
-    IgniteTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl);
+    IgniteLogicalTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl);
 
     /**
      * Converts table into relational expression.
@@ -78,7 +78,7 @@ public interface IgniteTable extends TranslatableTable {
      * @param idxName Index name.
      * @return Table relational expression.
      */
-    IgniteIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName);
+    IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName);
 
     /**
      * Creates rows iterator over the table.

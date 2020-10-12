@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -102,6 +101,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFun
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -390,7 +390,7 @@ class RelJson {
         else if (o instanceof Map) {
             Map map = (Map)o;
             Map<String, Object> opMap = (Map)map.get("op");
-            RelDataTypeFactory typeFactory = cluster.getTypeFactory();
+            IgniteTypeFactory typeFactory = Commons.typeFactory(cluster);
             if (opMap != null) {
                 if (map.containsKey("class"))
                     opMap.put("class", map.get("class"));

@@ -26,8 +26,8 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -40,30 +40,30 @@ public class ExposeIndexRule extends RelOptRule {
 
     /** */
     public ExposeIndexRule() {
-        super(operandJ(IgniteTableScan.class, null, ExposeIndexRule::preMatch, any()));
+        super(operandJ(IgniteLogicalTableScan.class, null, ExposeIndexRule::preMatch, any()));
     }
 
     /** */
-    private static boolean preMatch(IgniteTableScan scan) {
+    private static boolean preMatch(IgniteLogicalTableScan scan) {
         return scan.simple() // was not modified by ProjectScanMergeRule or FilterScanMergeRule
-            && scan.getTable().unwrap(IgniteTable.class).indexes().size() > 1; // has indexes to expose
+            && !scan.getTable().unwrap(IgniteTable.class).indexes().isEmpty(); // has indexes to expose
     }
 
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        IgniteTableScan scan = call.rel(0);
+        IgniteLogicalTableScan scan = call.rel(0);
         RelOptCluster cluster = scan.getCluster();
 
         RelOptTable optTable = scan.getTable();
         IgniteTable igniteTable = optTable.unwrap(IgniteTable.class);
 
-        List<IgniteIndexScan> indexes = igniteTable.indexes().keySet().stream()
+        List<IgniteLogicalIndexScan> indexes = igniteTable.indexes().keySet().stream()
             .map(idxName -> igniteTable.toRel(cluster, optTable, idxName))
             .collect(Collectors.toList());
 
-        assert indexes.size() > 1;
+        assert !indexes.isEmpty();
 
-        Map<RelNode, RelNode> equivMap = new HashMap<>(indexes.size() - 1);
+        Map<RelNode, RelNode> equivMap = new HashMap<>(indexes.size());
         for (int i = 1; i < indexes.size(); i++)
             equivMap.put(indexes.get(i), scan);
 

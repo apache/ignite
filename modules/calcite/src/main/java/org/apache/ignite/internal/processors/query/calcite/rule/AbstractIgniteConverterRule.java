@@ -33,8 +33,8 @@ public abstract class AbstractIgniteConverterRule<T extends RelNode> extends Con
     }
 
     /** */
-    protected AbstractIgniteConverterRule(Class<T> clazz, String descriptionPreffix) {
-        super(clazz, Convention.NONE, IgniteConvention.INSTANCE, descriptionPreffix);
+    protected AbstractIgniteConverterRule(Class<T> clazz, String descriptionPrefix) {
+        super(clazz, Convention.NONE, IgniteConvention.INSTANCE, descriptionPrefix);
     }
 
     /** {@inheritDoc} */

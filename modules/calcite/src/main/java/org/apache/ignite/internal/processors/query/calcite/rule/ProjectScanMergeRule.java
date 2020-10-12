@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.List;
-import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -31,38 +30,44 @@ import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-
-import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.isIdentity;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /** */
 public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableScan> extends RelOptRule {
     /** Instance. */
-    public static final ProjectScanMergeRule<IgniteIndexScan> INDEX_SCAN =
-        new ProjectScanMergeRule<IgniteIndexScan>(LogicalProject.class, IgniteIndexScan.class, "ProjectIndexScanMergeRule") {
+    public static final ProjectScanMergeRule<IgniteLogicalIndexScan> INDEX_SCAN =
+        new ProjectScanMergeRule<IgniteLogicalIndexScan>(
+            LogicalProject.class,
+            IgniteLogicalIndexScan.class,
+            "ProjectIndexScanMergeRule"
+        ) {
             /** {@inheritDoc} */
-            @Override protected IgniteIndexScan createNode(RelOptCluster cluster, IgniteIndexScan scan,
+            @Override protected IgniteLogicalIndexScan createNode(RelOptCluster cluster, IgniteLogicalIndexScan scan,
                 RelTraitSet traits, List<RexNode> projections, RexNode cond, ImmutableBitSet requiredColunms) {
-                return new IgniteIndexScan(cluster, traits, scan.getTable(), scan.indexName(), projections,
+                return IgniteLogicalIndexScan.create(cluster, traits, scan.getTable(), scan.indexName(), projections,
                     cond, requiredColunms);
             }
         };
 
     /** Instance. */
-    public static final ProjectScanMergeRule<IgniteTableScan> TABLE_SCAN =
-        new ProjectScanMergeRule<IgniteTableScan>(LogicalProject.class, IgniteTableScan.class, "ProjectTableScanMergeRule") {
+    public static final ProjectScanMergeRule<IgniteLogicalTableScan> TABLE_SCAN =
+        new ProjectScanMergeRule<IgniteLogicalTableScan>(
+            LogicalProject.class,
+            IgniteLogicalTableScan.class,
+            "ProjectTableScanMergeRule"
+        ) {
             /** {@inheritDoc} */
-            @Override protected IgniteTableScan createNode(RelOptCluster cluster, IgniteTableScan scan,
+            @Override protected IgniteLogicalTableScan createNode(RelOptCluster cluster, IgniteLogicalTableScan scan,
                 RelTraitSet traits, List<RexNode> projections, RexNode cond, ImmutableBitSet requiredColunms) {
-                return new IgniteTableScan(cluster, traits, scan.getTable(), projections, cond, requiredColunms);
+                return IgniteLogicalTableScan.create(cluster, traits, scan.getTable(), projections, cond, requiredColunms);
             }
         };
 
@@ -77,7 +82,11 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
      * @param tableClass Ignite scan class.
      * @param desc Description, or null to guess description
      */
-    private ProjectScanMergeRule(Class<? extends RelNode> projectionClazz, Class<T> tableClass, String desc) {
+    private ProjectScanMergeRule(
+        Class<? extends RelNode> projectionClazz,
+        Class<T> tableClass,
+        String desc
+    ) {
         super(operand(projectionClazz,
                 operand(tableClass, none())),
                     RelFactories.LOGICAL_BUILDER, desc);
@@ -86,7 +95,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
     /** {@inheritDoc} */
     @Override public boolean matches(RelOptRuleCall call) {
         T rel = call.rel(1);
-        return rel.projects() == null;
+        return rel.requiredColunms() == null;
     }
 
     /** {@inheritDoc} */
@@ -108,7 +117,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             TraitUtils.distribution(traits), projects, scan.getRowType()));
 
         IgniteTable tbl = scan.getTable().unwrap(IgniteTable.class);
-        IgniteTypeFactory typeFactory = Commons.context(scan).typeFactory();
+        IgniteTypeFactory typeFactory = Commons.typeFactory(cluster);
         ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
 
         new RexShuttle() {
@@ -127,11 +136,8 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
 
         ImmutableBitSet requiredColunms = builder.build();
 
-        Mappings.TargetMapping targetMapping = Mappings.create(MappingType.PARTIAL_FUNCTION,
-            tbl.getRowType(typeFactory).getFieldCount(), requiredColunms.cardinality());
-
-        for (Ord<Integer> ord : Ord.zip(requiredColunms))
-            targetMapping.set(ord.e, ord.i);
+        Mappings.TargetMapping targetMapping = Commons.mapping(requiredColunms,
+            tbl.getRowType(typeFactory).getFieldCount());
 
         projects = new RexShuttle() {
             @Override public RexNode visitInputRef(RexInputRef ref) {
@@ -139,7 +145,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             }
         }.apply(projects);
 
-        if (isIdentity(projects, tbl.getRowType(typeFactory, requiredColunms), true))
+        if (RexUtils.isIdentity(projects, tbl.getRowType(typeFactory, requiredColunms), true))
             projects = null;
 
         cond = new RexShuttle() {

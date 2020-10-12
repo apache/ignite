@@ -1,10 +1,12 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
@@ -13,12 +15,22 @@ import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.builder;
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.replaceLocalRefs;
 
 /** Scan with projects and filters. */
 public class ProjectableFilterableTableScan extends TableScan {
@@ -103,34 +115,62 @@ public class ProjectableFilterableTableScan extends TableScan {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double tableRows = table.getRowCount();
+        double estimated = estimateRowCount(mq);
 
         if (projects != null)
-            tableRows += tableRows * projects.size();
+            estimated += estimated * projects.size();
 
-        return planner.getCostFactory().makeCost(tableRows, 0, 0);
+        return planner.getCostFactory().makeCost(estimated, 0, 0);
     }
 
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        double rows = table.getRowCount();
-
-        if (condition != null)
-            rows *= mq.getSelectivity(this, condition);
-
-        return rows;
+        return table.getRowCount() * mq.getSelectivity(this, null);
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType deriveRowType() {
         if (projects != null)
-            return RexUtil.createStructType(Commons.context(this).typeFactory(), projects);
+            return RexUtil.createStructType(Commons.typeFactory(getCluster()), projects);
         else
-            return table.unwrap(IgniteTable.class).getRowType(getCluster().getTypeFactory(), requiredColunms);
+            return table.unwrap(IgniteTable.class).getRowType(Commons.typeFactory(getCluster()), requiredColunms);
     }
 
     /** */
     public boolean simple() {
         return condition == null && projects == null && requiredColunms == null;
+    }
+
+    /** */
+    public RexNode pushUpPredicate() {
+        if (condition == null || projects == null)
+            return replaceLocalRefs(condition);
+
+        IgniteTypeFactory typeFactory = Commons.typeFactory(getCluster());
+        IgniteTable tbl = getTable().unwrap(IgniteTable.class);
+
+        Mappings.TargetMapping mapping = RexUtils.invercePermutation(projects,
+            tbl.getRowType(typeFactory, requiredColunms), true);
+
+        RexShuttle shuttle = new RexShuttle() {
+            @Override public RexNode visitLocalRef(RexLocalRef ref) {
+                int targetRef = mapping.getSourceOpt(ref.getIndex());
+                if (targetRef == -1)
+                    throw new ControlFlowException();
+                return new RexInputRef(targetRef, ref.getType());
+            }
+        };
+
+        List<RexNode> conjunctions = new ArrayList<>();
+        for (RexNode conjunction : RelOptUtil.conjunctions(condition)) {
+            try {
+                conjunctions.add(shuttle.apply(conjunction));
+            }
+            catch (ControlFlowException ignore) {
+                // No-op
+            }
+        }
+
+        return RexUtil.composeConjunction(builder(getCluster()), conjunctions, true);
     }
 }

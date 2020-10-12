@@ -16,58 +16,57 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ControlFlowException;
-import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
-
-import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.builder;
-import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.simplifier;
 
 /**
  * Rule that pushes filter into the scan. This might be useful for index range scans.
  */
 public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableScan> extends RelOptRule {
     /** Instance. */
-    public static final FilterScanMergeRule<IgniteIndexScan> INDEX_SCAN =
-        new FilterScanMergeRule<IgniteIndexScan>(LogicalFilter.class, IgniteIndexScan.class, "FilterIndexScanMergeRule") {
+    public static final FilterScanMergeRule<IgniteLogicalIndexScan> INDEX_SCAN =
+        new FilterScanMergeRule<IgniteLogicalIndexScan>(LogicalFilter.class, IgniteLogicalIndexScan.class, "FilterIndexScanMergeRule") {
             /** {@inheritDoc} */
-            @Override protected IgniteIndexScan createNode(RelOptCluster cluster, IgniteIndexScan scan, RexNode cond) {
-                return new IgniteIndexScan(cluster, scan.getTraitSet(), scan.getTable(), scan.indexName(),
+            @Override protected IgniteLogicalIndexScan createNode(RelOptCluster cluster, IgniteLogicalIndexScan scan, RexNode cond) {
+                return IgniteLogicalIndexScan.create(cluster, scan.getTraitSet(), scan.getTable(), scan.indexName(),
                     scan.projects(), cond, scan.requiredColunms());
             }
         };
 
     /** Instance. */
-    public static final FilterScanMergeRule<IgniteTableScan> TABLE_SCAN =
-        new FilterScanMergeRule<IgniteTableScan>(LogicalFilter.class, IgniteTableScan.class, "FilterTableScanMergeRule") {
+    public static final FilterScanMergeRule<IgniteLogicalTableScan> TABLE_SCAN =
+        new FilterScanMergeRule<IgniteLogicalTableScan>(LogicalFilter.class, IgniteLogicalTableScan.class, "FilterTableScanMergeRule") {
             /** {@inheritDoc} */
-            @Override protected IgniteTableScan createNode(RelOptCluster cluster, IgniteTableScan scan, RexNode cond) {
-                return new IgniteTableScan(cluster, scan.getTraitSet(), scan.getTable(), scan.projects(), cond, scan.requiredColunms());
+            @Override protected IgniteLogicalTableScan createNode(RelOptCluster cluster, IgniteLogicalTableScan scan, RexNode cond) {
+                return IgniteLogicalTableScan.create(cluster, scan.getTraitSet(), scan.getTable(), scan.projects(),
+                    cond, scan.requiredColunms());
             }
         };
 
@@ -90,79 +89,84 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         T scan = call.rel(1);
 
         RelOptCluster cluster = scan.getCluster();
+        RexBuilder builder = RexUtils.builder(cluster);
         RelMetadataQuery mq = call.getMetadataQuery();
 
-        RexNode cond = filter.getCondition();
+        RexNode condition = filter.getCondition();
+        RexNode remaining = null;
 
         if (scan.projects() != null) {
-            IgniteTypeFactory typeFactory = Commons.context(scan).typeFactory();
+            IgniteTypeFactory typeFactory = Commons.typeFactory(scan);
 
             IgniteTable tbl = scan.getTable().unwrap(IgniteTable.class);
 
             RelDataType cols = tbl.getRowType(typeFactory, scan.requiredColunms());
 
-            Mappings.TargetMapping permutation = permutation(scan.projects(), cols.getFieldCount());
+            Mappings.TargetMapping permutation = RexUtils.permutation(scan.projects(), cols, true);
 
-            try {
-                cond = new RexShuttle() {
-                    @Override public RexNode visitLocalRef(RexLocalRef ref) {
-                        int targetRef = permutation.getTargetOpt(ref.getIndex());
+            List<RexNode> conjunctions = RelOptUtil.conjunctions(condition);
 
-                        if (targetRef == -1)
-                            throw new ControlFlowException();
+            List<RexNode> condition0 = new ArrayList<>(conjunctions.size());
+            List<RexNode> remaining0 = new ArrayList<>(conjunctions.size());
 
-                        return new RexLocalRef(targetRef, ref.getType());
-                    }
-                }.apply(cond);
+            RexShuttle shuttle = new RexShuttle() {
+                @Override public RexNode visitInputRef(RexInputRef ref) {
+                    int targetRef = permutation.getTargetOpt(ref.getIndex());
+                    if (targetRef == -1)
+                        throw new ControlFlowException();
+                    return new RexInputRef(targetRef, ref.getType());
+                }
+            };
+
+            for (RexNode cond0 : conjunctions) {
+                try {
+                    condition0.add(shuttle.apply(cond0));
+                }
+                catch (ControlFlowException e) {
+                    remaining0.add(cond0);
+                }
             }
-            catch (ControlFlowException e) {
-                return;
-            }
+
+            condition = RexUtil.composeConjunction(builder, condition0, false);
+            remaining = RexUtil.composeConjunction(builder, remaining0, true);
         }
 
-        RexSimplify simplifier = simplifier(cluster);
+        RexSimplify simplifier = RexUtils.simplifier(cluster);
 
         // Let's remove from the condition common with the scan filter parts.
-        cond = simplifier
+        condition = simplifier
             .withPredicates(mq.getPulledUpPredicates(scan))
-            .simplifyUnknownAsFalse(cond);
+            .simplifyUnknownAsFalse(condition);
 
         // We need to replace RexInputRef with RexLocalRef because TableScan doesn't have inputs.
-        cond = cond.accept(new InputRefReplacer());
+        condition = RexUtils.replaceInputRefs(condition);
 
         // Combine the condition with the scan filter.
-        cond = RexUtil.composeConjunction(builder(cluster), F.asList(cond, scan.condition()));
+        condition = RexUtil.composeConjunction(builder, F.asList(condition, scan.condition()));
 
         // Final simplification. We need several phases because simplifier sometimes
         // (see RexSimplify.simplifyGenericNode) leaves UNKNOWN nodes that can be
         // eliminated on next simplify attempt. We limit attempts count not to break
         // planning performance on complex condition.
         Set<RexNode> nodes = new HashSet<>();
-        while (nodes.add(cond) && nodes.size() < 3)
-            cond = simplifier.simplifyUnknownAsFalse(cond);
+        while (nodes.add(condition) && nodes.size() < 3)
+            condition = simplifier.simplifyUnknownAsFalse(condition);
 
-        call.transformTo(createNode(cluster, scan, cond));
+        RelNode res = createNode(cluster, scan, condition);
+
+        if (res == null)
+            return;
+
+        if (remaining != null) {
+            res = relBuilderFactory.create(cluster, null)
+                .push(res)
+                .filter(remaining)
+                .build();
+        }
+
+        call.transformTo(res);
     }
 
     /** */
     protected abstract T createNode(RelOptCluster cluster, T scan, RexNode cond);
-
-    /** Visitor for replacing input refs to local refs. We need it for proper plan serialization. */
-    private static class InputRefReplacer extends RexShuttle {
-        @Override public RexNode visitInputRef(RexInputRef inputRef) {
-            return new RexLocalRef(inputRef.getIndex(), inputRef.getType());
-        }
-    }
-
-    /** */
-    private static Mappings.TargetMapping permutation(List<RexNode> nodes, int totalSize) {
-        final Mappings.TargetMapping mapping =
-            Mappings.create(MappingType.PARTIAL_FUNCTION, nodes.size(), totalSize);
-
-        for (Ord<RexNode> node : Ord.zip(nodes)) {
-            if (node.e instanceof RexLocalRef)
-                mapping.set(node.i, ((RexLocalRef) node.e).getIndex());
-        }
-        return mapping;
-    }
 }

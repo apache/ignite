@@ -49,61 +49,19 @@ public abstract class QueryChecker {
      * @param tblName Table name.
      * @return Matcher.
      */
-    public static Matcher<String> containsScan(String schema, String tblName) {
+    public static Matcher<String> containsTableScan(String schema, String tblName) {
         return containsSubPlan("IgniteTableScan(table=[[" + schema + ", " + tblName + "]]");
     }
 
     /**
-     * Ignite table scan with projects matcher.
+     * Ignite index scan matcher.
      *
      * @param schema  Schema name.
      * @param tblName Table name.
      * @return Matcher.
      */
-    public static Matcher<String> containsAnyProject(String schema, String tblName) {
-        return containsSubPlan("IgniteTableScan(table=[[" + schema + ", " + tblName + "]], " + "requiredColunms=");
-    }
-
-    /**
-     * Ignite table scan with projects unmatcher.
-     *
-     * @param schema  Schema name.
-     * @param tblName Table name.
-     * @return Matcher.
-     */
-    public static Matcher<String> notContainsProject(String schema, String tblName) {
-        return CoreMatchers.not(containsSubPlan("IgniteTableScan(table=[[" + schema + ", " +
-            tblName + "]], " + "requiredColunms="));
-    }
-
-    /**
-     * Ignite table scan with projects unmatcher.
-     *
-     * @param schema  Schema name.
-     * @param tblName Table name.
-     * @return Matcher.
-     */
-    public static Matcher<String> containsProject(String schema, String tblName, int... requiredColunms) {
-        return matches(".*IgniteTableScan\\(table=\\[\\[" + schema + ", " +
-            tblName + "\\]\\], " + "requiredColunms=\\[\\{" +
-            Arrays.toString(requiredColunms)
-                .replaceAll("\\[", "")
-                .replaceAll("]", "") + "\\}\\]\\).*");
-    }
-
-    /**
-     * Ignite table scan with projects unmatcher.
-     *
-     * @param schema  Schema name.
-     * @param tblName Table name.
-     * @return Matcher.
-     */
-    public static Matcher<String> containsOneProject(String schema, String tblName, int... requiredColunms) {
-        return matchesOnce(".*IgniteTableScan\\(table=\\[\\[" + schema + ", " +
-            tblName + "\\]\\], " + "requiredColunms=\\[\\{" +
-            Arrays.toString(requiredColunms)
-                .replaceAll("\\[", "")
-                .replaceAll("]", "") + "\\}\\]\\).*");
+    public static Matcher<String> containsIndexScan(String schema, String tblName) {
+        return containsSubPlan("IgniteIndexScan(table=[[" + schema + ", " + tblName + "]]");
     }
 
     /**
@@ -114,8 +72,63 @@ public abstract class QueryChecker {
      * @param idxName Index name.
      * @return Matcher.
      */
-    public static Matcher<String> containsScan(String schema, String tblName, String idxName) {
+    public static Matcher<String> containsIndexScan(String schema, String tblName, String idxName) {
         return containsSubPlan("IgniteIndexScan(table=[[" + schema + ", " + tblName + "]], index=[" + idxName + ']');
+    }
+
+    /**
+     * Ignite table|index scan with projects matcher.
+     *
+     * @param schema  Schema name.
+     * @param tblName Table name.
+     * @return Matcher.
+     */
+    public static Matcher<String> containsAnyProject(String schema, String tblName) {
+        return containsSubPlan("Scan(table=[[" + schema + ", " + tblName + "]], " + "requiredColunms=");
+    }
+
+    /**
+     * Ignite table|index scan with projects unmatcher.
+     *
+     * @param schema  Schema name.
+     * @param tblName Table name.
+     * @return Matcher.
+     */
+    public static Matcher<String> notContainsProject(String schema, String tblName) {
+        return CoreMatchers.not(containsSubPlan("Scan(table=[[" + schema + ", " +
+            tblName + "]], " + "requiredColunms="));
+    }
+
+    /**
+     * Ignite table|index scan with projects matcher.
+     *
+     * @param schema  Schema name.
+     * @param tblName Table name.
+     * @param requiredColunms columns in projection.
+     * @return Matcher.
+     */
+    public static Matcher<String> containsProject(String schema, String tblName, int... requiredColunms) {
+        return matches(".*Ignite(Table|Index)Scan\\(table=\\[\\[" + schema + ", " +
+            tblName + "\\]\\], " + "requiredColunms=\\[\\{" +
+            Arrays.toString(requiredColunms)
+                .replaceAll("\\[", "")
+                .replaceAll("]", "") + "\\}\\]\\).*");
+    }
+
+    /**
+     * Ignite table|index scan with only one project matcher.
+     *
+     * @param schema  Schema name.
+     * @param tblName Table name.
+     * @param requiredColunms columns in projection.
+     * @return Matcher.
+     */
+    public static Matcher<String> containsOneProject(String schema, String tblName, int... requiredColunms) {
+        return matchesOnce(".*Ignite(Table|Index)Scan\\(table=\\[\\[" + schema + ", " +
+            tblName + "\\]\\], " + "requiredColunms=\\[\\{" +
+            Arrays.toString(requiredColunms)
+                .replaceAll("\\[", "")
+                .replaceAll("]", "") + "\\}\\]\\).*");
     }
 
     /**
@@ -145,7 +158,7 @@ public abstract class QueryChecker {
         };
     }
 
-    /** */
+    /** Matches only one occurance. */
     public static Matcher<String> matchesOnce(final String substring) {
         return new SubstringMatcher(substring) {
             /** {@inheritDoc} */
@@ -183,7 +196,7 @@ public abstract class QueryChecker {
      */
     public static Matcher<String> containsAnyScan(final String schema, final String tblName, String... idxNames) {
         return CoreMatchers.anyOf(
-            Arrays.stream(idxNames).map(idx -> containsScan(schema, tblName, idx)).collect(Collectors.toList()));
+            Arrays.stream(idxNames).map(idx -> containsIndexScan(schema, tblName, idx)).collect(Collectors.toList()));
     }
 
     /** */

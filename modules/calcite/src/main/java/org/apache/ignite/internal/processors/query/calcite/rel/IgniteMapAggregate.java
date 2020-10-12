@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
@@ -32,6 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumula
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.random;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
@@ -61,7 +61,7 @@ public class IgniteMapAggregate extends Aggregate implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override protected RelDataType deriveRowType() {
-        return rowType(getCluster().getTypeFactory());
+        return rowType(Commons.typeFactory(getCluster()));
     }
 
     /**

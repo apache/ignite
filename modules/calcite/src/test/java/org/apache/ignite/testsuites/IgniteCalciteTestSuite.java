@@ -46,8 +46,7 @@ import org.junit.runners.Suite;
     JdbcQueryTest.class,
     CalciteBasicSecondaryIndexIntegrationTest.class,
     CancelTest.class,
-    QueryCheckerTest.class,
-    ProjectScanMergeRuleTest.class
+    QueryCheckerTest.class
 })
 public class IgniteCalciteTestSuite {
 }

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.Objects;
-
 import com.google.common.collect.Ordering;
 import org.apache.calcite.plan.RelMultipleTrait;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -144,7 +143,7 @@ public final class DistributionTrait implements IgniteDistribution {
             return this;
 
         if (mapping.getTargetCount() < keys.size())
-            IgniteDistributions.random();
+            return IgniteDistributions.random();
 
         int[] map = new int[mapping.getSourceCount()];
         int[] res = new int[keys.size()];

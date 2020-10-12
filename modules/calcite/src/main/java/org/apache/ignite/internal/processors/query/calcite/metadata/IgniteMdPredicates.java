@@ -23,13 +23,11 @@ import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdPredicates;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /** */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
@@ -42,18 +40,11 @@ public class IgniteMdPredicates extends RelMdPredicates {
      * See {@link RelMdPredicates#getPredicates(org.apache.calcite.rel.RelNode, org.apache.calcite.rel.metadata.RelMetadataQuery)}
      */
     public RelOptPredicateList getPredicates(ProjectableFilterableTableScan rel, RelMetadataQuery mq) {
-        if (rel.condition() == null)
+        RexNode predicate = rel.pushUpPredicate();
+        if (predicate == null)
             return RelOptPredicateList.EMPTY;
 
-        return RelOptPredicateList.of(rel.getCluster().getRexBuilder(),
-                    RexUtil.retainDeterministic(
-                        RelOptUtil.conjunctions(rel.condition().accept(new LocalRefReplacer()))));
-    }
-
-    /** Visitor for replacing scan local refs to input refs. */
-    private static class LocalRefReplacer extends RexShuttle {
-        @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
-            return new RexInputRef(inputRef.getIndex(), inputRef.getType());
-        }
+        return RelOptPredicateList.of(RexUtils.builder(rel),
+            RexUtil.retainDeterministic(RelOptUtil.conjunctions(predicate)));
     }
 }

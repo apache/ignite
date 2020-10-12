@@ -30,14 +30,18 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.apache.calcite.config.CalciteSystemProperty;
+import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
+import org.apache.calcite.util.mapping.Mapping;
+import org.apache.calcite.util.mapping.MappingType;
+import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
@@ -45,6 +49,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -128,6 +133,20 @@ public final class Commons {
             list.add(mapFun.apply(t));
 
         return list;
+    }
+
+    /**
+     * Extracts type factory.
+     */
+    public static IgniteTypeFactory typeFactory(RelNode rel) {
+        return typeFactory(rel.getCluster());
+    }
+
+    /**
+     * Extracts type factory.
+     */
+    public static IgniteTypeFactory typeFactory(RelOptCluster cluster) {
+        return (IgniteTypeFactory)cluster.getTypeFactory();
     }
 
     /**
@@ -294,5 +313,21 @@ public final class Commons {
     /** */
     public static <T> Predicate<T> negate(Predicate<T> p) {
         return p.negate();
+    }
+
+    /** */
+    public static Mappings.TargetMapping mapping(ImmutableBitSet bitSet, int sourceSize) {
+        Mapping mapping = Mappings.create(MappingType.PARTIAL_FUNCTION, sourceSize, bitSet.cardinality());
+        for (Ord<Integer> ord : Ord.zip(bitSet))
+            mapping.set(ord.e, ord.i);
+        return mapping;
+    }
+
+    /** */
+    public static Mappings.TargetMapping inverceMapping(ImmutableBitSet bitSet, int sourceSize) {
+        Mapping mapping = Mappings.create(MappingType.INVERSE_FUNCTION, sourceSize, bitSet.cardinality());
+        for (Ord<Integer> ord : Ord.zip(bitSet))
+            mapping.set(ord.e, ord.i);
+        return mapping;
     }
 }

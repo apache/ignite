@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
@@ -34,12 +32,12 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -59,7 +57,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
 public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
     /** {@inheritDoc} */
     public IgniteAggregate(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-        super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
+        super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
@@ -130,8 +128,8 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
                 ImmutableIntList keys = distribution.getKeys();
 
                 if (isSimple(this) && groupSet.cardinality() == keys.size()) {
-                    Mappings.TargetMapping mapping = groupMapping(
-                        getInput().getRowType().getFieldCount(), groupSet);
+                    Mappings.TargetMapping mapping = Commons.inverceMapping(
+                        groupSet, getInput().getRowType().getFieldCount());
 
                     List<Integer> srcKeys = new ArrayList<>(keys.size());
 
@@ -211,8 +209,8 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
                     ImmutableIntList keys = distribution.getKeys();
 
                     if (groupSet.cardinality() == keys.size()) {
-                        Mappings.TargetMapping mapping = groupMapping(
-                            getInput().getRowType().getFieldCount(), groupSet);
+                        Mappings.TargetMapping mapping = Commons.inverceMapping(
+                            groupSet, getInput().getRowType().getFieldCount());
 
                         IgniteDistribution outDistr = distribution.apply(mapping);
 
@@ -281,17 +279,5 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
     private boolean isMapReduce(RelTraitSet out, RelTraitSet in) {
         return TraitUtils.distribution(out).satisfies(single())
             && TraitUtils.distribution(in).satisfies(random());
-    }
-
-    /** */
-    @NotNull private static Mappings.TargetMapping groupMapping(int inputFieldCount, ImmutableBitSet groupSet) {
-        Mappings.TargetMapping mapping =
-            Mappings.create(MappingType.INVERSE_FUNCTION,
-                inputFieldCount, groupSet.cardinality());
-
-        for (Ord<Integer> group : Ord.zip(groupSet))
-            mapping.set(group.e, group.i);
-
-        return mapping;
     }
 }

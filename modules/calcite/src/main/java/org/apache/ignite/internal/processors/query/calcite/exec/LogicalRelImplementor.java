@@ -223,8 +223,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
         ImmutableBitSet requiredColunms = rel.requiredColunms();
-        List<RexNode> lowerCond = rel.lowerIndexCondition();
-        List<RexNode> upperCond = rel.upperIndexCondition();
+        List<RexNode> lowerCond = rel.lowerBound();
+        List<RexNode> upperCond = rel.upperBound();
 
         RelDataType cols = tbl.getRowType(typeFactory, requiredColunms);
 
