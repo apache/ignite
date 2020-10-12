@@ -20,9 +20,7 @@ package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
 /**
  * Base interface.
  */
-
 public interface Action {
-
     /* Target action. **/
     public long singleAction();
 

@@ -173,9 +173,9 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
 
     /** Publishing the final report in the log.  */
     private void calculateFinalReport() {
-        StringBuilder builder = new StringBuilder();
         ArrayList<Report> reports = new ArrayList(Arrays.asList(queue.stream().toArray()));
 
+        StringBuilder builder = new StringBuilder();
         builder.append("\n<report start>\n");
         builder.append("<meansured agent-name>" + this.nodeId + "</meansured agent-name>" + "\n");
         builder.append("<action name>" + actionName + "</action name>" + "\n");

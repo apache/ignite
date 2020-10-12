@@ -30,9 +30,7 @@ import org.apache.log4j.Logger;
 /**
  * Java client. Tx put operation.
  */
-
 public class SimpleTransactionGenerator extends ActionNode {
-
     /** Target cache. */
     private IgniteCache cache;
 
@@ -68,11 +66,10 @@ public class SimpleTransactionGenerator extends ActionNode {
      * @param cacheName - name of target cache.
      * */
     private CacheConfiguration prepareCacheConfiguration(String cacheName) {
-        CacheConfiguration<?,?> cfg = new CacheConfiguration();
-        cfg.setBackups(2);
-        cfg.setName(cacheName);
-        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        return cfg;
+        return new CacheConfiguration()
+            .setBackups(2)
+            .setName(cacheName)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 
 }
