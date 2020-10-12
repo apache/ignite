@@ -763,8 +763,13 @@ class ClientImpl extends TcpDiscoveryImpl {
                         marshalCredentials(node);
                     }
 
-                    if (discoveryData == null)
-                        discoveryData = spi.collectExchangeData(new DiscoveryDataPacket(getLocalNodeId()));
+                    if (discoveryData == null) {
+                        DiscoveryDataPacket discoveryDataPacket = new DiscoveryDataPacket(getLocalNodeId());
+
+                        discoveryDataPacket.joiningNodeClient(true);
+
+                        discoveryData = spi.collectExchangeData(discoveryDataPacket);
+                    }
 
                     TcpDiscoveryJoinRequestMessage joinReqMsg = new TcpDiscoveryJoinRequestMessage(node, discoveryData);
 

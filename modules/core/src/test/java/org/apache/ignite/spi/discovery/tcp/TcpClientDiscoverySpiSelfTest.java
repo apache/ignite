@@ -24,8 +24,10 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -65,6 +67,8 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -2168,6 +2172,22 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Ensures that {@link DiscoveryDataBag#isJoiningNodeClient()} returns a valid value when joining a client node.
+     *
+     * @throws Exception In case of error.
+     */
+    @Test
+    public void testJoiningNodeClientFlag() throws Exception {
+        startServerNodes(1);
+        startClientNodes(1);
+
+        Map<UUID, Boolean> joiningNodesClientFlag =
+            ((TestTcpDiscoverySpi)grid("client-0").context().config().getDiscoverySpi()).joiningNodesClientFlag;
+
+        assertTrue(joiningNodesClientFlag.get(grid("client-0").localNode().id()));
+    }
+
+    /**
      * @param ignite Ignite.
      * @throws Exception If failed.
      */
@@ -2499,6 +2519,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         /** */
         private volatile boolean skipNodeAdded;
 
+        /** Mapping of ignite node ID to databag joining flag. */
+        private final Map<UUID, Boolean> joiningNodesClientFlag = new ConcurrentHashMap<>();
+
         /**
          * @param lock Lock.
          */
@@ -2562,6 +2585,21 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
                 mux.notifyAll();
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setDataExchange(DiscoverySpiDataExchange delegate) {
+            super.setDataExchange(new DiscoverySpiDataExchange() {
+                @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
+                    joiningNodesClientFlag.putIfAbsent(dataBag.joiningNodeId(), dataBag.isJoiningNodeClient());
+
+                    return delegate.collect(dataBag);
+                }
+
+                @Override public void onExchange(DiscoveryDataBag dataBag) {
+                    delegate.onExchange(dataBag);
+                }
+            });
         }
 
         /** {@inheritDoc} */
