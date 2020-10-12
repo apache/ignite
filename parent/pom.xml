@@ -988,7 +988,7 @@
                                         <exclude>packaging/**</exclude>
                                         <!-- Ignite Documentation-->
                                         <exclude>docs/_site/**</exclude>
-                                        <exclude>docs/assets/**</exclude>
+                                        <exclude>docs/assets/images/**</exclude>
                                         <exclude>docs/Gemfile.lock</exclude>
                                         <exclude>docs/.jekyll-cache/**</exclude>
                                         <exclude>docs/_docs/images/**</exclude>
