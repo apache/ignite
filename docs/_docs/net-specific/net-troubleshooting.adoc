@@ -148,7 +148,7 @@ Therefore, it is possible that Java overwrites .NET handler, or vice versa,
 making it impossible to clean up child processes on one of the platforms,
 resulting in link:https://en.wikipedia.org/wiki/Parent_process[zombie processes].
 
-*GridGain uses child processes on Java side in one particular case: when Persistence is enabled and `direct-io` module is used.*
+*Ignite uses child processes on Java side in one particular case: when Persistence is enabled and `direct-io` module is used.*
 In this case .NET `System.Diagnostics.Process` API should not be used.
 
 ==== Workaround
