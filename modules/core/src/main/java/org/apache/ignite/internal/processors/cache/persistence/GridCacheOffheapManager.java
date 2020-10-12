@@ -93,7 +93,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.Partiti
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIndexMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIOV2;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
@@ -1060,8 +1060,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             try {
                 long metastoreRoot, reuseListRoot;
 
-                if (PageIO.getType(pageAddr) != PageIO.T_INDEX_META && PageIO.getType(pageAddr) != PageIO.T_META) {
-                    PageIndexMetaIO pageIO = PageIndexMetaIO.VERSIONS.latest();
+                if (PageIO.getType(pageAddr) != PageIO.T_META) {
+                    PageMetaIOV2 pageIO = (PageMetaIOV2)PageMetaIOV2.VERSIONS.latest();
 
                     pageIO.initNewPage(pageAddr, metaId, pageMem.realPageSize(grpId));
 
@@ -1072,7 +1072,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     pageIO.setReuseListRoot(pageAddr, reuseListRoot);
 
                     if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaId, metaPage, wal, null)) {
-                        assert pageIO.getType() == PageIO.T_INDEX_META;
+                        assert pageIO.getType() == PageIO.T_META;
 
                         wal.log(new MetaPageInitRecord(
                             grpId,
@@ -1087,19 +1087,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     markDirty = true;
                 }
                 else {
-                    // Upgrade meta page.
-                    if (PageIO.getType(pageAddr) == PageIO.T_META) {
-                        PageIO.setType(pageAddr, PageIO.T_INDEX_META);
-
-                        PageIndexMetaIO pageIO = PageIO.getPageIO(pageAddr);
-
-                        pageIO.setEncryptedPageIndex(pageAddr, 0);
-                        pageIO.setEncryptedPageCount(pageAddr, 0);
+                    if (PageMetaIO.getVersion(pageAddr) < 2) {
+                        ((PageMetaIOV2)PageMetaIOV2.VERSIONS.latest()).upgradePage(pageAddr);
 
                         markDirty = true;
                     }
 
-                    PageIndexMetaIO pageIO = PageIO.getPageIO(pageAddr);
+                    PageMetaIOV2 pageIO = PageIO.getPageIO(pageAddr);
 
                     metastoreRoot = pageIO.getTreeRoot(pageAddr);
                     reuseListRoot = pageIO.getReuseListRoot(pageAddr);
@@ -1331,7 +1325,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             long metaPageAddr = pageMem.writeLock(grpId, metaPageId, metaPage);
 
             try {
-                PageIndexMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
+                PageMetaIOV2 metaIo = PageMetaIO.getPageIO(metaPageAddr);
 
                 int encryptIdx = ReencryptStateUtils.pageIndex(state);
                 int encryptCnt = ReencryptStateUtils.pageCount(state);

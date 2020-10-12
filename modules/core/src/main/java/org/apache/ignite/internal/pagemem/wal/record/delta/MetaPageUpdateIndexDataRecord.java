@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIndexMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIOV2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -52,11 +52,10 @@ public class MetaPageUpdateIndexDataRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        // Upgrade meta page.
-        if (PageIO.getType(pageAddr) == PageIO.T_META)
-            PageIO.setType(pageAddr, PageIO.T_INDEX_META);
+        if (PageIO.getVersion(pageAddr) < 2)
+            ((PageMetaIOV2)PageMetaIOV2.VERSIONS.latest()).upgradePage(pageAddr);
 
-        PageIndexMetaIO io = PageIndexMetaIO.VERSIONS.forPage(pageAddr);
+        PageMetaIOV2 io = (PageMetaIOV2)PageMetaIOV2.VERSIONS.forPage(pageAddr);
 
         io.setEncryptedPageIndex(pageAddr, encryptPageIdx);
         io.setEncryptedPageCount(pageAddr, encryptPageCnt);

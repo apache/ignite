@@ -22,7 +22,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 /**
  * IO for index partition metadata page.
  */
-public class PageIndexMetaIO extends PageMetaIO {
+public class PageMetaIOV2 extends PageMetaIO {
     /** Total pages for reencryption offset. */
     private static final int ENCRYPT_PAGE_IDX_OFF = END_OF_PAGE_META;
 
@@ -32,14 +32,9 @@ public class PageIndexMetaIO extends PageMetaIO {
     /**
      * @param ver Version.
      */
-    public PageIndexMetaIO(int ver) {
-        super(T_INDEX_META, ver);
+    public PageMetaIOV2(int ver) {
+        super(ver);
     }
-
-    /** */
-    public static final IOVersions<PageIndexMetaIO> VERSIONS = new IOVersions<>(
-        new PageIndexMetaIO(1)
-    );
 
     /**
      * @param pageAddr Page address.
@@ -93,5 +88,19 @@ public class PageIndexMetaIO extends PageMetaIO {
 
         setEncryptedPageCount(pageAddr, 0);
         setEncryptedPageIndex(pageAddr, 0);
+    }
+
+    /**
+     * Upgrade page to PageMetaIOV2.
+     *
+     * @param pageAddr Page address.
+     */
+    public void upgradePage(long pageAddr) {
+        assert PageIO.getType(pageAddr) == getType();
+
+        PageIO.setVersion(pageAddr, getVersion());
+
+        setEncryptedPageIndex(pageAddr, 0);
+        setEncryptedPageCount(pageAddr, 0);
     }
 }
