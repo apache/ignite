@@ -1,0 +1,208 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Cluster Snapshots
+
+== Overview
+
+Ignite provides an ability to create full cluster snapshots for deployments using
+link:persistence/native-persistence[Ignite Persistence]. An Ignite snapshot includes a consistent cluster-wide copy of
+all data records persisted on disk and some other files needed for a restore procedure.
+
+The snapshot structure is similar to the layout of the
+link:persistence/native-persistence#configuring-persistent-storage-directory[Ignite Persistence storage directory],
+with several exceptions. Let's take this snapshot as an example to review the structure:
+[source,shell]
+----
+work
+└── snapshots
+    └── backup23012020
+        └── db
+            ├── binary_meta
+            │         ├── node1
+            │         ├── node2
+            │         └── node3
+            ├── marshaller
+            │         ├── node1
+            │         ├── node2
+            │         └── node3
+            ├── node1
+            │    └── my-sample-cache
+            │        ├── cache_data.dat
+            │        ├── part-3.bin
+            │        ├── part-4.bin
+            │        └── part-6.bin
+            ├── node2
+            │    └── my-sample-cache
+            │        ├── cache_data.dat
+            │        ├── part-1.bin
+            │        ├── part-5.bin
+            │        └── part-7.bin
+            └── node3
+                └── my-sample-cache
+                    ├── cache_data.dat
+                    ├── part-0.bin
+                    └── part-2.bin
+----
+* The snapshot is located under the `work\snapshots` directory and named as `backup23012020` where `work` is Ignite's work
+directory.
+* The snapshot is created for a 3-node cluster with all the nodes running on the same machine. In this example,
+the nodes are named as `node1`, `node2`, and `node3`, while in practice, the names are equal to nodes'
+link:https://cwiki.apache.org/confluence/display/IGNITE/Ignite+Persistent+Store+-+under+the+hood#IgnitePersistentStoreunderthehood-SubfoldersGeneration[consistent IDs].
+* The snapshot keeps a copy of the `my-sample-cache` cache.
+* The `db` folder keeps a copy of data records in `part-N.bin` and `cache_data.dat` files. Write-ahead and checkpointing
+are not added into the snapshot as long as those are not required for the current restore procedure.
+* The `binary_meta` and `marshaller` directories store metadata and marshaller-specific information.
+
+[NOTE]
+====
+[discrete]
+=== Usually Snapshot is Spread Across the Cluster
+
+The previous example shows the snapshot created for the cluster running on the same physical machine. Thus, the whole
+snapshot is located in a single place. While in practice, all the nodes will be running on different machines having the
+snapshot data spread across the cluster. Each node keeps a segment of the snapshot with the data belonging to this particular node.
+The link:persistence/snapshots#restoring-from-snapshot[restore procedure] explains how to tether together all the segments during recovery.
+====
+
+== Configuring Snapshot Directory
+
+By default, a segment of the snapshot is stored in the work directory of a respective Ignite node and uses the same storage
+media where Ignite Persistence keeps data, index, WAL, and other files. Since the snapshot can consume as much space as
+already taken by the persistence files and can affect your applications' performance by sharing the disk I/O with the
+Ignite Persistence routines, it's suggested to store the snapshot and persistence files on different media.
+
+You can avoid this interference between Ignite Native persistence and snapshotting
+by either changing link:persistence/native-persistence#configuring-persistent-storage-directory[storage directories of the persistence files]
+or overriding the default snapshots' location as shown below:
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+include::code-snippets/xml/snapshots.xml[tags=ignite-config;!discovery, indent=0]
+----
+tab:Java[]
+[source, java]
+----
+include::{javaCodeDir}/Snapshots.java[tags=config, indent=0]
+----
+--
+
+== Creating Snapshot
+
+Ignite provides several APIs for the snapshot creation. Let's review all the options.
+
+=== Using Control Script
+
+Ignite ships the link:control-script[control script] that supports snapshots-related commands listed below:
+
+[source,shell]
+----
+#Create a cluster snapshot:
+control.(sh|bat) --snapshot create snapshot_name
+
+#Cancel a running snapshot:
+control.(sh|bat) --snapshot cancel snapshot_name
+
+#Kill a running snapshot:
+control.(sh|bat) --kill SNAPSHOT snapshot_name
+----
+
+=== Using JMX
+
+Use the `SnapshotMXBean` interface to perform the snapshot-specific procedures via JMX:
+
+[cols="1,1",opts="header"]
+|===
+|Method | Description
+|createSnapshot(String snpName) | Create a snapshot.
+|cancelSnapshot(String snpName) | Cancel a snapshot on the node initiated its creation.
+|===
+
+=== Using Java API
+
+Also, it's possible to create a snapshot programmatically in Java:
+
+[tabs]
+--
+tab:Java[]
+
+[source, java]
+----
+include::{javaCodeDir}/Snapshots.java[tags=create, indent=0]
+----
+--
+
+== Restoring From Snapshot
+
+Currently, the data restore procedure has to be performed manually. In a nutshell, you need to stop the cluster,
+replace persistence data and other files with the data from the snapshot, and restart the nodes.
+
+The detailed procedure looks as follows:
+
+. Stop the cluster you intend to restore
+. Remove all files from the checkpoint `$IGNITE_HOME/work/cp` directory
+. Do the following on each node. Clean the
+link:link:persistence/native-persistence#configuring-persistent-storage-directory[`db/{node_id}`] directory separately if
+it's not located under the Ignite `work` dir:
+    - Remove the files related to the `{nodeId}` from the `$IGNITE_HOME/work/db/binary_meta` directory
+    - Remove the files related to the `{nodeId}` from the `$IGNITE_HOME/work/db/marshaller` directory
+    - Remove the files and sub-directories related to the `{nodeId}` under your `$IGNITE_HOME/work/db` directory. Clean the
+    - Copy the files belonging to a node with the `{node_id}` from the snapshot into the `$IGNITE_HOME/work/` directory.
+If the `db/{node_id}` directory is not located under the Ignite `work` dir then you need to copy data files there.
+. Restart the cluster
+
+*Restore On Cluster of Different Topology*
+
+Sometimes you might want to create a snapshot of an N-node cluster and use it to restore on an M-node cluster. The table
+below explains what options are supported:
+
+[cols="1,1",opts="header"]
+|===
+|Condition | Description
+|N == M | The *recommended* case. Create and use the snapshot on clusters of a similar topology.
+|N < M | Start the first N nodes of the M-node cluster and apply the snapshot. Add the rest of the M-cluster nodes to
+the topology and wait while the data gets rebalanced and indexes are rebuilt.
+|N > M | Unsupported.
+|===
+
+== Consistency Guarantees
+
+All snapshots are fully consistent in terms of concurrent cluster-wide operations as well as ongoing changes with Ignite
+Persistence data, index, schema, binary metadata, marshaller and other files on nodes.
+
+The cluster-wide snapshot consistency is achieved by triggering the link:https://cwiki.apache.org/confluence/display/IGNITE/%28Partition+Map%29+Exchange+-+under+the+hood[Partition-Map-Exchange]
+procedure. By doing that, the cluster will eventually get to the point in time when all previously started transactions are completed, and new
+ones are paused. Once this happens, the cluster initiates the snapshot creation procedure. The PME procedure ensures
+that the snapshot includes primary and backup in a consistent state.
+
+The consistency between the Ignite Persistence files and their snapshot copies is achieved by copying the original
+files to the destination snapshot directory with tracking all concurrent ongoing changes. The tracking of the changes
+might require extra space on the Ignite Persistence storage media (up to the 1x size of the storage media).
+
+== Current Limitations
+
+The snapshot procedure has some limitations that you should be aware of before using the feature in your production environment:
+
+* Snapshotting of specific caches/tables is unsupported. You always create a full cluster snapshot.
+* Caches/tables that are not persisted in Ignite Persistence are not included into the snapshot.
+* Encrypted caches are not included in the snapshot.
+* You can have only one snapshotting operation running at a time.
+* The snapshot procedure is interrupted if a server node leaves the cluster.
+* Snapshot may be restored only at the same cluster topology with the same node IDs;
+* The automatic restore procedure is not available yet. You have to restore it manually.
+
+If any of these limitations prevent you from using Apache Ignite, then select alternate snapshotting implementations for
+Ignite provided by enterprise vendors.
