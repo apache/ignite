@@ -136,3 +136,26 @@ JVM runs in the same process as .NET, it overrides that handler, breaking .NET e
 
 The fix for this issue exists in .NET Core 3.0 (https://github.com/dotnet/coreclr/pull/25972[#25972, window=_blank].
 by setting the `COMPlus_EnableAlternateStackCheck` environment variable to `1`.
+
+=== Zombie processes on Linux
+
+On Linux, both .NET and Java install `SIGCHLD` handler to deal with child process termination.
+
+* Handlers are installed lazily (when a `Process` is first started)
+* Only one handler can exist at a time
+
+Therefore, it is possible that Java overwrites .NET handler, or vice versa,
+making it impossible to clean up child processes on one of the platforms,
+resulting in link:https://en.wikipedia.org/wiki/Parent_process[zombie processes].
+
+*Ignite uses child processes on Java side in one particular case: when Persistence is enabled and `direct-io` module is used.*
+In this case .NET `System.Diagnostics.Process` API should not be used.
+
+==== Workaround
+
+To work around the issue, make sure that child processes are created either only on Java side, or only on .NET side.
+
+For example, when `direct-io` is used, and .NET code requires starting a child process,
+move the process handling logic to Java side and invoke it with
+link:developers-guide/distributed-computing/distributed-computing[Compute] `ExecuteJavaTask` API.
+Alternatively, use Services API to call Java service from .NET.
