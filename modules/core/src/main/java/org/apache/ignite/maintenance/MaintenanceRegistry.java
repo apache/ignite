@@ -18,7 +18,6 @@
 package org.apache.ignite.maintenance;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -55,7 +54,7 @@ import org.jetbrains.annotations.Nullable;
  *             on startup checks if the task is registered (thus it should go to Maintenance Mode).
  *             If task is found component provides to {@link MaintenanceRegistry} its own implementation
  *             of {@link MaintenanceWorkflowCallback} interface
- *             via method {@link MaintenanceRegistry#registerWorkflowCallback(UUID, MaintenanceWorkflowCallback)}.
+ *             via method {@link MaintenanceRegistry#registerWorkflowCallback(String, MaintenanceWorkflowCallback)}.
  *         </li>
  *         <li>
  *             {@link MaintenanceWorkflowCallback} should provide {@link MaintenanceRegistry} with
@@ -66,7 +65,7 @@ import org.jetbrains.annotations.Nullable;
  *         </li>
  *         <li>
  *             When maintenance task is fixed, it should be removed from {@link MaintenanceRegistry}
- *             with call {@link MaintenanceRegistry#unregisterMaintenanceTask(UUID)}.
+ *             with call {@link MaintenanceRegistry#unregisterMaintenanceTask(String)}.
  *         </li>
  *     </ul>
  * </p>
@@ -104,44 +103,46 @@ public interface MaintenanceRegistry {
     /**
      * Deletes {@link MaintenanceTask} of given ID from maintenance registry.
      *
-     * @param maintenanceId {@link UUID} of {@link MaintenanceTask} to be deleted.
+     * @param maintenanceTaskName name of {@link MaintenanceTask} to be deleted.
      */
-    public void unregisterMaintenanceTask(UUID maintenanceId);
+    public void unregisterMaintenanceTask(String maintenanceTaskName);
 
     /**
-     * Returns active {@link MaintenanceTask} by its ID.
+     * Returns active {@link MaintenanceTask} by its name.
      * There are active tasks only when node entered Maintenance Mode.
      *
      * {@link MaintenanceTask} becomes active when node enters Maintenance Mode and doesn't resolve the task
      * during maintenance prepare phase.
      *
-     * @return {@link MaintenanceTask} object for given maintenance ID or null if no maintenance task was found.
+     * @param maintenanceTaskName Maintenance Task name.
+     *
+     * @return {@link MaintenanceTask} object for given name or null if no maintenance task was found.
      */
-    @Nullable public MaintenanceTask activeMaintenanceTask(UUID maitenanceId);
+    @Nullable public MaintenanceTask activeMaintenanceTask(String maintenanceTaskName);
 
     /**
-     * Registers {@link MaintenanceWorkflowCallback} for a {@link MaintenanceTask} with a given ID.
+     * Registers {@link MaintenanceWorkflowCallback} for a {@link MaintenanceTask} with a given name.
      *
      * Component registered {@link MaintenanceTask} automatically or by user request
      * is responsible for providing {@link MaintenanceRegistry} with an implementation of
      * {@link MaintenanceWorkflowCallback} where registry obtains {@link MaintenanceAction}s
      * to be executed for this task and does a preliminary check before starting maintenance.
      *
-     * @param maintenanceId UUID of {@link MaintenanceTask} this callback is registered for.
+     * @param maintenanceTaskName name of {@link MaintenanceTask} this callback is registered for.
      * @param cb {@link MaintenanceWorkflowCallback} interface used by MaintenanceRegistry to execute
      *                                              maintenance steps by workflow.
      */
-    public void registerWorkflowCallback(@NotNull UUID maintenanceId, @NotNull MaintenanceWorkflowCallback cb);
+    public void registerWorkflowCallback(@NotNull String maintenanceTaskName, @NotNull MaintenanceWorkflowCallback cb);
 
     /**
-     * All {@link MaintenanceAction}s provided by a component for {@link MaintenanceTask} with a given ID.
+     * All {@link MaintenanceAction}s provided by a component for {@link MaintenanceTask} with a given name.
      *
-     * @param maintenanceId {@link UUID} of Maintenance Task.
+     * @param maintenanceTaskName name of Maintenance Task.
      * @return {@link List} of all available {@link MaintenanceAction}s for given Maintenance Task.
      *
-     * @throws IgniteException if no Maintenance Tasks are registered for provided ID.
+     * @throws IgniteException if no Maintenance Tasks are registered for provided name.
      */
-    public List<MaintenanceAction> actionsForMaintenanceTask(UUID maintenanceId);
+    public List<MaintenanceAction> actionsForMaintenanceTask(String maintenanceTaskName);
 
     /**
      * Examine all components if they need to execute maintenance actions.

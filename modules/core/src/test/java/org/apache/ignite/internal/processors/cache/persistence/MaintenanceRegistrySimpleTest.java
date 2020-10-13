@@ -21,7 +21,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -117,7 +116,7 @@ public class MaintenanceRegistrySimpleTest {
      */
     @Test
     public void testMaintenanceTaskReplacement() throws IgniteCheckedException {
-        UUID id0 = UUID.randomUUID();
+        String name0 = "taskName0";
         String descr = "description";
         String oldParams = "oldParams";
         String newParams = "newParams";
@@ -128,15 +127,15 @@ public class MaintenanceRegistrySimpleTest {
 
         assertFalse(proc.isMaintenanceMode());
 
-        proc.registerMaintenanceTask(new MaintenanceTask(id0, descr, oldParams));
-        proc.registerMaintenanceTask(new MaintenanceTask(id0, descr, newParams));
+        proc.registerMaintenanceTask(new MaintenanceTask(name0, descr, oldParams));
+        proc.registerMaintenanceTask(new MaintenanceTask(name0, descr, newParams));
 
         proc.stop(false);
 
         proc.start();
 
         assertTrue(proc.isMaintenanceMode());
-        MaintenanceTask task = proc.activeMaintenanceTask(id0);
+        MaintenanceTask task = proc.activeMaintenanceTask(name0);
 
         assertNotNull(task);
         assertEquals(newParams, task.parameters());
@@ -149,9 +148,9 @@ public class MaintenanceRegistrySimpleTest {
      */
     @Test
     public void testDeleteMaintenanceTask() throws IgniteCheckedException {
-        UUID id = UUID.randomUUID();
+        String name = "name0";
 
-        MaintenanceTask task = new MaintenanceTask(id, "description", null);
+        MaintenanceTask task = new MaintenanceTask(name, "description", null);
 
         MaintenanceProcessor proc = new MaintenanceProcessor(initContext(true));
 
@@ -161,13 +160,13 @@ public class MaintenanceRegistrySimpleTest {
 
         assertFalse(proc.isMaintenanceMode());
 
-        proc.unregisterMaintenanceTask(id);
+        proc.unregisterMaintenanceTask(name);
 
         proc.stop(false);
 
         proc.start();
 
-        assertNull(proc.activeMaintenanceTask(id));
+        assertNull(proc.activeMaintenanceTask(name));
         assertFalse(proc.isMaintenanceMode());
     }
 
@@ -181,20 +180,20 @@ public class MaintenanceRegistrySimpleTest {
         String actionName0 = "action0";
         String actionName1 = "action1";
 
-        UUID id0 = UUID.randomUUID();
-        UUID id1 = UUID.randomUUID();
+        String name0 = "name0";
+        String name1 = "name1";
 
         MaintenanceProcessor proc = new MaintenanceProcessor(initContext(true));
 
         // attempt to register callback with actions with non-unique names throws exception
         GridTestUtils.assertThrows(log, () ->
-                proc.registerWorkflowCallback(id0, new SimpleMaintenanceCallback(Arrays.asList(new SimpleAction(actionName0), new SimpleAction(actionName0))
+                proc.registerWorkflowCallback(name0, new SimpleMaintenanceCallback(Arrays.asList(new SimpleAction(actionName0), new SimpleAction(actionName0))
                 )),
             IgniteException.class,
             "unique names: " + actionName0 + ", " + actionName0);
 
         // Attempt to register callback with actions with unique names finishes succesfully
-        proc.registerWorkflowCallback(id1, new SimpleMaintenanceCallback(Arrays.asList(new SimpleAction(actionName0), new SimpleAction(actionName1))));
+        proc.registerWorkflowCallback(name1, new SimpleMaintenanceCallback(Arrays.asList(new SimpleAction(actionName0), new SimpleAction(actionName1))));
     }
 
     /**
@@ -206,8 +205,8 @@ public class MaintenanceRegistrySimpleTest {
     public void testMultipleMaintenanceTasks() throws IgniteCheckedException {
         MaintenanceProcessor proc = new MaintenanceProcessor(initContext(true));
 
-        UUID task0Id = UUID.randomUUID();
-        UUID task1Id = UUID.randomUUID();
+        String task0Name = "name0";
+        String task1Name = "name1";
 
         String desc0 = "task0";
         String desc1 = "task1";
@@ -217,15 +216,15 @@ public class MaintenanceRegistrySimpleTest {
 
         proc.start();
 
-        proc.registerMaintenanceTask(new MaintenanceTask(task0Id, desc0, params0));
-        proc.registerMaintenanceTask(new MaintenanceTask(task1Id, desc1, params1));
+        proc.registerMaintenanceTask(new MaintenanceTask(task0Name, desc0, params0));
+        proc.registerMaintenanceTask(new MaintenanceTask(task1Name, desc1, params1));
 
         proc.stop(false);
 
         proc.start();
 
-        MaintenanceTask task0 = proc.activeMaintenanceTask(task0Id);
-        MaintenanceTask task1 = proc.activeMaintenanceTask(task1Id);
+        MaintenanceTask task0 = proc.activeMaintenanceTask(task0Name);
+        MaintenanceTask task1 = proc.activeMaintenanceTask(task1Name);
 
         assertNotNull(task0);
         assertNotNull(task1);
@@ -245,8 +244,8 @@ public class MaintenanceRegistrySimpleTest {
     public void testMaintenanceTasksWithoutParameters() throws IgniteCheckedException {
         MaintenanceProcessor proc = new MaintenanceProcessor(initContext(true));
 
-        UUID task0Id = UUID.randomUUID();
-        UUID task1Id = UUID.randomUUID();
+        String task0Name = "name0";
+        String task1Name = "name1";
 
         String desc0 = "task0";
         String desc1 = "task1";
@@ -256,16 +255,16 @@ public class MaintenanceRegistrySimpleTest {
         // call to initialize file for maintenance tasks
         proc.start();
 
-        proc.registerMaintenanceTask(new MaintenanceTask(task0Id, desc0, params0));
-        proc.registerMaintenanceTask(new MaintenanceTask(task1Id, desc1, null));
+        proc.registerMaintenanceTask(new MaintenanceTask(task0Name, desc0, params0));
+        proc.registerMaintenanceTask(new MaintenanceTask(task1Name, desc1, null));
 
         proc.stop(false);
 
         // call to force Maintenance Processor to read that file and fill internal collection of maintenance tasks
         proc.start();
 
-        MaintenanceTask task0 = proc.activeMaintenanceTask(task0Id);
-        MaintenanceTask task1 = proc.activeMaintenanceTask(task1Id);
+        MaintenanceTask task0 = proc.activeMaintenanceTask(task0Name);
+        MaintenanceTask task1 = proc.activeMaintenanceTask(task1Name);
 
         assertNotNull(task0);
         assertNotNull(task1);
@@ -283,11 +282,11 @@ public class MaintenanceRegistrySimpleTest {
     public void testMaintenanceActionNameSymbols() throws IgniteCheckedException {
         MaintenanceProcessor proc = new MaintenanceProcessor(initContext(true));
 
-        UUID id0 = UUID.randomUUID();
+        String name0 = "name0";
         String wrongName = "wrong*Name";
 
         GridTestUtils.assertThrows(log,
-            () -> proc.registerWorkflowCallback(id0, new SimpleMaintenanceCallback(Arrays.asList(new SimpleAction(wrongName)))),
+            () -> proc.registerWorkflowCallback(name0, new SimpleMaintenanceCallback(Arrays.asList(new SimpleAction(wrongName)))),
             IgniteException.class,
             "alphanumeric");
 

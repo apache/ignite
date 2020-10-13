@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -73,6 +72,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -737,11 +737,10 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             private Ignite ig;
 
             @Override public void run() {
-                UUID mntcActionId = UUID.fromString("607fcd84-03a0-4da5-b779-7bb082e5f6b7");
-
                 MaintenanceRegistry mntcRegistry = ((IgniteEx) ig).context().maintenanceRegistry();
 
-                List<MaintenanceAction> actions = mntcRegistry.actionsForMaintenanceTask(mntcActionId);
+                List<MaintenanceAction> actions = mntcRegistry
+                    .actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
                 Optional<MaintenanceAction> optional = actions
                     .stream()
@@ -752,7 +751,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                 else
                     optional.get().execute();
 
-                mntcRegistry.unregisterMaintenanceTask(mntcActionId);
+                mntcRegistry.unregisterMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
             }
         });
 

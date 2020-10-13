@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -81,7 +80,7 @@ public class MaintenanceFileStore {
     private final FileIOFactory ioFactory;
 
     /** */
-    private final Map<UUID, MaintenanceTask> tasksInSync = new ConcurrentHashMap<>();
+    private final Map<String, MaintenanceTask> tasksInSync = new ConcurrentHashMap<>();
 
     /** */
     private final IgniteLogger log;
@@ -167,21 +166,11 @@ public class MaintenanceFileStore {
                 continue;
             }
 
-            UUID id;
+            String name = subStrs[0];
 
-            try {
-                id = UUID.fromString(subStrs[0]);
-            }
-            catch (IllegalArgumentException e) {
-                log.info("Corrupted maintenance task found and will be skipped, " +
-                    "task id is unreadable: " + taskStr);
+            MaintenanceTask task = new MaintenanceTask(name, subStrs[1], partsNum == 3 ? subStrs[2] : null);
 
-                continue;
-            }
-
-            MaintenanceTask task = new MaintenanceTask(id, subStrs[1], partsNum == 3 ? subStrs[2] : null);
-
-            tasksInSync.put(id, task);
+            tasksInSync.put(name, task);
         }
     }
 
@@ -191,7 +180,7 @@ public class MaintenanceFileStore {
 
         String allTasks = tasksInSync.values().stream()
             .map(
-                task -> task.id().toString() +
+                task -> task.name() +
                     TASK_PARTS_SEPARATOR +
                     task.description() +
                     TASK_PARTS_SEPARATOR +
@@ -211,7 +200,7 @@ public class MaintenanceFileStore {
     }
 
     /** */
-    public Map<UUID, MaintenanceTask> getAllTasks() {
+    public Map<String, MaintenanceTask> getAllTasks() {
         if (inMemoryMode)
             return null;
 
@@ -223,17 +212,17 @@ public class MaintenanceFileStore {
         if (inMemoryMode)
             return;
 
-        tasksInSync.put(task.id(), task);
+        tasksInSync.put(task.name(), task);
 
         writeTasksToFile();
     }
 
     /** */
-    public void deleteMaintenanceTask(UUID taskId) throws IOException {
+    public void deleteMaintenanceTask(String taskName) throws IOException {
         if (inMemoryMode)
             return;
 
-        tasksInSync.remove(taskId);
+        tasksInSync.remove(taskName);
 
         writeTasksToFile();
     }

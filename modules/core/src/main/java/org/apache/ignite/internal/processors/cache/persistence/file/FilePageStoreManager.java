@@ -41,7 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -146,9 +145,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public static final PathMatcher TMP_FILE_MATCHER =
         FileSystems.getDefault().getPathMatcher("glob:**" + TMP_SUFFIX);
 
-    /** Unique identifier for corrupted data files maintenance records. */
-    public static final UUID CORRUPTED_DATA_FILES_MNTC_TASK_ID = UUID
-        .fromString("607fcd84-03a0-4da5-b779-7bb082e5f6b7");
+    /** Unique name for corrupted data files maintenance task. */
+    public static final String CORRUPTED_DATA_FILES_MNTC_TASK_NAME = "corrupted-cache-data-files-task";
 
     /** Listeners of configuration changes e.g. overwrite or remove actions. */
     private final List<BiConsumer<String, File>> lsnrs = new CopyOnWriteArrayList<>();
@@ -379,7 +377,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             try {
                 cctx.kernalContext().maintenanceRegistry()
                     .registerMaintenanceTask(
-                        new MaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID,
+                        new MaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
                             "Corrupted cache groups found",
                             groupsWithWalDisabled.stream().collect(Collectors.joining(File.separator)))
                     );

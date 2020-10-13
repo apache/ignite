@@ -174,7 +174,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointReadWriteLock.CHECKPOINT_LOCK_HOLD_COUNT;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_ID;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 
 /**
@@ -1581,14 +1581,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         MaintenanceRegistry mntcRegistry = kctx.maintenanceRegistry();
 
-        MaintenanceTask mntcTask = mntcRegistry.activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID);
+        MaintenanceTask mntcTask = mntcRegistry.activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
         if (mntcTask != null) {
             log.warning("Maintenance task found, stop restoring memory");
 
             File workDir = ((FilePageStoreManager) cctx.pageStore()).workDir();
 
-            mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_TASK_ID,
+            mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
                 new CorruptedPdsMaintenanceCallback(workDir,
                     Arrays.asList(mntcTask.parameters().split(File.separator)))
             );

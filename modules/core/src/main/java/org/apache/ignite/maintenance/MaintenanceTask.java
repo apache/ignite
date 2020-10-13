@@ -17,8 +17,6 @@
 
 package org.apache.ignite.maintenance;
 
-import java.util.UUID;
-
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,16 +37,16 @@ import org.jetbrains.annotations.Nullable;
  *
  * Components that may need to perform maintenance actions as part of their recovery workflow should check
  * maintenance status on startup and supply {@link MaintenanceWorkflowCallback} implementation to
- * {@link MaintenanceRegistry#registerWorkflowCallback(UUID, MaintenanceWorkflowCallback)} to allow Maintenance Registry
+ * {@link MaintenanceRegistry#registerWorkflowCallback(String, MaintenanceWorkflowCallback)} to allow Maintenance Registry
  * to find maintenance actions and start them automatically or by user request.
  *
  * Matching between {@link MaintenanceTask} and {@link MaintenanceWorkflowCallback} is performed based on
- * unique ID of maintenance situation.
+ * the name of maintenance task that should be unique among all registered tasks.
  */
 @IgniteExperimental
 public class MaintenanceTask {
     /** */
-    private final UUID id;
+    private final String name;
 
     /** */
     private final String description;
@@ -57,21 +55,21 @@ public class MaintenanceTask {
     private final String params;
 
     /**
-     * @param id Mandatory unique ID of maintenance task.
+     * @param name Mandatory name of maintenance task. Name should be unique among all other tasks.
      * @param description Mandatory description of maintenance situation.
      * @param params Optional parameters that may be needed to perform maintenance actions.
      */
-    public MaintenanceTask(@NotNull UUID id, @NotNull String description, @Nullable String params) {
-        this.id = id;
+    public MaintenanceTask(@NotNull String name, @NotNull String description, @Nullable String params) {
+        this.name = name;
         this.description = description;
         this.params = params;
     }
 
     /**
-     * @return Unique not-nullable ID of Maintenance Task.
+     * @return Name of Maintenance Task unique among all registered tasks.
      */
-    public @NotNull UUID id() {
-        return id;
+    public @NotNull String name() {
+        return name;
     }
 
     /**
