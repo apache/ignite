@@ -17,5 +17,3 @@
 pytest==6.0.1
 pylint==2.6.0
 flake8==3.8.3
-Jinja2~=2.11.2
-matplotlib~=3.3.2
