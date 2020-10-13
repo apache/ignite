@@ -26,6 +26,7 @@ import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -100,10 +101,7 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
 
         IgniteThread runner = null;
         try {
-            runner = new IgniteThread(worker);
-            runner.start();
-
-            GridTestUtils.waitForCondition(() -> worker.runner() != null, 100);
+            runner = runWorker(worker);
 
             ignite.context().workersRegistry().register(worker);
 
@@ -160,10 +158,12 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
      * @param worker Grid worker to run.
      * @return Thread, running worker.
      */
-    private IgniteThread runWorker(GridWorker worker) {
+    private IgniteThread runWorker(GridWorker worker) throws IgniteInterruptedCheckedException {
         IgniteThread runner = new IgniteThread(worker);
 
         runner.start();
+
+        GridTestUtils.waitForCondition(() -> worker.runner() != null, 100);
 
         return runner;
     }
