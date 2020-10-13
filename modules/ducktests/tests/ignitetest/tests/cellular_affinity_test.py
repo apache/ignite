@@ -23,7 +23,8 @@ from jinja2 import Template
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteClientConfiguration
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteClientConfiguration, \
+    DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils import ignite_versions, version_if
 from ignitetest.utils.ignite_test import IgniteTest
@@ -208,13 +209,15 @@ def start_cell(
         joined_cluster: IgniteService = None,
         backups: int = CellularAffinity.NUM_NODES,
         attr: str = CellularAffinity.ATTRIBUTE,
-        cacheName: str = CellularAffinity.CACHE_NAME):
+        cacheName: str = CellularAffinity.CACHE_NAME,
+        data_storage: DataStorageConfiguration = None):
 
     """
     Starts cell.
     """
     config = IgniteConfiguration(version=IgniteVersion(version),
                                  properties=CellularAffinity.properties(backups, attr, cacheName),
+                                 data_storage=data_storage,
                                  cluster_state="INACTIVE")
 
     if joined_cluster:
