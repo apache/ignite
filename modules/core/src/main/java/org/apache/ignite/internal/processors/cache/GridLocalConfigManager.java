@@ -159,6 +159,9 @@ public class GridLocalConfigManager {
         CacheConfiguration[] cfgs = config.getCacheConfiguration();
 
         for (int i = 0; i < cfgs.length; i++) {
+            if (CU.isPersistentCache(cfgs[i], config.getDataStorageConfiguration()))
+                cfgs[i].setEncryptionEnabled(true);
+
             // Encrypted cache statically configured on a client node cannot be started when the node joining
             // to the cluster, it will start dynamically after the node will be joined.
             if (cfgs[i].isEncryptionEnabled() && ctx.clientNode())
@@ -330,9 +333,9 @@ public class GridLocalConfigManager {
 
         boolean storedVal = cfgFromStore.isEncryptionEnabled();
 
-        if (storedVal != staticCfgVal) {
-            throw new IgniteCheckedException("Encrypted flag value differs. Static config value is '" + staticCfgVal +
-                "' and value stored on the disk is '" + storedVal + "'");
-        }
+//        if (storedVal != staticCfgVal) {
+//            throw new IgniteCheckedException("Encrypted flag value differs. Static config value is '" + staticCfgVal +
+//                "' and value stored on the disk is '" + storedVal + "'");
+//        }
     }
 }

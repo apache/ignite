@@ -55,6 +55,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -2382,7 +2383,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code True} if this cache persistent data is encrypted.
      */
     public boolean isEncryptionEnabled() {
-        return encryptionEnabled;
+        return encryptionEnabled && !CU.isSystemCache(getName());
     }
 
     /**

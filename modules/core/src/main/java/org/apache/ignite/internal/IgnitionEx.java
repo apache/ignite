@@ -125,6 +125,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
@@ -2502,8 +2503,16 @@ public class IgnitionEx {
             if (cfg.getIndexingSpi() == null)
                 cfg.setIndexingSpi(new NoopIndexingSpi());
 
-            if (cfg.getEncryptionSpi() == null)
-                cfg.setEncryptionSpi(new NoopEncryptionSpi());
+            if (cfg.getEncryptionSpi() == null || cfg.getEncryptionSpi() instanceof NoopEncryptionSpi) {
+                KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
+
+                encSpi.setKeyStorePath(IgniteUtils.resolveIgnitePath("modules/core/src/test/resources/tde.jks").getAbsolutePath());
+                encSpi.setKeyStorePassword("love_sex_god".toCharArray());
+
+                cfg.setEncryptionSpi(encSpi);
+
+//                CacheConfiguration.encryptionEnabled = true;
+            }
 
             if (F.isEmpty(cfg.getMetricExporterSpi()))
                 cfg.setMetricExporterSpi(new NoopMetricExporterSpi());

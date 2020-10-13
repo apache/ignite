@@ -983,7 +983,7 @@ public class PlatformConfigurationUtils {
      */
     private static void readEncryptionConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
         if (!in.readBoolean()) {
-            cfg.setEncryptionSpi(new NoopEncryptionSpi());
+            cfg.setEncryptionSpi(new KeystoreEncryptionSpi());
 
             return;
         }
