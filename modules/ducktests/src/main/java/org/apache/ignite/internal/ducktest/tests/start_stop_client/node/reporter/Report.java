@@ -40,7 +40,7 @@ public class Report {
     private long maxLatency = -1;
 
     /** The average duration of the operations. */
-    private long avgLatency = -1;
+    private double avgLatency = -1;
 
     /** Percentile 99 %. */
     private long percentile99 = -1;
@@ -134,12 +134,12 @@ public class Report {
     }
 
     /** */
-    public long getAvgLatency() {
+    public double getAvgLatency() {
         return avgLatency;
     }
 
     /** */
-    public void setAvgLatency(long avgLatency) {
+    public void setAvgLatency(double avgLatency) {
         this.avgLatency = avgLatency;
     }
 }

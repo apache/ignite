@@ -63,7 +63,7 @@ public class Reporter implements Runnable {
             "%d," +
             "%d," +
             "%d," +
-            "%d," +
+            "%.2f," +
             "%d," +
             "%d," +
             "%.2f";

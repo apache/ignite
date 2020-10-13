@@ -137,7 +137,7 @@ class ClientTest(IgniteTest):
 
             time.sleep(self.CLIENTS_WORK_TIME_S)
             temp_clients.stop()
-            time.sleep(15)
+            time.sleep(30)
 
             current_top_v += self.TEMP_CLIENTS_NUM
             check_topology(control_utility, current_top_v)

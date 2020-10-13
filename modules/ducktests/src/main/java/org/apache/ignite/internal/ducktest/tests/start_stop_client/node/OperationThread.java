@@ -74,7 +74,7 @@ public class OperationThread implements Runnable {
         long txCount = 0;
         long minLatency = -1;
         long maxLatency = -1;
-        long avgLatency = 0;
+        double avgLatency = 0;
         long percentile99 = 0;
 
         ArrayList<Long> reports = new ArrayList();
@@ -103,18 +103,19 @@ public class OperationThread implements Runnable {
         for (Long l : reports) {
             sum += l;
         }
+
+        double sum_d = sum;
+
         if (!reports.isEmpty()) {
-            avgLatency = sum / reports.size();
+            avgLatency = sum_d / reports.size();
             Collections.sort(reports);
 
             percentile99 = reports.get((int) (reports.size() * 0.99));
         }
 
         //calc dispersion
-        long x = 0;
+        double x = 0;
         for (Long report : reports) x += Math.pow(report - avgLatency, 2);
-
-        logger.info("dispersion debug: " + x);
 
         double dispersion = 0;
         if (reports.size() > 1) {
