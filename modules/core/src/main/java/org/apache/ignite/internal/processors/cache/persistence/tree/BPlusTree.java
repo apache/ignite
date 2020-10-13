@@ -5585,40 +5585,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             updateLowerBound(lastRow);
 
-            for (;;) {
-                if (nextPageId == 0) {
-                    onNotFound(true);
+            if (nextPageId == 0) {
+                onNotFound(true);
 
-                    return false; // Done.
-                }
-
-                long pageId = nextPageId;
-                long page = acquirePage(pageId);
-                try {
-                    long pageAddr = readLock(pageId, page); // Doing explicit null check.
-
-                    // If concurrent merge occurred we have to reinitialize cursor from the last returned row.
-                    if (pageAddr == 0L)
-                        break;
-
-                    try {
-                        BPlusIO<L> io = io(pageAddr);
-
-                        if (fillFromBuffer(pageAddr, io, -1, io.getCount(pageAddr)))
-                            return true;
-
-                        // Continue fetching forward.
-                    }
-                    finally {
-                        readUnlock(pageId, page, pageAddr);
-                    }
-                }
-                catch (RuntimeException | AssertionError e) {
-                    throw corruptedTreeException("Runtime failure on cursor iteration", e, grpId, pageId);
-                }
-                finally {
-                    releasePage(pageId, page);
-                }
+                return false; // Done.
             }
 
             // Reinitialize when `next` is released.
