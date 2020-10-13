@@ -63,7 +63,7 @@ public class OperationThread implements Runnable {
         Report report;
         while (!Thread.currentThread().isInterrupted()) {
             report = calculateInternalReport();
-            if (report!=null){
+            if (report != null) {
                 actionNode.publishInternalReport(report);
             }
         }
