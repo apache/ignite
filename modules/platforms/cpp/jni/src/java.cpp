@@ -509,7 +509,7 @@ namespace ignite
 
             void RegisterNatives(JNIEnv* env) {
                 {
-					JNINativeMethod methods[5];
+                    JNINativeMethod methods[5];
 
                     int idx = 0;
 

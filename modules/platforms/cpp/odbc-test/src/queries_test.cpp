@@ -97,7 +97,7 @@ struct QueriesTestSuiteFixture : odbc::OdbcTestSuite
 
         const SQLSMALLINT columnsCnt = 12;
 
-        T columns[columnsCnt] = { 0 };
+        T columns[columnsCnt];
 
         // Binding columns.
         for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
@@ -136,7 +136,7 @@ struct QueriesTestSuiteFixture : odbc::OdbcTestSuite
         BOOST_CHECK_EQUAL(columns[10], 0);
         BOOST_CHECK_EQUAL(columns[11], 0);
 
-        SQLLEN columnLens[columnsCnt] = { 0 };
+        SQLLEN columnLens[columnsCnt];
 
         // Binding columns.
         for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
@@ -292,7 +292,7 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
     const SQLSMALLINT columnsCnt = 12;
 
-    SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
+    SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE];
 
     // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
@@ -332,7 +332,7 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "12:48:12");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[11])), "1998-12-27 01:02:03");
 
-    SQLLEN columnLens[columnsCnt] = { 0 };
+    SQLLEN columnLens[columnsCnt];
 
     // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
@@ -391,9 +391,9 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 
     const SQLSMALLINT columnsCnt = 12;
 
-    SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
+    SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE];
 
-    SQLLEN columnLens[columnsCnt] = { 0 };
+    SQLLEN columnLens[columnsCnt];
 
     // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
@@ -459,7 +459,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 
     const SQLSMALLINT columnsCnt = 12;
 
-    SQLLEN columnLens[columnsCnt] = { 0 };
+    SQLLEN columnLens[columnsCnt];
 
     // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
@@ -515,8 +515,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowObject)
     cache2.Put(1, obj);
 
     int64_t column1 = 0;
-    int8_t column2[ODBC_BUFFER_SIZE] = { 0 };
-    char column3[ODBC_BUFFER_SIZE] = { 0 };
+    int8_t column2[ODBC_BUFFER_SIZE];
+    char column3[ODBC_BUFFER_SIZE];
 
     SQLLEN column1Len = sizeof(column1);
     SQLLEN column2Len = sizeof(column2);
@@ -572,8 +572,8 @@ BOOST_AUTO_TEST_CASE(TestDataAtExecution)
 
     const SQLSMALLINT columnsCnt = 12;
 
-    SQLLEN columnLens[columnsCnt] = { 0 };
-    SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
+    SQLLEN columnLens[columnsCnt];
+    SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE];
 
     // Binding columns.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
@@ -699,7 +699,7 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
 
     const SQLSMALLINT columnsCnt = 11;
 
-    SQLLEN columnLens[columnsCnt] = { 0 };
+    SQLLEN columnLens[columnsCnt];
 
     int8_t i8Column;
     int16_t i16Column;
@@ -824,7 +824,7 @@ BOOST_AUTO_TEST_CASE(TestDistributedJoins)
 
     const SQLSMALLINT columnsCnt = 2;
 
-    SQLBIGINT columns[columnsCnt] = { 0 };
+    SQLBIGINT columns[columnsCnt];
 
     // Binding colums.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
@@ -883,7 +883,7 @@ BOOST_AUTO_TEST_CASE(TestInsertSelect)
     InsertTestStrings(recordsNum);
 
     int64_t key = 0;
-    char strField[1024] = { 0 };
+    char strField[1024];
     SQLLEN strFieldLen = 0;
 
     // Binding columns.
@@ -943,7 +943,7 @@ BOOST_AUTO_TEST_CASE(TestInsertUpdateSelect)
     InsertTestStrings(recordsNum);
 
     int64_t key = 0;
-    char strField[1024] = { 0 };
+    char strField[1024];
     SQLLEN strFieldLen = 0;
 
     SQLCHAR updateReq[] = "UPDATE TestType SET strField = 'Updated value' WHERE _key = 42";
@@ -1017,7 +1017,7 @@ BOOST_AUTO_TEST_CASE(TestInsertDeleteSelect)
     InsertTestStrings(recordsNum);
 
     int64_t key = 0;
-    char strField[1024] = { 0 };
+    char strField[1024];
     SQLLEN strFieldLen = 0;
 
     SQLCHAR updateReq[] = "DELETE FROM TestType WHERE (_key % 2) = 1";
@@ -1088,7 +1088,7 @@ BOOST_AUTO_TEST_CASE(TestInsertMergeSelect)
     InsertTestStrings(recordsNum, true);
 
     int64_t key = 0;
-    char strField[1024] = { 0 };
+    char strField[1024];
     SQLLEN strFieldLen = 0;
 
     // Binding columns.
@@ -1317,17 +1317,17 @@ BOOST_AUTO_TEST_CASE(TestKeyVal)
     //_key
     int64_t column1 = 0;
     //_val
-    int8_t column2[ODBC_BUFFER_SIZE] = { 0 };
+    int8_t column2[ODBC_BUFFER_SIZE];
     //k
     int64_t column3 = 0;
     //v
-    int8_t column4[ODBC_BUFFER_SIZE] = { 0 };
+    int8_t column4[ODBC_BUFFER_SIZE];
     //i32Field
     int64_t column5 = 0;
     //objField
-    int8_t column6[ODBC_BUFFER_SIZE] = { 0 };
+    int8_t column6[ODBC_BUFFER_SIZE];
     //strField
-    char column7[ODBC_BUFFER_SIZE] = { 0 };
+    char column7[ODBC_BUFFER_SIZE];
 
     SQLLEN column1Len = sizeof(column1);
     SQLLEN column2Len = sizeof(column2);
@@ -1453,7 +1453,7 @@ BOOST_AUTO_TEST_CASE(TestExecuteAfterCursorClose)
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     int64_t key = 0;
-    char strField[1024] = { 0 };
+    char strField[1024];
     SQLLEN strFieldLen = 0;
 
     // Binding columns.
@@ -1519,7 +1519,7 @@ BOOST_AUTO_TEST_CASE(TestCloseNonFullFetch)
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     int64_t key = 0;
-    char strField[1024] = { 0 };
+    char strField[1024];
     SQLLEN strFieldLen = 0;
 
     // Binding columns.
@@ -1585,7 +1585,7 @@ BOOST_AUTO_TEST_CASE(TestBindNullParameter)
     // Selecting inserted column to make sure that everything is OK
     SQLCHAR selectReq[] = "SELECT strField FROM TestType";
 
-    char strField[1024] = { 0 };
+    char strField[1024];
     SQLLEN strFieldLen = 0;
 
     // Binding column.

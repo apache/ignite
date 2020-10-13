@@ -61,7 +61,7 @@ if (${WARNINGS_AS_ERRORS})
     if (MSVC)
         add_compile_options(/WX)
     else()
-        add_compile_options(-Wall -Wextra -pedantic -Werror -Wno-variadic-macros)
+        add_compile_options(-Wall -Wextra -Werror -Wno-variadic-macros)
     endif()
 endif()
 

@@ -628,13 +628,15 @@ namespace ignite
                 /**
                  * Constructor.
                  */
-                TxStartRequest(ignite::thin::transactions::TransactionConcurrency::Type conc,
-                               ignite::thin::transactions::TransactionIsolation::Type isolationLvl,
-                               int64_t tmOut, int32_t sz, ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > lbl) :
+                TxStartRequest(
+                    ignite::thin::transactions::TransactionConcurrency::Type conc,
+                    ignite::thin::transactions::TransactionIsolation::Type isolationLvl,
+                    int64_t tmOut,
+                    ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > lbl
+                ) :
                     concurrency(conc),
                     isolation(isolationLvl),
                     timeout(tmOut),
-                    size(sz),
                     label(lbl)
                 {
                     // No-op.
@@ -669,9 +671,6 @@ namespace ignite
 
                 /** Timeout. */
                 const int64_t timeout;
-
-                /** Size. */
-                const int32_t size;
 
                 /** Tx label. */
                 ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > label;
