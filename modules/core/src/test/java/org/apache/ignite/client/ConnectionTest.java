@@ -94,13 +94,12 @@ public class ConnectionTest {
             // Handshake.
             BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
             try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
-                writer.writeInt(0); // reserve an integer for the request size
-                writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+                writer.writeInt(12); // reserve an integer for the request size
 
+                writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
                 writer.writeShort(1);
                 writer.writeShort(0);
                 writer.writeShort(0);
-
                 writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
 
                 Future<Integer> writeFut = client.write(ByteBuffer.wrap(writer.array()));
