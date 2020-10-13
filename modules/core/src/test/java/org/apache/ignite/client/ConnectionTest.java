@@ -19,13 +19,27 @@ package org.apache.ignite.client;
 
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature;
+import org.apache.ignite.internal.client.thin.ProtocolContext;
+import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.USER_ATTRIBUTES;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.AUTHORIZATION;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.BITMAP_FEATURES;
 
 /**
  * Checks if it can connect to a valid address from the node address list.
@@ -74,11 +88,24 @@ public class ConnectionTest {
             // Connect.
             AsynchronousSocketChannel client = AsynchronousSocketChannel.open();
             InetSocketAddress hostAddress = new InetSocketAddress("localhost", 10800);
-            Future<Void> future = client.connect(hostAddress);
-            future.get();
+            Future<Void> connectFut = client.connect(hostAddress);
+            connectFut.get();
 
             // Handshake.
+            BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
+            try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
+                writer.writeInt(0); // reserve an integer for the request size
+                writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
 
+                writer.writeShort(1);
+                writer.writeShort(0);
+                writer.writeShort(0);
+
+                writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
+
+                Future<Integer> writeFut = client.write(ByteBuffer.wrap(writer.array()));
+                writeFut.get();
+            }
 
         } catch (InterruptedException | ExecutionException | IOException e) {
             e.printStackTrace();
