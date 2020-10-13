@@ -21,6 +21,12 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
 /**
  * Checks if it can connect to a valid address from the node address list.
  */
@@ -59,6 +65,24 @@ public class ConnectionTest {
     @Test
     public void testValidInvalidNodeAddressesMix() throws Exception {
         testConnection("127.0.0.1:47500", "127.0.0.1:10801", Config.SERVER);
+    }
+
+    /** */
+    @Test
+    public void testAsynchronousSocketChannel() {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1)) {
+            // Connect.
+            AsynchronousSocketChannel client = AsynchronousSocketChannel.open();
+            InetSocketAddress hostAddress = new InetSocketAddress("localhost", 10800);
+            Future<Void> future = client.connect(hostAddress);
+            future.get();
+
+            // Handshake.
+
+
+        } catch (InterruptedException | ExecutionException | IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
