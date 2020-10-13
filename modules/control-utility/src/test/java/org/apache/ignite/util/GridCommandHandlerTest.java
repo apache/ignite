@@ -264,7 +264,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @throws Exception If failed.
      */
     @Test
-    public void testPersistenceCleaningCommand() throws Exception {
+    public void testPersistenceCommand() throws Exception {
         IgniteEx ig0 = startGrid(0);
         IgniteEx ig1 = startGrid(1);
 
@@ -313,7 +313,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
 
-        execute("--persistence-cleaning", "--host", "localhost", "--port", port);
+//        execute("--persistence", "clean", "caches", DEFAULT_CACHE_NAME, "--host", "localhost", "--port", port);
+
+        execute("--persistence", "clean", "all", "--host", "localhost", "--port", port);
     }
 
     /**

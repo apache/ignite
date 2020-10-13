@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.persistence.cleaning;
+package org.apache.ignite.internal.visor.persistence;
 
 import org.jetbrains.annotations.Nullable;
 
 /** Persistence cleaning operations. */
-public enum PersistenceCleaningOperation {
+public enum PersistenceOperation {
     /** */
     INFO,
 
@@ -28,14 +28,14 @@ public enum PersistenceCleaningOperation {
     CLEAN;
 
     /** */
-    private static final PersistenceCleaningOperation[] VALS = values();
+    private static final PersistenceOperation[] VALS = values();
 
     /**
      *
      * @param ordinal
      * @return
      */
-    @Nullable public static PersistenceCleaningOperation fromOrdinal(int ordinal) {
+    @Nullable public static PersistenceOperation fromOrdinal(int ordinal) {
         return ordinal >= 0 && ordinal < VALS.length ? VALS[ordinal] : null;
     }
 }
