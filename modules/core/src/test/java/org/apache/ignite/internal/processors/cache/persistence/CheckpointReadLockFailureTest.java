@@ -22,7 +22,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -33,6 +32,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointReadWriteLock;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -129,14 +129,18 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ig.context().cache().context().database();
 
+        CheckpointReadWriteLock checkpointReadWriteLock = U.field(
+            db.checkpointManager.checkpointTimeoutLock(), "checkpointReadWriteLock"
+        );
+
         IgniteInternalFuture acquireWriteLock = GridTestUtils.runAsync(() -> {
-            db.checkpointLock.writeLock().lock();
+            checkpointReadWriteLock.writeLock();
 
             try {
                 doSleep(Long.MAX_VALUE);
             }
             finally {
-                db.checkpointLock.writeLock().unlock();
+                checkpointReadWriteLock.writeUnlock();
             }
         });
 
@@ -176,18 +180,22 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ig.context().cache().context().database();
 
-        U.ReentrantReadWriteLockTracer tracker = (U.ReentrantReadWriteLockTracer)db.checkpointLock;
+        CheckpointReadWriteLock checkpointReadWriteLock = U.field(
+            db.checkpointManager.checkpointTimeoutLock(), "checkpointReadWriteLock"
+        );
+        U.ReentrantReadWriteLockTracer tracker = U.field(checkpointReadWriteLock, "checkpointLock");
 
         GridTestUtils.runAsync(() -> {
-            db.checkpointLock.readLock().lock();
+            checkpointReadWriteLock.readLock();
 
             try {
                 canRelease.await(tracker.lockWaitThreshold() + 500, TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException e) {
                 e.printStackTrace();
-            } finally {
-                db.checkpointLock.readLock().unlock();
+            }
+            finally {
+                checkpointReadWriteLock.readUnlock();
             }
         }, "async-runnable-runner-1");
 
@@ -208,7 +216,11 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ig.context().cache().context().database();
 
-        ReentrantReadWriteLock rwLock = db.checkpointLock;
+        CheckpointReadWriteLock checkpointReadWriteLock = U.field(
+            db.checkpointManager.checkpointTimeoutLock(), "checkpointReadWriteLock"
+        );
+
+        ReentrantReadWriteLock rwLock = U.field(checkpointReadWriteLock, "checkpointLock");
 
         CountDownLatch waitFirstRLock = new CountDownLatch(1);
 

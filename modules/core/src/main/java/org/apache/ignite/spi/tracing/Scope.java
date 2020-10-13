@@ -31,7 +31,10 @@ public enum Scope {
     COMMUNICATION((short)3),
 
     /** Transactional scope. */
-    TX((short)4);
+    TX((short)4),
+
+    /** SQL query scope. */
+    SQL((short)5);
 
     /** Scope index. */
     private final short idx;

@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -161,7 +162,7 @@ public class IgnitePdsConsistencyOnDelayedPartitionOwning extends GridCommonAbst
         GridCacheDatabaseSharedManager dbMgr =
             (GridCacheDatabaseSharedManager) grid(1).context().cache().context().database();
 
-        dbMgr.addCheckpointListener(new DbCheckpointListener() {
+        dbMgr.addCheckpointListener(new CheckpointListener() {
             @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
                 // No-op.
             }

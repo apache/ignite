@@ -91,7 +91,7 @@ namespace ignite
             }
 
             template<>
-            BinaryObjectImpl BinaryObjectImpl::GetField(const char* name) const
+            IGNITE_IMPORT_EXPORT BinaryObjectImpl BinaryObjectImpl::GetField(const char* name) const
             {
                 CheckIdResolver();
 

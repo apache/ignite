@@ -1100,7 +1100,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertEquals(2, view.size());
 
             for (BinaryMetadataView meta : view) {
-                if (Objects.equals(TestObjectEnum.class.getName(), meta.typeName())) {
+                if (TestObjectEnum.class.getName().contains(meta.typeName())) {
                     assertTrue(meta.isEnum());
 
                     assertEquals(0, meta.fieldsCount());
@@ -1138,19 +1138,25 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             String name = "test-key";
             String val = "test-value";
+            String unmarshalledName = "unmarshalled-key";
+            String unmarshalledVal = "[Raw data. 0 bytes]";
 
             db.checkpointReadLock();
 
             try {
                 db.metaStorage().write(name, val);
+                db.metaStorage().writeRaw(unmarshalledName, new byte[0]);
             } finally {
                 db.checkpointReadUnlock();
             }
 
-            MetastorageView testKey = F.find(metaStoreView, null,
-                (IgnitePredicate<? super MetastorageView>)view -> name.equals(view.name()) && val.equals(view.value()));
+            assertNotNull(F.find(metaStoreView, null,
+                (IgnitePredicate<? super MetastorageView>)view ->
+                    name.equals(view.name()) && val.equals(view.value())));
 
-            assertNotNull(testKey);
+            assertNotNull(F.find(metaStoreView, null,
+                (IgnitePredicate<? super MetastorageView>)view ->
+                    unmarshalledName.equals(view.name()) && unmarshalledVal.equals(view.value())));
         }
     }
 

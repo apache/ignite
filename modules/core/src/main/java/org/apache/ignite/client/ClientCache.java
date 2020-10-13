@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
+
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
@@ -44,6 +45,15 @@ public interface ClientCache<K, V> {
     public V get(K key) throws ClientException;
 
     /**
+     * Gets an entry from the cache asynchronously.
+     *
+     * @param key Key.
+     * @return a Future representing pending completion of the operation.
+     * Future result is the cache entry value or null if it does not exist.
+     */
+    public IgniteClientFuture<V> getAsync(K key);
+
+    /**
      * Associates the specified value with the specified key in the cache.
      * <p>
      * If the {@link ClientCache} previously contained a mapping for the key, the old
@@ -54,6 +64,19 @@ public interface ClientCache<K, V> {
      * @throws NullPointerException if key is null or if value is null.
      */
     public void put(K key, V val) throws ClientException;
+
+    /**
+     * Associates the specified value with the specified key in the cache asynchronously.
+     * <p>
+     * If the {@link ClientCache} previously contained a mapping for the key, the old
+     * value is replaced by the specified value.
+     *
+     * @param key key with which the specified value is to be associated
+     * @param val value to be associated with the specified key.
+     * @return a Future representing pending completion of the operation.
+     * @throws NullPointerException if key is null or if value is null.
+     */
+    public IgniteClientFuture<Void> putAsync(K key, V val) throws ClientException;
 
     /**
      * Determines if the {@link ClientCache} contains an entry for the specified key.
@@ -68,6 +91,19 @@ public interface ClientCache<K, V> {
     public boolean containsKey(K key) throws ClientException;
 
     /**
+     * Determines if the {@link ClientCache} contains an entry for the specified key asynchronously.
+     * <p>
+     * More formally, returns <tt>true</tt> if and only if this cache contains a
+     * mapping for a key <tt>k</tt> such that <tt>key.equals(k)</tt>.
+     * (There can be at most one such mapping)
+     *
+     * @param key key whose presence in this cache is to be tested.
+     * @return a Future representing pending completion of the operation.
+     * Future result is <tt>true</tt> if this map contains a mapping for the specified key.
+     */
+    public IgniteClientFuture<Boolean> containsKeyAsync(K key) throws ClientException;
+
+    /**
      * @return The name of the cache.
      */
     public String getName();
@@ -76,6 +112,12 @@ public interface ClientCache<K, V> {
      * @return The cache configuration.
      */
     public ClientCacheConfiguration getConfiguration() throws ClientException;
+
+    /**
+     * Gets the cache configuration asynchronously.
+     * @return a Future representing pending completion of the operation, which wraps the cache configuration.
+     */
+    public IgniteClientFuture<ClientCacheConfiguration> getConfigurationAsync() throws ClientException;
 
     /**
      * Gets the number of all entries cached across all nodes. By default, if {@code peekModes} value isn't provided,
@@ -89,6 +131,18 @@ public interface ClientCache<K, V> {
     public int size(CachePeekMode... peekModes) throws ClientException;
 
     /**
+     * Gets the number of all entries cached across all nodes. By default, if {@code peekModes} value isn't provided,
+     * only size of primary copies across all nodes will be returned. This behavior is identical to calling
+     * this method with {@link CachePeekMode#PRIMARY} peek mode.
+     * <p>
+     * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+     *
+     * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     * @return a Future representing pending completion of the operation, which wraps the cache size.
+     */
+    public IgniteClientFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws ClientException;
+
+    /**
      * Gets a collection of entries from the {@link ClientCache}, returning them as
      * {@link Map} of the values associated with the set of keys requested.
      *
@@ -97,6 +151,16 @@ public interface ClientCache<K, V> {
      * in the cache are not in the returned map.
      */
     public Map<K, V> getAll(Set<? extends K> keys) throws ClientException;
+
+    /**
+     * Gets a collection of entries from the {@link ClientCache}, returning them as
+     * {@link Map} of the values associated with the set of keys requested.
+     *
+     * @param keys The keys whose associated values are to be returned.
+     * @return a Future representing pending completion of the operation, which wraps a map of entries that
+     * were found for the given keys. Keys not found in the cache are not in the returned map.
+     */
+    public IgniteClientFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) throws ClientException;
 
     /**
      * Copies all of the entries from the specified map to the {@link ClientCache}.
@@ -109,8 +173,7 @@ public interface ClientCache<K, V> {
      * <p>
      * The behavior of this operation is undefined if entries in the cache
      * corresponding to entries in the map are modified or removed while this
-     * operation is in progress. or if map is modified while the operation is in
-     * progress.
+     * operation is in progress, or if map is modified while the operation is in progress.
      * <p>
      *
      * @param map Mappings to be stored in this cache.
@@ -118,9 +181,28 @@ public interface ClientCache<K, V> {
     public void putAll(Map<? extends K, ? extends V> map) throws ClientException;
 
     /**
+     * Copies all of the entries from the specified map to the {@link ClientCache}.
+     * <p>
+     * The effect of this call is equivalent to that of calling
+     * {@link #put(Object, Object) put(k, v)} on this cache once for each mapping
+     * from key <tt>k</tt> to value <tt>v</tt> in the specified map.
+     * <p>
+     * The order in which the individual puts occur is undefined.
+     * <p>
+     * The behavior of this operation is undefined if entries in the cache
+     * corresponding to entries in the map are modified or removed while this
+     * operation is in progress, or if map is modified while the operation is in progress.
+     * <p>
+     *
+     * @param map Mappings to be stored in this cache.
+     * @return a Future representing pending completion of the operation.
+     */
+    public IgniteClientFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) throws ClientException;
+
+    /**
      * Atomically replaces the entry for a key only if currently mapped to a given value.
      * <p>
-     * This is equivalent to:
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key) &amp;&amp; equals(cache.get(key), oldValue)) {
      *  cache.put(key, newValue);
@@ -129,7 +211,6 @@ public interface ClientCache<K, V> {
      *  return false;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key with which the specified value is associated.
      * @param oldVal Value expected to be associated with the specified key.
@@ -139,10 +220,31 @@ public interface ClientCache<K, V> {
     public boolean replace(K key, V oldVal, V newVal) throws ClientException;
 
     /**
+     * Atomically replaces the entry for a key only if currently mapped to a given value.
+     * <p>
+     * This is equivalent to performing the following operations as a single atomic action:
+     * <pre><code>
+     * if (cache.containsKey(key) &amp;&amp; equals(cache.get(key), oldValue)) {
+     *  cache.put(key, newValue);
+     * return true;
+     * } else {
+     *  return false;
+     * }
+     * </code></pre>
+     *
+     * @param key Key with which the specified value is associated.
+     * @param oldVal Value expected to be associated with the specified key.
+     * @param newVal Value to be associated with the specified key.
+     * @return a Future representing pending completion of the operation, which wraps a value indicating whether the
+     * cache value was replaced.
+     */
+    public IgniteClientFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) throws ClientException;
+
+    /**
      * Atomically replaces the entry for a key only if currently mapped to some
      * value.
      * <p>
-     * This is equivalent to
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key)) {
      *   cache.put(key, value);
@@ -150,13 +252,32 @@ public interface ClientCache<K, V> {
      * } else {
      *   return false;
      * }</code></pre>
-     * except that the action is performed atomically.
      *
      * @param key The key with which the specified value is associated.
      * @param val The value to be associated with the specified key.
      * @return <tt>true</tt> if the value was replaced.
      */
     public boolean replace(K key, V val) throws ClientException;
+
+    /**
+     * Atomically replaces the entry for a key only if currently mapped to some
+     * value.
+     * <p>
+     * This is equivalent to performing the following operations as a single atomic action:
+     * <pre><code>
+     * if (cache.containsKey(key)) {
+     *   cache.put(key, value);
+     *   return true;
+     * } else {
+     *   return false;
+     * }</code></pre>
+     *
+     * @param key The key with which the specified value is associated.
+     * @param val The value to be associated with the specified key.
+     * @return a Future representing pending completion of the operation, which wraps a value indicating whether the
+     * cache value was replaced.
+     */
+    public IgniteClientFuture<Boolean> replaceAsync(K key, V val) throws ClientException;
 
     /**
      * Removes the mapping for a key from this cache if it is present.
@@ -177,9 +298,27 @@ public interface ClientCache<K, V> {
     public boolean remove(K key) throws ClientException;
 
     /**
+     * Removes the mapping for a key from this cache if it is present.
+     * <p>
+     * More formally, if this cache contains a mapping from key <tt>k</tt> to value <tt>v</tt> such that
+     * <code>(key==null ?  k==null : key.equals(k))</code>, that mapping is removed.
+     * (The cache can contain at most one such mapping.)
+     *
+     * <p>Returns <tt>true</tt> if this cache previously associated the key, or <tt>false</tt> if the cache
+     * contained no mapping for the key.
+     * <p>
+     * The cache will not contain a mapping for the specified key once the call returns.
+     *
+     * @param key Key whose mapping is to be removed from the cache.
+     * @return a Future representing pending completion of the operation, which wraps a value indicating whether the
+     * cache value was removed.
+     */
+    public IgniteClientFuture<Boolean> removeAsync(K key) throws ClientException;
+
+    /**
      * Atomically removes the mapping for a key only if currently mapped to the given value.
      * <p>
-     * This is equivalent to:
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key) &amp;&amp; equals(cache.get(key), oldValue) {
      *   cache.remove(key);
@@ -188,13 +327,32 @@ public interface ClientCache<K, V> {
      *   return false;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key whose mapping is to be removed from the cache.
      * @param oldVal Value expected to be associated with the specified key.
      * @return <tt>false</tt> if there was no matching key.
      */
     public boolean remove(K key, V oldVal) throws ClientException;
+
+    /**
+     * Atomically removes the mapping for a key only if currently mapped to the given value.
+     * <p>
+     * This is equivalent to performing the following operations as a single atomic action:
+     * <pre><code>
+     * if (cache.containsKey(key) &amp;&amp; equals(cache.get(key), oldValue) {
+     *   cache.remove(key);
+     *   return true;
+     * } else {
+     *   return false;
+     * }
+     * </code></pre>
+     *
+     * @param key Key whose mapping is to be removed from the cache.
+     * @param oldVal Value expected to be associated with the specified key.
+     * @return a Future representing pending completion of the operation, which wraps a value indicating whether the
+     * cache value was removed.
+     */
+    public IgniteClientFuture<Boolean> removeAsync(K key, V oldVal) throws ClientException;
 
     /**
      * Removes entries for the specified keys.
@@ -206,11 +364,41 @@ public interface ClientCache<K, V> {
     public void removeAll(Set<? extends K> keys) throws ClientException;
 
     /**
+     * Removes entries for the specified keys.
+     * <p>
+     * The order in which the individual entries are removed is undefined.
+     *
+     * @param keys The keys to remove.
+     * @return a Future representing pending completion of the operation.
+     */
+    public IgniteClientFuture<Void> removeAllAsync(Set<? extends K> keys) throws ClientException;
+
+    /**
      * Removes all of the mappings from this cache.
      * <p>
      * The order that the individual entries are removed is undefined.
+     * <p>
+     * This operation is not transactional. It calls broadcast closure that
+     * deletes all primary keys from remote nodes.
+     * <p>
+     * This is potentially an expensive operation as listeners are invoked.
+     * Use {@link #clear()} to avoid this.
      */
     public void removeAll() throws ClientException;
+
+    /**
+     * Removes all of the mappings from this cache.
+     * <p>
+     * The order that the individual entries are removed is undefined.
+     * <p>
+     * This operation is not transactional. It calls broadcast closure that
+     * deletes all primary keys from remote nodes.
+     * <p>
+     * This is potentially an expensive operation as listeners are invoked.
+     * Use {@link #clear()} to avoid this.
+     * @return a Future representing pending completion of the operation.
+     */
+    public IgniteClientFuture<Void> removeAllAsync() throws ClientException;
 
     /**
      * Associates the specified value with the specified key in this cache, returning an existing value if one existed.
@@ -232,9 +420,28 @@ public interface ClientCache<K, V> {
     public V getAndPut(K key, V val) throws ClientException;
 
     /**
+     * Associates the specified value with the specified key in this cache, returning an existing value if one existed.
+     * <p>
+     * If the cache previously contained a mapping for
+     * the key, the old value is replaced by the specified value.  (A cache
+     * <tt>c</tt> is said to contain a mapping for a key <tt>k</tt> if and only
+     * if {@link #containsKey(Object) c.containsKey(k)} would return
+     * <tt>true</tt>.)
+     * <p>
+     * The previous value is returned, or null if there was no value associated
+     * with the key previously.
+     *
+     * @param key Key with which the specified value is to be associated.
+     * @param val Value to be associated with the specified key.
+     * @return a Future representing pending completion of the operation, which wraps the value associated with the
+     * key at the start of the operation or null if none was associated.
+     */
+    public IgniteClientFuture<V> getAndPutAsync(K key, V val) throws ClientException;
+
+    /**
      * Atomically removes the entry for a key only if currently mapped to some value.
      * <p>
-     * This is equivalent to:
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key)) {
      *   V oldValue = cache.get(key);
@@ -244,7 +451,6 @@ public interface ClientCache<K, V> {
      *   return null;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key with which the specified value is associated.
      * @return The value if one existed or null if no mapping existed for this key.
@@ -252,9 +458,29 @@ public interface ClientCache<K, V> {
     public V getAndRemove(K key) throws ClientException;
 
     /**
+     * Atomically removes the entry for a key only if currently mapped to some value.
+     * <p>
+     * This is equivalent to performing the following operations as a single atomic action:
+     * <pre><code>
+     * if (cache.containsKey(key)) {
+     *   V oldValue = cache.get(key);
+     *   cache.remove(key);
+     *   return oldValue;
+     * } else {
+     *   return null;
+     * }
+     * </code></pre>
+     *
+     * @param key Key with which the specified value is associated.
+     * @return a Future representing pending completion of the operation, which wraps the value if one existed or null
+     * if no mapping existed for this key.
+     */
+    public IgniteClientFuture<V> getAndRemoveAsync(K key) throws ClientException;
+
+    /**
      * Atomically replaces the value for a given key if and only if there is a value currently mapped by the key.
      * <p>
-     * This is equivalent to
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (cache.containsKey(key)) {
      *   V oldValue = cache.get(key);
@@ -264,7 +490,6 @@ public interface ClientCache<K, V> {
      *   return null;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key with which the specified value is associated.
      * @param val Value to be associated with the specified key.
@@ -274,9 +499,30 @@ public interface ClientCache<K, V> {
     public V getAndReplace(K key, V val) throws ClientException;
 
     /**
+     * Atomically replaces the value for a given key if and only if there is a value currently mapped by the key.
+     * <p>
+     * This is equivalent to performing the following operations as a single atomic action:
+     * <pre><code>
+     * if (cache.containsKey(key)) {
+     *   V oldValue = cache.get(key);
+     *   cache.put(key, value);
+     *   return oldValue;
+     * } else {
+     *   return null;
+     * }
+     * </code></pre>
+     *
+     * @param key Key with which the specified value is associated.
+     * @param val Value to be associated with the specified key.
+     * @return a Future representing pending completion of the operation, which wraps the previous value associated
+     * with the specified key, or <tt>null</tt> if there was no mapping for the key.
+     */
+    public IgniteClientFuture<V> getAndReplaceAsync(K key, V val) throws ClientException;
+
+    /**
      * Atomically associates the specified key with the given value if it is not already associated with a value.
      * <p>
-     * This is equivalent to:
+     * This is equivalent to performing the following operations as a single atomic action:
      * <pre><code>
      * if (!cache.containsKey(key)) {}
      *   cache.put(key, value);
@@ -285,7 +531,6 @@ public interface ClientCache<K, V> {
      *   return false;
      * }
      * </code></pre>
-     * except that the action is performed atomically.
      *
      * @param key Key with which the specified value is to be associated.
      * @param val Value to be associated with the specified key.
@@ -294,9 +539,37 @@ public interface ClientCache<K, V> {
     public boolean putIfAbsent(K key, V val) throws ClientException;
 
     /**
+     * Atomically associates the specified key with the given value if it is not already associated with a value.
+     * <p>
+     * This is equivalent to performing the following operations as a single atomic action:
+     * <pre><code>
+     * if (!cache.containsKey(key)) {}
+     *   cache.put(key, value);
+     *   return true;
+     * } else {
+     *   return false;
+     * }
+     * </code></pre>
+     *
+     * @param key Key with which the specified value is to be associated.
+     * @param val Value to be associated with the specified key.
+     * @return a Future representing pending completion of the operation, which wraps the value indicating whether
+     * a value was set.
+     */
+    public IgniteClientFuture<Boolean> putIfAbsentAsync(K key, V val) throws ClientException;
+
+    /**
      * Clears the contents of the cache.
+     * In contrast to {@link #removeAll()}, this method does not notify event listeners and cache writers.
      */
     public void clear() throws ClientException;
+
+    /**
+     * Clears the contents of the cache asynchronously.
+     * In contrast to {@link #removeAll()}, this method does not notify event listeners and cache writers.
+     * @return a Future representing pending completion of the operation.
+     */
+    public IgniteClientFuture<Void> clearAsync() throws ClientException;
 
     /**
      * Returns cache that will operate with binary objects.

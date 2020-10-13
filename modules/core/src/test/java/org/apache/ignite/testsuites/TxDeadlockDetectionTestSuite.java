@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.transactions.DepthFirstSearchTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockCauseTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionMessageMarshallingTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionNoHangsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionTest;
@@ -40,7 +41,7 @@ import org.junit.runners.Suite;
     TxOptimisticDeadlockDetectionCrossCacheTest.class,
     TxPessimisticDeadlockDetectionTest.class,
     TxPessimisticDeadlockDetectionCrossCacheTest.class,
-    //TxDeadlockCauseTest.class,
+    TxDeadlockCauseTest.class,
     TxDeadlockDetectionTest.class,
     TxDeadlockDetectionNoHangsTest.class,
     TxDeadlockDetectionUnmasrhalErrorsTest.class,
