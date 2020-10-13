@@ -65,6 +65,8 @@ import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
+import org.apache.ignite.client.ClientReconnectedException;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -222,7 +224,7 @@ class TcpClientChannel implements ClientChannel {
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
-    ) throws ClientConnectionException, ClientAuthorizationException, ClientServerError, ClientException {
+    ) throws ClientException {
         long id = send(op, payloadWriter);
 
         return receive(id, payloadReader);
@@ -252,7 +254,7 @@ class TcpClientChannel implements ClientChannel {
      * @return Request ID.
      */
     private long send(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
-        throws ClientException, ClientConnectionException {
+        throws ClientException {
         long id = reqId.getAndIncrement();
 
         // Only one thread at a time can have access to write to the channel.
@@ -297,7 +299,7 @@ class TcpClientChannel implements ClientChannel {
      * @return Received operation payload or {@code null} if response has no payload.
      */
     private <T> T receive(long reqId, Function<PayloadInputChannel, T> payloadReader)
-        throws ClientServerError, ClientException, ClientConnectionException, ClientAuthorizationException {
+        throws ClientException {
         ClientRequestFuture pendingReq = pendingReqs.get(reqId);
 
         assert pendingReq != null : "Pending request future not found for request " + reqId;
@@ -311,16 +313,7 @@ class TcpClientChannel implements ClientChannel {
             return payloadReader.apply(new PayloadInputChannel(this, payload));
         }
         catch (IgniteCheckedException e) {
-            if (e.getCause() instanceof ClientError)
-                throw new ClientException(e.getMessage(), e.getCause());
-
-            if (e.getCause() instanceof ClientConnectionException)
-                throw new ClientConnectionException(e.getMessage(), e.getCause());
-
-            if (e.getCause() instanceof ClientException)
-                throw new ClientException(e.getMessage(), e.getCause());
-
-            throw new ClientException(e.getMessage(), e);
+            throw convertException(e);
         }
         finally {
             pendingReqs.remove(reqId);
@@ -370,8 +363,24 @@ class TcpClientChannel implements ClientChannel {
         if (e.getCause() instanceof ClientError)
             return new ClientException(e.getMessage(), e.getCause());
 
+        // For every known class derived from ClientException, wrap cause in a new instance.
+        // We could rethrow e.getCause() when instanceof ClientException,
+        // but this results in an incomplete stack trace from the receiver thread.
+        // This is similar to IgniteUtils.exceptionConverters.
         if (e.getCause() instanceof ClientConnectionException)
             return new ClientConnectionException(e.getMessage(), e.getCause());
+
+        if (e.getCause() instanceof ClientReconnectedException)
+            return new ClientReconnectedException(e.getMessage(), e.getCause());
+
+        if (e.getCause() instanceof ClientAuthenticationException)
+            return new ClientAuthenticationException(e.getMessage(), e.getCause());
+
+        if (e.getCause() instanceof ClientAuthorizationException)
+            return new ClientAuthorizationException(e.getMessage(), e.getCause());
+
+        if (e.getCause() instanceof ClientFeatureNotSupportedByServerException)
+            return new ClientFeatureNotSupportedByServerException(e.getMessage(), e.getCause());
 
         if (e.getCause() instanceof ClientException)
             return new ClientException(e.getMessage(), e.getCause());

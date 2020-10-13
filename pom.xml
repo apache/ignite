@@ -72,7 +72,6 @@
         <module>modules/gce</module>
         <module>modules/cloud</module>
         <module>modules/mesos</module>
-        <module>modules/kafka</module>
         <module>modules/yarn</module>
         <module>modules/zookeeper</module>
         <module>modules/hibernate-core</module>

@@ -40,6 +40,10 @@ public class DistanceTest {
         new EuclideanDistance(),
         new HammingDistance(),
         new ManhattanDistance(),
+        new BrayCurtisDistance(),
+        new CanberraDistance(),
+        new JensenShannonDistance(),
+        new WeightedMinkowskiDistance(4, new DenseVector(new double[]{1, 1, 1})),
         new MinkowskiDistance(Math.random()));
 
     /** */
@@ -148,6 +152,57 @@ public class DistanceTest {
 
         assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
         assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+    }
+
+    /** */
+    @Test
+    public void brayCurtisDistance() {
+        double expRes = 1.0;
+
+        DistanceMeasure distanceMeasure = new BrayCurtisDistance();
+
+        assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+    }
+
+    /** */
+    @Test
+    public void canberraDistance() {
+        double expRes = 2.0;
+
+        DistanceMeasure distanceMeasure = new CanberraDistance();
+
+        assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+    }
+
+    /** */
+    @Test
+    public void jensenShannonDistance() {
+        double precistion = 0.01;
+        double expRes = 0.83;
+        double[] pData = new double[] {1.0, 0.0, 0.0};
+        Vector pV1 = new DenseVector(new double[] {0.0, 1.0, 0.0});
+        Vector pV2 = new DenseVector(pData);
+
+        DistanceMeasure distanceMeasure = new JensenShannonDistance();
+
+        assertEquals(expRes, distanceMeasure.compute(pV1, pData), precistion);
+        assertEquals(expRes, distanceMeasure.compute(pV1, pV2), precistion);
+    }
+
+    /** */
+    @Test
+    public void weightedMinkowskiDistance() {
+        double precistion = 0.01;
+        int p = 2;
+        double expRes = 5.0;
+        Vector v = new DenseVector(new double[]{2, 3, 4});
+
+        DistanceMeasure distanceMeasure = new WeightedMinkowskiDistance(p, v);
+
+        assertEquals(expRes, distanceMeasure.compute(v1, data2), precistion);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), precistion);
     }
 
     /** Returns a random vector */

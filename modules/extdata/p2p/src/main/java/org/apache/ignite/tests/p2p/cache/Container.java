@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.kafka.connect;
+package org.apache.ignite.tests.p2p.cache;
 
-import org.apache.kafka.connect.connector.Task;
+/** */
+public class Container {
+    /** */
+    private Object field;
 
-/**
- * Source connector mock for tests for using the task mock.
- */
-public class IgniteSourceConnectorMock extends IgniteSourceConnector {
-    /** {@inheritDoc} */
-    @Override public Class<? extends Task> taskClass() {
-        return IgniteSourceTaskMock.class;
+    /** */
+    public Container(Object field) {
+        this.field = field;
     }
 }
