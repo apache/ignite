@@ -19,13 +19,13 @@ package org.apache.ignite.platform;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.ignite.IgniteException;
 
 /**
  * Platform process utils for tests.
@@ -56,6 +56,7 @@ public class PlatformProcessUtils {
 
         InputStreamReader isr = new InputStreamReader(process.getInputStream());
         BufferedReader br = new BufferedReader(isr);
+        List<String> log = Collections.synchronizedList(new ArrayList<>());
 
         if (waitForOutput != null) {
             try {
@@ -63,13 +64,14 @@ public class PlatformProcessUtils {
                     try {
                         String line;
                         while ((line = br.readLine()) != null) {
+                            log.add(line);
                             System.out.println("PlatformProcessUtils >> " + line);
 
                             if (line.contains(waitForOutput))
                                 return;
                         }
-                    } catch (IOException ioException) {
-                        throw new IgniteException(ioException);
+                    } catch (Exception ignored) {
+                        // No-op.
                     }
                 });
 
@@ -78,11 +80,18 @@ public class PlatformProcessUtils {
                 process.destroyForcibly();
                 process = null;
 
-                throw new Exception("Failed to wait for specified output: '" + waitForOutput + "'", e);
+                String logString = String.join(System.lineSeparator(), log);
+
+                throw new Exception("Failed to wait for specified output ('" + waitForOutput + "'): " + logString, e);
             }
 
             if (!process.isAlive()) {
-                throw new Exception("Process has exited unexpectedly: " + process.exitValue());
+                int exitValue = process.exitValue();
+                process = null;
+
+                String logString = String.join(System.lineSeparator(), log);
+
+                throw new Exception("Process has exited unexpectedly (" + exitValue + "): " + logString);
             }
         }
 
@@ -92,8 +101,8 @@ public class PlatformProcessUtils {
                 String line;
                 while ((line = br.readLine()) != null)
                     System.out.println("PlatformProcessUtils >> " + line);
-            } catch (IOException ioException) {
-                throw new IgniteException(ioException);
+            } catch (Exception ignored) {
+                // No-op.
             }
         });
     }
