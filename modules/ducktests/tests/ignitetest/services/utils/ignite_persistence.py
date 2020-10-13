@@ -29,11 +29,17 @@ class PersistenceAware:
     # Root directory for persistent output
     PERSISTENT_ROOT = "/mnt/service"
     IGNITE_LOG_FILE = "ignite.log"
+    CONSOLE_LOG = "console.log"
     PATH_TO_LOG_FILE = os.path.join(PERSISTENT_ROOT, IGNITE_LOG_FILE)
+    STDOUT_STDERR_CAPTURE = os.path.join(PERSISTENT_ROOT, CONSOLE_LOG)
 
     logs = {
         "ignite_log": {
             "path": PATH_TO_LOG_FILE,
+            "collect_default": True
+        },
+        "console_log": {
+            "path": STDOUT_STDERR_CAPTURE,
             "collect_default": True
         }
     }

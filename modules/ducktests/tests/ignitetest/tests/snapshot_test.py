@@ -83,7 +83,7 @@ class SnapshotTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.UuidStreamerApplication",
             params={
                 "cacheName": "test-cache",
-                "iterSize": 512 * 1024
+                "iterSize": 10 * 1024
             }
         )
 
