@@ -202,7 +202,7 @@ namespace ignite
             return libNameBuffer.str();
         }
 
-        bool AllDigits(const std::string &val)
+        IGNITE_IMPORT_EXPORT bool AllDigits(const std::string &val)
         {
             std::string::const_iterator i = val.begin();
 

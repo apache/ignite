@@ -908,7 +908,7 @@ BOOST_AUTO_TEST_CASE(TestPrecisionSimple)
     BOOST_CHECK_EQUAL(Decimal(9).GetPrecision(), 1);
 
     BOOST_CHECK_EQUAL(Decimal(2147483648L).GetPrecision(),           10); // 2^31:       10 digits
-    BOOST_CHECK_EQUAL(Decimal(-2147483648L).GetPrecision(),          10); // -2^31:      10 digits
+    BOOST_CHECK_EQUAL(Decimal(-2147483647L).GetPrecision(),          10); // -2^31+1:    10 digits
     BOOST_CHECK_EQUAL(Decimal(98893745455L).GetPrecision(),          11); // random:     11 digits
     BOOST_CHECK_EQUAL(Decimal(3455436789887L).GetPrecision(),        13); // random:     13 digits
     BOOST_CHECK_EQUAL(Decimal(140737488355328L).GetPrecision(),      15); // 2^47:       15 digits

@@ -208,7 +208,7 @@ namespace ignite
          *
          * @param val Value to check.
          */
-        bool AllDigits(const std::string& val);
+        IGNITE_IMPORT_EXPORT bool AllDigits(const std::string& val);
 
         /**
          * Converts 32-bit integer to big endian format
