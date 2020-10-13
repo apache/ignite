@@ -115,15 +115,15 @@ public class OperationThread implements Runnable {
 
         //calc dispersion
         double x = 0;
-        for (Long report : reports) x += Math.pow(report - avgLatency, 2);
+        for (Long report : reports)
+            x += Math.pow(report - avgLatency, 2);
 
-        double dispersion = 0;
-        if (reports.size() > 1) {
-            dispersion = x / (reports.size() - 1);
-        }
+        double variance = 0;
+        if (reports.size() > 1)
+            variance = x / (reports.size() - 1);
 
         Report report = new Report();
-        report.setAvgLatency(avgLatency);
+        report.setAvgLatency(Math.round(avgLatency));
         report.setStartTime(startTime);
         report.setEndTime(endTime);
         report.setMinLatency(minLatency);
@@ -131,7 +131,7 @@ public class OperationThread implements Runnable {
         report.setTxCount(txCount);
         report.setThreadName(Thread.currentThread().getName());
         report.setPercentile99(percentile99);
-        report.setDispersion(dispersion);
+        report.setVariance(Math.round(variance));
         return report;
     }
 }

@@ -53,7 +53,7 @@ public class Reporter implements Runnable {
             "avg_latency," +
             "max_latency," +
             "percentile99%," +
-            "dispersion";
+            "variance";
 
     /**
      * Template for the final report line.
@@ -63,10 +63,10 @@ public class Reporter implements Runnable {
             "%d," +
             "%d," +
             "%d," +
-            "%.2f," +
             "%d," +
             "%d," +
-            "%.2f";
+            "%d," +
+            "%d";
 
     /** */
     public Reporter(String reportFile, ConcurrentLinkedDeque concurrentLinkedDeque, Metadata metadata) throws IOException {
@@ -121,7 +121,7 @@ public class Reporter implements Runnable {
                 report.getAvgLatency(),
                 report.getMaxLatency(),
                 report.getPercentile99(),
-                report.getDispersion()
+                report.getVariance()
         ));
         return builder.toString();
     }

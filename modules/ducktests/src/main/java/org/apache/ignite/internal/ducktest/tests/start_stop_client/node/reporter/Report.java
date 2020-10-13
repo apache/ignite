@@ -40,13 +40,13 @@ public class Report {
     private long maxLatency = -1;
 
     /** The average duration of the operations. */
-    private double avgLatency = -1;
+    private long avgLatency = -1;
 
     /** Percentile 99 %. */
     private long percentile99 = -1;
 
     /** Measurement variance. */
-    private double dispersion = -1;
+    private long variance = -1;
 
     /** */
     public Report(){
@@ -54,13 +54,13 @@ public class Report {
     }
 
     /** */
-    public double getDispersion() {
-        return dispersion;
+    public long getVariance() {
+        return variance;
     }
 
     /** */
-    public void setDispersion(double dispersion) {
-        this.dispersion = dispersion;
+    public void setVariance(long dispersion) {
+        this.variance = dispersion;
     }
 
     /** */
@@ -134,12 +134,12 @@ public class Report {
     }
 
     /** */
-    public double getAvgLatency() {
+    public long getAvgLatency() {
         return avgLatency;
     }
 
     /** */
-    public void setAvgLatency(double avgLatency) {
+    public void setAvgLatency(long avgLatency) {
         this.avgLatency = avgLatency;
     }
 }
