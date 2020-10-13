@@ -28,10 +28,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -56,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -163,6 +166,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean reconnectDisabled;
 
+    /** */
+    private BiConsumer<ClusterNode, DiscoveryDataBag> dataExchangeCollectClosure;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -232,8 +238,14 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         disco.setClientReconnectDisabled(reconnectDisabled);
 
-        if (disco instanceof TestTcpDiscoverySpi)
-            ((TestTcpDiscoverySpi)disco).afterWrite(afterWrite);
+        if (disco instanceof TestTcpDiscoverySpi) {
+            TestTcpDiscoverySpi tcpDisco = ((TestTcpDiscoverySpi)disco);
+
+            tcpDisco.afterWrite(afterWrite);
+
+            if (dataExchangeCollectClosure != null)
+                tcpDisco.dataExchangeCollectClosure = dataExchangeCollectClosure;
+        }
 
         cfg.setDiscoverySpi(disco);
 
@@ -2178,22 +2190,43 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJoiningNodeClientFlag() throws Exception {
-        startServerNodes(1);
-        startClientNodes(1);
+        Collection<T2<ClusterNode, DiscoveryDataBag>> dataBags = new ConcurrentLinkedQueue<>();
 
-        IgniteEx srv = grid("server-0");
-        IgniteEx client = grid("client-0");
+        dataExchangeCollectClosure = new BiConsumer<ClusterNode, DiscoveryDataBag>() {
+            @Override public void accept(ClusterNode node, DiscoveryDataBag dataBag) {
+                dataBags.add(new T2<>(node, dataBag));
+            }
+        };
 
-        Map<UUID, Boolean> joiningNodesClientFlag =
-            ((TestTcpDiscoverySpi)srv.context().config().getDiscoverySpi()).joiningNodesClientFlag;
+        startGrid("server-0");
+        validateJoiningNodeFlag(dataBags);
 
-        assertFalse(joiningNodesClientFlag.get(srv.localNode().id()));
-        assertTrue(joiningNodesClientFlag.get(client.localNode().id()));
+        startClientGrid("client-0");
+        validateJoiningNodeFlag(dataBags);
 
-        joiningNodesClientFlag =
-            ((TestTcpDiscoverySpi)client.context().config().getDiscoverySpi()).joiningNodesClientFlag;
+        startGrid("server-1");
+        validateJoiningNodeFlag(dataBags);
 
-        assertTrue(joiningNodesClientFlag.get(client.localNode().id()));
+        startClientGrid("client-1");
+        validateJoiningNodeFlag(dataBags);
+    }
+
+    /**
+     * @param dataBags Collection of discovery data bags with the node ID where this bag was collected.
+     */
+    private void validateJoiningNodeFlag(Collection<T2<ClusterNode, DiscoveryDataBag>> dataBags) {
+        assertFalse(dataBags.isEmpty());
+
+        for (T2<ClusterNode, DiscoveryDataBag> pair : dataBags) {
+            ClusterNode locNode = pair.get1();
+            DiscoveryDataBag dataBag = pair.get2();
+            UUID joiningNodeId = dataBag.joiningNodeId();
+
+            assertEquals("locNode=" + locNode.id() + ", joinNode=" + joiningNodeId,
+                grid("server-0").cluster().node(joiningNodeId).isClient(), dataBag.isJoiningNodeClient());
+        }
+
+        dataBags.clear();
     }
 
     /**
@@ -2528,6 +2561,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         /** */
         private volatile boolean skipNodeAdded;
 
+        /** */
+        private volatile BiConsumer<ClusterNode, DiscoveryDataBag> dataExchangeCollectClosure;
+
         /** Mapping of ignite node ID to databag joining flag. */
         private final Map<UUID, Boolean> joiningNodesClientFlag = new ConcurrentHashMap<>();
 
@@ -2600,7 +2636,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         @Override public void setDataExchange(DiscoverySpiDataExchange delegate) {
             super.setDataExchange(new DiscoverySpiDataExchange() {
                 @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
-                    joiningNodesClientFlag.putIfAbsent(dataBag.joiningNodeId(), dataBag.isJoiningNodeClient());
+                    if (dataExchangeCollectClosure != null)
+                        dataExchangeCollectClosure.accept(locNode, dataBag);
 
                     return delegate.collect(dataBag);
                 }
