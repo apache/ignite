@@ -128,6 +128,11 @@ public class CacheGroupPageScanner implements CheckpointListener {
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context cpCtx) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeCheckpointBegin(Context cpCtx) {
         Set<GroupScanTask> completeCandidates = new HashSet<>();
 
         cpWaitGrps.removeIf(completeCandidates::add);
@@ -164,11 +169,6 @@ public class CacheGroupPageScanner implements CheckpointListener {
                 }
             }
         );
-    }
-
-    /** {@inheritDoc} */
-    @Override public void beforeCheckpointBegin(Context cpCtx) {
-        // No-op.
     }
 
     /** {@inheritDoc} */
