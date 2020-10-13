@@ -243,7 +243,7 @@ def simulate_nodes_failure(servers, failed_nodes, survived_node):
 
         logged_timestamps.append(
             datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
-                              "[%Y-%m-%d %H:%M:%S,%f]"))
+                              "[%Y-%m-%dT%H:%M:%S,%f]"))
 
     logged_timestamps.sort(reverse=True)
 
