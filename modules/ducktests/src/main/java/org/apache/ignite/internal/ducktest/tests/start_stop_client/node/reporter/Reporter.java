@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.ducktest.tests.start_stop_client.node.reporter;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -32,7 +29,6 @@ public class Reporter implements Runnable {
      * Queue with data for report.
      * */
     private ConcurrentLinkedDeque<Report> queue;
-    private Logger logger = LoggerFactory.getLogger(Reporter.class.getName());
 
     /**
      * Target report file path.
@@ -107,7 +103,6 @@ public class Reporter implements Runnable {
                 String singleReport = buildReportString(queue.pollFirst());
                 fileWriter.write(singleReport);
                 fileWriter.flush();
-                logger.info("write data: " + singleReport);
             }
         }
     }
@@ -132,7 +127,7 @@ public class Reporter implements Runnable {
     }
 
     /** */
-    private String supportInfoBuilder(Metadata metadata){
+    private String supportInfoBuilder(Metadata metadata) {
         return String.format(this.supportInfoTemplate, metadata.getActionName(),
                 metadata.getThreads(),
                 metadata.getStartTime());

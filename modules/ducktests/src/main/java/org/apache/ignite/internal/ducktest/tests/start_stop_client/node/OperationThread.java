@@ -19,6 +19,8 @@ package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
 
 import java.util.ArrayList;
 import java.util.Collections;
+
+import org.apache.ignite.internal.ducktest.tests.start_stop_client.node.reporter.Report;
 import org.apache.log4j.Logger;
 
 /**
@@ -59,15 +61,15 @@ public class OperationThread implements Runnable {
     @Override public void run() {
         while (!Thread.interrupted()) {
             try {
-                actionNode.publishInterimReport(calculateInterimStatement());
+                actionNode.publishInternalReport(calculateInternalReport());
                 Thread.sleep(pacing);
             } catch (InterruptedException e) {
             }
         }
     }
 
-    /** Building an interim report. */
-    private Report calculateInterimStatement() {
+    /** */
+    private Report calculateInternalReport() {
         long endTime = 0;
         long txCount = 0;
         long minLatency = -1;
@@ -79,60 +81,56 @@ public class OperationThread implements Runnable {
 
         long latency = 0;
         long batch = 0;
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
 
-        try {
-            while (batch < (count)) {
-                latency = actionNode.singleAction();
-                txCount++;
+        while (batch < (count)) {
+            latency = actionNode.singleAction();
+            txCount++;
 
-                if (minLatency == -1 || minLatency > latency) {
-                    minLatency = latency;
-                }
-
-                if (maxLatency < latency) {
-                    maxLatency = latency;
-                }
-                reports.add(latency);
-                batch++;
+            if (minLatency == -1 || minLatency > latency) {
+                minLatency = latency;
             }
-            endTime = System.currentTimeMillis();
 
-            long sum = 0;
-            for (Long l : reports) {
-                sum += l;
+            if (maxLatency < latency) {
+                maxLatency = latency;
             }
-            if (!reports.isEmpty()) {
-                avgLatency = sum / reports.size();
-                Collections.sort(reports);
-
-                percentile99 = reports.get((int) (reports.size() * 0.99));
-            }
+            reports.add(latency);
+            batch++;
         }
-        finally {
-            //calc dispersion
-            long x = 0;
-            for (Long report : reports) x += Math.pow(report - avgLatency, 2);
+        endTime = System.nanoTime();
 
-            logger.info("dispersion debug: " + x);
-
-            double dispersion = 0;
-            if (reports.size() > 1) {
-                dispersion = x / (reports.size() - 1);
-            }
-
-            Report report = new Report();
-            report.setAvgLatency(avgLatency);
-            report.setStartTime(startTime);
-            report.setEndTime(endTime);
-            report.setMinLatency(minLatency);
-            report.setMaxLatency(maxLatency);
-            report.setTxCount(txCount);
-            report.setThreadName(Thread.currentThread().getName());
-            report.setPercentile99(percentile99);
-            report.setDispersion(dispersion);
-
-            return report;
+        long sum = 0;
+        for (Long l : reports) {
+            sum += l;
         }
+        if (!reports.isEmpty()) {
+            avgLatency = sum / reports.size();
+            Collections.sort(reports);
+
+            percentile99 = reports.get((int) (reports.size() * 0.99));
+        }
+
+        //calc dispersion
+        long x = 0;
+        for (Long report : reports) x += Math.pow(report - avgLatency, 2);
+
+        logger.info("dispersion debug: " + x);
+
+        double dispersion = 0;
+        if (reports.size() > 1) {
+            dispersion = x / (reports.size() - 1);
+        }
+
+        Report report = new Report();
+        report.setAvgLatency(avgLatency);
+        report.setStartTime(startTime);
+        report.setEndTime(endTime);
+        report.setMinLatency(minLatency);
+        report.setMaxLatency(maxLatency);
+        report.setTxCount(txCount);
+        report.setThreadName(Thread.currentThread().getName());
+        report.setPercentile99(percentile99);
+        report.setDispersion(dispersion);
+        return report;
     }
 }
