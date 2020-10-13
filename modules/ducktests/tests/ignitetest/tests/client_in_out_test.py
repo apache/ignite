@@ -16,14 +16,18 @@
 """
 This module contains client tests
 """
+import os
 import time
 from ducktape.mark.resource import cluster
+from ducktape.tests.test import TestContext
+from ducktape.utils.local_filesystem_utils import mkdir_p
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_persistence import PersistenceAware
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, V_2_8_1, IgniteVersion
@@ -49,10 +53,11 @@ class ClientTest(IgniteTest):
     THREADS = 1
     ACTION = "put-tx"
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.start_stop_client.SimpleTransactionGenerator"
+    REPORT_FOLDER = PersistenceAware.PERSISTENT_ROOT + "/report"
 
     CLIENTS_WORK_TIME_S = 30
     STATIC_CLIENT_WORK_TIME_S = 30
-    ITERATION_COUNT = 3
+    ITERATION_COUNT = 1
     CLUSTER_NODES = 7
     STATIC_CLIENTS_NUM = 1
     TEMP_CLIENTS_NUM = 4
@@ -74,6 +79,7 @@ class ClientTest(IgniteTest):
 
         # build client config
         client_cfg = server_cfg._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite))
+
         # prepare client services
         static_clients = IgniteApplicationService(
             self.test_context,
@@ -83,7 +89,8 @@ class ClientTest(IgniteTest):
             params={"cacheName": self.CACHE_NAME,
                     "pacing": self.PACING,
                     "action": self.ACTION,
-                    "threads": self.THREADS})
+                    "threads": self.THREADS,
+                    "report_folder": self.REPORT_FOLDER})
 
         temp_clients = IgniteApplicationService(
             self.test_context,
@@ -91,7 +98,9 @@ class ClientTest(IgniteTest):
             java_class_name=self.JAVA_CLIENT_CLASS_NAME,
             num_nodes=self.TEMP_CLIENTS_NUM,
             params={"cacheName": self.CACHE_NAME,
-                    "pacing": self.PACING})
+                    "pacing": self.PACING,
+                    "report_folder": self.REPORT_FOLDER})
+
         # start servers and check cluster
         ignite.start()
         ignite.await_event(f'servers={servers_count}',
@@ -134,6 +143,17 @@ class ClientTest(IgniteTest):
             check_topology(control_utility, current_top_v)
 
         static_clients.stop()
+
+        # collect results from static nodes
+        for node in static_clients.nodes:
+            dest = os.path.join(
+                TestContext.results_dir(self.test_context, self.test_context.test_index),
+                static_clients.service_id, node.account.hostname)
+            self.logger.debug("Dest dir: " + dest)
+            if not os.path.isdir(dest):
+                mkdir_p(dest)
+            node.account.copy_from(self.REPORT_FOLDER, dest)
+
         check_topology(control_utility, fin_top_ver)
 
 

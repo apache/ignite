@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
 
+import org.apache.ignite.internal.ducktest.tests.start_stop_client.node.reporter.Report;
+
 /**
  * Base interface.
  */
@@ -25,5 +27,5 @@ public interface Action {
     public long singleAction();
 
     /* Method for publishing an internal report. **/
-    public void publishInterimReport(Report report);
+    public void publishInternalReport(Report report);
 }

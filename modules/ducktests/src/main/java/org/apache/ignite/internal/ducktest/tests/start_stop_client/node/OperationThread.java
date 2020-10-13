@@ -19,6 +19,8 @@ package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
 
 import java.util.ArrayList;
 import java.util.Collections;
+
+import org.apache.ignite.internal.ducktest.tests.start_stop_client.node.reporter.Report;
 import org.apache.log4j.Logger;
 
 /**
@@ -59,15 +61,15 @@ public class OperationThread implements Runnable {
     @Override public void run() {
         while (!Thread.interrupted()) {
             try {
-                actionNode.publishInterimReport(calculateInterimStatement());
+                actionNode.publishInternalReport(calculateInternalReport());
                 Thread.sleep(pacing);
             } catch (InterruptedException e) {
             }
         }
     }
 
-    /** Building an interim report. */
-    private Report calculateInterimStatement() {
+    /** */
+    private Report calculateInternalReport() {
         long endTime = 0;
         long txCount = 0;
         long minLatency = -1;
@@ -79,7 +81,7 @@ public class OperationThread implements Runnable {
 
         long latency = 0;
         long batch = 0;
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
 
         try {
             while (batch < (count)) {
@@ -96,14 +98,14 @@ public class OperationThread implements Runnable {
                 reports.add(latency);
                 batch++;
             }
-            endTime = System.currentTimeMillis();
+            endTime = System.nanoTime();
 
             long sum = 0;
             for (Long l : reports) {
                 sum += l;
             }
             if (!reports.isEmpty()) {
-                avgLatency = sum / reports.size();
+                avgLatency = (Long) sum / reports.size();
                 Collections.sort(reports);
 
                 percentile99 = reports.get((int) (reports.size() * 0.99));
@@ -112,12 +114,14 @@ public class OperationThread implements Runnable {
         finally {
             //calc dispersion
             long x = 0;
-            for (Long report : reports) {
-                x = x + (report - avgLatency) ^ (2);
-            }
+            for (Long report : reports) x = (long) (x + Math.pow(report - avgLatency, 2));
+
             logger.info("dispersion debug: " + x);
 
-            double dispersion = (double) (x / (reports.size() - 1));
+            double dispersion = 0;
+            if (reports.size() > 1) {
+                dispersion = (double) (x / (reports.size() - 1));
+            }
 
             Report report = new Report();
             report.setAvgLatency(avgLatency);

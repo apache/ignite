@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
+package org.apache.ignite.internal.ducktest.tests.start_stop_client.node.reporter;
 
 /**
  * Java client. Tx put operation
@@ -25,28 +25,28 @@ public class Report {
     private String threadName = "default";
 
     /** Measurement start time. */
-    private long startTime;
+    private long startTime = -1;
 
     /** The time of completion of measurement. */
-    private long endTime;
+    private long endTime = -1;
 
     /** Transaction count. */
-    private long txCount;
+    private long txCount = -1;
 
     /** The minimum duration of the operation. */
-    private long minLatency;
+    private long minLatency = -1;
 
     /** The maximum duration of the operation. */
-    private long maxLatency;
+    private long maxLatency = -1;
 
     /** The average duration of the operations. */
-    private long avgLatency;
+    private long avgLatency = -1;
 
     /** Percentile 99 %. */
-    private long percentile99;
+    private long percentile99 = -1;
 
     /** Measurement variance. */
-    private double dispersion;
+    private double dispersion = -1;
 
     /** */
     public Report(){

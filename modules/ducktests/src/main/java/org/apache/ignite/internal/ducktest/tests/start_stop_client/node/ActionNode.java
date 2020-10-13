@@ -17,14 +17,20 @@
 
 package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.ignite.internal.ducktest.tests.start_stop_client.node.reporter.Metadata;
+import org.apache.ignite.internal.ducktest.tests.start_stop_client.node.reporter.Report;
+import org.apache.ignite.internal.ducktest.tests.start_stop_client.node.reporter.Reporter;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -36,6 +42,17 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
     /** The unique name of the agent. */
     private String nodeId = UUID.randomUUID().toString();
 
+    /**
+     * Queue with data for report.
+     * */
+    private ConcurrentLinkedDeque<Report> queue = new ConcurrentLinkedDeque<Report>();
+
+    /* **/
+    Reporter reporter;
+
+    /* **/
+    Metadata testInfo = new Metadata();
+
     /** Start test time. */
     protected Date startTime;
 
@@ -44,17 +61,6 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
 
     /** Thread count. */
     private int threads;
-
-    /** Template for the final report line. */
-    private final String FINAL_REPORT_TEMPLATE = "" +
-            "<start_time>%d</start_time>" +
-            "<end_t>%d</end_t>" +
-            "<tx_c>%d</tx_c>" +
-            "<min_l>%d</min_l>" +
-            "<avg_l>%d</avg_l>" +
-            "<max_l>%d</max_l>" +
-            "<percentile>%d</percentile>" +
-            "<disp>%.2f</disp>";
 
     /** The delay between iterations of the action. */
     protected long pacing;
@@ -98,10 +104,12 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
     }
 
     /** */
-    protected void init(JsonNode jsonNode) {
+    protected void init(JsonNode jsonNode) throws IOException {
         threads = Optional.ofNullable(jsonNode.get("threads")).map(JsonNode::asInt).orElse(1);
         pacing = Optional.ofNullable(jsonNode.get("pacing")).map(JsonNode::asLong).orElse(0l);
         actionName = Optional.ofNullable(jsonNode.get("action")).map(JsonNode::asText).orElse("default-action-name");
+        String reportFolder = jsonNode.get("report_folder").asText();
+
         startTime = new Date();
 
         log.info(
@@ -111,7 +119,20 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
                 " threads=" + threads
         );
 
-        executor = Executors.newFixedThreadPool(threads + 2);
+        testInfo.setActionName(actionName);
+        testInfo.setThreads(threads);
+        testInfo.setStartTime(System.currentTimeMillis());
+
+        File folder = new File(reportFolder);
+        if (!folder.exists()) {
+            folder.mkdir();
+        }
+
+        String reportPath = reportFolder + "/report-" + System.currentTimeMillis() + ".csv";
+        reporter = new Reporter(reportPath, queue, testInfo);
+
+        executor = Executors.newFixedThreadPool(threads + 3);
+        executor.execute(reporter);
         scriptInit(jsonNode);
     }
 
@@ -119,32 +140,13 @@ public abstract class ActionNode extends IgniteAwareApplication implements Actio
     protected abstract void scriptInit(JsonNode jsonNode);
 
     /** {@inheritDoc} */
-    @Override public void publishInterimReport(Report report) {
+    @Override public void publishInternalReport(Report report) {
         if (!executor.isShutdown()) {
             executor.execute(new Runnable() {
                 @Override public void run() {
-                    printReportIntoLog(report);
+                    queue.push(report);
                 }
             });
         }
-    }
-
-    /** */
-    private void printReportIntoLog(Report report) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("\n");
-        builder.append("<data>\n");
-        builder.append(String.format(FINAL_REPORT_TEMPLATE,
-                report.getStartTime(),
-                report.getEndTime(),
-                report.getTxCount(),
-                report.getMinLatency(),
-                report.getAvgLatency(),
-                report.getMaxLatency(),
-                report.getPercentile99(),
-                report.getDispersion()
-        ));
-        builder.append("</data>\n");
-        log.info(builder.toString());
     }
 }
