@@ -15,32 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.persistence.cleaning;
+package org.apache.ignite.internal.commandline.persistence;
 
-import org.apache.ignite.internal.visor.persistence.cleaning.PersistenceCleaningOperation;
+import org.apache.ignite.internal.visor.persistence.PersistenceOperation;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public enum PersistenceCleaningSubcommands {
+public enum PersistenceSubcommands {
     /** Collects information about corrupted caches and cache groups and their file system paths. */
-    INFO("info", PersistenceCleaningOperation.INFO),
+    INFO("info", PersistenceOperation.INFO),
 
     /** Cleans partition files of corrupted caches and cache groups. */
-    CLEAN("clean", PersistenceCleaningOperation.CLEAN);
+    CLEAN("clean", PersistenceOperation.CLEAN);
 
     /** Subcommand name. */
     private final String name;
 
     /** Operation this subcommand triggers. */
-    private final PersistenceCleaningOperation operation;
+    private final PersistenceOperation operation;
 
     /**
      * @param name String representation of subcommand.
      * @param operation Operation this command triggers.
      */
-    PersistenceCleaningSubcommands(String name, PersistenceCleaningOperation operation) {
+    PersistenceSubcommands(String name, PersistenceOperation operation) {
         this.name = name;
         this.operation = operation;
     }
@@ -49,9 +49,9 @@ public enum PersistenceCleaningSubcommands {
      * @param strRep String representation of subcommand.
      * @return Subcommand for its string representation.
      */
-    public static @Nullable PersistenceCleaningSubcommands of(String strRep) {
-        for (PersistenceCleaningSubcommands cmd : values()) {
-            if (cmd.name().equals(strRep))
+    public static @Nullable PersistenceSubcommands of(String strRep) {
+        for (PersistenceSubcommands cmd : values()) {
+            if (cmd.text().equals(strRep))
                 return cmd;
         }
 
@@ -59,7 +59,12 @@ public enum PersistenceCleaningSubcommands {
     }
 
     /** */
-    public PersistenceCleaningOperation cleaningOperation() {
+    public String text() {
+        return name;
+    }
+
+    /** */
+    public PersistenceOperation operation() {
         return operation;
     }
 }

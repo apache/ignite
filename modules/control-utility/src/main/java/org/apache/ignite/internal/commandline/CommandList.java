@@ -92,7 +92,7 @@ public enum CommandList {
     METRIC("--metric", new MetricCommand()),
 
     /** */
-    PERSISTENCE_CLEANING("--persistence-cleaning", new PersistenceCleaningCommand());
+    PERSISTENCE("--persistence", new PersistenceCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

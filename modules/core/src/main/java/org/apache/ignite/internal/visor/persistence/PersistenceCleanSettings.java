@@ -15,53 +15,57 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.persistence.cleaning;
+package org.apache.ignite.internal.visor.persistence;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.List;
 
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/**
- *
- */
-public class PersistenceCleaningTaskArg extends IgniteDataTransferObject {
+/** */
+public class PersistenceCleanSettings extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private PersistenceCleaningOperation op;
+    private PersistenceCleanType cleanType;
 
-    /**
-     * Default constructor.
-     */
-    public PersistenceCleaningTaskArg() {
+    /** */
+    private List<String> cacheNames;
+
+    /** */
+    public PersistenceCleanSettings() {
         // No-op.
     }
 
-    /**
-     * @param op
-     */
-    public PersistenceCleaningTaskArg(PersistenceCleaningOperation op) {
-        this.op = op;
-    }
-
-    /**
-     * @return
-     */
-    public PersistenceCleaningOperation operation() {
-        return op;
+    /** */
+    public PersistenceCleanSettings(PersistenceCleanType cleanType, List<String> cacheNames) {
+        this.cleanType = cleanType;
+        this.cacheNames = cacheNames;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeEnum(out, op);
+        U.writeEnum(out, cleanType);
+        U.writeCollection(out, cacheNames);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        op = PersistenceCleaningOperation.fromOrdinal(in.readByte());
+        cleanType = PersistenceCleanType.fromOrdinal(in.readByte());
+        cacheNames = U.readList(in);
+    }
+
+    /** */
+    public PersistenceCleanType cleanType() {
+        return cleanType;
+    }
+
+    /** */
+    public List<String> cacheNames() {
+        return cacheNames;
     }
 }

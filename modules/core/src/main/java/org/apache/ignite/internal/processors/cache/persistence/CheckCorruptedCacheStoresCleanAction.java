@@ -18,64 +18,53 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.List;
 
 import org.apache.ignite.maintenance.MaintenanceAction;
-import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 
-/**
- *
- */
-public class CorruptedPdsMaintenanceCallback implements MaintenanceWorkflowCallback {
+/** */
+public class CheckCorruptedCacheStoresCleanAction implements MaintenanceAction<Boolean> {
     /** */
-    private final File workDir;
+    public static final String ACTION_NAME = "check_cache_files_cleaned";
 
     /** */
-    private final List<String> cacheStoreDirs;
+    private final File rootStoreDir;
 
-    /**
-     * @param workDir
-     * @param cacheStoreDirs
-     */
-    public CorruptedPdsMaintenanceCallback(@NotNull File workDir,
-                                           @NotNull List<String> cacheStoreDirs)
-    {
-        this.workDir = workDir;
+    /** */
+    private final String[] cacheStoreDirs;
+
+    /** */
+    public CheckCorruptedCacheStoresCleanAction(File rootStoreDir, String[] cacheStoreDirs) {
+        this.rootStoreDir = rootStoreDir;
         this.cacheStoreDirs = cacheStoreDirs;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean shouldProceedWithMaintenance() {
+    @Override public Boolean execute() {
         for (String cacheStoreDirName : cacheStoreDirs) {
-            File cacheStoreDir = new File(workDir, cacheStoreDirName);
+            File cacheStoreDir = new File(rootStoreDir, cacheStoreDirName);
 
-            if (cacheStoreDir.exists()
-                && cacheStoreDir.isDirectory()
-                && cacheStoreDir.listFiles().length > 0
-            ) {
+            if (cacheStoreDir.exists() && cacheStoreDir.isDirectory()) {
                 for (File f : cacheStoreDir.listFiles()) {
                     if (!f.getName().equals(CACHE_DATA_FILENAME))
-                        return true;
+                        return Boolean.FALSE;
                 }
             }
         }
 
-        return false;
+        return Boolean.TRUE;
     }
 
     /** {@inheritDoc} */
-    @Override public List<MaintenanceAction> allActions() {
-        return Arrays.asList(
-            new CleanCacheStoresMaintenanceAction(workDir, cacheStoreDirs.toArray(new String[0])),
-            new CheckCorruptedCacheStoresCleanAction(workDir, cacheStoreDirs.toArray(new String[0])));
+    @Override public @NotNull String name() {
+        return ACTION_NAME;
     }
 
     /** {@inheritDoc} */
-    @Override public MaintenanceAction automaticAction() {
-        return null;
+    @Override public @Nullable String description() {
+        return "Checks if all corrupted data files are cleaned from cache store directories";
     }
 }
