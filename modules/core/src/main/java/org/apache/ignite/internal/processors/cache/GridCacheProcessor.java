@@ -306,7 +306,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final CacheRecoveryLifecycle recovery = new CacheRecoveryLifecycle();
 
     /** Cache configuration splitter. */
-    private CacheConfigurationSplitter splitter;
+    private final CacheConfigurationSplitter splitter;
 
     /** Cache configuration enricher. */
     private final CacheConfigurationEnricher enricher;
