@@ -45,7 +45,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
@@ -747,7 +747,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         long reservedIdx = walMgr.currentSegment();
 
-        boolean reserved = walMgr.reserve(new FileWALPointer(reservedIdx, 0, 0));
+        boolean reserved = walMgr.reserve(new WALPointer(reservedIdx, 0, 0));
         assertTrue(reserved);
 
         IgniteInternalFuture<?> loadFut = loadDataAsync(node);
