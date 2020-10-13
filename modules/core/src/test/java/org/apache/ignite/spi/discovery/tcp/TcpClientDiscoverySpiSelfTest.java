@@ -2184,7 +2184,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Ensures that {@link DiscoveryDataBag#isJoiningNodeClient()} returns a valid value when joining a client node.
+     * Ensures that {@link DiscoveryDataBag#isJoiningNodeClient()} returns a valid value when joining a node.
      *
      * @throws Exception In case of error.
      */
@@ -2192,41 +2192,29 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     public void testJoiningNodeClientFlag() throws Exception {
         Collection<T2<ClusterNode, DiscoveryDataBag>> dataBags = new ConcurrentLinkedQueue<>();
 
-        dataExchangeCollectClosure = new BiConsumer<ClusterNode, DiscoveryDataBag>() {
-            @Override public void accept(ClusterNode node, DiscoveryDataBag dataBag) {
-                dataBags.add(new T2<>(node, dataBag));
-            }
-        };
+        dataExchangeCollectClosure = (locNode, dataBag) -> dataBags.add(new T2<>(locNode, dataBag));
 
-        startGrid("server-0");
-        validateJoiningNodeFlag(dataBags);
-
-        startClientGrid("client-0");
-        validateJoiningNodeFlag(dataBags);
-
-        startGrid("server-1");
-        validateJoiningNodeFlag(dataBags);
-
-        startClientGrid("client-1");
-        validateJoiningNodeFlag(dataBags);
+        checkJoiningNodeData(true, dataBags);
+        checkJoiningNodeData(false, dataBags);
+        checkJoiningNodeData(true, dataBags);
+        checkJoiningNodeData(false, dataBags);
     }
 
     /**
-     * @param dataBags Collection of discovery data bags with the node ID where this bag was collected.
+     * @param srv Server node flag.
+     * @param bags Collection of discovery data bags with the node ID where this bag was collected.
      */
-    private void validateJoiningNodeFlag(Collection<T2<ClusterNode, DiscoveryDataBag>> dataBags) {
-        assertFalse(dataBags.isEmpty());
+    private void checkJoiningNodeData(boolean srv, Collection<T2<ClusterNode, DiscoveryDataBag>> bags) throws Exception {
+        if (srv)
+            startGrid("server-" + srvIdx.getAndIncrement());
+        else
+            startClientGrid("client-" + clientIdx.getAndIncrement());
 
-        for (T2<ClusterNode, DiscoveryDataBag> pair : dataBags) {
-            ClusterNode locNode = pair.get1();
-            DiscoveryDataBag dataBag = pair.get2();
-            UUID joiningNodeId = dataBag.joiningNodeId();
+        assertFalse(bags.isEmpty());
 
-            assertEquals("locNode=" + locNode.id() + ", joinNode=" + joiningNodeId,
-                grid("server-0").cluster().node(joiningNodeId).isClient(), dataBag.isJoiningNodeClient());
-        }
+        assertTrue(bags.toString(), bags.stream().allMatch(pair -> srv != pair.get2().isJoiningNodeClient()));
 
-        dataBags.clear();
+        bags.clear();
     }
 
     /**
@@ -2638,6 +2626,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
                     if (dataExchangeCollectClosure != null)
                         dataExchangeCollectClosure.accept(locNode, dataBag);
+
+                    assert !locNode.isClient() || locNode.id().equals(dataBag.joiningNodeId());
 
                     return delegate.collect(dataBag);
                 }
