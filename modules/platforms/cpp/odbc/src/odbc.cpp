@@ -255,8 +255,7 @@ namespace ignite
                                SQLSMALLINT* outConnectionStringLen,
                                SQLUSMALLINT driverCompletion)
     {
-        // Unused.
-        (void) driverCompletion;
+        IGNITE_UNUSED(driverCompletion);
 
         using odbc::Connection;
         using odbc::diagnostic::DiagnosticRecordStorage;
@@ -304,11 +303,10 @@ namespace ignite
                          SQLCHAR*       auth,
                          SQLSMALLINT    authLen)
     {
-        // Unused.
-        (void) userName;
-        (void) userNameLen;
-        (void) auth;
-        (void) authLen;
+        IGNITE_UNUSED(userName);
+        IGNITE_UNUSED(userNameLen);
+        IGNITE_UNUSED(auth);
+        IGNITE_UNUSED(authLen);
 
         using odbc::Connection;
         using odbc::config::Configuration;
@@ -633,8 +631,7 @@ namespace ignite
                            SQLINTEGER   outQueryBufferLen,
                            SQLINTEGER*  outQueryLen)
     {
-        // Unused.
-        (void) conn;
+        IGNITE_UNUSED(conn);
 
         using namespace utility;
 

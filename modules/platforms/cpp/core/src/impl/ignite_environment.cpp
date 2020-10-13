@@ -214,8 +214,7 @@ namespace ignite
         int64_t IGNITE_CALL InLongLongLongObjectOutLong(void* target, int type, int64_t val1, int64_t val2, 
             int64_t val3, void* arg)
         {
-            // Unused for now.
-            (void) val3;
+            IGNITE_UNUSED(val3);
 
             int64_t res = 0;
             SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);

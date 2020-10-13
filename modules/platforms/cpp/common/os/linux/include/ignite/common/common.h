@@ -44,6 +44,8 @@
 #   define IGNITE_NO_THROW throw()
 #endif
 
+#define IGNITE_UNUSED(x) ((void) x)
+
 /**
  * Common construction to disable copy constructor and assignment for class.
  */

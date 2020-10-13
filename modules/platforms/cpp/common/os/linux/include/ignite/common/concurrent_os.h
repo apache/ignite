@@ -490,6 +490,8 @@ namespace ignite
                     int err = clock_gettime(CLOCK_MONOTONIC, &ts);
                     assert(!err);
 
+                    IGNITE_UNUSED(err);
+
                     ts.tv_sec += msTimeout / 1000 + (ts.tv_nsec + (msTimeout % 1000) * 1000000) / 1000000000;
                     ts.tv_nsec = (ts.tv_nsec + (msTimeout % 1000) * 1000000) % 1000000000;
 
@@ -504,7 +506,10 @@ namespace ignite
                 void NotifyOne()
                 {
                     int err = pthread_cond_signal(&cond);
+
                     assert(!err);
+
+                    IGNITE_UNUSED(err);
                 }
 
                 /**
@@ -513,7 +518,10 @@ namespace ignite
                 void NotifyAll()
                 {
                     int err = pthread_cond_broadcast(&cond);
+
                     assert(!err);
+
+                    IGNITE_UNUSED(err);
                 }
 
             private:
