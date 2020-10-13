@@ -52,10 +52,10 @@ class ClientTest(IgniteTest):
 
     CLIENTS_WORK_TIME_S = 30
     STATIC_CLIENT_WORK_TIME_S = 30
-    ITERATION_COUNT = 3
-    CLUSTER_NODES = 7
-    STATIC_CLIENTS_NUM = 1
-    TEMP_CLIENTS_NUM = 4
+    ITERATION_COUNT = 1
+    CLUSTER_NODES = 8
+    STATIC_CLIENTS_NUM = 2
+    TEMP_CLIENTS_NUM = 3
 
     @cluster(num_nodes=CLUSTER_NODES)
     @ignite_versions(str(DEV_BRANCH), str(V_2_8_1))
@@ -128,7 +128,7 @@ class ClientTest(IgniteTest):
 
             time.sleep(self.CLIENTS_WORK_TIME_S)
             temp_clients.stop()
-            time.sleep(5)
+            time.sleep(15)
 
             current_top_v += self.TEMP_CLIENTS_NUM
             check_topology(control_utility, current_top_v)

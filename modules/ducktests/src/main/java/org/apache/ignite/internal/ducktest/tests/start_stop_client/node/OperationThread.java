@@ -112,12 +112,14 @@ public class OperationThread implements Runnable {
         finally {
             //calc dispersion
             long x = 0;
-            for (Long report : reports) {
-                x = x + (report - avgLatency) ^ (2);
-            }
+            for (Long report : reports) x += Math.pow(report - avgLatency, 2);
+
             logger.info("dispersion debug: " + x);
 
-            double dispersion = (double) (x / (reports.size() - 1));
+            double dispersion = 0;
+            if (reports.size() > 1) {
+                dispersion = x / (reports.size() - 1);
+            }
 
             Report report = new Report();
             report.setAvgLatency(avgLatency);
