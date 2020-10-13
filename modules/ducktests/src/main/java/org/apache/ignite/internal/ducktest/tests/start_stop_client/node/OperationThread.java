@@ -19,6 +19,7 @@ package org.apache.ignite.internal.ducktest.tests.start_stop_client.node;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.ignite.internal.ducktest.tests.start_stop_client.node.reporter.Report;
 import org.apache.log4j.Logger;
@@ -59,11 +60,11 @@ public class OperationThread implements Runnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        while (!Thread.interrupted()) {
-            try {
-                actionNode.publishInternalReport(calculateInternalReport());
-                Thread.sleep(pacing);
-            } catch (InterruptedException e) {
+        Report report;
+        while (!Thread.currentThread().isInterrupted()) {
+            report = calculateInternalReport();
+            if (report!=null){
+                actionNode.publishInternalReport(report);
             }
         }
     }
@@ -84,7 +85,13 @@ public class OperationThread implements Runnable {
         long startTime = System.nanoTime();
 
         while (batch < (count)) {
-            latency = actionNode.singleAction();
+            try {
+                latency = actionNode.singleAction();
+            } catch (Exception e) {
+                logger.info("Fail put operation!");
+                return null;
+            }
+
             txCount++;
 
             if (minLatency == -1 || minLatency > latency) {
@@ -132,6 +139,13 @@ public class OperationThread implements Runnable {
         report.setThreadName(Thread.currentThread().getName());
         report.setPercentile99(percentile99);
         report.setVariance(Math.round(variance));
+
+        try {
+            TimeUnit.MILLISECONDS.sleep(pacing);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return report;
     }
 }
