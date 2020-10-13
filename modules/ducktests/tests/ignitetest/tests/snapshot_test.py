@@ -83,7 +83,7 @@ class SnapshotTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.UuidStreamerApplication",
             params={
                 "cacheName": "test-cache",
-                "iterSize": 512 * 1024
+                "iterSize": 10 * 1024
             }
         )
 
@@ -144,5 +144,5 @@ def load(service_load: IgniteApplicationService, duration: int = 60):
     service_load.start()
     try:
         service_load.await_stopped(duration)
-    except AssertionError:
+    except (AssertionError, TimeoutError):
         service_load.stop()

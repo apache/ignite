@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN"
-    "http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/xml/doc-files/log4j.dtd">
 
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,56 +17,53 @@
  limitations under the License.
 -->
 
-<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
-    <appender name="CONSOLE_ERR" class="org.apache.log4j.ConsoleAppender">
-        <param name="Target" value="System.err"/>
+<Configuration>
+    <Appenders>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+            <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="ACCEPT"/>
+        </Console>
 
-        <param name="Threshold" value="INFO"/>
+        <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+        </Console>
 
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{{ISO8601}}][%-5p][%t][%c{{1}}] %m%n"/>
-        </layout>
-    </appender>
+        <RollingFile name="FILE" fileName="{{ log_file }}"
+                     filePattern="{{ log_file }}-%d{yyyy-MM-dd_HH-mm}">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+            <Policies>
+                <OnStartupTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="10 MB" />
+            </Policies>
+        </RollingFile>
+    </Appenders>
 
-    <appender name="FILE" class="org.apache.log4j.RollingFileAppender">
-        <param name="Threshold" value="DEBUG"/>
-        <param name="File" value="{{ log_file }}"/>
-        <param name="Append" value="true"/>
-        <param name="MaxFileSize" value="10MB"/>
-        <param name="MaxBackupIndex" value="10"/>
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
-        </layout>
-    </appender>
+    <Loggers>
+        <Logger name="org.apache.ignite" level="INFO"/>
 
-    <category name="org.apache.ignite">
-        <level value="INFO"/>
-    </category>
+        <!--
+        <Logger name="org.apache.ignite.CourtesyConfigNotice" level=OFF/>
+        -->
 
-    <category name="org.springframework">
-        <level value="WARN"/>
-    </category>
+        <Logger name="org.springframework" level="WARN"/>
+        <Logger name="org.eclipse.jetty" level="WARN"/>
 
-    <category name="org.eclipse.jetty">
-        <level value="WARN"/>
-    </category>
+        <!--
+        Avoid warnings about failed bind attempt when multiple nodes running on the same host.
+        -->
+        <Logger name="org.eclipse.jetty.util.log" level="ERROR"/>
+        <Logger name="org.eclipse.jetty.util.component" level="ERROR"/>
 
-    <category name="org.eclipse.jetty.util.log">
-        <level value="ERROR"/>
-    </category>
+        <Logger name="com.amazonaws" level="WARN"/>
 
-    <category name="org.eclipse.jetty.util.component">
-        <level value="ERROR"/>
-    </category>
+        <Root level="INFO">
+            <!-- Uncomment to enable logging to console. -->
+            <!--
+            <AppenderRef ref="CONSOLE" level="DEBUG"/>
+            -->
 
-    <category name="com.amazonaws">
-        <level value="WARN"/>
-    </category>
-
-    <root>
-        <level value="INFO"/>
-
-        <appender-ref ref="FILE"/>
-        <appender-ref ref="CONSOLE_ERR"/>
-    </root>
-</log4j:configuration>
+            <AppenderRef ref="CONSOLE_ERR" level="ERROR"/>
+            <AppenderRef ref="FILE" level="INFO"/>
+        </Root>
+    </Loggers>
+</Configuration>

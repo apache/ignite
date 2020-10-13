@@ -62,6 +62,8 @@ class IgniteService(IgniteAwareService):
         for node in self.nodes:
             super().start_node(node)
 
+        time.sleep(30)  # start node and rotate log
+
         self.logger.info("Waiting for Ignite(s) to start...")
 
         for node in self.nodes:
@@ -163,7 +165,7 @@ class IgniteService(IgniteAwareService):
         """
         assert len(self.pids(node)) == 0
 
-        node.account.ssh(f"mv {self.WORK_DIR}/db {self.WORK_DIR}/{new_db_name}", allow_fail=False)
+        node.account.ssh(f"mv {self.WORK_DIR}/db {self.WORK_DIR}/{new_db_name}")
 
     def restore_from_snapshot(self, snapshot_name: str):
         """

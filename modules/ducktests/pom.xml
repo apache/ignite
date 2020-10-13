@@ -160,6 +160,11 @@
             <artifactId>htrace-core4</artifactId>
             <version>4.1.0-incubating</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>2.11.0</version>
+        </dependency>
     </dependencies>
 
     <build>
