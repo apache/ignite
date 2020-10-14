@@ -31,16 +31,20 @@
                         </list>
                     </property>
                 {% endif %}
+
+                {% if config.wal_mode %}
+                <property name="walMode" value="{{ config.wal_mode }}"/>
+                {% endif %}
             </bean>
         </property>
     {% endif %}
 {% endmacro %}
 
 {% macro data_region(config) %}
-    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
-        <property name="name" value="{{ config.name }}"/>
-        <property name="persistenceEnabled" value="{{ config.persistent }}"/>
-        <property name="initialSize" value="{{ config.init_size }}"/>
-        <property name="maxSize" value="{{ config.max_size }}"/>
-    </bean>
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <property name="name" value="{{ config.name }}"/>
+                        <property name="persistenceEnabled" value="{{ config.persistent }}"/>
+                        <property name="initialSize" value="{{ config.init_size }}"/>
+                        <property name="maxSize" value="{{ config.max_size }}"/>
+                    </bean>
 {% endmacro %}

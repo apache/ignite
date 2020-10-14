@@ -45,20 +45,19 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
     CACHE_NAME = "test-cache"
 
-    PREPARED_TX_CNT = 500  # possible amount at real cluster under load (per cell).
-
     @cluster(num_nodes=NUM_NODES * 3 + 1)
     @ignite_versions(str(DEV_BRANCH))
     def two_phased_rebalance_test(self, ignite_version):
         """
         Tests Cellular Affinity scenario (partition distribution).
         """
-        data_storage = DataStorageConfiguration(default=DataRegionConfiguration(persistent=True))
+        data_storage = DataStorageConfiguration(default=DataRegionConfiguration(persistent=True),
+                                                wal_mode='NONE')
 
         cells = self.start_cells(ignite_version=ignite_version,
-                                 cells_cnt=2,
+                                 cells_cnt=1,
                                  cell_nodes_cnt=4,
-                                 cacheName=self.CACHE_NAME,
+                                 cache_name=self.CACHE_NAME,
                                  data_storage=data_storage)
 
         ControlUtility(cells[0], self.test_context).activate()
@@ -73,9 +72,21 @@ class TwoPhasedRebalancedTest(IgniteTest):
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.UuidStreamerApplication",
+            timeout_sec=180,
             params={
                 "cacheName": "test-cache",
                 "iterSize": 10 * 1024
+            }
+        )
+
+        deleter = IgniteApplicationService(
+            self.test_context,
+            client_config,
+            java_class_name="org.apache.ignite.internal.ducktest.tests.DeleteDataApplication",
+            timeout_sec=180,
+            params={
+                "cacheName": "test-cache",
+                "iterSize": 8 * 1024
             }
         )
 
@@ -86,9 +97,16 @@ class TwoPhasedRebalancedTest(IgniteTest):
         self.logger.warn("PDS")
         self.logger.warn(pds)
 
-        time.sleep(300)
+        load(deleter)
 
-    def start_cells(self, ignite_version: str, cells_cnt: int, cell_nodes_cnt: int, cacheName: str,
+        pds = self.pds_size(cells)
+
+        self.logger.warn("PDS")
+        self.logger.warn(pds)
+
+        time.sleep(10)
+
+    def start_cells(self, ignite_version: str, cells_cnt: int, cell_nodes_cnt: int, cache_name: str,
                     data_storage: DataStorageConfiguration = None):
         """
         Start cells.
@@ -98,13 +116,14 @@ class TwoPhasedRebalancedTest(IgniteTest):
         cells = []
 
         cell = start_cell(self.test_context, ignite_version, [f'-D{self.ATTRIBUTE}=0'],
-                          nodes_cnt=cell_nodes_cnt, cacheName=cacheName, data_storage=data_storage)
+                          nodes_cnt=cell_nodes_cnt, cache_name=cache_name, data_storage=data_storage)
         cells.append(cell)
 
         if cells_cnt > 1:
             for i in range(1, cells_cnt):
                 cells.append(start_cell(self.test_context, ignite_version, [f'-D{self.ATTRIBUTE}={i}'],
-                                        nodes_cnt=cell_nodes_cnt, cacheName=cacheName, joined_cluster=cell))
+                                        nodes_cnt=cell_nodes_cnt, cache_name=cache_name, data_storage=data_storage,
+                                        joined_cluster=cell))
 
         return cells
 
@@ -119,8 +138,8 @@ class TwoPhasedRebalancedTest(IgniteTest):
         for cell in cells:
             cll = {}
             for node in cell.nodes:
-                cmd = f'du -hs {IgnitePersistenceAware.WORK_DIR}/db/{node.account.hostname}'
-                cll[node.account.hostname] = node.account.ssh_output(cmd)
+                cmd = f'du -hs {IgnitePersistenceAware.WORK_DIR}/db/{node.account.hostname} | ' + "awk '{print $1}'"
+                cll[node.account.hostname] = node.account.ssh_output(cmd).decode("utf-8")
 
             res.append(cll)
 

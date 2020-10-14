@@ -57,7 +57,7 @@ class CellularAffinity(IgniteTest):
                                 </property>
                             </bean>
                         </property>
-                        <property name="name" value="{{ cacheName }}"/>
+                        <property name="name" value="{{ cache_name }}"/>
                         <property name="backups" value="{{ backups }}"/>
                         <property name="atomicityMode" value="TRANSACTIONAL"/>
                     </bean>
@@ -66,14 +66,14 @@ class CellularAffinity(IgniteTest):
         """  # noqa: E501
 
     @staticmethod
-    def properties(backups: int = NUM_NODES, attr: str = ATTRIBUTE, cacheName: str = CACHE_NAME):
+    def properties(backups: int = NUM_NODES, attr: str = ATTRIBUTE, cache_name: str = CACHE_NAME):
         """
         :return: Configuration properties.
         """
         return Template(CellularAffinity.CONFIG_TEMPLATE) \
             .render(backups=backups,  # bigger than cell capacity (to handle single cell useless test)
                     attr=attr,
-                    cacheName=cacheName)
+                    cache_name=cache_name)
 
     @cluster(num_nodes=NUM_NODES * 3 + 1)
     @version_if(lambda version: version >= DEV_BRANCH)
@@ -209,14 +209,14 @@ def start_cell(
         joined_cluster: IgniteService = None,
         backups: int = CellularAffinity.NUM_NODES,
         attr: str = CellularAffinity.ATTRIBUTE,
-        cacheName: str = CellularAffinity.CACHE_NAME,
+        cache_name: str = CellularAffinity.CACHE_NAME,
         data_storage: DataStorageConfiguration = None):
 
     """
     Starts cell.
     """
     config = IgniteConfiguration(version=IgniteVersion(version),
-                                 properties=CellularAffinity.properties(backups, attr, cacheName),
+                                 properties=CellularAffinity.properties(backups, attr, cache_name),
                                  data_storage=data_storage,
                                  cluster_state="INACTIVE")
 

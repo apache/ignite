@@ -36,3 +36,4 @@ class DataStorageConfiguration(NamedTuple):
     """
     default: DataRegionConfiguration = DataRegionConfiguration()
     regions: list = []
+    wal_mode: str = None
