@@ -99,6 +99,8 @@ struct QueriesTestSuiteFixture : odbc::OdbcTestSuite
 
         T columns[columnsCnt];
 
+        std::memset(&columns, 0, sizeof(columns));
+
         // Binding columns.
         for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
         {
