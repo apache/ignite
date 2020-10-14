@@ -50,14 +50,12 @@ class ClientTest(IgniteTest):
 
     CACHE_NAME = "simple-tx-cache"
     PACING = 10
-    THREADS = 1
     ACTION = "put-tx"
-    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.start_stop_client.SimpleTransactionGenerator"
-    REPORT_FOLDER = PersistenceAware.PERSISTENT_ROOT + "/report"
+    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.start_stop_client.SimpleClient"
 
     CLIENTS_WORK_TIME_S = 30
     STATIC_CLIENT_WORK_TIME_S = 30
-    ITERATION_COUNT = 1
+    ITERATION_COUNT = 3
     CLUSTER_NODES = 8
     STATIC_CLIENTS_NUM = 2
     TEMP_CLIENTS_NUM = 4
@@ -87,10 +85,7 @@ class ClientTest(IgniteTest):
             java_class_name=self.JAVA_CLIENT_CLASS_NAME,
             num_nodes=self.STATIC_CLIENTS_NUM,
             params={"cacheName": self.CACHE_NAME,
-                    "pacing": self.PACING,
-                    "action": self.ACTION,
-                    "threads": self.THREADS,
-                    "report_folder": self.REPORT_FOLDER})
+                    "pacing": self.PACING})
 
         temp_clients = IgniteApplicationService(
             self.test_context,
@@ -98,8 +93,7 @@ class ClientTest(IgniteTest):
             java_class_name=self.JAVA_CLIENT_CLASS_NAME,
             num_nodes=self.TEMP_CLIENTS_NUM,
             params={"cacheName": self.CACHE_NAME,
-                    "pacing": self.PACING,
-                    "report_folder": self.REPORT_FOLDER})
+                    "pacing": self.PACING})
 
         # start servers and check cluster
         ignite.start()
@@ -143,16 +137,7 @@ class ClientTest(IgniteTest):
             check_topology(control_utility, current_top_v)
 
         static_clients.stop()
-
-        # collect results from static nodes
-        for node in static_clients.nodes:
-            dest = os.path.join(
-                TestContext.results_dir(self.test_context, self.test_context.test_index),
-                static_clients.service_id, node.account.hostname)
-            self.logger.debug("Dest dir: " + dest)
-            if not os.path.isdir(dest):
-                mkdir_p(dest)
-            node.account.copy_from(self.REPORT_FOLDER, dest)
+        time.sleep(15)
 
         check_topology(control_utility, fin_top_ver)
 
