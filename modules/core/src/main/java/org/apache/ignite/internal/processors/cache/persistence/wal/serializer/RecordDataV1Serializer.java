@@ -38,9 +38,9 @@ import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
+import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -209,7 +209,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 T2<Integer, RecordType> knownData = skipEncryptedRecord(in, true);
 
                 //This happen on offline WAL iteration(we don't have encryption keys available).
-                return new EncryptedRecord(knownData.get1(), knownData.get2());
+                return new EncryptedRecordV2(knownData.get1(), knownData.get2());
             }
 
             T3<ByteBufferBackedDataInput, Integer, RecordType> clData =
@@ -218,7 +218,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             //This happen during startup. On first WAL iteration we restore only metastore.
             //So, no encryption keys available. See GridCacheDatabaseSharedManager#readMetastore
             if (clData.get1() == null)
-                return new EncryptedRecord(clData.get2(), clData.get3());
+                return new EncryptedRecordV2(clData.get2(), clData.get3());
 
             return readPlainRecord(clData.get3(), clData.get1(), true, clData.get1().buffer().capacity());
         }
@@ -557,9 +557,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return txRecordSerializer.size((TxRecord)record);
 
             case MASTER_KEY_CHANGE_RECORD_V2:
-                MasterKeyChangeRecord rec = (MasterKeyChangeRecord)record;
-
-                return rec.dataSize();
+                return ((MasterKeyChangeRecordV2)record).dataSize();
 
             case REENCRYPTION_START_RECORD:
                 return ((ReencryptionStartRecord)record).dataSize();
@@ -1246,7 +1244,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     grpKeys.add(new T2<>(grpId, new GroupKeyEncrypted(keyId, grpKey)));
                 }
 
-                res = new MasterKeyChangeRecord(masterKeyName, grpKeys);
+                res = new MasterKeyChangeRecordV2(masterKeyName, grpKeys);
 
                 break;
 
@@ -1856,7 +1854,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case MASTER_KEY_CHANGE_RECORD_V2:
-                MasterKeyChangeRecord mkChangeRec = (MasterKeyChangeRecord)rec;
+                MasterKeyChangeRecordV2 mkChangeRec = (MasterKeyChangeRecordV2)rec;
 
                 byte[] keyIdBytes = mkChangeRec.getMasterKeyName().getBytes();
 

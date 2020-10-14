@@ -48,7 +48,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
-import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -1379,7 +1379,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 reencryptedKeys.add(new T2<>(grpId, grpKey));
         }
 
-        MasterKeyChangeRecord rec = new MasterKeyChangeRecord(getSpi().getMasterKeyName(), reencryptedKeys);
+        MasterKeyChangeRecordV2 rec = new MasterKeyChangeRecordV2(getSpi().getMasterKeyName(), reencryptedKeys);
 
         WALPointer ptr = ctx.cache().context().wal().log(rec);
 
@@ -1391,7 +1391,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      *
      * @param rec Record.
      */
-    public void applyKeys(MasterKeyChangeRecord rec) {
+    public void applyKeys(MasterKeyChangeRecordV2 rec) {
         assert !writeToMetaStoreEnabled && !ctx.state().clusterState().active();
 
         log.info("Master key name loaded from WAL [masterKeyName=" + rec.getMasterKeyName() + ']');

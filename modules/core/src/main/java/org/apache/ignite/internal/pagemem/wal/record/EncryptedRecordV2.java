@@ -18,43 +18,20 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 /**
- * Encrypted record from WAL.
+ * Encrypted WAL record v2 includes an encryption key identifier.
  * That types of record returned from a {@code RecordDataSerializer} on offline WAL iteration.
  */
-public class EncryptedRecord extends WALRecord implements WalRecordCacheGroupAware {
-    /**
-     * Group id.
-     */
-    private int grpId;
-
-    /**
-     * Type of plain record.
-     */
-    private RecordType plainRecType;
-
+public class EncryptedRecordV2 extends EncryptedRecord {
     /**
      * @param grpId Group id
      * @param plainRecType Plain record type.
      */
-    public EncryptedRecord(int grpId, RecordType plainRecType) {
-        this.grpId = grpId;
-        this.plainRecType = plainRecType;
+    public EncryptedRecordV2(int grpId, RecordType plainRecType) {
+        super(grpId, plainRecType);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.ENCRYPTED_RECORD;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int groupId() {
-        return grpId;
-    }
-
-    /**
-     * @return Type of plain record.
-     */
-    public RecordType plainRecordType() {
-        return plainRecType;
+        return RecordType.ENCRYPTED_RECORD_V2;
     }
 }

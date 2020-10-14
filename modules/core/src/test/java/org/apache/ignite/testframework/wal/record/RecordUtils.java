@@ -26,7 +26,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
@@ -221,7 +221,7 @@ public class RecordUtils {
             put(PARTITION_META_PAGE_UPDATE_COUNTERS_V2, RecordUtils::buildMetaPageUpdatePartitionDataRecordV2);
             put(PARTITION_META_PAGE_DELTA_RECORD_V3, RecordUtils::buildMetaPageUpdatePartitionDataRecordV3);
             put(MASTER_KEY_CHANGE_RECORD, RecordUtils::buildMasterKeyChangeRecord);
-            put(MASTER_KEY_CHANGE_RECORD_V2, RecordUtils::buildMasterKeyChangeRecord);
+            put(MASTER_KEY_CHANGE_RECORD_V2, RecordUtils::buildMasterKeyChangeRecordV2);
             put(REENCRYPTION_START_RECORD, RecordUtils::buildEncryptionStatusRecord);
             put(ROTATED_ID_PART_RECORD, RecordUtils::buildRotatedIdPartRecord);
             put(MVCC_DATA_PAGE_MARK_UPDATED_RECORD, RecordUtils::buildDataPageMvccMarkUpdatedRecord);
@@ -539,8 +539,13 @@ public class RecordUtils {
     }
 
     /** **/
-    public static MasterKeyChangeRecord buildMasterKeyChangeRecord() {
-        return new MasterKeyChangeRecord("", Collections.emptyList());
+    public static UnsupportedWalRecord buildMasterKeyChangeRecord() {
+        return new UnsupportedWalRecord(MASTER_KEY_CHANGE_RECORD);
+    }
+
+    /** **/
+    public static MasterKeyChangeRecordV2 buildMasterKeyChangeRecordV2() {
+        return new MasterKeyChangeRecordV2("", Collections.emptyList());
     }
 
     /** **/
