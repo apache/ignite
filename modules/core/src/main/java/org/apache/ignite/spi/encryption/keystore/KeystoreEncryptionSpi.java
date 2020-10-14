@@ -44,7 +44,6 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
@@ -101,12 +100,12 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     /**
      * Path to master key store.
      */
-    private String keyStorePath = IgniteUtils.resolveIgnitePath("modules/core/src/test/resources/tde.jks").getAbsolutePath();
+    private String keyStorePath;
 
     /**
      * Key store password.
      */
-    private char[] keyStorePwd = "love_sex_god".toCharArray();
+    private char[] keyStorePwd;
 
     /**
      * Key size.
