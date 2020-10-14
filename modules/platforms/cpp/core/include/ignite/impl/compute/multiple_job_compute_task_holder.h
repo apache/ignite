@@ -266,7 +266,7 @@ namespace ignite
                  * @param reader Reader for stream with result.
                  * @param err Error.
                  */
-                virtual void JobResultSuccess(binary::BinaryReaderImpl& reader)
+                virtual void JobResultSuccess(binary::BinaryReaderImpl&)
                 {
                     ComputeJobResult<void> res;
 

@@ -105,7 +105,7 @@ namespace ignite
 
                 if (outPtr)
                 {
-                    long long res = env.Get()->Context()->TargetInStreamOutLong(javaRef, opType, outPtr, &jniErr);
+                    int64_t res = env.Get()->Context()->TargetInStreamOutLong(javaRef, opType, outPtr, &jniErr);
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 

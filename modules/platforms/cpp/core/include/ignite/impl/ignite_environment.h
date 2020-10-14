@@ -342,7 +342,7 @@ namespace ignite
              * @param type Operation type.
              * @param val Value.
              */
-            friend long long IGNITE_CALL InLongOutLong(void* target, int type, long long val);
+            friend int64_t IGNITE_CALL InLongOutLong(void* target, int type, int64_t val);
 
         private:
             /** Node configuration. */

@@ -164,10 +164,13 @@ namespace ignite
                 {
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
                     SharedPointer<InteropMemory> memCopy(new InteropUnpooledMemory(mem.Get()->Capacity()));
+
                     memCopy.Get()->Length(mem.Get()->Length());
                     memcpy(memCopy.Get()->Data(), mem.Get()->Data(), mem.Get()->Capacity());
+
                     SP_ClusterNodeImpl node = (new impl::cluster::ClusterNodeImpl(memCopy));
                     env->Get()->nodes.Get()->AddNode(node);
+
                     break;
                 }
 
