@@ -803,7 +803,7 @@
                         <artifactId>apache-rat-plugin</artifactId>
                         <version>0.12</version>
                         <configuration>
-                            <addDefaultLicenseMatchers>false</addDefaultLicenseMatchers>
+                            <addDefaultLicenseMatchers>true</addDefaultLicenseMatchers>
                             <licenses>
                                 <license implementation="org.apache.rat.analysis.license.FullTextMatchingLicense">
                                     <licenseFamilyCategory>IAL20</licenseFamilyCategory>
@@ -993,6 +993,7 @@
                                         <exclude>docs/.jekyll-cache/**</exclude>
                                         <exclude>docs/_docs/images/**</exclude>
                                         <exclude>docs/Gemfile</exclude>
+                                        <exclude>docs/assets/js/anchor.min.js</exclude><!-- Distributed under the MIT license. The original license header is badly formatted. -->
                                     </excludes>
                                 </configuration>
                             </execution>
