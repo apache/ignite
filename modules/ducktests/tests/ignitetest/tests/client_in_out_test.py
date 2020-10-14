@@ -64,21 +64,22 @@ class ClientTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(V_2_8_1))
     def test_ignite_start_stop(self, ignite_version):
         """
-        test scenario
+        Test scenario.
         """
-        # prepare servers
+
+        # Prepare servers.
         servers_count = self.CLUSTER_NODES - self.STATIC_CLIENTS_NUM - self.TEMP_CLIENTS_NUM
-        # topology version after test
+
+        # Topology version after test.
         current_top_v = servers_count
         fin_top_ver = servers_count + 2 * self.STATIC_CLIENTS_NUM + 2 * self.ITERATION_COUNT * self.TEMP_CLIENTS_NUM
         server_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version))
         ignite = IgniteService(self.test_context, server_cfg, num_nodes=servers_count)
         control_utility = ControlUtility(ignite, self.test_context)
 
-        # build client config
+        # Build client config.
         client_cfg = server_cfg._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite))
 
-        # prepare client services
         static_clients = IgniteApplicationService(
             self.test_context,
             client_cfg,
@@ -95,32 +96,20 @@ class ClientTest(IgniteTest):
             params={"cacheName": self.CACHE_NAME,
                     "pacing": self.PACING})
 
-        # start servers and check cluster
         ignite.start()
-        ignite.await_event(f'servers={servers_count}',
-                           timeout_sec=60,
-                           from_the_beginning=True,
-                           backoff_sec=1)
 
-        # start static clients
         static_clients.start()
         current_top_v += self.STATIC_CLIENTS_NUM
         check_topology(control_utility, current_top_v)
 
-        # check client counter
-        ignite.await_event(f'clients={self.STATIC_CLIENTS_NUM}',
-                           timeout_sec=60,
-                           from_the_beginning=True,
-                           backoff_sec=1)
-
-        # start stop temp_clients node. Check cluster.
-
-        time.sleep(self.STATIC_CLIENT_WORK_TIME_S)
-
+        # Start stop temp_clients node. Check cluster.
         for i in range(self.ITERATION_COUNT):
+            self.logger.debug(f'Starting iteration:{i}')
+
             time.sleep(self.CLIENTS_WORK_TIME_S)
+
             temp_clients.start()
-            print("Starting iteration: " + str(i))
+
             temp_clients.await_event(f'clients={self.STATIC_CLIENTS_NUM + self.TEMP_CLIENTS_NUM}',
                                      timeout_sec=80,
                                      from_the_beginning=True,
