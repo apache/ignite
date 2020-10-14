@@ -153,7 +153,6 @@
                 <exclude>org.apache.ignite:ignite-gce</exclude>
                 <exclude>org.apache.ignite:ignite-jcl</exclude>
                 <exclude>org.apache.ignite:ignite-jms11</exclude>
-                <exclude>org.apache.ignite:ignite-kafka</exclude>
                 <exclude>org.apache.ignite:ignite-mesos</exclude>
                 <exclude>org.apache.ignite:ignite-ml</exclude>
                 <exclude>org.apache.ignite:ignite-ml-h2o-model-parser</exclude>

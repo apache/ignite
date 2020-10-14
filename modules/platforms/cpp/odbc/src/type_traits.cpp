@@ -427,7 +427,7 @@ namespace ignite
                 }
             }
 
-            int16_t BinaryTypeNullability(int8_t binaryType)
+            int16_t BinaryTypeNullability(int8_t)
             {
                 return SQL_NULLABLE_UNKNOWN;
             }
@@ -639,7 +639,7 @@ namespace ignite
                 return SqlTypeNumPrecRadix(sqlType);
             }
 
-            int32_t SqlTypeDecimalDigits(int16_t type)
+            int32_t SqlTypeDecimalDigits(int16_t)
             {
                 // Not implemented for the NUMERIC and DECIMAL data types.
                 return -1;

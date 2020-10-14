@@ -658,6 +658,85 @@ namespace ignite
                 return rawPos == -1 ? stream->Position() : rawPos;
             }
 
+            template<typename T>
+            void BinaryWriterImpl::WritePrimitiveRaw(
+                const T val,
+                void(*func)(interop::InteropOutputStream*, T)
+            )
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                func(stream, val);
+            }
+
+            template<typename T>
+            void BinaryWriterImpl::WritePrimitiveArrayRaw(
+                const T* val,
+                const int32_t len,
+                void(*func)(interop::InteropOutputStream*, const T*, const int32_t),
+                const int8_t hdr
+            )
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                if (val)
+                {
+                    stream->WriteInt8(hdr);
+                    stream->WriteInt32(len);
+                    func(stream, val, len);
+                }
+                else
+                    stream->WriteInt8(IGNITE_HDR_NULL);
+            }
+
+            template<typename T>
+            void BinaryWriterImpl::WritePrimitive(
+                const char* fieldName,
+                const T val,
+                void(*func)(interop::InteropOutputStream*, T),
+                const int8_t typ,
+                const int32_t
+            )
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                WriteFieldId(fieldName, typ);
+
+                stream->WriteInt8(typ);
+
+                func(stream, val);
+            }
+
+            template<typename T>
+            void BinaryWriterImpl::WritePrimitiveArray(
+                const char* fieldName,
+                const T* val,
+                const int32_t len,
+                void(*func)(interop::InteropOutputStream*, const T*, const int32_t),
+                const int8_t hdr,
+                const int32_t
+            )
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                WriteFieldId(fieldName, hdr);
+
+                if (val)
+                {
+                    stream->WriteInt8(hdr);
+                    stream->WriteInt32(len);
+                    func(stream, val, len);
+                }
+                else
+                {
+                    stream->WriteInt8(IGNITE_HDR_NULL);
+                }
+            }
+
             void BinaryWriterImpl::CheckRawMode(bool expected) const
             {
                 bool rawMode = rawPos != -1;

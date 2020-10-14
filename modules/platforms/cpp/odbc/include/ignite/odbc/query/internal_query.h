@@ -83,7 +83,7 @@ namespace ignite
                  */
                 virtual SqlResult::Type FetchNextRow(app::ColumnBindingMap& columnBindings)
                 {
-                    (void) columnBindings;
+                   IGNITE_UNUSED(columnBindings);
 
                     return SqlResult::AI_NO_DATA;
                 }
@@ -97,8 +97,8 @@ namespace ignite
                  */
                 virtual SqlResult::Type GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
                 {
-                    (void) columnIdx;
-                    (void) buffer;
+                    IGNITE_UNUSED(columnIdx);
+                    IGNITE_UNUSED(buffer);
 
                     return SqlResult::AI_NO_DATA;
                 }
