@@ -18,7 +18,6 @@
 package org.apache.ignite.maintenance;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  * and components that may require maintenance.
  *
  * If a component may cause node to enter maintenance mode, it should register this callback
- * in {@link MaintenanceRegistry} using method {@link MaintenanceRegistry#registerWorkflowCallback(UUID, MaintenanceWorkflowCallback)}
+ * in {@link MaintenanceRegistry} using method {@link MaintenanceRegistry#registerWorkflowCallback(String, MaintenanceWorkflowCallback)}
  *
  * {@link MaintenanceRegistry} during its workflow will collect necessary information about maintenance for components
  * without knowing implementation details of the components.

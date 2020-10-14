@@ -17,8 +17,6 @@
 
 package org.apache.ignite.maintenance;
 
-import java.util.UUID;
-
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * List of maintenance actions available for each task is defined by {@link MaintenanceWorkflowCallback}.
  *
  * {@link MaintenanceRegistry} provides an access to maintenance actions for a {@link MaintenanceTask} with
- * call {@link MaintenanceRegistry#actionsForMaintenanceTask(UUID)}
+ * call {@link MaintenanceRegistry#actionsForMaintenanceTask(String)}
  *
  */
 @IgniteExperimental
