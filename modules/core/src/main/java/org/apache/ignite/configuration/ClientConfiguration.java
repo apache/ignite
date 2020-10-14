@@ -135,6 +135,7 @@ public final class ClientConfiguration implements Serializable {
     public String[] getAddresses() {
         if (addrs != null)
             return Arrays.copyOf(addrs, addrs.length);
+
         return null;
     }
 

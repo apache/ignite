@@ -53,7 +53,6 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
@@ -63,6 +62,9 @@ import org.jetbrains.annotations.NotNull;
 final class ReliableChannel implements AutoCloseable, NotificationListener {
     /** Timeout to wait for executor service to shutdown (in milliseconds). */
     private static final long EXECUTOR_SHUTDOWN_TIMEOUT = 10_000L;
+
+    /** Do nothing helper function. */
+    private static final Consumer<Integer> DO_NOTHING = (v) -> {};
 
     /** Async runner thread name. */
     static final String ASYNC_RUNNER_THREAD_NAME = "thin-client-channel-async-init";
@@ -218,17 +220,23 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                                         Function<PayloadInputChannel, T> payloadReader,
                                         int attemptsLimit,
                                         ClientConnectionException failure) {
-        T2<ClientChannel, Integer> chAndAttempts;
+        ClientChannel ch;
+        // Workaround to store used attempts value within lambda body.
+        int attemptsCnt[] = new int[1];
 
         try {
-            chAndAttempts = applyOnDefaultChannel(channel -> channel, attemptsLimit);
-
+            ch = applyOnDefaultChannel(channel -> channel, attemptsLimit, v -> attemptsCnt[0] = v );
         } catch (Throwable ex) {
+            if (failure != null) {
+                failure.addSuppressed(ex);
+                fut.completeExceptionally(failure);
+                return;
+            }
+
             fut.completeExceptionally(ex);
+
             return;
         }
-
-        ClientChannel ch = chAndAttempts.getKey();
 
         ch
             .serviceAsync(op, payloadWriter, payloadReader)
@@ -248,6 +256,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                     }
                     catch (Throwable ex) {
                         fut.completeExceptionally(ex);
+
                         return null;
                     }
 
@@ -256,7 +265,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
                     else
                         failure0.addSuppressed(err);
 
-                    int leftAttempts = attemptsLimit - chAndAttempts.getValue();
+                    int leftAttempts = attemptsLimit - attemptsCnt[0];
 
                     // If it is a first retry then reset attempts (as for initialization we use only 1 attempt).
                     if (failure == null)
@@ -264,15 +273,18 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
                     if (leftAttempts > 0) {
                         handleServiceAsync(fut, op, payloadWriter, payloadReader, leftAttempts, failure0);
+
                         return null;
                     }
                 }
                 else {
                     fut.completeExceptionally(err instanceof ClientException ? err : new ClientException(err));
+
                     return null;
                 }
 
                 fut.completeExceptionally(failure0);
+
                 return null;
             });
     }
@@ -514,6 +526,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
      */
     private void rollCurrentChannel(ClientChannelHolder hld) {
         curChannelsGuard.writeLock().lock();
+
         try {
             int idx = curChIdx;
             List<ClientChannelHolder> holders = channels;
@@ -552,8 +565,11 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
         chFailLsnrs.forEach(Runnable::run);
 
-        if (scheduledChannelsReinit.get())
-            channelsInit(true);
+        if (scheduledChannelsReinit.get()) {
+            // Already initializing asynchronously in #onTopologyChanged.
+            if (!partitionAwarenessEnabled)
+                channelsInit();
+        }
         else
             rollCurrentChannel(hld);
     }
@@ -591,7 +607,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             if (scheduledChannelsReinit.compareAndSet(false, true)) {
                 // If partition awareness is disabled then only schedule and wait for the default channel to fail.
                 if (partitionAwarenessEnabled)
-                    asyncRunner.submit(() -> channelsInit(true));
+                    asyncRunner.submit(this::channelsInit);
             }
         }
     }
@@ -612,14 +628,10 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
     /**
      * Init channel holders to all nodes.
-     * @param force enable to replace existing channels with new holders.
-     * @return {@code true} if holders are reinited and {@code false} if the initialization was interrupted.
+     * @return boolean wheter channels was reinited.
      */
-    synchronized boolean initChannelHolders(boolean force) {
+    synchronized boolean initChannelHolders() {
         List<ClientChannelHolder> holders = channels;
-
-        if (!force && holders != null)
-            return true;
 
         startChannelsReInit = System.currentTimeMillis();
 
@@ -643,6 +655,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
         if (newAddrs == null) {
             finishChannelsReInit = System.currentTimeMillis();
+
             return true;
         }
 
@@ -706,6 +719,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             dfltChannelIdx = new Random().nextInt(reinitHolders.size());
 
         curChannelsGuard.writeLock().lock();
+
         try {
             channels = reinitHolders;
             curChIdx = dfltChannelIdx;
@@ -715,6 +729,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         }
 
         finishChannelsReInit = System.currentTimeMillis();
+
         return true;
     }
 
@@ -722,12 +737,9 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
      * Establishing connections to servers. If partition awareness feature is enabled connections are created
      * for every configured server. Otherwise only default channel is connected.
      */
-    void channelsInit(boolean force) {
-        if (!force && channels != null)
-            return;
-
+    void channelsInit() {
         // Do not establish connections if interrupted.
-        if (!initChannelHolders(force))
+        if (!initChannelHolders())
             return;
 
         // Apply no-op function. Establish default channel connection.
@@ -751,7 +763,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
             if (channel != null)
                 return function.apply(channel);
-
         } catch (ClientConnectionException e) {
             onChannelFailure(hld, channel);
         }
@@ -761,23 +772,15 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
     /** */
     private <T> T applyOnDefaultChannel(Function<ClientChannel, T> function) {
-        List<ClientChannelHolder> holders = channels;
-
-        if (holders == null)
-            throw new ClientException("Connections to nodes aren't initialized.");
-
-        int size = holders.size();
-
-        int attemptsLimit = clientCfg.getRetryLimit() > 0 ?
-            Math.min(clientCfg.getRetryLimit(), size) : size;
-
-        return applyOnDefaultChannel(function, attemptsLimit).getKey();
+        return applyOnDefaultChannel(function, getRetryLimit(), DO_NOTHING);
     }
 
     /**
      * Apply specified {@code function} on any of available channel.
      */
-    private <T> T2<T, Integer> applyOnDefaultChannel(Function<ClientChannel, T> function, int attemptsLimit) {
+    private <T> T applyOnDefaultChannel(Function<ClientChannel, T> function,
+                                        int attemptsLimit,
+                                        Consumer<Integer> attemptsCallback) {
         ClientConnectionException failure = null;
 
         for (int attempt = 0; attempt < attemptsLimit; attempt++) {
@@ -798,8 +801,10 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
                 c = hld.getOrCreateChannel();
 
-                if (c != null)
-                    return new T2<>(function.apply(c), attempt + 1);
+                if (c != null) {
+                    attemptsCallback.accept(attempt + 1);
+                    return function.apply(c);
+                }
             }
             catch (ClientConnectionException e) {
                 if (failure == null)
@@ -842,12 +847,17 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             }
         }
 
-        return applyOnDefaultChannel(function, retryLimit).getKey();
+        return applyOnDefaultChannel(function, retryLimit, DO_NOTHING);
     }
 
     /** Get retry limit. */
     private int getRetryLimit() {
-        int size = channels.size();
+        List<ClientChannelHolder> holders = channels;
+
+        if (holders == null)
+            throw new ClientException("Connections to nodes aren't initialized.");
+
+        int size = holders.size();
 
         return clientCfg.getRetryLimit() > 0 ? Math.min(clientCfg.getRetryLimit(), size) : size;
     }
@@ -865,7 +875,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         /** ID of the last server node that {@link ch} is or was connected to. */
         private volatile UUID serverNodeId;
 
-        /** Address that holder is bind to (chCfg.addr) is not in use now. So close the holder */
+        /** Address that holder is bind to (chCfg.addr) is not in use now. So close the holder. */
         private volatile boolean close;
 
         /** Timestamps of reconnect retries. */
@@ -973,7 +983,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             close = true;
 
             if (serverNodeId != null)
-                nodeChannels.remove(serverNodeId);
+                nodeChannels.remove(serverNodeId, this);
 
             closeChannel();
         }

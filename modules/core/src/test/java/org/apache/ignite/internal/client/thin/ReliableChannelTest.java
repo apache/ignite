@@ -66,7 +66,7 @@ public class ReliableChannelTest {
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
-        rc.channelsInit(false);
+        rc.channelsInit();
 
         assertEquals(3, rc.getChannelHolders().size());
     }
@@ -95,7 +95,7 @@ public class ReliableChannelTest {
             .collect(Collectors.toList());
 
         Consumer<List<String>> assertAddrReInitAndEqualsTo = (addrs) -> {
-            rc.channelsInit(true);
+            rc.channelsInit();
 
             assertEquals(addrs, holderAddresses.get());
         };
@@ -145,13 +145,13 @@ public class ReliableChannelTest {
     private void checkDoesNotReinit(ClientConfiguration ccfg) {
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
-        rc.channelsInit(false);
+        rc.channelsInit();
 
         List<ReliableChannel.ClientChannelHolder> originalChannels = rc.getChannelHolders();
         List<ReliableChannel.ClientChannelHolder> copyOriginalChannels = new ArrayList<>(originalChannels);
 
         // Imitate topology change.
-        rc.initChannelHolders(true);
+        rc.initChannelHolders();
 
         List<ReliableChannel.ClientChannelHolder> newChannels = rc.getChannelHolders();
 
@@ -174,7 +174,7 @@ public class ReliableChannelTest {
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
-        rc.channelsInit(false);
+        rc.channelsInit();
 
         // Trigger TestClientChannel creation.
         rc.service(null, null, null);
@@ -182,7 +182,7 @@ public class ReliableChannelTest {
         assertEquals(1, rc.getNodeChannels().size());
 
         // Imitate topology change.
-        rc.initChannelHolders(true);
+        rc.initChannelHolders();
 
         assertEquals(1, rc.getNodeChannels().size());
     }
@@ -200,12 +200,12 @@ public class ReliableChannelTest {
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
-        rc.channelsInit(false);
+        rc.channelsInit();
 
         List<ReliableChannel.ClientChannelHolder> originChannels = Collections.unmodifiableList(rc.getChannelHolders());
 
         // Imitate topology change.
-        rc.initChannelHolders(true);
+        rc.initChannelHolders();
 
         assertEquals(2, F.size(originChannels, ReliableChannel.ClientChannelHolder::isClosed));
 
@@ -237,7 +237,7 @@ public class ReliableChannelTest {
 
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
-        rc.channelsInit(false);
+        rc.channelsInit();
 
         // Trigger TestClientChannel creation.
         rc.service(null, null, null);
@@ -245,7 +245,7 @@ public class ReliableChannelTest {
         assertEquals(1, rc.getNodeChannels().size());
 
         // Imitate topology change.
-        rc.initChannelHolders(true);
+        rc.initChannelHolders();
 
         assertEquals(0, rc.getNodeChannels().size());
     }
@@ -261,7 +261,7 @@ public class ReliableChannelTest {
 
         ReliableChannel rc = new ReliableChannel(cfg -> new TestFailureClientChannel(), ccfg, null);
 
-        rc.channelsInit(false);
+        rc.channelsInit();
     }
 
     /**
@@ -309,7 +309,7 @@ public class ReliableChannelTest {
                 return new TestFailureClientChannel();
         }, ccfg, null);
 
-        rc.channelsInit(false);
+        rc.channelsInit();
 
         rc.getScheduledChannelsReinit().set(channelsReinitOnFail);
 
