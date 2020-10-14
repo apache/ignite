@@ -42,7 +42,12 @@ public class SimpleClient extends IgniteAwareApplication {
                 " cacheName=" + cacheName +
                 " pacing=" + pacing);
 
-        IgniteCache<UUID, UUID> cache = ignite.getOrCreateCache(prepareCacheConfiguration(cacheName));
+        CacheConfiguration cacheConfiguration = new CacheConfiguration()
+                .setBackups(2)
+                .setName(cacheName)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        IgniteCache<UUID, UUID> cache = ignite.getOrCreateCache(cacheConfiguration);
         log.info("Node name: " + ignite.name() + " starting cache operations.");
 
         markInitialized();
@@ -61,13 +66,5 @@ public class SimpleClient extends IgniteAwareApplication {
             Thread.sleep(pacing);
         }
         markFinished();
-    }
-
-    /** */
-    private CacheConfiguration prepareCacheConfiguration(String cacheName) {
-        return new CacheConfiguration()
-            .setBackups(2)
-            .setName(cacheName)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 }

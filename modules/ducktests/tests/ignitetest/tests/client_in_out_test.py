@@ -16,18 +16,13 @@
 """
 This module contains client tests
 """
-import os
 import time
 from ducktape.mark.resource import cluster
-from ducktape.tests.test import TestContext
-from ducktape.utils.local_filesystem_utils import mkdir_p
-
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
-from ignitetest.services.utils.ignite_persistence import PersistenceAware
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, V_2_8_1, IgniteVersion
@@ -50,34 +45,32 @@ class ClientTest(IgniteTest):
 
     CACHE_NAME = "simple-tx-cache"
     PACING = 10
-    ACTION = "put-tx"
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.start_stop_client.SimpleClient"
 
     CLIENTS_WORK_TIME_S = 30
     STATIC_CLIENT_WORK_TIME_S = 30
-    ITERATION_COUNT = 1
-    CLUSTER_NODES = 8
+    ITERATION_COUNT = 3
+    CLUSTER_NODES = 7
     STATIC_CLIENTS_NUM = 2
-    TEMP_CLIENTS_NUM = 4
+    TEMP_CLIENTS_NUM = 3
 
     @cluster(num_nodes=CLUSTER_NODES)
     @ignite_versions(str(DEV_BRANCH), str(V_2_8_1))
     def test_ignite_start_stop(self, ignite_version):
         """
-        Test scenario.
+        Start and stop clients test
         """
 
-        # Prepare servers.
         servers_count = self.CLUSTER_NODES - self.STATIC_CLIENTS_NUM - self.TEMP_CLIENTS_NUM
 
         # Topology version after test.
         current_top_v = servers_count
         fin_top_ver = servers_count + 2 * self.STATIC_CLIENTS_NUM + 2 * self.ITERATION_COUNT * self.TEMP_CLIENTS_NUM
+
         server_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version))
         ignite = IgniteService(self.test_context, server_cfg, num_nodes=servers_count)
         control_utility = ControlUtility(ignite, self.test_context)
 
-        # Build client config.
         client_cfg = server_cfg._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite))
 
         static_clients = IgniteApplicationService(
@@ -104,38 +97,36 @@ class ClientTest(IgniteTest):
 
         # Start stop temp_clients node. Check cluster.
         for i in range(self.ITERATION_COUNT):
-            self.logger.debug(f'Starting iteration: {i}.')
+            self.logger.debug(f'Starting iteration:{i}')
 
             time.sleep(self.CLIENTS_WORK_TIME_S)
 
             temp_clients.start()
 
-            # temp_clients.await_event(f'clients={self.STATIC_CLIENTS_NUM + self.TEMP_CLIENTS_NUM}',
-            #                          timeout_sec=80,
-            #                          from_the_beginning=True,
-            #                          backoff_sec=1)
+            temp_clients.await_event(f'clients={self.STATIC_CLIENTS_NUM + self.TEMP_CLIENTS_NUM}',
+                                     timeout_sec=80,
+                                     from_the_beginning=True,
+                                     backoff_sec=1)
 
             current_top_v += self.TEMP_CLIENTS_NUM
             check_topology(control_utility, current_top_v)
 
             time.sleep(self.CLIENTS_WORK_TIME_S)
             temp_clients.stop()
-            time.sleep(30)
 
             current_top_v += self.TEMP_CLIENTS_NUM
             check_topology(control_utility, current_top_v)
 
         static_clients.stop()
-        time.sleep(15)
 
         check_topology(control_utility, fin_top_ver)
 
 
-def check_topology(control_utility: ControlUtility, fin_top_ver: int):
+def check_topology(control_utility, fin_top_ver):
     """
     :param control_utility: control.sh
     :param fin_top_ver: expected topology version
+    :return:
     """
     top_ver = control_utility.cluster_state().topology_version
-
-    assert top_ver == fin_top_ver, f'Cluster topology version={top_ver}, expected topology version={fin_top_ver}.'
+    assert top_ver == fin_top_ver, f'cluster topology version={top_ver}, expected topology version={fin_top_ver}'
