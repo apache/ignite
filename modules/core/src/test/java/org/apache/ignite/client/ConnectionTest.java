@@ -79,18 +79,27 @@ public class ConnectionTest {
 
     /** */
     @Test
-    public void testAsynchronousSocketChannel() throws IOException, ExecutionException, InterruptedException {
+    public void testAsynchronousSocketChannel() throws Exception {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1)) {
             IgniteStopwatch sw = IgniteStopwatch.createStarted();
 
-            for (int i = 0; i < 1000; i++) {
-                handshakeAsyncChannel().get();
+            for (int i = 0; i < 10000; i++) {
+                handshakeOld().get();
             }
 
             System.out.println(">>> " + sw.elapsed().toMillis());
         }
     }
 
+    /** 28800ms */
+    private CompletableFuture<Integer> handshakeOld() throws Exception {
+        IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses("localhost:10800"));
+        client.close();
+
+        return CompletableFuture.completedFuture(12);
+    }
+
+    /** 5600ms */
     private CompletableFuture<Integer> handshakeAsyncChannel() throws IOException {
         CompletableFuture<Integer> fut = new CompletableFuture<>();
 
