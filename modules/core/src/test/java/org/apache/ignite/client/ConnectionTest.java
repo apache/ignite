@@ -30,12 +30,13 @@ import org.apache.ignite.internal.util.IgniteStopwatch;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Checks if it can connect to a valid address from the node address list.
@@ -84,7 +85,7 @@ public class ConnectionTest {
             IgniteStopwatch sw = IgniteStopwatch.createStarted();
 
             for (int i = 0; i < 10000; i++) {
-                handshakeOld().get();
+                handshakeAsyncChannel().get();
             }
 
             System.out.println(">>> " + sw.elapsed().toMillis());
@@ -99,7 +100,28 @@ public class ConnectionTest {
         return CompletableFuture.completedFuture(12);
     }
 
-    /** 5600ms */
+    /** 3200ms */
+    private CompletableFuture<Integer> handshakeOld2() throws Exception {
+        Socket sock = new Socket("localhost", 10800);
+        OutputStream out = sock.getOutputStream();
+
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
+        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
+            writer.writeInt(12); // reserve an integer for the request size
+
+            writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+            writer.writeShort(1);
+            writer.writeShort(0);
+            writer.writeShort(0);
+            writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
+
+            out.write(writer.array());
+        }
+
+        return CompletableFuture.completedFuture(12);
+    }
+
+    /** 5100ms */
     private CompletableFuture<Integer> handshakeAsyncChannel() throws IOException {
         CompletableFuture<Integer> fut = new CompletableFuture<>();
 
