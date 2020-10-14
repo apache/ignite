@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStoragePersistentTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
+import org.apache.ignite.spi.discovery.DiscoverySpiDataExchangeTest;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -44,7 +45,8 @@ import org.junit.runners.Suite;
     IgniteCacheReplicatedQuerySelfTest.class,
     DistributedMetaStorageTest.class,
     DistributedMetaStoragePersistentTest.class,
-    IgniteNodeValidationFailedEventTest.class
+    IgniteNodeValidationFailedEventTest.class,
+    DiscoverySpiDataExchangeTest.class
 })
 public class ZookeeperDiscoverySpiTestSuite4 {
     /** */
