@@ -379,7 +379,7 @@ BOOST_AUTO_TEST_CASE(IgniteGetTopology)
     BOOST_REQUIRE(cluster.GetTopology(1).size() == 1);
     BOOST_REQUIRE(cluster.GetTopology(INT_MAX).size() == 0);
 
-    long topVer = cluster.GetTopologyVersion();
+    int64_t topVer = cluster.GetTopologyVersion();
 
     BOOST_REQUIRE(Ignition::Stop(server3.GetName(), true));
 
