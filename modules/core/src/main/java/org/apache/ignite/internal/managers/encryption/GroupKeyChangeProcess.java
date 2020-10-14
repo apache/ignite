@@ -70,6 +70,7 @@ class GroupKeyChangeProcess {
 
     /**
      * @param ctx Grid kernal context.
+     * @param keys Cache group encryption keys.
      */
     GroupKeyChangeProcess(GridKernalContext ctx, CacheGroupEncryptionKeys keys) {
         this.ctx = ctx;

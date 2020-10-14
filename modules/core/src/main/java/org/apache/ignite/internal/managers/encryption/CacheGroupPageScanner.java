@@ -99,7 +99,7 @@ public class CacheGroupPageScanner implements CheckpointListener {
 
         DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
 
-        if (!CU.isPersistenceEnabled(dsCfg)) {
+        if (ctx.clientNode() || !CU.isPersistenceEnabled(dsCfg)) {
             batchSize = -1;
             limiter = null;
             singleExecSvc = null;

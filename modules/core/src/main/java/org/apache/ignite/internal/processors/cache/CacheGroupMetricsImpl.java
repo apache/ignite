@@ -511,7 +511,7 @@ public class CacheGroupMetricsImpl {
 
         FilePageStoreManager mgr = (FilePageStoreManager)ctx.shared().pageStore();
 
-        GridEncryptionManager encrMgr = ctx.shared().kernalContext().encryption();
+        GridEncryptionManager encMgr = ctx.shared().kernalContext().encryption();
 
         try {
             for (int p = 0; p < ctx.affinity().partitions(); p++) {
@@ -520,12 +520,12 @@ public class CacheGroupMetricsImpl {
                 if (!pageStore.exists())
                     continue;
 
-                long state = encrMgr.getEncryptionState(ctx.groupId(), p);
+                long state = encMgr.getEncryptionState(ctx.groupId(), p);
 
                 pagesLeft += ReencryptStateUtils.pageCount(state) - ReencryptStateUtils.pageIndex(state);
             }
 
-            long state = encrMgr.getEncryptionState(ctx.groupId(), PageIdAllocator.INDEX_PARTITION);
+            long state = encMgr.getEncryptionState(ctx.groupId(), PageIdAllocator.INDEX_PARTITION);
 
             pagesLeft += ReencryptStateUtils.pageCount(state) - ReencryptStateUtils.pageIndex(state);
         }

@@ -782,11 +782,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                     writeGroupKeysToMetaStore(grpId, grpKeys.getAll(grpId));
 
-                    if (ptr != null) {
-                        grpKeys.reserveWalKey(grpId, prevGrpKey.unsignedId(), ctx.cache().context().wal().currentSegment());
+                    if (ptr == null)
+                        return null;
 
-                        writeTrackedWalIdxsToMetaStore();
-                    }
+                    grpKeys.reserveWalKey(grpId, prevGrpKey.unsignedId(), ctx.cache().context().wal().currentSegment());
+
+                    writeTrackedWalIdxsToMetaStore();
                 }
 
                 return null;
@@ -1258,7 +1259,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         ctx.cache().context().database().checkpointReadLock();
 
         try {
-            metaStorage.write(REENCRYPTED_WAL_SEGMENTS, grpKeys.trackedWalSegments());
+            metaStorage.write(REENCRYPTED_WAL_SEGMENTS, (Serializable)grpKeys.trackedWalSegments());
         }
         finally {
             ctx.cache().context().database().checkpointReadUnlock();

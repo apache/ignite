@@ -74,9 +74,16 @@ public interface IgniteEncryption {
 
     /**
      * Starts cache group encryption key change process.
+     * <p>
+     * <b>NOTE:</b> Node join is rejected during rotation of cache group encryption key. Background re-encryption of
+     * existing data in the specified cache group(s) begins after the encryption key(s) is changed. During
+     * re-encryption, node join is not rejected, the cluster remains fully functional, it is fault-tolerant operation
+     * that automatically continues after restart. Secondary rotation of the encryption key of a cache group is only
+     * possible after background re-encryption of existing data in this cache group is completed.
      *
      * @param cacheOrGrpNames Cache or group names.
-     * @return Future that will be completed when a new key is set for writing on all nodes in the cluster.
+     * @return Future which will be completed when new encryption key(s) are set for writing on all nodes in the cluster
+     * and re-encryption of existing cache data is initiated.
      */
     public IgniteFuture<Void> changeCacheGroupKey(Collection<String> cacheOrGrpNames);
 }

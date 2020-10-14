@@ -129,7 +129,7 @@ class CacheGroupEncryptionKeys {
         if (F.isEmpty(grpKeys))
             return null;
 
-        HashMap<Integer, GroupKeyEncrypted> keys = new HashMap<>();
+        HashMap<Integer, GroupKeyEncrypted> keys = U.newHashMap(grpKeys.size());
 
         for (Map.Entry<Integer, List<GroupKey>> entry : grpKeys.entrySet()) {
             int grpId = entry.getKey();
@@ -282,8 +282,8 @@ class CacheGroupEncryptionKeys {
     /**
      * @return A collection of tracked (encrypted with previous encryption keys) WAL segments.
      */
-    Serializable trackedWalSegments() {
-        return (Serializable)Collections.unmodifiableCollection(trackedWalSegments);
+    Collection<TrackedWalSegment> trackedWalSegments() {
+        return Collections.unmodifiableCollection(trackedWalSegments);
     }
 
     /**

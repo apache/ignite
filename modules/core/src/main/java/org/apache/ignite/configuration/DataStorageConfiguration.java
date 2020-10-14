@@ -315,7 +315,7 @@ public class DataStorageConfiguration implements Serializable {
     @Nullable private WarmUpConfiguration dfltWarmUpCfg;
 
     /** Encryption configuration. */
-    private EncryptionConfiguration encrCfg = new EncryptionConfiguration();
+    private EncryptionConfiguration encCfg = new EncryptionConfiguration();
 
     /**
      * Creates valid durable memory configuration with all default values.
@@ -1127,17 +1127,17 @@ public class DataStorageConfiguration implements Serializable {
      * @return Encryption configuration.
      */
     public EncryptionConfiguration getEncryptionConfiguration() {
-        return encrCfg;
+        return encCfg;
     }
 
     /**
      * Sets encryption configuration.
      *
-     * @param encrCfg Encryption configuration.
+     * @param encCfg Encryption configuration.
      * @return {@code this} for chaining.
      */
-    public DataStorageConfiguration setEncryptionConfiguration(EncryptionConfiguration encrCfg) {
-        this.encrCfg = encrCfg;
+    public DataStorageConfiguration setEncryptionConfiguration(EncryptionConfiguration encCfg) {
+        this.encCfg = encCfg;
 
         return this;
     }
