@@ -53,4 +53,4 @@
     cls(const cls& src); \
     cls& operator= (const cls& other)
 
-#endif
+#endif //_IGNITE_COMMON_COMMON

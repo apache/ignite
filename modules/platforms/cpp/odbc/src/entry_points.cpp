@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <ignite/common/common.h>
+
 #include "ignite/odbc.h"
 
 #include "ignite/odbc/log.h"
