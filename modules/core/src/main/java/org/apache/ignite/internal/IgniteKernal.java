@@ -2158,8 +2158,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
 
         if (ctx.state().clusterState().state() == ClusterState.INACTIVE) {
-            U.quietAndInfo(log, ">>> Ignite cluster is not active (limited functionality available). " +
-                "Use control.(sh|bat) script or IgniteCluster interface to activate.");
+            U.quietAndInfo(log, ">>> Ignite cluster is in INACTIVE state (limited functionality available). " +
+                "Use control.(sh|bat) script or IgniteCluster.state(ClusterState.ACTIVE) to change the state.");
         }
     }
 
