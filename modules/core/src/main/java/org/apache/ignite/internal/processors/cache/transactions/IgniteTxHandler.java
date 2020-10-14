@@ -2371,7 +2371,7 @@ public class IgniteTxHandler {
                                     if (updated && rollback) {
                                         CacheGroupContext grpCtx = part.group();
 
-                                        if (grpCtx.walEnabled() && !grpCtx.mvccEnabled()) {
+                                        if (grpCtx.persistenceEnabled() && grpCtx.walEnabled() && !grpCtx.mvccEnabled()) {
                                             RollbackRecord rec =
                                                 new RollbackRecord(grpCtx.groupId(), part.id(), start, delta);
 

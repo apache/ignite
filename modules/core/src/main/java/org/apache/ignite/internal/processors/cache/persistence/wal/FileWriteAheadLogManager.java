@@ -248,7 +248,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * Number of WAL compressor worker threads.
      */
-    private static final int WAL_COMPRESSOR_WORKER_THREAD_CNT =
+    private final int WAL_COMPRESSOR_WORKER_THREAD_CNT =
             IgniteSystemProperties.getInteger(IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT,
                 DFLT_WAL_COMPRESSOR_WORKER_THREAD_CNT);
 
@@ -262,7 +262,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private final boolean alwaysWriteFullPages;
 
-    /** WAL segment size in bytes. This is maximum value, actual segments may be shorter. */
+    /** WAL segment size in bytes. . This is maximum value, actual segments may be shorter. */
     private final long maxWalSegmentSize;
 
     /**
@@ -461,20 +461,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
 
-            //TODO: we should use just `GridMetricManager` here and query `walSize` inside DataStorageMetricsImpl.
-            if (cctx.database() instanceof GridCacheDatabaseSharedManager) {
-                GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
-                metrics = dbMgr.persistentStoreMetricsImpl();
-            }
-            else {
-                DataStorageConfiguration dataStorageConfiguration = cctx.gridConfig().getDataStorageConfiguration();
-
-                metrics = new DataStorageMetricsImpl(cctx.kernalContext().metric(),
-                    dataStorageConfiguration.isMetricsEnabled(),
-                    dataStorageConfiguration.getMetricsRateTimeInterval(),
-                    dataStorageConfiguration.getMetricsSubIntervalCount());
-            }
+            metrics = dbMgr.persistentStoreMetricsImpl();
 
             checkOrPrepareFiles();
 
@@ -1118,24 +1107,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public long lastCompactedSegment() {
         return segmentAware.lastCompressedIdx();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long lastSegment() {
-        long lastIdx = -1;
-
-        for (File file : walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER)) {
-            try {
-                long idx = Long.parseLong(file.getName().substring(0, 16));
-
-                lastIdx = Math.max(lastIdx, idx);
-            }
-            catch (NumberFormatException | IndexOutOfBoundsException ignore) {
-
-            }
-        }
-
-        return lastIdx;
     }
 
     /** {@inheritDoc} */
@@ -1988,7 +1959,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          *
          * @param absIdx Absolute index to archive.
          */
-        private SegmentArchiveResult archiveSegment(long absIdx) throws StorageException {
+        public SegmentArchiveResult archiveSegment(long absIdx) throws StorageException {
             long segIdx = absIdx % dsCfg.getWalSegments();
 
             File origFile = new File(walWorkDir, FileDescriptor.fileName(segIdx));
@@ -2006,17 +1977,23 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             try {
                 Files.deleteIfExists(dstTmpFile.toPath());
 
-                long offs = switchSegmentRecordOffset.get((int)segIdx);
+                boolean copied = false;
 
-                if (offs > 0) {
-                    switchSegmentRecordOffset.set((int)segIdx, 0);
+                if (switchSegmentRecordOffset != null) {
+                    long offs = switchSegmentRecordOffset.get((int)segIdx);
 
-                    if (offs < origFile.length()) {
-                        GridFileUtils.copy(ioFactory, origFile, ioFactory, dstTmpFile, offs);
+                    if (offs > 0) {
+                        switchSegmentRecordOffset.set((int)segIdx, 0);
 
+                        if (offs < origFile.length()) {
+                            GridFileUtils.copy(ioFactory, origFile, ioFactory, dstTmpFile, offs);
+
+                            copied = true;
+                        }
                     }
                 }
-                else
+
+                if (!copied)
                     Files.copy(origFile.toPath(), dstTmpFile.toPath());
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());

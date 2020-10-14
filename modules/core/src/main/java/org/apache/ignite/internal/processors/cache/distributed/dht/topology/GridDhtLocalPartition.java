@@ -536,7 +536,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param toState State to set.
      */
     public void setState(GridDhtPartitionState toState) {
-        if (grp.walEnabled()) {
+        if (grp.persistenceEnabled() && grp.walEnabled()) {
             synchronized (this) {
                 long state0 = state.get();
 
@@ -560,7 +560,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code true} if cas succeeds.
      */
     private boolean casState(long state, GridDhtPartitionState toState) {
-        if (grp.walEnabled()) {
+        if (grp.persistenceEnabled() && grp.walEnabled()) {
             synchronized (this) {
                 GridDhtPartitionState prevState = state();
 

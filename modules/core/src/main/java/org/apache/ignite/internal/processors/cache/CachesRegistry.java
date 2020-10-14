@@ -62,7 +62,7 @@ public class CachesRegistry {
         assert cctx != null;
 
         this.cctx = cctx;
-        this.log = cctx.kernalContext().log(getClass());
+        this.log = cctx.logger(getClass());
     }
 
     /**

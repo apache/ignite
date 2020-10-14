@@ -589,14 +589,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private void readMetastore() throws IgniteCheckedException {
         try {
-            CheckpointStatus status = checkpointManager.readCheckpointStatus();
+            CheckpointStatus status = readCheckpointStatus();
 
             checkpointReadLock();
 
             try {
                 dataRegion(METASTORE_DATA_REGION_NAME).pageMemory().start();
 
-                performBinaryMemoryRestore(status, onlyMetastorageGroup(), false);
+                performBinaryMemoryRestore(status, onlyMetastorageGroup(), physicalRecords(), false);
 
                 metaStorage = createMetastorage(true);
 
@@ -759,7 +759,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // Try to resume logging since last finished checkpoint if possible.
             if (walTail == null) {
-                CheckpointStatus status = checkpointManager.readCheckpointStatus();
+                CheckpointStatus status = readCheckpointStatus();
 
                 walTail = CheckpointStatus.NULL_PTR.equals(status.endPtr) ? null : status.endPtr;
             }
@@ -809,11 +809,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * @param cacheGroupsPredicate Cache groups to restore.
+     * @param recordTypePredicate Filter records by type.
      * @return Last seen WAL pointer during binary memory recovery.
      * @throws IgniteCheckedException If failed.
      */
     private RestoreBinaryState restoreBinaryMemory(
-        IgnitePredicate<Integer> cacheGroupsPredicate
+        IgnitePredicate<Integer> cacheGroupsPredicate,
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordTypePredicate
     ) throws IgniteCheckedException {
         long time = System.currentTimeMillis();
 
@@ -823,13 +825,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
                 lsnr.beforeBinaryMemoryRestore(this);
 
-            CheckpointStatus status = checkpointManager.readCheckpointStatus();
+            CheckpointStatus status = readCheckpointStatus();
 
             // First, bring memory to the last consistent checkpoint state if needed.
             // This method should return a pointer to the last valid record in the WAL.
             RestoreBinaryState binaryState = performBinaryMemoryRestore(
                 status,
                 cacheGroupsPredicate,
+                recordTypePredicate,
                 true
             );
 
@@ -1557,6 +1560,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointManager.removeCheckpointListener(lsnr);
     }
 
+    /**
+     * @return Read checkpoint status.
+     * @throws IgniteCheckedException If failed to read checkpoint status page.
+     */
+    @SuppressWarnings("TooBroadScope")
+    private CheckpointStatus readCheckpointStatus() throws IgniteCheckedException {
+        return checkpointManager.readCheckpointStatus();
+    }
+
     /** {@inheritDoc} */
     @Override public void startMemoryRestore(GridKernalContext kctx, TimeBag startTimer) throws IgniteCheckedException {
         if (kctx.clientNode())
@@ -1571,7 +1583,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             startTimer.finishGlobalStage("Init and start regions");
 
             // Restore binary memory for all not WAL disabled cache groups.
-            restoreBinaryMemory(groupsWithEnabledWal());
+            restoreBinaryMemory(
+                groupsWithEnabledWal(),
+                physicalRecords()
+            );
 
             if (recoveryVerboseLogging && log.isInfoEnabled()) {
                 log.info("Partition states information after BINARY RECOVERY phase:");
@@ -1581,7 +1596,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             startTimer.finishGlobalStage("Restore binary memory");
 
-            CheckpointStatus status = checkpointManager.readCheckpointStatus();
+            CheckpointStatus status = readCheckpointStatus();
 
             RestoreLogicalState logicalState = applyLogicalUpdates(
                 status,
@@ -1700,6 +1715,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private RestoreBinaryState performBinaryMemoryRestore(
         CheckpointStatus status,
         IgnitePredicate<Integer> cacheGroupsPredicate,
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordTypePredicate,
         boolean finalizeState
     ) throws IgniteCheckedException {
         if (log.isInfoEnabled())
@@ -1771,7 +1787,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long lastArchivedSegment = cctx.wal().lastArchivedSegment();
 
-        WALIterator it = cctx.wal().replay(recPtr, physicalRecords());
+        WALIterator it = cctx.wal().replay(recPtr, recordTypePredicate);
 
         RestoreBinaryState restoreBinaryState = new RestoreBinaryState(status, it, lastArchivedSegment, cacheGroupsPredicate);
 

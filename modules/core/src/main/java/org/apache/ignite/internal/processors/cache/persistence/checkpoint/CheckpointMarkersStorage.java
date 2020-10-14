@@ -193,22 +193,21 @@ public class CheckpointMarkersStorage {
         for (File file : files) {
             Matcher matcher = CP_FILE_NAME_PATTERN.matcher(file.getName());
 
-            if (!matcher.matches())
-                continue;
+            if (matcher.matches()) {
+                long ts = Long.parseLong(matcher.group(1));
+                UUID id = UUID.fromString(matcher.group(2));
+                CheckpointEntryType type = CheckpointEntryType.valueOf(matcher.group(3));
 
-            long ts = Long.parseLong(matcher.group(1));
-            UUID id = UUID.fromString(matcher.group(2));
-            CheckpointEntryType type = CheckpointEntryType.valueOf(matcher.group(3));
-
-            if (type == CheckpointEntryType.START && ts > lastStartTs) {
-                lastStartTs = ts;
-                startId = id;
-                startFile = file;
-            }
-            else if (type == CheckpointEntryType.END && ts > lastEndTs) {
-                lastEndTs = ts;
-                endId = id;
-                endFile = file;
+                if (type == CheckpointEntryType.START && ts > lastStartTs) {
+                    lastStartTs = ts;
+                    startId = id;
+                    startFile = file;
+                }
+                else if (type == CheckpointEntryType.END && ts > lastEndTs) {
+                    lastEndTs = ts;
+                    endId = id;
+                    endFile = file;
+                }
             }
         }
 

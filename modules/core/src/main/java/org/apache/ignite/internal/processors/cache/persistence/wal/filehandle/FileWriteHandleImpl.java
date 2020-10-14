@@ -244,49 +244,47 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
             WALPointer ptr = null;
 
-            if (seg == null) {
-                walWriter.flushAll();
+            if (seg != null) {
+                try {
+                    int pos = (int)(seg.position() - rec.size());
 
-                continue;
-            }
+                    ByteBuffer buf = seg.buffer();
 
-            try {
-                int pos = (int)(seg.position() - rec.size());
+                    if (buf == null)
+                        return null; // Can not write to this segment, need to switch to the next one.
 
-                ByteBuffer buf = seg.buffer();
+                    ptr = new WALPointer(getSegmentId(), pos, rec.size());
 
-                if (buf == null)
-                    return null; // Can not write to this segment, need to switch to the next one.
+                    rec.position(ptr);
 
-                ptr = new WALPointer(getSegmentId(), pos, rec.size());
+                    fillBuffer(buf, rec);
 
-                rec.position(ptr);
+                    if (mmap) {
+                        // written field must grow only, but segment with greater position can be serialized
+                        // earlier than segment with smaller position.
+                        while (true) {
+                            long written0 = written;
 
-                fillBuffer(buf, rec);
-
-                if (mmap) {
-                    // written field must grow only, but segment with greater position can be serialized
-                    // earlier than segment with smaller position.
-                    while (true) {
-                        long written0 = written;
-
-                        if (seg.position() > written0) {
-                            if (WRITTEN_UPD.compareAndSet(this, written0, seg.position()))
+                            if (seg.position() > written0) {
+                                if (WRITTEN_UPD.compareAndSet(this, written0, seg.position()))
+                                    break;
+                            }
+                            else
                                 break;
                         }
-                        else
-                            break;
                     }
+
+                    return ptr;
                 }
+                finally {
+                    seg.release();
 
-                return ptr;
+                    if (mode == WALMode.BACKGROUND && rec instanceof CheckpointRecord)
+                        flushOrWait(ptr);
+                }
             }
-            finally {
-                seg.release();
-
-                if (mode == WALMode.BACKGROUND && rec instanceof CheckpointRecord)
-                    flushOrWait(ptr);
-            }
+            else
+                walWriter.flushAll();
         }
     }
 
@@ -396,46 +394,45 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
             long lastFsyncPos0 = lastFsyncPos;
             long written0 = written;
 
-            if (lastFsyncPos0 == written0)
-                return;
+            if (lastFsyncPos0 != written0) {
+                // Fsync position must be behind.
+                assert lastFsyncPos0 < written0 : "lastFsyncPos=" + lastFsyncPos0 + ", written=" + written0;
 
-            // Fsync position must be behind.
-            assert lastFsyncPos0 < written0 : "lastFsyncPos=" + lastFsyncPos0 + ", written=" + written0;
+                boolean metricsEnabled = metrics.metricsEnabled();
 
-            boolean metricsEnabled = metrics.metricsEnabled();
+                long start = metricsEnabled ? System.nanoTime() : 0;
 
-            long start = metricsEnabled ? System.nanoTime() : 0;
+                if (mmap) {
+                    long pos = ptr == null ? -1 : ptr.fileOffset();
 
-            if (mmap) {
-                long pos = ptr == null ? -1 : ptr.fileOffset();
+                    List<SegmentedRingByteBuffer.ReadSegment> segs = buf.poll(pos);
 
-                List<SegmentedRingByteBuffer.ReadSegment> segs = buf.poll(pos);
+                    if (segs != null) {
+                        assert segs.size() == 1;
 
-                if (segs != null) {
-                    assert segs.size() == 1;
+                        SegmentedRingByteBuffer.ReadSegment seg = segs.get(0);
 
-                    SegmentedRingByteBuffer.ReadSegment seg = segs.get(0);
+                        int off = seg.buffer().position();
+                        int len = seg.buffer().limit() - off;
 
-                    int off = seg.buffer().position();
-                    int len = seg.buffer().limit() - off;
+                        fsync((MappedByteBuffer)buf.buf, off, len);
 
-                    fsync((MappedByteBuffer)buf.buf, off, len);
-
-                    seg.release();
+                        seg.release();
+                    }
                 }
+                else
+                    walWriter.force();
+
+                lastFsyncPos = written;
+
+                if (fsyncDelay > 0)
+                    fsync.signalAll();
+
+                long end = metricsEnabled ? System.nanoTime() : 0;
+
+                if (metricsEnabled)
+                    metrics.onFsync(end - start);
             }
-            else
-                walWriter.force();
-
-            lastFsyncPos = written;
-
-            if (fsyncDelay > 0)
-                fsync.signalAll();
-
-            long end = metricsEnabled ? System.nanoTime() : 0;
-
-            if (metricsEnabled)
-                metrics.onFsync(end - start);
         }
         finally {
             lock.unlock();
@@ -477,84 +474,85 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      * @throws StorageException If failed.
      */
     @Override public boolean close(boolean rollOver) throws IgniteCheckedException, StorageException {
-        if (!stop.compareAndSet(false, true))
-            return false;
-
-        lock.lock();
-
-        try {
-            flushOrWait(null);
+        if (stop.compareAndSet(false, true)) {
+            lock.lock();
 
             try {
-                RecordSerializer backwardSerializer = new RecordSerializerFactoryImpl(cctx)
-                    .createSerializer(serializerVer);
+                flushOrWait(null);
 
-                SwitchSegmentRecord segmentRecord = new SwitchSegmentRecord();
+                try {
+                    RecordSerializer backwardSerializer = new RecordSerializerFactoryImpl(cctx)
+                        .createSerializer(serializerVer);
 
-                int switchSegmentRecSize = backwardSerializer.size(segmentRecord);
+                    SwitchSegmentRecord segmentRecord = new SwitchSegmentRecord();
 
-                if (rollOver && written + switchSegmentRecSize < maxWalSegmentSize) {
-                    segmentRecord.size(switchSegmentRecSize);
+                    int switchSegmentRecSize = backwardSerializer.size(segmentRecord);
 
-                    WALPointer segRecPtr = addRecord(segmentRecord);
+                    if (rollOver && written + switchSegmentRecSize < maxWalSegmentSize) {
+                        segmentRecord.size(switchSegmentRecSize);
 
-                    if (segRecPtr != null) {
-                        fsync(segRecPtr);
+                        WALPointer segRecPtr = addRecord(segmentRecord);
 
-                        switchSegmentRecordOffset = segRecPtr.fileOffset() + switchSegmentRecSize;
+                        if (segRecPtr != null) {
+                            fsync(segRecPtr);
+
+                            switchSegmentRecordOffset = segRecPtr.fileOffset() + switchSegmentRecSize;
+                        }
+                    }
+
+                    if (mmap) {
+                        List<SegmentedRingByteBuffer.ReadSegment> segs = buf.poll(maxWalSegmentSize);
+
+                        if (segs != null) {
+                            assert segs.size() == 1;
+
+                            segs.get(0).release();
+                        }
+                    }
+
+                    // Do the final fsync.
+                    if (mode != WALMode.NONE) {
+                        if (mmap)
+                            ((MappedByteBuffer)buf.buf).force();
+                        else
+                            fileIO.force();
+
+                        lastFsyncPos = written;
+                    }
+
+                    if (mmap) {
+                        try {
+                            fileIO.close();
+                        }
+                        catch (IOException ignore) {
+                            // No-op.
+                        }
+                    }
+                    else {
+                        walWriter.close();
+
+                        if (!rollOver)
+                            buf.free();
                     }
                 }
-
-                if (mmap) {
-                    List<SegmentedRingByteBuffer.ReadSegment> segs = buf.poll(maxWalSegmentSize);
-
-                    if (segs != null) {
-                        assert segs.size() == 1;
-
-                        segs.get(0).release();
-                    }
+                catch (IOException e) {
+                    throw new StorageException("Failed to close WAL write handle [idx=" + getSegmentId() + "]", e);
                 }
 
-                // Do the final fsync.
-                if (mode != WALMode.NONE) {
-                    if (mmap)
-                        ((MappedByteBuffer)buf.buf).force();
-                    else
-                        fileIO.force();
+                if (log.isDebugEnabled())
+                    log.debug("Closed WAL write handle [idx=" + getSegmentId() + "]");
 
-                    lastFsyncPos = written;
-                }
-
-                if (mmap) {
-                    try {
-                        fileIO.close();
-                    }
-                    catch (IOException ignore) {
-                        // No-op.
-                    }
-                }
-                else {
-                    walWriter.close();
-
-                    if (!rollOver)
-                        buf.free();
-                }
+                return true;
             }
-            catch (IOException e) {
-                throw new StorageException("Failed to close WAL write handle [idx=" + getSegmentId() + "]", e);
+            finally {
+                if (mmap)
+                    buf.free();
+
+                lock.unlock();
             }
-
-            if (log.isDebugEnabled())
-                log.debug("Closed WAL write handle [idx=" + getSegmentId() + "]");
-
-            return true;
         }
-        finally {
-            if (mmap)
-                buf.free();
-
-            lock.unlock();
-        }
+        else
+            return false;
     }
 
     /**

@@ -182,11 +182,6 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public long lastCompactedSegment();
 
     /**
-     * @return Last WAL segment index.
-     */
-    public long lastSegment();
-
-    /**
      * @return Max allowed index of archived segment to delete or -1 if it does not exist.
      */
     public long maxArchivedSegmentToDelete();

@@ -57,7 +57,6 @@ import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -164,6 +163,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** First eviction was warned flag. */
     private volatile boolean firstEvictWarn;
+
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -1006,25 +1006,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If fails.
      */
     public void startMemoryRestore(GridKernalContext kctx, TimeBag startTimer) throws IgniteCheckedException {
-        if (kctx.config().getDataStorageConfiguration().getWalMode() == null)
-            return;
-
-        long idx = cctx.wal().lastSegment();
-
-        if (idx < 0) {
-            cctx.wal().resumeLogging(null);
-
-            return;
-        }
-
-        WALPointer start = new WALPointer(idx, 0, 0);
-
-        WALIterator it = cctx.wal().replay(start);
-
-        while (it.hasNext())
-            it.next();
-
-        cctx.wal().resumeLogging(it.lastRead().orElse(null));
+        // No-op.
     }
 
     /**
