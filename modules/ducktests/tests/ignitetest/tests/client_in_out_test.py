@@ -55,7 +55,7 @@ class ClientTest(IgniteTest):
 
     CLIENTS_WORK_TIME_S = 30
     STATIC_CLIENT_WORK_TIME_S = 30
-    ITERATION_COUNT = 3
+    ITERATION_COUNT = 1
     CLUSTER_NODES = 8
     STATIC_CLIENTS_NUM = 2
     TEMP_CLIENTS_NUM = 4
@@ -104,16 +104,16 @@ class ClientTest(IgniteTest):
 
         # Start stop temp_clients node. Check cluster.
         for i in range(self.ITERATION_COUNT):
-            self.logger.debug(f'Starting iteration:{i}')
+            self.logger.debug(f'Starting iteration: {i}.')
 
             time.sleep(self.CLIENTS_WORK_TIME_S)
 
             temp_clients.start()
 
-            temp_clients.await_event(f'clients={self.STATIC_CLIENTS_NUM + self.TEMP_CLIENTS_NUM}',
-                                     timeout_sec=80,
-                                     from_the_beginning=True,
-                                     backoff_sec=1)
+            # temp_clients.await_event(f'clients={self.STATIC_CLIENTS_NUM + self.TEMP_CLIENTS_NUM}',
+            #                          timeout_sec=80,
+            #                          from_the_beginning=True,
+            #                          backoff_sec=1)
 
             current_top_v += self.TEMP_CLIENTS_NUM
             check_topology(control_utility, current_top_v)
@@ -131,13 +131,11 @@ class ClientTest(IgniteTest):
         check_topology(control_utility, fin_top_ver)
 
 
-def check_topology(control_utility, fin_top_ver):
+def check_topology(control_utility: ControlUtility, fin_top_ver: int):
     """
     :param control_utility: control.sh
     :param fin_top_ver: expected topology version
-    :return:
     """
     top_ver = control_utility.cluster_state().topology_version
-    print("cluster topology version: " + str(top_ver))
-    print("expected topology version: " + str(fin_top_ver))
-    assert top_ver == fin_top_ver
+
+    assert top_ver == fin_top_ver, f'Cluster topology version={top_ver}, expected topology version={fin_top_ver}.'
