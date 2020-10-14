@@ -34,9 +34,9 @@ class IgniteApplicationService(IgniteAwareService):
     SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"
 
     # pylint: disable=R0913
-    def __init__(self, context, config, java_class_name, params="", timeout_sec=60, modules=None,
+    def __init__(self, context, config, java_class_name, num_nodes=1, params="", timeout_sec=60, modules=None,
                  servicejava_class_name=SERVICE_JAVA_CLASS_NAME, jvm_opts=None, start_ignite=True):
-        super().__init__(context, config, 1, modules=modules, servicejava_class_name=servicejava_class_name,
+        super().__init__(context, config, num_nodes, modules=modules, servicejava_class_name=servicejava_class_name,
                          java_class_name=java_class_name, params=params, jvm_opts=jvm_opts, start_ignite=start_ignite)
 
         self.servicejava_class_name = servicejava_class_name
@@ -57,25 +57,21 @@ class IgniteApplicationService(IgniteAwareService):
         """
         Stops node in async way.
         """
-        self.logger.info("%s Stopping node %s" % (self.__class__.__name__, str(self.nodes[0].account)))
-        self.nodes[0].account.kill_java_processes(self.servicejava_class_name, clean_shutdown=clean_shutdown,
-                                                  allow_fail=True)
+        for node in self.nodes:
+            self.logger.info("%s Stopping node %s" % (self.__class__.__name__, str(node.account)))
+            node.account.kill_java_processes(self.servicejava_class_name, clean_shutdown=clean_shutdown,
+                                             allow_fail=True)
 
     def await_stopped(self, timeout_sec=10):
         """
         Awaits node stop finish.
         """
-        stopped = self.wait_node(self.nodes[0], timeout_sec=timeout_sec)
-        assert stopped, "Node %s: did not stop within the specified timeout of %s seconds" % \
-                        (str(self.nodes[0].account), str(timeout_sec))
+        for node in self.nodes:
+            stopped = self.wait_node(node, timeout_sec=timeout_sec)
+            assert stopped, "Node %s: did not stop within the specified timeout of %s seconds" % \
+                            (str(node.account), str(timeout_sec))
 
         self.__check_status("IGNITE_APPLICATION_FINISHED", timeout=timeout_sec)
-
-    # pylint: disable=W0221
-    def stop_node(self, node, clean_shutdown=True, timeout_sec=10):
-        assert node == self.nodes[0]
-        self.stop_async(clean_shutdown)
-        self.await_stopped(timeout_sec)
 
     def __check_status(self, desired, timeout=1):
         self.await_event("%s\\|IGNITE_APPLICATION_BROKEN" % desired, timeout, from_the_beginning=True)
@@ -121,10 +117,10 @@ class IgniteApplicationService(IgniteAwareService):
         """
         res = []
 
-        output = self.nodes[0].account.ssh_capture(
-            "grep '%s' %s" % (name + "->", self.STDOUT_STDERR_CAPTURE), allow_fail=False)
-
-        for line in output:
-            res.append(re.search("%s(.*)%s" % (name + "->", "<-"), line).group(1))
+        for node in self.nodes:
+            output = node.account.ssh_capture(
+                "grep '%s' %s" % (name + "->", self.STDOUT_STDERR_CAPTURE), allow_fail=False)
+            for line in output:
+                res.append(re.search("%s(.*)%s" % (name + "->", "<-"), line).group(1))
 
         return res
