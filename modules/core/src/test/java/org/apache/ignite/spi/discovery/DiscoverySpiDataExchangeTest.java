@@ -48,13 +48,13 @@ import org.junit.Test;
  */
 public class DiscoverySpiDataExchangeTest extends GridCommonAbstractTest {
     /** */
-    private BiConsumer<ClusterNode, DiscoveryDataBag> dataExchangeCollectClosure;;
+    private BiConsumer<ClusterNode, DiscoveryDataBag> dataExchangeCollectClosure;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
         IgniteConfiguration cfg0 = super.optimize(cfg);
 
-        cfg0.setDiscoverySpi(new DelegatedDiscoverySpi(cfg.getDiscoverySpi()));
+        cfg0.setDiscoverySpi(new DelegatedDiscoverySpi((IgniteDiscoverySpi)cfg.getDiscoverySpi()));
 
         return cfg0;
     }
@@ -81,12 +81,12 @@ public class DiscoverySpiDataExchangeTest extends GridCommonAbstractTest {
      * @param bags Collection of discovery data bags with the node ID where this bag was collected.
      */
     private void checkJoiningNodeData(boolean srv, Collection<T2<ClusterNode, DiscoveryDataBag>> bags) throws Exception {
-        int cntr = G.allGrids().size();
+        int idx = G.allGrids().size();
 
         if (srv)
-            startGrid("server-" + cntr);
+            startGrid("server-" + idx);
         else
-            startClientGrid("client-" + cntr);
+            startClientGrid("client-" + idx);
 
         assertFalse(bags.isEmpty());
 
@@ -102,12 +102,12 @@ public class DiscoverySpiDataExchangeTest extends GridCommonAbstractTest {
     @DiscoverySpiMutableCustomMessageSupport(true)
     private class DelegatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscoverySpi {
         /** */
-        private final DiscoverySpi delegate;
+        private final IgniteDiscoverySpi delegate;
 
         /**
          * @param delegate Delegate.
          */
-        DelegatedDiscoverySpi(DiscoverySpi delegate) {
+        DelegatedDiscoverySpi(IgniteDiscoverySpi delegate) {
             this.delegate = delegate;
         }
 
@@ -142,6 +142,7 @@ public class DiscoverySpiDataExchangeTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Deprecated
         @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
             delegate.setListener(lsnr);
         }
@@ -202,7 +203,7 @@ public class DiscoverySpiDataExchangeTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override  public void injectResources(Ignite ignite) {
+        @Override public void injectResources(Ignite ignite) {
             super.injectResources(ignite);
 
             if (ignite != null && delegate instanceof IgniteSpiAdapter) {
@@ -217,42 +218,42 @@ public class DiscoverySpiDataExchangeTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean knownNode(UUID nodeId) {
-            return ((IgniteDiscoverySpi)delegate).knownNode(nodeId);
+            return delegate.knownNode(nodeId);
         }
 
         /** {@inheritDoc} */
         @Override public boolean clientReconnectSupported() {
-            return ((IgniteDiscoverySpi)delegate).clientReconnectSupported();
+            return delegate.clientReconnectSupported();
         }
 
         /** {@inheritDoc} */
         @Override public void clientReconnect() {
-            ((IgniteDiscoverySpi)delegate).clientReconnect();
+            delegate.clientReconnect();
         }
 
         /** {@inheritDoc} */
         @Override public boolean allNodesSupport(IgniteFeatures feature) {
-            return ((IgniteDiscoverySpi)delegate).allNodesSupport(feature);
+            return delegate.allNodesSupport(feature);
         }
 
         /** {@inheritDoc} */
         @Override public void simulateNodeFailure() {
-            ((IgniteDiscoverySpi)delegate).simulateNodeFailure();
+            delegate.simulateNodeFailure();
         }
 
         /** {@inheritDoc} */
         @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
-            ((IgniteDiscoverySpi)delegate).setInternalListener(lsnr);
+            delegate.setInternalListener(lsnr);
         }
 
         /** {@inheritDoc} */
         @Override public boolean supportsCommunicationFailureResolve() {
-            return ((IgniteDiscoverySpi)delegate).supportsCommunicationFailureResolve();
+            return delegate.supportsCommunicationFailureResolve();
         }
 
         /** {@inheritDoc} */
         @Override public void resolveCommunicationFailure(ClusterNode node, Exception err) {
-            ((IgniteDiscoverySpi)delegate).resolveCommunicationFailure(node, err);
+            delegate.resolveCommunicationFailure(node, err);
         }
 
         /** {@inheritDoc} */
