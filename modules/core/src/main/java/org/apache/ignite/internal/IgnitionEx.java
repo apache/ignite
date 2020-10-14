@@ -61,6 +61,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.index.IgniteIndexing;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -2516,7 +2517,7 @@ public class IgnitionEx {
             }
 
             if (cfg.getIndexingSpi() == null)
-                cfg.setIndexingSpi(new NoopIndexingSpi());
+                cfg.setIndexingSpi(new IgniteIndexing());
 
             if (cfg.getEncryptionSpi() == null)
                 cfg.setEncryptionSpi(new NoopEncryptionSpi());

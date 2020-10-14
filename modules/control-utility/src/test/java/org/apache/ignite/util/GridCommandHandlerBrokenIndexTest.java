@@ -223,11 +223,6 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
         }
 
         /** */
-        @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
-            return 0;
-        }
-
-        /** */
         @Override public Cursor find(Session session, SearchRow first, SearchRow last) {
             throw new RuntimeException(EXCEPTION_MSG);
         }

@@ -155,8 +155,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         taskLifecycleListener
     );
 
-    /** */
-    private H2TreeIndex.H2TreeFactory regularH2TreeFactory;
+//    /** */
+//    private H2TreeIndex.H2TreeFactory regularH2TreeFactory;
 
     /** */
     private DurableBackgroundTaskTestListener durableBackgroundTaskTestLsnr;
@@ -187,9 +187,9 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         cleanPersistenceDir();
 
-        regularH2TreeFactory = H2TreeIndex.h2TreeFactory;
-
-        H2TreeIndex.h2TreeFactory = H2TreeTest::new;
+//        regularH2TreeFactory = H2TreeIndex.h2TreeFactory;
+//
+//        H2TreeIndex.h2TreeFactory = H2TreeTest::new;
 
         blockedSysCriticalThreadLsnr.reset();
 
@@ -201,7 +201,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     @Override protected void afterTest() throws Exception {
         blockedSysCriticalThreadLsnr.reset();
 
-        H2TreeIndex.h2TreeFactory = regularH2TreeFactory;
+//        H2TreeIndex.h2TreeFactory = regularH2TreeFactory;
 
         stopAllGrids();
 

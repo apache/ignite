@@ -229,7 +229,7 @@ public class H2TableDescriptor {
         if (hashIdx != null)
             idxs.add(hashIdx);
 
-        // Add primary key index.
+//        // Add primary key index.
         Index pkIdx = idx.createSortedIndex(
             PK_IDX_NAME,
             tbl,

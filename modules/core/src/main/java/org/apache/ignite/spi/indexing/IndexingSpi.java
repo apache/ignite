@@ -20,6 +20,11 @@ package org.apache.ignite.spi.indexing;
 import java.util.Collection;
 import java.util.Iterator;
 import javax.cache.Cache;
+import org.apache.ignite.cache.query.index.Index;
+import org.apache.ignite.cache.query.index.IndexDefinition;
+import org.apache.ignite.cache.query.index.IndexFactory;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
@@ -87,6 +92,40 @@ public interface IndexingSpi extends IgniteSpi {
     public void store(@Nullable String cacheName, Object key, Object val, long expirationTime) throws IgniteSpiException;
 
     /**
+     * Updates index with new row. Note that key is unique for cache, so if cache contains multiple indexes
+     * the key should be removed from indexes other than one being updated.
+     *
+     * @param cctx Cache context.
+     * @param newRow cache row to store in index.
+     * @param prevRow optional cache row that will be replaced with new row.
+     */
+    public default void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow)
+        throws IgniteSpiException {
+        // No-Op
+    }
+
+    /**
+     * Creates a new index.
+     *
+     * @param factory Index factory.
+     * @param def Description of an index to create.
+     */
+    public default Index createIndex(IndexFactory factory, IndexDefinition def) {
+        throw new IllegalStateException();
+    }
+
+    /**
+     * Removes an index.
+     *
+     * @param cacheName Cache name.
+     * @param idxName Index name.
+     * @param softDelete whether it's required to delete underlying structures.
+     */
+    public default void removeIndex(String cacheName, String idxName, boolean softDelete) {
+        // No-op
+    }
+
+    /**
      * Removes index entry by key.
      *
      * @param cacheName Cache name.
@@ -94,4 +133,14 @@ public interface IndexingSpi extends IgniteSpi {
      * @throws IgniteSpiException If failed.
      */
     public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException;
+
+    /**
+     * Delete specified row from index.
+     *
+     * @param cacheName Cache name.
+     * @param prevRow Cache row to delete from index.
+     */
+    public default void remove(String cacheName, @Nullable CacheDataRow prevRow) {
+        // No-op
+    }
 }

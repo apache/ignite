@@ -240,12 +240,6 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
     }
 
     /**
-     * @param partsFilter Partitions filter.
-     * @return Total row count in the current index for filtered partitions.
-     */
-    public abstract long totalRowCount(IndexingQueryCacheFilter partsFilter);
-
-    /**
      * @param tbl Table.
      * @param colsList Columns list.
      * @return Index column array.

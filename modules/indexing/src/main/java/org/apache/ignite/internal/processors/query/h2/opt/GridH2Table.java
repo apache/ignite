@@ -663,8 +663,7 @@ public class GridH2Table extends TableBase {
                     database.removeSchemaObject(ses, idx);
 
                     // We have to call destroy here if we are who has removed this index from the table.
-                    if (idx instanceof GridH2IndexBase)
-                        ((GridH2IndexBase)idx).destroy(rmIndex);
+                    destroyIndex(idx);
                 }
             }
 
@@ -697,11 +696,26 @@ public class GridH2Table extends TableBase {
             destroyed = true;
 
             for (int i = 1, len = idxs.size(); i < len; i++)
-                if (idxs.get(i) instanceof GridH2IndexBase)
-                    index(i).destroy(rmIndex);
+                destroyIndex(idxs.get(i));
         }
         finally {
             unlock(true);
+        }
+    }
+
+    private void destroyIndex(Index idx) {
+        if (idx instanceof GridH2IndexBase) {
+            GridH2IndexBase h2idx = (GridH2IndexBase) idx;
+
+            String cacheName = h2idx.getTable().cacheContext().name();
+
+            // TODO: use context.indexing() GridManagerIndexing, that proxy to Indexing SPI
+            // Destroy underlying Ignite index
+            cacheContext().kernalContext().config().getIndexingSpi()
+                .removeIndex(cacheName, idx.getName(), false);
+
+            // Call it too, if H2 index stores some state.
+            h2idx.destroy(rmIndex);
         }
     }
 
@@ -1130,7 +1144,7 @@ public class GridH2Table extends TableBase {
                     GridCacheContext cctx0 = cacheInfo.cacheContext();
 
                     if (cctx0 != null && idx instanceof GridH2IndexBase)
-                        ((GridH2IndexBase)idx).destroy(rmIndex);
+                        destroyIndex(idx);
 
                     continue;
                 }

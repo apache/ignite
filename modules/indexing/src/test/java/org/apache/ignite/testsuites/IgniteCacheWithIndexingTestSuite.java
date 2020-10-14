@@ -51,7 +51,7 @@ import org.apache.ignite.internal.processors.cache.ttl.CacheTtlReadOnlyModeSelfT
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalPartitionedSelfTest;
 import org.apache.ignite.internal.processors.client.IgniteDataStreamerTest;
-import org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.InlineIndexColumnTest;
+import org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.InlineIndexTypeTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -60,7 +60,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    InlineIndexColumnTest.class,
+    InlineIndexTypeTest.class,
 
     GridIndexingWithNoopSwapSelfTest.class,
     GridCacheOffHeapSelfTest.class,

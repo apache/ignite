@@ -54,6 +54,7 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
      * @param ifNotExists Ignore operation if index exists.
      * @param parallel Index creation parallelism level.
      */
+    // TODO: QueryIndex idx - it's not a query index now
     public SchemaIndexCreateOperation(UUID opId, String cacheName, String schemaName, String tblName, QueryIndex idx,
         boolean ifNotExists, int parallel) {
         super(opId, cacheName, schemaName);

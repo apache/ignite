@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.InlineIndexColumnFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
@@ -80,9 +79,6 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
     /** */
     private static final String CACHE_GRP_2 = "cache_grp_2";
 
-    /** */
-    private H2TreeIndex.H2TreeFactory regularH2TreeFactory;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
@@ -112,14 +108,14 @@ public class MultipleParallelCacheDeleteDeadlockTest extends GridCommonAbstractT
 
         cleanPersistenceDir();
 
-        regularH2TreeFactory = H2TreeIndex.h2TreeFactory;
-
-        H2TreeIndex.h2TreeFactory = H2TreeTest::new;
+//        regularH2TreeFactory = H2TreeIndex.h2TreeFactory;
+//
+//        H2TreeIndex.h2TreeFactory = H2TreeTest::new;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        H2TreeIndex.h2TreeFactory = regularH2TreeFactory;
+//        H2TreeIndex.h2TreeFactory = regularH2TreeFactory;
 
         stopAllGrids();
 

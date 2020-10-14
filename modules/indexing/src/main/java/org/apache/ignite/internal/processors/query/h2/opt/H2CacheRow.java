@@ -69,6 +69,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public Value getValue(int col) {
+        // TODO: removed? It's part of RowCache?
         if (removedRow()) {
             assert col == 0 : col;
 
