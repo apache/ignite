@@ -450,13 +450,16 @@ namespace ignite
                     pthread_condattr_t attr;
                     int err = pthread_condattr_init(&attr);
                     assert(!err);
+                    IGNITE_UNUSED(err);
 
 #if !defined(__APPLE__)
                     err = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
                     assert(!err);
+                    IGNITE_UNUSED(err);
 #endif
                     err = pthread_cond_init(&cond, &attr);
                     assert(!err);
+                    IGNITE_UNUSED(err);
                 }
 
                 /**
@@ -550,16 +553,21 @@ namespace ignite
                     pthread_condattr_t attr;
                     int err = pthread_condattr_init(&attr);
                     assert(!err);
+                    IGNITE_UNUSED(err);
+
 #if !defined(__APPLE__)
                     err = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
                     assert(!err);
+                    IGNITE_UNUSED(err);
 #endif
 
                     err = pthread_cond_init(&cond, &attr);
                     assert(!err);
+                    IGNITE_UNUSED(err);
 
                     err = pthread_mutex_init(&mutex, NULL);
                     assert(!err);
+                    IGNITE_UNUSED(err);
                 }
 
                 /**
@@ -578,14 +586,17 @@ namespace ignite
                 {
                     int err = pthread_mutex_lock(&mutex);
                     assert(!err);
+                    IGNITE_UNUSED(err);
 
                     state = true;
 
                     err = pthread_cond_broadcast(&cond);
                     assert(!err);
+                    IGNITE_UNUSED(err);
 
                     err = pthread_mutex_unlock(&mutex);
                     assert(!err);
+                    IGNITE_UNUSED(err);
                 }
 
                 /**
@@ -595,11 +606,13 @@ namespace ignite
                 {
                     int err = pthread_mutex_lock(&mutex);
                     assert(!err);
+                    IGNITE_UNUSED(err);
 
                     state = false;
 
                     err = pthread_mutex_unlock(&mutex);
                     assert(!err);
+                    IGNITE_UNUSED(err);
                 }
 
                 /**
@@ -609,15 +622,18 @@ namespace ignite
                 {
                     int err = pthread_mutex_lock(&mutex);
                     assert(!err);
+                    IGNITE_UNUSED(err);
 
                     while (!state)
                     {
                         err = pthread_cond_wait(&cond, &mutex);
                         assert(!err);
+                        IGNITE_UNUSED(err);
                     }
 
                     err = pthread_mutex_unlock(&mutex);
                     assert(!err);
+                    IGNITE_UNUSED(err);
                 }
 
                 /**
@@ -631,22 +647,26 @@ namespace ignite
                     int res = 0;
                     int err = pthread_mutex_lock(&mutex);
                     assert(!err);
+                    IGNITE_UNUSED(err);
 
                     if (!state)
                     {
                         timespec ts;
                         err = clock_gettime(CLOCK_MONOTONIC, &ts);
                         assert(!err);
+                        IGNITE_UNUSED(err);
 
                         ts.tv_sec += msTimeout / 1000 + (ts.tv_nsec + (msTimeout % 1000) * 1000000) / 1000000000;
                         ts.tv_nsec = (ts.tv_nsec + (msTimeout % 1000) * 1000000) % 1000000000;
 
                         res = pthread_cond_timedwait(&cond, &mutex, &ts);
                         assert(res == 0 || res == ETIMEDOUT);
+                        IGNITE_UNUSED(res);
                     }
 
                     err = pthread_mutex_unlock(&mutex);
                     assert(!err);
+                    IGNITE_UNUSED(err);
 
                     return res == 0;
                 }
