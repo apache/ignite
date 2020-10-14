@@ -115,25 +115,12 @@ public class ConnectionTest {
         Socket sock = new Socket("localhost", 10800);
         OutputStream out = sock.getOutputStream();
 
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
-            writer.writeInt(12); // reserve an integer for the request size
-
-            writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
-            writer.writeShort(1);
-            writer.writeShort(0);
-            writer.writeShort(0);
-            writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
-
-            out.write(writer.array());
-        }
+        out.write(getHandshakeBytes());
 
         return CompletableFuture.completedFuture(12);
     }
 
     private CompletableFuture<Integer> handshakeNetty() throws Exception {
-        // TODO
-
         String host = "localhost";
         int port = 10800;
         EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -143,21 +130,21 @@ public class ConnectionTest {
             b.group(workerGroup); // (2)
             b.channel(NioSocketChannel.class); // (3)
             b.option(ChannelOption.SO_KEEPALIVE, true); // (4)
-//            b.handler(new ChannelInitializer<SocketChannel>() {
-//                @Override
-//                public void initChannel(SocketChannel ch) throws Exception {
-//                    ch.pipeline().addLast(new TimeClientHandler());
-//                }
-//            });
+            b.handler(new ChannelInitializer<SocketChannel>() {
+                @Override
+                public void initChannel(SocketChannel ch) throws Exception {
+                    // ch.pipeline().addLast(new TimeClientHandler());
+                }
+            });
 
             // Start the client.
             ChannelFuture f = b.connect(host, port).sync(); // (5)
 
-            // Wait until the connection is closed.
-            f.channel().closeFuture().sync();
+            f.channel().writeAndFlush(getHandshakeBytes());
         } finally {
             workerGroup.shutdownGracefully();
         }
+
         return CompletableFuture.completedFuture(12);
     }
 
@@ -172,17 +159,8 @@ public class ConnectionTest {
             @Override
             public void completed(Void unused, Object o) {
                 // Handshake.
-                BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
-                try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
-                    writer.writeInt(12); // reserve an integer for the request size
-
-                    writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
-                    writer.writeShort(1);
-                    writer.writeShort(0);
-                    writer.writeShort(0);
-                    writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
-
-                    client.write(ByteBuffer.wrap(writer.array()), null, new CompletionHandler<Integer, Object>() {
+                try {
+                    client.write(ByteBuffer.wrap(getHandshakeBytes()), null, new CompletionHandler<Integer, Object>() {
                         @Override
                         public void completed(Integer integer, Object o) {
                             fut.complete(integer);
@@ -214,6 +192,21 @@ public class ConnectionTest {
         });
 
         return fut;
+    }
+
+    private byte[] getHandshakeBytes() throws IOException {
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
+        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
+            writer.writeInt(12); // reserve an integer for the request size
+
+            writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+            writer.writeShort(1);
+            writer.writeShort(0);
+            writer.writeShort(0);
+            writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
+
+            return writer.array();
+        }
     }
 
     /**
