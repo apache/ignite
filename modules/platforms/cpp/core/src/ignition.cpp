@@ -376,7 +376,7 @@ namespace ignite
             if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
             {
                 // 2. Get environment pointer.
-                long long ptr = ctx.Get()->IgnitionEnvironmentPointer(name0, &jniErr);
+                int64_t ptr = ctx.Get()->IgnitionEnvironmentPointer(name0, &jniErr);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 

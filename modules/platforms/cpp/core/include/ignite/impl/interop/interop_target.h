@@ -204,7 +204,7 @@ namespace ignite
                 /** javaRef release flag. */
                 bool skipJavaRefRelease;
 
-                IGNITE_NO_COPY_ASSIGNMENT(InteropTarget)
+                IGNITE_NO_COPY_ASSIGNMENT(InteropTarget);
 
                 /**
                  * Write data to memory.

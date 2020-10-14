@@ -94,7 +94,7 @@ namespace ignite
             return stat(path.c_str(), &pathStat) != -1 && S_ISDIR(pathStat.st_mode);
         }
 
-        static int rmFiles(const char *pathname, const struct stat *sbuf, int type, struct FTW *ftwb)
+        static int rmFiles(const char *pathname, const struct stat*, int, struct FTW*)
         {
             remove(pathname);
 

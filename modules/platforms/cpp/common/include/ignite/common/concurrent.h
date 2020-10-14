@@ -101,7 +101,7 @@ namespace ignite
                 /** Reference count. */
                 int32_t refCnt;
 
-                IGNITE_NO_COPY_ASSIGNMENT(SharedPointerImpl)
+                IGNITE_NO_COPY_ASSIGNMENT(SharedPointerImpl);
             };
 
             /* Forward declaration. */

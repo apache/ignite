@@ -88,7 +88,7 @@ namespace ignite
                  * @param reader Reader for stream with result.
                  * @return Policy.
                  */
-                virtual int32_t JobResultRemote(ComputeJobHolder& job, binary::BinaryReaderImpl& reader)
+                virtual int32_t JobResultRemote(ComputeJobHolder&, binary::BinaryReaderImpl& reader)
                 {
                     res.Read(reader);
 
@@ -173,7 +173,7 @@ namespace ignite
                  * @param reader Reader for stream with result.
                  * @return Policy.
                  */
-                virtual int32_t JobResultRemote(ComputeJobHolder& job, binary::BinaryReaderImpl& reader)
+                virtual int32_t JobResultRemote(ComputeJobHolder&, binary::BinaryReaderImpl& reader)
                 {
                     res.Read(reader);
 
