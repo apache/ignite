@@ -24,8 +24,6 @@ import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature;
-import org.apache.ignite.internal.client.thin.ProtocolContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.junit.Test;
@@ -34,12 +32,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-
-import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.USER_ATTRIBUTES;
-import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.AUTHORIZATION;
-import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.BITMAP_FEATURES;
+import java.nio.channels.CompletionHandler;
 
 /**
  * Checks if it can connect to a valid address from the node address list.
@@ -83,31 +76,48 @@ public class ConnectionTest {
 
     /** */
     @Test
-    public void testAsynchronousSocketChannel() {
+    public void testAsynchronousSocketChannel() throws IOException {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1)) {
             // Connect.
             AsynchronousSocketChannel client = AsynchronousSocketChannel.open();
             InetSocketAddress hostAddress = new InetSocketAddress("localhost", 10800);
-            Future<Void> connectFut = client.connect(hostAddress);
-            connectFut.get();
+            client.connect(hostAddress, null, new CompletionHandler<Void, Object>() {
+                @Override
+                public void completed(Void unused, Object o) {
+                    // Handshake.
+                    BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
+                    try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
+                        writer.writeInt(12); // reserve an integer for the request size
 
-            // Handshake.
-            BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
-            try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
-                writer.writeInt(12); // reserve an integer for the request size
+                        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+                        writer.writeShort(1);
+                        writer.writeShort(0);
+                        writer.writeShort(0);
+                        writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
 
-                writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
-                writer.writeShort(1);
-                writer.writeShort(0);
-                writer.writeShort(0);
-                writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
+                        client.write(ByteBuffer.wrap(writer.array()), null, new CompletionHandler<Integer, Object>() {
+                            @Override
+                            public void completed(Integer integer, Object o) {
+                                System.out.println(">>> Handshake done");
+                            }
 
-                Future<Integer> writeFut = client.write(ByteBuffer.wrap(writer.array()));
-                writeFut.get();
-            }
+                            @Override
+                            public void failed(Throwable throwable, Object o) {
+                                // No-op.
+                            }
+                        });
+                    }
+                    catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
 
-        } catch (InterruptedException | ExecutionException | IOException e) {
-            e.printStackTrace();
+                @Override
+                public void failed(Throwable throwable, Object o) {
+                    // No-op.
+                }
+            });
+
         }
     }
 
