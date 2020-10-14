@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.kubernetes.connection;
 
-import org.apache.ignite.internal.kubernetes.connection.KubernetesServiceAddressResolver;
 import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfiguration;
 
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
