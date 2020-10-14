@@ -29,7 +29,8 @@
         </Console>
 
         <RollingFile name="FILE" fileName="{{ log_file }}"
-                     filePattern="{{ log_file }}-%d{yyyy-MM-dd_HH-mm}">
+                     filePattern="{{ log_file }}-%d{yyyy-MM-dd_HH-mm}"
+                     immediateFlush="true">
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
             <Policies>
                 <OnStartupTriggeringPolicy />
