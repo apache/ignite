@@ -900,12 +900,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var desc = _marsh.GetDescriptor(type);
 
-            _stream.WriteByte(BinaryTypeId.Enum);
-            _stream.WriteInt(desc.TypeId);
-            _stream.WriteInt(val);
+            WriteEnum(val, desc.TypeId);
 
             var metaHnd = _marsh.GetBinaryTypeHandler(desc);
             SaveMetadata(desc, metaHnd.OnObjectWriteFinished());
+        }
+
+        /// <summary>
+        /// Write enum value.
+        /// </summary>
+        /// <param name="val">Enum value.</param>
+        /// <param name="typeId">Enum type id.</param>
+        private void WriteEnum(int val, int typeId)
+        {
+            _stream.WriteByte(BinaryTypeId.Enum);
+            _stream.WriteInt(typeId);
+            _stream.WriteInt(val);
         }
 
         /// <summary>
@@ -1377,6 +1387,16 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     if (!WriteHandle(_stream.Position, portObj))
                         _builder.ProcessBinary(_stream, portObj);
+
+                    return true;
+                }
+
+                // Special case for binary enum during build.
+                BinaryEnum binEnum = obj as BinaryEnum;
+
+                if (binEnum != null)
+                {
+                    WriteEnum(binEnum.EnumValue, binEnum.TypeId);
 
                     return true;
                 }
