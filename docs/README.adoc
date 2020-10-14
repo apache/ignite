@@ -86,6 +86,14 @@ The following sections explain specific asciidoc syntax that we use.
 The table of content is defined in the `_data/toc.yaml` file.
 If you want to add a new page, make sure to update the TOC.
 
+=== Changing an URL of an existing page
+
+If you rename an already published page or change the page's path in the `/_data/toc.yaml` file,
+you must configure a proper redirect from the old to the new URL in the following files of the Ignite website:
+https://github.com/apache/ignite-website/blob/master/.htaccess
+
+Reach out to documentation maintainers if you need any help with this.
+
 === Links to other sections in the docs
 All .adoc files are located in the "docs/_docs" directory.
 Any link to the files within the directory must be relative to that directory.
@@ -148,6 +156,26 @@ tab:C++[unsupported]
 
 --
 ```
+
+=== Callouts
+
+Use the syntax below if you need to bring reader's attention to some details:
+
+[NOTE]
+====
+[discrete]
+=== Callout Title
+Callout Text
+====
+
+Change the callout type to `CAUTION` if you want to put out a warning:
+
+[CAUTION]
+====
+[discrete]
+=== Callout Title
+Callout Text
+====
 
 === Code Snippets
 
