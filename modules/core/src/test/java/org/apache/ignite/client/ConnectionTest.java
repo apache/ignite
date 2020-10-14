@@ -26,6 +26,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
+import org.apache.ignite.internal.util.IgniteStopwatch;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -34,6 +35,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Checks if it can connect to a valid address from the node address list.
@@ -77,8 +79,15 @@ public class ConnectionTest {
 
     /** */
     @Test
-    public void testAsynchronousSocketChannel() throws IOException {
+    public void testAsynchronousSocketChannel() throws IOException, ExecutionException, InterruptedException {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1)) {
+            IgniteStopwatch sw = IgniteStopwatch.createStarted();
+
+            for (int i = 0; i < 1000; i++) {
+                handshakeAsyncChannel().get();
+            }
+
+            System.out.println(">>> " + sw.elapsed().toMillis());
         }
     }
 
@@ -122,6 +131,14 @@ public class ConnectionTest {
             @Override
             public void failed(Throwable throwable, Object o) {
                 fut.completeExceptionally(throwable);
+            }
+        });
+
+        fut.thenAccept(i -> {
+            try {
+                client.close();
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
             }
         });
 
