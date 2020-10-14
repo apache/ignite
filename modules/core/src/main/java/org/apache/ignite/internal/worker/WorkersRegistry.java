@@ -178,7 +178,7 @@ public class WorkersRegistry implements GridWorkerListener {
 
         Thread prevCheckerThread = lastChecker.get();
 
-        if (prevCheckerThread == null ||
+        if (prevCheckerThread == null || registeredWorkers.size() < 2 ||
             U.currentTimeMillis() - lastCheckTs <= checkInterval ||
             !lastChecker.compareAndSet(prevCheckerThread, null))
             return;
