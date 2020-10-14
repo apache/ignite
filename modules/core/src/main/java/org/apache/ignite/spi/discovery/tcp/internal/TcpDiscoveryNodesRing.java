@@ -178,7 +178,7 @@ public class TcpDiscoveryNodesRing {
     public Collection<TcpDiscoveryNode> serverNodes() {
         return nodes(new PN() {
             @Override public boolean apply(ClusterNode node) {
-                return !node.isClient();
+                return ((TcpDiscoveryNode)node).clientRouterNodeId() == null;
             }
         });
     }
