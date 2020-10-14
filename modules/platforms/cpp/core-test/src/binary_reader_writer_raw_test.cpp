@@ -326,7 +326,7 @@ void CheckRawCollection(CollectionType::Type* colType)
 void CheckRawCollectionIterators(CollectionType::Type* colType)
 {
     typedef std::vector<BinaryInner> BinaryInnerVector;
-    
+
     BinaryInnerVector writeValues;
     writeValues.push_back(1);
     writeValues.push_back(0);
@@ -350,8 +350,8 @@ void CheckRawCollectionIterators(CollectionType::Type* colType)
     InteropInputStream in(&mem);
     BinaryReaderImpl reader(&in);
     BinaryRawReader rawReader(&reader);
-    
-    int32_t collectionSize = rawReader.ReadCollectionSize();
+
+    size_t collectionSize = rawReader.ReadCollectionSize();
     BOOST_REQUIRE(collectionSize == writeValues.size());
 
     if (colType)
@@ -360,7 +360,7 @@ void CheckRawCollectionIterators(CollectionType::Type* colType)
         BOOST_REQUIRE(rawReader.ReadCollectionType() == CollectionType::UNDEFINED);
 
     BinaryInnerVector readValues(collectionSize);
-    
+
     int32_t elementsRead = rawReader.ReadCollection<BinaryInner>(readValues.begin());
 
     BOOST_REQUIRE(elementsRead == 3);
