@@ -121,6 +121,11 @@ public class ConnectionTest {
         return CompletableFuture.completedFuture(12);
     }
 
+    private CompletableFuture<Integer> handshakeNetty() throws IOException {
+        // TODO
+        return CompletableFuture.completedFuture(12);
+    }
+
     /** 5100ms */
     private CompletableFuture<Integer> handshakeAsyncChannel() throws IOException {
         CompletableFuture<Integer> fut = new CompletableFuture<>();
