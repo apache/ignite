@@ -33,6 +33,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Checks if it can connect to a valid address from the node address list.
@@ -78,47 +79,53 @@ public class ConnectionTest {
     @Test
     public void testAsynchronousSocketChannel() throws IOException {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1)) {
-            // Connect.
-            AsynchronousSocketChannel client = AsynchronousSocketChannel.open();
-            InetSocketAddress hostAddress = new InetSocketAddress("localhost", 10800);
-            client.connect(hostAddress, null, new CompletionHandler<Void, Object>() {
-                @Override
-                public void completed(Void unused, Object o) {
-                    // Handshake.
-                    BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
-                    try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
-                        writer.writeInt(12); // reserve an integer for the request size
-
-                        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
-                        writer.writeShort(1);
-                        writer.writeShort(0);
-                        writer.writeShort(0);
-                        writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
-
-                        client.write(ByteBuffer.wrap(writer.array()), null, new CompletionHandler<Integer, Object>() {
-                            @Override
-                            public void completed(Integer integer, Object o) {
-                                System.out.println(">>> Handshake done");
-                            }
-
-                            @Override
-                            public void failed(Throwable throwable, Object o) {
-                                // No-op.
-                            }
-                        });
-                    }
-                    catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                @Override
-                public void failed(Throwable throwable, Object o) {
-                    // No-op.
-                }
-            });
-
         }
+    }
+
+    private CompletableFuture<Integer> handshakeAsyncChannel() throws IOException {
+        CompletableFuture<Integer> fut = new CompletableFuture<>();
+
+        // Connect.
+        AsynchronousSocketChannel client = AsynchronousSocketChannel.open();
+        InetSocketAddress hostAddress = new InetSocketAddress("localhost", 10800);
+        client.connect(hostAddress, null, new CompletionHandler<Void, Object>() {
+            @Override
+            public void completed(Void unused, Object o) {
+                // Handshake.
+                BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
+                try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
+                    writer.writeInt(12); // reserve an integer for the request size
+
+                    writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+                    writer.writeShort(1);
+                    writer.writeShort(0);
+                    writer.writeShort(0);
+                    writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
+
+                    client.write(ByteBuffer.wrap(writer.array()), null, new CompletionHandler<Integer, Object>() {
+                        @Override
+                        public void completed(Integer integer, Object o) {
+                            fut.complete(integer);
+                        }
+
+                        @Override
+                        public void failed(Throwable throwable, Object o) {
+                            fut.completeExceptionally(throwable);
+                        }
+                    });
+                }
+                catch (IOException e) {
+                    fut.completeExceptionally(e);
+                }
+            }
+
+            @Override
+            public void failed(Throwable throwable, Object o) {
+                fut.completeExceptionally(throwable);
+            }
+        });
+
+        return fut;
     }
 
     /**
