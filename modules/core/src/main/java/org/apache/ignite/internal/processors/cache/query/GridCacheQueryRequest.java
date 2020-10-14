@@ -241,7 +241,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param args Query arguments.
      * @param incMeta Include meta data or not.
      * @param keepBinary Keep binary flag.
-     * @param subjId Subject ID.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
      * @param mvccSnapshot Mvcc snapshot.

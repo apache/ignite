@@ -189,7 +189,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param rolledbackVers Rolled back versions.
      * @param pendingVers Pending versions.
      * @param txSize Expected transaction size.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param updateIdxs Partition update idxs.
      * @param addDepInfo Deployment info flag.
