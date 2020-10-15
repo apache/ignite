@@ -68,7 +68,7 @@ namespace ignite
                  */
                 BinaryWriterImpl(interop::InteropOutputStream* stream, BinaryIdResolver* idRslvr, 
                     BinaryTypeManager* metaMgr, BinaryTypeHandler* metaHnd, int32_t start);
-                
+
                 /**
                  * Constructor used to construct light-weight writer allowing only raw operations 
                  * and primitive objects.

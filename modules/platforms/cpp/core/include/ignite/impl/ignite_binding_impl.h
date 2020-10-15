@@ -117,7 +117,8 @@ namespace ignite
              */
             int64_t makeKey(int32_t type, int32_t id)
             {
-                return (static_cast<int64_t>(type) << 32) | id;
+                return ((static_cast<int64_t>(type) & 0xFFFFFFFF) << 32) |
+                       ((static_cast<int64_t>(id) & 0xFFFFFFFF));
             }
 
             /** Ignite environment. */
