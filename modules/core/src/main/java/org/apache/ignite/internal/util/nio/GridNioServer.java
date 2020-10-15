@@ -2233,15 +2233,21 @@ public class GridNioServer<T> {
                         if (!changeReqs.isEmpty())
                             continue;
 
-                        updateHeartbeat();
+                        blockingSectionBegin();
 
                         // Wake up every 2 seconds to check if closed.
-                        if (selector.select(2000) > 0) {
+                        int numKeys = selector.select(2000);
+
+                        blockingSectionEnd();
+
+                        if (numKeys > 0) {
                             // Walk through the ready keys collection and process network events.
                             if (selectedKeys == null)
                                 processSelectedKeys(selector.selectedKeys());
                             else
                                 processSelectedKeysOptimized(selectedKeys.flip());
+
+                            updateHeartbeat();
                         }
 
                         // select() call above doesn't throw on interruption; checking it here to propagate timely.
@@ -3037,14 +3043,19 @@ public class GridNioServer<T> {
         private void accept() throws IgniteCheckedException {
             try {
                 while (!closed && selector.isOpen() && !Thread.currentThread().isInterrupted()) {
-                    updateHeartbeat();
+                    blockingSectionBegin();
 
                     // Wake up every 2 seconds to check if closed.
-                    if (selector.select(2000) > 0)
+                    int numKeys = selector.select(2000);
+
+                    blockingSectionEnd();
+
+                    if (numKeys > 0) {
                         // Walk through the ready keys collection and process date requests.
                         processSelectedKeys(selector.selectedKeys());
-                    else
+
                         updateHeartbeat();
+                    }
 
                     if (balancer != null)
                         balancer.run();
