@@ -49,6 +49,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
+import java.nio.charset.Charset;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -236,7 +237,7 @@ public class ConnectionTest {
         }
     }
 
-    public class ClientHandler extends SimpleChannelInboundHandler {
+    public static class ClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
         @Override
         public void channelActive(ChannelHandlerContext channelHandlerContext){
             // channelHandlerContext.writeAndFlush(Unpooled.copiedBuffer("Netty Rocks!", CharsetUtil.UTF_8));
@@ -249,8 +250,8 @@ public class ConnectionTest {
         }
 
         @Override
-        protected void channelRead0(ChannelHandlerContext ctx, Object msg)  {
-            System.out.println("Client received: " + msg);
+        protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg)  {
+            System.out.println("Client received: " + msg.toString(Charset.defaultCharset()));
         }
     }
 }
