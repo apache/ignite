@@ -719,13 +719,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         int j = outStr.indexOf("\n", i) + 1;
 
-        int beginOfNodeDescription = -1;
+        int beginOfNodeDesc = -1;
 
         List<String> nodesInfo = new ArrayList<>();
 
-        while ((beginOfNodeDescription = outStr.indexOf("ConsistentId=", j) ) != -1) {
-            j = outStr.indexOf("\n", beginOfNodeDescription);
-            nodesInfo.add(outStr.substring(beginOfNodeDescription, j).trim());
+        while ((beginOfNodeDesc = outStr.indexOf("ConsistentId=", j) ) != -1) {
+            j = outStr.indexOf("\n", beginOfNodeDesc);
+            nodesInfo.add(outStr.substring(beginOfNodeDesc, j).trim());
         }
 
         return nodesInfo;
