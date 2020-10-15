@@ -20,13 +20,43 @@
 
 #include "ignite/ignition.h"
 
-#define MUTE_TEST_FOR_TEAMCITY \
-    if (jetbrains::teamcity::underTeamcity()) \
-    { \
-        BOOST_TEST_MESSAGE("Muted on TeamCity because of periodical non-critical failures"); \
-        BOOST_CHECK(jetbrains::teamcity::underTeamcity()); \
-        return; \
+#define MUTE_TEST_FOR_TEAMCITY                                              \
+    if (jetbrains::teamcity::underTeamcity()) {                             \
+        BOOST_TEST_MESSAGE("Muted on TeamCity because of "                  \
+            "periodical non-critical failures");                            \
+        BOOST_CHECK(jetbrains::teamcity::underTeamcity());                  \
+        return;                                                             \
     }
+
+#define WITH_STABLE_TOPOLOGY_BEGIN(node)                                    \
+    int64_t __topVer = node.GetCluster().GetTopologyVersion();              \
+    while (true) {
+
+#define WITH_STABLE_TOPOLOGY_END break; }
+
+#define CHECK_TOPOLOGY_STABLE(node)                                         \
+    {                                                                       \
+        int64_t __topVer0 = node.GetCluster().GetTopologyVersion();         \
+        if (__topVer != __topVer0) {                                        \
+            __topVer = __topVer0;                                           \
+            continue;                                                       \
+        }                                                                   \
+    }
+
+#define WITH_RETRY_BEGIN                                                    \
+    int retries = 0;                                                        \
+    while (true) {
+
+#define WITH_RETRY_END break; }
+
+#define CHECK_EQUAL_OR_RETRY(expected, actual)                              \
+    if ((retries < RETRIES_FOR_STABLE_TOPOLOGY) && (expected != actual)) {  \
+        ++retries;                                                          \
+        continue;                                                           \
+    }                                                                       \
+    BOOST_CHECK_EQUAL(expected, actual)
+
+
 
 namespace ignite_test
 {
@@ -71,6 +101,11 @@ namespace ignite_test
      * @return New node.
      */
     ignite::Ignite StartNode(const char* cfgFile, const char* name);
+
+    /**
+     * Remove all the LFS artifacts.
+     */
+    void ClearLfs();
 
     /**
      * Check if the error is generic.

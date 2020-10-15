@@ -229,7 +229,7 @@ BOOST_AUTO_TEST_CASE(ConnectionAttributeLoginTimeout)
     SQLRETURN ret = SQLGetConnectAttr(dbc, SQL_ATTR_LOGIN_TIMEOUT, &timeout, 0, 0);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
-    BOOST_REQUIRE_EQUAL(timeout, odbc::Connection::DEFAULT_CONNECT_TIMEOUT);
+    BOOST_REQUIRE_EQUAL(timeout, (SQLUINTEGER) odbc::Connection::DEFAULT_CONNECT_TIMEOUT);
 
     ret = SQLSetConnectAttr(dbc, SQL_ATTR_LOGIN_TIMEOUT, reinterpret_cast<SQLPOINTER>(42), 0);
 

@@ -264,7 +264,7 @@ namespace ignite
                 impl::InCacheLocalPeekOperation<K> inOp(key, peekModes);
                 impl::Out1Operation<V> outOp(val);
 
-                impl.Get()->LocalPeek(inOp, outOp, peekModes, err);
+                impl.Get()->LocalPeek(inOp, outOp, err);
 
                 return val;
             }
