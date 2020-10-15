@@ -24,41 +24,48 @@ import org.apache.calcite.plan.DeriveMode;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /** */
 public interface TraitsAwareIgniteRel extends IgniteRel {
     /** {@inheritDoc} */
     @Override public default RelNode passThrough(RelTraitSet required) {
+        required = fixTraits(required);
+
         List<RelNode> nodes = TraitsPropagationContext.forPassingThrough(this, required)
             .propagate(this::passThroughCollation)
             .propagate(this::passThroughDistribution)
             .propagate(this::passThroughRewindability)
             .nodes(this::createNode);
 
-        if (U.assertionsEnabled()) {
-            RelNode first = F.first(nodes);
+        RelOptPlanner planner = getCluster().getPlanner();
 
-            if (first != null) {
-                RelTraitSet traits = first.getTraitSet();
+        assert planner instanceof VolcanoPlanner;
 
-                for (int i = 1; i < nodes.size(); i++) {
-                    if (!traits.equals(nodes.get(i).getTraitSet()))
-                        throw new AssertionError("All produced nodes must have equal traits. [nodes=" + nodes + "]");
-                }
+        for (RelNode node : nodes) {
+            RelTraitSet traits = node.getTraitSet();
+
+            // try to fix traits somehow.
+            if (!traits.satisfies(required))
+                node = TraitUtils.enforce(node, required);
+
+            if (node != null) {
+                boolean satisfies = node.getTraitSet().satisfies(required);
+
+                assert satisfies : "current rel=" + getRelTypeName() + ", traits=" + traits + ", required=" + required;
+
+                if (satisfies)
+                    planner.register(node, this);
             }
         }
 
-        RelOptPlanner planner = getCluster().getPlanner();
-        for (int i = 1; i < nodes.size(); i++)
-            planner.register(nodes.get(i), this);
-
-        return F.first(nodes);
+        return RelOptRule.convert(this, required);
     }
 
     /** {@inheritDoc} */

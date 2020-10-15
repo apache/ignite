@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import org.apache.calcite.rel.rules.AggregateReduceFunctionsRule;
+import org.apache.calcite.rel.rules.JoinCommuteRule;
+import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
 import org.apache.calcite.rel.rules.SortRemoveRule;
 import org.apache.calcite.rel.rules.SubQueryRemoveRule;
@@ -97,6 +100,10 @@ public enum PlannerPhase {
                 UnionMergeRule.INSTANCE,
                 UnionConverterRule.INSTANCE,
                 SortConverterRule.INSTANCE,
+                JoinCommuteRule.INSTANCE,
+                JoinPushThroughJoinRule.LEFT,
+                JoinPushThroughJoinRule.RIGHT,
+                AggregateReduceFunctionsRule.INSTANCE,
                 SortRemoveRule.INSTANCE);
         }
 

@@ -48,7 +48,6 @@ public class TraitsPropagationContext {
                 Commons.transform(node.getInputs(), i -> fixTraits(i.getCluster().traitSet()))));
 
         return new TraitsPropagationContext(variants);
-
     }
 
     /**
@@ -81,7 +80,7 @@ public class TraitsPropagationContext {
         ImmutableSet.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableSet.builder();
 
         for (Pair<RelTraitSet, List<RelTraitSet>> variant : combinations)
-            b.addAll(processor.propagate(variant.left, variant.right));
+                b.addAll(processor.propagate(variant.left, variant.right));
 
         return new TraitsPropagationContext(b.build());
     }

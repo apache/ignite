@@ -226,11 +226,14 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
         // over a left edge. The code below checks whether a desired collation is possible and requires
         // appropriate collation from the left edge.
 
+        RelCollation collation = TraitUtils.collation(nodeTraits);
+
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
-        RelTraitSet outTraits, leftTraits, rightTraits;
+        if (collation.equals(RelCollations.EMPTY))
+            return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(left, right)));
 
-        RelCollation collation = TraitUtils.collation(nodeTraits);
+        RelTraitSet outTraits, leftTraits, rightTraits;
 
         if (!projectsLeft(collation))
             collation = RelCollations.EMPTY;
@@ -301,8 +304,11 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
             case RANDOM_DISTRIBUTED:
                 // Such join may be replaced as a cross join with a filter uppon it.
                 // It's impossible to get random or hash distribution from a cross join.
-                if (F.isEmpty(joinInfo.pairs()))
+                if (F.isEmpty(joinInfo.pairs())) {
+                    res.add(Pair.of(nodeTraits, ImmutableList.of(left, right)));
+
                     break;
+                }
 
                 // We cannot provide random distribution without unique constrain on join keys,
                 // so, we require hash distribution (wich satisfies random distribution) instead.
