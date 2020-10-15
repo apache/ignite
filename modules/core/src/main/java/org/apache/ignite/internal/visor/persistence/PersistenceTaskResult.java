@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 public class PersistenceTaskResult extends IgniteDataTransferObject {
     /** */
@@ -36,10 +38,13 @@ public class PersistenceTaskResult extends IgniteDataTransferObject {
     private boolean maintenanceTaskCompleted;
 
     /** */
-    private List<String> cleanedCaches;
+    private List<String> handledCaches;
 
     /** */
-    private List<String> failedToCleanCaches;
+    private List<String> failedToHandleCaches;
+
+    /** */
+    private Map<String, IgniteBiTuple<Boolean, Boolean>> cachesInfo;
 
     /** */
     public PersistenceTaskResult() {
@@ -57,16 +62,18 @@ public class PersistenceTaskResult extends IgniteDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeBoolean(inMaintenanceMode);
         out.writeBoolean(maintenanceTaskCompleted);
-        U.writeCollection(out, cleanedCaches);
-        U.writeCollection(out, failedToCleanCaches);
+        U.writeCollection(out, handledCaches);
+        U.writeCollection(out, failedToHandleCaches);
+        U.writeMap(out, cachesInfo);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         inMaintenanceMode = in.readBoolean();
         maintenanceTaskCompleted = in.readBoolean();
-        cleanedCaches = U.readList(in);
-        failedToCleanCaches = U.readList(in);
+        handledCaches = U.readList(in);
+        failedToHandleCaches = U.readList(in);
+        cachesInfo = U.readMap(in);
     }
 
     /** */
@@ -85,22 +92,32 @@ public class PersistenceTaskResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public List<String> cleanedCaches() {
-        return cleanedCaches;
+    public List<String> handledCaches() {
+        return handledCaches;
     }
 
     /** */
-    public void cleanedCaches(List<String> cleanedCaches) {
-        this.cleanedCaches = cleanedCaches;
+    public void handledCaches(List<String> handledCaches) {
+        this.handledCaches = handledCaches;
     }
 
     /** */
-    public List<String> failedToCleanCaches() {
-        return failedToCleanCaches;
+    public List<String> failedCaches() {
+        return failedToHandleCaches;
     }
 
     /** */
-    public void failedToCleanCaches(List<String> failedToCleanCaches) {
-        this.failedToCleanCaches = failedToCleanCaches;
+    public void failedCaches(List<String> failedToHandleCaches) {
+        this.failedToHandleCaches = failedToHandleCaches;
+    }
+
+    /** */
+    public Map<String, IgniteBiTuple<Boolean, Boolean>> cachesInfo() {
+        return cachesInfo;
+    }
+
+    /** */
+    public void cachesInfo(Map<String, IgniteBiTuple<Boolean, Boolean>> cachesInfo) {
+        this.cachesInfo = cachesInfo;
     }
 }

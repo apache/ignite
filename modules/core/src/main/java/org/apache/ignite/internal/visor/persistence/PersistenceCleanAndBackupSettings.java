@@ -26,42 +26,42 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class PersistenceCleanSettings extends IgniteDataTransferObject {
+public class PersistenceCleanAndBackupSettings extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private PersistenceCleanType cleanType;
+    private PersistenceCleanAndBackupType cleanAndBackupType;
 
     /** */
     private List<String> cacheNames;
 
     /** */
-    public PersistenceCleanSettings() {
+    public PersistenceCleanAndBackupSettings() {
         // No-op.
     }
 
     /** */
-    public PersistenceCleanSettings(PersistenceCleanType cleanType, List<String> cacheNames) {
-        this.cleanType = cleanType;
+    public PersistenceCleanAndBackupSettings(PersistenceCleanAndBackupType cleanAndBackupType, List<String> cacheNames) {
+        this.cleanAndBackupType = cleanAndBackupType;
         this.cacheNames = cacheNames;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeEnum(out, cleanType);
+        U.writeEnum(out, cleanAndBackupType);
         U.writeCollection(out, cacheNames);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        cleanType = PersistenceCleanType.fromOrdinal(in.readByte());
+        cleanAndBackupType = PersistenceCleanAndBackupType.fromOrdinal(in.readByte());
         cacheNames = U.readList(in);
     }
 
     /** */
-    public PersistenceCleanType cleanType() {
-        return cleanType;
+    public PersistenceCleanAndBackupType cleanAndBackupType() {
+        return cleanAndBackupType;
     }
 
     /** */

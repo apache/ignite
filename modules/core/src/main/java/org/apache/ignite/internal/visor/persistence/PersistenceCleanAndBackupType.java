@@ -20,7 +20,7 @@ package org.apache.ignite.internal.visor.persistence;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public enum PersistenceCleanType {
+public enum PersistenceCleanAndBackupType {
     /** */
     ALL,
     /** */
@@ -29,13 +29,13 @@ public enum PersistenceCleanType {
     CACHES;
 
     /** */
-    private static final PersistenceCleanType[] VALS = values();
+    private static final PersistenceCleanAndBackupType[] VALS = values();
 
     /**
      * @param ordinal
      * @return
      */
-    @Nullable public static PersistenceCleanType fromOrdinal(int ordinal) {
+    @Nullable public static PersistenceCleanAndBackupType fromOrdinal(int ordinal) {
         return ordinal >= 0 && ordinal < VALS.length ? VALS[ordinal] : null;
     }
 }

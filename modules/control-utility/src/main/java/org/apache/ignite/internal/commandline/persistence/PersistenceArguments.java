@@ -27,7 +27,7 @@ public class PersistenceArguments {
     private PersistenceSubcommands cmd;
 
     /** */
-    private CleanSubcommandArg cleanArg;
+    private CleanAndBackupSubcommandArg cleanArg;
 
     /** */
     private List<String> cachesList;
@@ -35,7 +35,7 @@ public class PersistenceArguments {
     /**
      * @param cmd
      */
-    public PersistenceArguments(PersistenceSubcommands cmd, CleanSubcommandArg cleanArg, List<String> cachesList) {
+    public PersistenceArguments(PersistenceSubcommands cmd, CleanAndBackupSubcommandArg cleanArg, List<String> cachesList) {
         this.cmd = cmd;
         this.cleanArg = cleanArg;
         this.cachesList = cachesList;
@@ -47,7 +47,7 @@ public class PersistenceArguments {
     }
 
     /** */
-    public CleanSubcommandArg cleanArg() {
+    public CleanAndBackupSubcommandArg cleanArg() {
         return cleanArg;
     }
 
@@ -62,7 +62,7 @@ public class PersistenceArguments {
         private PersistenceSubcommands subCmd;
 
         /** */
-        private CleanSubcommandArg cleanSubCmdArg;
+        private CleanAndBackupSubcommandArg cleanSubCmdArg;
 
         /** */
         private List<String> cacheNames;
@@ -75,7 +75,7 @@ public class PersistenceArguments {
         }
 
         /** */
-        public Builder withCleanSubcommandArg(CleanSubcommandArg cleanSubCmdArg) {
+        public Builder withCleanAndBackupSubcommandArg(CleanAndBackupSubcommandArg cleanSubCmdArg) {
             this.cleanSubCmdArg = cleanSubCmdArg;
 
             return this;

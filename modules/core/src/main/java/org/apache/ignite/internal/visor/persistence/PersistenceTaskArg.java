@@ -35,7 +35,7 @@ public class PersistenceTaskArg extends IgniteDataTransferObject {
     private PersistenceOperation op;
 
     /** */
-    private PersistenceCleanSettings cleanSettings;
+    private PersistenceCleanAndBackupSettings cleanAndBackupSettings;
 
     /**
      * Default constructor.
@@ -47,9 +47,9 @@ public class PersistenceTaskArg extends IgniteDataTransferObject {
     /**
      * @param op
      */
-    public PersistenceTaskArg(PersistenceOperation op, PersistenceCleanSettings cleanSettings) {
+    public PersistenceTaskArg(PersistenceOperation op, PersistenceCleanAndBackupSettings cleanAndBackupSettings) {
         this.op = op;
-        this.cleanSettings = cleanSettings;
+        this.cleanAndBackupSettings = cleanAndBackupSettings;
     }
 
     /**
@@ -62,19 +62,19 @@ public class PersistenceTaskArg extends IgniteDataTransferObject {
     /**
      * @return
      */
-    public PersistenceCleanSettings cleanSettings() {
-        return cleanSettings;
+    public PersistenceCleanAndBackupSettings cleanAndBackupSettings() {
+        return cleanAndBackupSettings;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeEnum(out, op);
-        out.writeObject(cleanSettings);
+        out.writeObject(cleanAndBackupSettings);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         op = PersistenceOperation.fromOrdinal(in.readByte());
-        cleanSettings = (PersistenceCleanSettings) in.readObject();
+        cleanAndBackupSettings = (PersistenceCleanAndBackupSettings) in.readObject();
     }
 }

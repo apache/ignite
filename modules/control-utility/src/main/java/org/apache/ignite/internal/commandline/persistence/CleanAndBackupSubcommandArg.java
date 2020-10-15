@@ -5,7 +5,7 @@ import org.apache.ignite.internal.commandline.argument.CommandArg;
 /**
  * {@link PersistenceSubcommands#CLEAN} subcommand arguments.
  */
-public enum CleanSubcommandArg implements CommandArg {
+public enum CleanAndBackupSubcommandArg implements CommandArg {
     /** Clean all caches data files. */
     ALL("all"),
     /** Clean corrupted caches data files. */
@@ -17,7 +17,7 @@ public enum CleanSubcommandArg implements CommandArg {
     private final String name;
 
     /** */
-    CleanSubcommandArg(String name) {
+    CleanAndBackupSubcommandArg(String name) {
         this.name = name;
     }
 
