@@ -1344,9 +1344,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                     recheck(entry);
             }
 
-            if (log.isDebugEnabled())
-                log.debug("After rechecking finished future: " + this);
-
             if (pendingLocks.isEmpty()) {
                 if (exchLog.isDebugEnabled())
                     exchLog.debug("Finish lock future is done: " + this);
@@ -1370,13 +1367,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
             if (cands != null) {
                 synchronized (cands) {
-                    for (Iterator<GridCacheMvccCandidate> it = cands.iterator(); it.hasNext(); ) {
-                        GridCacheMvccCandidate cand = it.next();
-
-                        // Check exclude ID again, as key could have been reassigned.
-                        if (cand.removed())
-                            it.remove();
-                    }
+                    // Check exclude ID again, as key could have been reassigned.
+                    cands.removeIf(GridCacheMvccCandidate::removed);
 
                     if (cands.isEmpty())
                         pendingLocks.remove(entry.txKey());

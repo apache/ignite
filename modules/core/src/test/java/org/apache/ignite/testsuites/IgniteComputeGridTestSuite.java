@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.ClusterNodeMetricsSelfTest;
 import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
+import org.apache.ignite.internal.GridAffinityMappedTest;
 import org.apache.ignite.internal.GridAffinityNoCacheSelfTest;
 import org.apache.ignite.internal.GridAffinitySelfTest;
 import org.apache.ignite.internal.GridAlwaysFailoverSpiFailSelfTest;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.GridNonHistoryMetricsSelfTest;
 import org.apache.ignite.internal.GridProjectionLocalJobMultipleArgumentsSelfTest;
 import org.apache.ignite.internal.GridStopWithWaitSelfTest;
 import org.apache.ignite.internal.GridTaskCancelSingleNodeSelfTest;
+import org.apache.ignite.internal.GridTaskExecutionContextSelfTest;
 import org.apache.ignite.internal.GridTaskExecutionSelfTest;
 import org.apache.ignite.internal.GridTaskExecutionWithoutPeerClassLoadingSelfTest;
 import org.apache.ignite.internal.GridTaskFailoverAffinityRunTest;
@@ -104,7 +106,7 @@ import org.junit.runners.Suite;
     GridCancelUnusedJobSelfTest.class,
     GridTaskJobRejectSelfTest.class,
     GridTaskExecutionSelfTest.class,
-    //GridTaskExecutionContextSelfTest.class,
+    GridTaskExecutionContextSelfTest.class,
     GridTaskExecutionWithoutPeerClassLoadingSelfTest.class,
     GridFailoverSelfTest.class,
     GridTaskListenerSelfTest.class,
@@ -147,8 +149,7 @@ import org.junit.runners.Suite;
     GridProjectionLocalJobMultipleArgumentsSelfTest.class,
     GridAffinitySelfTest.class,
     GridAffinityNoCacheSelfTest.class,
-    //GridAffinityMappedTest.class,
-    //GridAffinityP2PSelfTest.class,
+    GridAffinityMappedTest.class,
     GridEventStorageRuntimeConfigurationSelfTest.class,
     GridMultinodeRedeployContinuousModeSelfTest.class,
     GridMultinodeRedeploySharedModeSelfTest.class,

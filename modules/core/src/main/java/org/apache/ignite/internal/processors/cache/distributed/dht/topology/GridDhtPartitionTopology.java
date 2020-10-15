@@ -443,4 +443,13 @@ public interface GridDhtPartitionTopology {
      * @param updateRebalanceVer {@code True} if need check rebalance state.
      */
     public void onExchangeDone(GridDhtPartitionsExchangeFuture fut, AffinityAssignment assignment, boolean updateRebalanceVer);
+
+    /**
+     * Rents a partition and updates a partition map if the partition was switched to RENTING.
+     *
+     * @param p Partition ID.
+     *
+     * @return {@code True} if the partition was switched to RENTING.
+     */
+    public boolean rent(int p);
 }

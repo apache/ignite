@@ -19,11 +19,11 @@ project(ignite-tests)
 
 set(TARGET ${PROJECT_NAME})
 
-find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread system)
-
 if (WIN32)
     set(Boost_USE_STATIC_LIBS ON)
 endif()
+
+find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread system)
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
 
@@ -56,7 +56,10 @@ set(SOURCES src/reference_test.cpp
         src/transactions_test.cpp
         src/teamcity_messages.cpp
         src/teamcity_boost.cpp
-        src/test_utils.cpp)
+        src/test_utils.cpp
+        src/cluster_node_test.cpp
+        src/affinity_test.cpp
+        src/cluster_group_test.cpp)
 
 add_executable(${TARGET} ${SOURCES})
 

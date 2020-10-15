@@ -111,6 +111,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -228,6 +229,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -839,25 +841,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param clsPathEntry Classpath file to process.
-     * @param clsPathContent StringBuilder to attach path to.
-     */
-    private void ackClassPathElementRecursive(File clsPathEntry, SB clsPathContent) {
-        if (clsPathEntry.isDirectory()) {
-            String[] list = clsPathEntry.list();
-
-            for (String listElement : list)
-                ackClassPathElementRecursive(new File(clsPathEntry, listElement), clsPathContent);
-        }
-        else {
-            String path = clsPathEntry.getAbsolutePath();
-
-            if (path.endsWith(".class"))
-                clsPathContent.a(path).a(";");
-        }
-    }
-
-    /**
      * @param clsPathEntry Classpath string to process.
      * @param clsPathContent StringBuilder to attach path to.
      */
@@ -865,7 +848,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         File clsPathElementFile = new File(clsPathEntry);
 
         if (clsPathElementFile.isDirectory())
-            ackClassPathElementRecursive(clsPathElementFile, clsPathContent);
+            clsPathContent.a(clsPathEntry).a(";");
         else {
             String extension = clsPathEntry.length() >= 4
                 ? clsPathEntry.substring(clsPathEntry.length() - 4).toLowerCase()
@@ -1212,7 +1195,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Assign discovery manager to context before other processors start so they
             // are able to register custom event listener.
-            final GridManager discoMgr = new GridDiscoveryManager(ctx);
+            GridManager discoMgr = new GridDiscoveryManager(ctx);
 
             ctx.add(discoMgr, false);
 
@@ -1220,12 +1203,25 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // able to register custom event listener.
             startManager(new GridEncryptionManager(ctx));
 
+            startProcessor(new PdsConsistentIdProcessor(ctx));
+
+            MaintenanceProcessor mntcProcessor = new MaintenanceProcessor(ctx);
+
+            startProcessor(mntcProcessor);
+
+            if (mntcProcessor.isMaintenanceMode()) {
+                ctx.config().setDiscoverySpi(new IsolatedDiscoverySpi());
+
+                discoMgr = new GridDiscoveryManager(ctx);
+
+                ctx.add(discoMgr, false);
+            }
+
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
             try {
                 startProcessor(COMPRESSION.createOptional(ctx));
                 startProcessor(new GridMarshallerMappingProcessor(ctx));
-                startProcessor(new PdsConsistentIdProcessor(ctx));
                 startProcessor(new MvccProcessorImpl(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
                 startProcessor(new GridAffinityProcessor(ctx));
@@ -1298,6 +1294,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 throw e;
             }
+
+            // All components exept Discovery are started, time to check if maintenance is still needed
+            mntcProcessor.prepareAndExecuteMaintenance();
 
             gw.writeLock();
 

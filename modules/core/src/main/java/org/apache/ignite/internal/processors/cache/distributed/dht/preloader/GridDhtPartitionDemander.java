@@ -164,6 +164,10 @@ public class GridDhtPartitionDemander {
         mreg.register("RebalancingPartitionsLeft", () -> rebalanceFut.partitionsLeft.get(),
             "The number of cache group partitions left to be rebalanced.");
 
+        mreg.register("RebalancingPartitionsTotal",
+            () -> rebalanceFut.partitionsTotal,
+            "The total number of cache group partitions to be rebalanced.");
+
         mreg.register("RebalancingReceivedKeys", () -> rebalanceFut.receivedKeys.get(),
             "The number of currently rebalanced keys for the whole cache group.");
 
@@ -1139,6 +1143,9 @@ public class GridDhtPartitionDemander {
         /** The number of cache group partitions left to be rebalanced. */
         private final AtomicLong partitionsLeft = new AtomicLong(0);
 
+        /** The number of cache group partitions total to be rebalanced. */
+        private final int partitionsTotal;
+
         /** Rebalancing start time. */
         private volatile long startTime = -1;
 
@@ -1192,7 +1199,7 @@ public class GridDhtPartitionDemander {
         ) {
             assert assignments != null : "Asiignments must not be null.";
 
-            this.rebalancingParts = U.newHashMap(assignments.size());
+            rebalancingParts = U.newHashMap(assignments.size());
             this.assignments = assignments;
             exchId = assignments.exchangeId();
             topVer = assignments.topologyVersion();
@@ -1229,6 +1236,7 @@ public class GridDhtPartitionDemander {
 
             this.routines = remaining.size();
 
+            partitionsTotal = rebalancingParts.values().stream().mapToInt(Set::size).sum();
             this.grp = grp;
             this.log = log;
             this.rebalanceId = rebalanceId;
@@ -1243,6 +1251,7 @@ public class GridDhtPartitionDemander {
          */
         RebalanceFuture() {
             this.rebalancingParts = null;
+            this.partitionsTotal = 0;
             this.assignments = null;
             this.exchId = null;
             this.topVer = null;

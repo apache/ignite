@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers;
 
+import java.lang.management.ManagementFactory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -69,6 +70,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
         ctx = newContext();
 
         ctx.config().setPeerClassLoadingEnabled(true);
+        ctx.config().setMBeanServer(ManagementFactory.getPlatformMBeanServer());
 
         ctx.add(new PoolProcessor(ctx));
         ctx.add(new GridResourceProcessor(ctx));

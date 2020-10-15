@@ -1,0 +1,84 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Microsoft Azure Kubernetes Service Deployment
+
+:serviceName: AKS
+:soft_name: Kubernetes
+:command: kubectl
+:configDir: ../../code-snippets/k8s
+:script: ../../code-snippets/k8s/setup.sh
+:javaFile: ../../{javaCodeDir}/k8s/K8s.java
+
+This page is a step-by-step guide on how to deploy an Ignite  cluster on Microsoft Azure Kubernetes Service.
+
+include::installation/kubernetes/generic-configuration.adoc[tag=intro]
+
+include::installation/kubernetes/generic-configuration.adoc[tag=kube-version]
+
+== Creating the AKS Cluster
+
+The first step is to configure the Azure Kubernetes Service (AKS) cluster by following one of the Microsoft guidelines:
+
+*  link:https://docs.microsoft.com/en-us/azure/aks/kubernetes-walkthrough-portal[Deploy an AKS cluster using the Azure portal,window=_blank]
+*  link:https://docs.microsoft.com/en-us/azure/aks/kubernetes-walkthrough[Deploy an AKS cluster using the Azure CLI,window=_blank]
+
+
+In this guide, we'll be using the Azure portal.
+
+1. Create a Microsoft account if you do not have one. Navigate to https://portal.azure.com[,window=_blank] and choose *Create a resource > Kubernetes Service > Create*.
+2. On the screen that appears, specify general parameters for your deployment, cluster name as "IgniteCluster", and resource group name as "Ignite".
++
+--
+image::images/k8s/create-aks-cluster.png[]
+--
+3. On the same screen, pick the required number of nodes for your AKS cluster:
++
+--
+image::images/k8s/aks-node-number.png[]
+--
+4. Configure other parameters as required.
+5. When finished with the configuration, click the *Review + create* button.
+6. Double check the configuration parameters and click *Create*. Give Azure some time to deploy the cluster.
+7. Go to *All Resources > IgniteCluster* to view the state of the cluster.
+
+== Connecting to the AKS Cluster
+
+To configure `kubectl` to connect to your Kubernetes cluster, use the following command:
+
+[source, shell]
+----
+az aks get-credentials --resource-group Ignite --name IgniteCluster
+----
+
+If you encounter any problems, check out the https://docs.microsoft.com/en-us/azure/aks/kubernetes-walkthrough#connect-to-the-cluster[official documentation,window=_blank].
+
+Using the following command, check that all the nodes are in "Ready" state:
+
+[source, shell]
+----
+$ kubectl get nodes
+
+NAME                                STATUS   ROLES   AGE     VERSION
+aks-agentpool-25545244-vmss000000   Ready    agent   6h23m   v1.14.8
+aks-agentpool-25545244-vmss000001   Ready    agent   6h23m   v1.14.8
+aks-agentpool-25545244-vmss000002   Ready    agent   6h23m   v1.14.8
+----
+
+Now you can start creating Kubernetes resources.
+
+== Kubernetes Configuration
+
+include::installation/kubernetes/generic-configuration.adoc[tag=kubernetes-config]
+
