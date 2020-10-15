@@ -44,7 +44,6 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 import org.apache.ignite.internal.visor.util.VisorTaskUtils;
-import org.jetbrains.annotations.NotNull;
 
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
@@ -198,13 +197,13 @@ public class BaselineCommand implements Command<BaselineArguments> {
                     .map(addrs -> node.getAddrs())
                     .orElse(Collections.emptyList())
                     .stream()
-                    .sorted(Comparator.comparing(tuple -> new VisorTaskUtils.SortableAddress(tuple.getKey())))
-                .map(addr -> {
-                    if (!addr.getKey().equals(addr.getValue()))
-                        return addr.getValue() + "/" + addr.getKey();
-                    else return addr.getKey();
-                });
-
+                    .sorted(Comparator
+                        .comparing(resolvedAddr -> new VisorTaskUtils.SortableAddress(resolvedAddr.getAddr())))
+                    .map(resolvedAddr -> {
+                        if (!resolvedAddr.getHostname().equals(resolvedAddr.getAddr()))
+                            return resolvedAddr.getHostname() + "/" + resolvedAddr.getAddr();
+                        else return resolvedAddr.getAddr();
+                    });
             if (verbose) {
                 String hosts = String.join(",", sortedByIpHosts.collect(Collectors.toList()));
 

@@ -20,15 +20,16 @@ package org.apache.ignite.internal.visor.baseline;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.cluster.BaselineNode;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,10 +50,10 @@ public class VisorBaselineNode extends VisorDataTransferObject {
     private @Nullable Long order;
 
     /**
-     * Resolved list of ip->hostname pairs
+     * Resolved list of (ip, hostname) pairs
      * (if ip has no resolved host, hostname will be the string representation of ip).
      */
-    private @NotNull Collection<IgniteBiTuple<String, String>> addrs = Collections.emptyList();
+    private @NotNull Collection<ResolvedAddresses> addrs = Collections.emptyList();
 
     /**
      * Default constructor.
@@ -66,7 +67,7 @@ public class VisorBaselineNode extends VisorDataTransferObject {
      *
      * @param node Baseline node.
      */
-    public VisorBaselineNode(BaselineNode node, @NotNull Collection<IgniteBiTuple<String, String>> resolvedInetAddrs) {
+    public VisorBaselineNode(BaselineNode node, @NotNull Collection<ResolvedAddresses> resolvedInetAddrs) {
         consistentId = String.valueOf(node.consistentId());
         attrs = node.attributes();
 
@@ -107,7 +108,7 @@ public class VisorBaselineNode extends VisorDataTransferObject {
      *
      * @return Collection with resolved pairs ip->hostname
      */
-    public @NotNull Collection<IgniteBiTuple<String, String>> getAddrs() {
+    public @NotNull Collection<ResolvedAddresses> getAddrs() {
         return addrs;
     }
 
@@ -128,7 +129,7 @@ public class VisorBaselineNode extends VisorDataTransferObject {
             order = (Long)in.readObject();
 
         if (protoVer >= V3) {
-            Collection<IgniteBiTuple<String, String>> inputAddrs = U.readCollection(in);
+            Collection<ResolvedAddresses> inputAddrs = U.readCollection(in);
             if (inputAddrs != null) addrs = inputAddrs;
         }
     }
@@ -136,5 +137,61 @@ public class VisorBaselineNode extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorBaselineNode.class, this);
+    }
+
+    /**
+     * Simple data class for storing (hostname, address) pairs
+     */
+    public static class ResolvedAddresses extends IgniteDataTransferObject {
+
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private String hostname;
+
+        /** Textual representation of IP address. */
+        private String addr;
+
+        /**
+         * @param inetAddr Inet address.
+         */
+        public ResolvedAddresses(InetAddress inetAddr) {
+            this.hostname = inetAddr.getHostName();
+            this.addr = inetAddr.getHostAddress();
+        }
+
+        /**
+         * Default constructor.
+         */
+        public ResolvedAddresses() {}
+
+        /**
+         * @return Hostname.
+         */
+        public String getHostname() {
+            return hostname;
+        }
+
+        /**
+         * @return Textual representation of IP address.
+         */
+        public String getAddr() {
+            return addr;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            U.writeString(out, hostname);
+            U.writeString(out, addr);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(byte protoVer, ObjectInput in)
+            throws IOException, ClassNotFoundException {
+
+            hostname = U.readString(in);
+            addr = U.readString(in);
+        }
     }
 }

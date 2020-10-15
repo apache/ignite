@@ -20,11 +20,12 @@ package org.apache.ignite.internal.visor.baseline;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.BaselineNode;
@@ -35,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Result for {@link VisorBaselineTask}.
@@ -103,12 +103,12 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         Map<String, VisorBaselineNode> map = new TreeMap<>();
 
         for (BaselineNode node : nodes) {
-            Collection<IgniteBiTuple<String, String>> addrs = Collections.emptyList();
+            Collection<VisorBaselineNode.ResolvedAddresses> addrs = new ArrayList<>();
             if (node instanceof IgniteClusterNode) {
                 try {
-                    addrs = IgniteUtils.toInetAddresses((ClusterNode)node).stream()
-                        .map(addr -> new IgniteBiTuple<>(addr.getHostAddress(), addr.getHostName()))
-                        .collect(Collectors.toList());
+                    for (InetAddress inetAddress: IgniteUtils.toInetAddresses((ClusterNode)node)) {
+                        addrs.add(new VisorBaselineNode.ResolvedAddresses(inetAddress));
+                    }
                 }
                 catch (IgniteCheckedException ex) {
                     throw IgniteUtils.convertException(ex);
