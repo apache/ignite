@@ -214,7 +214,7 @@ public class ConnectionTest {
     private byte[] getHandshakeBytes() throws IOException {
         BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
-            writer.writeInt(12); // reserve an integer for the request size
+            writer.writeInt(8);
 
             writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
             writer.writeShort(1);
