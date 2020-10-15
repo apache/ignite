@@ -104,37 +104,60 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
             MaintenanceTask task = mntcReg.activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID);
 
+            File workDir = ((FilePageStoreManager) ignite.context().cache().context().pageStore()).workDir();
+
             switch (backupSettings.cleanAndBackupType()) {
+                case ALL:
+                    return backupAll(workDir);
+
                 case CORRUPTED:
-                    return backupCaches(corruptedCacheDirectories(task));
+                    return backupCaches(workDir, corruptedCacheDirectories(task));
 
                 default:
-                    return new PersistenceTaskResult(true);
+                    return backupCaches(workDir, cacheDirectoriesFromCacheNames(backupSettings.cacheNames()));
             }
         }
 
         /** */
-        private PersistenceTaskResult backupCaches(List<String> cacheDirs) {
+        private PersistenceTaskResult backupAll(File workDir) {
+            GridCacheProcessor cacheProc = ignite.context().cache();
+
+            List<String> allCacheDirs = cacheProc.cacheDescriptors()
+                .values()
+                .stream()
+                .map(desc -> cacheDirName(desc.cacheConfiguration()))
+                .distinct()
+                .collect(Collectors.toList());
+
+            return backupCaches(workDir, allCacheDirs);
+        }
+
+        /** */
+        private PersistenceTaskResult backupCaches(File workDir, List<String> cacheDirs) {
             PersistenceTaskResult res = new PersistenceTaskResult(true);
 
-            File workDir = ((FilePageStoreManager) ignite.context().cache().context().pageStore()).workDir();
+            List<String> backupCompletedCaches = new ArrayList<>();
             List<String> backupFailedCaches = new ArrayList<>();
 
             for (String dir : cacheDirs) {
-                File backupDir = new File(workDir, BACKUP_FOLDER_PREFIX + dir);
+                String backupDirName = BACKUP_FOLDER_PREFIX + dir;
+
+                File backupDir = new File(workDir, backupDirName);
 
                 if (!backupDir.exists()) {
                     try {
-                        U.ensureDirectory(backupDir, BACKUP_FOLDER_PREFIX + dir, null);
+                        U.ensureDirectory(backupDir, backupDirName, null);
 
                         copyCacheFiles(workDir.toPath().resolve(dir).toFile(), backupDir);
 
+                        backupCompletedCaches.add(backupDirName);
                     } catch (IgniteCheckedException | IOException e) {
                         backupFailedCaches.add(dir);
                     }
                 }
             }
 
+            res.handledCaches(backupCompletedCaches);
             res.failedCaches(backupFailedCaches);
 
             return res;
@@ -176,6 +199,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             List<String> cacheNames
         ) {
             PersistenceTaskResult res = new PersistenceTaskResult(true);
+
             List<String> cleanedCaches = new ArrayList<>();
             List<String> failedToCleanCaches = new ArrayList<>();
 
@@ -225,7 +249,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
         private PersistenceTaskResult cleanAll(GridCacheProcessor cacheProc, MaintenanceRegistry mntcReg) {
             PersistenceTaskResult res = new PersistenceTaskResult(true);
 
-            List<String> allCaches = cacheProc.cacheDescriptors()
+            List<String> allCacheDirs = cacheProc.cacheDescriptors()
                 .values()
                 .stream()
                 .map(desc -> cacheDirName(desc.cacheConfiguration()))
@@ -240,7 +264,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             mntcReg.unregisterMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID);
 
             res.maintenanceTaskCompleted(true);
-            res.handledCaches(allCaches);
+            res.handledCaches(allCacheDirs);
 
             return res;
         }
@@ -313,6 +337,22 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             String[] namesArr = params.split(File.separator);
 
             return Arrays.asList(namesArr);
+        }
+
+        /** */
+        private List<String> cacheDirectoriesFromCacheNames(List<String> cacheNames) {
+            GridCacheProcessor cacheProc = ignite.context().cache();
+
+            DataStorageConfiguration dsCfg = ignite.configuration().getDataStorageConfiguration();
+
+            return cacheNames.stream()
+                .filter(s -> cacheProc.cacheDescriptor(s) != null)
+                .filter(s ->
+                    CU.isPersistentCache(cacheProc.cacheDescriptor(s).cacheConfiguration(), dsCfg))
+                .map(s -> cacheProc.cacheDescriptor(s).cacheConfiguration())
+                .map(ccfg -> cacheDirName(ccfg))
+                .distinct()
+                .collect(Collectors.toList());
         }
     }
 }

@@ -277,7 +277,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ig0.cluster().baselineAutoAdjustEnabled(false);
         ig0.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, Integer> cache = ig0.getOrCreateCache(cacheConfiguration(DEFAULT_CACHE_NAME));
+        String cacheName1 = DEFAULT_CACHE_NAME + "1";
+
+        CacheConfiguration defaultCache = cacheConfiguration(DEFAULT_CACHE_NAME).setGroupName("default-group");
+
+        CacheConfiguration cache1Cfg = cacheConfiguration(cacheName1).setGroupName("default-group1");
+
+        IgniteCache<Integer, Integer> cache = ig0.getOrCreateCache(defaultCache);
+        ig0.getOrCreateCache(cache1Cfg);
 
         for (int k = 0; k < 1000; k++)
             cache.put(k, k);
@@ -288,14 +295,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         dbMrg0.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
         dbMrg1.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
 
-        ig0.cluster().disableWal(DEFAULT_CACHE_NAME);
+        ig0.context().cache().context().walState().changeWalMode(Arrays.asList(DEFAULT_CACHE_NAME), false);
+        ig0.cluster().disableWal(cacheName1);
 
         for (int k = 1000; k < 2000; k++)
             cache.put(k, k);
 
         stopGrid(1);
 
-        ig0.cluster().enableWal(DEFAULT_CACHE_NAME);
+        ig0.context().cache().context().walState().changeWalMode(Arrays.asList(DEFAULT_CACHE_NAME), true);
+        ig0.cluster().enableWal(cacheName1);
 
         for (int k = 2000; k < 3000; k++)
             cache.put(k, k);
@@ -315,7 +324,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
 //        execute("--persistence", "clean", "caches", DEFAULT_CACHE_NAME, "--host", "localhost", "--port", port);
 
-        execute("--persistence", "backup", "corrupted", "--host", "localhost", "--port", port);
+        execute("--persistence", "backup", "caches", DEFAULT_CACHE_NAME + "," + cacheName1, "--host", "localhost", "--port", port);
     }
 
     /**
