@@ -21,12 +21,15 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.CharsetUtil;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -135,8 +138,8 @@ public class ConnectionTest {
             b.option(ChannelOption.SO_KEEPALIVE, true); // (4)
             b.handler(new ChannelInitializer<SocketChannel>() {
                 @Override
-                public void initChannel(SocketChannel ch) throws Exception {
-                    // ch.pipeline().addLast(new TimeClientHandler());
+                public void initChannel(SocketChannel ch) {
+                    ch.pipeline().addLast(new ClientHandler());
                 }
             });
 
@@ -153,6 +156,8 @@ public class ConnectionTest {
                    fut.completeExceptionally(new Exception("Netty failed"));
                }
             });
+
+            Thread.sleep(3000);
         } finally {
             // workerGroup.shutdownGracefully();
         }
@@ -228,6 +233,24 @@ public class ConnectionTest {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(new ClientConfiguration()
                      .setAddresses(addrs))) {
+        }
+    }
+
+    public class ClientHandler extends SimpleChannelInboundHandler {
+        @Override
+        public void channelActive(ChannelHandlerContext channelHandlerContext){
+            // channelHandlerContext.writeAndFlush(Unpooled.copiedBuffer("Netty Rocks!", CharsetUtil.UTF_8));
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext channelHandlerContext, Throwable cause){
+            cause.printStackTrace();
+            channelHandlerContext.close();
+        }
+
+        @Override
+        protected void channelRead0(ChannelHandlerContext ctx, Object msg)  {
+            System.out.println("Client received: " + msg);
         }
     }
 }
