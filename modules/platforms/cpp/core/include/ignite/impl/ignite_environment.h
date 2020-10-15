@@ -101,7 +101,7 @@ namespace ignite
              * @param memPtr Memory pointer.
              * @param proc Processor instance.
              */
-            void OnStartCallback(long long memPtr, jobject proc);
+            void OnStartCallback(int64_t memPtr, jobject proc);
 
             /**
              * Continuous query listener apply callback.
