@@ -18,6 +18,8 @@
 package org.apache.ignite.client;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -96,7 +98,7 @@ public class ConnectionTest {
 //                handshakeAsyncChannel().get();
 //            }
 
-            handshakeNetty();
+            handshakeNetty().get();
 
             System.out.println(">>> " + sw.elapsed().toMillis());
         }
@@ -124,6 +126,7 @@ public class ConnectionTest {
         String host = "localhost";
         int port = 10800;
         EventLoopGroup workerGroup = new NioEventLoopGroup();
+        CompletableFuture<Integer> fut = new CompletableFuture<>();
 
         try {
             Bootstrap b = new Bootstrap(); // (1)
@@ -140,12 +143,21 @@ public class ConnectionTest {
             // Start the client.
             ChannelFuture f = b.connect(host, port).sync(); // (5)
 
-            f.channel().writeAndFlush(getHandshakeBytes());
+            byte[] handshakeBytes = getHandshakeBytes();
+            ByteBuf handshakeBuf = Unpooled.wrappedBuffer(handshakeBytes);
+            ChannelFuture channelFuture = f.channel().writeAndFlush(handshakeBuf);
+            channelFuture.addListener(future -> {
+               if (future.isSuccess()) {
+                   fut.complete(12);
+               } else {
+                   fut.completeExceptionally(new Exception("Netty failed"));
+               }
+            });
         } finally {
-            workerGroup.shutdownGracefully();
+            // workerGroup.shutdownGracefully();
         }
 
-        return CompletableFuture.completedFuture(12);
+        return fut;
     }
 
     /** 5100ms */
