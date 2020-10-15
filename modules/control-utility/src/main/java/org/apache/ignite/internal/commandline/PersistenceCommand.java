@@ -40,12 +40,15 @@ import org.apache.ignite.internal.visor.persistence.PersistenceTaskArg;
 import org.apache.ignite.internal.visor.persistence.PersistenceTaskResult;
 import org.apache.ignite.lang.IgniteBiTuple;
 
+import static org.apache.ignite.internal.commandline.Command.usage;
 import static org.apache.ignite.internal.commandline.CommandList.PERSISTENCE;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.persistence.CleanAndBackupSubcommandArg.ALL;
 import static org.apache.ignite.internal.commandline.persistence.CleanAndBackupSubcommandArg.CACHES;
 import static org.apache.ignite.internal.commandline.persistence.CleanAndBackupSubcommandArg.CORRUPTED;
+import static org.apache.ignite.internal.commandline.persistence.PersistenceSubcommands.BACKUP;
+import static org.apache.ignite.internal.commandline.persistence.PersistenceSubcommands.CLEAN;
 import static org.apache.ignite.internal.commandline.persistence.PersistenceSubcommands.INFO;
 import static org.apache.ignite.internal.commandline.persistence.PersistenceSubcommands.of;
 
@@ -84,14 +87,20 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
         return null;
     }
 
+    /**
+     * Prints result of command execution: information about caches or result of clean/backup command.
+     *
+     * @param res {@link PersistenceTaskResult} object with results of command execution.
+     * @param logger {@link Logger} to print output to.
+     */
     private void printResult(PersistenceTaskResult res, Logger logger) {
         if (!res.inMaintenanceMode()) {
             logger.warning("Persistence command can be sent only to node in Maintenance Mode.");
 
             return;
         }
+        //info command
         else if (res.cachesInfo() != null) {
-            // info command was sent, caches info was collected
             logger.info("Persistent caches found on node:");
 
             //sort results so corrupted caches occur in the list at the top
@@ -127,15 +136,26 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
                 }
             );
         }
-        else {
+        //clean command
+        else if (cleaningArgs != null && cleaningArgs.subcommand() == CLEAN) {
             logger.info("Maintenance task is " + (!res.maintenanceTaskCompleted() ? "not " : "") + "fixed.");
 
             List<String> cleanedCaches = res.handledCaches();
 
             if (cleanedCaches != null && !cleanedCaches.isEmpty()) {
-                String cacheNames = cleanedCaches.stream().collect(Collectors.joining(", "));
+                String cacheDirNames = cleanedCaches.stream().collect(Collectors.joining(", "));
 
-                logger.info("Cleaned caches: [" + cacheNames + ']');
+                logger.info("Cache directories were cleaned: [" + cacheDirNames + ']');
+            }
+        }
+        // backup command
+        else {
+            List<String> backupCompletedCaches = res.handledCaches();
+
+            if (backupCompletedCaches != null && !backupCompletedCaches.isEmpty()) {
+                String cacheDirNames = backupCompletedCaches.stream().collect(Collectors.joining(", "));
+
+                logger.info("Cache data files was backed up to the following directories in node's work directory: [" + cacheDirNames + ']');
             }
         }
     }
@@ -147,7 +167,24 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
+        final String cacheNames = "cache1,cache2,cache3";
 
+        usage(logger, "Without arguments command prints information about caches on local node:",
+            PERSISTENCE);
+        usage(logger, "The same information is printed when info subcommand is passed:", PERSISTENCE,
+            INFO.text());
+
+        usage(logger, "Clean directories of caches with corrupted data files:", PERSISTENCE, CLEAN.text(),
+            CORRUPTED.argName());
+        usage(logger, "Clean directories of all caches:", PERSISTENCE, CLEAN.text(),
+            ALL.argName());
+        usage(logger, "Clean directories of only given caches:", PERSISTENCE, CLEAN.text(),
+            CACHES.argName(), cacheNames);
+
+        usage(logger, "Backup data files of corrupted caches only:", PERSISTENCE, BACKUP.text(),
+            CORRUPTED.argName());
+        usage(logger, "Backup data files of all caches:", PERSISTENCE, BACKUP.text(), ALL.argName());
+        usage(logger, "Backup data files of only given caches:", PERSISTENCE, BACKUP.text(), ALL.argName());
     }
 
     /** {@inheritDoc} */
@@ -202,7 +239,7 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
 
     /** */
     private PersistenceTaskArg convertArguments(PersistenceArguments args) {
-        PersistenceCleanAndBackupSettings cleanSettings = convertCleanSettings(args);
+        PersistenceCleanAndBackupSettings cleanSettings = convertCleanAndBackupSettings(args);
 
         PersistenceTaskArg taskArgs = new PersistenceTaskArg(args.subcommand().operation(), cleanSettings);
 
@@ -210,7 +247,7 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
     }
 
     /** */
-    private PersistenceCleanAndBackupSettings convertCleanSettings(PersistenceArguments args) {
+    private PersistenceCleanAndBackupSettings convertCleanAndBackupSettings(PersistenceArguments args) {
         if (args.subcommand() == INFO)
             return null;
 
@@ -230,8 +267,6 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
                 type = PersistenceCleanAndBackupType.CACHES;
         }
 
-        PersistenceCleanAndBackupSettings settings = new PersistenceCleanAndBackupSettings(type, args.cachesList());
-
-        return settings;
+        return new PersistenceCleanAndBackupSettings(type, args.cachesList());
     }
 }
