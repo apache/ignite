@@ -347,6 +347,8 @@ public class CachePartitionDefragmentationManager {
             }
 
             mntcReg.clearMaintenanceRecord(DEFRAGMENTATION_MNTC_RECORD_ID);
+
+            log.info("Defragmentation completed. All partitions are defragmented.");
         }
         finally {
             System.clearProperty(SKIP_CP_ENTRIES);
