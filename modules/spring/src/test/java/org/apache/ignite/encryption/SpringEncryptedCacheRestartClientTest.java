@@ -23,8 +23,10 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.junit.Ignore;
 
 /** */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13520")
 public class SpringEncryptedCacheRestartClientTest extends EncryptedCacheRestartTest {
     /** {@inheritDoc} */
     @Override protected void createEncryptedCache(IgniteEx grid0, IgniteEx grid1, String cacheName, String cacheGroup) {
