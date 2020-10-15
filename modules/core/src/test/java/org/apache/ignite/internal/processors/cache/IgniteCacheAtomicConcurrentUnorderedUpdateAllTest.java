@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
+package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -40,7 +39,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /** Test concurrent putAll/removeAll operations with unordered set of keys on atomic caches. */
 @RunWith(Parameterized.class)
-public class AtomicConcurrentUnorderedUpdateAllTest extends GridCommonAbstractTest {
+public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_CNT = 3;
 
