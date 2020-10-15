@@ -460,17 +460,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        IgniteFuture<Void> fut = node2.encryption().changeCacheGroupKey(Collections.singleton(cacheName()));
-
-        fut.get(MAX_AWAIT_MILLIS);
-
-        stopAllGrids();
-
-        startGrid(GRID_0);
-        startGrid(GRID_1);
-        startGrid(GRID_2);
-
-        grid(GRID_0).cluster().state(ClusterState.ACTIVE);
+        node2.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get(MAX_AWAIT_MILLIS);
 
         awaitPartitionMapExchange();
 
