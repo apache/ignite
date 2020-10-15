@@ -143,7 +143,7 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec, IgnitePersistenceAware):
         super().__init__(project="ignite", **kwargs)
 
         libs = (modules or [])
-        libs.append("log4j")
+        libs.append("log4j2")
         libs = list(map(lambda m: self.path.module(m) + "/*", libs))
 
         libs.append(IgnitePath(DEV_BRANCH).module("ducktests") + "/*")
@@ -170,7 +170,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
         self.context = context
 
         libs = modules or []
-        libs.extend(["log4j"])
+        libs.extend(["log4j2"])
 
         libs = [self.path.module(m) + "/*" for m in libs]
         libs.append(IgnitePath(DEV_BRANCH).module("ducktests") + "/*")

@@ -193,23 +193,6 @@
                             <excludeTransitive>false</excludeTransitive>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>copy-ignite-log4j2</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>target</outputDirectory>
-                            <includeScope>compile</includeScope>
-                            <includeArtifactIds>
-                                ignite-log4j2,
-                                log4j-core,
-                                log4j-api
-                            </includeArtifactIds>
-                            <excludeTransitive>false</excludeTransitive>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
 
