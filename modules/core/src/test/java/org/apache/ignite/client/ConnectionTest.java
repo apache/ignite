@@ -50,6 +50,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.Charset;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -102,6 +103,7 @@ public class ConnectionTest {
 //                handshakeAsyncChannel().get();
 //            }
 
+            System.out.println(">>>> Thread count: " + Thread.getAllStackTraces().size());
             handshakeNetty().get();
 
             System.out.println(">>> " + sw.elapsed().toMillis());
@@ -149,7 +151,13 @@ public class ConnectionTest {
 
             byte[] handshakeBytes = getHandshakeBytes();
             ByteBuf handshakeBuf = Unpooled.wrappedBuffer(handshakeBytes);
+
+            System.out.println(">>>> Thread count: " + Thread.getAllStackTraces().size());
+
             ChannelFuture channelFuture = f.channel().writeAndFlush(handshakeBuf);
+
+            System.out.println(">>>> Thread count: " + Thread.getAllStackTraces().size());
+
             channelFuture.addListener(future -> {
                if (future.isSuccess()) {
                    fut.complete(12);
