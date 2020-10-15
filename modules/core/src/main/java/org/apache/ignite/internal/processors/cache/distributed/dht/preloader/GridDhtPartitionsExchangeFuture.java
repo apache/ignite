@@ -151,6 +151,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
+import static org.apache.ignite.internal.util.IgniteUtils.dumpStack;
 
 /**
  * Future for exchanging partition maps.
@@ -1151,6 +1152,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * Start client caches if absent.
      */
     private void ensureClientCachesStarted() {
+//        U.dumpStack("ensureClientCachesStarted");
+
         GridCacheProcessor cacheProcessor = cctx.cache();
 
         Set<String> cacheNames = new HashSet<>(cacheProcessor.cacheNames());
@@ -1158,6 +1161,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         List<CacheConfiguration> notStartedCacheConfigs = new ArrayList<>();
 
         for (CacheConfiguration cCfg : cctx.gridConfig().getCacheConfiguration()) {
+//            log.info(">>>xxx cacheNames " + cacheNames.contains(cCfg.getName()) + " " + cCfg.getName());
+//            log.info(">>>xxx isCacheTemplateName " + GridCacheUtils.isCacheTemplateName(cCfg.getName()) + " " + cCfg.getName());
+
             if (!cacheNames.contains(cCfg.getName()) && !GridCacheUtils.isCacheTemplateName(cCfg.getName()))
                 notStartedCacheConfigs.add(cCfg);
         }
@@ -2739,6 +2745,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void waitUntilNewCachesAreRegistered() {
         try {
+            if (cctx.kernalContext().clientNode())
+                ensureClientCachesStarted();
+
             IgniteInternalFuture<?> registerCachesFut = registerCachesFuture;
 
             if (registerCachesFut != null && !registerCachesFut.isDone()) {

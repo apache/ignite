@@ -1038,6 +1038,9 @@ public class ClusterCachesInfo {
             req.cacheConfigurationEnrichment()
         );
 
+//        if (ccfg.isEncryptionEnabled() && ctx.clientNode())
+//            U.dumpStack("(register) process request cache " + ccfg.getName());
+
         DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
 
         restartingCaches.remove(ccfg.getName());
@@ -1123,8 +1126,23 @@ public class ClusterCachesInfo {
         else {
             assert ctx.config().isDaemon() || joinDiscoData != null;
 
-            return joinDiscoData;
+            return ctx.clientNode() ? filterEncryptedCaches(joinDiscoData) : joinDiscoData;
         }
+    }
+
+    private Serializable filterEncryptedCaches(CacheJoinNodeDiscoveryData data) {
+        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> infos = new HashMap<>();
+
+        for (Map.Entry<String, CacheJoinNodeDiscoveryData.CacheInfo> entry : data.caches().entrySet()) {
+            CacheJoinNodeDiscoveryData.CacheInfo info = entry.getValue();
+
+            if (info.cacheData().config().isEncryptionEnabled())
+                continue;
+
+            infos.put(entry.getKey(), info);
+        }
+
+        return new CacheJoinNodeDiscoveryData(data.cacheDeploymentId(), infos, data.templates(), data.startCaches());
     }
 
     /**
@@ -1480,6 +1498,9 @@ public class ClusterCachesInfo {
                 cachesToSave.add(desc); //received config is different of local config - need to resave
 
             desc.receivedOnDiscovery(true);
+
+//            if (cfg.isEncryptionEnabled() && ctx.clientNode())
+//                U.dumpStack("(register) register received cache " + cfg.getName());
 
             registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
 
@@ -2104,6 +2125,9 @@ public class ClusterCachesInfo {
             new QuerySchema(cacheInfo.cacheData().queryEntities()),
             cacheInfo.cacheData().cacheConfigurationEnrichment()
         );
+
+//        if (cfg.isEncryptionEnabled() && ctx.clientNode())
+//            U.dumpStack("(register) register new cache " + cfg.getName());
 
         DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
 

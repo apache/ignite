@@ -162,10 +162,10 @@ public class GridLocalConfigManager {
             if (CU.isPersistentCache(cfgs[i], config.getDataStorageConfiguration()))
                 cfgs[i].setEncryptionEnabled(true);
 
-            // Encrypted cache statically configured on a client node cannot be started when the node joining
-            // to the cluster, it will start dynamically after the node will be joined.
-            if (cfgs[i].isEncryptionEnabled() && ctx.clientNode())
-                continue;
+//            // Encrypted cache statically configured on a client node cannot be started when the node joining
+//            // to the cluster, it will start dynamically after the node will be joined.
+//            if (cfgs[i].isEncryptionEnabled() && ctx.clientNode())
+//                continue;
 
             CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
 

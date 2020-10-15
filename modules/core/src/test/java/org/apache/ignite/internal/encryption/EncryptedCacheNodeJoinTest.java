@@ -226,9 +226,9 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         IgniteEx grid0 = startGrid(GRID_0);
 
-        grid0.cluster().state(ClusterState.ACTIVE);
-
         IgniteEx client = startClientGrid(CLIENT);
+
+        grid0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = client.cache(cacheName());
 
@@ -265,13 +265,13 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         startGrid(GRID_0);
         startGrid(GRID_3);
 
-        IgniteEx client1 = startClientGrid("client1");
-
-        grid(GRID_0).cluster().state(ClusterState.ACTIVE);
-
         configureCache = true;
 
+        IgniteEx client1 = startClientGrid("client1");
+
         IgniteEx node = client ? startClientGrid(CLIENT) : startGrid(GRID_6);
+
+        grid(GRID_0).cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
