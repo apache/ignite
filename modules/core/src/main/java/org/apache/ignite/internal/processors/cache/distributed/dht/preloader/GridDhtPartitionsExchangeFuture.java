@@ -151,7 +151,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
-import static org.apache.ignite.internal.util.IgniteUtils.dumpStack;
 
 /**
  * Future for exchanging partition maps.
