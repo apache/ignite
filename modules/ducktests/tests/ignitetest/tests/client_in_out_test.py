@@ -56,7 +56,7 @@ class ClientTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(V_2_8_1))
     def test_ignite_start_stop(self, ignite_version):
         """
-        Start and stop clients test
+        Start and stop clients test.
         """
 
         servers_count = self.CLUSTER_NODES - self.STATIC_CLIENTS_NUM - self.TEMP_CLIENTS_NUM
