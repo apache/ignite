@@ -639,6 +639,18 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertContains(log, nodesInfo.get(0), "Addresses=188.166.164.247.hostname/188.166.164.247,10.19.112.175.hostname/10.19.112.175");
         }
 
+        { // empty resolved addresses
+            addresses.set(ignite.cluster().node(), Collections.emptyList());
+            hostNames.set(ignite.cluster().node(), Collections.emptyList());
+
+            assertEquals(EXIT_CODE_OK, execute("--verbose", "--baseline"));
+
+            List<String> nodesInfo = findBaselineNodesInfo();
+            assertEquals(1, nodesInfo.size());
+            assertContains(log, nodesInfo.get(0), "ConsistentId=" +
+                grid(0).cluster().localNode().consistentId() + ", State=");
+        }
+
         assertEquals(1, ignite.cluster().currentBaselineTopology().size());
     }
 
