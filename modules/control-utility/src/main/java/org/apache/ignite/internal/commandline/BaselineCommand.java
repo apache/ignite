@@ -57,14 +57,9 @@ import static org.apache.ignite.internal.commandline.baseline.BaselineSubcommand
 /**
  * Commands associated with baseline functionality.
  */
-public class BaselineCommand implements Command<BaselineArguments> {
+public class BaselineCommand extends AbstractCommand<BaselineArguments> {
     /** Arguments. */
     private BaselineArguments baselineArgs;
-
-    /**
-     * Use verbose mode for command output
-     */
-    private boolean verbose = false;
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
@@ -89,19 +84,6 @@ public class BaselineCommand implements Command<BaselineArguments> {
             return "Warning: the command will perform changes in baseline.";
 
         return null;
-    }
-
-    /**
-     * @see #execute(GridClientConfiguration, Logger)
-     * @param clientCfg Thin client configuration if connection to cluster is necessary.
-     * @param logger Logger to use.
-     * @param verbose Use verbose mode or not
-     *
-     * @throws Exception If failed to execute baseline action.
-     */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger, boolean verbose) throws Exception {
-        this.verbose = verbose;
-        return execute(clientCfg, logger);
     }
 
     /**
