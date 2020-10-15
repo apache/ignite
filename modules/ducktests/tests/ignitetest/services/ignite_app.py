@@ -74,7 +74,7 @@ class IgniteApplicationService(IgniteAwareService):
         self.__check_status("IGNITE_APPLICATION_FINISHED", timeout=timeout_sec)
 
     # pylint: disable=W0221
-    def stop_node(self, node, clean_shutdown=True, timeout_sec=10):
+    def stop(self, clean_shutdown=True, timeout_sec=60):
         self.stop_async(clean_shutdown)
         self.await_stopped(timeout_sec)
 

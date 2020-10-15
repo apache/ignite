@@ -21,8 +21,6 @@ import java.util.Optional;
 import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
@@ -31,9 +29,8 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 public class SimpleClient extends IgniteAwareApplication {
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
-        String cacheName = Optional.ofNullable(jsonNode.get("cacheName"))
-                .map(JsonNode::asText)
-                .orElse("default-cache-name");
+        String cacheName = jsonNode.get("cacheName").asText();
+
         long pacing = Optional.ofNullable(jsonNode.get("pacing"))
                 .map(JsonNode::asLong)
                 .orElse(0l);
@@ -42,29 +39,25 @@ public class SimpleClient extends IgniteAwareApplication {
                 " cacheName=" + cacheName +
                 " pacing=" + pacing);
 
-        CacheConfiguration cacheConfiguration = new CacheConfiguration()
-                .setBackups(2)
-                .setName(cacheName)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-        IgniteCache<UUID, UUID> cache = ignite.getOrCreateCache(cacheConfiguration);
+        IgniteCache<UUID, UUID> cache = ignite.getOrCreateCache(cacheName);
         log.info("Node name: " + ignite.name() + " starting cache operations.");
 
         markInitialized();
 
         while (!terminated()) {
-            UUID key = UUID.randomUUID();
+            UUID uuid = UUID.randomUUID();
 
             long startTime = System.nanoTime();
 
-            cache.put(key,key);
+            cache.put(uuid, uuid);
 
             long resultTime = System.nanoTime() - startTime;
 
-            log.info("Success put key=" + key + " value=" + key + " latency: " + resultTime + "ns.");
+            log.info("Success put, latency: " + resultTime + "ns.");
 
             Thread.sleep(pacing);
         }
+
         markFinished();
     }
 }

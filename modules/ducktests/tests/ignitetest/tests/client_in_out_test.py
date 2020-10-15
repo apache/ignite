@@ -21,6 +21,7 @@ from ducktape.mark.resource import cluster
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
+from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.utils import ignite_versions
@@ -36,7 +37,6 @@ class ClientTest(IgniteTest):
     PACING - the frequency of the operation on clients (ms).
     JAVA_CLIENT_CLASS_NAME - running classname.
     CLIENTS_WORK_TIME_S - clients working time (s).
-    STATIC_CLIENT_WORK_TIME_S - static client work time (s)
     ITERATION_COUNT - the number of iterations of starting and stopping client nodes (s).
     CLUSTER_NODES - cluster size.
     STATIC_CLIENTS_NUM - the number of permanently employed clients.
@@ -48,7 +48,6 @@ class ClientTest(IgniteTest):
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.start_stop_client.SimpleClient"
 
     CLIENTS_WORK_TIME_S = 30
-    STATIC_CLIENT_WORK_TIME_S = 30
     ITERATION_COUNT = 3
     CLUSTER_NODES = 7
     STATIC_CLIENTS_NUM = 2
@@ -65,13 +64,16 @@ class ClientTest(IgniteTest):
 
         # Topology version after test.
         current_top_v = servers_count
-        fin_top_ver = servers_count + 2 * self.STATIC_CLIENTS_NUM + 2 * self.ITERATION_COUNT * self.TEMP_CLIENTS_NUM
+        fin_top_ver = servers_count + (2 * self.STATIC_CLIENTS_NUM) + (2 * self.ITERATION_COUNT * self.TEMP_CLIENTS_NUM)
 
-        server_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version))
+        server_cfg = IgniteConfiguration(
+            version=IgniteVersion(ignite_version),
+            caches=[CacheConfiguration(name=self.CACHE_NAME, backups=1, atomicity_mode='TRANSACTIONAL')]
+        )
         ignite = IgniteService(self.test_context, server_cfg, num_nodes=servers_count)
         control_utility = ControlUtility(ignite, self.test_context)
 
-        client_cfg = server_cfg._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite))
+        client_cfg = server_cfg._replace(client_mode=True)
 
         static_clients = IgniteApplicationService(
             self.test_context,
@@ -92,12 +94,13 @@ class ClientTest(IgniteTest):
         ignite.start()
 
         static_clients.start()
+
         current_top_v += self.STATIC_CLIENTS_NUM
         check_topology(control_utility, current_top_v)
 
-        # Start stop temp_clients node. Check cluster.
+        # Start / stop temp_clients node. Check cluster.
         for i in range(self.ITERATION_COUNT):
-            self.logger.debug(f'Starting iteration:{i}')
+            self.logger.debug(f'Starting iteration: {i}.')
 
             time.sleep(self.CLIENTS_WORK_TIME_S)
 
@@ -122,11 +125,10 @@ class ClientTest(IgniteTest):
         check_topology(control_utility, fin_top_ver)
 
 
-def check_topology(control_utility, fin_top_ver):
+def check_topology(control_utility: ControlUtility, fin_top_ver: int):
     """
-    :param control_utility: control.sh
-    :param fin_top_ver: expected topology version
-    :return:
+    Check current topology version.
     """
     top_ver = control_utility.cluster_state().topology_version
-    assert top_ver == fin_top_ver, f'cluster topology version={top_ver}, expected topology version={fin_top_ver}'
+    assert top_ver == fin_top_ver, f'Cluster current topology version={top_ver}, ' \
+                                   f'expected topology version={fin_top_ver}.'
