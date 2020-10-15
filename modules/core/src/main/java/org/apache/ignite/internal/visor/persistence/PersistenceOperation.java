@@ -25,7 +25,10 @@ public enum PersistenceOperation {
     INFO,
 
     /** */
-    CLEAN;
+    CLEAN,
+
+    /** */
+    BACKUP;
 
     /** */
     private static final PersistenceOperation[] VALS = values();

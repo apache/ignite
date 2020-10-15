@@ -315,7 +315,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
 //        execute("--persistence", "clean", "caches", DEFAULT_CACHE_NAME, "--host", "localhost", "--port", port);
 
-        execute("--persistence", "clean", "all", "--host", "localhost", "--port", port);
+        execute("--persistence", "backup", "corrupted", "--host", "localhost", "--port", port);
     }
 
     /**

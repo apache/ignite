@@ -29,22 +29,24 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
-import org.apache.ignite.internal.commandline.persistence.CleanSubcommandArg;
+import org.apache.ignite.internal.commandline.persistence.CleanAndBackupSubcommandArg;
 import org.apache.ignite.internal.commandline.persistence.PersistenceArguments;
 import org.apache.ignite.internal.commandline.persistence.PersistenceSubcommands;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.persistence.PersistenceCleanSettings;
-import org.apache.ignite.internal.visor.persistence.PersistenceCleanType;
+import org.apache.ignite.internal.visor.persistence.PersistenceCleanAndBackupSettings;
+import org.apache.ignite.internal.visor.persistence.PersistenceCleanAndBackupType;
 import org.apache.ignite.internal.visor.persistence.PersistenceTask;
 import org.apache.ignite.internal.visor.persistence.PersistenceTaskArg;
 import org.apache.ignite.internal.visor.persistence.PersistenceTaskResult;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.commandline.CommandList.PERSISTENCE;
+import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
-import static org.apache.ignite.internal.commandline.persistence.CleanSubcommandArg.ALL;
-import static org.apache.ignite.internal.commandline.persistence.CleanSubcommandArg.CACHES;
-import static org.apache.ignite.internal.commandline.persistence.CleanSubcommandArg.CORRUPTED;
-import static org.apache.ignite.internal.commandline.persistence.PersistenceSubcommands.CLEAN;
+import static org.apache.ignite.internal.commandline.persistence.CleanAndBackupSubcommandArg.ALL;
+import static org.apache.ignite.internal.commandline.persistence.CleanAndBackupSubcommandArg.CACHES;
+import static org.apache.ignite.internal.commandline.persistence.CleanAndBackupSubcommandArg.CORRUPTED;
+import static org.apache.ignite.internal.commandline.persistence.PersistenceSubcommands.INFO;
 import static org.apache.ignite.internal.commandline.persistence.PersistenceSubcommands.of;
 
 /** */
@@ -68,7 +70,6 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
                 );
 
                 printResult(res, logger);
-
             }
             else
                 logger.warning("No nodes found in topology, command won't be executed.");
@@ -89,10 +90,47 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
 
             return;
         }
+        else if (res.cachesInfo() != null) {
+            // info command was sent, caches info was collected
+            logger.info("Persistent caches found on node:");
+
+            //sort results so corrupted caches occur in the list at the top
+            res.cachesInfo().entrySet().stream().sorted((ci0, ci1) -> {
+                IgniteBiTuple<Boolean, Boolean> t0 = ci0.getValue();
+                IgniteBiTuple<Boolean, Boolean> t1 = ci1.getValue();
+
+                boolean corrupted0 = t0.get1() || t0.get2();
+                boolean corrupted1 = t1.get1() || t1.get2();
+
+                if (corrupted0 && corrupted1)
+                    return 0;
+                else if (!corrupted0 && !corrupted1)
+                    return 0;
+                else if (corrupted0 && !corrupted1)
+                    return -1;
+                else
+                    return 1;
+            }).forEach(
+                e -> {
+                    IgniteBiTuple<Boolean, Boolean> t = e.getValue();
+
+                    String status;
+
+                    if (!t.get1())
+                        status = "corrupted - WAL disabled globally.";
+                    else if (!t.get1())
+                        status = "corrupted - WAL disabled locally.";
+                    else
+                        status = "no corruption.";
+
+                    logger.info(INDENT + "cache name: " + e.getKey() + ". Status: " + status);
+                }
+            );
+        }
         else {
             logger.info("Maintenance task is " + (!res.maintenanceTaskCompleted() ? "not " : "") + "fixed.");
 
-            List<String> cleanedCaches = res.cleanedCaches();
+            List<String> cleanedCaches = res.handledCaches();
 
             if (cleanedCaches != null && !cleanedCaches.isEmpty()) {
                 String cacheNames = cleanedCaches.stream().collect(Collectors.joining(", "));
@@ -115,7 +153,7 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         if (!argIter.hasNextSubArg()) {
-            cleaningArgs = new PersistenceArguments.Builder(PersistenceSubcommands.INFO).build();
+            cleaningArgs = new PersistenceArguments.Builder(INFO).build();
 
             return;
         }
@@ -128,20 +166,21 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
         PersistenceArguments.Builder bldr = new PersistenceArguments.Builder(cmd);
 
         switch (cmd) {
+            case BACKUP:
             case CLEAN:
-                CleanSubcommandArg cleanSubcommandArg = CommandArgUtils.of(
-                    argIter.nextArg("Expected one of clean subcommand arguments"), CleanSubcommandArg.class
+                CleanAndBackupSubcommandArg cleanAndBackupSubcommandArg = CommandArgUtils.of(
+                    argIter.nextArg("Expected one of subcommand arguments"), CleanAndBackupSubcommandArg.class
                 );
 
-                if (cleanSubcommandArg == null)
-                    throw new IllegalArgumentException("Expected one of clean subcommand arguments");
+                if (cleanAndBackupSubcommandArg == null)
+                    throw new IllegalArgumentException("Expected one of subcommand arguments");
 
-                bldr.withCleanSubcommandArg(cleanSubcommandArg);
+                bldr.withCleanAndBackupSubcommandArg(cleanAndBackupSubcommandArg);
 
-                if (cleanSubcommandArg == ALL || cleanSubcommandArg == CORRUPTED)
+                if (cleanAndBackupSubcommandArg == ALL || cleanAndBackupSubcommandArg == CORRUPTED)
                     break;
 
-                if (cleanSubcommandArg == CACHES) {
+                if (cleanAndBackupSubcommandArg == CACHES) {
                     Set<String> caches = argIter.nextStringSet("list of cache names");
 
                     if (F.isEmpty(caches))
@@ -163,7 +202,7 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
 
     /** */
     private PersistenceTaskArg convertArguments(PersistenceArguments args) {
-        PersistenceCleanSettings cleanSettings = convertCleanSettings(args);
+        PersistenceCleanAndBackupSettings cleanSettings = convertCleanSettings(args);
 
         PersistenceTaskArg taskArgs = new PersistenceTaskArg(args.subcommand().operation(), cleanSettings);
 
@@ -171,27 +210,27 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
     }
 
     /** */
-    private PersistenceCleanSettings convertCleanSettings(PersistenceArguments args) {
-        if (args.subcommand() != CLEAN)
+    private PersistenceCleanAndBackupSettings convertCleanSettings(PersistenceArguments args) {
+        if (args.subcommand() == INFO)
             return null;
 
-        PersistenceCleanType type;
+        PersistenceCleanAndBackupType type;
 
         switch (args.cleanArg()) {
             case ALL:
-                type = PersistenceCleanType.ALL;
+                type = PersistenceCleanAndBackupType.ALL;
 
                 break;
             case CORRUPTED:
-                type = PersistenceCleanType.CORRUPTED;
+                type = PersistenceCleanAndBackupType.CORRUPTED;
 
                 break;
 
             default:
-                type = PersistenceCleanType.CACHES;
+                type = PersistenceCleanAndBackupType.CACHES;
         }
 
-        PersistenceCleanSettings settings = new PersistenceCleanSettings(type, args.cachesList());
+        PersistenceCleanAndBackupSettings settings = new PersistenceCleanAndBackupSettings(type, args.cachesList());
 
         return settings;
     }

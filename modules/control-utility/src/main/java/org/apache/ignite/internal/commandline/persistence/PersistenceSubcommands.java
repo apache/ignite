@@ -28,7 +28,10 @@ public enum PersistenceSubcommands {
     INFO("info", PersistenceOperation.INFO),
 
     /** Cleans partition files of corrupted caches and cache groups. */
-    CLEAN("clean", PersistenceOperation.CLEAN);
+    CLEAN("clean", PersistenceOperation.CLEAN),
+
+    /** */
+    BACKUP("backup", PersistenceOperation.BACKUP);
 
     /** Subcommand name. */
     private final String name;
