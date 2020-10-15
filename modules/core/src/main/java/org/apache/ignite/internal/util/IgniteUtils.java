@@ -9310,11 +9310,7 @@ public abstract class IgniteUtils {
 
             if (!F.isEmpty(hostName)) {
                 try {
-                    if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TEST_ENV)) {
-                        String ipStr = hostName.substring(0, hostName.length() - ".hostname".length());
-                        inetAddr = InetAddress.getByAddress(hostName, InetAddress.getByName(ipStr).getAddress());
-
-                    } else inetAddr = InetAddress.getByName(hostName);
+                    inetAddr = InetAddress.getByName(hostName);
                 }
                 catch (UnknownHostException ignored) {
                 }
@@ -9322,9 +9318,7 @@ public abstract class IgniteUtils {
 
             if (inetAddr == null || inetAddr.isLoopbackAddress()) {
                 try {
-                    if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TEST_ENV))
-                        inetAddr = InetAddress.getByAddress(addr + ".hostname", InetAddress.getByName(addr).getAddress());
-                    else inetAddr = InetAddress.getByName(addr);
+                    inetAddr = InetAddress.getByName(addr);
                 }
                 catch (UnknownHostException ignored) {
                 }
