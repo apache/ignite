@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.client.TestClusterClientConnection;
 import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfigurationTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinderSelfTest;
 import org.junit.runner.RunWith;
@@ -28,7 +29,8 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     KubernetesConnectionConfigurationTest.class,
-    TcpDiscoveryKubernetesIpFinderSelfTest.class
+    TcpDiscoveryKubernetesIpFinderSelfTest.class,
+    TestClusterClientConnection.class
 })
 public class IgniteKubernetesTestSuite {
 }
