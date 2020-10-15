@@ -121,6 +121,10 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
         DFLT_CONFIG_MAP.put(
             new TracingConfigurationCoordinates.Builder(Scope.CACHE_API_READ).build(),
             TracingConfigurationManager.DEFAULT_CACHE_API_READ_CONFIGURATION);
+
+        DFLT_CONFIG_MAP.put(
+            new TracingConfigurationCoordinates.Builder(Scope.SQL).build(),
+            TracingConfigurationManager.DEFAULT_SQL_CONFIGURATION);
     }
 
     /** Test trace exporter handler. */

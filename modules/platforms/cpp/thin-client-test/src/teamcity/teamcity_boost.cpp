@@ -49,13 +49,6 @@ std::string toString(boost::unit_test::const_string bstr)
     ss << bstr;
     return ss.str();
 }
-
-std::string toString(const boost::execution_exception& excpt)
-{
-    std::stringstream ss(std::ios_base::out);
-    ss << excpt.what();
-    return ss.str();
-}
 }                                                           // anonymous namespace
 
 /// Custom formatter for TeamCity messages
@@ -106,7 +99,7 @@ public:
     virtual void log_entry_context(std::ostream& os, boost::unit_test::log_level, boost::unit_test::const_string ctx) {
         log_entry_context(os, ctx);
     }
-    virtual void entry_context_finish(std::ostream& os, boost::unit_test::log_level) override {
+    virtual void entry_context_finish(std::ostream& os, boost::unit_test::log_level) {
         entry_context_finish(os);
     }
 #endif
@@ -239,7 +232,7 @@ void TeamcityBoostLogFormatter::log_exception_start(
 }
 
 void TeamcityBoostLogFormatter::test_unit_skipped(
-    std::ostream& out
+    std::ostream&
   , const boost::unit_test::test_unit& tu
   , boost::unit_test::const_string reason
   )

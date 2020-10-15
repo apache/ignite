@@ -26,8 +26,10 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
     /// <summary>
@@ -100,6 +102,12 @@ namespace Apache.Ignite.Core.Tests.Client
                 Logger = new ConsoleLogger
                 {
                     MinLevel = LogLevel.Debug
+                },
+                TransactionConfiguration = new TransactionClientConfiguration
+                {
+                    DefaultTimeout = TimeSpan.FromSeconds(1),
+                    DefaultTransactionConcurrency = TransactionConcurrency.Optimistic,
+                    DefaultTransactionIsolation = TransactionIsolation.Serializable
                 }
             };
 
@@ -316,5 +324,25 @@ namespace Apache.Ignite.Core.Tests.Client
                 typeof(IgniteClientConfiguration));
         }
 #endif
+
+        /// <summary>
+        /// Tests <see cref="TransactionClientConfiguration"/> copy ctor. 
+        /// </summary>
+        [Test]
+        public void TestTransactionConfigurationCopyCtor()
+        {
+            var sourceCfg = new TransactionClientConfiguration
+            {
+                DefaultTimeout = TimeSpan.MaxValue,
+                DefaultTransactionConcurrency = TransactionConcurrency.Pessimistic,
+                DefaultTransactionIsolation = TransactionIsolation.Serializable
+            };
+            
+            var resultCfg = new TransactionClientConfiguration(sourceCfg);
+            
+            Assert.AreEqual(sourceCfg.DefaultTimeout, resultCfg.DefaultTimeout);
+            Assert.AreEqual(sourceCfg.DefaultTransactionConcurrency, resultCfg.DefaultTransactionConcurrency);
+            Assert.AreEqual(sourceCfg.DefaultTransactionIsolation, resultCfg.DefaultTransactionIsolation);
+        }
     }
 }

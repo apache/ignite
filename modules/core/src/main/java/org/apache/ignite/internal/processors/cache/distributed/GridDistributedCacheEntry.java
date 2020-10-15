@@ -63,7 +63,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     private void refreshRemotes() {
         GridCacheMvcc mvcc = mvccExtras();
 
-        rmts = mvcc == null ? Collections.<GridCacheMvccCandidate>emptyList() : mvcc.remoteCandidates();
+        rmts = mvcc == null ? Collections.emptyList() : mvcc.remoteCandidates();
     }
 
     /**
@@ -591,7 +591,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
         @Nullable Collection<GridCacheVersion> pendingVers,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        boolean sysInvalidate) throws GridCacheEntryRemovedException {
+        boolean sysInvalidate
+    ) throws GridCacheEntryRemovedException {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 

@@ -268,7 +268,82 @@ public enum SpanType {
 
     /** */
     CACHE_API_NEAR_PROCESS_ATOMIC_SINGLE_GET_RESPONSE(Scope.CACHE_API_READ,
-        "cache.api.near.atomic.single.get.response", 78, false);
+        "cache.api.near.atomic.single.get.response", 78, false),
+
+    /** The overall execution of SQL query. */
+    SQL_QRY(Scope.SQL, "sql.query", 79, true),
+
+    /** Opening SQL query cursor. */
+    SQL_CURSOR_OPEN(Scope.SQL, "sql.cursor.open", 80),
+
+    /** Closing SQL query cursor. */
+    SQL_CURSOR_CLOSE(Scope.SQL, "sql.cursor.close", 81),
+
+    /** Cancellation SQL query cursor. */
+    SQL_CURSOR_CANCEL(Scope.SQL, "sql.cursor.cancel", 82),
+
+    /** Parsing SQL query. */
+    SQL_QRY_PARSE(Scope.SQL, "sql.query.parse", 83),
+
+    /** Processing SQL query execution request. */
+    SQL_QRY_EXEC_REQ(Scope.SQL, "sql.query.execute.request", 84),
+
+    /** Processing SQL next result page request. */
+    SQL_NEXT_PAGE_REQ(Scope.SQL, "sql.next.page.request", 85),
+
+    /** Processing mapped node response with requested SQL result page. */
+    SQL_PAGE_RESP(Scope.SQL, "sql.page.response", 86),
+
+    /** Execution SQL query by H2. */
+    SQL_QRY_EXECUTE(Scope.SQL, "sql.query.execute", 87),
+
+    /** Reading rows from cursor and preparing result page. */
+    SQL_PAGE_PREPARE(Scope.SQL, "sql.page.prepare", 88),
+
+    /** Processing SQL query fail response. */
+    SQL_FAIL_RESP(Scope.SQL, "sql.fail.response", 89),
+
+    /** Processing DML query request. */
+    SQL_DML_QRY_EXEC_REQ(Scope.SQL, "sql.dml.query.execute.request", 90),
+
+    /** Processing DML query response. */
+    SQL_DML_QRY_RESP(Scope.SQL, "sql.dml.query.response", 91),
+
+    /** Processing query cancellation request. */
+    SQL_QRY_CANCEL_REQ(Scope.SQL, "sql.query.cancel.request", 92),
+
+    /** Opening cursor iterator. */
+    SQL_ITER_OPEN(Scope.SQL, "sql.iterator.open", 93),
+
+    /** Opening cursor iterator. */
+    SQL_ITER_CLOSE(Scope.SQL, "sql.iterator.close", 94),
+
+    /** Fetching SQL query result page. */
+    SQL_PAGE_FETCH(Scope.SQL, "sql.page.fetch", 95),
+
+    /** Waiting for SQL query results page to be received. */
+    SQL_PAGE_WAIT(Scope.SQL, "sql.page.wait", 96),
+
+    /** Processing SQL index range request. */
+    SQL_IDX_RANGE_REQ(Scope.SQL, "sql.index.range.request", 97),
+
+    /** Processing SQL index range response. */
+    SQL_IDX_RANGE_RESP(Scope.SQL, "sql.index.range.response", 98),
+
+    /** Execution of SQL DML query. */
+    SQL_DML_QRY_EXECUTE(Scope.SQL, "sql.dml.query.execute", 99),
+
+    /** Execution of SQL command query which either DDL SQL queries or Ignite native SQL commands. */
+    SQL_CMD_QRY_EXECUTE(Scope.SQL, "sql.command.query.execute", 100),
+
+    /** SQL query partitions reservation. */
+    SQL_PARTITIONS_RESERVE(Scope.SQL, "sql.partitions.reserve", 101),
+
+    /** Update of cache as a result of the SQL DML query. */
+    SQL_CACHE_UPDATE(Scope.SQL, "sql.cache.update", 102),
+
+    /** Processing of incoming batch. */
+    SQL_BATCH_PROCESS(Scope.SQL, "sql.batch.process", 103);
 
     /** Scope */
     private Scope scope;

@@ -32,7 +32,10 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -68,15 +71,19 @@ import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.junits.GridAbstractTest.getMxBean;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -88,8 +95,10 @@ import static org.junit.Assert.fail;
 /**
  * Thin client functional tests.
  */
+@SuppressWarnings("unused")
 public class FunctionalTest {
     /** Per test timeout */
+    @SuppressWarnings("deprecation")
     @Rule
     public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
 
@@ -181,7 +190,7 @@ public class FunctionalTest {
                 .setEagerTtl(false)
                 .setGroupName("FunctionalTest")
                 .setDefaultLockTimeout(12345)
-                .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_ALL)
+                .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
                 .setReadFromBackup(true)
                 .setRebalanceBatchSize(67890)
                 .setRebalanceBatchesPrefetchCount(102938)
@@ -212,7 +221,7 @@ public class FunctionalTest {
                 )
                 .setExpiryPolicy(new PlatformExpiryPolicy(10, 20, 30));
 
-            ClientCache cache = client.createCache(cacheCfg);
+            ClientCache<Object, Object> cache = client.createCache(cacheCfg);
 
             assertEquals(CACHE_NAME, cache.getName());
 
@@ -551,6 +560,7 @@ public class FunctionalTest {
     public void testClientFailsOnStart() {
         ClientConnectionException expEx = null;
 
+        //noinspection EmptyTryBlock
         try (IgniteClient ignored = Ignition.startClient(getClientConfiguration())) {
             // No-op.
         }
@@ -570,6 +580,149 @@ public class FunctionalTest {
             String.format("%s expected but no exception was received", ClientConnectionException.class.getName()),
             expEx
         );
+    }
+
+
+    /**
+     * Test PESSIMISTIC REPEATABLE_READ tx holds lock and other tx should be timed out.
+     */
+    @Test
+    public void testPessimisticRepeatableReadsTransactionHoldsLock() throws Exception {
+        testPessimisticTxLocking(REPEATABLE_READ);
+    }
+
+    /**
+     * Test PESSIMISTIC SERIALIZABLE tx holds lock and other tx should be timed out.
+     */
+    @Test
+    public void testPessimisticSerializableTransactionHoldsLock() throws Exception {
+        testPessimisticTxLocking(SERIALIZABLE);
+    }
+
+    /**
+     * Test pessimistic tx holds the lock.
+     */
+    private void testPessimisticTxLocking(TransactionIsolation isolation) throws Exception {
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
+                    .setName("cache")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            );
+            cache.put(0, "value0");
+
+            Future<?> fut;
+
+            try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, isolation)) {
+                assertEquals("value0", cache.get(0));
+
+                CyclicBarrier barrier = new CyclicBarrier(2);
+
+                fut = ForkJoinPool.commonPool().submit(() -> {
+                    try (ClientTransaction tx2 = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 500)) {
+                        cache.put(0, "value2");
+                        tx2.commit();
+                    } finally {
+                        try {
+                            barrier.await(2000, TimeUnit.MILLISECONDS);
+                        } catch (Throwable ignore) {
+                            // No-op.
+                        }
+                    }
+                });
+
+                barrier.await(2000, TimeUnit.MILLISECONDS);
+
+                tx.commit();
+            }
+
+            assertEquals("value0", cache.get(0));
+
+            assertThrowsAnyCause(null, fut::get, ClientException.class,
+                    "Failed to acquire lock within provided timeout");
+        }
+    }
+
+    /**
+     * Test OPTIMISTIC SERIALIZABLE tx rolls backs if another TX commits.
+     */
+    @Test
+    public void testOptimitsticSerializableTransactionHoldsLock() throws Exception {
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
+                    .setName("cache")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            );
+            cache.put(0, "value0");
+
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            try (ClientTransaction tx = client.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                assertEquals("value0", cache.get(0));
+
+                Future<?> fut = ForkJoinPool.commonPool().submit(() -> {
+                    try (ClientTransaction tx2 = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                        cache.put(0, "value2");
+                        tx2.commit();
+                    }
+                    finally {
+                        latch.countDown();
+                    }
+                });
+
+                latch.await();
+
+                cache.put(0, "value1");
+
+                fut.get();
+
+                assertThrowsAnyCause(null, () -> {
+                    tx.commit();
+                    return null;
+                }, ClientException.class, "read/write conflict");
+            }
+
+            assertEquals("value2", cache.get(0));
+        }
+    }
+
+    /**
+     * Test OPTIMISTIC REPEATABLE_READ tx doesn't conflict with a regular cache put.
+     */
+    @Test
+    public void testOptimitsticRepeatableReadUpdatesValue() throws Exception {
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
+                    .setName("cache")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            );
+            cache.put(0, "value0");
+
+            try (ClientTransaction tx = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                assertEquals("value0", cache.get(0));
+
+                cache.put(0, "value1");
+
+                Future<?> f = ForkJoinPool.commonPool().submit(() -> {
+                    assertEquals("value0", cache.get(0));
+
+                    cache.put(0, "value2");
+
+                    assertEquals("value2", cache.get(0));
+                });
+
+                f.get();
+
+                tx.commit();
+            }
+
+            assertEquals("value1", cache.get(0));
+        }
     }
 
     /**
@@ -667,7 +820,7 @@ public class FunctionalTest {
 
                     fail();
                 }
-                catch (ClientServerError expected) {
+                catch (ClientException expected) {
                     // No-op.
                 }
 
@@ -676,7 +829,7 @@ public class FunctionalTest {
 
                     fail();
                 }
-                catch (ClientServerError expected) {
+                catch (ClientException expected) {
                     // No-op.
                 }
             }
@@ -809,7 +962,7 @@ public class FunctionalTest {
 
                 cache.put(0, "value18");
 
-                Thread t = new Thread(() -> {
+                Future<?> fut = ForkJoinPool.commonPool().submit(() -> {
                     try (ClientTransaction tx1 = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                         cache.put(1, "value19");
 
@@ -830,8 +983,6 @@ public class FunctionalTest {
                     }
                 });
 
-                t.start();
-
                 barrier.await();
 
                 assertEquals("value9", cache.get(1));
@@ -844,14 +995,14 @@ public class FunctionalTest {
 
                 assertEquals("value19", cache.get(1));
 
-                t.join();
+                fut.get();
             }
 
             // Test transaction usage by different threads.
             try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 cache.put(0, "value20");
 
-                Thread t = new Thread(() -> {
+                ForkJoinPool.commonPool().submit(() -> {
                     // Implicit transaction started here.
                     cache.put(1, "value21");
 
@@ -871,11 +1022,7 @@ public class FunctionalTest {
                     tx.close();
 
                     assertEquals("value18", cache.get(0));
-                });
-
-                t.start();
-
-                t.join();
+                }).get();
 
                 assertEquals("value21", cache.get(1));
 
@@ -894,11 +1041,7 @@ public class FunctionalTest {
                 // Start implicit transaction after explicit transaction has been closed by another thread.
                 cache.put(0, "value22");
 
-                t = new Thread(() -> assertEquals("value22", cache.get(0)));
-
-                t.start();
-
-                t.join();
+                ForkJoinPool.commonPool().submit(() -> assertEquals("value22", cache.get(0))).get();
 
                 // New explicit transaction can be started after current transaction has been closed by another thread.
                 try (ClientTransaction tx1 = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
@@ -924,11 +1067,12 @@ public class FunctionalTest {
                 t.join();
             }
 
-            try (ClientTransaction tx = client.transactions().txStart()) {
+            try (ClientTransaction ignored = client.transactions().txStart()) {
                 fail();
             }
-            catch (ClientServerError e) {
-                assertEquals(ClientStatus.TX_LIMIT_EXCEEDED, e.getCode());
+            catch (ClientException e) {
+                ClientServerError cause = (ClientServerError) e.getCause();
+                assertEquals(ClientStatus.TX_LIMIT_EXCEEDED, cause.getCode());
             }
 
             for (ClientTransaction tx : txs)
@@ -948,11 +1092,50 @@ public class FunctionalTest {
             // Test that implicit transaction started after commit of previous one without closing.
             cache.put(0, "value24");
 
-            Thread t = new Thread(() -> assertEquals("value24", cache.get(0)));
+            ForkJoinPool.commonPool().submit(() -> assertEquals("value24", cache.get(0))).get();
+        }
+    }
 
-            t.start();
+    /**
+     * Test transactions.
+     */
+    @Test
+    public void testTransactionsAsync() throws Exception {
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
+                    .setName("cache")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            );
 
-            t.join();
+            cache.put(0, "value0");
+            cache.put(1, "value1");
+
+            // Test implicit rollback when transaction closed.
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                cache.putAsync(1, "value2").get();
+            }
+
+            assertEquals("value1", cache.get(1));
+
+            // Test explicit rollback.
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                cache.putAsync(1, "value2").get();
+
+                tx.rollback();
+            }
+
+            assertEquals("value1", cache.get(1));
+
+            // Test commit.
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                cache.putAsync(1, "value2").get();
+
+                tx.commit();
+            }
+
+            assertEquals("value2", cache.get(1));
         }
     }
 

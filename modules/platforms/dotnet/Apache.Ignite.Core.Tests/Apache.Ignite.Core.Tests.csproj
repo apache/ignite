@@ -114,8 +114,10 @@
     <Compile Include="Cache\CacheCreateTest.cs" />
     <Compile Include="Cache\CacheQueryMetricsTest.cs" />
     <Compile Include="Cache\CacheTimeoutOnPmeTransactionalTest.cs" />
+    <Compile Include="Cache\CacheTransactionGridStopTest.cs" />
     <Compile Include="Cache\DataRegionMetricsTest.cs" />
     <Compile Include="Cache\DataStorageMetricsTest.cs" />
+    <Compile Include="Cache\CacheLocalActiveTransactionsTest.cs" />
     <Compile Include="Cache\NearCacheTest.cs" />
     <Compile Include="Cache\OptimisticTransactionTest.cs" />
     <Compile Include="Cache\Platform\PlatformCacheTestCreateDestroy.cs" />
@@ -145,7 +147,12 @@
     <Compile Include="Cache\Store\CacheStoreSessionTestCodeConfig.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestSharedFactory.cs" />
     <Compile Include="Client\Cache\ContinuousQueryTest.cs" />
+    <Compile Include="Client\Cache\CacheClientAbstractTxTest.cs" />
+    <Compile Include="Client\Cache\CacheClientLocalTxTest.cs" />
+    <Compile Include="Client\Cache\CacheClientPartitionedTxDisconnectTest.cs" />
+    <Compile Include="Client\Cache\CacheClientPartitionedTxTest.cs" />
     <Compile Include="Client\Cache\DynamicFieldSetTest.cs" />
+    <Compile Include="Client\Cache\CacheClientOptimisticTxTest.cs" />
     <Compile Include="Client\Cache\SerializableObjectsTest.cs" />
     <Compile Include="Client\Cache\PartitionAwarenessTest.cs" />
     <Compile Include="Client\Cache\BinaryBuilderTest.cs" />
@@ -387,6 +394,7 @@
     <Compile Include="Services\ServicesAsyncWrapper.cs" />
     <Compile Include="TestRunner.cs" />
     <Compile Include="TestUtils.cs" />
+    <Compile Include="TestUtilsJni.cs" />
     <Compile Include="Unmanaged\JniThreadDetachTest.cs" />
     <Compile Include="Unmanaged\UnmanagedThreadTest.cs" />
     <Compile Include="WindowsServiceTest.cs" />

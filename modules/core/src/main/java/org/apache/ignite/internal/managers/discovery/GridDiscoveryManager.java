@@ -37,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -184,6 +185,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** */
     public static final String NODES_SYS_VIEW_DESC = "Cluster nodes";
 
+    /** @see IgniteSystemProperties#IGNITE_DISCOVERY_HISTORY_SIZE */
+    public static final int DFLT_DISCOVERY_HISTORY_SIZE = 500;
+
     /** Predicate filtering out daemon nodes. */
     private static final IgnitePredicate<ClusterNode> FILTER_NOT_DAEMON = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
@@ -199,7 +203,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     };
 
     /** Discovery cached history size. */
-    private final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 500);
+    private final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, DFLT_DISCOVERY_HISTORY_SIZE);
 
     /** */
     private final Object discoEvtMux = new Object();
@@ -289,10 +293,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
 
-        ctx.systemView().registerView(NODES_SYS_VIEW, NODES_SYS_VIEW_DESC,
-            new ClusterNodeViewWalker(),
-            () -> F.concat(false, allNodes(), daemonNodes()),
-            ClusterNodeView::new);
+        if (ctx.systemView().view(NODES_SYS_VIEW) == null) {
+            ctx.systemView().registerView(NODES_SYS_VIEW, NODES_SYS_VIEW_DESC,
+                new ClusterNodeViewWalker(),
+                () -> F.concat(false, allNodes(), daemonNodes()),
+                ClusterNodeView::new);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1057,7 +1063,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return new DiscoveryMetricsProvider() {
             /** Disable cache metrics update. */
             private final boolean disableCacheMetricsUpdate = IgniteSystemProperties.getBoolean(
-                IgniteSystemProperties.IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE, false);
+                IgniteSystemProperties.IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE);
 
             /** */
             private final long startTime = U.currentTimeMillis();
@@ -1557,7 +1563,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ClusterNode currCrd = discoCache.oldestServerNode();
 
         if ((evtType == EventType.EVT_NODE_FAILED || evtType == EventType.EVT_NODE_LEFT) &&
-                currCrd != null && currCrd.order() > evtNode.order())
+                currCrd != null && currCrd.order() > evtNode.order() && !evtNode.isClient() && !evtNode.isDaemon())
             clo.apply("Coordinator changed [prev=" + evtNode + ", cur=" + currCrd + "]");
 
         BaselineTopology blt = state.baselineTopology();
