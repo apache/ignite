@@ -43,6 +43,8 @@ public class LockedEntriesInfo {
         LockedEntries lockedEntries = lockedEntriesPerThread.computeIfAbsent(Thread.currentThread().getId(),
                 threadId -> new LockedEntries(entries));
 
+        boolean wasInterrupted = false;
+
         for (int i = 0; i < entries.length; i++) {
             GridCacheEntryEx entry = entries[i];
 
@@ -55,6 +57,8 @@ public class LockedEntriesInfo {
                 if (entry.tryLockEntry(DEADLOCK_DETECTION_TIMEOUT))
                     break; // Successfully locked.
                 else {
+                    wasInterrupted |= Thread.interrupted(); // Clear thread interruption flag.
+
                     if (hasLockCollisions(entry, lockedEntries)) {
                         // Possible deadlock detected, unlock all locked entries and retry again.
                         retry = true;
@@ -80,11 +84,17 @@ public class LockedEntriesInfo {
                         entries[j].unlockEntry();
                 }
 
+                if (wasInterrupted)
+                    Thread.currentThread().interrupt();
+
                 return false;
             }
 
             lockedEntries.lockedIdx = i;
         }
+
+        if (wasInterrupted)
+            Thread.currentThread().interrupt();
 
         return true;
     }
