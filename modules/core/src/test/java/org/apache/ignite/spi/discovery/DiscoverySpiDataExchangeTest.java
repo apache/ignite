@@ -47,7 +47,7 @@ import org.junit.Test;
  * Discovery data exchange test.
  */
 public class DiscoverySpiDataExchangeTest extends GridCommonAbstractTest {
-    /** */
+    /** Closure to collect discovery data bags when node is joined. */
     private BiConsumer<ClusterNode, DiscoveryDataBag> dataExchangeCollectClosure;
 
     /** {@inheritDoc} */
@@ -95,17 +95,15 @@ public class DiscoverySpiDataExchangeTest extends GridCommonAbstractTest {
         bags.clear();
     }
 
-    /** */
+    /** Delegated discovery. */
     @IgniteSpiMultipleInstancesSupport(true)
-    @DiscoverySpiOrderSupport(true)
     @DiscoverySpiHistorySupport(true)
-    @DiscoverySpiMutableCustomMessageSupport(true)
     private class DelegatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscoverySpi {
-        /** */
+        /** Discovery delegate. */
         private final IgniteDiscoverySpi delegate;
 
         /**
-         * @param delegate Delegate.
+         * @param delegate Discovery delegate.
          */
         DelegatedDiscoverySpi(IgniteDiscoverySpi delegate) {
             this.delegate = delegate;
@@ -256,13 +254,13 @@ public class DiscoverySpiDataExchangeTest extends GridCommonAbstractTest {
             delegate.resolveCommunicationFailure(node, err);
         }
 
-        /** {@inheritDoc} */
+        /** Delegated discovery data exchange. */
         private class DelegatedDiscoverySpiDataExchange implements DiscoverySpiDataExchange {
-            /** */
+            /** Discovery data exchange delegate. */
             private final DiscoverySpiDataExchange delegate;
 
             /**
-             * @param delegate discovery data exchange delegate.
+             * @param delegate Discovery data exchange delegate.
              */
             public DelegatedDiscoverySpiDataExchange(DiscoverySpiDataExchange delegate) {
                 this.delegate = delegate;
