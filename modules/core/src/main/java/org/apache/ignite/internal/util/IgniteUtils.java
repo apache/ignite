@@ -11246,7 +11246,7 @@ public abstract class IgniteUtils {
 
                 Collection<R> results = new ArrayList<>(batch.tasks.size());
 
-                try(OperationSecurityContext c = security.withContext(secSubjId)){
+                try (OperationSecurityContext c = security.withContext(secSubjId)) {
                     for (T item : batch.tasks)
                         results.add(operation.apply(item));
                 }
