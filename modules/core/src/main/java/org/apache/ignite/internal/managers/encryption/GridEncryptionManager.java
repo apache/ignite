@@ -433,7 +433,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        if (dataBag.isJoiningNodeClient() || ctx.clientNode())
+        if (ctx.clientNode())
             return;
 
         HashMap<Integer, byte[]> knownEncKeys = knownEncryptionKeys();

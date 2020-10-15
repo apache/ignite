@@ -1123,8 +1123,31 @@ public class ClusterCachesInfo {
         else {
             assert ctx.config().isDaemon() || joinDiscoData != null;
 
-            return joinDiscoData;
+            return ctx.clientNode() ? removeEncryptedCaches(joinDiscoData) : joinDiscoData;
         }
+    }
+
+    /**
+     * Removes encrypted caches from local discovery data.
+     * <p>
+     * Encrypted caches statically configured on a client node cannot be started when the node joining
+     * to the cluster, it will start dynamically after the node will be joined.
+     *
+     * @param data Local caches discovery data.
+     */
+    private Serializable removeEncryptedCaches(CacheJoinNodeDiscoveryData data) {
+        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> infos = new HashMap<>();
+
+        for (Map.Entry<String, CacheJoinNodeDiscoveryData.CacheInfo> entry : data.caches().entrySet()) {
+            CacheJoinNodeDiscoveryData.CacheInfo info = entry.getValue();
+
+            if (info.cacheData().config().isEncryptionEnabled())
+                continue;
+
+            infos.put(entry.getKey(), info);
+        }
+
+        return new CacheJoinNodeDiscoveryData(data.cacheDeploymentId(), infos, data.templates(), data.startCaches());
     }
 
     /**
