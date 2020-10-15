@@ -1,0 +1,81 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Error Codes
+
+Ignite JDBC drivers pass error codes in the `java.sql.SQLException` class, used to facilitate exception handling on the application side. To get an error code, use the `java.sql.SQLException.getSQLState()` method. It returns a string containing the ANSI SQLSTATE error code:
+
+[source,java]
+----
+include::{javaCodeDir}/JDBCThinDriver.java[tags=error-codes, indent=0]
+----
+
+
+The table below lists all the link:https://en.wikipedia.org/wiki/SQLSTATE[ANSI SQLSTATE] error codes currently supported by Ignite. Note that the list may be extended in the future.
+
+[width="100%",cols="20%,80%"]
+|=======================================================================
+|Code |Description
+
+|0700B|Conversion failure (for example, a string expression cannot be parsed as a number or a date).
+
+|0700E|Invalid transaction isolation level.
+
+|08001|The driver failed to open a connection to the cluster.
+
+|08003|The connection is in the closed state. Happened unexpectedly.
+
+|08004|The connection was rejected by the cluster.
+
+|08006|I/O error during communication.
+
+|22004|Null value not allowed.
+
+|22023|Unsupported parameter type.
+
+|23000|Data integrity constraint violation.
+
+|24000|Invalid result set state.
+
+|0A000|Requested operation is not supported.
+
+|40001|Concurrent update conflict. See link:transactions/mvcc#concurrent-updates[Concurrent Updates].
+
+|42000|Query parsing exception.
+
+|50000|Ignite internal error.
+The code is not defined by ANSI and refers to an Ignite specific error. Refer to the `java.sql.SQLException` error message for more information.
+|=======================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

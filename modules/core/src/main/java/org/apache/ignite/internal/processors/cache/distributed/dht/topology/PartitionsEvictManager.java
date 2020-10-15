@@ -95,7 +95,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
      * @param grp Group.
      */
     public void onCacheGroupStarted(CacheGroupContext grp) {
-        evictionGroupsMap.remove(grp.groupId());
+        // No-op.
     }
 
     /**
@@ -106,6 +106,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
      * @param grp Group context.
      */
     public void onCacheGroupStopped(CacheGroupContext grp) {
+        // Must keep context in the map to avoid race with subsequent clearing request after the call to this method.
         GroupEvictionContext grpEvictionCtx =
             evictionGroupsMap.computeIfAbsent(grp.groupId(), p -> new GroupEvictionContext(grp));
 
@@ -133,6 +134,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
         try {
             int grpId = grp.groupId();
+
+            if (cctx.cache().cacheGroup(grpId) == null)
+                return new GridFinishedFuture<>(new CacheStoppedException(grp.cacheOrGroupName()));
 
             GroupEvictionContext grpEvictionCtx = evictionGroupsMap.computeIfAbsent(
                 grpId, k -> new GroupEvictionContext(grp));
@@ -247,6 +251,15 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         partByReason.forEach((reason, partIds) -> joiner.add(reason.toString() + '=' + S.compact(partIds)));
 
         return joiner.toString();
+    }
+
+    /**
+     * Cleans up group eviction context when it's safe.
+     *
+     * @param grpId Group id.
+     */
+    public void cleanupRemovedGroup(int grpId) {
+        evictionGroupsMap.remove(grpId);
     }
 
     /**

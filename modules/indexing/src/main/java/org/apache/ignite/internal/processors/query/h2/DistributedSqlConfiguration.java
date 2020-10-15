@@ -61,12 +61,16 @@ public class DistributedSqlConfiguration {
     public static final int DFLT_QRY_TIMEOUT = 0;
 
     /** Disabled SQL functions. */
-    private final SimpleDistributedProperty<HashSet<String>> disabledSqlFuncs
-        = new SimpleDistributedProperty<>("sql.disabledFunctions");
+    private final SimpleDistributedProperty<HashSet<String>> disabledSqlFuncs = new SimpleDistributedProperty<>(
+        "sql.disabledFunctions",
+        SimpleDistributedProperty::parseStringSet
+    );
 
     /** Query timeout. */
-    private final SimpleDistributedProperty<Integer> dfltQueryTimeout
-        = new SimpleDistributedProperty<>("sql.defaultQueryTimeout");
+    private final SimpleDistributedProperty<Integer> dfltQueryTimeout = new SimpleDistributedProperty<>(
+        "sql.defaultQueryTimeout",
+        SimpleDistributedProperty::parseNonNegativeInteger
+    );
 
     /**
      * @param ctx Kernal context

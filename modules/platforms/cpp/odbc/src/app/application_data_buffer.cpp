@@ -1318,7 +1318,9 @@ namespace ignite
             {
                 using namespace type_traits;
 
-                tm tmTime = { 0 };
+                tm tmTime;
+
+                std::memset(&tmTime, 0, sizeof(tmTime));
 
                 switch (type)
                 {
@@ -1390,7 +1392,9 @@ namespace ignite
             {
                 using namespace type_traits;
 
-                tm tmTime = { 0 };
+                tm tmTime;
+
+                std::memset(&tmTime, 0, sizeof(tmTime));
 
                 int32_t nanos = 0;
 
@@ -1466,7 +1470,9 @@ namespace ignite
             {
                 using namespace type_traits;
 
-                tm tmTime = { 0 };
+                tm tmTime;
+
+                std::memset(&tmTime, 0, sizeof(tmTime));
 
                 tmTime.tm_year = 70;
                 tmTime.tm_mon = 0;

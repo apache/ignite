@@ -93,7 +93,7 @@ namespace ignite
 
                 assert(state0 != 0);
 
-                return state.Get()->SetValue(val);
+                return state0->SetValue(val);
             }
 
             /**
@@ -108,7 +108,7 @@ namespace ignite
 
                 assert(state0 != 0);
 
-                state.Get()->SetError(err);
+                state0->SetError(err);
             }
 
             /**
@@ -181,7 +181,7 @@ namespace ignite
 
                 assert(state0 != 0);
 
-                return state.Get()->SetValue();
+                return state0->SetValue();
             }
 
             /**
@@ -196,7 +196,7 @@ namespace ignite
 
                 assert(state0 != 0);
 
-                state.Get()->SetError(err);
+                state0->SetError(err);
             }
 
             /**

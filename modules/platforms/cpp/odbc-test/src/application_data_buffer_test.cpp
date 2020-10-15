@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(TestPutGuidToString)
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, buffer, sizeof(buffer), &reslen);
 
-    ignite::Guid guid(0x1da1ef8f39ff4d62ULL, 0x8b72e8e9f3371801ULL);
+    ignite::Guid guid(0x1da1ef8f39ff4d62UL, 0x8b72e8e9f3371801UL);
 
     appBuf.PutGuid(guid);
 
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(TestPutStringToString)
     appBuf.PutString(testString);
 
     BOOST_CHECK(!strcmp(buffer, testString.c_str()));
-    BOOST_CHECK(reslen == testString.size());
+    BOOST_CHECK_EQUAL(static_cast<size_t>(reslen), testString.size());
 }
 
 BOOST_AUTO_TEST_CASE(TestPutStringToWstring)
@@ -376,7 +376,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToNumeric)
 
 BOOST_AUTO_TEST_CASE(TestPutDateToString)
 {
-    char strBuf[64] = { 0 };
+    char strBuf[64];
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen);
@@ -390,7 +390,7 @@ BOOST_AUTO_TEST_CASE(TestPutDateToString)
 
 BOOST_AUTO_TEST_CASE(TestPutDateToDate)
 {
-    SQL_DATE_STRUCT buf = { 0 };
+    SQL_DATE_STRUCT buf;
     SqlLen reslen = sizeof(buf);
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_TDATE, &buf, sizeof(buf), &reslen);
@@ -406,7 +406,7 @@ BOOST_AUTO_TEST_CASE(TestPutDateToDate)
 
 BOOST_AUTO_TEST_CASE(TestPutDateToTimestamp)
 {
-    SQL_TIMESTAMP_STRUCT buf = { 0 };
+    SQL_TIMESTAMP_STRUCT buf;
 
     SqlLen reslen = sizeof(buf);
 
@@ -427,7 +427,7 @@ BOOST_AUTO_TEST_CASE(TestPutDateToTimestamp)
 
 BOOST_AUTO_TEST_CASE(TestPutTimeToString)
 {
-    char strBuf[64] = { 0 };
+    char strBuf[64];
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen);
@@ -441,7 +441,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimeToString)
 
 BOOST_AUTO_TEST_CASE(TestPutTimeToTime)
 {
-    SQL_TIME_STRUCT buf = { 0 };
+    SQL_TIME_STRUCT buf;
     SqlLen reslen = sizeof(buf);
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_TTIME, &buf, sizeof(buf), &reslen);
@@ -457,7 +457,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimeToTime)
 
 BOOST_AUTO_TEST_CASE(TestPutTimestampToString)
 {
-    char strBuf[64] = { 0 };
+    char strBuf[64];
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen);
@@ -471,7 +471,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToString)
 
 BOOST_AUTO_TEST_CASE(TestPutTimestampToDate)
 {
-    SQL_DATE_STRUCT buf = { 0 };
+    SQL_DATE_STRUCT buf;
     SqlLen reslen = sizeof(buf);
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_TDATE, &buf, sizeof(buf), &reslen);
@@ -487,7 +487,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToDate)
 
 BOOST_AUTO_TEST_CASE(TestPutTimestampToTime)
 {
-    SQL_TIME_STRUCT buf = { 0 };
+    SQL_TIME_STRUCT buf;
     SqlLen reslen = sizeof(buf);
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_TTIME, &buf, sizeof(buf), &reslen);
@@ -503,7 +503,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToTime)
 
 BOOST_AUTO_TEST_CASE(TestPutTimestampToTimestamp)
 {
-    SQL_TIMESTAMP_STRUCT buf = { 0 };
+    SQL_TIMESTAMP_STRUCT buf;
     SqlLen reslen = sizeof(buf);
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_TTIMESTAMP, &buf, sizeof(buf), &reslen);
@@ -530,7 +530,7 @@ BOOST_AUTO_TEST_CASE(TestGetGuidFromString)
 
     ignite::Guid guid = appBuf.GetGuid();
 
-    BOOST_CHECK_EQUAL(guid, Guid(0x1da1ef8f39ff4d62ULL, 0x8b72e8e9f3371801ULL));
+    BOOST_CHECK_EQUAL(guid, Guid(0x1da1ef8f39ff4d62UL, 0x8b72e8e9f3371801UL));
 }
 
 BOOST_AUTO_TEST_CASE(TestGetStringFromLong)
@@ -885,7 +885,7 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromString)
 
 BOOST_AUTO_TEST_CASE(TestGetDateFromDate)
 {
-    SQL_DATE_STRUCT buf = { 0 };
+    SQL_DATE_STRUCT buf;
 
     buf.year = 1984;
     buf.month = 5;
@@ -913,7 +913,7 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromDate)
 
 BOOST_AUTO_TEST_CASE(TestGetTimestampFromDate)
 {
-    SQL_DATE_STRUCT buf = { 0 };
+    SQL_DATE_STRUCT buf;
 
     buf.year = 1984;
     buf.month = 5;
@@ -941,7 +941,7 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromDate)
 
 BOOST_AUTO_TEST_CASE(TestGetTimestampFromTime)
 {
-    SQL_TIME_STRUCT buf = { 0 };
+    SQL_TIME_STRUCT buf;
 
     buf.hour = 6;
     buf.minute = 34;
@@ -969,7 +969,7 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromTime)
 
 BOOST_AUTO_TEST_CASE(TestGetTimestampFromTimestamp)
 {
-    SQL_TIMESTAMP_STRUCT buf = { 0 };
+    SQL_TIMESTAMP_STRUCT buf;
 
     buf.year = 2004;
     buf.month = 8;
@@ -1002,7 +1002,7 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromTimestamp)
 
 BOOST_AUTO_TEST_CASE(TestGetDateFromTimestamp)
 {
-    SQL_TIMESTAMP_STRUCT buf = { 0 };
+    SQL_TIMESTAMP_STRUCT buf;
 
     buf.year = 2004;
     buf.month = 8;
@@ -1034,7 +1034,7 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromTimestamp)
 
 BOOST_AUTO_TEST_CASE(TestGetTimeFromTimestamp)
 {
-    SQL_TIMESTAMP_STRUCT buf = { 0 };
+    SQL_TIMESTAMP_STRUCT buf;
 
     buf.year = 2004;
     buf.month = 8;
