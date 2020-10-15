@@ -231,7 +231,8 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
         if (collation.equals(RelCollations.EMPTY))
-            return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(left, right)));
+            return ImmutableList.of(Pair.of(nodeTraits,
+                ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(RelCollations.EMPTY))));
 
         RelTraitSet outTraits, leftTraits, rightTraits;
 
@@ -304,11 +305,8 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
             case RANDOM_DISTRIBUTED:
                 // Such join may be replaced as a cross join with a filter uppon it.
                 // It's impossible to get random or hash distribution from a cross join.
-                if (F.isEmpty(joinInfo.pairs())) {
-                    res.add(Pair.of(nodeTraits, ImmutableList.of(left, right)));
-
+                if (F.isEmpty(joinInfo.pairs()))
                     break;
-                }
 
                 // We cannot provide random distribution without unique constrain on join keys,
                 // so, we require hash distribution (wich satisfies random distribution) instead.

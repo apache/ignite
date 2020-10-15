@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgni
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.hash;
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
 /**
@@ -126,7 +127,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         if (srcKeys.size() == keys.size())
             return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(in.replace(hash(srcKeys, distribution.function())))));
 
-        return ImmutableList.of();
+        return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(in.replace(single()))));
     }
 
     /** {@inheritDoc} */
