@@ -41,20 +41,20 @@ public class ChangeCacheEncryptionRequest implements Serializable {
     /** Key identifiers. */
     private final byte[] keyIds;
 
-    /** Master key name. */
-    private final String masterKeyName;
+    /** Master key digest. */
+    private final byte[] masterKeyDigest;
 
     /**
      * @param grpIds Cache group IDs.
      * @param keys Encryption keys.
      * @param keyIds Key identifiers.
-     * @param masterKeyName Master key name.
+     * @param masterKeyDigest Master key digest.
      */
-    public ChangeCacheEncryptionRequest(int[] grpIds, byte[][] keys, byte[] keyIds, String masterKeyName) {
+    public ChangeCacheEncryptionRequest(int[] grpIds, byte[][] keys, byte[] keyIds, byte[] masterKeyDigest) {
         this.grpIds = grpIds;
         this.keys = keys;
         this.keyIds = keyIds;
-        this.masterKeyName = masterKeyName;
+        this.masterKeyDigest = masterKeyDigest;
     }
 
     /**
@@ -84,10 +84,10 @@ public class ChangeCacheEncryptionRequest implements Serializable {
     public byte[] keyIds() { return keyIds; }
 
     /**
-     * @return Master key name.
+     * @return Master key digest.
      */
-    public String masterKeyName() {
-        return masterKeyName;
+    public byte[] masterKeyDigest() {
+        return masterKeyDigest;
     }
 
     /** {@inheritDoc} */

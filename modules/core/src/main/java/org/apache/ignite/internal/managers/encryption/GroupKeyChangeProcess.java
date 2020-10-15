@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.encryption;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -164,10 +166,14 @@ class GroupKeyChangeProcess {
             n += 1;
         }
 
-        byte[][] keys = ctx.encryption().createKeys(grpIds.length).get1().toArray(new byte[grpIds.length][]);
+        T2<Collection<byte[]>, byte[]> keysAndDigest = ctx.encryption().createKeys(grpIds.length);
 
-        ChangeCacheEncryptionRequest req =
-            new ChangeCacheEncryptionRequest(grpIds, keys, keyIds, ctx.config().getEncryptionSpi().getMasterKeyName());
+        ChangeCacheEncryptionRequest req = new ChangeCacheEncryptionRequest(
+            grpIds,
+            keysAndDigest.get1().toArray(new byte[grpIds.length][]),
+            keyIds,
+            keysAndDigest.get2()
+        );
 
         fut = new GroupKeyChangeFuture(req);
 
@@ -231,9 +237,7 @@ class GroupKeyChangeProcess {
             }
 
             return ctx.encryption().withMasterKeyChangeReadLock(() -> {
-                String curMasterKeyName = ctx.config().getEncryptionSpi().getMasterKeyName();
-
-                if (!curMasterKeyName.equals(req.masterKeyName())) {
+                if (!Arrays.equals(ctx.config().getEncryptionSpi().masterKeyDigest(), req.masterKeyDigest())) {
                     return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
                         "Master key has been changed."));
                 }

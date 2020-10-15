@@ -1572,7 +1572,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      *
      * @return Digest of last changed master key or {@code null} if master key was not changed.
      */
-    public byte[] masterKeyDigest() {
+    @Nullable public byte[] masterKeyDigest() {
         return masterKeyDigest;
     }
 
