@@ -145,6 +145,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchang
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
@@ -211,7 +212,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.withContextIfNeed;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
@@ -1749,7 +1749,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             .map(desc -> new StartCacheInfo(desc, null, exchTopVer, false))
             .collect(Collectors.toList());
 
-        withContextIfNeed(nodeId, ctx.security(), () -> prepareStartCaches(startCacheInfos));
+        try (OperationSecurityContext c = ctx.security().withContext(nodeId)) {
+            prepareStartCaches(startCacheInfos);
+        }
 
         return receivedCaches;
     }
@@ -1840,7 +1842,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             doInParallel(
                 parallelismLvl,
-                ctx.security(),
                 sharedCtx.kernalContext().getSystemExecutorService(),
                 startCacheInfos,
                 startCacheInfo -> {
@@ -1861,7 +1862,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     );
 
                     return null;
-                }
+                },
+                ctx.security()
             );
 
             /*
@@ -1902,7 +1904,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             doInParallel(
                 parallelismLvl,
-                ctx.security(),
                 sharedCtx.kernalContext().getSystemExecutorService(),
                 cacheContexts.entrySet(),
                 cacheCtxEntry -> {
@@ -1923,7 +1924,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     );
 
                     return null;
-                }
+                },
+                ctx.security()
             );
         }
     }
@@ -2764,7 +2766,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             doInParallel(
                     parallelismLvl,
-                    ctx.security(),
                     sharedCtx.kernalContext().getSystemExecutorService(),
                     cachesToStop.entrySet(),
                     cachesToStopByGrp -> {
@@ -2810,7 +2811,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         }
 
                         return null;
-                    }
+                    },
+                ctx.security()
             );
         }
         catch (IgniteCheckedException e) {

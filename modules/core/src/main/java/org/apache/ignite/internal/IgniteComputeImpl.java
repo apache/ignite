@@ -36,7 +36,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -482,10 +482,9 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID_PREDICATE, prj.predicate());
 
-            return SecurityUtils.withContextIfNeed(subjId, ctx.security(), () -> ctx.task().execute(taskName, arg, execName));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            try (OperationSecurityContext c = ctx.security().withContext(subjId)) {
+                return ctx.task().execute(taskName, arg, execName);
+            }
         }
         finally {
             unguard();
@@ -523,11 +522,9 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID_PREDICATE, prj.predicate());
 
-            return SecurityUtils.withContextIfNeed(subjId, ctx.security(),
-                () -> ctx.task().execute(taskCls, arg, execName));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            try (OperationSecurityContext c = ctx.security().withContext(subjId)) {
+                return ctx.task().execute(taskCls, arg, execName);
+            }
         }
         finally {
             unguard();
@@ -565,11 +562,9 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID_PREDICATE, prj.predicate());
 
-            return SecurityUtils.withContextIfNeed(subjId, ctx.security(),
-                () -> ctx.task().execute(task, arg, execName));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            try (OperationSecurityContext c = ctx.security().withContext(subjId)) {
+                return ctx.task().execute(task, arg, execName);
+            }
         }
         finally {
             unguard();

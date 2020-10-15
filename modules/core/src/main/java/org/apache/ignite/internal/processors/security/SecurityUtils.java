@@ -168,57 +168,16 @@ public class SecurityUtils {
     }
 
     /**
-     * Runs passed {@code runnable} with the security context associated
-     * with passed {@code secSubjId} if security is enabled.
-     *
-     * @param secSubjId Security subject id.
-     * @param security Ignite security.
-     * @param r Runnable.
+     * @return Current security subject id if security is enabled otherwise null.
      */
-    public static void withContextIfNeed(UUID secSubjId, IgniteSecurity security, RunnableX r) {
-        if (security.enabled() && secSubjId != null) {
-            try (OperationSecurityContext s = security.withContext(secSubjId)) {
-                r.run();
-            }
-        }
-        else
-            r.run();
-    }
-
-    /**
-     * Calls passed {@code callable} with the security context associated
-     * with passed {@code secSubjId} if security is enabled.
-     *
-     * @param secSubjId Security subject id.
-     * @param security Ignite security.
-     * @param c Callable.
-     * @return Result of passed callable.
-     */
-    public static <T> T withContextIfNeed(UUID secSubjId, IgniteSecurity security, Callable<T> c)
-        throws IgniteCheckedException {
-        try {
-            if (security.enabled() && secSubjId != null) {
-                try (OperationSecurityContext s = security.withContext(secSubjId)) {
-                    return c.call();
-                }
-            }
-
-            return c.call();
-        }
-        catch (Exception e) {
-            if (e instanceof IgniteCheckedException)
-                throw (IgniteCheckedException)e;
-
-            throw new IgniteCheckedException(e);
-        }
+    public static UUID securitySubjectId(GridKernalContext ctx) {
+        return securitySubjectId(ctx.security());
     }
 
     /**
      * @return Current security subject id if security is enabled otherwise null.
      */
-    public static UUID securitySubjectId(GridKernalContext ctx) {
-        IgniteSecurity security = ctx.security();
-
+    public static UUID securitySubjectId(IgniteSecurity security) {
         return security.enabled() ? security.securityContext().subject().id() : null;
     }
 

@@ -84,7 +84,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
@@ -2121,7 +2121,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
              but possibly we can safely optimize this. */
 
             GridNearTxEnlistFuture fut = new GridNearTxEnlistFuture(cacheCtx, this,
-                timeout, it, 0, sequential, filter, retval, keepBinary, securitySubjectId(cacheCtx));
+                timeout, it, 0, sequential, filter, retval, keepBinary);
 
             fut.init();
 
@@ -2309,7 +2309,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     @Override public IgniteInternalFuture<Map<K, V>> postLock() throws IgniteCheckedException {
                         if (log.isDebugEnabled())
                             log.debug("Acquired transaction lock for read on keys: " + lockKeys);
-                        return SecurityUtils.withContextIfNeed(secSubjId, cctx.kernalContext().security(), () -> {
+                        try (OperationSecurityContext c = cctx.kernalContext().security().withContext(secSubjId)) {
                             // Load keys only after the locks have been acquired.
                             for (KeyCacheObject cacheKey : lockKeys) {
                                 K keyVal = (K)
@@ -2493,7 +2493,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             }
 
                             return new GridFinishedFuture<>(Collections.emptyMap());
-                        });
+                        }
                     }
                 };
 

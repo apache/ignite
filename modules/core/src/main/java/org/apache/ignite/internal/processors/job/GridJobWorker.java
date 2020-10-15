@@ -830,6 +830,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         // Avoid finishing a job more than once from different threads.
         if (!finishing.compareAndSet(false, true))
             return;
+
         try (OperationSecurityContext c = ctx.security().withContext(secCtx)) {
 
             // Do not send reply if job has been cancelled from system.

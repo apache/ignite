@@ -1042,7 +1042,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         try {
             IgniteUtils.doInParallel(3,
-                IGNITE_SECURITY,
                 executorService,
                 asList(1, 2, 3),
                 i -> {
@@ -1054,7 +1053,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                     }
 
                     return null;
-                }
+                },
+                IGNITE_SECURITY
             );
         } finally {
             executorService.shutdownNow();
@@ -1073,7 +1073,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         try {
             IgniteUtils.doInParallel(2,
-                IGNITE_SECURITY,
                 executorService,
                 asList(1, 2, 3),
                 i -> {
@@ -1085,7 +1084,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                     }
 
                     return null;
-                }
+                }, IGNITE_SECURITY
             );
 
             fail("Should throw timeout exception");
@@ -1180,7 +1179,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         AtomicInteger poolThreadCnt = new AtomicInteger();
 
         Collection<Integer> res = U.doInParallel(10,
-            IGNITE_SECURITY,
             executorService,
             data,
             new IgniteThrowableFunction<Integer, Integer>() {
@@ -1212,7 +1210,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
                     return -cnt;
                 }
-            });
+            }, IGNITE_SECURITY);
 
         Assert.assertEquals(curThreadCnt.get() + poolThreadCnt.get(), data.size());
         Assert.assertEquals(5, curThreadCnt.get());
@@ -1259,7 +1257,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         try {
             res = U.doInParallel(10,
-                IGNITE_SECURITY,
                 executorService,
                 data,
                 new IgniteThrowableFunction<Integer, Integer>() {
@@ -1280,7 +1277,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
                         return -cnt;
                     }
-                });
+                }, IGNITE_SECURITY);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -1304,10 +1301,10 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> results = IgniteUtils.doInParallel(
             parallelism,
-            IGNITE_SECURITY,
             executorService,
             list,
-            i -> i * 2
+            i -> i * 2,
+            IGNITE_SECURITY
         );
 
         assertEquals(list.size(), results.size());
@@ -1334,7 +1331,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         try {
             IgniteUtils.doInParallel(
                 1,
-                IGNITE_SECURITY,
                 executorService,
                 asList(1, 2, 3),
                 i -> {
@@ -1342,7 +1338,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                         throw new IgniteCheckedException(expectedException);
 
                     return null;
-                }
+                },
+                IGNITE_SECURITY
             );
 
             fail("Should throw ParallelExecutionException");

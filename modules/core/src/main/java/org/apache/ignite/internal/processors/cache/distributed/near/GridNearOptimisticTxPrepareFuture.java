@@ -48,7 +48,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -872,9 +872,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         /** Mappings to proceed prepare. */
         private Queue<GridDistributedTxMapping> mappings;
 
-        /** Security subject id. */
-        private final UUID secSubjId;
-
         /**
          * @param parent Parent.
          * @param m Mapping.
@@ -889,7 +886,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             this.m = m;
             this.futId = futId;
             this.mappings = mappings;
-            secSubjId = SecurityUtils.securitySubjectId(parent.cctx);
         }
 
         /**
@@ -922,8 +918,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     log.debug("Failed to get future result [fut=" + this + ", err=" + e + ']');
 
                 // Fail.
-                SecurityUtils.withContextIfNeed(secSubjId, parent.cctx.kernalContext().security(),
-                    (SecurityUtils.RunnableX)() -> onDone(e));
+                try (OperationSecurityContext c = parent.cctx.kernalContext().security().withContext(parent.tx().subjectId())) {
+                    onDone(e);
+                }
             }
             else
                 U.warn(log, "Received error after another result has been processed [fut=" +
@@ -935,7 +932,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
          * @param discoThread {@code True} if executed from discovery thread.
          */
         void onNodeLeft(ClusterTopologyCheckedException e, boolean discoThread) {
-            SecurityUtils.withContextIfNeed(secSubjId, parent.cctx.kernalContext().security(), () -> {
+            try (OperationSecurityContext c = parent.cctx.kernalContext().security().withContext(parent.tx().subjectId())) {
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("Near optimistic prepare fut, mini future node left [txId=" + parent.tx.nearXidVersion() +
                         ", node=" + m.primary().id() + ']');
@@ -952,7 +949,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     // to prevent multiple lock coordinators).
                     parent.onError(e, discoThread);
                 }
-            });
+            }
         }
 
         /**
@@ -962,7 +959,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             if (isDone())
                 return;
 
-            SecurityUtils.withContextIfNeed(secSubjId, parent.cctx.kernalContext().security(), () -> {
+            try (OperationSecurityContext c = parent.cctx.kernalContext().security().withContext(parent.tx().subjectId())) {
                 if (RCV_RES_UPD.compareAndSet(this, 0, 1)) {
                     if (parent.tx.remainingTime() == -1 || res.error() instanceof IgniteTxTimeoutCheckedException) {
                         parent.onTimeout();
@@ -1001,7 +998,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         }
                     }
                 }
-            });
+            }
         }
 
         /**

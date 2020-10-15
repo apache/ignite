@@ -105,13 +105,9 @@ class ClientComputeTask implements ClientCloseableResource {
         task.setThreadContext(TC_NO_FAILOVER, (flags & NO_FAILOVER_FLAG_MASK) != 0);
         task.setThreadContext(TC_NO_RESULT_CACHE, (flags & NO_RESULT_CACHE_FLAG_MASK) != 0);
 
-        if (ctx.kernalContext().security().enabled()) {
-            try (OperationSecurityContext c = ctx.kernalContext().security().withContext(ctx.securityContext())) {
-                taskFut = task.execute(taskName, arg);
-            }
-        }
-        else
+        try (OperationSecurityContext c = ctx.kernalContext().security().withContext(ctx.securityContext())) {
             taskFut = task.execute(taskName, arg);
+        }
 
         // Fail fast.
         if (taskFut.isDone() && taskFut.error() != null)

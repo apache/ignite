@@ -139,8 +139,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         boolean sequential,
         @Nullable CacheEntryPredicate filter,
         boolean needRes,
-        boolean keepBinary,
-        UUID secSubjId) {
+        boolean keepBinary) {
         super(cctx, tx, timeout, null);
 
         this.it = it;

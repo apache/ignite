@@ -199,7 +199,6 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                         threadId,
                         futId,
                         ++idx, // The common tx logic expects non-zero mini-future ids (negative local and positive non-local).
-                        securitySubjectId(),
                         topVer,
                         lockVer,
                         mvccSnapshot,

@@ -1034,7 +1034,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .collect(Collectors.toList());
 
         U.doInParallel(
-            cctx.kernalContext().security(),
             cctx.kernalContext().getSystemExecutorService(),
             startedGroups,
             grpDesc -> {
@@ -1046,8 +1045,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 validator.validateCacheGroup(grpDesc);
 
                 return null;
-            }
-        );
+            },
+            cctx.kernalContext().security());
     }
 
     /**
@@ -1281,11 +1280,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .collect(Collectors.toList());
 
         try {
-            U.doInParallel(cctx.kernalContext().security(), cctx.kernalContext().getSystemExecutorService(), affinityCaches, t -> {
+            U.doInParallel(cctx.kernalContext().getSystemExecutorService(), affinityCaches, t -> {
                 c.applyx(t);
 
                 return null;
-            });
+            }, cctx.kernalContext().security());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to execute affinity operation on cache groups", e);
@@ -1301,11 +1300,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .collect(Collectors.toList());
 
         try {
-            U.doInParallel(cctx.kernalContext().security(), cctx.kernalContext().getSystemExecutorService(), affinityCaches, t -> {
+            U.doInParallel(cctx.kernalContext().getSystemExecutorService(), affinityCaches, t -> {
                 c.applyx(t);
 
                 return null;
-            });
+            }, cctx.kernalContext().security());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to execute affinity operation on cache groups", e);

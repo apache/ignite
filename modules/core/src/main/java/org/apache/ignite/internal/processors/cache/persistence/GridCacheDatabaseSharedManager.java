@@ -1388,7 +1388,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (fut.localJoinExchange() || fut.activateCluster()
             || (fut.exchangeActions() != null && !F.isEmpty(fut.exchangeActions().cacheGroupsToStart()))) {
             U.doInParallel(
-                cctx.kernalContext().security(),
                 cctx.kernalContext().getSystemExecutorService(),
                 cctx.cache().cacheGroups(),
                 cacheGroup -> {
@@ -1411,7 +1410,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
 
                     return null;
-                }
+                },
+                cctx.kernalContext().security()
             );
 
             fut.timeBag().finishGlobalStage("Restore partition states");

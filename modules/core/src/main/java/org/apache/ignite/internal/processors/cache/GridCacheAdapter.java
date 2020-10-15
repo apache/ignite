@@ -109,7 +109,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -5006,24 +5006,23 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     if (repFut.error() != null)
                         fut.onDone(repFut.error());
                     else {
-                        SecurityUtils.withContextIfNeed(secSubjId, ctx.kernalContext().security(),
-                            () -> {
-                                CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
+                        try (OperationSecurityContext c = ctx.kernalContext().security().withContext(secSubjId)) {
+                            CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
 
-                                IgniteInternalTx prevTx = ctx.tm().tx(tx); // Within the original tx.
-                                ctx.operationContextPerCall(opCtx); // With the same operation context.
+                            IgniteInternalTx prevTx = ctx.tm().tx(tx); // Within the original tx.
+                            ctx.operationContextPerCall(opCtx); // With the same operation context.
 
-                                try {
-                                    fut.onDone(retry.get().get());
-                                }
-                                catch (IgniteCheckedException e2) {
-                                    fut.onDone(e2);
-                                }
-                                finally {
-                                    ctx.tm().tx(prevTx);
-                                    ctx.operationContextPerCall(prevOpCtx);
-                                }
-                            });
+                            try {
+                                fut.onDone(retry.get().get());
+                            }
+                            catch (IgniteCheckedException e2) {
+                                fut.onDone(e2);
+                            }
+                            finally {
+                                ctx.tm().tx(prevTx);
+                                ctx.operationContextPerCall(prevOpCtx);
+                            }
+                        }
                     }
                 });
             }

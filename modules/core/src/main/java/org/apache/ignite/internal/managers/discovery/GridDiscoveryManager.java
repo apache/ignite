@@ -173,7 +173,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.withContextIfNeed;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
 /**
@@ -2979,7 +2978,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 blockingSectionEnd();
             }
 
-            withContextIfNeed(evt.secSubjId, ctx.security(), () -> {
+            try (OperationSecurityContext c = ctx.security().withContext(evt.secSubjId)) {
                 int type = evt.type;
 
                 AffinityTopologyVersion topVer = evt.topVer;
@@ -3145,7 +3144,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 if (segmented)
                     onSegmentation();
-            });
+            }
         }
 
         /**

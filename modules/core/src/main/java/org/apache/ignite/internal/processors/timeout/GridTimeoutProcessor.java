@@ -27,6 +27,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -41,7 +42,6 @@ import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.withContextIfNeed;
 
 /**
  * Detects timeout events and processes them.
@@ -180,7 +180,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                     if (finalTimeoutObj != null && !finalTimeoutObj.finishGuard.compareAndSet(false, true))
                         return;
 
-                    withContextIfNeed(subjId, ctx.security(), () -> {
+                    try (OperationSecurityContext c = ctx.security().withContext(subjId)) {
                         try {
                             fut.get();
 
@@ -193,7 +193,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                             if (finalTimeoutObj != null)
                                 removeTimeoutObject(finalTimeoutObj);
                         }
-                    });
+                    }
                 }
             });
         }

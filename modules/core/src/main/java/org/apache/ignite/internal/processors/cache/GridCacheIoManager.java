@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -288,8 +289,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                                     log.debug(msg0.toString());
                                 }
 
-                                SecurityUtils.withContextIfNeed(secSubjId, cctx.kernalContext().security(),
-                                    () -> handleMessage(nodeId, cacheMsg, plc));
+                                try (OperationSecurityContext c = cctx.kernalContext().security().withContext(secSubjId)) {
+                                    handleMessage(nodeId, cacheMsg, plc);
+                                }
                             }
                         };
 
