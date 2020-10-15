@@ -109,7 +109,8 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
                     addrs = IgniteUtils.toInetAddresses((ClusterNode)node).stream()
                         .map(addr -> new IgniteBiTuple<>(addr.getHostAddress(), addr.getHostName()))
                         .collect(Collectors.toList());
-                } catch (IgniteCheckedException ex) {
+                }
+                catch (IgniteCheckedException ex) {
                     throw IgniteUtils.convertException(ex);
                 }
             }

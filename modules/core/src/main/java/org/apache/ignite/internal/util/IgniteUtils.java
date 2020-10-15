@@ -9311,8 +9311,8 @@ public abstract class IgniteUtils {
             if (!F.isEmpty(hostName)) {
                 try {
                     if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TEST_ENV)) {
-                        String ipString = hostName.substring(0, hostName.length() - ".hostname".length());
-                        inetAddr = InetAddress.getByAddress(hostName, InetAddress.getByName(ipString).getAddress());
+                        String ipStr = hostName.substring(0, hostName.length() - ".hostname".length());
+                        inetAddr = InetAddress.getByAddress(hostName, InetAddress.getByName(ipStr).getAddress());
 
                     } else inetAddr = InetAddress.getByName(hostName);
                 }

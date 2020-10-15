@@ -65,7 +65,7 @@ public class BaselineCommand implements Command<BaselineArguments> {
     /**
      * Use verbose mode for command output
      */
-    private @NotNull boolean verbose = false;
+    private boolean verbose = false;
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
@@ -207,9 +207,11 @@ public class BaselineCommand implements Command<BaselineArguments> {
 
             if (verbose) {
                 String hosts = String.join(",", sortedByIpHosts.collect(Collectors.toList()));
+
                 if (!hosts.isEmpty())
                     return ", Addresses=" + hosts;
-                else return "";
+                else
+                    return "";
             } else
                 return sortedByIpHosts.findFirst().map(ip -> ", Address=" + ip).orElse("");
         };
@@ -219,7 +221,8 @@ public class BaselineCommand implements Command<BaselineArguments> {
             .filter(node -> node.getOrder() != null)
             .min(Comparator.comparing(VisorBaselineNode::getOrder))
             // format
-            .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + extractFormattedAddrs.apply(crd) + ", Order=" + crd.getOrder() + ")")
+            .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + extractFormattedAddrs.apply(crd) +
+                ", Order=" + crd.getOrder() + ")")
             .orElse("");
 
         logger.info("Current topology version: " + res.getTopologyVersion() + crdStr);
@@ -237,7 +240,8 @@ public class BaselineCommand implements Command<BaselineArguments> {
 
                 String order = srvNode != null ? ", Order=" + srvNode.getOrder() : "";
 
-                logger.info(DOUBLE_INDENT + "ConsistentId=" + node.getConsistentId() + extractFormattedAddrs.apply(srvNode) + state + order);
+                logger.info(DOUBLE_INDENT + "ConsistentId=" + node.getConsistentId() +
+                    extractFormattedAddrs.apply(srvNode) + state + order);
             }
 
             logger.info(DELIM);

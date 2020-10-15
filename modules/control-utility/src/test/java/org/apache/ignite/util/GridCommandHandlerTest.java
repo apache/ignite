@@ -715,7 +715,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         int i = outStr.indexOf("Baseline nodes:");
 
-        assertTrue(i != -1);
+        assertTrue("Baseline nodes information is not found", i != -1);
 
         int j = outStr.indexOf("\n", i) + 1;
 
