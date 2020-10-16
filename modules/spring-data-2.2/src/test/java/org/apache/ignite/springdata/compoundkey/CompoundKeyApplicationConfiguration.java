@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.springdata.compoundkey;
 
-import org.apache.ignite.springdata.IgniteSpringDataCompoundKeyTest;
-import org.apache.ignite.springdata.IgniteSpringDataCrudSelfExpressionTest;
-import org.apache.ignite.springdata.IgniteSpringDataCrudSelfTest;
-import org.apache.ignite.springdata.IgniteSpringDataQueriesSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
- * Ignite Spring Data 2.0 test suite.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IgniteSpringDataCrudSelfTest.class,
-    IgniteSpringDataQueriesSelfTest.class,
-    IgniteSpringDataCrudSelfExpressionTest.class,
-    IgniteSpringDataCompoundKeyTest.class
-})
-public class IgniteSpringData2TestSuite {
+ * Spring application configuration
+ * */
+@Configuration
+@EnableIgniteRepositories
+public class CompoundKeyApplicationConfiguration {
+    /**
+     * Ignite instance bean
+     * */
+    @Bean
+    public Ignite igniteInstance() {
+        return Ignition.start();
+    }
 }
