@@ -120,7 +120,8 @@ class IgniteApplicationService(IgniteAwareService):
         """
         results = self.extract_results(name)
 
-        assert len(results) <= 1, f"Expected exactly one result occurence, {len(results)} found."
+        assert len(results) <= len(self.nodes), f"Expected exactly {len(self.nodes)} occurence," \
+                                                f" but found {len(results)}."
 
         return results[0] if results else ""
 
