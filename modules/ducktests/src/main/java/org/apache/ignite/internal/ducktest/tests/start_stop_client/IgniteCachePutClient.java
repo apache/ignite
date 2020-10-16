@@ -26,7 +26,7 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 /**
  * Java client. Tx put operation
  */
-public class SimpleClient extends IgniteAwareApplication {
+public class IgniteCachePutClient extends IgniteAwareApplication {
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
         String cacheName = jsonNode.get("cacheName").asText();

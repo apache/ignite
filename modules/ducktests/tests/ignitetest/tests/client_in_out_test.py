@@ -44,7 +44,7 @@ class ClientTest(IgniteTest):
 
     CACHE_NAME = "simple-tx-cache"
     PACING = 10
-    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.start_stop_client.SimpleClient"
+    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.start_stop_client.IgniteCachePutClient"
 
     CLIENTS_WORK_TIME_S = 30
     ITERATION_COUNT = 3
