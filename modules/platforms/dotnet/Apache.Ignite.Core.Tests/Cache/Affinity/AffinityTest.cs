@@ -17,9 +17,12 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
+    using System.Collections.Generic;
     using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using NUnit.Framework;
 
@@ -79,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             IIgnite g = Ignition.GetIgnite("grid-0");
 
-            ICacheAffinity aff = g.GetAffinity("default");  
+            ICacheAffinity aff = g.GetAffinity("default");
 
             IBinaryObject affKey = g.GetBinary().ToBinary<IBinaryObject>(new AffinityTestKey(0, 1));
 
@@ -92,6 +95,40 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
                 Assert.AreEqual(node.Id, aff.MapKeyToNode(otherAffKey).Id);
             }
+        }
+
+        /// <summary>
+        /// Tests AffinityKeyMapped attribute should map to the same partitions
+        /// for the same field value.
+        /// </summary>
+        [Test]
+        public void TestCustomAffinity()
+        {
+            IIgnite g = Ignition.GetIgnite("grid-0");
+
+            var cacheCfg = new CacheConfiguration("mycache")
+            {
+                // Without QueryEntities tests passes.
+                QueryEntities = new List<QueryEntity>
+                {
+                    new QueryEntity(typeof(MyKey), typeof(int))
+                }
+            };
+            g.GetOrCreateCache<MyKey, int>(cacheCfg);
+
+            var key1 = new MyKey {Data = "data1", AffinityKey = 1};
+            var key2 = new MyKey {Data = "data2", AffinityKey = 1};
+
+            ICacheAffinity aff = g.GetAffinity(cacheCfg.Name);
+            Assert.AreEqual(aff.GetPartition(key1), aff.GetPartition(key2));
+        }
+
+        private class MyKey
+        {
+            [QuerySqlField]
+            public string Data { get; set; }
+            [AffinityKeyMapped]
+            public long AffinityKey { get; set; }
         }
 
         /// <summary>
