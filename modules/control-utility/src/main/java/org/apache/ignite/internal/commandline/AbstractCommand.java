@@ -36,5 +36,4 @@ public abstract class AbstractCommand<T> implements Command<T> {
         this.verbose = verbose;
         return this.execute(clientCfg, log);
     }
-
 }

@@ -182,11 +182,12 @@ public class BaselineCommand extends AbstractCommand<BaselineArguments> {
                     .orElse(Collections.emptyList())
                     .stream()
                     .sorted(Comparator
-                        .comparing(resolvedAddr -> new VisorTaskUtils.SortableAddress(resolvedAddr.getAddr())))
+                        .comparing(resolvedAddr -> new VisorTaskUtils.SortableAddress(resolvedAddr.address())))
                     .map(resolvedAddr -> {
-                        if (!resolvedAddr.getHostname().equals(resolvedAddr.getAddr()))
-                            return resolvedAddr.getHostname() + "/" + resolvedAddr.getAddr();
-                        else return resolvedAddr.getAddr();
+                        if (!resolvedAddr.hostname().equals(resolvedAddr.address()))
+                            return resolvedAddr.hostname() + "/" + resolvedAddr.address();
+                        else
+                            return resolvedAddr.address();
                     });
             if (verbose) {
                 String hosts = String.join(",", sortedByIpHosts.collect(Collectors.toList()));

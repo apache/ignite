@@ -86,7 +86,6 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         Map<String, VisorBaselineNode> map = new TreeMap<>();
 
         for (BaselineNode node : nodes) {
-
             VisorBaselineNode dto = new VisorBaselineNode(node, Collections.emptyList());
 
             map.put(dto.getConsistentId(), dto);
@@ -107,10 +106,10 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
 
         for (BaselineNode node : nodes) {
             Collection<VisorBaselineNode.ResolvedAddresses> addrs = new ArrayList<>();
+
             if (node instanceof IgniteClusterNode) {
-                for (InetAddress inetAddress: resolveInetAddresses((ClusterNode)node)) {
+                for (InetAddress inetAddress: resolveInetAddresses((ClusterNode)node))
                     addrs.add(new VisorBaselineNode.ResolvedAddresses(inetAddress));
-                }
             }
 
             VisorBaselineNode dto = new VisorBaselineNode(node, addrs);

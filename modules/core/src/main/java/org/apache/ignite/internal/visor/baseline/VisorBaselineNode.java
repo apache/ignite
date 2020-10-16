@@ -143,7 +143,6 @@ public class VisorBaselineNode extends VisorDataTransferObject {
      * Simple data class for storing (hostname, address) pairs
      */
     public static class ResolvedAddresses extends IgniteDataTransferObject {
-
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -156,7 +155,7 @@ public class VisorBaselineNode extends VisorDataTransferObject {
         /**
          * @param inetAddr Inet address.
          */
-        public ResolvedAddresses(InetAddress inetAddr) {
+        ResolvedAddresses(InetAddress inetAddr) {
             this.hostname = inetAddr.getHostName();
             this.addr = inetAddr.getHostAddress();
         }
@@ -164,20 +163,7 @@ public class VisorBaselineNode extends VisorDataTransferObject {
         /**
          * Default constructor.
          */
-        public ResolvedAddresses() {}
-
-        /**
-         * @return Hostname.
-         */
-        public String getHostname() {
-            return hostname;
-        }
-
-        /**
-         * @return Textual representation of IP address.
-         */
-        public String getAddr() {
-            return addr;
+        public ResolvedAddresses() {
         }
 
         /** {@inheritDoc} */
@@ -189,9 +175,22 @@ public class VisorBaselineNode extends VisorDataTransferObject {
         /** {@inheritDoc} */
         @Override protected void readExternalData(byte protoVer, ObjectInput in)
             throws IOException, ClassNotFoundException {
-
             hostname = U.readString(in);
             addr = U.readString(in);
+        }
+
+        /**
+         * @return Hostname.
+         */
+        public String hostname() {
+            return hostname;
+        }
+
+        /**
+         * @return Textual representation of IP address.
+         */
+        public String address() {
+            return addr;
         }
     }
 }
