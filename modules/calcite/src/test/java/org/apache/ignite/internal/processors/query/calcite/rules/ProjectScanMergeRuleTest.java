@@ -34,6 +34,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsOneProject;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsProject;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsTableScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.notContainsProject;
 import static org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest.Product;
@@ -82,6 +83,7 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
         devCache.put(1, new Product(1, "prod1", 1, "cat1", 11, "noname1"));
         devCache.put(2, new Product(2, "prod2", 2, "cat1", 11, "noname2"));
         devCache.put(3, new Product(3, "prod3", 3, "cat1", 12, "noname3"));
+        devCache.put(4, new Product(4, "prod4", 4, "cat1", 13, "noname4"));
 
         awaitPartitionMapExchange();
     }
@@ -106,6 +108,7 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
             .returns("noname1")
             .returns("noname2")
             .returns("noname3")
+            .returns("noname4")
             .check();
 
         checkQuery("SELECT SUBCAT_ID, NAME FROM products d;")
@@ -114,13 +117,48 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
             .returns(11, "noname1")
             .returns(11, "noname2")
             .returns(12, "noname3")
+            .returns(13, "noname4")
             .check();
 
         checkQuery("SELECT NAME FROM products d WHERE CAT_ID > 1;")
             .matches(containsIndexScan("PUBLIC", "PRODUCTS"))
+            .matches(containsProject("PUBLIC", "PRODUCTS", 4, 7))
+            .returns("noname2")
+            .returns("noname3")
+            .returns("noname4")
+            .check();
+    }
+
+    /**
+     * Tests projects with nested requests.
+     */
+    @Test
+    public void testNestedProjects() {
+        checkQuery("SELECT NAME FROM products WHERE CAT_ID IN (SELECT CAT_ID FROM products WHERE CAT_ID > 1) and ID > 2;")
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS"))
+            .matches(notContainsProject("PUBLIC", "PRODUCTS"))
+            .returns("noname3")
+            .returns("noname4")
+            .check();
+
+        checkQuery("SELECT NAME FROM products WHERE CAT_ID IN (SELECT DISTINCT CAT_ID FROM products WHERE CAT_ID > 1)")
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS"))
             .matches(notContainsProject("PUBLIC", "PRODUCTS"))
             .returns("noname2")
             .returns("noname3")
+            .returns("noname4")
+            .check();
+
+        checkQuery("SELECT NAME FROM products WHERE CAT_ID IN (SELECT DISTINCT CAT_ID FROM products WHERE SUBCAT_ID > 11)")
+            .matches(containsTableScan("PUBLIC", "PRODUCTS"))
+            .returns("noname3")
+            .returns("noname4")
+            .check();
+
+        checkQuery("SELECT NAME FROM products WHERE CAT_ID = (SELECT CAT_ID FROM products WHERE SUBCAT_ID = 13)")
+            .matches(containsTableScan("PUBLIC", "PRODUCTS"))
+            .matches(containsIndexScan("PUBLIC", "PRODUCTS"))
+            .returns("noname4")
             .check();
     }
 }

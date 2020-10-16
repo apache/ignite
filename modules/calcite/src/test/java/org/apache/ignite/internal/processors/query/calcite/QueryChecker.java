@@ -100,6 +100,13 @@ public abstract class QueryChecker {
     }
 
     /**
+     * {@link #containsProject(java.lang.String, java.lang.String, int...)} reverter.
+     */
+    public static Matcher<String> notContainsProject(String schema, String tblName, int... requiredColunms) {
+        return CoreMatchers.not(containsProject(schema, tblName, requiredColunms));
+    }
+
+    /**
      * Ignite table|index scan with projects matcher.
      *
      * @param schema  Schema name.
@@ -108,11 +115,12 @@ public abstract class QueryChecker {
      * @return Matcher.
      */
     public static Matcher<String> containsProject(String schema, String tblName, int... requiredColunms) {
-        return matches(".*Ignite(Table|Index)Scan\\(table=\\[\\[" + schema + ", " +
-            tblName + "\\]\\], " + "requiredColunms=\\[\\{" +
+        Matcher<String> res = matches(".*Ignite(Table|Index)Scan\\(table=\\[\\[" + schema + ", " +
+            tblName + "\\]\\], " + ".*requiredColunms=\\[\\{" +
             Arrays.toString(requiredColunms)
                 .replaceAll("\\[", "")
-                .replaceAll("]", "") + "\\}\\]\\).*");
+                .replaceAll("]", "") + "\\}\\].*");
+        return res;
     }
 
     /**
@@ -125,10 +133,10 @@ public abstract class QueryChecker {
      */
     public static Matcher<String> containsOneProject(String schema, String tblName, int... requiredColunms) {
         return matchesOnce(".*Ignite(Table|Index)Scan\\(table=\\[\\[" + schema + ", " +
-            tblName + "\\]\\], " + "requiredColunms=\\[\\{" +
+            tblName + "\\]\\], " + ".*requiredColunms=\\[\\{" +
             Arrays.toString(requiredColunms)
                 .replaceAll("\\[", "")
-                .replaceAll("]", "") + "\\}\\]\\).*");
+                .replaceAll("]", "") + "\\}\\].*");
     }
 
     /**

@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -226,11 +225,15 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
         // over a left edge. The code below checks whether a desired collation is possible and requires
         // appropriate collation from the left edge.
 
+        RelCollation collation = TraitUtils.collation(nodeTraits);
+
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
-        RelTraitSet outTraits, leftTraits, rightTraits;
+        if (collation.equals(RelCollations.EMPTY))
+            return ImmutableList.of(Pair.of(nodeTraits,
+                ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(RelCollations.EMPTY))));
 
-        RelCollation collation = TraitUtils.collation(nodeTraits);
+        RelTraitSet outTraits, leftTraits, rightTraits;
 
         if (!projectsLeft(collation))
             collation = RelCollations.EMPTY;

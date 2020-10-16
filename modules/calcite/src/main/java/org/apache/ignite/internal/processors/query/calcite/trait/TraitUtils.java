@@ -149,7 +149,7 @@ public class TraitUtils {
         return rel;
     }
 
-    /** */
+    /** Change distribution and Convention. */
     public static RelTraitSet fixTraits(RelTraitSet traits) {
         if (distribution(traits) == any())
             traits = traits.replace(single());

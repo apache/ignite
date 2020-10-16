@@ -21,12 +21,12 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.List;
 import java.util.function.Supplier;
-
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.calcite.sql.type.SqlTypeName.ANY;
 import static org.apache.calcite.sql.type.SqlTypeName.BIGINT;
 import static org.apache.calcite.sql.type.SqlTypeName.DECIMAL;
 import static org.apache.calcite.sql.type.SqlTypeName.DOUBLE;
@@ -49,8 +49,10 @@ public class Accumulators {
                 return minFactory(call);
             case "MAX":
                 return maxFactory(call);
+            case "SINGLE_VALUE":
+                return SingleVal.FACTORY;
             default:
-                throw new AssertionError();
+                throw new AssertionError(call.getAggregation().getName());
         }
     }
 
@@ -117,6 +119,44 @@ public class Accumulators {
             case BIGINT:
             default:
                 return LongMinMax.MAX_FACTORY;
+        }
+    }
+
+    /** */
+    private static class SingleVal implements Accumulator {
+        /** */
+        private Object holder;
+
+        /** */
+        public static final Supplier<Accumulator> FACTORY = SingleVal::new;
+
+        /** */
+        @Override public void add(Object... args) {
+            assert args.length == 1 : args.length;
+
+            holder = args[0];
+        }
+
+        /** */
+        @Override public void apply(Accumulator other) {
+            assert holder == null : "sudden apply for: " + other + " on SingleVal";
+
+            holder = ((SingleVal)other).holder;
+        }
+
+        /** */
+        @Override public Object end() {
+            return holder;
+        }
+
+        /** */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(ANY), true));
+        }
+
+        /** */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createSqlType(ANY);
         }
     }
 

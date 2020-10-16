@@ -69,6 +69,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         super(cluster, traits, input, projects, rowType);
     }
 
+    /** */
     public IgniteProject(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
     }
@@ -123,9 +124,8 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
             srcKeys.add(src);
         }
 
-        if (srcKeys.size() == keys.size()) {
+        if (srcKeys.size() == keys.size())
             return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(in.replace(hash(srcKeys, distribution.function())))));
-        }
 
         return ImmutableList.of(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
     }

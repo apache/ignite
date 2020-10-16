@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.List;
 import java.util.Set;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelTraitSet;
@@ -48,7 +47,6 @@ public class TraitsPropagationContext {
                 Commons.transform(node.getInputs(), i -> fixTraits(i.getCluster().traitSet()))));
 
         return new TraitsPropagationContext(variants);
-
     }
 
     /**
