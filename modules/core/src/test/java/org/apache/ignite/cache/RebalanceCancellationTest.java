@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -69,7 +68,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
     public boolean persistenceEnabled;
 
     /** Add additional non-persistence data region. */
-    public boolean additionalMemRegion;
+    public boolean addtiotionalMemRegion;
 
     /** Filter node. */
     public boolean filterNode;
@@ -87,7 +86,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
                     .setAffinity(new RendezvousAffinityFunction(false, 15))
                     .setBackups(BACKUPS));
 
-        if (additionalMemRegion) {
+        if (addtiotionalMemRegion) {
             cfg.setCacheConfiguration(cfg.getCacheConfiguration()[0],
                 new CacheConfiguration(MEM_REGION_CACHE)
                     .setDataRegionName(MEM_REGION)
@@ -117,15 +116,12 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
         cleanPersistenceDir();
     }
 
@@ -253,7 +249,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
     @Test
     public void testComplexCompatibilityInMemory() throws Exception {
         persistenceEnabled = false;
-        additionalMemRegion = false;
+        addtiotionalMemRegion = false;
 
         IgniteEx crd = startGrid(0);
 
@@ -324,16 +320,16 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
      * Trigger rebalance when dynamic caches stop/start.
      *
      * @param persistence Persistent flag.
-     * @param additionalRegion Use additional (non default) region.
+     * @param addtiotionalRegion Use additional (non default) region.
      * @throws Exception If failed.
      */
-    public void testRebalanceDynamicCache(boolean persistence, boolean additionalRegion) throws Exception {
+    public void testRebalanceDynamicCache(boolean persistence, boolean addtiotionalRegion) throws Exception {
         persistenceEnabled = persistence;
-        additionalMemRegion = additionalRegion;
+        addtiotionalMemRegion = addtiotionalRegion;
 
         IgniteEx ignite0 = startGrids(NODES_CNT);
 
-        ignite0.cluster().state(ClusterState.ACTIVE);
+        ignite0.cluster().active(true);
 
         grid(1).close();
 
@@ -375,14 +371,14 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
      * Trigger rebalance when non-blt node left topology.
      *
      * @param persistence Persistent flag.
-     * @param additionalRegion Use additional (non default) region.
+     * @param addtiotionalRegion Use additional (non default) region.
      * @param fail If true node forcibly falling.
      * @throws Exception If failed.
      */
-    public void testRebalanceNoneBltNode(boolean persistence, boolean additionalRegion,
+    public void testRebalanceNoneBltNode(boolean persistence, boolean addtiotionalRegion,
         boolean fail) throws Exception {
         persistenceEnabled = persistence;
-        additionalMemRegion = additionalRegion;
+        addtiotionalMemRegion = addtiotionalRegion;
 
         IgniteEx ignite0 = startGrids(NODES_CNT);
 
@@ -449,7 +445,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
      */
     public void testRebalanceFilteredNode(boolean persistence, boolean addtiotionalRegion) throws Exception {
         persistenceEnabled = persistence;
-        additionalMemRegion = addtiotionalRegion;
+        addtiotionalMemRegion = addtiotionalRegion;
         filterNode = true;
 
         IgniteEx ignite0 = startGrids(NODES_CNT);

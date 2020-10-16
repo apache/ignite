@@ -33,7 +33,6 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.StandardCopyOption;
 import java.util.AbstractList;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,7 +40,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -86,12 +84,12 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadW
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridStripedReadWriteLock;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.maintenance.MaintenanceRecord;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
@@ -153,10 +151,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** Matcher for searching of *.tmp files. */
     public static final PathMatcher TMP_FILE_MATCHER =
         FileSystems.getDefault().getPathMatcher("glob:**" + TMP_SUFFIX);
-
-    /** Unique identifier for corrupted data files maintenance records. */
-    public static final UUID CORRUPTED_DATA_FILES_MNTC_RECORD_ID = UUID
-        .fromString("607fcd84-03a0-4da5-b779-7bb082e5f6b7");
 
     /** Listeners of configuration changes e.g. overwrite or remove actions. */
     private final List<BiConsumer<String, File>> lsnrs = new CopyOnWriteArrayList<>();
@@ -374,66 +368,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void beginRecover() {
-        List<String> groupsWithWalDisabled = checkCachesWithDisabledWal();
-
-        if (!groupsWithWalDisabled.isEmpty()) {
-            String errorMsg = "Cache groups with potentially corrupted partition files found. " +
-                "Cleanup cache group folders and restart the node: " + groupsWithWalDisabled;
-
-            log.warning(errorMsg);
-
-            try {
-                cctx.kernalContext().maintenanceRegistry()
-                    .registerMaintenanceRecord(
-                        new MaintenanceRecord(CORRUPTED_DATA_FILES_MNTC_RECORD_ID,
-                            "Corrupted cache groups found",
-                            groupsWithWalDisabled.stream().collect(Collectors.joining(File.separator)))
-                    );
-            } catch (IgniteCheckedException e) {
-                log.warning("Failed to register maintenance record for corrupted partition files.", e);
-            }
-
-            throw new IgniteException(errorMsg);
-        }
-
         for (CacheStoreHolder holder : idxCacheStores.values()) {
             holder.idxStore.beginRecover();
 
             for (PageStore partStore : holder.partStores)
                 partStore.beginRecover();
         }
-    }
-
-    /**
-     * Checks cache groups' settings and returns groups names with disabled WAL.
-     *
-     * @return List of cache groups names that had WAL disabled before node stop.
-     */
-    private List<String> checkCachesWithDisabledWal() {
-        List<String> corruptedCachesDirs = new ArrayList<>();
-
-        for (Integer grpDescId : idxCacheStores.keySet()) {
-            CacheGroupDescriptor desc = cctx.cache().cacheGroupDescriptor(grpDescId);
-
-            if (desc != null && desc.persistenceEnabled()) {
-                boolean localEnabled = cctx.database().walEnabled(grpDescId, true);
-                boolean globalEnabled = cctx.database().walEnabled(grpDescId, false);
-
-                if (!localEnabled || !globalEnabled) {
-                    File dir = cacheWorkDir(desc.config());
-
-                    if (Arrays.stream(
-                        dir.listFiles())
-                        .filter(f -> !f.getName().equals(CACHE_DATA_FILENAME))
-                        .count() > 0)
-                    {
-                        corruptedCachesDirs.add(cacheDirName(desc.config()));
-                    }
-                }
-            }
-        }
-
-        return corruptedCachesDirs;
     }
 
     /** {@inheritDoc} */
@@ -1299,6 +1239,27 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 "(partition has not been created) [grpId=" + grpId + ", partId=" + partId + ']');
 
         return store;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeCacheGroupStart(CacheGroupDescriptor grpDesc) {
+        if (grpDesc.persistenceEnabled()) {
+            boolean localEnabled = cctx.database().walEnabled(grpDesc.groupId(), true);
+            boolean globalEnabled = cctx.database().walEnabled(grpDesc.groupId(), false);
+
+            if (!localEnabled || !globalEnabled) {
+                File dir = cacheWorkDir(grpDesc.config());
+
+                assert dir.exists();
+
+                boolean res = IgniteUtils.delete(dir);
+
+                assert res;
+
+                if (!globalEnabled)
+                    grpDesc.walEnabled(false);
+            }
+        }
     }
 
     /**

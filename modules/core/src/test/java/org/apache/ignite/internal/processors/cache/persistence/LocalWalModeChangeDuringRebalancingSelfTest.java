@@ -22,9 +22,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.UUID;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
@@ -55,11 +56,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.maintenance.MaintenanceAction;
-import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -68,8 +65,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -117,7 +112,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 // Test checks internal state before and after rebalance, so it is configured to be triggered manually
                 .setRebalanceDelay(-1)
-                .setAffinity(new RendezvousAffinityFunction(false, 32))
                 .setBackups(dfltCacheBackupCnt),
 
             new CacheConfiguration(REPL_CACHE)
@@ -259,7 +253,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         Ignite ignite = startGrids(3);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
-        ignite.cluster().state(ACTIVE);
+        ignite.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, Integer> cache2 = ignite.cache(REPL_CACHE);
@@ -344,7 +338,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         Ignite ignite = startGrids(3);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
-        ignite.cluster().state(ACTIVE);
+        ignite.cluster().active(true);
 
         ignite.cluster().setBaselineTopology(3);
 
@@ -399,7 +393,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         Ignite ignite = startGrids(3);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
-        ignite.cluster().state(ACTIVE);
+        ignite.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -442,7 +436,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         Ignite ignite = startGrids(nodeCnt);
 
-        ignite.cluster().state(ACTIVE);
+        ignite.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache = ignite.cache(REPL_CACHE);
 
@@ -513,7 +507,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         Ignite ignite = startGrids(3);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
-        ignite.cluster().state(ACTIVE);
+        ignite.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -553,208 +547,60 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     }
 
     /**
-     * Node doesn't delete consistent PDS when WAL was turned off automatically (disable WAL during rebalancing feature).
-     * <p>
-     * Test scenario:
-     * <ol>
-     *     <li>
-     *         Two server nodes are started, cluster is activated, baseline is set. 2500 keys are put into cache.
-     *     </li>
-     *     <li>
-     *         Checkpoint is started and finished on both nodes.
-     *     </li>
-     *     <li>
-     *         Node n1 is stopped, another 2500 keys are put into the same cache.
-     *     </li>
-     *     <li>
-     *         Node n1 is started back so rebalancing is triggered from n0 to n1. WAL is turned off on n1 automatically.
-     *     </li>
-     *     <li>
-     *         Both nodes are stopped without checkpoint.
-     *     </li>
-     *     <li>
-     *         Node n1 is started and activated. Lost partitions are reset.
-     *     </li>
-     *     <li>
-     *         First 2500 keys are found in cache thus PDS wasn't removed on restart.
-     *     </li>
-     *     <li>
-     *         Second 2500 keys are not found in cache as WAL was disabled during rebalancing
-     *         and no checkpoint was triggered.
-     *     </li>
-     * </ol>
-     * </p>
-     *
-     *
      * @throws Exception If failed.
      */
     @Test
-    public void testConsistentPdsIsNotClearedAfterRestartWithDisabledWal() throws Exception {
-        dfltCacheBackupCnt = 1;
+    public void testDataClearedAfterRestartWithDisabledWal() throws Exception {
+        Ignite ignite = startGrid(0);
 
-        IgniteEx ig0 = startGrid(0);
-        IgniteEx ig1 = startGrid(1);
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+        ignite.cluster().active(true);
 
-        ig0.cluster().baselineAutoAdjustEnabled(false);
-        ig0.cluster().state(ACTIVE);
+        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        IgniteCache<Integer, Integer> cache = ig0.cache(DEFAULT_CACHE_NAME);
+        int keysCnt = getKeysCount();
 
-        for (int k = 0; k < 2500; k++)
+        for (int k = 0; k < keysCnt; k++)
             cache.put(k, k);
 
-        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager) ig0.context().cache().context().database();
-        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager) ig1.context().cache().context().database();
+        IgniteEx newIgnite = startGrid(1);
 
-        dbMrg0.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
-        dbMrg1.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
+        newIgnite.cluster().setBaselineTopology(2);
+
+        // Await fully exchange complete.
+        awaitExchange(newIgnite);
+
+        CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
+
+        assertFalse(grpCtx.localWalEnabled());
 
         stopGrid(1);
+        stopGrid(0);
 
-        for (int k = 2500; k < 5000; k++)
-            cache.put(k, k);
+        newIgnite = startGrid(1);
 
-        ig1 = startGrid(1);
+        newIgnite.cluster().active(true);
 
-        awaitExchange(ig1);
+        newIgnite.cluster().setBaselineTopology(newIgnite.cluster().nodes());
 
-        stopAllGrids(false);
+        cache = newIgnite.cache(DEFAULT_CACHE_NAME);
 
-        ig1 = startGrid(1);
-        ig1.cluster().state(ACTIVE);
+        Collection<Integer> lostParts = cache.lostPartitions();
 
-        ig1.resetLostPartitions(Arrays.asList(DEFAULT_CACHE_NAME));
+        Set<Integer> keys = new TreeSet<>();
 
-        awaitExchange(ig1);
+        for (int k = 0; k < keysCnt; k++) {
+            // Skip lost partitions.
+            if (lostParts.contains(newIgnite.affinity(DEFAULT_CACHE_NAME).partition(k)))
+                continue;
 
-        cache = ig1.cache(DEFAULT_CACHE_NAME);
-
-        for (int k = 0; k < 2500; k++)
-            assertTrue(cache.containsKey(k));
-
-        for (int k = 2500; k < 5000; k++)
-            assertFalse(cache.containsKey(k));
-    }
-
-    /**
-     * Test is opposite to {@link #testConsistentPdsIsNotClearedAfterRestartWithDisabledWal()}
-     *
-     * <p>
-     * Test scenario:
-     * <ol>
-     *      <li>
-     *          Two server nodes are started, cluster is activated, baseline is set. 2500 keys are put into cache.
-     *      </li>
-     *      <li>
-     *          Checkpoint is started and finished on both nodes.
-     *      </li>
-     *      <li>
-     *          Node n1 is stopped, another 2500 keys are put into the same cache.
-     *      </li>
-     *      <li>
-     *          Node n1 is started back so rebalancing is triggered from n0 to n1. WAL is turned off on n1 automatically.
-     *      </li>
-     *      <li>
-     *          Both nodes are stopped without checkpoint.
-     *      </li>
-     *      <li>
-     *          CP END marker for the first checkpoint is removed on node n1 so node will think it crushed during checkpoint
-     *          on the next restart.
-     *      </li>
-     *      <li>
-     *          Node n1 fails to start as it sees potentially corrupted files of one cache. Manual action is required.
-     *      </li>
-     *      <li>
-     *          Cache files are cleaned up manually on node n1 and it starts successfully.
-     *      </li>
-     * </ol>
-     * </p>
-     * @throws Exception
-     */
-    @Test
-    public void testPdsWithBrokenBinaryConsistencyIsClearedAfterRestartWithDisabledWal() throws Exception {
-        dfltCacheBackupCnt = 1;
-
-        IgniteEx ig0 = startGrid(0);
-        IgniteEx ig1 = startGrid(1);
-
-        String ig1Folder = ig1.context().pdsFolderResolver().resolveFolders().folderName();
-        File dbDir = U.resolveWorkDirectory(ig1.configuration().getWorkDirectory(), "db", false);
-
-        File ig1LfsDir = new File(dbDir, ig1Folder);
-        File ig1CpDir = new File(ig1LfsDir, "cp");
-
-        ig0.cluster().baselineAutoAdjustEnabled(false);
-        ig0.cluster().state(ACTIVE);
-
-        IgniteCache<Integer, Integer> cache = ig0.cache(DEFAULT_CACHE_NAME);
-
-        for (int k = 0; k < 2500; k++)
-            cache.put(k, k);
-
-        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager) ig0.context().cache().context().database();
-        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager) ig1.context().cache().context().database();
-
-        dbMrg0.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
-        dbMrg1.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
-
-        stopGrid(1);
-
-        for (int k = 2500; k < 5000; k++)
-            cache.put(k, k);
-
-        ig1 = startGrid(1);
-
-        awaitExchange(ig1);
-
-        stopAllGrids(false);
-
-        ig0 = startGrid(0);
-
-        File[] cpMarkers = ig1CpDir.listFiles();
-
-        for (File cpMark : cpMarkers) {
-            if (cpMark.getName().contains("-END"))
-                cpMark.delete();
+            keys.add(k);
         }
 
-        assertThrows(null, () -> startGrid(1), Exception.class, null);
+        for (Integer k : keys)
+            assertFalse("k=" + k + ", v=" + cache.get(k), cache.containsKey(k));
 
-        ig1 = startGrid(1);
-
-        assertEquals(1, ig0.cluster().nodes().size());
-        assertEquals(1, ig1.cluster().nodes().size());
-
-        ig1.compute().run(new IgniteRunnable() {
-            @IgniteInstanceResource
-            private Ignite ig;
-
-            @Override public void run() {
-                UUID mntcActionId = UUID.fromString("607fcd84-03a0-4da5-b779-7bb082e5f6b7");
-
-                MaintenanceRegistry mntcRegistry = ((IgniteEx) ig).context().maintenanceRegistry();
-
-                MaintenanceAction mntcAction = mntcRegistry.maintenanceAction(mntcActionId);
-
-                if (mntcAction != null)
-                    mntcAction.execute();
-
-                mntcRegistry.clearMaintenanceRecord(mntcActionId);
-            }
-        });
-
-        stopAllGrids();
-
-        ig1 = startGrid(1);
-
-        ig1.cluster().state(ACTIVE);
-
-        assertEquals(1, ig1.cluster().nodes().size());
-
-        cache = ig1.cache(DEFAULT_CACHE_NAME);
-
-        for (int k = 0; k < 2500; k++)
-            assertFalse(cache.containsKey(k));
+        assertFalse(cache.containsKeys(keys));
     }
 
     /**
@@ -765,7 +611,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         Ignite ignite = startGrids(4);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
-        ignite.cluster().state(ACTIVE);
+        ignite.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
