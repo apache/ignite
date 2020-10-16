@@ -20,6 +20,7 @@ package org.apache.ignite.client;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -29,7 +30,9 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.CharsetUtil;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslHandler;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -50,7 +53,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.Charset;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -133,15 +135,18 @@ public class ConnectionTest {
         int port = 10800;
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         CompletableFuture<Integer> fut = new CompletableFuture<>();
+        SslContextBuilder sslContextBuilder = SslContextBuilder.forClient();
+        SslContext sslContext = sslContextBuilder.build();
 
         try {
-            Bootstrap b = new Bootstrap(); // (1)
-            b.group(workerGroup); // (2)
-            b.channel(NioSocketChannel.class); // (3)
-            b.option(ChannelOption.SO_KEEPALIVE, true); // (4)
+            Bootstrap b = new Bootstrap();
+            b.group(workerGroup);
+            b.channel(NioSocketChannel.class);
+            b.option(ChannelOption.SO_KEEPALIVE, true);
             b.handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 public void initChannel(SocketChannel ch) {
+                    ch.pipeline().addLast(new SslHandler(sslContext.newEngine(ch.alloc())));
                     ch.pipeline().addLast(new ClientHandler());
                 }
             });
@@ -154,7 +159,8 @@ public class ConnectionTest {
 
             System.out.println(">>>> Thread count: " + Thread.getAllStackTraces().size());
 
-            ChannelFuture channelFuture = f.channel().writeAndFlush(handshakeBuf);
+            Channel channel = f.channel();
+            ChannelFuture channelFuture = channel.writeAndFlush(handshakeBuf);
 
             System.out.println(">>>> Thread count: " + Thread.getAllStackTraces().size());
 
