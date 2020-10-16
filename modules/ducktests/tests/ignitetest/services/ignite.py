@@ -62,8 +62,6 @@ class IgniteService(IgniteAwareService):
         for node in self.nodes:
             self.start_node(node)
 
-        time.sleep(30)  # start node and rotate log
-
         self.logger.info("Waiting for Ignite(s) to start...")
 
         for node in self.nodes:
