@@ -37,13 +37,12 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        int segmentSz = 512 * 1024;
+        int segmentSz = 10 * 1024 * 1024;
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setCdcEnabled(true)
             .setWalMode(WALMode.FSYNC)
             .setMaxWalArchiveSize(10 * segmentSz)
-            .setWalHistorySize(10)
-            .setWalSegments(3)
             .setWalSegmentSize(segmentSz)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)));
@@ -62,9 +61,9 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
     public void testCDC() throws Exception {
         IgniteCDC cdc = new IgniteCDC(getConfiguration("cdc"), new LogAllCDCConsumer());
 
-        runAsync(cdc);
+        //runAsync(cdc);
 
-        Thread.sleep(1000);
+        //Thread.sleep(1000);
 
         Ignite ign = startGrid();
 
@@ -80,8 +79,6 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
 
                     cache.put(i, bytes);
                 }
-
-                Thread.sleep(25000);
             }
         };
 

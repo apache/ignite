@@ -89,9 +89,9 @@ public class CommandLineStartup {
 
             CDCConsumer consumer = consumer(cfgUrl, spring);
 
-            IgniteCDC app = new IgniteCDC(igniteCfg, consumer);
-
-            app.run();
+            try (IgniteCDC app = new IgniteCDC(igniteCfg, consumer)) {
+                app.run();
+            }
         }
         catch (Throwable e) {
             e.printStackTrace();

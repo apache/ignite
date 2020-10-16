@@ -19,6 +19,8 @@ package org.apache.ignite.cdc;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
@@ -36,8 +38,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CDC_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.NODE_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.UUID_STR_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
@@ -61,8 +63,8 @@ public class IgniteCDC implements Runnable, Closeable {
     /** Watch utils. */
     private final WatchUtils wu;
 
-    /** WAL archive directory. */
-    private Path walArchive;
+    /** CDC directory. */
+    private Path cdcDir;
 
     /** Binary meta directory. */
     private File binaryMeta;
@@ -74,7 +76,7 @@ public class IgniteCDC implements Runnable, Closeable {
     private Thread waitSegmentThread;
 
     /** Queue of segments to process. */
-    private final BlockingQueue<Path> archiveSegments = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Path> segments = new LinkedBlockingQueue<>();
 
     /**
      * @param cfg Ignite configuration.
@@ -110,7 +112,7 @@ public class IgniteCDC implements Runnable, Closeable {
         }
 
         if (log.isInfoEnabled()) {
-            log.info("WAL archive -\t" + walArchive);
+            log.info("CDC dir     -\t" + cdcDir);
             log.info("Binary meta -\t" + binaryMeta);
             log.info("Marshaller  -\t" + marshaller);
             log.info("--------------------------------");
@@ -118,13 +120,13 @@ public class IgniteCDC implements Runnable, Closeable {
 
         consumer.start(cfg, log);
 
-        waitSegmentThread = new Thread(() -> wu.waitFor(walArchive,
+        waitSegmentThread = new Thread(() -> wu.waitFor(cdcDir,
             p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches(),
-            archiveSegment -> {
-                log.info("Found new segment - " + archiveSegment);
+            segment -> {
+                log.info("Found new segment - " + segment);
 
                 try {
-                    archiveSegments.put(archiveSegment);
+                    segments.put(segment);
                 }
                 catch (InterruptedException e) {
                     throw new IgniteException(e);
@@ -138,11 +140,13 @@ public class IgniteCDC implements Runnable, Closeable {
 
         while (true) {
             try {
-                Path segment = archiveSegments.take();
+                Path segment = segments.take();
 
                 readSegment(segment.toFile());
+
+                Files.delete(segment);
             }
-            catch (IgniteCheckedException | InterruptedException e) {
+            catch (IgniteCheckedException | InterruptedException | IOException e) {
                 throw new IgniteException(e);
             }
         }
@@ -167,12 +171,12 @@ public class IgniteCDC implements Runnable, Closeable {
     private void initDirs() throws IgniteCheckedException {
         String workDir = workDir(cfg);
 
-        walArchive = initArchiveDir(workDir);
+        cdcDir = initCdcDir(workDir);
 
-        String consIdDir = walArchive.getName(walArchive.getNameCount() - 1).toString();
+        String consIdDir = cdcDir.getName(cdcDir.getNameCount() - 1).toString();
 
         if (log.isDebugEnabled())
-            log.debug("Found WAL archive[dir=" + walArchive + ']');
+            log.debug("Found WAL archive[dir=" + cdcDir + ']');
 
         binaryMeta = new File(U.resolveWorkDirectory(workDir, DFLT_BINARY_METADATA_PATH, false), consIdDir);
 
@@ -188,29 +192,29 @@ public class IgniteCDC implements Runnable, Closeable {
      * @param workDir Working directory.
      * @return WAL archive directory.
      */
-    private Path initArchiveDir(String workDir) {
-        Path archiveParent;
+    private Path initCdcDir(String workDir) {
+        Path cdcParent;
 
         if (cfg.getDataStorageConfiguration() != null &&
-            !F.isEmpty(cfg.getDataStorageConfiguration().getWalArchivePath())) {
-            archiveParent = Paths.get(cfg.getDataStorageConfiguration().getWalArchivePath());
+            !F.isEmpty(cfg.getDataStorageConfiguration().getCdcPath())) {
+            cdcParent = Paths.get(cfg.getDataStorageConfiguration().getCdcPath());
 
-            if (!archiveParent.isAbsolute())
-                archiveParent = Paths.get(workDir, cfg.getDataStorageConfiguration().getWalArchivePath());
+            if (!cdcParent.isAbsolute())
+                cdcParent = Paths.get(workDir, cfg.getDataStorageConfiguration().getCdcPath());
         }
         else
-            archiveParent = Paths.get(workDir).resolve(DFLT_WAL_ARCHIVE_PATH);
+            cdcParent = Paths.get(workDir).resolve(DFLT_CDC_PATH);
 
         if (log.isDebugEnabled())
-            log.debug("Archive root[dir=" + archiveParent + ']');
+            log.debug("Archive root[dir=" + cdcParent + ']');
 
-        final Path[] archiveDir = new Path[1];
+        final Path[] cdcDir = new Path[1];
 
-        wu.waitFor(archiveParent,
+        wu.waitFor(cdcParent,
             dir -> dir.getName(dir.getNameCount() - 1).toString().matches(NODE_PATTERN + UUID_STR_PATTERN),
-            dir -> { archiveDir[0] = dir; });
+            dir -> { cdcDir[0] = dir; });
 
-        return archiveDir[0];
+        return cdcDir[0];
     }
 
 

@@ -24,13 +24,18 @@
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
-                <property name="walMode" value="LOG_ONLY" />
+                <property name="walMode" value="FSYNC" />
+
+                <property name="maxWalArchiveSize" value="524288" />
+                <property name="walSegments" value="3" />
+                <property name="walSegmentSize" value="5242880" />
+                <property name="defaultDataRegionConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <property name="persistenceEnabled" value="true" />
+                    </bean>
+                </property>
             </bean>
         </property>
-
-<!--
-        <property name="consistentId" value="cdc-node" />
--->
     </bean>
 
     <bean class="org.apache.ignite.cdc.LogAllCDCConsumer" />
