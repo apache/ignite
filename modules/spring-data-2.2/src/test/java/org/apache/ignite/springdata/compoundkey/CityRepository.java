@@ -15,24 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.springdata.compoundkey;
 
-import org.apache.ignite.springdata.IgniteSpringDataCompoundKeyTest;
-import org.apache.ignite.springdata.IgniteSpringDataCrudSelfExpressionTest;
-import org.apache.ignite.springdata.IgniteSpringDataCrudSelfTest;
-import org.apache.ignite.springdata.IgniteSpringDataQueriesSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.util.List;
+import javax.cache.Cache;
+import org.apache.ignite.springdata22.repository.IgniteRepository;
+import org.apache.ignite.springdata22.repository.config.RepositoryConfig;
+import org.springframework.stereotype.Repository;
 
-/**
- * Ignite Spring Data 2.0 test suite.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IgniteSpringDataCrudSelfTest.class,
-    IgniteSpringDataQueriesSelfTest.class,
-    IgniteSpringDataCrudSelfExpressionTest.class,
-    IgniteSpringDataCompoundKeyTest.class
-})
-public class IgniteSpringData2TestSuite {
+/** City repository */
+@Repository
+@RepositoryConfig(cacheName = "City", autoCreateCache = true)
+public interface CityRepository extends IgniteRepository<City, CityKey> {
+    /**
+     * Find city by id
+     * @param id city identifier
+     * @return city
+     * */
+    public City findById(int id);
+
+    /**
+     * Find all cities by coutrycode
+     * @param cc coutrycode
+     * @return list of cache enrties CityKey -> City
+     * */
+    public List<Cache.Entry<CityKey, City>> findByCountryCode(String cc);
 }
