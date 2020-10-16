@@ -17,15 +17,19 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
 public class IgniteCDCSelfTest extends GridCommonAbstractTest {
@@ -33,37 +37,57 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setWalMode(WALMode.LOG_ONLY));
+        int segmentSz = 512 * 1024;
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setWalMode(WALMode.FSYNC)
+            .setMaxWalArchiveSize(10 * segmentSz)
+            .setWalHistorySize(10)
+            .setWalSegments(3)
+            .setWalSegmentSize(segmentSz)
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(true)));
 
         return cfg;
+    }
+
+    @Override protected void beforeTest() throws Exception {
+        cleanPersistenceDir();
+
+        super.beforeTest();
     }
 
     /** Simplest CDC test. */
     @Test
     public void testCDC() throws Exception {
-        Ignite ign = startGrid();
-
-        ExecutorService execSvc = Executors.newFixedThreadPool(2);
-
-        execSvc.submit(() -> {
-            IgniteCache<Integer, Integer> cache = ign.createCache("my-cache");
-
-            int i = 0;
-
-            while (true) {
-                cache.put(i, i++);
-
-                Thread.sleep(250);
-            }
-        });
-
         IgniteCDC cdc = new IgniteCDC(getConfiguration("cdc"), new LogAllCDCConsumer());
 
-        execSvc.submit(cdc);
+        runAsync(cdc);
+
+        Thread.sleep(1000);
+
+        Ignite ign = startGrid();
+
+        ign.cluster().state(ACTIVE);
+
+        Callable<Object> genData = () -> {
+            IgniteCache<Integer, byte[]> cache = ign.createCache("my-cache");
+
+            while (true) {
+                for (int i = 0; i < 512; i++) {
+                    byte[] bytes = new byte[1024];
+                    ThreadLocalRandom.current().nextBytes(bytes);
+
+                    cache.put(i, bytes);
+                }
+
+                Thread.sleep(25000);
+            }
+        };
+
+        runAsync(genData);
 
         Thread.sleep(60_000);
-
-        execSvc.shutdownNow();
     }
 
     /** {@inheritDoc} */

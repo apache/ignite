@@ -17,39 +17,40 @@
 
 package org.apache.ignite.cdc;
 
+import java.io.Closeable;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.NODE_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.UUID_STR_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 
 /**
  * CDC(Capture Data Change) application.
  */
-public class IgniteCDC implements Runnable {
+public class IgniteCDC implements Runnable, Closeable {
     /** Ignite configuration. */
     private final IgniteConfiguration cfg;
+
+    /** WAL iterator factory. */
+    private final IgniteWalIteratorFactory factory;
 
     /** Events consumers. */
     private final CDCConsumer consumer;
@@ -57,229 +58,166 @@ public class IgniteCDC implements Runnable {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** WAL iterator factory. */
-    private final IgniteWalIteratorFactory factory;
-
     /** Watch utils. */
     private final WatchUtils wu;
 
-    /** Work dir. */
-    private File workDir;
+    /** WAL archive directory. */
+    private Path walArchive;
 
-    /** Consistent id directory name. */
-    private String consIdDir;
-
-    /** Binary metadata directory. */
+    /** Binary meta directory. */
     private File binaryMeta;
 
     /** Marshaller directory. */
     private File marshaller;
 
-    /** WAL segments. */
-    private volatile File[] segments = new File[0];
+    /** Thread that waits for creation of the new WAL segments. */
+    private Thread waitSegmentThread;
 
-    /** WAL segment position. */
-    private Optional<WALPointer> pos = Optional.empty();
+    /** Queue of segments to process. */
+    private final BlockingQueue<Path> archiveSegments = new LinkedBlockingQueue<>();
 
     /**
      * @param cfg Ignite configuration.
      * @param consumer Event consumer.
      */
     public IgniteCDC(IgniteConfiguration cfg, CDCConsumer consumer) {
+        this.log = logger(cfg, workDir(cfg));
         this.cfg = cfg;
-        this.consumer = consumer;
-        this.workDir = new File(workDirectory(cfg));
-        this.log = logger(cfg, workDir.toString());
         this.factory = new IgniteWalIteratorFactory(log);
+        this.consumer = consumer;
         this.wu = new WatchUtils(log);
 
-        if (cfg.getConsistentId() != null)
-            consIdDir = U.maskForFileName(cfg.getConsistentId().toString());
+        if (!CU.isPersistenceEnabled(cfg))
+            throw new IllegalArgumentException("Persistence disabled. IgniteCDC can't run!");
+
+        if (cfg.getConsistentId() == null)
+            log.warning("Consistent ID is not set, it is recommended to set consistent ID for production " +
+                "clusters (use IgniteConfiguration.setConsistentId property)");
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
         if (log.isInfoEnabled()) {
             log.info("Starting Ignite CDC Application.");
-            log.info(consumer.toString());
+            log.info("Consumer    -\t" + consumer.toString());
+        }
+
+        try {
+            initDirs();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+
+        if (log.isInfoEnabled()) {
+            log.info("WAL archive -\t" + walArchive);
+            log.info("Binary meta -\t" + binaryMeta);
+            log.info("Marshaller  -\t" + marshaller);
             log.info("--------------------------------");
         }
 
         consumer.start(cfg, log);
 
-        final Path[] nodeWalDir = new Path[1];
+        waitSegmentThread = new Thread(() -> wu.waitFor(walArchive,
+            p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches(),
+            archiveSegment -> {
+                log.info("Found new segment - " + archiveSegment);
 
-        findNodeWalDir(dir -> nodeWalDir[0] = dir);
-
-        if (log.isInfoEnabled())
-            log.info("Node WAL directory found[dir=" + nodeWalDir[0] + ']');
-
-        watchForNewWALFiles(nodeWalDir);
-
-        try {
-            int segmentIdx = 0;
-
-            while (segments.length == 0) {
-                if (log.isDebugEnabled())
-                    log.debug("No WAL segments found");
-
-                Thread.sleep(250);
-            }
-
-            log.info("Moving to the next WAL segment[segment=" + segments[segmentIdx].getName() + ']');
-
-            while (true) {
-                segmentIdx = readAvailableEvents(segmentIdx);
-
-                Thread.sleep(250);
-            }
-        }
-        catch (InterruptedException | IgniteCheckedException e) {
-            log.info("IgniteCDC stopped.");
-        }
-    }
-
-    /** @param nodeWalDir */
-    private void watchForNewWALFiles(Path[] nodeWalDir) {
-        Thread newFileThread = new Thread(() ->
-            wu.waitFor(nodeWalDir[0], p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches(), walFile -> {
-                File[] newWalFiles = new File[segments.length + 1];
-
-                System.arraycopy(segments, 0, newWalFiles, 0, segments.length);
-
-                newWalFiles[segments.length] = walFile.toFile();
-
-                Arrays.sort(newWalFiles);
-
-                segments = newWalFiles;
+                try {
+                    archiveSegments.put(archiveSegment);
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteException(e);
+                }
 
                 return true;
-            })
-        );
+            }),
+            "wait-archive-segments");
 
-        newFileThread.start();
-    }
+        waitSegmentThread.start();
 
-    /**
-     * Reads available events from {@code idx} file of {@link #segments}.
-     * @param idx Index of the WAL segment.
-     * @return Last readed position.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private int readAvailableEvents(int idx)
-        throws IgniteCheckedException {
+        while (true) {
+            try {
+                Path segment = archiveSegments.take();
 
-        if (log.isDebugEnabled())
-            log.debug("Fetching new events from WAL[segment=" + segments[idx].getName() + ']');
-
-        int read = readFromFile(segments[idx]);
-
-        if (read == 0 && idx < segments.length - 1) {
-            read = readFromFile(segments[idx+1]);
-
-            if (read > 0) {
-                log.info("Moving to the next WAL segment[segment=" + segments[idx+1].getName() + ']');
-
-                return idx + 1;
+                readSegment(segment.toFile());
+            }
+            catch (IgniteCheckedException | InterruptedException e) {
+                throw new IgniteException(e);
             }
         }
-
-        return idx;
     }
 
-    private int readFromFile(File file) throws IgniteCheckedException {
-        IteratorParametersBuilder builder = new IteratorParametersBuilder()
+    /** Reads all available from segment. */
+    private void readSegment(File segment) throws IgniteCheckedException {
+        IgniteWalIteratorFactory.IteratorParametersBuilder builder = new IgniteWalIteratorFactory.IteratorParametersBuilder()
             .log(log)
             .binaryMetadataFileStoreDir(binaryMeta)
             .marshallerMappingFileStoreDir(marshaller)
             .keepBinary(true)
-            .filesOrDirs(file);
-
-        pos.ifPresent(ptr -> builder.from((FileWALPointer)ptr));
-
-        int read = 0;
+            .filesOrDirs(segment);
 
         try (WALIterator it = factory.iterator(builder)) {
-            while (it.hasNext()) {
-                WALRecord rec = it.next().get2();
-
-                read++;
-
-                consumer.onRecord(rec);
-            }
-
-            if (read > 0)
-                pos = it.lastRead().map(WALPointer::next);
+            while (it.hasNext())
+                consumer.onRecord(it.next().get2());
         }
-        return read;
+    }
+
+    /** Founds required directories. */
+    private void initDirs() throws IgniteCheckedException {
+        String workDir = workDir(cfg);
+
+        walArchive = initArchiveDir(workDir);
+
+        String consIdDir = walArchive.getName(walArchive.getNameCount() - 1).toString();
+
+        if (log.isDebugEnabled())
+            log.debug("Found WAL archive[dir=" + walArchive + ']');
+
+        binaryMeta = new File(U.resolveWorkDirectory(workDir, DFLT_BINARY_METADATA_PATH, false), consIdDir);
+
+        marshaller = U.resolveWorkDirectory(workDir, DFLT_MARSHALLER_PATH, false);
+
+        if (log.isDebugEnabled()) {
+            log.debug("Using BinaryMeta directory[dir=" + binaryMeta + ']');
+            log.debug("Using Marshaller directory[dir=" + marshaller + ']');
+        }
     }
 
     /**
-     * Finds node wal directory.
-     *
-     * @param callback Callback to be notified.
+     * @param workDir Working directory.
+     * @return WAL archive directory.
      */
-    private void findNodeWalDir(Consumer<Path> callback) {
-        wu.waitFor(workDir.toPath(), work -> {
-            if (log.isDebugEnabled())
-                log.debug("Work directory found[dir=" + work + ']');
+    private Path initArchiveDir(String workDir) {
+        Path archiveParent;
 
-            wu.waitFor(Paths.get(work.toAbsolutePath().toString(), DFLT_STORE_DIR), db -> {
-                if (log.isDebugEnabled())
-                    log.debug("DB directory found[dir=" + work + ']');
+        if (cfg.getDataStorageConfiguration() != null &&
+            !F.isEmpty(cfg.getDataStorageConfiguration().getWalArchivePath())) {
+            archiveParent = Paths.get(cfg.getDataStorageConfiguration().getWalArchivePath());
 
-                wu.waitFor(Paths.get(work.toAbsolutePath().toString(), DFLT_WAL_PATH), wal -> {
-                    if (log.isDebugEnabled())
-                        log.debug("WAL directory found[dir=" + wal + ']');
+            if (!archiveParent.isAbsolute())
+                archiveParent = Paths.get(workDir, cfg.getDataStorageConfiguration().getWalArchivePath());
+        }
+        else
+            archiveParent = Paths.get(workDir).resolve(DFLT_WAL_ARCHIVE_PATH);
 
-                    Consumer<Path> preCallback = p -> resolveDirs();
+        if (log.isDebugEnabled())
+            log.debug("Archive root[dir=" + archiveParent + ']');
 
-                    if (consIdDir != null)
-                        wu.waitFor(Paths.get(wal.toAbsolutePath().toString(), consIdDir),
-                            preCallback.andThen(callback));
-                    else {
-                        if (log.isInfoEnabled()) {
-                            log.info("Consistent id not specified. Waiting for first WAL directory available[parent=" +
-                                wal + ']');
-                        }
+        final Path[] archiveDir = new Path[1];
 
-                        wu.waitFor(wal, p -> !p.endsWith(DFLT_WAL_ARCHIVE_PATH), p -> {
-                            consIdDir = p.subpath(p.getNameCount() - 1, p.getNameCount()).toString();
+        wu.waitFor(archiveParent,
+            dir -> dir.getName(dir.getNameCount() - 1).toString().matches(NODE_PATTERN + UUID_STR_PATTERN),
+            dir -> { archiveDir[0] = dir; });
 
-                            if (log.isInfoEnabled())
-                                log.info("Found consistenId directory[consId=" + consIdDir + ']');
-
-                            preCallback.andThen(callback).accept(p);
-                        });
-                    }
-                });
-            });
-        });
+        return archiveDir[0];
     }
 
-    /** Resolves directories required for WAL iteration. */
-    private void resolveDirs() {
-        try {
-            binaryMeta =
-                new File(U.resolveWorkDirectory(workDir.toString(), DFLT_BINARY_METADATA_PATH, false), consIdDir);
-
-            marshaller = U.resolveWorkDirectory(workDir.toString(), DFLT_MARSHALLER_PATH, false);
-
-            if (log.isInfoEnabled()) {
-                log.info("Using BinaryMeta directory[dir=" + binaryMeta + ']');
-                log.info("Using Marshaller directory[dir=" + marshaller + ']');
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
 
     /**
      * Initialize logger.
      *
      * @param cfg Configuration.
-     * @throws IgniteCheckedException
      */
     private static IgniteLogger logger(IgniteConfiguration cfg, String workDir) {
         try {
@@ -295,11 +233,9 @@ public class IgniteCDC implements Runnable {
     /**
      * Resolves work directory.
      *
-     * @param cfg
-     * @return
-     * @throws IgniteCheckedException
+     * @return Working directory
      */
-    private static String workDirectory(IgniteConfiguration cfg) {
+    public static String workDir(IgniteConfiguration cfg) {
         try {
             String igniteHome = cfg.getIgniteHome();
 
@@ -318,5 +254,10 @@ public class IgniteCDC implements Runnable {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        waitSegmentThread.interrupt();
     }
 }

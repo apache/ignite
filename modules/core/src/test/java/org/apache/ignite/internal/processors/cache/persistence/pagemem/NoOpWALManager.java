@@ -179,10 +179,6 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
         return -1L;
     }
 
-    @Override public long lastSegment() {
-        return -1L;
-    }
-
     /** {@inheritDoc} */
     @Override public long maxArchivedSegmentToDelete() {
         return -1;

@@ -52,40 +52,29 @@ public class WatchUtils {
      * @param filter Filter of events.
      * @param callback Callback to be notified.
      */
-    public void waitFor(Path watchDir, Predicate<Path> filter, Consumer<Path> callback) {
-        waitFor(watchDir, filter, p -> {
-            callback.accept(p);
-
-            return false;
-        });
-    }
-
-    /**
-     * Waits for creation of the path and notifies callback of it.
-     *
-     * @param watchDir Dir to watch
-     * @param filter Filter of events.
-     * @param callback Callback to be notified.
-     */
     public void waitFor(Path watchDir, Predicate<Path> filter, Predicate<Path> callback) {
+        // If watch dir not exists waiting for it creation.
+        if (!Files.exists(watchDir))
+            waitFor(watchDir, dir -> {});
+
         try {
-            try(Stream<Path> children = Files.walk(watchDir, 1).filter(p -> !p.equals(watchDir))) {
-                final boolean[] status = {true};
-
-                children.filter(filter).sorted().peek(p -> {
-                    if (status[0])
-                        status[0] = callback.test(p);
-                }).count();
-
-                if (!status[0])
-                    return;
-            }
-
-            if (log.isInfoEnabled())
-                log.info("Waiting for creation of directory. Watching directory[dir=" + watchDir + ']');
-
             try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
                 watchDir.register(watcher, ENTRY_CREATE);
+
+                try(Stream<Path> children = Files.walk(watchDir, 1).filter(p -> !p.equals(watchDir))) {
+                    final boolean[] status = {true};
+
+                    children.filter(filter).sorted().peek(p -> {
+                        if (status[0])
+                            status[0] = callback.test(p);
+                    }).count();
+
+                    if (!status[0])
+                        return;
+                }
+
+                if (log.isDebugEnabled())
+                    log.debug("Waiting for creation of directory. Watching directory[dir=" + watchDir + ']');
 
                 boolean needNext = true;
 
@@ -100,8 +89,8 @@ public class WatchUtils {
 
                         Path evtPath = Paths.get(watchDir.toString(), evt.context().toString()).toAbsolutePath();
 
-                        if (log.isInfoEnabled())
-                            log.info("Event received[evt=" + evtPath.toAbsolutePath() + ",kind=" + kind + ']');
+                        if (log.isDebugEnabled())
+                            log.debug("Event received[evt=" + evtPath.toAbsolutePath() + ",kind=" + kind + ']');
 
                         if (filter.test(evtPath)) {
                             needNext = callback.test(evtPath);
@@ -124,6 +113,21 @@ public class WatchUtils {
         catch (IOException | InterruptedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * Waits for creation of the path and notifies callback of it.
+     *
+     * @param watchDir Dir to watch
+     * @param filter Filter of events.
+     * @param callback Callback to be notified.
+     */
+    public void waitFor(Path watchDir, Predicate<Path> filter, Consumer<Path> callback) {
+        waitFor(watchDir, filter, p -> {
+            callback.accept(p);
+
+            return false;
+        });
     }
 
     /**

@@ -22,6 +22,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.LOGICAL;
+
 /**
  * CDC consumer that log all records.
  */
@@ -40,7 +42,8 @@ public class LogAllCDCConsumer implements CDCConsumer {
 
     /** {@inheritDoc} */
     @Override public <T extends WALRecord> void onRecord(T record) {
-        log.info(Objects.toString(record));
+        if (record.type().purpose() == LOGICAL)
+            log.info(Objects.toString(record));
     }
 
     /** {@inheritDoc} */

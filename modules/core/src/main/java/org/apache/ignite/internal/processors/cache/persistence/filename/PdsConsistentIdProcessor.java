@@ -57,10 +57,10 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     private static final String NODEIDX_UID_SEPARATOR = "-";
 
     /** Constant node subfolder prefix and node index pattern (nodeII, where II - node index as decimal integer) */
-    private static final String NODE_PATTERN = DB_FOLDER_PREFIX + "[0-9]*" + NODEIDX_UID_SEPARATOR;
+    public static final String NODE_PATTERN = DB_FOLDER_PREFIX + "[0-9]*" + NODEIDX_UID_SEPARATOR;
 
     /** Uuid as string pattern. */
-    private static final String UUID_STR_PATTERN = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
+    public static final String UUID_STR_PATTERN = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
 
     /**
      * Subdir (nodeII-UID, where II - node index as decimal integer, UID - string representation of consistent ID)

@@ -1559,7 +1559,7 @@ public class IgnitionEx {
     /**
      * Grid data container.
      */
-    private static final class IgniteNamedInstance {
+    public static final class IgniteNamedInstance {
         /** Map of registered MBeans. */
         private static final Map<MBeanServer, GridMBeanServerData> mbeans =
             new HashMap<>();

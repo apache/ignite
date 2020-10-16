@@ -18,7 +18,7 @@
 package org.apache.ignite.cdc;
 
 import java.io.File;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 
 /** Consumer state. */
 public class ConsumerState {
@@ -35,11 +35,11 @@ public class ConsumerState {
         this.stateDir = new File(workDir, CDC_STATE_DIR);
     }
 
-    public FileWALPointer get() {
+    public WALPointer get() {
         return null;
     }
 
-    public void save(FileWALPointer ptr) {
+    public void save(WALPointer ptr) {
 
     }
 }
