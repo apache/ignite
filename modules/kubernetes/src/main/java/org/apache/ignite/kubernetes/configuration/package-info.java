@@ -15,24 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import org.apache.ignite.client.TestClusterClientConnection;
-import org.apache.ignite.internal.kubernetes.connection.KubernetesServiceAddressResolverTest;
-import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfigurationTest;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinderSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 /**
- * Ignite Kubernetes integration test.
+ * <!-- Package description. -->
+ * Contains Kubernetes configuration classes.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    KubernetesConnectionConfigurationTest.class,
-    TcpDiscoveryKubernetesIpFinderSelfTest.class,
-    TestClusterClientConnection.class,
-    KubernetesServiceAddressResolverTest.class
-})
-public class IgniteKubernetesTestSuite {
-}
+
+package org.apache.ignite.kubernetes.configuration;
