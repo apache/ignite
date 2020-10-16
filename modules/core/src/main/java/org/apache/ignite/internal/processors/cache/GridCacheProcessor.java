@@ -311,7 +311,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Cache configuration enricher. */
     private final CacheConfigurationEnricher enricher;
 
-    /** */
+    /** Pool to use while restoring partition states. */
     private final ForkJoinPool restorePartitionsPool;
 
     /**
@@ -5300,7 +5300,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return enricher;
     }
 
-    /** */
+    /**
+     * Returns {@code ForkJoinPool} instance to be used in partition states restoration.<br/>
+     * It's more convenient then egular pools because it can be used to parallel by cache groups and by partitions
+     * without sacrificing code simplicity (cache group tasks won't exclusively occupy their threads and won't block
+     * partition tasks as a result).<br/>
+     * <br/>
+     * There's a chance that this pool will later be replaced with a more common one, like system pool, for example.
+     *
+     * @return Pool instance.
+     */
     public ForkJoinPool restorePartitionsPool() {
         return restorePartitionsPool;
     }
