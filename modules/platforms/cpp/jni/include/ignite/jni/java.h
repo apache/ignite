@@ -18,6 +18,8 @@
 #ifndef _IGNITE_JNI_JAVA
 #define _IGNITE_JNI_JAVA
 
+#include <stdint.h>
+
 #include <jni.h>
 
 #include "ignite/common/common.h"
@@ -29,90 +31,90 @@ namespace ignite
         namespace java
         {
             /* Handlers for callbacks from Java. */
-            typedef long long(JNICALL *CacheStoreCreateHandler)(void* target, long long memPtr);
-            typedef int(JNICALL *CacheStoreInvokeHandler)(void* target, long long objPtr, long long memPtr);
-            typedef void(JNICALL *CacheStoreDestroyHandler)(void* target, long long objPtr);
-            typedef long long(JNICALL *CacheStoreSessionCreateHandler)(void* target, long long storePtr);
+            typedef int64_t(JNICALL *CacheStoreCreateHandler)(void* target, int64_t memPtr);
+            typedef int(JNICALL *CacheStoreInvokeHandler)(void* target, int64_t objPtr, int64_t memPtr);
+            typedef void(JNICALL *CacheStoreDestroyHandler)(void* target, int64_t objPtr);
+            typedef int64_t(JNICALL *CacheStoreSessionCreateHandler)(void* target, int64_t storePtr);
 
-            typedef long long(JNICALL *CacheEntryFilterCreateHandler)(void* target, long long memPtr);
-            typedef int(JNICALL *CacheEntryFilterApplyHandler)(void* target, long long ptr, long long memPtr);
-            typedef void(JNICALL *CacheEntryFilterDestroyHandler)(void* target, long long ptr);
+            typedef int64_t(JNICALL *CacheEntryFilterCreateHandler)(void* target, int64_t memPtr);
+            typedef int(JNICALL *CacheEntryFilterApplyHandler)(void* target, int64_t ptr, int64_t memPtr);
+            typedef void(JNICALL *CacheEntryFilterDestroyHandler)(void* target, int64_t ptr);
 
-            typedef void(JNICALL *CacheInvokeHandler)(void* target, long long inMemPtr, long long outMemPtr);
+            typedef void(JNICALL *CacheInvokeHandler)(void* target, int64_t inMemPtr, int64_t outMemPtr);
 
-            typedef void(JNICALL *ComputeTaskMapHandler)(void* target, long long taskPtr, long long inMemPtr, long long outMemPtr);
-            typedef int(JNICALL *ComputeTaskJobResultHandler)(void* target, long long taskPtr, long long jobPtr, long long memPtr);
-            typedef void(JNICALL *ComputeTaskReduceHandler)(void* target, long long taskPtr);
-            typedef void(JNICALL *ComputeTaskCompleteHandler)(void* target, long long taskPtr, long long memPtr);
-            typedef int(JNICALL *ComputeJobSerializeHandler)(void* target, long long jobPtr, long long memPtr);
-            typedef long long(JNICALL *ComputeJobCreateHandler)(void* target, long long memPtr);
-            typedef void(JNICALL *ComputeJobExecuteHandler)(void* target, long long jobPtr, int cancel, long long memPtr);
-            typedef void(JNICALL *ComputeJobCancelHandler)(void* target, long long jobPtr);
-            typedef void(JNICALL *ComputeJobDestroyHandler)(void* target, long long jobPtr);
+            typedef void(JNICALL *ComputeTaskMapHandler)(void* target, int64_t taskPtr, int64_t inMemPtr, int64_t outMemPtr);
+            typedef int(JNICALL *ComputeTaskJobResultHandler)(void* target, int64_t taskPtr, int64_t jobPtr, int64_t memPtr);
+            typedef void(JNICALL *ComputeTaskReduceHandler)(void* target, int64_t taskPtr);
+            typedef void(JNICALL *ComputeTaskCompleteHandler)(void* target, int64_t taskPtr, int64_t memPtr);
+            typedef int(JNICALL *ComputeJobSerializeHandler)(void* target, int64_t jobPtr, int64_t memPtr);
+            typedef int64_t(JNICALL *ComputeJobCreateHandler)(void* target, int64_t memPtr);
+            typedef void(JNICALL *ComputeJobExecuteHandler)(void* target, int64_t jobPtr, int cancel, int64_t memPtr);
+            typedef void(JNICALL *ComputeJobCancelHandler)(void* target, int64_t jobPtr);
+            typedef void(JNICALL *ComputeJobDestroyHandler)(void* target, int64_t jobPtr);
 
-            typedef void(JNICALL *ContinuousQueryListenerApplyHandler)(void* target, long long lsnrPtr, long long memPtr);
-            typedef long long(JNICALL *ContinuousQueryFilterCreateHandler)(void* target, long long memPtr);
-            typedef int(JNICALL *ContinuousQueryFilterApplyHandler)(void* target, long long filterPtr, long long memPtr);
-            typedef void(JNICALL *ContinuousQueryFilterReleaseHandler)(void* target, long long filterPtr);
+            typedef void(JNICALL *ContinuousQueryListenerApplyHandler)(void* target, int64_t lsnrPtr, int64_t memPtr);
+            typedef int64_t(JNICALL *ContinuousQueryFilterCreateHandler)(void* target, int64_t memPtr);
+            typedef int(JNICALL *ContinuousQueryFilterApplyHandler)(void* target, int64_t filterPtr, int64_t memPtr);
+            typedef void(JNICALL *ContinuousQueryFilterReleaseHandler)(void* target, int64_t filterPtr);
 
-            typedef void(JNICALL *DataStreamerTopologyUpdateHandler)(void* target, long long ldrPtr, long long topVer, int topSize);
-            typedef void(JNICALL *DataStreamerStreamReceiverInvokeHandler)(void* target, long long ptr, void* cache, long long memPtr, unsigned char keepPortable);
+            typedef void(JNICALL *DataStreamerTopologyUpdateHandler)(void* target, int64_t ldrPtr, int64_t topVer, int topSize);
+            typedef void(JNICALL *DataStreamerStreamReceiverInvokeHandler)(void* target, int64_t ptr, void* cache, int64_t memPtr, unsigned char keepPortable);
 
-            typedef void(JNICALL *FutureByteResultHandler)(void* target, long long futAddr, int res);
-            typedef void(JNICALL *FutureBoolResultHandler)(void* target, long long futAddr, int res);
-            typedef void(JNICALL *FutureShortResultHandler)(void* target, long long futAddr, int res);
-            typedef void(JNICALL *FutureCharResultHandler)(void* target, long long futAddr, int res);
-            typedef void(JNICALL *FutureIntResultHandler)(void* target, long long futAddr, int res);
-            typedef void(JNICALL *FutureFloatResultHandler)(void* target, long long futAddr, float res);
-            typedef void(JNICALL *FutureLongResultHandler)(void* target, long long futAddr, long long res);
-            typedef void(JNICALL *FutureDoubleResultHandler)(void* target, long long futAddr, double res);
-            typedef void(JNICALL *FutureObjectResultHandler)(void* target, long long futAddr, long long memPtr);
-            typedef void(JNICALL *FutureNullResultHandler)(void* target, long long futAddr);
-            typedef void(JNICALL *FutureErrorHandler)(void* target, long long futAddr, long long memPtr);
+            typedef void(JNICALL *FutureByteResultHandler)(void* target, int64_t futAddr, int res);
+            typedef void(JNICALL *FutureBoolResultHandler)(void* target, int64_t futAddr, int res);
+            typedef void(JNICALL *FutureShortResultHandler)(void* target, int64_t futAddr, int res);
+            typedef void(JNICALL *FutureCharResultHandler)(void* target, int64_t futAddr, int res);
+            typedef void(JNICALL *FutureIntResultHandler)(void* target, int64_t futAddr, int res);
+            typedef void(JNICALL *FutureFloatResultHandler)(void* target, int64_t futAddr, float res);
+            typedef void(JNICALL *FutureLongResultHandler)(void* target, int64_t futAddr, int64_t res);
+            typedef void(JNICALL *FutureDoubleResultHandler)(void* target, int64_t futAddr, double res);
+            typedef void(JNICALL *FutureObjectResultHandler)(void* target, int64_t futAddr, int64_t memPtr);
+            typedef void(JNICALL *FutureNullResultHandler)(void* target, int64_t futAddr);
+            typedef void(JNICALL *FutureErrorHandler)(void* target, int64_t futAddr, int64_t memPtr);
 
-            typedef void(JNICALL *LifecycleEventHandler)(void* target, long long ptr, int evt);
+            typedef void(JNICALL *LifecycleEventHandler)(void* target, int64_t ptr, int evt);
 
-            typedef void(JNICALL *MemoryReallocateHandler)(void* target, long long memPtr, int cap);
+            typedef void(JNICALL *MemoryReallocateHandler)(void* target, int64_t memPtr, int cap);
 
-            typedef long long(JNICALL *MessagingFilterCreateHandler)(void* target, long long memPtr);
-            typedef int(JNICALL *MessagingFilterApplyHandler)(void* target, long long ptr, long long memPtr);
-            typedef void(JNICALL *MessagingFilterDestroyHandler)(void* target, long long ptr);
+            typedef int64_t(JNICALL *MessagingFilterCreateHandler)(void* target, int64_t memPtr);
+            typedef int(JNICALL *MessagingFilterApplyHandler)(void* target, int64_t ptr, int64_t memPtr);
+            typedef void(JNICALL *MessagingFilterDestroyHandler)(void* target, int64_t ptr);
 
-            typedef long long(JNICALL *EventFilterCreateHandler)(void* target, long long memPtr);
-            typedef int(JNICALL *EventFilterApplyHandler)(void* target, long long ptr, long long memPtr);
-            typedef void(JNICALL *EventFilterDestroyHandler)(void* target, long long ptr);
+            typedef int64_t(JNICALL *EventFilterCreateHandler)(void* target, int64_t memPtr);
+            typedef int(JNICALL *EventFilterApplyHandler)(void* target, int64_t ptr, int64_t memPtr);
+            typedef void(JNICALL *EventFilterDestroyHandler)(void* target, int64_t ptr);
 
-            typedef long long(JNICALL *ServiceInitHandler)(void* target, long long memPtr);
-            typedef void(JNICALL *ServiceExecuteHandler)(void* target, long long svcPtr, long long memPtr);
-            typedef void(JNICALL *ServiceCancelHandler)(void* target, long long svcPtr, long long memPtr);
-            typedef void(JNICALL *ServiceInvokeMethodHandler)(void* target, long long svcPtr, long long inMemPtr, long long outMemPtr);
-            typedef int(JNICALL *ClusterNodeFilterApplyHandler)(void* target, long long memPtr);
+            typedef int64_t(JNICALL *ServiceInitHandler)(void* target, int64_t memPtr);
+            typedef void(JNICALL *ServiceExecuteHandler)(void* target, int64_t svcPtr, int64_t memPtr);
+            typedef void(JNICALL *ServiceCancelHandler)(void* target, int64_t svcPtr, int64_t memPtr);
+            typedef void(JNICALL *ServiceInvokeMethodHandler)(void* target, int64_t svcPtr, int64_t inMemPtr, int64_t outMemPtr);
+            typedef int(JNICALL *ClusterNodeFilterApplyHandler)(void* target, int64_t memPtr);
 
-            typedef long long(JNICALL *NodeInfoHandler)(void* target, long long memPtr);
+            typedef int64_t(JNICALL *NodeInfoHandler)(void* target, int64_t memPtr);
 
-            typedef void(JNICALL *OnStartHandler)(void* target, void* proc, long long memPtr);
+            typedef void(JNICALL *OnStartHandler)(void* target, void* proc, int64_t memPtr);
             typedef void(JNICALL *OnStopHandler)(void* target);
             typedef void(JNICALL *ErrorHandler)(void* target, int errCode, const char* errClsChars, int errClsCharsLen, const char* errMsgChars, int errMsgCharsLen, const char* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
 
-            typedef long long(JNICALL *ExtensionCallbackInLongOutLongHandler)(void* target, int typ, long long arg1);
-            typedef long long(JNICALL *ExtensionCallbackInLongLongOutLongHandler)(void* target, int typ, long long arg1, long long arg2);
+            typedef int64_t(JNICALL *ExtensionCallbackInLongOutLongHandler)(void* target, int typ, int64_t arg1);
+            typedef int64_t(JNICALL *ExtensionCallbackInLongLongOutLongHandler)(void* target, int typ, int64_t arg1, int64_t arg2);
 
             typedef void(JNICALL *OnClientDisconnectedHandler)(void* target);
             typedef void(JNICALL *OnClientReconnectedHandler)(void* target, unsigned char clusterRestarted);
 
-            typedef long long(JNICALL *AffinityFunctionInitHandler)(void* target, long long memPtr, void* baseFunc);
-            typedef int(JNICALL *AffinityFunctionPartitionHandler)(void* target, long long ptr, long long memPtr);
-            typedef void(JNICALL *AffinityFunctionAssignPartitionsHandler)(void* target, long long ptr, long long inMemPtr, long long outMemPtr);
-            typedef void(JNICALL *AffinityFunctionRemoveNodeHandler)(void* target, long long ptr, long long memPtr);
-            typedef void(JNICALL *AffinityFunctionDestroyHandler)(void* target, long long ptr);
+            typedef int64_t(JNICALL *AffinityFunctionInitHandler)(void* target, int64_t memPtr, void* baseFunc);
+            typedef int(JNICALL *AffinityFunctionPartitionHandler)(void* target, int64_t ptr, int64_t memPtr);
+            typedef void(JNICALL *AffinityFunctionAssignPartitionsHandler)(void* target, int64_t ptr, int64_t inMemPtr, int64_t outMemPtr);
+            typedef void(JNICALL *AffinityFunctionRemoveNodeHandler)(void* target, int64_t ptr, int64_t memPtr);
+            typedef void(JNICALL *AffinityFunctionDestroyHandler)(void* target, int64_t ptr);
 
             typedef void(JNICALL *ConsoleWriteHandler)(const char* chars, int charsLen, unsigned char isErr);
 
-            typedef void(JNICALL *LoggerLogHandler)(void* target, int level, const char* messageChars, int messageCharsLen, const char* categoryChars, int categoryCharsLen, const char* errorInfoChars, int errorInfoCharsLen, long long memPtr);
+            typedef void(JNICALL *LoggerLogHandler)(void* target, int level, const char* messageChars, int messageCharsLen, const char* categoryChars, int categoryCharsLen, const char* errorInfoChars, int errorInfoCharsLen, int64_t memPtr);
             typedef bool(JNICALL *LoggerIsLevelEnabledHandler)(void* target, int level);
             
-            typedef long long(JNICALL *InLongOutLongHandler)(void* target, int type, long long val);
-            typedef long long(JNICALL *InLongLongLongObjectOutLongHandler)(void* target, int type, long long val1, long long val2, long long val3, void* arg);
+            typedef int64_t(JNICALL *InLongOutLongHandler)(void* target, int type, int64_t val);
+            typedef int64_t(JNICALL *InLongLongLongObjectOutLongHandler)(void* target, int type, int64_t val1, int64_t val2, int64_t val3, void* arg);
 
             /**
              * Is Java 9 or later is used.
@@ -147,8 +149,8 @@ namespace ignite
                 jmethodID m_Throwable_getMessage;
                 jmethodID m_Throwable_printStackTrace;
 
-				jclass c_PlatformUtils;
-				jmethodID m_PlatformUtils_getFullStackTrace;
+                jclass c_PlatformUtils;
+                jmethodID m_PlatformUtils_getFullStackTrace;
 
                 /**
                  * Constructor.
@@ -164,7 +166,7 @@ namespace ignite
                  * Write error information.
                  */
                 bool WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen,
-					char** stackTrace, int* stackTraceLen);
+                    char** stackTrace, int* stackTraceLen);
             };
 
             /**
@@ -307,33 +309,33 @@ namespace ignite
             public:
                 static JniContext* Create(char** opts, int optsLen, JniHandlers hnds);
                 static JniContext* Create(char** opts, int optsLen, JniHandlers hnds, JniErrorInfo* errInfo);
-                static int Reallocate(long long memPtr, int cap);
+                static int Reallocate(int64_t memPtr, int cap);
                 static void Detach();
                 static void Release(jobject obj);
                 static void SetConsoleHandler(ConsoleWriteHandler consoleHandler);
                 static int RemoveConsoleHandler(ConsoleWriteHandler consoleHandler);
 
-                void IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr);
-                void IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo);
-                long long IgnitionEnvironmentPointer(char* name);
-                long long IgnitionEnvironmentPointer(char* name, JniErrorInfo* errInfo);
+                void IgnitionStart(char* cfgPath, char* name, int factoryId, int64_t dataPtr);
+                void IgnitionStart(char* cfgPath, char* name, int factoryId, int64_t dataPtr, JniErrorInfo* errInfo);
+                int64_t IgnitionEnvironmentPointer(char* name);
+                int64_t IgnitionEnvironmentPointer(char* name, JniErrorInfo* errInfo);
                 bool IgnitionStop(char* name, bool cancel);
                 bool IgnitionStop(char* name, bool cancel, JniErrorInfo* errInfo);
                 void IgnitionStopAll(bool cancel);
                 void IgnitionStopAll(bool cancel, JniErrorInfo* errInfo);
                 
-                long long TargetInLongOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
-                long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
-                void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
-                jobject TargetInStreamOutObject(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
-                jobject TargetInObjectStreamOutObjectStream(jobject obj, int opType, void* arg, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
-                void TargetOutStream(jobject obj, int opType, long long memPtr, JniErrorInfo* errInfo = NULL);
+                int64_t TargetInLongOutLong(jobject obj, int type, int64_t memPtr, JniErrorInfo* errInfo = NULL);
+                int64_t TargetInStreamOutLong(jobject obj, int type, int64_t memPtr, JniErrorInfo* errInfo = NULL);
+                void TargetInStreamOutStream(jobject obj, int opType, int64_t inMemPtr, int64_t outMemPtr, JniErrorInfo* errInfo = NULL);
+                jobject TargetInStreamOutObject(jobject obj, int type, int64_t memPtr, JniErrorInfo* errInfo = NULL);
+                jobject TargetInObjectStreamOutObjectStream(jobject obj, int opType, void* arg, int64_t inMemPtr, int64_t outMemPtr, JniErrorInfo* errInfo = NULL);
+                void TargetOutStream(jobject obj, int opType, int64_t memPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetOutObject(jobject obj, int opType, JniErrorInfo* errInfo = NULL);
-                void TargetInStreamAsync(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
-                jobject TargetInStreamOutObjectAsync(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
+                void TargetInStreamAsync(jobject obj, int type, int64_t memPtr, JniErrorInfo* errInfo = NULL);
+                jobject TargetInStreamOutObjectAsync(jobject obj, int type, int64_t memPtr, JniErrorInfo* errInfo = NULL);
 
-                jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
-                jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
+                jobject CacheOutOpQueryCursor(jobject obj, int type, int64_t memPtr, JniErrorInfo* errInfo = NULL);
+                jobject CacheOutOpContinuousQuery(jobject obj, int type, int64_t memPtr, JniErrorInfo* errInfo = NULL);
 
                 jobject Acquire(jobject obj);
 

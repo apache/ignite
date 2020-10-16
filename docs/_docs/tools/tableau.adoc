@@ -1,0 +1,66 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Using Tableau With Apache Ignite
+
+== Overview
+
+http://www.tableau.com[Tableau, window=_blank] is an interactive data-visualization tool focused on business intelligence.
+It uses ODBC APIs to connect to a variety of databases and data platforms allowing to analyze data stored there.
+
+You can use the link:SQL/ODBC/odbc-driver[Ignite ODBC driver] to interconnect Ignite with Tableau and analyze the data stored
+in the cluster.
+
+== Installation and Configuration
+
+To connect to an Apache Ignite cluster from Tableau, you need to do the following:
+
+* Download and install Tableau Desktop. Refer to an official Tableau documentation located on http://www.tableau.com[the product's main website, window=_blank].
+* Install the Apache Ignite ODBC driver on a Windows or Unix-based operating system. The detailed instructions can be found on the link:SQL/ODBC/odbc-driver[driver's configuration page].
+* Finalize the driver configuration by link:SQL/ODBC/connection-string-dsn#configuring-dsn[setting up a DSN (Data Source Name)].
+Tableau will connect to the DSN configured at this step.
+* The ODBC driver communicates to the Ignite cluster over a so-called `ODBC processor`. Make sure that this component is
+enabled on the link:SQL/ODBC/querying-modifying-data#configuring-the-cluster[cluster side].
+
+After all the above steps are accomplished, you can connect to the cluster and analyze its data.
+
+== Connecting to Ignite Cluster
+
+. Launch Tableau application and find `Other Databases (ODBC)` setting located under `Connect` \-> `To a Server` \-> `+More...+` window.
++
+image::images/tools/tableau-choosing_driver_01.png[Tableau Driver Selection]
+
+
+. Click on the `Edit connection` reference.
++
+image::images/tools/tableau-edit_connection.png[Tableau Edit Connection]
+
+. Set the `DSN` property to the name you configured before. In the example below it's equal to `LocalApacheIgniteDSN`.
+Once this is done, click on the `Connect` button.
++
+image::images/tools/tableau-choose_dsn_01.png[Tableau Choose DSN]
+
+. Tableau will try to check the connection by opening a temporary one. If the validation succeeds, the `Sign In` button
+as well as additional connection related fields will become active. Click on `Sign In` to finalize the connection process.
++
+image::images/tools/tableau-choose_dsn_02.png[Tableau Choose DSN]
+
+== Data Querying and Analysis
+
+Once the connection is successfully established between Ignite and Tableau, the data can be queried and analyzed in a
+variety of ways supported by Tableau. For more details, refer to the  http://www.tableau.com/learn/training[official Tableau documentation, window=_blank].
+
+image::images/tools/tableau-creating_dataset.png[Tableau Creating DataSet]
+
+image::images/tools/tableau-visualizing_data.png[Tableau Visualizing Data]

@@ -21,7 +21,7 @@
 #include "ignite/impl/binary/binary_writer_impl.h"
 
 /** FNV1 hash offset basis. */
-enum { FNV1_OFFSET_BASIS = 0x811C9DC5 };
+enum { FNV1_OFFSET_BASIS = 0x811C9DC5L };
 
 /** FNV1 hash prime. */
 enum { FNV1_PRIME = 0x01000193 };
@@ -47,7 +47,7 @@ namespace ignite
                 if (!id)
                 {
                     // Initialize offset when the first field is written.
-                    id = FNV1_OFFSET_BASIS;
+                    id = (int32_t) FNV1_OFFSET_BASIS;
                 }
 
                 // Advance schema hash.

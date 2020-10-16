@@ -50,14 +50,14 @@ namespace ignite
                 /**
                  * Execute job locally.
                  */
-                virtual void ExecuteLocal() = 0;
+                virtual void ExecuteLocal(IgniteEnvironment* env) = 0;
 
                 /**
                  * Execute job remote.
                  *
                  * @param writer Writer.
                  */
-                virtual void ExecuteRemote(binary::BinaryWriterImpl& writer) = 0;
+                virtual void ExecuteRemote(IgniteEnvironment* env, binary::BinaryWriterImpl& writer) = 0;
             };
 
             /**
@@ -97,10 +97,11 @@ namespace ignite
                     return res;
                 }
 
-                virtual void ExecuteLocal()
+                virtual void ExecuteLocal(IgniteEnvironment* env)
                 {
                     try
                     {
+                        job.SetIgnite(env->GetIgnite());
                         res.SetResult(job.Call());
                     }
                     catch (const IgniteError& err)
@@ -118,9 +119,9 @@ namespace ignite
                     }
                 }
 
-                virtual void ExecuteRemote(binary::BinaryWriterImpl& writer)
+                virtual void ExecuteRemote(IgniteEnvironment* env, binary::BinaryWriterImpl& writer)
                 {
-                    ExecuteLocal();
+                    ExecuteLocal(env);
 
                     res.Write(writer);
                 }
@@ -169,10 +170,11 @@ namespace ignite
                     return res;
                 }
 
-                virtual void ExecuteLocal()
+                virtual void ExecuteLocal(IgniteEnvironment* env)
                 {
                     try
                     {
+                        job.SetIgnite(env->GetIgnite());
                         job.Call();
                         res.SetResult();
                     }
@@ -191,9 +193,9 @@ namespace ignite
                     }
                 }
 
-                virtual void ExecuteRemote(binary::BinaryWriterImpl& writer)
+                virtual void ExecuteRemote(IgniteEnvironment* env, binary::BinaryWriterImpl& writer)
                 {
-                    ExecuteLocal();
+                    ExecuteLocal(env);
 
                     res.Write(writer);
                 }

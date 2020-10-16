@@ -163,8 +163,13 @@ if "%JMX_PORT%" == "" (
     echo %0, WARN: Failed to resolve JMX host. JMX will be disabled.
     set JMX_MON=
 ) else (
-    set JMX_MON=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=%JMX_PORT% ^
-    -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false
+    if "%JMX_PORT%" == "IGNITE_JMX_PORT_IS_BUSY" (
+        echo %0, WARN: Provided IGNITE_JMX_PORT is busy. JMX will be disabled.
+        set JMX_MON=
+    ) else (
+        set JMX_MON=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=%JMX_PORT% ^
+        -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false
+    )
 )
 
 ::
