@@ -22,7 +22,6 @@ from time import monotonic
 from ducktape.utils.local_filesystem_utils import mkdir_p
 from ducktape.tests.test import Test, TestContext
 from ignitetest.services.ignite import IgniteService
-from ignitetest.services.utils.ignite_persistence import PersistenceAware
 
 
 # pylint: disable=W0223
@@ -45,7 +44,7 @@ class IgniteTest(Test):
         """
         return monotonic()
 
-    def copy_ignite_root_dir(self):
+    def copy_ignite_work_dir(self):
         """
         Copying root directory from service nodes to the results directory.
         """
@@ -66,15 +65,15 @@ class IgniteTest(Test):
                         if not os.path.isdir(dest):
                             mkdir_p(dest)
 
-                        tgz_root = '%s.tgz' % PersistenceAware.PERSISTENT_ROOT
+                        tgz_root = '%s.tgz' % service.WORK_DIR
 
-                        node.account.ssh(compress_cmd(PersistenceAware.PERSISTENT_ROOT, tgz_root))
+                        node.account.ssh(compress_cmd(service.PERSISTENT_ROOT, tgz_root))
                         node.account.copy_from(tgz_root, dest)
                 except Exception as ex:  # pylint: disable=W0703
                     self.logger.warn(
                         "Error copying persistence dir from %(source)s to %(dest)s. \
                         service %(service)s: %(message)s" %
-                        {'source': PersistenceAware.PERSISTENT_ROOT,
+                        {'source': service.PERSISTENT_ROOT,
                          'dest': dest,
                          'service': service,
                          'message': ex})

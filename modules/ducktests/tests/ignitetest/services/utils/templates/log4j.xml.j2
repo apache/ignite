@@ -28,8 +28,8 @@
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
         </Console>
 
-        <RollingFile name="FILE" fileName="{{ log_file }}"
-                     filePattern="{{ log_file }}-%d{yyyy-MM-dd_HH-mm}"
+        <RollingFile name="FILE" fileName="{{ logs_dir }}/ignite.log"
+                     filePattern="{{ logs_dir }}/ignite-%i-%d{yyyy-MM-dd_HH-mm}.log"
                      immediateFlush="true">
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
             <Policies>
@@ -58,13 +58,11 @@
         <Logger name="com.amazonaws" level="WARN"/>
 
         <Root level="INFO">
-            <!-- Uncomment to enable logging to console. -->
-            <!--
-            <AppenderRef ref="CONSOLE" level="DEBUG"/>
-            -->
+            <AppenderRef ref="CONSOLE" level="INFO"/>
 
             <AppenderRef ref="CONSOLE_ERR" level="ERROR"/>
-            <AppenderRef ref="FILE" level="INFO"/>
+
+            <AppenderRef ref="FILE" level="DEBUG"/>
         </Root>
     </Loggers>
 </Configuration>
