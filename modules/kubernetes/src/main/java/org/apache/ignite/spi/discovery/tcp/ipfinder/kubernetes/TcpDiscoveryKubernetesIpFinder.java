@@ -39,6 +39,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -84,9 +86,11 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
     private IgniteLogger log;
 
     /** Init routine guard. */
+    @GridToStringExclude
     private final AtomicBoolean initGuard = new AtomicBoolean();
 
     /** Init routine latch. */
+    @GridToStringExclude
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
     /** Trust manager. */
@@ -336,5 +340,10 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
     private static class Endpoints {
         /** */
         public List<Subset> subsets;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryKubernetesIpFinder.class, this);
     }
 }
