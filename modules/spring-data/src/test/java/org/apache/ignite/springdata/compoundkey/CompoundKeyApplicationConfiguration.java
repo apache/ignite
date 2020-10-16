@@ -29,7 +29,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableIgniteRepositories
 public class CompoundKeyApplicationConfiguration {
-
     /**
      * Ignite instance bean
      * */

@@ -23,7 +23,6 @@ import java.util.Objects;
  * Value-class
  * */
 public class City {
-
     /** City name */
     private String name;
 

@@ -23,7 +23,6 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 
 /** Compound key for city class  */
 public class CityKey implements Serializable {
-
     /** city identifier */
     private int ID;
 

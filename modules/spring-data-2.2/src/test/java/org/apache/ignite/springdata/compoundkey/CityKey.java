@@ -23,7 +23,6 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 
 /** Compound key for city class  */
 public class CityKey implements Serializable {
-
     /** city identifier */
     private int ID;
 
@@ -58,9 +57,12 @@ public class CityKey implements Serializable {
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
+
         CityKey key = (CityKey)o;
+
         return ID == key.ID &&
                 COUNTRYCODE.equals(key.COUNTRYCODE);
     }

@@ -27,7 +27,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 @RepositoryConfig(cacheName = "City")
 public interface CityRepository extends IgniteRepository<City, CityKey> {
-
     /**
      * Find city by id
      * @param id city identifier

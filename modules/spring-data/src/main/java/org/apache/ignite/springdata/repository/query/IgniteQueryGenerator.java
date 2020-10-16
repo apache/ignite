@@ -38,6 +38,7 @@ public class IgniteQueryGenerator {
      */
     @NotNull public static IgniteQuery generateSql(Method mtd, RepositoryMetadata metadata) {
         PartTree parts;
+
         try {
             parts = new PartTree(mtd.getName(), metadata.getDomainType());
         }
@@ -174,6 +175,7 @@ public class IgniteQueryGenerator {
      */
     private static String getColumnName(Part part, Class<?> domainType) {
         PropertyPath prperty = part.getProperty();
+
         if (prperty.getType() != domainType)
             return domainType.getSimpleName() + "." + prperty.getSegment();
         else
