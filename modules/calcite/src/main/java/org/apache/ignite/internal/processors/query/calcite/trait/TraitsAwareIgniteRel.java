@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.List;
-
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.DeriveMode;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -60,8 +59,7 @@ public interface TraitsAwareIgniteRel extends IgniteRel {
 
                 assert satisfies : "current rel=" + getRelTypeName() + ", traits=" + traits + ", required=" + required;
 
-                if (satisfies)
-                    planner.register(node, this);
+                planner.register(node, this);
             }
         }
 

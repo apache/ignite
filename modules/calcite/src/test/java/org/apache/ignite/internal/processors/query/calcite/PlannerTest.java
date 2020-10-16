@@ -2631,10 +2631,10 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             assertNotNull(phys);
-            assertEquals("IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner])\n" +
+            assertEquals("" +
+                    "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner])\n" +
                     "  IgniteTableScan(table=[[PUBLIC, DEPT]], requiredColunms=[{0}])\n" +
-                    "  IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor2.DEPTNO, $t0)):INTEGER, 2)], " +
-                    "requiredColunms=[{2}])\n",
+                    "  IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor2.DEPTNO, $t0)):INTEGER, 2)], requiredColunms=[{2}])\n",
                 RelOptUtil.toString(phys));
         }
     }
