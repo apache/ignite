@@ -5302,7 +5302,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * Returns {@code ForkJoinPool} instance to be used in partition states restoration.<br/>
-     * It's more convenient then egular pools because it can be used to parallel by cache groups and by partitions
+     * It's more convenient than regular pools because it can be used to parallel by cache groups and by partitions
      * without sacrificing code simplicity (cache group tasks won't exclusively occupy their threads and won't block
      * partition tasks as a result).<br/>
      * <br/>
