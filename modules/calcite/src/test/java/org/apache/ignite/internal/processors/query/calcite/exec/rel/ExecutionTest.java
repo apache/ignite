@@ -22,21 +22,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -80,34 +78,39 @@ public class ExecutionTest extends AbstractExecutionTest {
         // WHERE P.ID >= 2
 
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
 
-        ScanNode<Object[]> persons = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
             new Object[]{0, "Igor", "Seliverstov"},
             new Object[]{1, "Roman", "Kondakov"},
             new Object[]{2, "Ivan", "Pavlukhin"},
             new Object[]{3, "Alexey", "Goncharuk"}
         ));
 
-        ScanNode<Object[]> projects = new ScanNode<>(ctx, Arrays.asList(
+        rowType = TypeUtils.createRowType(tf, int.class, int.class, String.class);
+        ScanNode<Object[]> projects = new ScanNode<>(ctx, rowType, Arrays.asList(
             new Object[]{0, 2, "Calcite"},
             new Object[]{1, 1, "SQL"},
             new Object[]{2, 2, "Ignite"},
             new Object[]{3, 0, "Core"}
         ));
 
-        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, String.class);
-        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, int.class, String.class);
+        RelDataType outType = TypeUtils.createRowType(tf, int.class, String.class, String.class, int.class, int.class, String.class);
+        RelDataType leftType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
+        RelDataType rightType = TypeUtils.createRowType(tf, int.class, int.class, String.class);
 
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, leftType, rightType, INNER, r -> r[0] == r[4]);
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, INNER, r -> r[0] == r[4]);
         join.register(F.asList(persons, projects));
 
-        ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[0], r[1], r[5]});
+        rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
+        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[]{r[0], r[1], r[5]});
         project.register(join);
 
-        FilterNode<Object[]> filter = new FilterNode<>(ctx, r -> (Integer) r[0] >= 2);
+        FilterNode<Object[]> filter = new FilterNode<>(ctx, rowType, r -> (Integer) r[0] >= 2);
         filter.register(project);
 
-        RootNode<Object[]> node = new RootNode<>(ctx);
+        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
         node.register(filter);
 
         assert node.hasNext();
@@ -127,31 +130,34 @@ public class ExecutionTest extends AbstractExecutionTest {
     @Test
     public void testUnionAll() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-        ScanNode<Object[]> scan1 = new ScanNode<>(ctx, Arrays.asList(
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
+
+        ScanNode<Object[]> scan1 = new ScanNode<>(ctx, rowType, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
             row("Alexey", 1000)
         ));
 
-        ScanNode<Object[]> scan2 = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> scan2 = new ScanNode<>(ctx, rowType, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
             row("Alexey", 1000)
         ));
 
-        ScanNode<Object[]> scan3 = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> scan3 = new ScanNode<>(ctx, rowType, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
             row("Alexey", 1000)
         ));
 
-        UnionAllNode<Object[]> union = new UnionAllNode<>(ctx);
+        UnionAllNode<Object[]> union = new UnionAllNode<>(ctx, rowType);
         union.register(F.asList(scan1, scan2, scan3));
 
-        RootNode<Object[]> root = new RootNode<>(ctx);
+        RootNode<Object[]> root = new RootNode<>(ctx, rowType);
         root.register(union);
 
         assertTrue(root.hasNext());
@@ -174,28 +180,34 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        ScanNode<Object[]> persons = new ScanNode<>(ctx, Arrays.asList(
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
+
+        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
             new Object[]{0, "Igor", 1},
             new Object[]{1, "Roman", 2},
             new Object[]{2, "Ivan", null},
             new Object[]{3, "Alexey", 1}
         ));
 
-        ScanNode<Object[]> deps = new ScanNode<>(ctx, Arrays.asList(
+        rowType = TypeUtils.createRowType(tf, int.class, String.class);
+        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
             new Object[]{1, "Core"},
             new Object[]{2, "SQL"}
         ));
 
+        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class, int.class, String.class);
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
         RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
 
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, leftType, rightType, LEFT, r -> r[2] == r[3]);
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, LEFT, r -> r[2] == r[3]);
         join.register(F.asList(persons, deps));
 
-        ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[0], r[1], r[4]});
+        rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
+        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[]{r[0], r[1], r[4]});
         project.register(join);
 
-        RootNode<Object[]> node = new RootNode<>(ctx);
+        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
         node.register(project);
 
         assert node.hasNext();
@@ -222,30 +234,35 @@ public class ExecutionTest extends AbstractExecutionTest {
         //         on e.depno = d.depno
 
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
 
-        ScanNode<Object[]> persons = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
             new Object[]{0, "Igor", 1},
             new Object[]{1, "Roman", 2},
             new Object[]{2, "Ivan", null},
             new Object[]{3, "Alexey", 1}
         ));
 
-        ScanNode<Object[]> deps = new ScanNode<>(ctx, Arrays.asList(
+        rowType = TypeUtils.createRowType(tf, int.class, String.class);
+        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
             new Object[]{1, "Core"},
             new Object[]{2, "SQL"},
             new Object[]{3, "QA"}
         ));
 
+        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, int.class, String.class, Integer.class);
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
         RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
 
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, leftType, rightType, RIGHT, r -> r[0] == r[4]);
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, RIGHT, r -> r[0] == r[4]);
         join.register(F.asList(deps, persons));
 
-        ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[2], r[3], r[1]});
+        rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
+        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[]{r[2], r[3], r[1]});
         project.register(join);
 
-        RootNode<Object[]> node = new RootNode<>(ctx);
+        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
         node.register(project);
 
         assert node.hasNext();
@@ -272,30 +289,35 @@ public class ExecutionTest extends AbstractExecutionTest {
         //              on e.depno = d.depno
 
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
 
-        ScanNode<Object[]> persons = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
             new Object[]{0, "Igor", 1},
             new Object[]{1, "Roman", 2},
             new Object[]{2, "Ivan", null},
             new Object[]{3, "Alexey", 1}
         ));
 
-        ScanNode<Object[]> deps = new ScanNode<>(ctx, Arrays.asList(
+        rowType = TypeUtils.createRowType(tf, int.class, String.class);
+        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
             new Object[]{1, "Core"},
             new Object[]{2, "SQL"},
             new Object[]{3, "QA"}
         ));
 
+        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class, int.class, String.class);
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
         RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
 
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, leftType, rightType, FULL, r -> r[2] == r[3]);
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, FULL, r -> r[2] == r[3]);
         join.register(F.asList(persons, deps));
 
-        ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[0], r[1], r[4]});
+        rowType = TypeUtils.createRowType(tf, Integer.class, String.class, String.class);
+        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[]{r[0], r[1], r[4]});
         project.register(join);
 
-        RootNode<Object[]> node = new RootNode<>(ctx);
+        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
         node.register(project);
 
         assert node.hasNext();
@@ -323,30 +345,35 @@ public class ExecutionTest extends AbstractExecutionTest {
         //        on e.depno = d.depno
 
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
 
-        ScanNode<Object[]> persons = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
             new Object[]{0, "Igor", 1},
             new Object[]{1, "Roman", 2},
             new Object[]{2, "Ivan", null},
             new Object[]{3, "Alexey", 1}
         ));
 
-        ScanNode<Object[]> deps = new ScanNode<>(ctx, Arrays.asList(
+        rowType = TypeUtils.createRowType(tf, int.class, String.class);
+        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
             new Object[]{1, "Core"},
             new Object[]{2, "SQL"},
             new Object[]{3, "QA"}
         ));
 
+        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
         RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
 
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, leftType, rightType, SEMI, r -> r[0] == r[4]);
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, SEMI, r -> r[0] == r[4]);
         join.register(F.asList(deps, persons));
 
-        ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[1]});
+        rowType = TypeUtils.createRowType(tf, String.class);
+        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[]{r[1]});
         project.register(join);
 
-        RootNode<Object[]> node = new RootNode<>(ctx);
+        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
         node.register(project);
 
         assert node.hasNext();
@@ -371,30 +398,35 @@ public class ExecutionTest extends AbstractExecutionTest {
         //        on e.depno = d.depno
 
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, Integer.class);
 
-        ScanNode<Object[]> persons = new ScanNode<>(ctx, Arrays.asList(
+        ScanNode<Object[]> persons = new ScanNode<>(ctx, rowType, Arrays.asList(
             new Object[]{0, "Igor", 1},
             new Object[]{1, "Roman", 2},
             new Object[]{2, "Ivan", null},
             new Object[]{3, "Alexey", 1}
         ));
 
-        ScanNode<Object[]> deps = new ScanNode<>(ctx, Arrays.asList(
+        rowType = TypeUtils.createRowType(tf, int.class, String.class);
+        ScanNode<Object[]> deps = new ScanNode<>(ctx, rowType, Arrays.asList(
             new Object[]{1, "Core"},
             new Object[]{2, "SQL"},
             new Object[]{3, "QA"}
         ));
 
+        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
         RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
 
-        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, leftType, rightType, ANTI, r -> r[0] == r[4]);
+        NestedLoopJoinNode<Object[]> join = NestedLoopJoinNode.create(ctx, outType, leftType, rightType, ANTI, r -> r[0] == r[4]);
         join.register(F.asList(deps, persons));
 
-        ProjectNode<Object[]> project = new ProjectNode<>(ctx, r -> new Object[]{r[1]});
+        rowType = TypeUtils.createRowType(tf, String.class);
+        ProjectNode<Object[]> project = new ProjectNode<>(ctx, rowType, r -> new Object[]{r[1]});
         project.register(join);
 
-        RootNode<Object[]> node = new RootNode<>(ctx);
+        RootNode<Object[]> node = new RootNode<>(ctx, rowType);
         node.register(project);
 
         assert node.hasNext();
@@ -413,21 +445,14 @@ public class ExecutionTest extends AbstractExecutionTest {
     @Test
     public void testAggregateMapReduceAvg() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-
-        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
             row("Alexey", 1000)
         ));
-
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-
-        RelDataType rowType = typeFactory.createStructType(F.asList(
-            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
-            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
-
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
         AggregateCall call = AggregateCall.create(
             SqlStdOperatorTable.AVG,
@@ -437,16 +462,20 @@ public class ExecutionTest extends AbstractExecutionTest {
             ImmutableIntList.of(1),
             -1,
             RelCollations.EMPTY,
-            typeFactory.createSqlType(SqlTypeName.DOUBLE),
+            tf.createJavaType(double.class),
             null);
 
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
+
+        RelDataType mapType = IgniteMapAggregate.rowType(tf);
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
+        RelDataType reduceType = TypeUtils.createRowType(tf, double.class);
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
         reduce.register(map);
 
-        RootNode<Object[]> root = new RootNode<>(ctx);
+        RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
         root.register(reduce);
 
         assertTrue(root.hasNext());
@@ -458,23 +487,15 @@ public class ExecutionTest extends AbstractExecutionTest {
     @Test
     public void testAggregateMapReduceSum() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
             row("Alexey", 1000)
         ));
 
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-
-        RelDataType rowType = typeFactory.createStructType(F.asList(
-            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
-            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
-
-        // empty groups means SELECT SUM(field) FROM table
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
-
-        // AVG on second field
         AggregateCall call = AggregateCall.create(
             SqlStdOperatorTable.SUM,
             false,
@@ -483,16 +504,20 @@ public class ExecutionTest extends AbstractExecutionTest {
             ImmutableIntList.of(1),
             -1,
             RelCollations.EMPTY,
-            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            tf.createJavaType(int.class),
             null);
 
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
+
+        RelDataType mapType = IgniteMapAggregate.rowType(tf);
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
+        RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
         reduce.register(map);
 
-        RootNode<Object[]> root = new RootNode<>(ctx);
+        RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
         root.register(reduce);
 
         assertTrue(root.hasNext());
@@ -504,21 +529,14 @@ public class ExecutionTest extends AbstractExecutionTest {
     @Test
     public void testAggregateMapReduceMin() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-
-        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
             row("Alexey", 1000)
         ));
-
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-
-        RelDataType rowType = typeFactory.createStructType(F.asList(
-            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
-            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
-
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
         AggregateCall call = AggregateCall.create(
             SqlStdOperatorTable.MIN,
@@ -528,16 +546,20 @@ public class ExecutionTest extends AbstractExecutionTest {
             ImmutableIntList.of(1),
             -1,
             RelCollations.EMPTY,
-            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            tf.createJavaType(int.class),
             null);
 
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
+
+        RelDataType mapType = IgniteMapAggregate.rowType(tf);
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
+        RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
         reduce.register(map);
 
-        RootNode<Object[]> root = new RootNode<>(ctx);
+        RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
         root.register(reduce);
 
         assertTrue(root.hasNext());
@@ -549,21 +571,14 @@ public class ExecutionTest extends AbstractExecutionTest {
     @Test
     public void testAggregateMapReduceMax() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-
-        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
             row("Alexey", 1000)
         ));
-
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-
-        RelDataType rowType = typeFactory.createStructType(F.asList(
-            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
-            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
-
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
         AggregateCall call = AggregateCall.create(
             SqlStdOperatorTable.MAX,
@@ -573,16 +588,20 @@ public class ExecutionTest extends AbstractExecutionTest {
             ImmutableIntList.of(1),
             -1,
             RelCollations.EMPTY,
-            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            tf.createJavaType(int.class),
             null);
 
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
+
+        RelDataType mapType = IgniteMapAggregate.rowType(tf);
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
+        RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
         reduce.register(map);
 
-        RootNode<Object[]> root = new RootNode<>(ctx);
+        RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
         root.register(reduce);
 
         assertTrue(root.hasNext());
@@ -594,21 +613,14 @@ public class ExecutionTest extends AbstractExecutionTest {
     @Test
     public void testAggregateMapReduceCount() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-
-        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
             row("Alexey", 1000)
         ));
-
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-
-        RelDataType rowType = typeFactory.createStructType(F.asList(
-            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
-            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
-
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
         AggregateCall call = AggregateCall.create(
             SqlStdOperatorTable.COUNT,
@@ -618,16 +630,20 @@ public class ExecutionTest extends AbstractExecutionTest {
             ImmutableIntList.of(),
             -1,
             RelCollations.EMPTY,
-            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            tf.createJavaType(int.class),
             null);
 
-        AggregateNode<Object[]> map = new AggregateNode<>(ctx, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
+
+        RelDataType mapType = IgniteMapAggregate.rowType(tf);
+        AggregateNode<Object[]> map = new AggregateNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
-        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, REDUCE, grpSets, accFactory(ctx, call, REDUCE, rowType), rowFactory());
+        RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
+        AggregateNode<Object[]> reduce = new AggregateNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
         reduce.register(map);
 
-        RootNode<Object[]> root = new RootNode<>(ctx);
+        RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
         root.register(reduce);
 
         assertTrue(root.hasNext());
@@ -639,21 +655,14 @@ public class ExecutionTest extends AbstractExecutionTest {
     @Test
     public void testAggregateAvg() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-
-        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
             row("Alexey", 1000)
         ));
-
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-
-        RelDataType rowType = typeFactory.createStructType(F.asList(
-            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
-            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
-
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
         AggregateCall call = AggregateCall.create(
             SqlStdOperatorTable.AVG,
@@ -663,13 +672,16 @@ public class ExecutionTest extends AbstractExecutionTest {
             ImmutableIntList.of(1),
             -1,
             RelCollations.EMPTY,
-            typeFactory.createSqlType(SqlTypeName.DOUBLE),
+            tf.createJavaType(double.class),
             null);
 
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
+
+        RelDataType aggType = TypeUtils.createRowType(tf, int.class);
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]> root = new RootNode<>(ctx);
+        RootNode<Object[]> root = new RootNode<>(ctx, aggType);
         root.register(agg);
 
         assertTrue(root.hasNext());
@@ -681,24 +693,15 @@ public class ExecutionTest extends AbstractExecutionTest {
     @Test
     public void testAggregateSum() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-
-        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
             row("Alexey", 1000)
         ));
 
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-
-        RelDataType rowType = typeFactory.createStructType(F.asList(
-            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
-            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
-
-        // empty groups means SELECT SUM(field) FROM table
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
-
-        // AVG on second field
         AggregateCall call = AggregateCall.create(
             SqlStdOperatorTable.SUM,
             false,
@@ -707,13 +710,16 @@ public class ExecutionTest extends AbstractExecutionTest {
             ImmutableIntList.of(1),
             -1,
             RelCollations.EMPTY,
-            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            tf.createJavaType(int.class),
             null);
 
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
+
+        RelDataType aggType = TypeUtils.createRowType(tf, int.class);
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]> root = new RootNode<>(ctx);
+        RootNode<Object[]> root = new RootNode<>(ctx, aggType);
         root.register(agg);
 
         assertTrue(root.hasNext());
@@ -725,21 +731,14 @@ public class ExecutionTest extends AbstractExecutionTest {
     @Test
     public void testAggregateMin() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-
-        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
             row("Alexey", 1000)
         ));
-
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-
-        RelDataType rowType = typeFactory.createStructType(F.asList(
-            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
-            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
-
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
         AggregateCall call = AggregateCall.create(
             SqlStdOperatorTable.MIN,
@@ -749,13 +748,16 @@ public class ExecutionTest extends AbstractExecutionTest {
             ImmutableIntList.of(1),
             -1,
             RelCollations.EMPTY,
-            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            tf.createJavaType(int.class),
             null);
 
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
+
+        RelDataType aggType = TypeUtils.createRowType(tf, int.class);
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]> root = new RootNode<>(ctx);
+        RootNode<Object[]> root = new RootNode<>(ctx, aggType);
         root.register(agg);
 
         assertTrue(root.hasNext());
@@ -767,21 +769,14 @@ public class ExecutionTest extends AbstractExecutionTest {
     @Test
     public void testAggregateMax() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-
-        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
             row("Alexey", 1000)
         ));
-
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-
-        RelDataType rowType = typeFactory.createStructType(F.asList(
-            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
-            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
-
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
         AggregateCall call = AggregateCall.create(
             SqlStdOperatorTable.MAX,
@@ -791,14 +786,18 @@ public class ExecutionTest extends AbstractExecutionTest {
             ImmutableIntList.of(1),
             -1,
             RelCollations.EMPTY,
-            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            tf.createJavaType(int.class),
             null);
 
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
+
+        RelDataType aggType = TypeUtils.createRowType(tf, int.class);
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]> root = new RootNode<>(ctx);
+        RootNode<Object[]> root = new RootNode<>(ctx, aggType);
         root.register(agg);
+
 
         assertTrue(root.hasNext());
         assertEquals(1400, root.next()[0]);
@@ -809,21 +808,14 @@ public class ExecutionTest extends AbstractExecutionTest {
     @Test
     public void testAggregateCount() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-
-        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
             row("Igor", 200),
             row("Roman", 300),
             row("Ivan", 1400),
             row("Alexey", 1000)
         ));
-
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-
-        RelDataType rowType = typeFactory.createStructType(F.asList(
-            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
-            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
-
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
         AggregateCall call = AggregateCall.create(
             SqlStdOperatorTable.COUNT,
@@ -833,13 +825,16 @@ public class ExecutionTest extends AbstractExecutionTest {
             ImmutableIntList.of(),
             -1,
             RelCollations.EMPTY,
-            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            tf.createJavaType(int.class),
             null);
 
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
+
+        RelDataType aggType = TypeUtils.createRowType(tf, int.class);
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]> root = new RootNode<>(ctx);
+        RootNode<Object[]> root = new RootNode<>(ctx, aggType);
         root.register(agg);
 
         assertTrue(root.hasNext());
@@ -851,22 +846,14 @@ public class ExecutionTest extends AbstractExecutionTest {
     @Test
     public void testAggregateCountByGroup() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-
-        ScanNode<Object[]> scan = new ScanNode<>(ctx, Arrays.asList(
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
             row("Igor", 0, 200),
             row("Roman", 1, 300),
             row("Ivan", 1, 1400),
             row("Alexey", 0, 1000)
         ));
-
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-
-        RelDataType rowType = typeFactory.createStructType(F.asList(
-            Pair.of("NAME", typeFactory.createSqlType(SqlTypeName.VARCHAR)),
-            Pair.of("PROJECT_ID", typeFactory.createSqlType(SqlTypeName.INTEGER)),
-            Pair.of("SALARY", typeFactory.createSqlType(SqlTypeName.INTEGER))));
-
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(1));
 
         AggregateCall call = AggregateCall.create(
             SqlStdOperatorTable.COUNT,
@@ -876,13 +863,16 @@ public class ExecutionTest extends AbstractExecutionTest {
             ImmutableIntList.of(),
             -1,
             RelCollations.EMPTY,
-            typeFactory.createSqlType(SqlTypeName.INTEGER),
+            tf.createJavaType(int.class),
             null);
 
-        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(1));
+
+        RelDataType aggType = TypeUtils.createRowType(tf, int.class);
+        AggregateNode<Object[]> agg = new AggregateNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
         agg.register(scan);
 
-        RootNode<Object[]> root = new RootNode<>(ctx);
+        RootNode<Object[]> root = new RootNode<>(ctx, aggType);
         root.register(agg);
 
         assertTrue(root.hasNext());

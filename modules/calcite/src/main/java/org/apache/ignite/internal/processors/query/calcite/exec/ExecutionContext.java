@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
@@ -60,6 +60,9 @@ public class ExecutionContext<Row> implements DataContext {
 
     /** */
     private final ExpressionFactory<Row> expressionFactory;
+
+    /** */
+    private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
     /** */
     private Object[] correlations = new Object[16];
@@ -191,6 +194,9 @@ public class ExecutionContext<Row> implements DataContext {
 
     /** {@inheritDoc} */
     @Override public Object get(String name) {
+        if (Variable.CANCEL_FLAG.camelName.equals(name))
+            return cancelFlag;
+
         return params.get(name);
     }
 
@@ -225,5 +231,18 @@ public class ExecutionContext<Row> implements DataContext {
      */
     public void execute(Runnable task) {
         executor.execute(qryId, fragmentId(), task);
+    }
+
+    /**
+     * Sets cancel flag, returns {@code true} if flag was changed by this call.
+     *
+     * @return {@code True} if flag was changed by this call.
+     */
+    public boolean cancel() {
+        return !cancelFlag.get() && cancelFlag.compareAndSet(false, true);
+    }
+
+    public boolean isCancelled() {
+        return cancelFlag.get();
     }
 }

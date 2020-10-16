@@ -21,13 +21,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-
 import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -77,11 +76,12 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
      */
     public ModifyNode(
         ExecutionContext<Row> ctx,
+        RelDataType rowType,
         TableDescriptor desc,
         TableModify.Operation op,
         List<String> cols
     ) {
-        super(ctx);
+        super(ctx, rowType);
 
         this.desc = desc;
         this.op = op;

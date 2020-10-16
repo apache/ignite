@@ -25,7 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -72,9 +72,9 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
     /**
      * @param ctx Execution context.
      */
-    public AggregateNode(ExecutionContext<Row> ctx, AggregateType type, List<ImmutableBitSet> grpSets,
+    public AggregateNode(ExecutionContext<Row> ctx, RelDataType rowType, AggregateType type, List<ImmutableBitSet> grpSets,
         Supplier<List<AccumulatorWrapper<Row>>> accFactory, RowFactory<Row> rowFactory) {
-        super(ctx);
+        super(ctx, rowType);
 
         this.type = type;
         this.accFactory = accFactory;

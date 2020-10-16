@@ -22,8 +22,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
-
 import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -81,8 +81,8 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
      * @param ctx Execution context.
      * @param cond Join expression.
      */
-    public CorrelatedNestedLoopJoinNode(ExecutionContext<Row> ctx, Predicate<Row> cond, Set<CorrelationId> correlationIds) {
-        super(ctx);
+    public CorrelatedNestedLoopJoinNode(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond, Set<CorrelationId> correlationIds) {
+        super(ctx, rowType);
 
         assert !F.isEmpty(correlationIds);
 

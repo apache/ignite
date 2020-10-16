@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.function.Function;
-
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -33,8 +33,8 @@ public class ProjectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
      * @param ctx Execution context.
      * @param prj Projection.
      */
-    public ProjectNode(ExecutionContext<Row> ctx, Function<Row, Row> prj) {
-        super(ctx);
+    public ProjectNode(ExecutionContext<Row> ctx, RelDataType rowType, Function<Row, Row> prj) {
+        super(ctx, rowType);
 
         this.prj = prj;
     }

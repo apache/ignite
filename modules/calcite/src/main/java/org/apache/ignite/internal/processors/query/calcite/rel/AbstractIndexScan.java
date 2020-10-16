@@ -92,7 +92,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         pw = super.explainTerms0(pw);
         return pw
             .itemIf("lower", lowerBound, !F.isEmpty(lowerBound()))
-            .itemIf("upper", upperBound, !F.isEmpty(lowerBound()));
+            .itemIf("upper", upperBound, !F.isEmpty(upperBound()));
     }
 
     /**

@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -84,7 +85,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
         long exchangeId,
         long srcFragmentId
     ) {
-        super(ctx);
+        super(ctx, ctx.getTypeFactory().createUnknownType());
         this.exchange = exchange;
         this.registry = registry;
 
@@ -106,11 +107,13 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
      * @param srcNodeIds Source node IDs.
      * @param comp Optional comparator for merge exchange.
      */
-    public void init(ExecutionContext<Row> ctx, Collection<UUID> srcNodeIds, @Nullable Comparator<Row> comp) {
+    public void init(ExecutionContext<Row> ctx, RelDataType rowType, Collection<UUID> srcNodeIds, @Nullable Comparator<Row> comp) {
         // It's important to set proper context here because
-        // because the one, that is created on a first message
+        // the one, that is created on a first message
         // received doesn't have all context variables in place.
         context(ctx);
+        rowType(rowType);
+
         this.comp = comp;
 
         // memory barier

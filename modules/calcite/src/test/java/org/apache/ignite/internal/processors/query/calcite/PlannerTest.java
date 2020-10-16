@@ -1341,7 +1341,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             exec = new LogicalRelImplementor<>(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeSvc,
                 new TestFailureProcessor(kernal)).go(fragment.root());
 
-            RootNode<Object[]> consumer = new RootNode<>(ectx);
+            RootNode<Object[]> consumer = new RootNode<>(ectx, exec.rowType());
             consumer.register(exec);
 
             //// Remote part
@@ -1600,7 +1600,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             exec = new LogicalRelImplementor<>(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeSvc,
                 new TestFailureProcessor(kernal)).go(fragment.root());
 
-            RootNode<Object[]> consumer = new RootNode<>(ectx);
+            RootNode<Object[]> consumer = new RootNode<>(ectx,exec.rowType());
             consumer.register(exec);
 
             //// Remote part

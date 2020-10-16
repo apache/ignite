@@ -23,7 +23,6 @@ import java.util.BitSet;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.Predicate;
-
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
@@ -65,8 +64,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
      * @param ctx Execution context.
      * @param cond Join expression.
      */
-    private NestedLoopJoinNode(ExecutionContext<Row> ctx, Predicate<Row> cond) {
-        super(ctx);
+    private NestedLoopJoinNode(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond) {
+        super(ctx, rowType);
 
         this.cond = cond;
         handler = ctx.rowHandler();
@@ -239,36 +238,36 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
     protected abstract void join() throws IgniteCheckedException;
 
     /** */
-    @NotNull public static <Row> NestedLoopJoinNode<Row> create(ExecutionContext<Row> ctx, RelDataType leftRowType,
+    @NotNull public static <Row> NestedLoopJoinNode<Row> create(ExecutionContext<Row> ctx, RelDataType outputRowType, RelDataType leftRowType,
         RelDataType rightRowType, JoinRelType joinType, Predicate<Row> cond) {
         switch (joinType) {
             case INNER:
-                return new InnerJoin<>(ctx, cond);
+                return new InnerJoin<>(ctx, outputRowType, cond);
 
             case LEFT: {
                 RowHandler.RowFactory<Row> rightRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rightRowType);
 
-                return new LeftJoin<>(ctx, cond, rightRowFactory);
+                return new LeftJoin<>(ctx, outputRowType, cond, rightRowFactory);
             }
 
             case RIGHT: {
                 RowHandler.RowFactory<Row> leftRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), leftRowType);
 
-                return new RightJoin<>(ctx, cond, leftRowFactory);
+                return new RightJoin<>(ctx, outputRowType, cond, leftRowFactory);
             }
 
             case FULL: {
                 RowHandler.RowFactory<Row> leftRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), leftRowType);
                 RowHandler.RowFactory<Row> rightRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rightRowType);
 
-                return new FullOuterJoin<>(ctx, cond, leftRowFactory, rightRowFactory);
+                return new FullOuterJoin<>(ctx, outputRowType, cond, leftRowFactory, rightRowFactory);
             }
 
             case SEMI:
-                return new SemiJoin<>(ctx, cond);
+                return new SemiJoin<>(ctx, outputRowType, cond);
 
             case ANTI:
-                return new AntiJoin<>(ctx, cond);
+                return new AntiJoin<>(ctx, outputRowType, cond);
 
             default:
                 throw new IllegalStateException("Join type \"" + joinType + "\" is not supported yet");
@@ -287,8 +286,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param cond Join expression.
          */
-        public InnerJoin(ExecutionContext<Row> ctx, Predicate<Row> cond) {
-            super(ctx, cond);
+        public InnerJoin(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond) {
+            super(ctx, rowType, cond);
         }
 
         /** {@inheritDoc} */
@@ -362,8 +361,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param cond Join expression.
          */
-        public LeftJoin(ExecutionContext<Row> ctx, Predicate<Row> cond, RowHandler.RowFactory<Row> rightRowFactory) {
-            super(ctx, cond);
+        public LeftJoin(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond, RowHandler.RowFactory<Row> rightRowFactory) {
+            super(ctx, rowType, cond);
 
             this.rightRowFactory = rightRowFactory;
         }
@@ -458,8 +457,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param cond Join expression.
          */
-        public RightJoin(ExecutionContext<Row> ctx, Predicate<Row> cond, RowHandler.RowFactory<Row> leftRowFactory) {
-            super(ctx, cond);
+        public RightJoin(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond, RowHandler.RowFactory<Row> leftRowFactory) {
+            super(ctx, rowType, cond);
 
             this.leftRowFactory = leftRowFactory;
         }
@@ -584,9 +583,9 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param cond Join expression.
          */
-        public FullOuterJoin(ExecutionContext<Row> ctx, Predicate<Row> cond, RowHandler.RowFactory<Row> leftRowFactory,
+        public FullOuterJoin(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond, RowHandler.RowFactory<Row> leftRowFactory,
             RowHandler.RowFactory<Row> rightRowFactory) {
-            super(ctx, cond);
+            super(ctx, rowType, cond);
 
             this.leftRowFactory = leftRowFactory;
             this.rightRowFactory = rightRowFactory;
@@ -713,8 +712,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param cond Join expression.
          */
-        public SemiJoin(ExecutionContext<Row> ctx, Predicate<Row> cond) {
-            super(ctx, cond);
+        public SemiJoin(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond) {
+            super(ctx, rowType, cond);
         }
 
         /** {@inheritDoc} */
@@ -781,8 +780,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param cond Join expression.
          */
-        public AntiJoin(ExecutionContext<Row> ctx, Predicate<Row> cond) {
-            super(ctx, cond);
+        public AntiJoin(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> cond) {
+            super(ctx, rowType, cond);
         }
 
         /** */

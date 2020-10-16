@@ -959,7 +959,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         private QueryInfo(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root) {
             this.ctx = ctx;
 
-            RootNode<Row> rootNode = new RootNode<>(ctx, this::tryClose);
+            RootNode<Row> rootNode = new RootNode<>(ctx, root.rowType(), this::tryClose);
             rootNode.register(root);
 
             this.root = rootNode;
@@ -1003,18 +1003,21 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 if (state == QueryState.RUNNING)
                     state0 = state = QueryState.CLOSING;
 
+                // 1) Cancel local fragment
+                ctx.cancel();
+
+                // 2) close local fragment
+                root.closeInternal();
+
                 if (state == QueryState.CLOSING && waiting.isEmpty())
                     state0 = state = QueryState.CLOSED;
             }
 
             if (state0 == QueryState.CLOSED) {
-                // 1) unregister runing query
+                // 3) unregister runing query
                 running.remove(ctx.queryId());
 
-                // 2) close local fragment
-                root.closeInternal();
-
-                // 3) close remote fragments
+                // 4) close remote fragments
                 for (UUID nodeId : remotes) {
                     try {
                         exchangeService().closeOutbox(nodeId, ctx.queryId(), -1, -1);

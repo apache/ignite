@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -33,8 +34,8 @@ public class UnionAllNode<Row> extends AbstractNode<Row> implements Downstream<R
     /**
      * @param ctx Execution context.
      */
-    public UnionAllNode(ExecutionContext<Row> ctx) {
-        super(ctx);
+    public UnionAllNode(ExecutionContext<Row> ctx, RelDataType rowType) {
+        super(ctx, rowType);
     }
 
     /** {@inheritDoc} */

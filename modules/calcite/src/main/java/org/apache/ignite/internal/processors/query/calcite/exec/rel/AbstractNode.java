@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -53,7 +53,10 @@ public abstract class AbstractNode<Row> implements Node<Row> {
      * creates on first message received from a remote source. This case the context
      * sets in scope of {@link Inbox#init(ExecutionContext, Collection, Comparator)} method call.
      */
-    private volatile ExecutionContext<Row> ctx;
+    private ExecutionContext<Row> ctx;
+
+    /** */
+    private RelDataType rowType;
 
     /** */
     private Downstream<Row> downstream;
@@ -67,8 +70,9 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     /**
      * @param ctx Execution context.
      */
-    protected AbstractNode(ExecutionContext<Row> ctx) {
+    protected AbstractNode(ExecutionContext<Row> ctx, RelDataType rowType) {
         this.ctx = ctx;
+        this.rowType = rowType;
     }
 
     /**
@@ -83,6 +87,16 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     /** */
     protected void context(ExecutionContext<Row> ctx) {
         this.ctx = ctx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType rowType() {
+        return rowType;
+    }
+
+    /** */
+    protected void rowType(RelDataType rowType) {
+        this.rowType = rowType;
     }
 
     /** {@inheritDoc} */
@@ -165,7 +179,7 @@ public abstract class AbstractNode<Row> implements Node<Row> {
 
     /** */
     protected void checkState() throws IgniteCheckedException {
-        if (isClosed())
+        if (context().isCancelled())
             throw new ExecutionCancelledException();
         if (Thread.interrupted())
             throw new IgniteInterruptedCheckedException("Thread was interrupted.");

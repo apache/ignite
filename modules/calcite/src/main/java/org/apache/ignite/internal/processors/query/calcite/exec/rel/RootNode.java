@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -65,8 +66,8 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     /**
      * @param ctx Execution context.
      */
-    public RootNode(ExecutionContext<Row> ctx) {
-        super(ctx);
+    public RootNode(ExecutionContext<Row> ctx, RelDataType rowType) {
+        super(ctx, rowType);
 
         onClose = this::closeInternal;
     }
@@ -74,8 +75,8 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     /**
      * @param ctx Execution context.
      */
-    public RootNode(ExecutionContext<Row> ctx, Runnable onClose) {
-        super(ctx);
+    public RootNode(ExecutionContext<Row> ctx, RelDataType rowType, Runnable onClose) {
+        super(ctx, rowType);
 
         this.onClose = onClose;
     }

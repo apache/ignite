@@ -22,11 +22,13 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.UUID;
-
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -111,18 +113,21 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
             };
 
             ExecutionContext<Object[]> ectx = executionContext(locNodeId, qryId, 0);
+            IgniteTypeFactory tf = ectx.getTypeFactory();
 
-            ScanNode<Object[]> scan = new ScanNode<>(ectx, iterable);
+            RelDataType rowType = TypeUtils.createRowType(tf, int.class, int.class, int.class, int.class, int.class, int.class);
+            ScanNode<Object[]> scan = new ScanNode<>(ectx, rowType, iterable);
 
-            ProjectNode<Object[]> project = new ProjectNode<>(ectx, r -> new Object[]{r[0], r[1], r[5]});
+            rowType = TypeUtils.createRowType(tf, int.class, int.class, int.class);
+            ProjectNode<Object[]> project = new ProjectNode<>(ectx, rowType, r -> new Object[]{r[0], r[1], r[5]});
             project.register(scan);
 
-            FilterNode<Object[]> filter = new FilterNode<>(ectx, r -> (Integer) r[0] >= 2);
+            FilterNode<Object[]> filter = new FilterNode<>(ectx, rowType, r -> (Integer) r[0] >= 2);
             filter.register(project);
 
             MailboxRegistry registry = mailboxRegistry(locNodeId);
 
-            Outbox<Object[]> outbox = new Outbox<>(ectx, exchangeService(locNodeId), registry,
+            Outbox<Object[]> outbox = new Outbox<>(ectx, rowType, exchangeService(locNodeId), registry,
                 0, 1, new AllNodes(nodes.subList(0, 1)));
 
             outbox.register(filter);
@@ -134,15 +139,17 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
         UUID locNodeId = nodes.get(0);
 
         ExecutionContext<Object[]> ectx = executionContext(locNodeId, qryId, 1);
+        IgniteTypeFactory tf = ectx.getTypeFactory();
 
         MailboxRegistry registry = mailboxRegistry(locNodeId);
 
         Inbox<Object[]> inbox = (Inbox<Object[]>) registry.register(
             new Inbox<>(ectx, exchangeService(locNodeId), registry, 0, 0));
 
-        inbox.init(ectx, nodes.subList(1, nodes.size()), null);
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, int.class, int.class);
+        inbox.init(ectx, rowType, nodes.subList(1, nodes.size()), null);
 
-        RootNode<Object[]> node = new RootNode<>(ectx);
+        RootNode<Object[]> node = new RootNode<>(ectx, rowType);
 
         node.register(inbox);
 

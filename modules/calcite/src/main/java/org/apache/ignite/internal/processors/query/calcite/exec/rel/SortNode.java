@@ -18,7 +18,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Comparator;
 import java.util.PriorityQueue;
-
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -43,8 +43,8 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
      * @param ctx Execution context.
      * @param comp Rows comparator.
      */
-    public SortNode(ExecutionContext<Row> ctx, Comparator<Row> comp) {
-        super(ctx);
+    public SortNode(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp) {
+        super(ctx, rowType);
 
         rows = comp == null ? new PriorityQueue<>() : new PriorityQueue<>(comp);
     }

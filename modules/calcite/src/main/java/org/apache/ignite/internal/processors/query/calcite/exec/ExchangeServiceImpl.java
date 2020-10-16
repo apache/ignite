@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -158,8 +157,10 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     protected void onMessage(UUID nodeId, InboxCloseMessage msg) {
         Collection<Inbox<?>> inboxes = mailboxRegistry().inboxes(msg.queryId(), msg.fragmentId(), msg.exchangeId());
         if (!F.isEmpty(inboxes)) {
-            for (Inbox<?> inbox : inboxes)
+            for (Inbox<?> inbox : inboxes) {
+                inbox.context().cancel();
                 inbox.context().execute(inbox::close);
+            }
         }
         else if (log.isDebugEnabled()) {
             log.debug("Stale inbox cancel message received: [" +
@@ -174,8 +175,10 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     protected void onMessage(UUID nodeId, OutboxCloseMessage msg) {
         Collection<Outbox<?>> outboxes = mailboxRegistry().outboxes(msg.queryId(), msg.fragmentId(), msg.exchangeId());
         if (!F.isEmpty(outboxes)) {
-            for (Outbox<?> outbox : outboxes)
+            for (Outbox<?> outbox : outboxes) {
+                outbox.context().cancel();
                 outbox.context().execute(outbox::close);
+            }
         }
         else if (log.isDebugEnabled()) {
             log.debug("Stale oubox cancel message received: [" +

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Predicate;
-
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -48,8 +48,8 @@ public class FilterNode<Row> extends AbstractNode<Row> implements SingleNode<Row
      * @param ctx Execution context.
      * @param pred Predicate.
      */
-    public FilterNode(ExecutionContext<Row> ctx, Predicate<Row> pred) {
-        super(ctx);
+    public FilterNode(ExecutionContext<Row> ctx, RelDataType rowType, Predicate<Row> pred) {
+        super(ctx, rowType);
 
         this.pred = pred;
     }

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -73,13 +74,14 @@ public class Outbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Sing
      */
     public Outbox(
         ExecutionContext<Row> ctx,
+        RelDataType rowType,
         ExchangeService exchange,
         MailboxRegistry registry,
         long exchangeId,
         long targetFragmentId,
         Destination<Row> dest
     ) {
-        super(ctx);
+        super(ctx, rowType);
         this.exchange = exchange;
         this.registry = registry;
         this.targetFragmentId = targetFragmentId;

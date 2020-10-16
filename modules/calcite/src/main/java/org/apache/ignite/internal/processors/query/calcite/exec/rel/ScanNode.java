@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Iterator;
 import java.util.List;
-
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -44,8 +44,8 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
      * @param ctx Execution context.
      * @param src Source.
      */
-    public ScanNode(ExecutionContext<Row> ctx, Iterable<Row> src) {
-        super(ctx);
+    public ScanNode(ExecutionContext<Row> ctx, RelDataType rowType, Iterable<Row> src) {
+        super(ctx, rowType);
 
         this.src = src;
     }
