@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
 import java.util.UUID;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -34,7 +33,7 @@ public class CheckpointStatus {
     public static final UUID NULL_UUID = new UUID(0L, 0L);
 
     /** Null WAL pointer. */
-    public static final WALPointer NULL_PTR = new FileWALPointer(0, 0, 0);
+    public static final WALPointer NULL_PTR = new WALPointer(0, 0, 0);
 
     /** Checkpoint start timestamp. */
     public long cpStartTs;

@@ -159,15 +159,33 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestMultipleClients()
         {
-            using (Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                var client1 = StartClient();
-                var client2 = StartClient();
-                var client3 = StartClient();
+                Assert.AreEqual(0, GetThinClientConnections(ignite).Length);
 
+                var client1 = StartClient();
+                var thinClientConnections = GetThinClientConnections(ignite);
+                Assert.AreEqual(1, thinClientConnections.Length);
+                StringAssert.Contains(
+                    "rmtAddr=" + client1.GetConnections().Single().LocalEndPoint,
+                    thinClientConnections.Single());
+
+                var client2 = StartClient();
+                Assert.AreEqual(2, GetThinClientConnections(ignite).Length);
+
+                var client3 = StartClient();
+                Assert.AreEqual(3, GetThinClientConnections(ignite).Length);
+
+                // ReSharper disable AccessToDisposedClosure
                 client1.Dispose();
+                TestUtils.WaitForTrueCondition(() => 2 == GetThinClientConnections(ignite).Length);
+
                 client2.Dispose();
+                TestUtils.WaitForTrueCondition(() => 1 == GetThinClientConnections(ignite).Length);
+
                 client3.Dispose();
+                TestUtils.WaitForTrueCondition(() => 0 == GetThinClientConnections(ignite).Length);
+                // ReSharper restore AccessToDisposedClosure
             }
         }
 
@@ -710,6 +728,17 @@ namespace Apache.Ignite.Core.Tests.Client
                 Password = "ignite",
                 SocketTimeout = TimeSpan.FromSeconds(10)
             };
+        }
+
+        /// <summary>
+        /// Gets thin client connections for the given server node.
+        /// </summary>
+        /// <param name="ignite">Ignite server instance.</param>
+        /// <returns>Active thin client connections.</returns>
+        private static string[] GetThinClientConnections(IIgnite ignite)
+        {
+            return ignite.GetCompute().ExecuteJavaTask<string[]>(
+                "org.apache.ignite.platform.PlatformThinClientConnectionsTask", ignite.Name);
         }
 
         /// <summary>

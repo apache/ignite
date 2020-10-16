@@ -58,7 +58,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
@@ -69,7 +68,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -1154,7 +1153,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        List<FileWALPointer> wal = new ArrayList<>();
+        List<WALPointer> wal = new ArrayList<>();
 
         String workDir = U.defaultWorkDirectory();
 
@@ -1164,7 +1163,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             while (it.hasNext()) {
                 IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
-                wal.add((FileWALPointer)tup.get1());
+                wal.add(tup.get1());
             }
         }
 
@@ -1174,11 +1173,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         int to0 = wal.size() - 1;
 
         // +1 for skip first record.
-        FileWALPointer exp0First = wal.get(from0);
-        FileWALPointer exp0Last = wal.get(to0);
+        WALPointer exp0First = wal.get(from0);
+        WALPointer exp0Last = wal.get(to0);
 
-        T2<FileWALPointer, WALRecord> actl0First = null;
-        T2<FileWALPointer, WALRecord> actl0Last = null;
+        T2<WALPointer, WALRecord> actl0First = null;
+        T2<WALPointer, WALRecord> actl0Last = null;
 
         int records0 = 0;
 
@@ -1187,9 +1186,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
                 if (actl0First == null)
-                    actl0First = new T2<>((FileWALPointer)tup.get1(), tup.get2());
+                    actl0First = new T2<>(tup.get1(), tup.get2());
 
-                actl0Last = new T2<>((FileWALPointer)tup.get1(), tup.get2());
+                actl0Last = new T2<>(tup.get1(), tup.get2());
 
                 records0++;
             }
@@ -1212,11 +1211,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         int to1 = rnd.nextInt(wal.size() - 3) + 1;
 
         // -3 for skip last record.
-        FileWALPointer exp1First = wal.get(from1);
-        FileWALPointer exp1Last = wal.get(to1);
+        WALPointer exp1First = wal.get(from1);
+        WALPointer exp1Last = wal.get(to1);
 
-        T2<FileWALPointer, WALRecord> actl1First = null;
-        T2<FileWALPointer, WALRecord> actl1Last = null;
+        T2<WALPointer, WALRecord> actl1First = null;
+        T2<WALPointer, WALRecord> actl1Last = null;
 
         int records1 = 0;
 
@@ -1229,9 +1228,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
                 if (actl1First == null)
-                    actl1First = new T2<>((FileWALPointer)tup.get1(), tup.get2());
+                    actl1First = new T2<>(tup.get1(), tup.get2());
 
-                actl1Last = new T2<>((FileWALPointer)tup.get1(), tup.get2());
+                actl1Last = new T2<>(tup.get1(), tup.get2());
 
                 records1++;
             }
@@ -1253,11 +1252,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         int from2 = rnd.nextInt(wal.size() - 2);
         int to2 = rnd.nextInt((wal.size() - 1) - from2) + from2;
 
-        FileWALPointer exp2First = wal.get(from2);
-        FileWALPointer exp2Last = wal.get(to2);
+        WALPointer exp2First = wal.get(from2);
+        WALPointer exp2Last = wal.get(to2);
 
-        T2<FileWALPointer, WALRecord> actl2First = null;
-        T2<FileWALPointer, WALRecord> actl2Last = null;
+        T2<WALPointer, WALRecord> actl2First = null;
+        T2<WALPointer, WALRecord> actl2Last = null;
 
         int records2 = 0;
 
@@ -1271,9 +1270,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
                 if (actl2First == null)
-                    actl2First = new T2<>((FileWALPointer)tup.get1(), tup.get2());
+                    actl2First = new T2<>(tup.get1(), tup.get2());
 
-                actl2Last = new T2<>((FileWALPointer)tup.get1(), tup.get2());
+                actl2Last = new T2<>(tup.get1(), tup.get2());
 
                 records2++;
             }

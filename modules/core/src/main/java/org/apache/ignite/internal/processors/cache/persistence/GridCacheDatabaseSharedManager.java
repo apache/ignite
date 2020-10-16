@@ -51,6 +51,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
+
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -82,7 +83,6 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -135,7 +135,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
@@ -157,6 +157,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
+import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.transactions.TransactionState;
@@ -180,7 +182,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointReadWriteLock.CHECKPOINT_LOCK_HOLD_COUNT;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_RECORD_ID;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 
 /**
@@ -1615,7 +1617,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 return false;
 
             if (oldestWALPointerToReserve == null ||
-                ((FileWALPointer)ptr).index() < ((FileWALPointer)oldestWALPointerToReserve).index())
+                ptr.index() < oldestWALPointerToReserve.index())
                 oldestWALPointerToReserve = ptr;
         }
 
@@ -1731,6 +1733,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public void startMemoryRestore(GridKernalContext kctx, TimeBag startTimer) throws IgniteCheckedException {
         if (kctx.clientNode())
             return;
+
+        MaintenanceRegistry mntcRegistry = kctx.maintenanceRegistry();
+
+        MaintenanceTask mntcTask = mntcRegistry.activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
+
+        if (mntcTask != null) {
+            log.warning("Maintenance task found, stop restoring memory");
+
+            File workDir = ((FilePageStoreManager) cctx.pageStore()).workDir();
+
+            mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
+                new CorruptedPdsMaintenanceCallback(workDir,
+                    Arrays.asList(mntcTask.parameters().split(File.separator)))
+            );
+
+            return;
+        }
 
         checkpointReadLock();
 
@@ -1858,12 +1877,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (lastFlushPtr == null && lastReadPtr != null)
             return lastReadPtr;
 
-        if (lastFlushPtr != null && lastReadPtr != null) {
-            FileWALPointer lastFlushPtr0 = (FileWALPointer)lastFlushPtr;
-            FileWALPointer lastReadPtr0 = (FileWALPointer)lastReadPtr;
-
-            return lastReadPtr0.compareTo(lastFlushPtr0) >= 0 ? lastReadPtr : lastFlushPtr0;
-        }
+        if (lastFlushPtr != null && lastReadPtr != null)
+            return lastReadPtr.compareTo(lastFlushPtr) >= 0 ? lastReadPtr : lastFlushPtr;
 
         return null;
     }
@@ -2101,7 +2116,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (!finalizeState)
             return null;
 
-        FileWALPointer lastReadPtr = restoreBinaryState.lastReadRecordPointer();
+        WALPointer lastReadPtr = restoreBinaryState.lastReadRecordPointer();
 
         if (status.needRestoreMemory()) {
             if (restoreBinaryState.needApplyBinaryUpdate())
@@ -3417,12 +3432,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * @return Last read WAL record pointer.
          */
-        public FileWALPointer lastReadRecordPointer() {
-            assert status.startPtr != null && status.startPtr instanceof FileWALPointer;
+        public WALPointer lastReadRecordPointer() {
+            assert status.startPtr != null;
 
             return iterator.lastRead()
-                .map(ptr -> (FileWALPointer)ptr)
-                .orElseGet(() -> (FileWALPointer)status.startPtr);
+                .orElseGet(() -> status.startPtr);
         }
 
         /**

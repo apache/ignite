@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#if !NETCOREAPP
 namespace Apache.Ignite.Core.Tests.Client.Compatibility
 {
     using System;
@@ -81,7 +80,10 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
-            _server.Dispose();
+            if (_server != null)
+            {
+                _server.Dispose();
+            }
         }
 
         /// <summary>
@@ -303,4 +305,3 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
         }
     }
 }
-#endif

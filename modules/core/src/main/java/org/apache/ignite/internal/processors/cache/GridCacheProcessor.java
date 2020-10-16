@@ -321,8 +321,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         internalCaches = new HashSet<>();
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
-        splitter = new CacheConfigurationSplitterImpl(marsh);
-        enricher = new CacheConfigurationEnricher(marsh, U.resolveClassLoader(ctx.config()));
+        splitter = new CacheConfigurationSplitterImpl(ctx, marsh);
+        enricher = new CacheConfigurationEnricher(ctx, marsh, U.resolveClassLoader(ctx.config()));
     }
 
     /**
@@ -548,6 +548,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             grp.removeIOStatistic();
         }
+
+        sharedCtx.evict().cleanupRemovedGroup(grp.groupId());
 
         cachesInfo.cleanupRemovedGroup(grp.groupId());
     }

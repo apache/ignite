@@ -40,7 +40,13 @@ set(SOURCES src/ignite.cpp
         src/impl/ignite_impl.cpp
         src/impl/ignite_binding_impl.cpp
         src/transactions/transaction.cpp
-        src/transactions/transactions.cpp)
+        src/transactions/transactions.cpp
+        src/cluster/cluster_node.cpp
+        src/cluster/cluster_group.cpp
+        src/cluster/ignite_cluster.cpp
+        src/impl/cluster/ignite_cluster_impl.cpp
+        src/impl/cluster/cluster_node_impl.cpp
+        src/impl/cache/cache_affinity_impl.cpp)
 
 add_library(${TARGET} SHARED ${SOURCES})
 
