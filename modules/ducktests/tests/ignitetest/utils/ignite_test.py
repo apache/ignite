@@ -46,7 +46,7 @@ class IgniteTest(Test):
 
     def copy_ignite_work_dir(self):
         """
-        Copying root directory from service nodes to the results directory.
+        Copying work directory from service nodes to the results directory.
         """
         for service in self.test_context.services:
             if not isinstance(service, IgniteService):
@@ -65,15 +65,15 @@ class IgniteTest(Test):
                         if not os.path.isdir(dest):
                             mkdir_p(dest)
 
-                        tgz_root = '%s.tgz' % service.WORK_DIR
+                        tgz_work = '%s.tgz' % service.WORK_DIR
 
-                        node.account.ssh(compress_cmd(service.PERSISTENT_ROOT, tgz_root))
-                        node.account.copy_from(tgz_root, dest)
+                        node.account.ssh(compress_cmd(service.WORK_DIR, tgz_work))
+                        node.account.copy_from(tgz_work, dest)
                 except Exception as ex:  # pylint: disable=W0703
                     self.logger.warn(
                         "Error copying persistence dir from %(source)s to %(dest)s. \
                         service %(service)s: %(message)s" %
-                        {'source': service.PERSISTENT_ROOT,
+                        {'source': service.WORK_DIR,
                          'dest': dest,
                          'service': service,
                          'message': ex})
