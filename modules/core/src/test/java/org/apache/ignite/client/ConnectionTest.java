@@ -32,7 +32,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.SslHandler;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -136,6 +135,9 @@ public class ConnectionTest {
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         CompletableFuture<Integer> fut = new CompletableFuture<>();
         SslContextBuilder sslContextBuilder = SslContextBuilder.forClient();
+        // TODO: Pass factories in TcpClientChannel
+        // sslContextBuilder.keyManager()
+        // sslContextBuilder.trustManager()
         SslContext sslContext = sslContextBuilder.build();
 
         try {
@@ -146,7 +148,7 @@ public class ConnectionTest {
             b.handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 public void initChannel(SocketChannel ch) {
-                    ch.pipeline().addLast(new SslHandler(sslContext.newEngine(ch.alloc())));
+                    // ch.pipeline().addLast(new SslHandler(sslContext.newEngine(ch.alloc())));
                     ch.pipeline().addLast(new ClientHandler());
                 }
             });
