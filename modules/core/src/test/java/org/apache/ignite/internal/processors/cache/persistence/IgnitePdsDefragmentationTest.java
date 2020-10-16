@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,16 +47,14 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
-import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
+import org.apache.ignite.internal.maintenance.MaintenanceFileStore;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.maintenance.MaintenanceRecord;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -66,6 +65,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.defragment
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartMappingFile;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.toStore;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /** */
@@ -249,15 +249,10 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
     /** */
     protected void createMaintenanceRecord() throws IgniteCheckedException {
-        MaintenanceRegistry mntcReg = grid(0).context().maintenanceRegistry();
+        IgniteEx grid = grid(0);
+        MaintenanceRegistry mntcReg = grid.context().maintenanceRegistry();
 
-        ((GridComponent)mntcReg).start(); // Bullshit.
-
-        mntcReg.registerMaintenanceRecord(new MaintenanceRecord(
-            CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_RECORD_ID,
-            "Test description",
-            "Test params"
-        ));
+        mntcReg.registerMaintenanceTask(toStore(Collections.singletonList(groupIdForCache(grid, DEFAULT_CACHE_NAME))));
     }
 
     /**
@@ -283,7 +278,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     public void testFailoverRestartWithoutDefragmentation() throws Exception {
         testFailover(workDir -> {
             try {
-                File mntcRecFile = new File(workDir.getParent(), "maintenance_records.mntc");
+                File mntcRecFile = new File(workDir.getParent(), MaintenanceFileStore.MAINTENANCE_FILE_NAME);
 
                 assertTrue(mntcRecFile.exists());
 

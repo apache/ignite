@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.LongJVMPauseDetector;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -39,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
@@ -49,8 +49,11 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 
 /**
- * Umbrella service for correct configuration of default checkpoint. This checkpoint ensures that all pages marked as
+ *This checkpoint ensures that all pages marked as
  * dirty under {@link #checkpointTimeoutLock ()} will be consistently saved to disk.
+ *
+ * This checkpoint unlike {@link CheckpointManager} doesn't store the checkpoint markers to disk and
+ * it write nothing checkpooint specific to WAL.
  *
  * Configuration of this checkpoint allows the following:
  * <p>Collecting all pages from configured dataRegions which was marked as dirty under {@link #checkpointTimeoutLock
@@ -82,7 +85,6 @@ public class LightCheckpointManager {
      * @param checkpointThreadName Name of main checkpoint thread.
      * @param workersRegistry Workers registry.
      * @param persistenceCfg Persistence configuration.
-     * @param pageStoreManager File page store manager.
      * @param dataRegions Data regions.
      * @param pageMemoryGroupResolver Page memory resolver.
      * @param throttlingPolicy Throttling policy.
@@ -99,7 +101,6 @@ public class LightCheckpointManager {
         String checkpointThreadName,
         WorkersRegistry workersRegistry,
         DataStorageConfiguration persistenceCfg,
-        FilePageStoreManager pageStoreManager,
         Supplier<Collection<DataRegion>> dataRegions,
         IgniteThrowableFunction<Integer, PageMemoryEx> pageMemoryGroupResolver,
         PageMemoryImpl.ThrottlingPolicy throttlingPolicy,

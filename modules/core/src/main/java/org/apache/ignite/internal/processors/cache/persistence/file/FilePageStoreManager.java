@@ -52,7 +52,6 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -91,6 +90,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;

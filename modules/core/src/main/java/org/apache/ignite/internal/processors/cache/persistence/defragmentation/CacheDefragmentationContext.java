@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -70,20 +73,25 @@ public class CacheDefragmentationContext {
     /** Busy lock. */
     private volatile GridSpinBusyLock busyLock;
 
+    private final Set<Integer> cacheGroupsForDefragmentation;
+
     /**
      * @param ctx Context.
      * @param dbMgr Database manager.
      * @param log Logger.
+     * @param cacheGroupsForDefragmentation Cache group ids for defragmentation.
      */
     public CacheDefragmentationContext(
         GridKernalContext ctx,
         GridCacheDatabaseSharedManager dbMgr,
-        IgniteLogger log
+        IgniteLogger log,
+        List<Integer> cacheGroupsForDefragmentation
     ) {
         this.ctx = ctx;
         this.dbMgr = dbMgr;
 
         this.log = log;
+        this.cacheGroupsForDefragmentation = new HashSet<>(cacheGroupsForDefragmentation);
     }
 
     /**
@@ -209,6 +217,10 @@ public class CacheDefragmentationContext {
      * @see CacheDefragmentationContext#pageStore(int, int)
      */
     public void onPageStoreCreated(int grpId, File cacheWorkDir, int partId, PageStore partStore) {
+        //TODO defragmenting all groups despite the input for easier testing
+//        if (!cacheGroupsForDefragmentation.contains(grpId))
+//            return;
+
         cacheWorkDirsByGrpId.putIfAbsent(grpId, cacheWorkDir);
 
         oldPageStoresMap.addPageStore(grpId, partId, partStore);
@@ -241,7 +253,7 @@ public class CacheDefragmentationContext {
      * @see CacheDefragmentationContext#partitionsForGroupId(int)
      */
     public void onCacheStoreCreated(CacheGroupContext grp, int partId, GridSpinBusyLock busyLock) {
-        if (!grp.userCache())
+        if (!grp.userCache())// || !cacheGroupsForDefragmentation.contains(grp.groupId()))
             return;
 
         if (this.busyLock == null)
