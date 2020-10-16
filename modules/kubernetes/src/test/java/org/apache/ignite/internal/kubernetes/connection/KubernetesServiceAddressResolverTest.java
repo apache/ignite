@@ -121,7 +121,10 @@ public class KubernetesServiceAddressResolverTest {
         throws IOException
     {
         File account = File.createTempFile("kubernetes-test-account", "");
-        new FileWriter(account).write("account-token");
+        FileWriter fw = new FileWriter(account);
+        fw.write("account-token");
+        fw.close();
+
         String accountFile = account.getAbsolutePath();
 
         KubernetesConnectionConfiguration cfg = new KubernetesConnectionConfiguration();
@@ -203,25 +206,4 @@ public class KubernetesServiceAddressResolverTest {
                               "}"
                     ));
     }
-
-//
-//    //    @Test
-//    public void test() throws Exception {
-//        Ignite crd = startGrid();
-//
-//        startGrid(getKubernetesConfiguration());
-//
-//
-//    }
-//
-//    private IgniteConfiguration getKubernetesConfiguration() throws Exception {
-//        IgniteConfiguration cfg = getConfiguration();
-//
-//        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-//        KubernetesConnectionConfiguration k8s = new KubernetesConnectionConfiguration();
-//        spi.setIpFinder(new TcpDiscoveryKubernetesIpFinder(k8s));
-//        cfg.setDiscoverySpi(spi);
-//
-//        return cfg;
-//    }
 }

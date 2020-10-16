@@ -229,7 +229,9 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         } catch (Throwable ex) {
             if (failure != null) {
                 failure.addSuppressed(ex);
+
                 fut.completeExceptionally(failure);
+
                 return;
             }
 
@@ -565,13 +567,12 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
         chFailLsnrs.forEach(Runnable::run);
 
-        if (scheduledChannelsReinit.get()) {
-            // Already initializing asynchronously in #onTopologyChanged.
-            if (!partitionAwarenessEnabled)
-                channelsInit();
-        }
-        else
-            rollCurrentChannel(hld);
+        // Roll current channel even if a topology changes. To help find working channel faster.
+        rollCurrentChannel(hld);
+
+        // For partiton awareness it's already initializing asynchronously in #onTopologyChanged.
+        if (scheduledChannelsReinit.get() && !partitionAwarenessEnabled)
+            channelsInit();
     }
 
     /**
@@ -803,6 +804,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
                 if (c != null) {
                     attemptsCallback.accept(attempt + 1);
+
                     return function.apply(c);
                 }
             }

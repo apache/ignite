@@ -140,7 +140,10 @@ public class TestClusterClientConnection extends GridCommonAbstractTest {
         throws IOException
     {
         File account = File.createTempFile("kubernetes-test-account", "");
-        new FileWriter(account).write("account-token");
+        FileWriter fw = new FileWriter(account);
+        fw.write("account-token");
+        fw.close();
+
         String accountFile = account.getAbsolutePath();
 
         KubernetesConnectionConfiguration cfg = new KubernetesConnectionConfiguration();
