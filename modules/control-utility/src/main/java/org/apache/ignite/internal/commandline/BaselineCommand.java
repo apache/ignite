@@ -46,6 +46,7 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 import org.apache.ignite.internal.visor.util.VisorTaskUtils;
 
 import static java.lang.Boolean.TRUE;
+import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
 import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
@@ -65,7 +66,8 @@ public class BaselineCommand extends AbstractCommand<BaselineArguments> {
     @Override public void printUsage(Logger logger) {
         final String constistIds = "consistentId1[,consistentId2,....,consistentIdN]";
 
-        Command.usage(logger, "Print cluster baseline topology:", BASELINE);
+        Command.usage(logger, "Print cluster baseline topology:", BASELINE,
+            singletonMap("verbose", "Show the full list of node ips."), optional("--verbose"));
         Command.usage(logger, "Add nodes into baseline topology:", BASELINE, BaselineSubcommands.ADD.text(),
             constistIds, optional(CMD_AUTO_CONFIRMATION));
         Command.usage(logger, "Remove nodes from baseline topology:", BASELINE, BaselineSubcommands.REMOVE.text(),
