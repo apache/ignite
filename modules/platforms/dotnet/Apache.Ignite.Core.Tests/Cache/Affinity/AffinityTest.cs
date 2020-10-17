@@ -112,6 +112,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             // TODO:
             // * Affinity key field name is used for queries (how?) - add a test for that as well
             //   (see where GridQueryTypeDescriptor#affinityKey is used - we should ensure it is passed correctly).
+            
+            // TODO: 
+            // * Do we have the same issue in Java? If not, how does it work there?
             IIgnite g = Ignition.GetIgnite("grid-0");
 
             var cacheCfg = new CacheConfiguration("mycache")
