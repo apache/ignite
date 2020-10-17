@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -130,10 +131,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             Assert.AreEqual(aff.GetPartition(key1), aff.GetPartition(key2));
         }
 
+        [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
         private class MyKey
         {
             [QuerySqlField]
             public string Data { get; set; }
+            
             [AffinityKeyMapped]
             public long AffinityKey { get; set; }
         }
