@@ -113,9 +113,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             // * GridQueryProcessor#registerBinaryMetadata scans all query entities and registers binary meta
             //   for key and val classes.
             
+            // Possible fixes:
+            // * Register binary types manually from .NET side on cache creation
+            //   - Pros: pure .NET fix, simple
+            //   - Cons: race condition (meta is registered after cache is ready)
+            // * Callback to Platforms from GridQueryProcessor#registerBinaryMetadata
+            
             // TODO:
             // * Affinity key field name is used for queries (how?) - add a test for that as well
             //   (see where GridQueryTypeDescriptor#affinityKey is used - we should ensure it is passed correctly).
+            
+            // TODO:
+            // * Can we specify .NET types in QueryEntity in Spring XML? Add a test for that.
             IIgnite g = Ignition.GetIgnite("grid-0");
 
             var cacheCfg = new CacheConfiguration("mycache")
