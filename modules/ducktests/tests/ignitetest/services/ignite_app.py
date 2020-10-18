@@ -61,7 +61,7 @@ class IgniteApplicationService(IgniteAwareService):
         self.nodes[0].account.kill_java_processes(self.servicejava_class_name, clean_shutdown=clean_shutdown,
                                                   allow_fail=True)
 
-    def await_stopped(self, timeout_sec=60):
+    def await_stopped(self, timeout_sec=10):
         """
         Awaits node stop finish.
         """
@@ -72,7 +72,7 @@ class IgniteApplicationService(IgniteAwareService):
         self.__check_status("IGNITE_APPLICATION_FINISHED", timeout=timeout_sec)
 
     # pylint: disable=W0221
-    def stop_node(self, node, clean_shutdown=True, timeout_sec=60):
+    def stop_node(self, node, clean_shutdown=True, timeout_sec=10):
         assert node == self.nodes[0]
         self.stop_async(clean_shutdown)
         self.await_stopped(timeout_sec)
