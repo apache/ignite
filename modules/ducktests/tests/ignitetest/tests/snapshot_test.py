@@ -16,7 +16,7 @@
 """
 Module contains discovery tests.
 """
-
+import ducktape
 from ducktape.mark.resource import cluster
 from ducktape.tests.status import FAIL
 
@@ -87,7 +87,7 @@ class SnapshotTest(IgniteTest):
             }
         )
 
-        load(streamer, duration=300)
+        load(streamer, duration=300, logger=self.logger)
 
         node = service.nodes[0]
 
@@ -95,15 +95,16 @@ class SnapshotTest(IgniteTest):
         control_utility.validate_indexes(check_assert=True)
         dump_1 = control_utility.idle_verify_dump(node, return_path=True)
 
-        self.logger.info(f'Path to dump_1 on {node.account.externally_routable_ip}={dump_1}')
+        self.logger.warn(f'Path to dump_1 on {node.account.externally_routable_ip}={dump_1}')
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
-        load(streamer)
+        self.logger.warn('load')
+        load(streamer, logger=self.logger)
 
         dump_2 = control_utility.idle_verify_dump(node, return_path=True)
 
-        self.logger.info(f'Path to dump_2 on {node.account.externally_routable_ip}={dump_2}')
+        self.logger.warn(f'Path to dump_2 on {node.account.externally_routable_ip}={dump_2}')
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
         assert len(diff) != 0
@@ -121,7 +122,7 @@ class SnapshotTest(IgniteTest):
         control_utility.validate_indexes(check_assert=True)
         dump_3 = control_utility.idle_verify_dump(node, return_path=True)
 
-        self.logger.info(f'Path to dump_3 on {node.account.externally_routable_ip}={dump_3}')
+        self.logger.warn(f'Path to dump_3 on {node.account.externally_routable_ip}={dump_3}')
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
         assert len(diff) == 0, diff
@@ -133,16 +134,22 @@ class SnapshotTest(IgniteTest):
         """
         super().copy_service_logs(test_status=test_status)
 
-        if test_status == FAIL:
-            self.copy_ignite_work_dir()
+        # if test_status == FAIL:
+        #     self.copy_ignite_work_dir()
 
 
-def load(service_load: IgniteApplicationService, duration: int = 60):
+def load(service_load: IgniteApplicationService, duration: int = 60, logger=None):
     """
     Load.
     """
     service_load.start()
     try:
         service_load.await_stopped(duration)
-    except (AssertionError, TimeoutError):
+    except (AssertionError, ducktape.errors.TimeoutError) as ex:
+        if logger:
+            logger.warn(f'>>>>>>>>{type(ex)}')
+        service_load.stop()
+    except Exception as ex:
+        if logger:
+            logger.warn(f'Exception >>>>>>>>{type(ex)}')
         service_load.stop()
