@@ -30,4 +30,14 @@ public class ClientAuthenticationException extends ClientException {
     public ClientAuthenticationException(String msg) {
         super(msg);
     }
+
+    /**
+     * Constructs a new exception with the specified detail message and cause.
+     *
+     * @param msg the detail message.
+     * @param cause the cause.
+     */
+    public ClientAuthenticationException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
 }

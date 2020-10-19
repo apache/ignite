@@ -1,0 +1,71 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Recommendation Systems
+
+CAUTION: This is an experimental API that could be changed in the next releases.
+
+Collaborative filtering is commonly used for recommender systems. These techniques aim to fill in the missing entries of a user-item association matrix. Apache Ignite ML currently supports model-based collaborative filtering, in which users and products are described by a small set of latent factors that can be used to predict missing entries.
+
+The standard approach to matrix factorization-based collaborative filtering treats the entries in the user-item matrix as explicit preferences given by the user to the item, for example, users giving ratings to movies.
+
+Example of recommendation system based on https://grouplens.org/datasets/movielens[MovieLens dataset].
+
+
+
+[source, java]
+----
+IgniteCache<Integer, RatingPoint> movielensCache = loadMovieLensDataset(ignite, 10_000);
+
+RecommendationTrainer trainer = new RecommendationTrainer()
+  .withMaxIterations(-1)
+  .withMinMdlImprovement(10)
+  .withBatchSize(10)
+  .withLearningRate(10)
+  .withLearningEnvironmentBuilder(envBuilder)
+  .withTrainerEnvironment(envBuilder.buildForTrainer());
+
+RecommendationModel<Integer, Integer> mdl = trainer.fit(new CacheBasedDatasetBuilder<>(ignite, movielensCache));
+----
+
+CAUTION: The Evaluator is not support the recommendation systems yet.
+
+The next example demonstrates how to calculate metrics over the given cache manually and locally on the client node:
+
+
+[source, java]
+----
+double mean = 0;
+
+try (QueryCursor<Cache.Entry<Integer, RatingPoint>> cursor = movielensCache.query(new ScanQuery<>())) {
+  for (Cache.Entry<Integer, RatingPoint> e : cursor) {
+    ObjectSubjectRatingTriplet<Integer, Integer> triplet = e.getValue();
+    mean += triplet.getRating();
+  }
+  mean /= movielensCache.size();
+}
+
+double tss = 0, rss = 0;
+
+try (QueryCursor<Cache.Entry<Integer, RatingPoint>> cursor = movielensCache.query(new ScanQuery<>())) {
+  for (Cache.Entry<Integer, RatingPoint> e : cursor) {
+    ObjectSubjectRatingTriplet<Integer, Integer> triplet = e.getValue();
+    tss += Math.pow(triplet.getRating() - mean, 2);
+    rss += Math.pow(triplet.getRating() - mdl.predict(triplet), 2);
+  }
+}
+
+double r2 = 1.0 - rss / tss;
+----
+

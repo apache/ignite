@@ -56,7 +56,10 @@ set(SOURCES src/reference_test.cpp
         src/transactions_test.cpp
         src/teamcity_messages.cpp
         src/teamcity_boost.cpp
-        src/test_utils.cpp)
+        src/test_utils.cpp
+        src/cluster_node_test.cpp
+        src/affinity_test.cpp
+        src/cluster_group_test.cpp)
 
 add_executable(${TARGET} ${SOURCES})
 

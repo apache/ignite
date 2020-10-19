@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.ClassPathContentLoggingTest;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.events.ClusterActivationStartedEventTest;
+import org.apache.ignite.failure.ExchangeWorkerWaitingForTaskTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeFailureHandlerTest;
@@ -248,6 +249,7 @@ import org.junit.runners.Suite;
     TransactionIntegrityWithSystemWorkerDeathTest.class,
     FailureProcessorLoggingTest.class,
     FailureProcessorThreadDumpThrottlingTest.class,
+    ExchangeWorkerWaitingForTaskTest.class,
 
     AtomicOperationsInTxTest.class,
 

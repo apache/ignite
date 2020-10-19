@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -38,6 +39,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -105,6 +107,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -320,6 +323,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Diagnostic processor. */
     @GridToStringInclude
     private DiagnosticProcessor diagnosticProcessor;
+
+    /** */
+    @GridToStringExclude
+    private MaintenanceProcessor maintenanceProc;
 
     /** */
     @GridToStringExclude
@@ -700,6 +707,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             diagnosticProcessor = (DiagnosticProcessor)comp;
         else if (comp instanceof DurableBackgroundTasksProcessor)
             durableBackgroundTasksProcessor = (DurableBackgroundTasksProcessor)comp;
+        else if (comp instanceof MaintenanceProcessor)
+            maintenanceProc = (MaintenanceProcessor) comp;
         else if (comp instanceof PerformaceStatisticsProcessor)
             perfStatProc = (PerformaceStatisticsProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
@@ -792,6 +801,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridSystemViewManager systemView() {
         return sysViewMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MaintenanceRegistry maintenanceRegistry() {
+        return maintenanceProc;
     }
 
     /** {@inheritDoc} */

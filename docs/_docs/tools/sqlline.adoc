@@ -1,0 +1,225 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Using SQLLine With Apache Ignite
+
+
+Command line tool for SQL connectivity.
+
+== Overview
+Apache Ignite is shipped with the SQLLine tool – a console-based utility for connecting to relational databases and executing SQL commands.
+This documentation describes how to connect SQLLine to your cluster, as well as various supported SQLLine commands.
+
+== Connecting to Ignite Cluster
+From your {IGNITE_HOME}/bin directory, run `sqlline.sh -u jdbc:ignite:thin:[host]` to connect SQLLine to the cluster. Substitute [host] with your actual value. For example:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+./sqlline.sh --verbose=true -u jdbc:ignite:thin://127.0.0.1/
+----
+
+tab:Windows[]
+[source,shell]
+----
+sqlline.bat --verbose=true -u jdbc:ignite:thin://127.0.0.1/
+----
+
+--
+
+
+
+Use the `-h` or `help` option to see the various options available with SQLLine:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+./sqlline.sh -h
+./sqlline.sh --help
+----
+
+tab:Windows[]
+[source,shell]
+----
+sqlline.bat -h
+sqlline.bat --help
+----
+--
+
+
+=== Authentication
+If you have authentication enabled for your cluster, then from your `{IGNITE_HOME}/bin' directory, run `jdbc:ignite:thin://[address]:[port];user=[username];password=[password]` to connect SQLLine to the cluster. Substitute `[address]`, `[port]`, `[username]` and `[password]` with your actual values. For example:
+
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+./sqlline.sh --verbose=true -u "jdbc:ignite:thin://127.0.0.1:10800;user=ignite;password=ignite"
+----
+
+tab:Windows[]
+[source,shell]
+----
+sqlline.bat --verbose=true -u "jdbc:ignite:thin://127.0.0.1:10800;user=ignite;password=ignite"
+----
+--
+
+If you do not have authentication set, omit `[username]` and `[password]`.
+
+[NOTE]
+====
+[discrete]
+=== Put JDBC URL in Quotes When Connecting from bash
+Make sure to put the connection URL in " " quotes when connecting from a bash environment, as follows: "jdbc:ignite:thin://[address]:[port];user=[username];password=[password]"
+====
+
+== Commands
+Here is the list of supported link:http://sqlline.sourceforge.net#commands[SQLLine commands, window=_blank]:
+
+[width="100%", cols="25%, 75%"]
+|=======
+|Command |	Description
+
+|`!all`
+|Execute the specified SQL against all the current connections.
+
+|`!batch`
+|Start or execute a batch of SQL statements.
+
+|`!brief`
+|Enable terse output mode.
+
+|`!closeall`
+|Close all current open connections.
+
+|`!columns`
+|Display columns of a table.
+
+|`!connect`
+|Connect to a database.
+
+|`!dbinfo`
+|List metadata information about the current connection.
+
+|`!dropall`
+|Drop all tables in the database.
+
+|`!go`
+|Change to a different active connection.
+
+|`!help`
+|Display help information.
+
+|`!history`
+|Display the command history.
+
+|`!indexes`
+|Display indexes for a table.
+
+|`!list`
+|Display all active connections.
+
+|`!manual`
+|Display SQLLine manual.
+
+|`!metadata`
+|Invoke arbitrary metadata commands.
+
+|`!nickname`
+|Create a friendly name for the connection (updates command prompt).
+
+|`!outputformat`
+|Change the method for displaying SQL results.
+
+|`!primarykeys`
+|Display the primary key columns for a table.
+
+|`!properties`
+|Connect to the database defined in the specified properties file.
+
+|`!quit`
+|Exit SQLLine.
+
+|`!reconnect`
+|Reconnect to the current database.
+
+|`!record`
+|Begin recording all output from SQL commands.
+
+|`!run`
+|Execute a command script.
+
+|`!script`
+|Save executed commands to a file.
+
+|`!sql`
+|Execute a SQL against a database.
+
+|`!tables`
+|List all the tables in the database.
+
+|`!verbose`
+|Enable verbose output mode.
+|=======
+
+Note that the above list may not be complete. Support for additional SQLLine commands can be added.
+
+== Example
+After connecting to the cluster, you can execute SQL statements and SQLLine commands:
+
+
+Create tables:
+[source,sql]
+----
+0: jdbc:ignite:thin://127.0.0.1/> CREATE TABLE City (id LONG PRIMARY KEY, name VARCHAR) WITH "template=replicated";
+No rows affected (0.301 seconds)
+
+0: jdbc:ignite:thin://127.0.0.1/> CREATE TABLE Person (id LONG, name VARCHAR, city_id LONG, PRIMARY KEY (id, city_id))WITH "backups=1, affinityKey=city_id";
+No rows affected (0.078 seconds)
+
+0: jdbc:ignite:thin://127.0.0.1/> !tables
++-----------+--------------+--------------+-------------+-------------+
+| TABLE_CAT | TABLE_SCHEM  |  TABLE_NAME  | TABLE_TYPE  | REMARKS     |
++-----------+--------------+--------------+-------------+-------------+
+|           | PUBLIC       | CITY         | TABLE       |             |
+|           | PUBLIC       | PERSON       | TABLE       |             |
++-----------+--------------+--------------+-------------+-------------+
+----
+
+Define indexes:
+
+[source,sql]
+----
+0: jdbc:ignite:thin://127.0.0.1/> CREATE INDEX idx_city_name ON City (name);
+No rows affected (0.039 seconds)
+
+0: jdbc:ignite:thin://127.0.0.1/> CREATE INDEX idx_person_name ON Person (name);
+No rows affected (0.013 seconds)
+
+0: jdbc:ignite:thin://127.0.0.1/> !indexes
++-----------+--------------+--------------+-------------+-----------------+
+| TABLE_CAT | TABLE_SCHEM  |  TABLE_NAME  | NON_UNIQUE  | INDEX_QUALIFIER |
++-----------+--------------+--------------+-------------+-----------------+
+|           | PUBLIC       | CITY         | true        |                 |
+|           | PUBLIC       | PERSON       | true        |                 |
++-----------+--------------+--------------+-------------+-----------------+
+----
+
+You can also watch a link:https://www.youtube.com/watch?v=FKS8A86h-VY[screencast, window=_blank] to learn more about how to use SQLLine.

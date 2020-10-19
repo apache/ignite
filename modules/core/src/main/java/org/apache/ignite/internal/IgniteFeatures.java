@@ -20,9 +20,11 @@ package org.apache.ignite.internal;
 import java.util.BitSet;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -125,8 +127,11 @@ public enum IgniteFeatures {
     /** Pk index keys are applied in correct order. */
     SPECIFIED_SEQ_PK_KEYS(45),
 
+    /** Compatibility support for new fields which are configured split. */
+    SPLITTED_CACHE_CONFIGURATIONS_V2(46),
+
     /** Collecting performance statistics. */
-    PERFORMANCE_STATISTICS(46);
+    PERFORMANCE_STATISTICS(47);
 
     /**
      * Unique feature identifier.
@@ -171,6 +176,9 @@ public enum IgniteFeatures {
      * @return {@code True} if feature is declared to be supported by remote node.
      */
     public static boolean nodeSupports(byte[] featuresAttrBytes, IgniteFeatures feature) {
+        if (featuresAttrBytes == null)
+            return false;
+
         int featureId = feature.getFeatureId();
 
         // Same as "BitSet.valueOf(features).get(featureId)"
@@ -198,6 +206,23 @@ public enum IgniteFeatures {
         }
 
         return true;
+    }
+
+    /**
+     * Check that feature is supported by all remote nodes.
+     *
+     * @param discoSpi Discovery SPI implementation.
+     * @param feature Feature to check.
+     * @return {@code True} if all remote nodes support the feature.
+     */
+    public static boolean allNodesSupport(
+        DiscoverySpi discoSpi,
+        IgniteFeatures feature
+    ) {
+        if (discoSpi instanceof IgniteDiscoverySpi)
+            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(feature);
+        else
+            return allNodesSupports(discoSpi.getRemoteNodes(), feature);
     }
 
     /**

@@ -305,7 +305,7 @@ namespace ignite
 
             SQLRETURN ret;
 
-            int recordsNum = to - from;
+            int32_t recordsNum = to - from;
 
             ret = SQLPrepare(stmt, merge ? mergeReq : insertReq, SQL_NTS);
 
@@ -449,7 +449,8 @@ namespace ignite
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
             BOOST_TEST_CHECKPOINT("Setting paramset size");
-            ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAMSET_SIZE, reinterpret_cast<SQLPOINTER>(recordsNum), 0);
+            ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAMSET_SIZE,
+                 reinterpret_cast<SQLPOINTER>(static_cast<ptrdiff_t>(recordsNum)), 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));

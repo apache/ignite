@@ -1,0 +1,225 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= System Functions
+
+
+== COALESCE
+
+Returns the first value that is not null.
+
+[source,sql]
+----
+{COALESCE | NVL } (aValue, bValue [,...])
+----
+
+
+
+Examples:
+[source,sql]
+----
+COALESCE(A, B, C)
+----
+
+
+
+== DECODE
+
+Returns the first matching value. NULL is considered to match NULL. If no match was found, then NULL or the last parameter (if the parameter count is even) is returned.
+
+[source,sql]
+----
+DECODE(value, whenValue, thenValue [,...])
+----
+
+
+
+Examples:
+[source,sql]
+----
+DECODE(RAND()>0.5, 0, 'Red', 1, 'Black')
+----
+
+
+== GREATEST
+
+Returns the largest value that is not NULL, or NULL if all values are NULL.
+[source,sql]
+----
+GREATEST(aValue, bValue [,...])
+----
+
+
+
+Examples:
+[source,sql]
+----
+GREATEST(1, 2, 3)
+----
+
+
+== IFNULL
+
+Returns the value of 'a' if it is not null, otherwise 'b'.
+
+[source,sql]
+----
+IFNULL(aValue, bValue)
+----
+
+
+
+Examples:
+[source,sql]
+----
+IFNULL(NULL, '')
+----
+
+
+== LEAST
+
+Returns the smallest value that is not NULL, or NULL if all values are NULL.
+
+[source,sql]
+----
+LEAST(aValue, bValue [,...])
+----
+
+
+
+Examples:
+[source,sql]
+----
+LEAST(1, 2, 3)
+----
+
+
+== NULLIF
+
+Returns NULL if 'a' is equals to 'b', otherwise 'a'.
+
+[source,sql]
+----
+NULLIF(aValue, bValue)
+----
+
+
+
+Examples:
+[source,sql]
+----
+NULLIF(A, B)
+----
+
+
+== NVL2
+
+If the test value is null, then 'b' is returned. Otherwise, 'a' is returned. The data type of the returned value is the data type of 'a' if this is a text type.
+
+[source,sql]
+----
+NVL2(testValue, aValue, bValue)
+----
+
+
+
+Examples:
+[source,sql]
+----
+NVL2(X, 'not null', 'null')
+----
+
+
+== CASEWHEN
+
+Returns 'aValue' if the boolean expression is true, otherwise 'bValue'.
+
+[source,sql]
+----
+CASEWHEN (boolean , aValue , bValue)
+----
+
+
+
+Examples:
+[source,sql]
+----
+CASEWHEN(ID=1, 'A', 'B')
+----
+
+
+== CAST
+
+Converts a value to another data type. The following conversion rules are used:
+
+- When converting a number to a boolean, 0 is considered as false and every other value is true.
+- When converting a boolean to a number, false is 0 and true is 1.
+- When converting a number to a number of another type, the value is checked for overflow.
+- When converting a number to binary, the number of bytes will match the precision.
+- When converting a string to binary, it is hex encoded.
+- A hex string can be converted into the binary form and then to a number. If a direct conversion is not possible, the value is first converted to a string.
+
+
+
+[source,sql]
+----
+CAST (value AS dataType)
+----
+
+
+Examples:
+[source,sql]
+----
+CAST(NAME AS INT);
+CAST(65535 AS BINARY);
+CAST(CAST('FFFF' AS BINARY) AS INT);
+----
+
+
+== CONVERT
+
+Converts a value to another data type.
+
+[source,sql]
+----
+CONVERT (value , dataType)
+----
+
+
+
+Examples:
+[source,sql]
+----
+CONVERT(NAME, INT)
+----
+
+
+== TABLE
+
+
+Returns the result set. TABLE_DISTINCT removes duplicate rows.
+
+[source,sql]
+----
+TABLE	| TABLE_DISTINCT	(name dataType = expression)
+----
+
+
+
+Examples:
+[source,sql]
+----
+SELECT * FROM TABLE(ID INT=(1, 2), NAME VARCHAR=('Hello', 'World'))
+----
+
