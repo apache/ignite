@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -85,7 +86,10 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
                     .start();
 
         try {
-            latch.await();
+            while (true) {
+                if (latch.await(1, TimeUnit.SECONDS) || terminated())
+                    break;
+            }
         }
         catch (InterruptedException e) {
             markBroken(new RuntimeException("Unexpected thread interruption", e));
