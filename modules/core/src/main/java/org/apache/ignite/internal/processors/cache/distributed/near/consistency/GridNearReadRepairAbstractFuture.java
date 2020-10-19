@@ -35,12 +35,10 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAPS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter.DFLT_MAX_REMAP_CNT;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  *
@@ -148,9 +146,6 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
 
             for (Map.Entry<ClusterNode, Collection<KeyCacheObject>> mapping : mappings.entrySet()) {
                 ClusterNode node = mapping.getKey();
-
-                assert tx == null || !ctx.kernalContext().security().enabled() ||
-                    F.eq(tx.subjectId(), securitySubjectId(ctx));
 
                 GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut =
                     new GridPartitionedGetFuture<>(

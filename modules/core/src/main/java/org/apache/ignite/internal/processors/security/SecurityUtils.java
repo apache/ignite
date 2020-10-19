@@ -196,6 +196,24 @@ public class SecurityUtils {
     }
 
     /**
+     * Runs passed {@code runnable} with the security context associated with passed {@code secSubjId} if security is
+     * enabled.
+     *
+     * @param secSubjId Security subject id.
+     * @param security Ignite security.
+     * @param r Runnable.
+     */
+    public static void withContextIfNeed(UUID secSubjId, IgniteSecurity security, RunnableX r) {
+        if (security.enabled() && secSubjId != null) {
+            try (OperationSecurityContext s = security.withContext(secSubjId)) {
+                r.run();
+            }
+        }
+        else
+            r.run();
+    }
+
+    /**
      * Computes a result in a privileged action.
      *
      * @param c Instance of SandboxCallable.

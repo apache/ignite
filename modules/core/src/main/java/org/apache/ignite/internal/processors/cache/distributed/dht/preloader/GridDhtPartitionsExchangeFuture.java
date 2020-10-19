@@ -410,14 +410,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param exchId Exchange ID.
      * @param exchActions Cache change requests.
      * @param affChangeMsg Affinity change message.
+     * @param secSubjId Security subject id.
      */
     public GridDhtPartitionsExchangeFuture(
         GridCacheSharedContext cctx,
         ReadWriteLock busyLock,
         GridDhtPartitionExchangeId exchId,
         ExchangeActions exchActions,
-        UUID secSubjId,
-        CacheAffinityChangeMessage affChangeMsg
+        CacheAffinityChangeMessage affChangeMsg,
+        UUID secSubjId
     ) {
         assert busyLock != null;
         assert exchId != null;

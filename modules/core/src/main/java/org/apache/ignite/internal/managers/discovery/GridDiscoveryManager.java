@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -2981,7 +2982,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 blockingSectionEnd();
             }
 
-            try (OperationSecurityContext c = ctx.security().withContext(evt.secSubjId)) {
+            SecurityUtils.withContextIfNeed(evt.secSubjId, ctx.security(), () -> {
                 int type = evt.type;
 
                 AffinityTopologyVersion topVer = evt.topVer;
@@ -3147,7 +3148,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 if (segmented)
                     onSegmentation();
-            }
+            });
         }
 
         /**
