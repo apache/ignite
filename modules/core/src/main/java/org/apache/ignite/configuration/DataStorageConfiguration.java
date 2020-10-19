@@ -277,10 +277,11 @@ public class DataStorageConfiguration implements Serializable {
     /** Time interval (in milliseconds) for rate-based metrics. */
     private long metricsRateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
 
-    /**
-     * Time interval (in milliseconds) for running auto archiving for incompletely WAL segment
-     */
+    /** Time interval (in milliseconds) for running auto archiving for incompletely WAL segment. */
     private long walAutoArchiveAfterInactivity = -1;
+
+    /** Time interval (in milliseconds) for force archiving of incompletely WAL segment. */
+    private long walForceArchiveTimeout = -1;
 
     /**
      * If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled.
@@ -996,6 +997,25 @@ public class DataStorageConfiguration implements Serializable {
      */
     public long getWalAutoArchiveAfterInactivity() {
         return walAutoArchiveAfterInactivity;
+    }
+
+    /**
+     * @param walForceArchiveTimeout time in millis to run auto archiving segment (even if incomplete) after last
+     * record logging. <br> Positive value enables incomplete segment archiving after timeout (inactivity). <br> Zero or
+     * negative  value disables auto archiving.
+     * @return current configuration instance for chaining
+     */
+    public DataStorageConfiguration setWalForceArchiveTimeout(long walForceArchiveTimeout) {
+        this.walForceArchiveTimeout = walForceArchiveTimeout;
+
+        return this;
+    }
+
+    /**
+     * @return time in millis to run auto archiving WAL segment (even if incomplete) after last record log
+     */
+    public long getWalForceArchiveTimeout() {
+        return walForceArchiveTimeout;
     }
 
     /**
