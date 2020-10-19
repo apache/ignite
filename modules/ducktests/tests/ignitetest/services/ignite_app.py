@@ -60,6 +60,7 @@ class IgniteApplicationService(IgniteAwareService):
         for node in self.nodes:
             self.stop_node(node=node, clean_shutdown=clean_shutdown)
 
+    # pylint: disable=W0221
     def stop_node(self, node, clean_shutdown=True):
         """
         Stops node in async way.
