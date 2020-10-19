@@ -1289,7 +1289,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 PlatformProcessor platformProc = ctx.platform();
                 if (platformProc.hasContext()) {
                     // TODO: Get meta from platforms
-                    platformProc.context().gateway().computeTaskComplete(0, 0);
+                    platformProc.context().gateway().binaryTypeGet(0);
                     binProc.binaryContext().registerClass((BinaryType)null, false);
                 }
             }
