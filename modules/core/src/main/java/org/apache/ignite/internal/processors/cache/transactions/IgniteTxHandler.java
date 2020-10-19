@@ -1845,9 +1845,6 @@ public class IgniteTxHandler {
                                                 entry.cached(cached);
                                             }
 
-                                            assert tx == null || !ctx.kernalContext().security().enabled() ||
-                                                F.eq(tx.subjectId(), securitySubjectId(ctx));
-
                                             CacheObject val = cached.innerGet(
                                                 /*ver*/null,
                                                 tx,

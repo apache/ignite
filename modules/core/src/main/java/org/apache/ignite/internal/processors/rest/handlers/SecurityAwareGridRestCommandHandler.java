@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 
 /**
- * Handler setups a security context related to a subject id from a request.
+ * Handler setups a security context related to a subject id from the request.
  */
 public class SecurityAwareGridRestCommandHandler implements GridRestCommandHandler {
     /** */
