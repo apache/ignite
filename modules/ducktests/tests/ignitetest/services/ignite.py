@@ -18,6 +18,7 @@ This module contains class to start ignite cluster node.
 """
 
 import os
+import re
 import signal
 import time
 from datetime import datetime
@@ -144,3 +145,18 @@ class IgniteService(IgniteAwareService):
             return pid_arr
         except (RemoteCommandError, ValueError):
             return []
+
+
+def node_failed_pattern(failed_node_id=None):
+    """Failed node pattern in log."""
+    return "Node FAILED: .\\{1,\\}Node \\[id=" + (failed_node_id if failed_node_id else "") + \
+           ".\\{1,\\}\\(isClient\\|client\\)=false"
+
+
+def node_fail_time(overseer, failed_node_id):
+    """Extracts time of filed node."""
+    _, stdout, _ = overseer.account.ssh_client.exec_command(
+        "grep '%s' %s" % (node_failed_pattern(failed_node_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
+
+    return datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
+                             "[%Y-%m-%d %H:%M:%S,%f]")

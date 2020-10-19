@@ -19,17 +19,15 @@ Module contains discovery tests.
 
 import os
 import random
-import re
 import sys
 from enum import IntEnum
-from datetime import datetime
 from time import monotonic
 from typing import NamedTuple
 
 from ducktape.mark import matrix
 from ducktape.mark.resource import cluster
 
-from ignitetest.services.ignite import IgniteAwareService, IgniteService
+from ignitetest.services.ignite import IgniteAwareService, IgniteService, node_failed_pattern, node_fail_time
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
@@ -179,8 +177,11 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
 
-        data = self._simulate_nodes_failure(servers, node_fail_task(ignite_config, test_config), failed_nodes,
-                                            survived_node)
+        data = {}
+
+        data.update(self._simulate_nodes_failure(servers, node_fail_task(ignite_config, test_config), failed_nodes,
+                                                 survived_node))
+
         data['Ignite cluster start time (s)'] = start_servers_sec
 
         return data
@@ -206,15 +207,10 @@ class DiscoveryTest(IgniteTest):
         data = {}
 
         for failed_id in ids_to_wait:
-            servers.await_event_on_node(failed_pattern(failed_id), survived_node, 15, from_the_beginning=True,
+            servers.await_event_on_node(node_failed_pattern(failed_id), survived_node, 15, from_the_beginning=True,
                                         backoff_sec=0.3)
 
-            _, stdout, _ = survived_node.account.ssh_client.exec_command(
-                "grep '%s' %s" % (failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
-
-            logged_timestamps.append(
-                datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
-                                  "[%Y-%m-%d %H:%M:%S,%f]"))
+            logged_timestamps.append(node_fail_time(survived_node, failed_id))
 
         self._check_failed_number(failed_nodes, survived_node)
         self._check_not_segmented(failed_nodes)
@@ -232,13 +228,13 @@ class DiscoveryTest(IgniteTest):
 
     def _check_failed_number(self, failed_nodes, survived_node):
         """Ensures number of failed nodes is correct."""
-        cmd = "grep '%s' %s | wc -l" % (failed_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE)
+        cmd = "grep '%s' %s | wc -l" % (node_failed_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE)
 
         failed_cnt = int(str(survived_node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding()))
 
         if failed_cnt != len(failed_nodes):
             failed = str(survived_node.account.ssh_client.exec_command(
-                "grep '%s' %s" % (failed_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE))[1].read(),
+                "grep '%s' %s" % (node_failed_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE))[1].read(),
                          sys.getdefaultencoding())
 
             self.logger.warn("Node '%s' (%s) has detected the following failures:%s%s" % (
@@ -338,14 +334,6 @@ def start_load_app(test_context, ignite_config, params, modules=None):
         # mute spam in log.
         jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"],
         params=params).start()
-
-
-def failed_pattern(failed_node_id=None):
-    """
-    Failed node pattern in log
-    """
-    return "Node FAILED: .\\{1,\\}Node \\[id=" + (failed_node_id if failed_node_id else "") + \
-           ".\\{1,\\}\\(isClient\\|client\\)=false"
 
 
 def choose_node_to_kill(servers, nodes_to_kill, sequential):
