@@ -142,6 +142,7 @@ import static org.apache.ignite.internal.processors.query.schema.SchemaOperation
 /**
  * Indexing processor.
  */
+@SuppressWarnings("rawtypes")
 public class GridQueryProcessor extends GridProcessorAdapter {
     /** */
     private static final String INLINE_SIZES_DISCO_BAG_KEY = "inline_sizes";
@@ -1174,20 +1175,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (binaryEnabled) {
                     for (QueryEntity qryEntity : qryEntities) {
-                        Class<?> keyCls = U.box(U.classForName(qryEntity.findKeyType(), null, true));
-                        Class<?> valCls = U.box(U.classForName(qryEntity.findValueType(), null, true));
-
-                        if (keyCls != null)
-                            registerDescriptorLocallyIfNeeded(keyCls);
-
-                        if (valCls != null)
-                            registerDescriptorLocallyIfNeeded(valCls);
-
-                        // TODO: Platform callback here?
-                        // The idea is to register metadata locally here,
-                        // so the platform should not call PutBinaryTypes.
-                        // Insted, platform should return binary types back,
-                        // and here we call addMetaLocally somehow?
+                        registerDescriptorLocallyIfNeeded(qryEntity.findKeyType());
+                        registerDescriptorLocallyIfNeeded(qryEntity.findValueType());
                     }
                 }
             }
@@ -1274,16 +1263,29 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Register class metadata locally if it didn't do it earlier.
      *
-     * @param cls Class for which the metadata should be registered.
+     * @param clsName Class name for which the metadata should be registered.
      * @throws BinaryObjectException if register was failed.
      */
-    private void registerDescriptorLocallyIfNeeded(Class<?> cls) throws BinaryObjectException {
+    private void registerDescriptorLocallyIfNeeded(String clsName) throws BinaryObjectException {
+        if (clsName == null)
+            return;
+
         IgniteCacheObjectProcessor cacheObjProc = ctx.cacheObjects();
 
         if (cacheObjProc instanceof CacheObjectBinaryProcessorImpl) {
-            ((CacheObjectBinaryProcessorImpl)cacheObjProc)
-                .binaryContext()
-                .registerClass(cls, true, false, true);
+            CacheObjectBinaryProcessorImpl proc = (CacheObjectBinaryProcessorImpl) cacheObjProc;
+
+            Class<?> cls = U.box(U.classForName(clsName, null, true));
+
+            if (cls != null)
+                proc.binaryContext().registerClass(cls, true, false, true);
+            else {
+                // TODO: Platform callback here?
+                // The idea is to register metadata locally here,
+                // so the platform should not call PutBinaryTypes.
+                // Insted, platform should return binary types back,
+                // and here we call addMetaLocally somehow?
+            }
         }
     }
 
