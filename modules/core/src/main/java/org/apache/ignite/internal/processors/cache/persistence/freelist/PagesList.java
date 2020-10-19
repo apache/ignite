@@ -1412,25 +1412,27 @@ public abstract class PagesList extends DataStructure {
 
                         decrementBucketSize(bucket);
 
+                        PageIO pageIO;
+
+                        byte flag;
+
                         if (initIoVers != null) {
-                            int partId = PageIdUtils.partId(tailId);
-
-                            PageIO pageIO = initIoVers.latest();
-
-                            byte flag;
+                            pageIO = initIoVers.latest();
 
                             if (pageIO.getType() == PageIO.T_DATA || pageIO.getType() == T_META)
                                 flag = FLAG_DATA;
                             else
                                 flag = pageFlag;
-
-                            dataPageId = initReusedPage(tailId, tailPage, tailAddr, partId, flag, pageIO);
                         }
                         else {
                             assert 0 == PageIO.getRotatedIdPart(tailAddr);
 
-                            dataPageId = tailId;
+                            pageIO = null;
+
+                            flag = pageFlag;
                         }
+
+                        dataPageId = initReusedPage(tailId, tailPage, tailAddr, PageIdUtils.partId(tailId), flag, pageIO);
 
                         dirty = true;
                     }
