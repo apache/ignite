@@ -2487,7 +2487,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                                     getRes.version(),
                                                     0,
                                                     0,
-                                                    needVer);
+                                                    needVer,
+                                                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
                                             }
 
                                             return Collections.emptyMap();
