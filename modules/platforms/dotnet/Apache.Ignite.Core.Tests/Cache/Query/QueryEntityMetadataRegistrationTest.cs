@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
                     SpringConfigUrl = Path.Combine("Config", "query-entity-metadata-registration.xml"),
-                    IgniteInstanceName = i > 0 ? i.ToString() : null
+                    IgniteInstanceName = i.ToString()
                 };
 
                 Ignition.Start(cfg);
@@ -88,26 +88,27 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void CacheStartFromSpringRegistersMetaForQueryEntityTypes()
         {
-            var ignite = Ignition.GetIgnite();
-            var qryEntity = ignite.GetCache<object, object>(CacheName).GetConfiguration().QueryEntities.Single();
+            foreach (var ignite in Ignition.GetAll())
+            {
+                // Do not use GetBinaryType which always returns something.
+                // Use GetBinaryTypes to make sure that types are actually registered.
+                var types = ignite.GetBinary().GetBinaryTypes();
+                var qryEntity = ignite.GetCache<object, object>(CacheName).GetConfiguration().QueryEntities.Single();
 
-            // Do not use GetBinaryType which always returns something.
-            // Use GetBinaryTypes to make sure that types are actually registered.
-            var types = ignite.GetBinary().GetBinaryTypes();
+                var keyType = types.Single(t => t.TypeName == qryEntity.KeyTypeName);
+                var valType = types.Single(t => t.TypeName == qryEntity.ValueTypeName);
 
-            var keyType = types.Single(t => t.TypeName == qryEntity.KeyTypeName);
-            var valType = types.Single(t => t.TypeName == qryEntity.ValueTypeName);
-            
-            Assert.AreEqual(typeof(Key2).FullName, qryEntity.KeyTypeName);
-            Assert.AreEqual(typeof(Value2).FullName, qryEntity.ValueTypeName);
-            
-            Assert.AreEqual("AffKey", keyType.AffinityKeyFieldName);
-            CollectionAssert.AreEquivalent(new[] {"Baz", "AffKey"}, keyType.Fields);
-            Assert.AreEqual("String", keyType.GetFieldTypeName("Baz"));
-            
-            Assert.IsNull(valType.AffinityKeyFieldName);
-            CollectionAssert.AreEquivalent(new[] {"Name", "Price"}, valType.Fields);
-            Assert.AreEqual("Double", valType.GetFieldTypeName("Price"));
+                Assert.AreEqual(typeof(Key2).FullName, qryEntity.KeyTypeName);
+                Assert.AreEqual(typeof(Value2).FullName, qryEntity.ValueTypeName);
+
+                Assert.AreEqual("AffKey", keyType.AffinityKeyFieldName);
+                CollectionAssert.AreEquivalent(new[] {"Baz", "AffKey"}, keyType.Fields);
+                Assert.AreEqual("String", keyType.GetFieldTypeName("Baz"));
+
+                Assert.IsNull(valType.AffinityKeyFieldName);
+                CollectionAssert.AreEquivalent(new[] {"Name", "Price"}, valType.Fields);
+                Assert.AreEqual("Double", valType.GetFieldTypeName("Price"));
+            }
         }
 
         /** */
