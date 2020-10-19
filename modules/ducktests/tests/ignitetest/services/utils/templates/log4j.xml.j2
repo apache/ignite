@@ -17,7 +17,7 @@
  limitations under the License.
 -->
 
-<Configuration status="info">
+<Configuration status="info" shutdownHook="disable">
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
