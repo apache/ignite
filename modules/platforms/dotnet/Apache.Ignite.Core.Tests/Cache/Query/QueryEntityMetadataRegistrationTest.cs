@@ -45,6 +45,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureSetUp]
         public void StartGrids()
         {
+            // TODO: Test for KeyFieldName and ValueFieldName
             for (int i = 0; i < 2; i++)
             {
                 var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
