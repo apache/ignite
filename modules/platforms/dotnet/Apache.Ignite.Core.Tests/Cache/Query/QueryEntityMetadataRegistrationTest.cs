@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
+#pragma warning disable 649 // Unassigned field
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System.IO;
+    using System.Linq;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
     using NUnit.Framework;
@@ -34,8 +36,35 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     public class QueryEntityMetadataRegistrationTest
     {
         /** */
-        private static readonly string SpringConfig = Path.Combine("Config", "query-entity-metadata-registration.xml");
+        private const string CacheName = "cache1";
         
+        /// <summary>
+        /// Fixture set up.
+        /// </summary>
+        [TestFixtureSetUp]
+        public void StartGrids()
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    SpringConfigUrl = Path.Combine("Config", "query-entity-metadata-registration.xml"),
+                    IgniteInstanceName = i > 0 ? i.ToString() : null
+                };
+
+                Ignition.Start(cfg);
+            }
+        }
+
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void StopGrids()
+        {
+            Ignition.StopAll(true);
+        }
+
         // TODO:
         // * Code config
         // * Spring config
@@ -58,7 +87,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void CacheStartFromSpringRegistersMetaForQueryEntityTypes()
         {
-            // TODO
+            var cache = Ignition.GetIgnite().GetCache<object, object>(CacheName);
+            var cfg = cache.GetConfiguration();
+            var qryEntity = cfg.QueryEntities.Single();
+            
+            Assert.AreEqual(typeof(Key2), qryEntity.KeyType);
+            Assert.AreEqual(typeof(Value2), qryEntity.ValueType);
         }
 
         /** */
