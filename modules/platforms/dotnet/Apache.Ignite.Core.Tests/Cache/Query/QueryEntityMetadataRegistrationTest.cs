@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
     using NUnit.Framework;
@@ -88,12 +89,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void CacheStartFromSpringRegistersMetaForQueryEntityTypes()
         {
             var ignite = Ignition.GetIgnite();
-            var cache = ignite.GetCache<object, object>(CacheName);
-            var cfg = cache.GetConfiguration();
-            var qryEntity = cfg.QueryEntities.Single();
-            
-            var keyType = ignite.GetBinary().GetBinaryType(qryEntity.KeyTypeName);
-            var valType = ignite.GetBinary().GetBinaryType(qryEntity.ValueTypeName);
+            var qryEntity = ignite.GetCache<object, object>(CacheName).GetConfiguration().QueryEntities.Single();
+
+            // Do not use GetBinaryType which always returns something.
+            // Use GetBinaryTypes to make sure that types are actually registered.
+            var types = ignite.GetBinary().GetBinaryTypes();
+
+            var keyType = types.Single(t => t.TypeName == qryEntity.KeyTypeName);
+            var valType = types.Single(t => t.TypeName == qryEntity.ValueTypeName);
             
             Assert.AreEqual(typeof(Key2).FullName, qryEntity.KeyTypeName);
             Assert.AreEqual(typeof(Value2).FullName, qryEntity.ValueTypeName);
