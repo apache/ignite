@@ -82,7 +82,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Implementation of platform context.
  */
-@SuppressWarnings("TypeMayBeWeakened")
+@SuppressWarnings({"TypeMayBeWeakened", "rawtypes"})
 public class PlatformContextImpl implements PlatformContext, PartitionsExchangeAware {
     /** Supported event types. */
     private static final Set<Integer> evtTyps;
@@ -106,7 +106,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     private final CacheObjectBinaryProcessorImpl cacheObjProc;
 
     /** Node ids that has been sent to native platform. */
-    private final Set<UUID> sentNodes = Collections.newSetFromMap(new ConcurrentHashMap<UUID, Boolean>());
+    private final Set<UUID> sentNodes = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /** Platform name. */
     private final String platform;
@@ -650,6 +650,27 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     /** {@inheritDoc} */
     @Override public void disableThreadLocalForPlatformCacheUpdate() {
         platformCacheUpdateUseThreadLocal.set(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable BinaryMetadata getBinaryType(String typeName) {
+        try (PlatformMemory mem0 = mem.allocate()) {
+            PlatformOutputStream out = mem0.output();
+            BinaryRawWriterEx writer = writer(out);
+
+            writer.writeString(typeName);
+            out.synchronize();
+
+            gateway().binaryTypeGet(mem0.pointer());
+
+            PlatformInputStream in = mem0.input();
+            in.synchronize();
+
+            if (!in.readBoolean())
+                return null;
+
+            return PlatformUtils.readBinaryMetadata(reader(in));
+        }
     }
 
     /** {@inheritDoc} */

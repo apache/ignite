@@ -1283,7 +1283,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (cls != null)
                 binProc.binaryContext().registerClass(cls, true, false, true);
             else {
-                registerPlatformTypeLocally(binProc);
+                registerPlatformTypeLocally(clsName, binProc);
             }
         }
     }
@@ -1291,18 +1291,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Registers platform type locally.
      *
+     * @param clsName Class name.
      * @param binProc Binary processor.
      */
-    private void registerPlatformTypeLocally(CacheObjectBinaryProcessorImpl binProc) {
+    private void registerPlatformTypeLocally(String clsName, CacheObjectBinaryProcessorImpl binProc) {
         PlatformProcessor platformProc = ctx.platform();
 
         if (!platformProc.hasContext())
             return;
 
-        // TODO: Get meta from platforms
-        platformProc.context().gateway().binaryTypeGet(0);
-        BinaryMetadata meta = PlatformUtils.readBinaryMetadata(null);
-        binProc.binaryContext().registerClass(meta.wrap(binProc.binaryContext()), false);
+        BinaryMetadata meta = platformProc.context().getBinaryType(clsName);
+
+        if (meta != null)
+            binProc.binaryContext().registerClass(meta.wrap(binProc.binaryContext()), false);
     }
 
     /**
