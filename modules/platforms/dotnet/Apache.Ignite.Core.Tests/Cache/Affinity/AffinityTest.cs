@@ -98,12 +98,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
         }
 
+        [Test]
+        public void TestAffinityKeyMappedWithQueryEntitySpringXml()
+        {
+            // TODO
+        }
+
         /// <summary>
         /// Tests AffinityKeyMapped attribute should map to the same partitions
         /// for the same field value.
         /// </summary>
         [Test]
-        public void TestCustomAffinity()
+        public void TestAffinityKeyMappedWithQueryEntity()
         {
             // Cause:
             // * CacheObjectBinaryProcessorImpl.java:1086 caches empty value
