@@ -1299,6 +1299,22 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Gets binary type by name.
+     *
+     * @param memPtr Ptr to a stream with serialized data.
+     */
+    public void binaryTypeGet(long memPtr) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.BinaryTypeGet, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
      * Enter gateway.
      */
     protected void enter() {
