@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.CacheAffinityKeyConfiguration
 import org.apache.ignite.internal.processors.cache.CacheAtomicSingleMessageCountSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteQueueTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteSanitySelfTest;
+import org.apache.ignite.internal.processors.cache.CacheEntryProcessorCopySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheFutureExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.CachePutEventListenerErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheTxFastFinishTest;
@@ -89,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheNearTxStoreException
 import org.apache.ignite.internal.processors.cache.GridCacheObjectToStringSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapMultiThreadedUpdateSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheP2PUndeploySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedLocalStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReplicatedLocalStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReplicatedTxStoreExceptionSelfTest;
@@ -97,6 +99,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnValueTransferS
 import org.apache.ignite.internal.processors.cache.GridCacheSlowTxWarnTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStopSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStoreValueBytesSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerLoadTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTxPartitionedLocalStoreSelfTest;
@@ -162,6 +165,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColo
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheGlobalLoadTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionsStateValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionsStateValidatorSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheConcurrentPutGetRemoveTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheGetStoreErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedStorePutSelfTest;
@@ -226,10 +230,7 @@ public class IgniteCacheTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteCrossCacheTxStoreSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheEntryProcessorSequentialCallTest.class, ignoredTests);
 
-        // TODO GG-11148: include test when implemented.
-        // Test fails due to incorrect handling of CacheConfiguration#getCopyOnRead() and
-        // CacheObjectContext#storeValue() properties. Heap storage should be redesigned in this ticket.
-        //GridTestUtils.addTestIfNeeded(suite, CacheEntryProcessorCopySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheEntryProcessorCopySelfTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgnitePutAllLargeBatchSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePutAllUpdateNonPreloadedPartitionSelfTest.class, ignoredTests);
@@ -257,8 +258,7 @@ public class IgniteCacheTestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridCacheMvccSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheMvccPartitionedSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheMvccManagerSelfTest.class, ignoredTests);
-        // TODO GG-11141.
-        // GridTestUtils.addTestIfNeeded(suite, GridCacheP2PUndeploySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheP2PUndeploySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheConfigurationValidationSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheConfigurationConsistencySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheAffinityKeyConfigurationMismatchTest.class, ignoredTests);
@@ -297,7 +297,7 @@ public class IgniteCacheTestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridCacheAsyncOperationsLimitSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheManyAsyncOperationsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheTtlManagerSelfTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, GridCacheTtlManagerEvictionSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheTtlManagerEvictionSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheLifecycleAwareSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheAtomicStopBusySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheTransactionalStopBusySelfTest.class, ignoredTests);
@@ -331,6 +331,7 @@ public class IgniteCacheTestSuite {
         GridTestUtils.addTestIfNeeded(suite, CacheDeferredDeleteQueueTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionsStateValidatorSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionsStateValidationTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheConcurrentPutGetRemoveTest.class, ignoredTests);
 
         suite.addAll(IgniteCacheTcpClientDiscoveryTestSuite.suite(ignoredTests));
 

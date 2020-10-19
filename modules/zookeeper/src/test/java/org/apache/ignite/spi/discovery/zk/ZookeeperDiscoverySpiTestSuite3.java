@@ -17,17 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
-import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDataStructuresTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedNodeRestartTxSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSequenceApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSequenceApiSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNodeRestartSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicMultiJvmFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedMultiJvmFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryLongP2PTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOperationP2PTest;
-import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
-import org.apache.ignite.p2p.GridP2PContinuousDeploymentSelfTest;
+import org.apache.ignite.testsuites.CoreZookeeperDiscoverySpiTestSuite3;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -37,17 +27,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    GridCacheReplicatedNodeRestartSelfTest.class,
-    GridEventConsumeSelfTest.class,
-    GridCachePartitionedNodeRestartTxSelfTest.class,
-    IgniteClientDataStructuresTest.class,
-    GridCacheReplicatedSequenceApiSelfTest.class,
-    GridCachePartitionedSequenceApiSelfTest.class,
-    GridCacheAtomicMultiJvmFullApiSelfTest.class,
-    GridCachePartitionedMultiJvmFullApiSelfTest.class,
-    GridP2PContinuousDeploymentSelfTest.class,
-    CacheContinuousQueryOperationP2PTest.class,
-    CacheContinuousQueryLongP2PTest.class
+    CoreZookeeperDiscoverySpiTestSuite3.class
 })
 public class ZookeeperDiscoverySpiTestSuite3 {
     /** */

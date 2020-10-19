@@ -37,11 +37,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
  */
+@Ignore("IGNITE-6753, now it takes too long, IGNITE-9218")
 public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
     /** */
     public static final int NODES = 3;

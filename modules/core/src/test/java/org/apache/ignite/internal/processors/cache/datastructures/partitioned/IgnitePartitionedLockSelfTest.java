@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteLockAbstractSelfTest;
+import org.junit.Ignore;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
+@Ignore("IGNITE-3141, IGNITE-9214")
 public class IgnitePartitionedLockSelfTest extends IgniteLockAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {

@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheQueryMultiThreaded
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.QueryJoinWithDifferentNodeFiltersTest;
 import org.apache.ignite.internal.processors.cache.SqlCacheStartStopTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheClientQueryReplicatedNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheDistributedQueryDefaultTimeoutSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQ
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryReservationOnUnstableTopologyTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteSqlQueryWithBaselineTest;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxMultiNodeBasicTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentAtomicPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentAtomicReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentTransactionalPartitionedSelfTest;
@@ -52,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.index.DynamicIndexPartitioned
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexReplicatedAtomicConcurrentSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexReplicatedTransactionalConcurrentSelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQueryDefaultTimeoutSelfTest;
-import org.apache.ignite.internal.processors.cache.query.ScanQueryOffheapExpiryPolicySelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteChangingBaselineCacheQueryNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineCacheQueryNodeRestartsSelfTest;
 import org.apache.ignite.internal.processors.query.CreateIndexOnInvalidDataTypeTest;
@@ -84,6 +81,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.RetryCauseMessageS
 import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubquerySelfTest;
 import org.apache.ignite.internal.processors.query.timeout.DefaultQueryTimeoutTestSuite;
 import org.apache.ignite.sqltests.SqlDataTypesCoverageTests;
+import org.apache.ignite.suites.CoreIgniteBinaryCacheQueryTestSuite2;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -127,8 +125,6 @@ import org.junit.runners.Suite;
     IgniteCacheQueryMultiThreadedSelfTest.class,
 
     IgniteCacheQueryEvictsMultiThreadedSelfTest.class,
-
-    ScanQueryOffheapExpiryPolicySelfTest.class,
 
     IgniteCacheCrossCacheJoinRandomTest.class,
     IgniteCacheClientQueryReplicatedNodeRestartSelfTest.class,
@@ -183,9 +179,6 @@ import org.junit.runners.Suite;
 
     DmlBatchSizeDeadlockTest.class,
 
-    GridCachePartitionedTxMultiNodeSelfTest.class,
-    GridCacheReplicatedTxMultiNodeBasicTest.class,
-
     SqlPartOfComplexPkLookupTest.class,
 
     SqlDataTypesCoverageTests.class,
@@ -195,7 +188,9 @@ import org.junit.runners.Suite;
 
     SqlQueriesTopologyMappingTest.class,
 
-    IgniteCacheQueryReservationOnUnstableTopologyTest.class
+    IgniteCacheQueryReservationOnUnstableTopologyTest.class,
+
+    CoreIgniteBinaryCacheQueryTestSuite2.class
 })
 public class IgniteBinaryCacheQueryTestSuite2 {
 }

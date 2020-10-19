@@ -17,16 +17,6 @@
 
 package org.apache.ignite.client;
 
-import org.apache.ignite.internal.client.thin.CacheAsyncTest;
-import org.apache.ignite.internal.client.thin.ClusterApiTest;
-import org.apache.ignite.internal.client.thin.ClusterGroupTest;
-import org.apache.ignite.internal.client.thin.ComputeTaskTest;
-import org.apache.ignite.internal.client.thin.ReliableChannelTest;
-import org.apache.ignite.internal.client.thin.ServicesTest;
-import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessDiscoveryTest;
-import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessResourceReleaseTest;
-import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessStableTopologyTest;
-import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessUnstableTopologyTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -35,32 +25,10 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    ClientConfigurationTest.class,
-    ClientCacheConfigurationTest.class,
-    FunctionalTest.class,
-    IgniteBinaryTest.class,
-    LoadTest.class,
-    ReliabilityTest.class,
-    ReliabilityTestAsync.class,
-    ReliabilityTestPartitionAware.class,
-    ReliabilityTestPartitionAwareAsync.class,
     SecurityTest.class,
     FunctionalQueryTest.class,
     IgniteBinaryQueryTest.class,
-    SslParametersTest.class,
-    ConnectionTest.class,
-    ConnectToStartingNodeTest.class,
-    AsyncChannelTest.class,
-    ComputeTaskTest.class,
-    ClusterApiTest.class,
-    ClusterGroupTest.class,
-    ServicesTest.class,
-    ThinClientPartitionAwarenessStableTopologyTest.class,
-    ThinClientPartitionAwarenessUnstableTopologyTest.class,
-    ThinClientPartitionAwarenessResourceReleaseTest.class,
-    ThinClientPartitionAwarenessDiscoveryTest.class,
-    ReliableChannelTest.class,
-    CacheAsyncTest.class
+    CoreClientTestSuite.class
 })
 public class ClientTestSuite {
     // No-op.

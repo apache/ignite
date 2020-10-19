@@ -31,11 +31,13 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.log4j.Level;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Single split load test.
  */
+@Ignore("Load Test")
 @GridCommonTest(group = "Load Test")
 public class SingleSplitsLoadTest extends GridCommonAbstractTest {
     /** */

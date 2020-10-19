@@ -18,6 +18,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
+import org.junit.Ignore;
+
+@Ignore("IGNITE-9218")
 public class GridCacheReplicatedOnheapFullApiSelfTest extends GridCacheReplicatedFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean onheapCacheEnabled() {
