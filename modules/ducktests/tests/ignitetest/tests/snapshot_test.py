@@ -144,5 +144,5 @@ def load(service_load: IgniteApplicationService, duration: int = 60):
     service_load.start()
     try:
         service_load.await_stopped(duration)
-    except AssertionError:
+    except (AssertionError, TimeoutError):
         service_load.stop()

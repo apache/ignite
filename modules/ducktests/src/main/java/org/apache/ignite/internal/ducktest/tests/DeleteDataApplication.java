@@ -38,11 +38,11 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cacheName);
 
-        long start = System.currentTimeMillis();
-
         int cnt = 0;
 
         markInitialized();
+
+        long start = System.currentTimeMillis();
 
         Iterator<Cache.Entry<Object, Object>> iter = cache.iterator();
 
@@ -54,96 +54,14 @@ public class DeleteDataApplication extends IgniteAwareApplication {
             cnt++;
         }
 
+        log.info(">>> Start removing: " + keys.size());
+
         cache.removeAll(keys);
+
+        log.info(">>> Cache size: " + cache.size());
 
         recordResult("DURATION", System.currentTimeMillis() - start);
 
-
         markFinished();
     }
-
-//    /** */
-//    private void workParallel(Ignite ignite, String cacheName, long iterSize, int dataSize) {
-//        int core = Runtime.getRuntime().availableProcessors() / 2;
-//
-//        long iterCore = 0 < iterSize ? iterSize / core : iterSize;
-//
-//        ThreadFactory threadFactory = new ThreadFactoryBuilder()
-//                .setNameFormat("UuidDataStreamer-%d")
-//                .setDaemon(true)
-//                .build();
-//
-//        ExecutorService executors = Executors.newFixedThreadPool(core, threadFactory);
-//        CountDownLatch latch = new CountDownLatch(core);
-//
-//        for (int i = 0; i < core; i++)
-//            executors.submit(new UuidDataStreamer(ignite, cacheName, latch, iterCore, dataSize));
-//
-//        try {
-//            while (true) {
-//                if (latch.await(1, TimeUnit.SECONDS) || terminated())
-//                    break;
-//            }
-//        }
-//        catch (InterruptedException e) {
-//            markBroken(new RuntimeException("Unexpected thread interruption", e));
-//
-//            Thread.currentThread().interrupt();
-//        }
-//        finally {
-//            executors.shutdownNow();
-//        }
-//    }
-//
-//    /** */
-//    private class UuidDataStreamer implements Runnable {
-//        /** Ignite. */
-//        private final Ignite ignite;
-//
-//        /** Cache name. */
-//        private final String cacheName;
-//
-//        /** Latch. */
-//        private final CountDownLatch latch;
-//
-//        /** Iteration size. */
-//        private final long iterSize;
-//
-//        /** Data size. */
-//        private final int dataSize;
-//
-//        /** */
-//        public UuidDataStreamer(Ignite ignite, String cacheName, CountDownLatch latch, long iterSize, int dataSize) {
-//            this.ignite = ignite;
-//            this.cacheName = cacheName;
-//            this.latch = latch;
-//            this.iterSize = iterSize;
-//            this.dataSize = dataSize;
-//        }
-//
-//        /** {@inheritDoc} */
-//        @Override public void run() {
-//            long cnt = 0L;
-//
-//            try (IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
-//                dataStreamer.autoFlushFrequency(100L);
-//
-//                while (cnt != iterSize && !Thread.currentThread().isInterrupted()) {
-//                    UUID uuid = UUID.randomUUID();
-//
-//                    byte[] data = new byte[dataSize];
-//
-//                    ThreadLocalRandom.current().nextBytes(data);
-//
-//                    dataStreamer.addData(uuid, data);
-//
-//                    cnt++;
-//                }
-//
-//                dataStreamer.flush();
-//            }
-//
-//            latch.countDown();
-//        }
-//    }
 }

@@ -64,7 +64,7 @@ class IgniteService(IgniteAwareService):
         self._rotate_log()
 
         for node in self.nodes:
-            super().start_node(node)
+            self.start_node(node)
 
         self.logger.info("Waiting for Ignite(s) to start...")
 
@@ -168,6 +168,12 @@ class IgniteService(IgniteAwareService):
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
         node.account.ssh("sudo rm -rf -- %s" % self.PERSISTENT_ROOT, allow_fail=False)
+
+    def remove(self, node, path: str):
+        """
+        Remove on node.
+        """
+        node.account.ssh("sudo rm -rf -- %s" % path, allow_fail=False)
 
     def rename_db(self, new_db_name: str):
         """
