@@ -438,9 +438,10 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         boolean initNew,
         PageLockListener lockLsnr,
         GridKernalContext ctx,
-        AtomicLong pageListCacheLimit
+        AtomicLong pageListCacheLimit,
+        byte pageFlag
     ) throws IgniteCheckedException {
-        super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, lockLsnr, ctx);
+        super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, lockLsnr, ctx, pageFlag);
 
         rmvRow = new RemoveRowHandler(cacheId == 0);
 
@@ -565,7 +566,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      */
     private long allocateDataPage(int part) throws IgniteCheckedException {
         assert part <= PageIdAllocator.MAX_PARTITION_ID;
-        assert part != PageIdAllocator.INDEX_PARTITION;
 
         return pageMem.allocatePage(grpId, part, PageIdAllocator.FLAG_DATA);
     }
@@ -909,6 +909,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         catch (Throwable t) {
             throw new CorruptedFreeListException("Failed to take recycled page", t);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long initReusedPage(long pageId, byte flag) throws IgniteCheckedException {
+        return initReusedPage0(pageId, flag);
     }
 
     /** {@inheritDoc} */

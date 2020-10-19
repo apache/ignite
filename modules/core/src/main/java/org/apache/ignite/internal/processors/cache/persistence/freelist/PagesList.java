@@ -43,6 +43,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListInitNewPageR
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListRemovePageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetNextRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetPreviousRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
@@ -66,6 +67,7 @@ import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.MAX_ITEMID_NUM;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_META;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageId;
 
 /**
@@ -209,9 +211,10 @@ public abstract class PagesList extends DataStructure {
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         PageLockListener lockLsnr,
-        GridKernalContext ctx
+        GridKernalContext ctx,
+        byte pageFlag
     ) {
-        super(cacheId, null, pageMem, wal, lockLsnr);
+        super(cacheId, null, pageMem, wal, lockLsnr, pageFlag);
 
         this.name = name;
         this.buckets = buckets;
@@ -1412,9 +1415,22 @@ public abstract class PagesList extends DataStructure {
                         if (initIoVers != null) {
                             int partId = PageIdUtils.partId(tailId);
 
-                            dataPageId = initReusedPage(tailId, tailPage, tailAddr, partId, FLAG_DATA, initIoVers.latest());
-                        } else
-                            dataPageId = recyclePage(tailId, tailPage, tailAddr, null);
+                            PageIO pageIO = initIoVers.latest();
+
+                            byte flag;
+
+                            if (pageIO.getType() == PageIO.T_DATA || pageIO.getType() == T_META)
+                                flag = FLAG_DATA;
+                            else
+                                flag = pageFlag;
+
+                            dataPageId = initReusedPage(tailId, tailPage, tailAddr, partId, flag, pageIO);
+                        }
+                        else {
+                            assert 0 == PageIO.getRotatedIdPart(tailAddr);
+
+                            dataPageId = tailId;
+                        }
 
                         dirty = true;
                     }
@@ -1448,6 +1464,25 @@ public abstract class PagesList extends DataStructure {
         }
     }
 
+    /** */
+    protected long initReusedPage0(long pageId, byte flag) throws IgniteCheckedException {
+        long page = pageMem.acquirePage(grpId, pageId);
+
+        try {
+            long pageAddr = pageMem.writeLock(grpId, pageId, page);
+
+            try {
+                return initReusedPage(pageId, page, pageAddr, PageIdUtils.partId(pageId), flag, null);
+            }
+            finally {
+                pageMem.writeUnlock(grpId, pageId, page, null, true);
+            }
+        }
+        finally {
+            pageMem.releasePage(grpId, pageId, page);
+        }
+    }
+
     /**
      * Reused page must obtain correctly assembled page id, then initialized by proper {@link PageIO} instance and
      * non-zero {@code itemId} of reused page id must be saved into special place.
@@ -1463,30 +1498,46 @@ public abstract class PagesList extends DataStructure {
      */
     protected final long initReusedPage(long reusedPageId, long reusedPage, long reusedPageAddr,
         int partId, byte flag, PageIO initIo) throws IgniteCheckedException {
+        // ah yes, flag !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         long newPageId = PageIdUtils.pageId(partId, flag, PageIdUtils.pageIndex(reusedPageId));
 
-        initIo.initNewPage(reusedPageAddr, newPageId, pageSize());
-
         boolean needWalDeltaRecord = needWalDeltaRecord(reusedPageId, reusedPage, null);
 
-        if (needWalDeltaRecord) {
-            assert PageIdUtils.partId(reusedPageId) == PageIdUtils.partId(newPageId) :
-                "Partition consistency failure: " +
-                "newPageId=" + Long.toHexString(newPageId) + " (newPartId: " + PageIdUtils.partId(newPageId) + ") " +
-                "reusedPageId=" + Long.toHexString(reusedPageId) + " (partId: " + PageIdUtils.partId(reusedPageId) + ")";
+        if (initIo != null) {
+            initIo.initNewPage(reusedPageAddr, newPageId, pageSize());
 
-            wal.log(new InitNewPageRecord(grpId, reusedPageId, initIo.getType(),
-                initIo.getVersion(), newPageId));
+
+            if (needWalDeltaRecord) {
+                assert PageIdUtils.partId(reusedPageId) == PageIdUtils.partId(newPageId) :
+                    "Partition consistency failure: " +
+                    "newPageId=" + Long.toHexString(newPageId) + " (newPartId: " + PageIdUtils.partId(newPageId) + ") " +
+                    "reusedPageId=" + Long.toHexString(reusedPageId) + " (partId: " + PageIdUtils.partId(reusedPageId) + ")";
+
+                wal.log(new InitNewPageRecord(grpId, reusedPageId, initIo.getType(),
+                    initIo.getVersion(), newPageId));
+            }
         }
 
         int itemId = PageIdUtils.itemId(reusedPageId);
 
         if (itemId != 0) {
-            PageIO.setRotatedIdPart(reusedPageAddr, itemId);
+            if (flag == FLAG_DATA) {
+                PageIO.setRotatedIdPart(reusedPageAddr, itemId);
 
-            if (needWalDeltaRecord)
-                wal.log(new RotatedIdPartRecord(grpId, newPageId, itemId));
+                if (needWalDeltaRecord)
+                    wal.log(new RotatedIdPartRecord(grpId, newPageId, itemId));
+            }
+            else {
+                long prevNewPageId = newPageId;
+
+                newPageId = PageIdUtils.link(prevNewPageId, itemId);
+
+                PageIO.setPageId(reusedPageAddr, newPageId);
+
+                if (needWalDeltaRecord)
+                    wal.log(new RecycleRecord(grpId, prevNewPageId, newPageId));
+            }
         }
 
         return newPageId;

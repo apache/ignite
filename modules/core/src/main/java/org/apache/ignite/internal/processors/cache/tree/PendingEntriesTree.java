@@ -52,7 +52,8 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
         long metaPageId,
         ReuseList reuseList,
         boolean initNew,
-        PageLockListener lockLsnr
+        PageLockListener lockLsnr,
+        byte pageFlag
     ) throws IgniteCheckedException {
         super(
             name,
@@ -65,6 +66,7 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
             reuseList,
             grp.sharedGroup() ? CacheIdAwarePendingEntryInnerIO.VERSIONS : PendingEntryInnerIO.VERSIONS,
             grp.sharedGroup() ? CacheIdAwarePendingEntryLeafIO.VERSIONS : PendingEntryLeafIO.VERSIONS,
+            pageFlag,
             grp.shared().kernalContext().failure(),
             lockLsnr
         );

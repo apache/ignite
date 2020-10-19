@@ -59,5 +59,10 @@ public class BPlusTreeFakeReuseSelfTest extends BPlusTreeSelfTest {
         @Override public long recycledPagesCount() throws IgniteCheckedException {
             return deque.size();
         }
+
+        /** {@inheritDoc} */
+        @Override public long initReusedPage(long pageId, byte flag) throws IgniteCheckedException {
+            return pageId;
+        }
     }
 }

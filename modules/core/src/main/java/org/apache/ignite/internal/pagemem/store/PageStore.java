@@ -26,6 +26,12 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
  * Persistent store of pages.
  */
 public interface PageStore extends Closeable {
+    /** */
+    public static byte TYPE_DATA = 1;
+
+    /** */
+    public static byte TYPE_IDX = 2;
+
     /**
      * @param lsnr Page write listener to set.
      */

@@ -765,6 +765,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos,
+        byte pageFlag,
         @Nullable FailureProcessor failureProcessor,
         @Nullable PageLockListener lockLsnr
     ) throws IgniteCheckedException {
@@ -777,6 +778,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             globalRmvId,
             metaPageId,
             reuseList,
+            pageFlag,
             failureProcessor,
             lockLsnr
         );
@@ -805,10 +807,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         AtomicLong globalRmvId,
         long metaPageId,
         ReuseList reuseList,
+        byte pageFlag,
         @Nullable FailureProcessor failureProcessor,
         @Nullable PageLockListener lsnr
     ) throws IgniteCheckedException {
-        super(cacheGrpId, grpName, pageMem, wal, lsnr);
+        super(cacheGrpId, grpName, pageMem, wal, lsnr, pageFlag);
 
         assert !F.isEmpty(name);
 

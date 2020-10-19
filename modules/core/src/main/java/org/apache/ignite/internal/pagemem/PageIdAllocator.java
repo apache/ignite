@@ -29,6 +29,9 @@ public interface PageIdAllocator {
     /** */
     public static final byte FLAG_IDX = 2;
 
+    /** */
+    public static final byte FLAG_AUX = 4;
+
     /** Max partition ID that can be used by affinity. */
     public static final int MAX_PARTITION_ID = 65500;
 

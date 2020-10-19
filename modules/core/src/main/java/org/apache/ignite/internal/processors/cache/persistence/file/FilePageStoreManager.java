@@ -751,7 +751,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             PageStore idxStore =
                 pageStoreFactory.createPageStore(
-                    PageMemory.FLAG_IDX,
+                    PageStore.TYPE_IDX,
                     idxFile,
                     allocatedTracker);
 
@@ -762,7 +762,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
                 PageStore partStore =
                     pageStoreFactory.createPageStore(
-                        PageMemory.FLAG_DATA,
+                        PageStore.TYPE_DATA,
                         () -> getPartitionFilePath(cacheWorkDir, p),
                         allocatedTracker);
 

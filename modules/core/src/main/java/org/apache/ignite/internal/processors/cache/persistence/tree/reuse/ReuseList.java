@@ -40,4 +40,7 @@ public interface ReuseList {
      * @throws IgniteCheckedException If failed.
      */
     public long recycledPagesCount() throws IgniteCheckedException;
+
+    /** */
+    long initReusedPage(long pageId, byte flag) throws IgniteCheckedException;
 }

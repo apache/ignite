@@ -48,7 +48,8 @@ public class TxLogTree extends BPlusTree<TxKey, TxRow> {
         ReuseList reuseList,
         FailureProcessor failureProcessor,
         boolean initNew,
-        PageLockListener lockLsnr
+        PageLockListener lockLsnr,
+        byte pageFlag
     ) throws IgniteCheckedException {
         super(
             TxLog.TX_LOG_CACHE_NAME,
@@ -61,6 +62,7 @@ public class TxLogTree extends BPlusTree<TxKey, TxRow> {
             reuseList,
             TxLogInnerIO.VERSIONS,
             TxLogLeafIO.VERSIONS,
+            pageFlag,
             failureProcessor,
             lockLsnr
         );

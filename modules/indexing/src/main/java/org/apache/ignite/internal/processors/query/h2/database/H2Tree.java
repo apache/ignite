@@ -30,6 +30,7 @@ import org.apache.ignite.SystemProperty;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -219,6 +220,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             globalRmvId,
             metaPageId,
             reuseList,
+            PageIdAllocator.FLAG_IDX,
             failureProcessor,
             null
         );

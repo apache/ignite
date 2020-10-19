@@ -60,9 +60,10 @@ public class PartitionMetaStorageImpl<T extends Storable> extends AbstractFreeLi
         boolean initNew,
         PageLockListener lsnr,
         GridKernalContext ctx,
-        AtomicLong pageListCacheLimit
+        AtomicLong pageListCacheLimit,
+        byte pageFlag
     ) throws IgniteCheckedException {
-        super(cacheId, name, memMetrics, memPlc, reuseList, wal, metaPageId, initNew, lsnr, ctx, pageListCacheLimit);
+        super(cacheId, name, memMetrics, memPlc, reuseList, wal, metaPageId, initNew, lsnr, ctx, pageListCacheLimit, pageFlag);
     }
 
     /**

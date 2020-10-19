@@ -104,6 +104,11 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
+        @Override public long initReusedPage(long pageId, byte flag) throws IgniteCheckedException {
+            return pageId;
+        }
+
+        /** {@inheritDoc} */
         @Override public long recycledPagesCount() throws IgniteCheckedException {
             return deque.size();
         }
@@ -186,6 +191,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
                 reuseList,
                 new IOVersions<>(new LongInnerIO()),
                 new IOVersions<>(new LongLeafIO()),
+                PageIdAllocator.FLAG_IDX,
                 null,
                 null
             );

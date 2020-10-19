@@ -59,7 +59,8 @@ public class ReuseListImpl extends PagesList implements ReuseList {
         boolean initNew,
         PageLockListener lockLsnr,
         GridKernalContext ctx,
-        AtomicLong pageListCacheLimit
+        AtomicLong pageListCacheLimit,
+        byte pageFlag
     ) throws IgniteCheckedException {
         super(
             cacheId,
@@ -69,7 +70,8 @@ public class ReuseListImpl extends PagesList implements ReuseList {
             wal,
             metaPageId,
             lockLsnr,
-            ctx
+            ctx,
+            pageFlag
         );
 
         bucketCache = new PagesCache(pageListCacheLimit);
@@ -94,6 +96,11 @@ public class ReuseListImpl extends PagesList implements ReuseList {
     /** {@inheritDoc} */
     @Override public long takeRecycledPage() throws IgniteCheckedException {
         return takeEmptyPage(0, null, IoStatisticsHolderNoOp.INSTANCE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long initReusedPage(long pageId, byte flag) throws IgniteCheckedException {
+        return initReusedPage0(pageId, flag);
     }
 
     /** {@inheritDoc} */
