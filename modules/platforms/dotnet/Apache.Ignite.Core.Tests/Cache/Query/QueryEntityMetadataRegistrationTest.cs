@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedMember.Local
 #pragma warning disable 649 // Unassigned field
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System.IO;
     using System.Linq;
-    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
     using NUnit.Framework;
@@ -66,24 +66,62 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Ignition.StopAll(true);
         }
 
-        // TODO:
-        // * Code config
-        // * Spring config
-        // * Local and remote node check
-
         /// <summary>
         /// Tests that starting a cache from code with a <see cref="QueryEntity"/> causes binary type registration
         /// for key and value types.
+        /// <para />
+        /// * Start a new cache with code configuration
+        /// * Check that query entity is populated correctly
+        /// * Check that key and value types are registered in the cluster 
         /// </summary>
         [Test]
         public void CacheStartFromCodeRegistersMetaForQueryEntityTypes()
         {
-            // TODO
+            var cacheCfg = new CacheConfiguration
+            {
+                Name = TestUtils.TestName,
+                QueryEntities = new[]
+                {
+                    new QueryEntity
+                    {
+                        KeyType = typeof(Key1),
+                        ValueType = typeof(Value1)
+                    }
+                }
+            };
+
+            Ignition.GetIgnite("0").CreateCache<object, object>(cacheCfg);
+            
+            foreach (var ignite in Ignition.GetAll())
+            {
+                // Do not use GetBinaryType which always returns something.
+                // Use GetBinaryTypes to make sure that types are actually registered.
+                var types = ignite.GetBinary().GetBinaryTypes();
+                var qryEntity = ignite.GetCache<object, object>(CacheName).GetConfiguration().QueryEntities.Single();
+
+                var keyType = types.Single(t => t.TypeName == qryEntity.KeyTypeName);
+                var valType = types.Single(t => t.TypeName == qryEntity.ValueTypeName);
+
+                Assert.AreEqual(typeof(Key1).FullName, qryEntity.KeyTypeName);
+                Assert.AreEqual(typeof(Value1).FullName, qryEntity.ValueTypeName);
+
+                Assert.AreEqual("Bar", keyType.AffinityKeyFieldName);
+                CollectionAssert.AreEquivalent(new[] {"Foo", "Bar"}, keyType.Fields);
+                Assert.AreEqual("Integer", keyType.GetFieldTypeName("Bar"));
+
+                Assert.IsNull(valType.AffinityKeyFieldName);
+                CollectionAssert.AreEquivalent(new[] {"Name", "Value"}, valType.Fields);
+                Assert.AreEqual("String", valType.GetFieldTypeName("Name"));
+            }
         }
 
         /// <summary>
         /// Tests that starting a cache from Spring XML with a <see cref="QueryEntity"/> causes binary type registration
         /// for key and value types.
+        /// <para />
+        /// * Get the cache started from Spring XML
+        /// * Check that query entity is populated correctly
+        /// * Check that key and value types are registered in the cluster 
         /// </summary>
         [Test]
         public void CacheStartFromSpringRegistersMetaForQueryEntityTypes()
