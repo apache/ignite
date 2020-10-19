@@ -124,7 +124,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             //   (see where GridQueryTypeDescriptor#affinityKey is used - we should ensure it is passed correctly).
             
             // TODO:
-            // * Can we specify .NET types in QueryEntity in Spring XML? Add a test for that.
+            // * Spring XML can be used to specify .NET types in QueryEntity - add test for that
+            //   Example: cache-query-continuous.xml
             IIgnite g = Ignition.GetIgnite("grid-0");
 
             var cacheCfg = new CacheConfiguration("mycache")
