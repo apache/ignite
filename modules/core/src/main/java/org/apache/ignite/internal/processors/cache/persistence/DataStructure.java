@@ -170,8 +170,6 @@ public abstract class DataStructure {
             PageIdUtils.flag(pageId) != FLAG_IDX && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID :
             U.hexLong(pageId) + " flag=" + PageIdUtils.flag(pageId) + " part=" + PageIdUtils.partId(pageId);
 
-        assert PageIdUtils.flag(pageId) != FLAG_DATA || PageIdUtils.itemId(pageId) == 0 : PageIdUtils.toDetailString(pageId);
-
         return pageMem.acquirePage(grpId, pageId, statHolder);
     }
 
