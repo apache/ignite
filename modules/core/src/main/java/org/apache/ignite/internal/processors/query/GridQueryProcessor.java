@@ -1182,6 +1182,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                         if (valCls != null)
                             registerDescriptorLocallyIfNeeded(valCls);
+
+                        // TODO: Platform callback here?
+                        // The idea is to register metadata locally here,
+                        // so the platform should not call PutBinaryTypes.
+                        // Insted, platform should return binary types back,
+                        // and here we call addMetaLocally somehow?
                     }
                 }
             }
