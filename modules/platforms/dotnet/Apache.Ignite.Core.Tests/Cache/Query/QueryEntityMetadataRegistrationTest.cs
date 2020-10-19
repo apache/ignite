@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
+    using System.IO;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
 
@@ -31,6 +32,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// </summary>
     public class QueryEntityMetadataRegistrationTest
     {
+        /** */
+        private static readonly string SpringConfig = Path.Combine("Config", "query-entity-metadata-registration.xml");
+        
         // TODO:
         // * Code config
         // * Spring config
