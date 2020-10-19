@@ -33,6 +33,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -150,7 +152,6 @@ import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.IgniteCollectors;
 import org.apache.ignite.internal.util.InitializationProtector;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -192,7 +193,6 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -306,10 +306,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final CacheRecoveryLifecycle recovery = new CacheRecoveryLifecycle();
 
     /** Cache configuration splitter. */
-    private CacheConfigurationSplitter splitter;
+    private final CacheConfigurationSplitter splitter;
 
     /** Cache configuration enricher. */
-    private CacheConfigurationEnricher enricher;
+    private final CacheConfigurationEnricher enricher;
+
+    /** Pool to use while restoring partition states. */
+    private final ForkJoinPool restorePartitionsPool;
 
     /**
      * @param ctx Kernal context.
@@ -324,6 +327,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
         splitter = new CacheConfigurationSplitterImpl(ctx, marsh);
         enricher = new CacheConfigurationEnricher(ctx, marsh, U.resolveClassLoader(ctx.config()));
+
+        ForkJoinPool.ForkJoinWorkerThreadFactory factory = new ForkJoinPool.ForkJoinWorkerThreadFactory() {
+            @Override public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+                ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+
+                worker.setName("restore-partition-states-" + worker.getPoolIndex());
+
+                return worker;
+            }
+        };
+
+        int stripesCnt = ctx.getStripedExecutorService().stripesCount();
+        restorePartitionsPool = new ForkJoinPool(stripesCnt, factory, null, false);
     }
 
     /**
@@ -743,6 +759,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CU.stopStoreSessionListeners(ctx, sharedCtx.storeSessionListeners());
 
         sharedCtx.cleanup();
+
+        restorePartitionsPool.shutdownNow();
 
         if (log.isDebugEnabled())
             log.debug("Stopped cache processor.");
@@ -5283,6 +5301,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Returns {@code ForkJoinPool} instance to be used in partition states restoration.<br/>
+     * It's more convenient than regular pools because it can be used to parallel by cache groups and by partitions
+     * without sacrificing code simplicity (cache group tasks won't exclusively occupy their threads and won't block
+     * partition tasks as a result).<br/>
+     * <br/>
+     * There's a chance that this pool will later be replaced with a more common one, like system pool, for example.
+     *
+     * @return Pool instance.
+     */
+    public ForkJoinPool restorePartitionsPool() {
+        return restorePartitionsPool;
+    }
+
+    /**
      * Pages list view supplier.
      *
      * @param filter Filter.
@@ -5464,12 +5496,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             AtomicReference<IgniteCheckedException> restoreStateError = new AtomicReference<>();
 
-            StripedExecutor stripedExec = ctx.getStripedExecutorService();
-
-            int roundRobin = 0;
+            CountDownLatch completionLatch = new CountDownLatch(forGroups.size());
 
             for (CacheGroupContext grp : forGroups) {
-                stripedExec.execute(roundRobin % stripedExec.stripesCount(), () -> {
+                restorePartitionsPool.submit(() -> {
                     try {
                         long processed = grp.offheap().restorePartitionStates(partitionStates);
 
@@ -5486,14 +5516,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 : new IgniteCheckedException(e)
                         );
                     }
+                    finally {
+                        completionLatch.countDown();
+                    }
                 });
-
-                roundRobin++;
             }
 
             try {
                 // Await completion restore state tasks in all stripes.
-                stripedExec.awaitComplete();
+                completionLatch.await();
             }
             catch (InterruptedException e) {
                 throw new IgniteInterruptedException(e);

@@ -38,9 +38,6 @@ namespace ignite
                 /** Operation: get multiple entries. */
                 const int32_t OP_GET_BATCH = 2;
 
-                /** Operation: get single entry. */
-                const int32_t OP_GET_SINGLE = 3;
-
                 /** Operation: start iterator. */
                 const int32_t OP_ITERATOR = 4;
 

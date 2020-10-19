@@ -18,13 +18,7 @@ The main feature set of Ignite includes:
 
 For information on how to get started with Apache Ignite please visit:
 
-    http://apacheignite.readme.io/docs/getting-started
-
-
-You can find Apache Ignite documentation here:
-
-    http://apacheignite.readme.io/docs
-
+    https://ignite.apache.org/docs/latest/
 
 Crypto Notice
 =============
@@ -49,12 +43,12 @@ and source code.
 The following provides more details on the included cryptographic software:
 
 * JDK SSL/TLS libraries used to enable secured connectivity between cluster
-nodes (https://apacheignite.readme.io/docs/ssltls).
+nodes (https://ignite.apache.org/docs/latest/security/ssl-tls).
 Oracle/OpenJDK (https://www.oracle.com/technetwork/java/javase/downloads/index.html)
 
 * JDK Java Cryptography Extensions build in encryption from the Java libraries is used
 for Transparent Data Encryption of data on disk
-(https://apacheignite.readme.io/docs/transparent-data-encryption)
+(https://ignite.apache.org/docs/latest/security/tde)
 and for AWS S3 Client Side Encryprion.
 (https://java.sun.com/javase/technologies/security/)
 

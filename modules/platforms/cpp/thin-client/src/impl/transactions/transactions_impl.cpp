@@ -77,7 +77,7 @@ namespace ignite
                         throw IgniteError(IgniteError::IGNITE_ERR_TX_THIS_THREAD, TX_ALREADY_STARTED);
                     }
 
-                    TxStartRequest req(concurrency, isolation, timeout, txSize, label);
+                    TxStartRequest req(concurrency, isolation, timeout, label);
 
                     Int32Response rsp;
 

@@ -168,6 +168,11 @@ namespace ignite
                 static bool IsAcquired(int32_t flags);
 
                 /**
+                 * Constructor.
+                 */
+                InteropMemory() : memPtr(0) { }
+
+                /**
                  * Destructor.
                  */
                 virtual ~InteropMemory() { }
@@ -267,7 +272,7 @@ namespace ignite
                 /** Whether this instance is owner of memory chunk. */
                 bool owning; 
 
-                IGNITE_NO_COPY_ASSIGNMENT(InteropUnpooledMemory)
+                IGNITE_NO_COPY_ASSIGNMENT(InteropUnpooledMemory);
             };
         }
     }
