@@ -23,6 +23,7 @@
 using namespace ignite;
 using namespace ignite::binary;
 using namespace ignite::impl::binary;
+using namespace ignite::impl::interop;
 
 namespace ignite_test
 {
@@ -33,6 +34,21 @@ namespace ignite_test
             inline bool IsBinaryError(const IgniteError& err)
             {
                 return err.GetCode() == IgniteError::IGNITE_ERR_BINARY;
+            }
+
+            inline bool IsStreamPositionEqualOnSkip(InteropInputStream& in, int32_t prevPos = 0)
+            {
+                int32_t pos = in.Position();
+
+                BinaryReaderImpl reader(&in);
+
+                in.Position(prevPos);
+                reader.Skip();
+                int32_t skipPos = in.Position();
+
+                in.Position(pos);
+
+                return skipPos == pos;
             }
 
             template<typename T>
