@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class LockedEntriesInfo {
     /** Deadlock detection timeout in milliseconds. */
-    private static final int DEADLOCK_DETECTION_TIMEOUT = 100;
+    private static final long DEADLOCK_DETECTION_TIMEOUT = 500L;
 
     /** Locked entries info for each thread. */
     private final Map<Long, LockedEntries> lockedEntriesPerThread = new ConcurrentHashMap<>();
