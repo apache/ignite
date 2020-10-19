@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
@@ -35,5 +36,47 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         // * Spring config
         // * Local and remote node check
         // * Java config with .NET types? 
+
+        /** */
+        public class Key1
+        {
+            /** */
+            public string Foo;
+
+            /** */
+            [AffinityKeyMapped]
+            public int Bar;
+        }
+        
+        /** */
+        public class Value1
+        {
+            /** */
+            public string Name { get; set; }
+            
+            /** */
+            public long Value { get; set; }
+        }
+        
+        /** */
+        public class Key2
+        {
+            /** */
+            public string Baz;
+
+            /** */
+            [AffinityKeyMapped]
+            public long AffKey;
+        }
+        
+        /** */
+        public class Value2
+        {
+            /** */
+            public string Name { get; set; }
+            
+            /** */
+            public decimal Price { get; set; }
+        }
     }
 }
