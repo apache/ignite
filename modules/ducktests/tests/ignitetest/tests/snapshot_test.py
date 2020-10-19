@@ -18,7 +18,6 @@ Module contains discovery tests.
 """
 import ducktape
 from ducktape.mark.resource import cluster
-from ducktape.tests.status import FAIL
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
@@ -125,16 +124,6 @@ class SnapshotTest(IgniteTest):
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
         assert len(diff) == 0, diff
-
-    def copy_service_logs(self, test_status):
-        """
-        Copy logs from service nodes to the results directory.
-        If the the test failed, root directory will be collected too.
-        """
-        super().copy_service_logs(test_status=test_status)
-
-        if test_status == FAIL:
-            self.copy_ignite_work_dir()
 
 
 def load(service_load: IgniteApplicationService, duration: int = 60):
