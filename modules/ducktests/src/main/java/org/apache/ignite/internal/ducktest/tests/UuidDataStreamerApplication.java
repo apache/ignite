@@ -68,8 +68,7 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void workParallel(Ignite ignite, String cacheName, long iterSize, int dataSize)
-            throws InterruptedException {
+    private void workParallel(Ignite ignite, String cacheName, long iterSize, int dataSize) {
         int threads = Runtime.getRuntime().availableProcessors() / 2;
 
         long iterCore = iterSize > 0 ? (iterSize / threads) : iterSize;
@@ -85,7 +84,14 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
             threadFactory.newThread(new UuidDataStreamer(ignite, cacheName, latch, iterCore, dataSize))
                     .start();
 
-        latch.await();
+        try {
+            latch.await();
+        }
+        catch (InterruptedException e) {
+            markBroken(new RuntimeException("Unexpected thread interruption", e));
+
+            Thread.currentThread().interrupt();
+        }
     }
 
     /** */
@@ -132,8 +138,6 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
 
                     cnt++;
                 }
-
-                dataStreamer.flush();
             }
 
             latch.countDown();
