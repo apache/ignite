@@ -28,6 +28,9 @@ public class ZookeeperDiscoveryStatistics {
     /** */
     private long failedNodesCnt;
 
+    /** */
+    private long leftNodesCnt;
+
     /** Communication error count. */
     private long commErrCnt;
 
@@ -39,6 +42,11 @@ public class ZookeeperDiscoveryStatistics {
     /** */
     public long failedNodesCnt() {
         return failedNodesCnt;
+    }
+
+    /** */
+    public long leftNodesCnt() {
+        return leftNodesCnt;
     }
 
     /** */
@@ -54,6 +62,11 @@ public class ZookeeperDiscoveryStatistics {
     /** */
     public void onNodeFailed() {
         failedNodesCnt++;
+    }
+
+    /** */
+    public void onNodeLeft() {
+        leftNodesCnt++;
     }
 
     /** */

@@ -180,7 +180,9 @@ public class ZookeeperDiscoveryConcurrentStartAndStartStopTest extends Zookeeper
             }, NODES, "stop-node");
 
             for (int j = 0; j < NODES; j++)
-                expEvts[j] = ZookeeperDiscoverySpiTestHelper.failEvent(++topVer);
+                expEvts[j] = ZookeeperDiscoverySpiTestHelper.leftEvent(++topVer, false);
+
+            helper.checkEvents(ignite(0), evts, expEvts);
 
             checkEventsConsistency();
         }

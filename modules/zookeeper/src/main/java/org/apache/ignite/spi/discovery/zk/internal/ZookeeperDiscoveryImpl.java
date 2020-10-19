@@ -101,6 +101,7 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
@@ -854,7 +855,8 @@ public class ZookeeperDiscoveryImpl {
                 zkPaths.customEvtsDir,
                 zkPaths.customEvtsPartsDir,
                 zkPaths.customEvtsAcksDir,
-                zkPaths.aliveNodesDir};
+                zkPaths.aliveNodesDir,
+                zkPaths.stoppedNodesFlagsDir};
 
             List<String> dirs = new ArrayList<>();
 
@@ -1642,6 +1644,11 @@ public class ZookeeperDiscoveryImpl {
             rtState.updateAlives = false;
         }
 
+        Set<Long> stoppedNodes = new HashSet<>();
+
+        for (String stoppedFlagPath : rtState.zkClient.getChildren(zkPaths.stoppedNodesFlagsDir))
+            stoppedNodes.add(ZkIgnitePaths.stoppedFlagNodeInternalId(stoppedFlagPath));
+
         TreeMap<Long, String> alives = new TreeMap<>();
 
         for (String child : aliveNodes) {
@@ -1670,7 +1677,7 @@ public class ZookeeperDiscoveryImpl {
 
                 failedNodes.add(failedNode);
 
-                generateNodeFail(curTop, failedNode);
+                generateNodeLeave(curTop, failedNode, !stoppedNodes.contains(failedNode.internalId()));
 
                 newEvts++;
 
@@ -2180,25 +2187,35 @@ public class ZookeeperDiscoveryImpl {
 
     /**
      * @param curTop Current topology.
-     * @param failedNode Failed node.
+     * @param leftNode Failed node.
+     * @param failed Whether node failed or stopped.
      */
-    private void generateNodeFail(TreeMap<Long, ZookeeperClusterNode> curTop, ZookeeperClusterNode failedNode) {
-        Object rmvd = curTop.remove(failedNode.order());
+    private void generateNodeLeave(
+        TreeMap<Long, ZookeeperClusterNode> curTop,
+        ZookeeperClusterNode leftNode,
+        boolean failed
+    ) {
+        Object rmvd = curTop.remove(leftNode.order());
 
         assert rmvd != null;
 
         rtState.evtsData.topVer++;
         rtState.evtsData.evtIdGen++;
 
-        ZkDiscoveryNodeFailEventData evtData = new ZkDiscoveryNodeFailEventData(
+        ZkDiscoveryNodeLeaveEventData evtData = new ZkDiscoveryNodeLeaveEventData(
             rtState.evtsData.evtIdGen,
             rtState.evtsData.topVer,
-            failedNode.internalId());
+            leftNode.internalId(),
+            failed
+        );
 
         rtState.evtsData.addEvent(curTop.values(), evtData);
 
-        if (log.isInfoEnabled())
-            log.info("Generated NODE_FAILED event [evt=" + evtData + ']');
+        if (log.isInfoEnabled()) {
+            String evtName = failed ? "NODE_FAILED" : "NODE_LEFT";
+
+            log.info("Generated " + evtName + " event [evt=" + evtData + ']');
+        }
     }
 
     /**
@@ -2388,6 +2405,8 @@ public class ZookeeperDiscoveryImpl {
         batch.addAll(client.getChildrenPaths(zkPaths.customEvtsPartsDir));
 
         batch.addAll(client.getChildrenPaths(zkPaths.customEvtsAcksDir));
+
+        batch.addAll(client.getChildrenPaths(zkPaths.stoppedNodesFlagsDir));
 
         client.deleteAll(batch, -1);
 
@@ -2690,13 +2709,13 @@ public class ZookeeperDiscoveryImpl {
                         break;
                     }
 
-                    case ZkDiscoveryEventData.ZK_EVT_NODE_FAILED: {
+                    case ZkDiscoveryEventData.ZK_EVT_NODE_LEFT: {
                         if (!rtState.joined)
                             break;
 
                         evtProcessed = true;
 
-                        notifyNodeFail((ZkDiscoveryNodeFailEventData)evtData);
+                        notifyNodeLeave((ZkDiscoveryNodeLeaveEventData)evtData);
 
                         break;
                     }
@@ -3532,8 +3551,8 @@ public class ZookeeperDiscoveryImpl {
     /**
      * @param evtData Event data.
      */
-    private void notifyNodeFail(final ZkDiscoveryNodeFailEventData evtData) {
-        notifyNodeFail(evtData.failedNodeInternalId(), evtData.topologyVersion());
+    private void notifyNodeLeave(final ZkDiscoveryNodeLeaveEventData evtData) {
+        notifyNodeLeave(evtData.leavedNodeInternalId(), evtData.topologyVersion(), evtData.failed());
     }
 
     /**
@@ -3541,11 +3560,23 @@ public class ZookeeperDiscoveryImpl {
      * @param topVer Topology version.
      */
     private void notifyNodeFail(long nodeInternalOrder, long topVer) {
-        final ZookeeperClusterNode failedNode = rtState.top.removeNode(nodeInternalOrder);
+        notifyNodeLeave(nodeInternalOrder, topVer, true);
+    }
 
-        assert failedNode != null && !failedNode.isLocal() : failedNode;
+    /**
+     * @param nodeInternalOrder Node order.
+     * @param topVer Topology version.
+     * @param failed {@code true} if node failed, {@code false} otherwise.
+     */
+    private void notifyNodeLeave(long nodeInternalOrder, long topVer, boolean failed) {
+        final ZookeeperClusterNode leavedNode = rtState.top.removeNode(nodeInternalOrder);
 
-        PingFuture pingFut = pingFuts.get(failedNode.order());
+        assert leavedNode != null && !leavedNode.isLocal() : leavedNode;
+
+        if (!failed && rtState.crd)
+            rtState.zkClient.deleteIfExistsAsync(zkPaths.nodeStoppedFlag(leavedNode));
+
+        PingFuture pingFut = pingFuts.get(leavedNode.order());
 
         if (pingFut != null)
             pingFut.onDone(false);
@@ -3554,9 +3585,9 @@ public class ZookeeperDiscoveryImpl {
 
         lsnr.onDiscovery(
             new DiscoveryNotification(
-                EVT_NODE_FAILED,
+                failed ? EVT_NODE_FAILED : EVT_NODE_LEFT,
                 topVer,
-                failedNode,
+                leavedNode,
                 topSnapshot,
                 Collections.emptyMap(),
                 null,
@@ -3564,7 +3595,10 @@ public class ZookeeperDiscoveryImpl {
             )
         ).get();
 
-        stats.onNodeFailed();
+        if (failed)
+            stats.onNodeFailed();
+        else
+            stats.onNodeLeft();
     }
 
     /**
@@ -3680,11 +3714,11 @@ public class ZookeeperDiscoveryImpl {
                         break;
                     }
 
-                    case ZkDiscoveryEventData.ZK_EVT_NODE_FAILED: {
+                    case ZkDiscoveryEventData.ZK_EVT_NODE_LEFT: {
                         if (log.isDebugEnabled())
-                            log.debug("All nodes processed node fail [evtData=" + evtData + ']');
+                            log.debug("All nodes processed node left [evtData=" + evtData + ']');
 
-                        break; // Do not need addition cleanup.
+                        break;
                     }
                 }
 
@@ -3899,7 +3933,7 @@ public class ZookeeperDiscoveryImpl {
      *
      */
     public void stop() {
-        stop0(new IgniteSpiException("Node stopped"));
+        stop0(null);
     }
 
     /**
@@ -3913,6 +3947,14 @@ public class ZookeeperDiscoveryImpl {
 
         if (rtState.zkClient != null && rtState.locNodeZkPath != null && rtState.zkClient.connected()) {
             try {
+                if (e == null) {
+                    rtState.zkClient.createIfNeededNoRetry(
+                        zkPaths.nodeStoppedFlag(locNode),
+                        null,
+                        PERSISTENT
+                    );
+                }
+
                 rtState.zkClient.deleteIfExistsNoRetry(rtState.locNodeZkPath, -1);
             }
             catch (Exception err) {

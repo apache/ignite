@@ -44,6 +44,9 @@ public class ZkIgnitePaths {
     /** Directory to store acknowledge messages for custom events. */
     private static final String CUSTOM_EVTS_ACKS_DIR = "ca";
 
+    /** Directory to store node's stopped flags. */
+    private static final String STOPPED_NODES_FLAGS_DIR = "sf";
+
     /** Directory to store EPHEMERAL znodes for alive cluster nodes. */
     static final String ALIVE_NODES_DIR = "n";
 
@@ -71,6 +74,9 @@ public class ZkIgnitePaths {
     /** */
     final String customEvtsAcksDir;
 
+    /** */
+    final String stoppedNodesFlagsDir;
+
     /**
      * @param zkRootPath Base Zookeeper directory for all Ignite nodes.
      */
@@ -83,6 +89,7 @@ public class ZkIgnitePaths {
         customEvtsDir = zkPath(CUSTOM_EVTS_DIR);
         customEvtsPartsDir = zkPath(CUSTOM_EVTS_PARTS_DIR);
         customEvtsAcksDir = zkPath(CUSTOM_EVTS_ACKS_DIR);
+        stoppedNodesFlagsDir = zkPath(STOPPED_NODES_FLAGS_DIR);
     }
 
     /**
@@ -109,7 +116,7 @@ public class ZkIgnitePaths {
     static long aliveInternalId(String path) {
         int idx = path.lastIndexOf('|');
 
-        return Integer.parseInt(path.substring(idx + 1));
+        return Long.parseLong(path.substring(idx + 1));
     }
 
     /**
@@ -153,6 +160,26 @@ public class ZkIgnitePaths {
         String idStr = path.substring(startIdx, startIdx + ZkIgnitePaths.UUID_LEN);
 
         return UUID.fromString(idStr);
+    }
+
+    /**
+     * @param node Leaving node.
+     * @return Stopped node path.
+     */
+    String nodeStoppedFlag(ZookeeperClusterNode node) {
+        String path = node.id().toString() + '|' + node.internalId();
+
+        return String.join(PATH_SEPARATOR, stoppedNodesFlagsDir, path);
+    }
+
+    /**
+     * @param path Leaving flag path.
+     * @return Stopped node internal id.
+     */
+    static long stoppedFlagNodeInternalId(String path) {
+        int idx = path.lastIndexOf('|');
+
+        return Long.parseLong(path.substring(idx + 1));
     }
 
     /**
