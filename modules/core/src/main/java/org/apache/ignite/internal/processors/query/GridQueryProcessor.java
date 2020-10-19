@@ -61,6 +61,7 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -84,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -1290,7 +1292,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (platformProc.hasContext()) {
                     // TODO: Get meta from platforms
                     platformProc.context().gateway().binaryTypeGet(0);
-                    binProc.binaryContext().registerClass((BinaryType)null, false);
+                    BinaryMetadata meta = PlatformUtils.readBinaryMetadata(null);
+                    binProc.binaryContext().registerClass(meta.wrap(binProc.binaryContext()), false);
                 }
             }
         }
