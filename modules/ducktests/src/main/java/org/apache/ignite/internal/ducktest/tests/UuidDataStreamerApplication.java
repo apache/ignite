@@ -132,6 +132,8 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
 
                     cnt++;
                 }
+
+                dataStreamer.flush();
             }
 
             latch.countDown();
