@@ -74,7 +74,7 @@ import org.junit.runners.Suite;
 
     GridCacheTxNodeFailureSelfTest.class,
 
-    AtomicPutAllChangingTopologyTest.class
+    AtomicPutAllChangingTopologyTest.class,
 })
 public class IgniteCacheFailoverTestSuite {
 }
