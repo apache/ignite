@@ -22,6 +22,7 @@ from time import monotonic
 from ducktape.utils.local_filesystem_utils import mkdir_p
 from ducktape.tests.test import Test, TestContext
 from ignitetest.services.ignite import IgniteService
+from ignitetest.services.utils.util import compress_cmd
 
 
 # pylint: disable=W0223
@@ -77,12 +78,3 @@ class IgniteTest(Test):
                          'dest': dest,
                          'service': service,
                          'message': ex})
-
-
-def compress_cmd(src_path, dest_tgz):
-    """
-    Return bash command which compresses the given path to a tarball.
-    """
-    compres_cmd = f'cd {src_path} ; tar czf "{dest_tgz}" *;'
-
-    return compres_cmd
