@@ -1507,7 +1507,6 @@ public abstract class PagesList extends DataStructure {
         if (initIo != null) {
             initIo.initNewPage(reusedPageAddr, newPageId, pageSize());
 
-
             if (needWalDeltaRecord) {
                 assert PageIdUtils.partId(reusedPageId) == PageIdUtils.partId(newPageId) :
                     "Partition consistency failure: " +
