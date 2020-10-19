@@ -20,8 +20,6 @@ package org.apache.ignite.internal.ducktest.tests;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -72,20 +70,20 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
 
     /** */
     private void workParallel(Ignite ignite, String cacheName, long iterSize, int dataSize) {
-        int core = Runtime.getRuntime().availableProcessors() / 2;
+        int threads = Runtime.getRuntime().availableProcessors() / 2;
 
-        long iterCore = 0 < iterSize ? iterSize / core : iterSize;
+        long iterCore = iterSize > 0 ? (iterSize / threads) : iterSize;
+
+        CountDownLatch latch = new CountDownLatch(threads);
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
                 .setNameFormat("UuidDataStreamer-%d")
                 .setDaemon(true)
                 .build();
 
-        ExecutorService executors = Executors.newFixedThreadPool(core, threadFactory);
-        CountDownLatch latch = new CountDownLatch(core);
-
-        for (int i = 0; i < core; i++)
-            executors.submit(new UuidDataStreamer(ignite, cacheName, latch, iterCore, dataSize));
+        for (int i = 0; i < threads; i++)
+            threadFactory.newThread(new UuidDataStreamer(ignite, cacheName, latch, iterCore, dataSize))
+                    .start();
 
         try {
             while (true) {
@@ -97,9 +95,6 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
             markBroken(new RuntimeException("Unexpected thread interruption", e));
 
             Thread.currentThread().interrupt();
-        }
-        finally {
-            executors.shutdownNow();
         }
     }
 
@@ -136,7 +131,7 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
             try (IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
                 dataStreamer.autoFlushFrequency(100L);
 
-                while (cnt != iterSize && !Thread.currentThread().isInterrupted()) {
+                while (cnt != iterSize && !terminated()) {
                     UUID uuid = UUID.randomUUID();
 
                     byte[] data = new byte[dataSize];
@@ -147,8 +142,6 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
 
                     cnt++;
                 }
-
-                dataStreamer.flush();
             }
 
             latch.countDown();

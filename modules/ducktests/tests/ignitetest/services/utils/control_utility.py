@@ -205,14 +205,13 @@ class ControlUtility:
                 end_time = int(list(mbean.__getattr__('LastSnapshotEndTime'))[0])
                 err_msg = list(mbean.__getattr__('LastSnapshotErrorMessage'))[0]
 
-                self.logger.debug(f'Hostname={node.account.hostname}, '
-                                  f'LastSnapshotStartTime={start_time}, '
-                                  f'LastSnapshotEndTime={end_time}, '
-                                  f'LastSnapshotErrorMessage={err_msg}'
-                                  )
-
                 if (0 < start_time < end_time) & (err_msg == ''):
-                    self.print_snapshot_size(snapshot_name)
+                    res = self._cluster.ssh_output_on_all_nodes(
+                        f'du -hs {IgnitePersistenceAware.SNAPSHOT}/{snapshot_name} | ' + "awk '{print $1}'")
+
+                    for items in res.items():
+                        data = items[1].decode("utf-8")
+                        self.logger.info(f'Snapshot {snapshot_name} on {items[0]}: {data}')
                     return
 
             time.sleep(1)
@@ -220,17 +219,6 @@ class ControlUtility:
         raise TimeoutError(f'LastSnapshotStartTime={start_time}, '
                            f'LastSnapshotEndTime={end_time}, '
                            f'LastSnapshotErrorMessage={err_msg}')
-
-    def print_snapshot_size(self, snapshot_name: str):
-        """
-        Print the snapshot directory size on the service nodes.
-        """
-        res = self._cluster.ssh_output_on_all_nodes(
-            f'du -hs {IgnitePersistenceAware.SNAPSHOT}/{snapshot_name} | ' + "awk '{print $1}'")
-
-        for items in res.items():
-            data = items[1].decode("utf-8")
-            self.logger.info(f'Snapshot {snapshot_name} on {items[0]}: {data}')
 
     @staticmethod
     def __tx_command(**kwargs):
