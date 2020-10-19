@@ -40,7 +40,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Nested transaction emulation.
  */
-public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
+public abstract class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
     /** Counter key. */
     private static final String CNTR_KEY = "CNTR_KEY";
 

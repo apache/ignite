@@ -28,6 +28,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -35,6 +36,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Test cases for multi-threaded tests.
  */
+@Ignore("Tests that are not ready to be used with BinaryMarshaller, IGNITE-9214")
 public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /** Grid. */
     private IgniteKernal grid;

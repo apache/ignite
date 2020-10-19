@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccDeadlockDetectionTes
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadBulkOpsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadOperationsTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildWithMvccEnabledSelfTest;
+import org.apache.ignite.suites.CoreIgniteCacheMvccSqlTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -153,10 +154,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     // Transaction recovery.
     CacheMvccTxRecoveryTest.class,
 
-    IgniteCacheMvccSqlTestSuite.MvccPartitionedPrimaryNodeFailureRecoveryTest.class,
-    IgniteCacheMvccSqlTestSuite.MvccPartitionedTwoBackupsPrimaryNodeFailureRecoveryTest.class,
-    IgniteCacheMvccSqlTestSuite.MvccColocatedTxPessimisticOriginatingNodeFailureRecoveryTest.class,
-    IgniteCacheMvccSqlTestSuite.MvccReplicatedTxPessimisticOriginatingNodeFailureRecoveryTest.class
+    CoreIgniteCacheMvccSqlTestSuite.class
 })
 public class IgniteCacheMvccSqlTestSuite {
     /** */

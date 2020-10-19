@@ -17,29 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousBatchForceServerModeAckTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBufferLimitTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryConcurrentPartitionUpdateTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryCounterPartitionedAtomicTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryCounterPartitionedTxTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryCounterReplicatedAtomicTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryCounterReplicatedTxTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryExecuteInPrimaryTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFactoryAsyncFilterRandomOperationTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerClientSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerReplicatedSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.ClientReconnectContinuousQueryTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.ContinuousQueryReassignmentTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryAtomicNearEnabledSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryNodesFilteringTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryPartitionTxOneNodeTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryPartitionedSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientReconnectTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTxReconnectTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryNoUnsubscribeTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryReconnectTest;
+import org.apache.ignite.suites.CoreIgniteCacheQuerySelfTestSuite3;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -48,34 +26,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    CacheContinuousQueryBufferLimitTest.class,
-
-    GridCacheContinuousQueryNodesFilteringTest.class,
-    GridCacheContinuousQueryPartitionTxOneNodeTest.class,
-    CacheContinuousWithTransformerReplicatedSelfTest.class,
-    CacheContinuousWithTransformerClientSelfTest.class,
-    CacheContinuousQueryExecuteInPrimaryTest.class,
-    IgniteCacheContinuousQueryNoUnsubscribeTest.class,
-
-    ClientReconnectContinuousQueryTest.class,
-    IgniteCacheContinuousQueryReconnectTest.class,
-    IgniteCacheContinuousQueryClientTxReconnectTest.class,
-    IgniteCacheContinuousQueryClientReconnectTest.class,
-
-    GridCacheContinuousQueryAtomicSelfTest.class,
-    GridCacheContinuousQueryAtomicNearEnabledSelfTest.class,
-    GridCacheContinuousQueryPartitionedSelfTest.class,
-    GridCacheContinuousQueryReplicatedSelfTest.class,
-
-    CacheContinuousQueryFactoryAsyncFilterRandomOperationTest.class,
-    CacheContinuousBatchForceServerModeAckTest.class,
-    ContinuousQueryReassignmentTest.class,
-    CacheContinuousQueryConcurrentPartitionUpdateTest.class,
-
-    CacheContinuousQueryCounterPartitionedAtomicTest.class,
-    CacheContinuousQueryCounterPartitionedTxTest.class,
-    CacheContinuousQueryCounterReplicatedAtomicTest.class,
-    CacheContinuousQueryCounterReplicatedTxTest.class
+    CoreIgniteCacheQuerySelfTestSuite3.class
 })
 public class IgniteCacheQuerySelfTestSuite3 {
 }

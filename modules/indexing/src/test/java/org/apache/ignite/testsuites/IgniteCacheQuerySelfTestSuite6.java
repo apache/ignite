@@ -19,26 +19,8 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.index.StaticCacheDdlKeepStaticConfigurationTest;
 import org.apache.ignite.internal.processors.cache.index.StaticCacheDdlTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousBatchAckTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFilterListenerTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFilterDeploymentFailedTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOperationP2PTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOrderingEventTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryRandomOperationsTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerPartitionedSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerRandomOperationsTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationNearEnabledTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationStoreEnabledTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.ContinuousQueryMarshallerTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryLocalAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryMultiNodesFilteringTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryPartitionAtomicOneNodeTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryPartitionedOnlySelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicOneNodeTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
 import org.apache.ignite.internal.processors.query.MemLeakOnSqlWithClientReconnectTest;
+import org.apache.ignite.suites.CoreIgniteCacheQuerySelfTestSuite6;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -47,28 +29,10 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    GridCacheContinuousQueryPartitionAtomicOneNodeTest.class,
-    CacheContinuousWithTransformerPartitionedSelfTest.class,
-    GridCacheContinuousQueryLocalAtomicSelfTest.class,
-    GridCacheContinuousQueryReplicatedAtomicOneNodeTest.class,
-    ContinuousQueryMarshallerTest.class,
-    GridCacheContinuousQueryReplicatedAtomicSelfTest.class,
-    CacheKeepBinaryIterationTest.class,
-    GridCacheContinuousQueryMultiNodesFilteringTest.class,
-    CacheKeepBinaryIterationStoreEnabledTest.class,
-    CacheKeepBinaryIterationNearEnabledTest.class,
-    GridCacheContinuousQueryPartitionedOnlySelfTest.class,
-    CacheContinuousQueryOperationP2PTest.class,
-    CacheContinuousBatchAckTest.class,
-    CacheContinuousQueryOrderingEventTest.class,
-    IgniteCacheContinuousQueryClientTest.class,
-    CacheContinuousQueryAsyncFilterListenerTest.class,
-    CacheContinuousWithTransformerRandomOperationsTest.class,
-    CacheContinuousQueryRandomOperationsTest.class,
     StaticCacheDdlTest.class,
     StaticCacheDdlKeepStaticConfigurationTest.class,
     MemLeakOnSqlWithClientReconnectTest.class,
-    CacheContinuousQueryFilterDeploymentFailedTest.class
+    CoreIgniteCacheQuerySelfTestSuite6.class
 })
 public class IgniteCacheQuerySelfTestSuite6 {
 }

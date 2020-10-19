@@ -18,6 +18,9 @@
 
 package org.apache.ignite.internal.processors.cache.binary.local;
 
+import org.junit.Ignore;
+
+@Ignore("IGNITE-9214")
 public class GridCacheBinaryObjectsLocalOnheapSelfTest extends GridCacheBinaryObjectsLocalSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean onheapCacheEnabled() {
