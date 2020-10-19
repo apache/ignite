@@ -70,7 +70,7 @@ class DiscoveryTest(IgniteTest):
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
-    NUM_NODES = 7
+    NUM_NODES = 9
 
     FAILURE_DETECTION_TIMEOUT_TCP = 1000
 

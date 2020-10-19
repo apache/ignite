@@ -83,6 +83,7 @@ class IgniteService(IgniteAwareService):
         :param task: a 'lambda: node'.
         :param simultaneously: Enables or disables simultaneous start of the task on each node.
         :param delay_ms: delay before task run. Begins with 0, grows by delay_ms for each next node in nodes.
+        :param timeout_sec: timeout to wait the task.
         """
         sem = CountDownLatch(len(nodes)) if simultaneously else None
         time_holder = AtomicValue()
