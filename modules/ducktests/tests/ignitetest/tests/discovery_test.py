@@ -179,13 +179,8 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
 
-        for node in failed_nodes:
-            self.logger.info(
-                "Simulating failure of node '%s' (order %d) on '%s'" % (node_id(node), order(node), node.name))
-
         data = self._simulate_nodes_failure(servers, node_fail_task(ignite_config, test_config), failed_nodes,
                                             survived_node)
-
         data['Ignite cluster start time (s)'] = start_servers_sec
 
         return data
@@ -194,6 +189,10 @@ class DiscoveryTest(IgniteTest):
         """
         Perform node failure scenario
         """
+        for node in failed_nodes:
+            self.logger.info(
+                "Simulating failure of node '%s' (order %d) on '%s'" % (node_id(node), order(node), node.name))
+
         ids_to_wait = [node_id(n) for n in failed_nodes]
 
         _, first_terminated = servers.exec_on_nodes_async(failed_nodes, kill_node_task)
@@ -217,7 +216,8 @@ class DiscoveryTest(IgniteTest):
                 datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
                                   "[%Y-%m-%d %H:%M:%S,%f]"))
 
-        self._check_results(failed_nodes, survived_node)
+        self._check_failed_number(failed_nodes, survived_node)
+        self._check_not_segmented(failed_nodes)
 
         logged_timestamps.sort(reverse=True)
 
@@ -230,8 +230,8 @@ class DiscoveryTest(IgniteTest):
 
         return data
 
-    def _check_results(self, failed_nodes, survived_node):
-        """Ensures test finishes correctly."""
+    def _check_failed_number(self, failed_nodes, survived_node):
+        """Ensures number of failed nodes is correct."""
         cmd = "grep '%s' %s | wc -l" % (failed_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE)
 
         failed_cnt = int(str(survived_node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding()))
@@ -247,9 +247,11 @@ class DiscoveryTest(IgniteTest):
             raise AssertionError(
                 "Wrong number of failed nodes: %d. Expected: %d. Check the logs." % (failed_cnt, len(failed_nodes)))
 
+    def _check_not_segmented(self, failed_nodes):
+        """Ensures only target nodes failed"""
         for service in [srv for srv in self.test_context.services if isinstance(srv, IgniteAwareService)]:
             for node in [srv_node for srv_node in service.nodes if srv_node not in failed_nodes]:
-                cmd = "grep -i '%s' %s | wc -l" % ("local no1de segmented", IgniteAwareService.STDOUT_STDERR_CAPTURE)
+                cmd = "grep -i '%s' %s | wc -l" % ("local node segmented", IgniteAwareService.STDOUT_STDERR_CAPTURE)
 
                 failed = str(node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding())
 
