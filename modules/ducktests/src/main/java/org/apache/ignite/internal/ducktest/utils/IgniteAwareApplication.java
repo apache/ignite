@@ -119,7 +119,6 @@ public abstract class IgniteAwareApplication {
             assert !broken;
 
             log.info(APP_INITED);
-            System.out.println(APP_INITED);
 
             inited = true;
         }
@@ -137,7 +136,6 @@ public abstract class IgniteAwareApplication {
             assert !broken;
 
             log.info(APP_FINISHED);
-            System.out.println(APP_FINISHED);
 
             finished = true;
         }
@@ -161,7 +159,6 @@ public abstract class IgniteAwareApplication {
             assert !finished;
 
             log.error(APP_BROKEN);
-            System.err.println(APP_BROKEN);
 
             broken = true;
         }
@@ -177,7 +174,6 @@ public abstract class IgniteAwareApplication {
             assert !terminated;
 
             log.info(APP_TERMINATED);
-            System.out.println(APP_TERMINATED);
 
             terminated = true;
         }
