@@ -87,12 +87,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void CacheStartFromSpringRegistersMetaForQueryEntityTypes()
         {
-            var cache = Ignition.GetIgnite().GetCache<object, object>(CacheName);
+            var ignite = Ignition.GetIgnite();
+            var cache = ignite.GetCache<object, object>(CacheName);
             var cfg = cache.GetConfiguration();
             var qryEntity = cfg.QueryEntities.Single();
             
-            Assert.AreEqual(typeof(Key2), qryEntity.KeyType);
-            Assert.AreEqual(typeof(Value2), qryEntity.ValueType);
+            var keyType = ignite.GetBinary().GetBinaryType(qryEntity.KeyTypeName);
+            var valType = ignite.GetBinary().GetBinaryType(qryEntity.ValueTypeName);
+            
+            Assert.AreEqual(typeof(Key2).FullName, qryEntity.KeyTypeName);
+            Assert.AreEqual(typeof(Value2).FullName, qryEntity.ValueTypeName);
+            
+            Assert.AreEqual("AffKey", keyType.AffinityKeyFieldName);
+            CollectionAssert.AreEquivalent(new[] {"Baz", "AffKey"}, keyType.Fields);
+            Assert.AreEqual("String", keyType.GetFieldTypeName("Baz"));
+            
+            Assert.IsNull(valType.AffinityKeyFieldName);
+            CollectionAssert.AreEquivalent(new[] {"Name", "Price"}, valType.Fields);
+            Assert.AreEqual("Double", valType.GetFieldTypeName("Price"));
         }
 
         /** */
