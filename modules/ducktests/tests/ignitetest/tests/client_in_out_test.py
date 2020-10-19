@@ -35,7 +35,6 @@ class ClientTest(IgniteTest):
     CACHE_NAME - name of the cache to create for the test.
     PACING - the frequency of the operation on clients (ms).
     JAVA_CLIENT_CLASS_NAME - running classname.
-
     client_work_time - clients working time (s).
     iteration_count - the number of iterations of starting and stopping client nodes (s).
     static_clients - the number of permanently employed clients.
