@@ -23,13 +23,18 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
@@ -43,6 +48,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class IgniteCDCSelfTest extends GridCommonAbstractTest {
+    /** Keys count. */
+    private static final int KEYS_CNT = 1_000;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -54,6 +62,7 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
             .setWalMode(WALMode.FSYNC)
             .setMaxWalArchiveSize(10 * segmentSz)
             .setWalSegmentSize(segmentSz)
+            .setWalForceArchiveTimeout(1_000)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)));
 
@@ -74,8 +83,10 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
 
         IgniteCDC cdc = new IgniteCDC(getConfiguration("cdc"), consumer);
 
+        IgniteInternalFuture<?> fut;
+
         try {
-            runAsync(() -> {
+            fut = runAsync(() -> {
                 cdc.start();
 
                 try {
@@ -90,25 +101,11 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
 
             ign.cluster().state(ACTIVE);
 
-            String cacheName = "my-cache";
+            IgniteCache<Integer, byte[]> cache = ign.createCache(DEFAULT_CACHE_NAME);
 
-            IgniteCache<Integer, byte[]> cache = ign.createCache(cacheName);
+            addData(cache, 0, KEYS_CNT);
 
-            int keysCnt = 10_000;
-
-            for (int i = 0; i < keysCnt; i++) {
-                byte[] bytes = new byte[1024];
-
-                ThreadLocalRandom.current().nextBytes(bytes);
-
-                cache.put(i, bytes);
-            }
-
-            boolean res = waitForCondition(() -> {
-                Set<Integer> keys = consumer.keys(cacheId(cacheName));
-
-                return F.size(keys) == keysCnt;
-            }, 10_000);
+            boolean res = waitForSize(consumer, KEYS_CNT);
 
             assertTrue(res);
         }
@@ -116,6 +113,101 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
             cdc.interrupt();
 
             cdc.join();
+        }
+
+        fut.get(getTestTimeout());
+
+        Set<Integer> keys = consumer.keys(cacheId(DEFAULT_CACHE_NAME));
+
+        for (int i = 0; i < KEYS_CNT; i++)
+            assertTrue(keys.contains(i));
+    }
+
+    /** Simplest CDC test. */
+    @Test
+    public void testRestoreStateAfterStop() throws Exception {
+        StoreKeysCDCConsumer consumer = new StoreKeysCDCConsumer();
+
+        IgniteCDC cdc = new IgniteCDC(getConfiguration("cdc"), consumer);
+
+        Runnable runCDC = () -> {
+            cdc.start();
+
+            try {
+                cdc.join();
+            }
+            catch (InterruptedException ignore) {
+                // No-op.
+            }
+        };
+
+        IgniteInternalFuture<?> restartFut;
+
+        try {
+            IgniteInternalFuture<?> runFut = runAsync(runCDC);
+
+            Ignite ign = startGrid();
+
+            ign.cluster().state(ACTIVE);
+
+            IgniteCache<Integer, byte[]> cache = ign.createCache(DEFAULT_CACHE_NAME);
+
+            addData(cache, 0, KEYS_CNT);
+
+            restartFut = runAsync(() -> {
+                try {
+                    waitForSize(consumer, 2);
+
+                    cdc.interrupt();
+
+                    cdc.join();
+
+                    runFut.get(getTestTimeout());
+
+                    runCDC.run();
+                }
+                catch (InterruptedException | IgniteCheckedException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            addData(cache, KEYS_CNT, KEYS_CNT * 2);
+
+            boolean res = waitForSize(consumer, KEYS_CNT * 2);
+
+            assertTrue(res);
+        }
+        finally {
+            cdc.interrupt();
+
+            cdc.join();
+        }
+
+        restartFut.get(getTestTimeout());
+
+        Set<Integer> keys = consumer.keys(cacheId(DEFAULT_CACHE_NAME));
+
+        for (int i = 0; i < KEYS_CNT * 2; i++)
+            assertTrue(keys.contains(i));
+    }
+
+    /** */
+    private boolean waitForSize(StoreKeysCDCConsumer consumer, int expSz) throws IgniteInterruptedCheckedException {
+        return waitForCondition(() -> {
+            Set<Integer> keys = consumer.keys(cacheId(DEFAULT_CACHE_NAME));
+
+            return F.size(keys) >= expSz;
+        }, getTestTimeout());
+    }
+
+    /** */
+    private void addData(IgniteCache<Integer, byte[]> cache, int from, int to) {
+        for (int i = from; i < to; i++) {
+            byte[] bytes = new byte[1024];
+
+            ThreadLocalRandom.current().nextBytes(bytes);
+
+            cache.put(i, bytes);
         }
     }
 
@@ -127,16 +219,11 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
     /** */
     private static class StoreKeysCDCConsumer implements CDCConsumer {
         /** Keys */
-        private ConcurrentMap<Integer, Set> cacheKeys;
+        private ConcurrentMap<Integer, Set> cacheKeys = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
         @Override public String id() {
             return getClass().getName();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
-            cacheKeys = new ConcurrentHashMap<>();
         }
 
         /** {@inheritDoc} */
@@ -149,8 +236,25 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
             for (DataEntry entry : dataRecord.writeEntries()) {
                 cacheKeys.computeIfAbsent(entry.cacheId(), key -> new GridConcurrentHashSet());
 
-                cacheKeys.get(entry.cacheId()).add(entry.key());
+                if (entry instanceof UnwrappedDataEntry) {
+                    UnwrappedDataEntry unwrapDataEntry = (UnwrappedDataEntry)entry;
+
+                    Integer key = (Integer)unwrapDataEntry.unwrappedKey();
+
+                    cacheKeys.get(entry.cacheId()).add(key);
+                }
+                else if (entry instanceof MarshalledDataEntry) {
+                    fail("Unexpected data entry type.");
+                }
+                else {
+                    fail("Unexpected data entry type.");
+                }
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
+            // No-op.
         }
 
         /** {@inheritDoc} */

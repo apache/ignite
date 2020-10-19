@@ -66,7 +66,7 @@ public class CDCState {
         buf.putInt(ptr.length());
         buf.flip();
 
-        try (FileChannel ch = FileChannel.open(tmp, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+        try (FileChannel ch = FileChannel.open(tmp, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             ch.write(buf);
 
             ch.force(true);
@@ -87,6 +87,8 @@ public class CDCState {
             ByteBuffer buf = ByteBuffer.allocate(POINTER_SIZE);
 
             ch.read(buf);
+
+            buf.flip();
 
             long idx = buf.getLong();
             int offset = buf.getInt();
