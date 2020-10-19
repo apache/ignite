@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -333,7 +334,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                     String msg = e.getMessage();
 
                     assert msg.startsWith("Client node disconnected") ||
-                        msg.startsWith("Client node was disconnected") : e.getMessage();
+                        msg.startsWith("Client node was disconnected") ||
+                        msg.contains("client is disconnected") : e.getMessage();
                 }
                 finally {
                     state = !state;
