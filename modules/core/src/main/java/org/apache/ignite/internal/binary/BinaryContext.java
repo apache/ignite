@@ -585,6 +585,16 @@ public class BinaryContext {
     }
 
     /**
+     * Registers binary type.
+     *
+     * @param binaryType Binary type to register.
+     * @param failIfUnregistered Whether to fail when not registered.
+     */
+    public void registerClass(BinaryType binaryType, boolean failIfUnregistered) {
+        metaHnd.addMetaLocally(binaryType.typeId(), binaryType, failIfUnregistered);
+    }
+
+    /**
      * @param cls Class.
      * @return A descriptor for the given class. If the class hasn't been registered yet, then a new descriptor will be
      * created, but its {@link BinaryClassDescriptor#registered()} will be {@code false}.

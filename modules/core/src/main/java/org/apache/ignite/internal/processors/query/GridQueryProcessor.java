@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -1273,18 +1274,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         IgniteCacheObjectProcessor cacheObjProc = ctx.cacheObjects();
 
         if (cacheObjProc instanceof CacheObjectBinaryProcessorImpl) {
-            CacheObjectBinaryProcessorImpl proc = (CacheObjectBinaryProcessorImpl) cacheObjProc;
+            CacheObjectBinaryProcessorImpl binProc = (CacheObjectBinaryProcessorImpl) cacheObjProc;
 
             Class<?> cls = U.box(U.classForName(clsName, null, true));
 
             if (cls != null)
-                proc.binaryContext().registerClass(cls, true, false, true);
+                binProc.binaryContext().registerClass(cls, true, false, true);
             else {
                 // TODO: Platform callback here?
                 // The idea is to register metadata locally here,
                 // so the platform should not call PutBinaryTypes.
                 // Insted, platform should return binary types back,
                 // and here we call addMetaLocally somehow?
+                PlatformProcessor platformProc = ctx.platform();
+                if (platformProc.hasContext()) {
+                    // TODO: Get meta from platforms
+                    platformProc.context().gateway().computeTaskComplete(0, 0);
+                    binProc.binaryContext().registerClass((BinaryType)null, false);
+                }
             }
         }
     }
