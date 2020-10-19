@@ -424,7 +424,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 row.version(),
                                 0,
                                 0,
-                                needVer);
+                                needVer,
+                                null);
 
                             if (ctx.statisticsEnabled() && !skipVals)
                                 metrics0().onRead(true);
@@ -506,7 +507,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                             true,
                                             null,
                                             0,
-                                            0);
+                                            0,
+                                            null);
                                     }
                                     else
                                         success = false;
@@ -1007,8 +1009,14 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (err != null)
             throw err;
 
-        Object ret = res == null ? null : rawRetval ? new GridCacheReturn(ctx, true, keepBinary, res.get2(), res.get1()) :
-            (retval || op == TRANSFORM) ? res.get2() : res.get1();
+        Object ret = res == null ? null : rawRetval ? new GridCacheReturn(
+            ctx,
+            true,
+            keepBinary,
+            U.deploymentClassLoader(ctx.kernalContext(), U.contextDeploymentClassLoaderId(ctx.kernalContext())),
+            res.get2(),
+            res.get1()
+        ) : (retval || op == TRANSFORM) ? res.get2() : res.get1();
 
         if (op == TRANSFORM && ret == null)
             ret = Collections.emptyMap();
