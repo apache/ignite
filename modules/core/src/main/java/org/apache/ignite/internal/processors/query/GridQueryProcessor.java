@@ -1178,8 +1178,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (binaryEnabled) {
                     for (QueryEntity qryEntity : qryEntities) {
-                        registerDescriptorLocallyIfNeeded(qryEntity.findKeyType());
-                        registerDescriptorLocallyIfNeeded(qryEntity.findValueType());
+                        registerTypeLocally(qryEntity.findKeyType());
+                        registerTypeLocally(qryEntity.findValueType());
                     }
                 }
             }
@@ -1269,7 +1269,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param clsName Class name for which the metadata should be registered.
      * @throws BinaryObjectException if register was failed.
      */
-    private void registerDescriptorLocallyIfNeeded(String clsName) throws BinaryObjectException {
+    private void registerTypeLocally(String clsName) throws BinaryObjectException {
         if (clsName == null)
             return;
 
@@ -1283,20 +1283,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (cls != null)
                 binProc.binaryContext().registerClass(cls, true, false, true);
             else {
-                // TODO: Platform callback here?
-                // The idea is to register metadata locally here,
-                // so the platform should not call PutBinaryTypes.
-                // Insted, platform should return binary types back,
-                // and here we call addMetaLocally somehow?
-                PlatformProcessor platformProc = ctx.platform();
-                if (platformProc.hasContext()) {
-                    // TODO: Get meta from platforms
-                    platformProc.context().gateway().binaryTypeGet(0);
-                    BinaryMetadata meta = PlatformUtils.readBinaryMetadata(null);
-                    binProc.binaryContext().registerClass(meta.wrap(binProc.binaryContext()), false);
-                }
+                registerPlatformTypeLocally(binProc);
             }
         }
+    }
+
+    /**
+     * Registers platform type locally.
+     *
+     * @param binProc Binary processor.
+     */
+    private void registerPlatformTypeLocally(CacheObjectBinaryProcessorImpl binProc) {
+        PlatformProcessor platformProc = ctx.platform();
+
+        if (!platformProc.hasContext())
+            return;
+
+        // TODO: Get meta from platforms
+        platformProc.context().gateway().binaryTypeGet(0);
+        BinaryMetadata meta = PlatformUtils.readBinaryMetadata(null);
+        binProc.binaryContext().registerClass(meta.wrap(binProc.binaryContext()), false);
     }
 
     /**
