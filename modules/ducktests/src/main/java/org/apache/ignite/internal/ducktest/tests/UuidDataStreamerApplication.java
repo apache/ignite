@@ -22,7 +22,6 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -36,9 +35,9 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 /**
  * Loading random uuids in cache.
  */
-public class UuidStreamerApplication extends IgniteAwareApplication {
+public class UuidDataStreamerApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
-    @Override public void run(JsonNode jNode) {
+    @Override public void run(JsonNode jNode) throws InterruptedException {
         String cacheName = jNode.get("cacheName").asText();
 
         int dataSize = Optional.ofNullable(jNode.get("dataSize"))
@@ -69,7 +68,8 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void workParallel(Ignite ignite, String cacheName, long iterSize, int dataSize) {
+    private void workParallel(Ignite ignite, String cacheName, long iterSize, int dataSize)
+            throws InterruptedException {
         int threads = Runtime.getRuntime().availableProcessors() / 2;
 
         long iterCore = iterSize > 0 ? (iterSize / threads) : iterSize;
@@ -85,17 +85,7 @@ public class UuidStreamerApplication extends IgniteAwareApplication {
             threadFactory.newThread(new UuidDataStreamer(ignite, cacheName, latch, iterCore, dataSize))
                     .start();
 
-        try {
-            while (true) {
-                if (latch.await(1, TimeUnit.SECONDS) || terminated())
-                    break;
-            }
-        }
-        catch (InterruptedException e) {
-            markBroken(new RuntimeException("Unexpected thread interruption", e));
-
-            Thread.currentThread().interrupt();
-        }
+        latch.await();
     }
 
     /** */
