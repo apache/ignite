@@ -86,10 +86,9 @@ class TwoPhasedRebalancedTest(IgniteTest):
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.UuidStreamerApplication",
-            timeout_sec=180,
             params={
                 "cacheName": "test-cache",
-                "iterSize": 30 * 1024
+                "iterSize": 100 * 1024
             }
         )
 
@@ -97,18 +96,16 @@ class TwoPhasedRebalancedTest(IgniteTest):
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.DeleteDataApplication",
-            timeout_sec=180,
             params={
                 "cacheName": "test-cache",
-                "iterSize": 20 * 1024
+                "iterSize": 80 * 1024
             }
         )
 
-        load(streamer)
+        load(streamer, duration=300)
 
-        time.sleep(180)
-
-        # cells[0].await_event('Checkpoint finished', timeout_sec=180)
+        node = cells[0].nodes[0]
+        cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=30)
 
         pds = self.pds_size(cells)
 
@@ -127,12 +124,12 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         self.start_idx_node_on_cell(cells, 2, 3)
 
+        cells[0].await_event('Skipping rebalancing (nothing scheduled)', timeout_sec=5 * 60)
+
         pds = self.pds_size(cells)
 
-        self.logger.warn("Clean and restart halh nodes, PDS")
+        self.logger.warn("Clean and restart nodes 2, 3. PDS")
         self.logger.warn(pds)
-
-        # cells[0].await_event()
 
         time.sleep(5 * 60)
 
@@ -145,9 +142,11 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         self.start_idx_node_on_cell(cells, 0, 1)
 
+        cells[0].await_event('Skipping rebalancing (nothing scheduled)', timeout_sec=5 * 60)
+
         pds = self.pds_size(cells)
 
-        self.logger.warn("Clean and restart halh nodes, PDS")
+        self.logger.warn("Clean and restart nodes 0, 1. PDS")
         self.logger.warn(pds)
 
         # cells[0].await_event()
@@ -210,7 +209,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
                 cell.stop_node(node)
                 cell.remove(node, cell.WORK_DIR)
 
-    def start_idx_node_on_cell(self, cells: [IgniteService], *idx: int, timeout_sec=30):
+    def start_idx_node_on_cell(self, cells: [IgniteService], *idx: int, timeout_sec=60):
         for cell in cells:
             size = len(cell.nodes)
             for i in idx:

@@ -84,9 +84,9 @@ class CellularAffinity(IgniteTest):
         """
         cell1 = start_cell(self.test_context, ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=1'])
         start_cell(self.test_context, ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=2'],
-                        joined_cluster=cell1)
+                   joined_cluster=cell1)
         start_cell(self.test_context, ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=XXX', '-DRANDOM=42'],
-                        joined_cluster=cell1)
+                   joined_cluster=cell1)
 
         ControlUtility(cell1, self.test_context).activate()
 

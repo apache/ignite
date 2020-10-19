@@ -150,7 +150,7 @@ class IgniteService(IgniteAwareService):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
         node.account.ssh("sudo rm -rf -- %s" % self.PERSISTENT_ROOT, allow_fail=False)
 
-    def remove(self, node, path: str):
+    def remove(self, node, path: str):  # pylint: disable=R0201
         """
         Remove on node.
         """
