@@ -17,21 +17,24 @@
 
 package org.apache.ignite.cdc;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -47,7 +50,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
 /**
  * CDC(Capture Data Change) application.
  */
-public class IgniteCDC implements Runnable, Closeable {
+public class IgniteCDC {
     /** Ignite configuration. */
     private final IgniteConfiguration cfg;
 
@@ -72,8 +75,17 @@ public class IgniteCDC implements Runnable, Closeable {
     /** Marshaller directory. */
     private File marshaller;
 
+    /** CDC state. */
+    private CDCState state;
+
+    /** Save state to start from. */
+    private WALPointer initState;
+
     /** Thread that waits for creation of the new WAL segments. */
     private Thread waitSegmentThread;
+
+    /** Thread that processes new WAL segments. */
+    private Thread processSegmentsThread;
 
     /** Queue of segments to process. */
     private final BlockingQueue<Path> segments = new LinkedBlockingQueue<>();
@@ -97,8 +109,8 @@ public class IgniteCDC implements Runnable, Closeable {
                 "clusters (use IgniteConfiguration.setConsistentId property)");
     }
 
-    /** {@inheritDoc} */
-    @Override public void run() {
+    /** Starts CDC. */
+    public void start() {
         if (log.isInfoEnabled()) {
             log.info("Starting Ignite CDC Application.");
             log.info("Consumer    -\t" + consumer.toString());
@@ -107,7 +119,7 @@ public class IgniteCDC implements Runnable, Closeable {
         try {
             initDirs();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException | IOException | InterruptedException e) {
             throw new IgniteException(e);
         }
 
@@ -118,42 +130,110 @@ public class IgniteCDC implements Runnable, Closeable {
             log.info("--------------------------------");
         }
 
-        consumer.start(cfg, log);
+        state = new CDCState(cdcDir.resolve("state"), consumer.id());
 
-        waitSegmentThread = new Thread(() -> wu.waitFor(cdcDir,
-            p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches(),
-            segment -> {
-                log.info("Found new segment - " + segment);
+        initState = state.load();
 
-                try {
-                    segments.put(segment);
-                }
-                catch (InterruptedException e) {
-                    throw new IgniteException(e);
-                }
+        waitSegmentThread = new Thread(() -> {
+            Predicate<Path> walFilesOnly = p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches();
 
-                return true;
-            }),
-            "wait-archive-segments");
+            Comparator<Path> sortByNumber = Comparator.comparingLong(this::segmentNumber);
+
+            try {
+                wu.waitFor(cdcDir, walFilesOnly, sortByNumber, segment -> {
+                    log.info("Found new segment - " + segment);
+
+                    if (initState != null) {
+                        long segmentIdx = segmentNumber(segment);
+
+                        if (segmentIdx > initState.index()) {
+                            log.error("Found segment greater then saved state. Some events are missed. Exiting!" +
+                                "[state=" + initState + ",segment=" + segmentIdx + ']');
+
+                            return false;
+                        }
+                    }
+
+                    try {
+                        segments.put(segment);
+                    }
+                    catch (InterruptedException e) {
+                        if (log.isInfoEnabled())
+                            log.info("Segment wait thread interrupted.");
+
+                        return false;
+                    }
+
+                    return true;
+                });
+            }
+            catch (InterruptedException ignore) {
+                if (log.isInfoEnabled())
+                    log.info("Segment wait thread interrupted.");
+            }
+        }, "wait-cdc-segments");
 
         waitSegmentThread.start();
 
-        while (true) {
+        processSegmentsThread = new Thread(() -> {
+            consumer.start(cfg, log);
+
             try {
-                Path segment = segments.take();
+                while (true) {
+                    try {
+                        Path segment = segments.take();
 
-                readSegment(segment.toFile());
+                        boolean skip = false;
 
-                Files.delete(segment);
+                        if (initState != null) {
+                            long segmentIdx = segmentNumber(segment);
+
+                            if (segmentIdx > initState.index()) {
+                                log.error("Found segment greater then saved state. Some events are missed. Exiting!" +
+                                    "[state=" + initState + ",segment=" + segmentIdx + ']');
+
+                                return;
+                            }
+
+                            if (segmentIdx < initState.index()) {
+                                if (log.isInfoEnabled()) {
+                                    log.info("Skipping segment. Saved state has greater index.[segment=" +
+                                        segmentIdx + ",state=" + initState.index() + ']');
+                                }
+
+                                skip = true;
+                            }
+                        }
+
+                        if (!skip)
+                            readSegment(segment.toFile());
+
+                        // WAL segment is a hard link to a segment file in a specifal CDC folder.
+                        // So we can safely delete it after success processing.
+                        Files.delete(segment);
+                    }
+                    catch (IgniteCheckedException | IOException e) {
+                        if (e instanceof ClosedByInterruptException)
+                            throw (ClosedByInterruptException)e;
+
+                        throw new IgniteException(e);
+                    }
+                }
             }
-            catch (IgniteCheckedException | InterruptedException | IOException e) {
-                throw new IgniteException(e);
+            catch (InterruptedException | ClosedByInterruptException ignore) {
+                if (log.isInfoEnabled())
+                    log.info("Segment process thread interrupted.");
             }
-        }
+            finally {
+                consumer.stop();
+            }
+        }, "process-cdc-segements");
+
+        processSegmentsThread.start();
     }
 
     /** Reads all available from segment. */
-    private void readSegment(File segment) throws IgniteCheckedException {
+    private void readSegment(File segment) throws IgniteCheckedException, IOException {
         IgniteWalIteratorFactory.IteratorParametersBuilder builder = new IgniteWalIteratorFactory.IteratorParametersBuilder()
             .log(log)
             .binaryMetadataFileStoreDir(binaryMeta)
@@ -161,14 +241,22 @@ public class IgniteCDC implements Runnable, Closeable {
             .keepBinary(true)
             .filesOrDirs(segment);
 
+        if (initState != null)
+            builder.from(initState);
+
         try (WALIterator it = factory.iterator(builder)) {
-            while (it.hasNext())
+            while (it.hasNext()) {
                 consumer.onRecord(it.next().get2());
+
+                state.save(it.lastRead().get());
+            }
         }
+
+        initState = null;
     }
 
     /** Founds required directories. */
-    private void initDirs() throws IgniteCheckedException {
+    private void initDirs() throws IgniteCheckedException, IOException, InterruptedException {
         String workDir = workDir(cfg);
 
         cdcDir = initCdcDir(workDir);
@@ -177,6 +265,8 @@ public class IgniteCDC implements Runnable, Closeable {
 
         if (log.isDebugEnabled())
             log.debug("Found WAL archive[dir=" + cdcDir + ']');
+
+        Files.createDirectories(cdcDir.resolve("state"));
 
         binaryMeta = new File(U.resolveWorkDirectory(workDir, DFLT_BINARY_METADATA_PATH, false), consIdDir);
 
@@ -192,7 +282,7 @@ public class IgniteCDC implements Runnable, Closeable {
      * @param workDir Working directory.
      * @return WAL archive directory.
      */
-    private Path initCdcDir(String workDir) {
+    private Path initCdcDir(String workDir) throws InterruptedException {
         Path cdcParent;
 
         if (cfg.getDataStorageConfiguration() != null &&
@@ -216,7 +306,6 @@ public class IgniteCDC implements Runnable, Closeable {
 
         return cdcDir[0];
     }
-
 
     /**
      * Initialize logger.
@@ -260,8 +349,31 @@ public class IgniteCDC implements Runnable, Closeable {
         }
     }
 
+    /**
+     * @param segment WAL segment file.
+     * @return Segment index.
+     */
+    public long segmentNumber(Path segment) {
+        String fn = segment.getFileName().toString();
+
+        return Long.parseLong(fn.substring(0, fn.indexOf('.')));
+    }
+
     /** {@inheritDoc} */
-    @Override public void close() {
-        waitSegmentThread.interrupt();
+    public void interrupt() {
+        if (waitSegmentThread != null)
+            waitSegmentThread.interrupt();
+
+        if (processSegmentsThread != null)
+            processSegmentsThread.interrupt();
+    }
+
+    /** Waits for CDC to be stopped. */
+    public void join() throws InterruptedException {
+        if (waitSegmentThread != null)
+            waitSegmentThread.join();
+
+        if (processSegmentsThread != null)
+            processSegmentsThread.join();
     }
 }

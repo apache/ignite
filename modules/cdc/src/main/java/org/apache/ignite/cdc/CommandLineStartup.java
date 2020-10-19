@@ -85,13 +85,15 @@ public class CommandLineStartup {
             if (cfgTuple.get1().size() > 1)
                 exit("Found " + cfgTuple.get1().size() + " configurations. Can use only 1", false, 1);
 
-            IgniteConfiguration igniteCfg =  cfgTuple.get1().iterator().next();
+            IgniteConfiguration cfg =  cfgTuple.get1().iterator().next();
 
             CDCConsumer consumer = consumer(cfgUrl, spring);
 
-            try (IgniteCDC app = new IgniteCDC(igniteCfg, consumer)) {
-                app.run();
-            }
+            IgniteCDC app = new IgniteCDC(cfg, consumer);
+
+            app.start();
+
+            app.join();
         }
         catch (Throwable e) {
             e.printStackTrace();

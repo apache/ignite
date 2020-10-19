@@ -17,19 +17,29 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.concurrent.Callable;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class IgniteCDCSelfTest extends GridCommonAbstractTest {
@@ -50,6 +60,7 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
 
@@ -58,37 +69,101 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
 
     /** Simplest CDC test. */
     @Test
-    public void testCDC() throws Exception {
-        IgniteCDC cdc = new IgniteCDC(getConfiguration("cdc"), new LogAllCDCConsumer());
+    public void testReadAllKeys() throws Exception {
+        StoreKeysCDCConsumer consumer = new StoreKeysCDCConsumer();
 
-        //runAsync(cdc);
+        IgniteCDC cdc = new IgniteCDC(getConfiguration("cdc"), consumer);
 
-        //Thread.sleep(1000);
+        try {
+            runAsync(() -> {
+                cdc.start();
 
-        Ignite ign = startGrid();
-
-        ign.cluster().state(ACTIVE);
-
-        Callable<Object> genData = () -> {
-            IgniteCache<Integer, byte[]> cache = ign.createCache("my-cache");
-
-            while (true) {
-                for (int i = 0; i < 512; i++) {
-                    byte[] bytes = new byte[1024];
-                    ThreadLocalRandom.current().nextBytes(bytes);
-
-                    cache.put(i, bytes);
+                try {
+                    cdc.join();
                 }
+                catch (InterruptedException ignore) {
+                    // No-op.
+                }
+            });
+
+            Ignite ign = startGrid();
+
+            ign.cluster().state(ACTIVE);
+
+            String cacheName = "my-cache";
+
+            IgniteCache<Integer, byte[]> cache = ign.createCache(cacheName);
+
+            int keysCnt = 10_000;
+
+            for (int i = 0; i < keysCnt; i++) {
+                byte[] bytes = new byte[1024];
+
+                ThreadLocalRandom.current().nextBytes(bytes);
+
+                cache.put(i, bytes);
             }
-        };
 
-        runAsync(genData);
+            boolean res = waitForCondition(() -> {
+                Set<Integer> keys = consumer.keys(cacheId(cacheName));
 
-        Thread.sleep(60_000);
+                return F.size(keys) == keysCnt;
+            }, 10_000);
+
+            assertTrue(res);
+        }
+        finally {
+            cdc.interrupt();
+
+            cdc.join();
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
+    }
+
+    /** */
+    private static class StoreKeysCDCConsumer implements CDCConsumer {
+        /** Keys */
+        private ConcurrentMap<Integer, Set> cacheKeys;
+
+        /** {@inheritDoc} */
+        @Override public String id() {
+            return getClass().getName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
+            cacheKeys = new ConcurrentHashMap<>();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T extends WALRecord> void onRecord(T record) {
+            if (record.type() != WALRecord.RecordType.DATA_RECORD)
+                return;
+
+            DataRecord dataRecord = (DataRecord)record;
+
+            for (DataEntry entry : dataRecord.writeEntries()) {
+                cacheKeys.computeIfAbsent(entry.cacheId(), key -> new GridConcurrentHashSet());
+
+                cacheKeys.get(entry.cacheId()).add(entry.key());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop() {
+            // No-op.
+        }
+
+        /** @return Read keys. */
+        public <K> Set<K> keys(int cacheId) {
+            if (cacheKeys == null)
+                return null;
+
+            return (Set<K>)cacheKeys.get(cacheId);
+        }
     }
 }

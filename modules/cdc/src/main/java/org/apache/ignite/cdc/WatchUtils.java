@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.util.Comparator;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -50,9 +51,11 @@ public class WatchUtils {
      *
      * @param watchDir Dir to watch
      * @param filter Filter of events.
+     * @param existingSorter Sorter of existing files.
      * @param callback Callback to be notified.
      */
-    public void waitFor(Path watchDir, Predicate<Path> filter, Predicate<Path> callback) {
+    public void waitFor(Path watchDir, Predicate<Path> filter, Comparator<Path> existingSorter,
+        Predicate<Path> callback) throws InterruptedException {
         // If watch dir not exists waiting for it creation.
         if (!Files.exists(watchDir))
             waitFor(watchDir, dir -> {});
@@ -110,7 +113,7 @@ public class WatchUtils {
                 }
             }
         }
-        catch (IOException | InterruptedException e) {
+        catch (IOException e) {
             throw new IgniteException(e);
         }
     }
@@ -122,8 +125,8 @@ public class WatchUtils {
      * @param filter Filter of events.
      * @param callback Callback to be notified.
      */
-    public void waitFor(Path watchDir, Predicate<Path> filter, Consumer<Path> callback) {
-        waitFor(watchDir, filter, p -> {
+    public void waitFor(Path watchDir, Predicate<Path> filter, Consumer<Path> callback) throws InterruptedException {
+        waitFor(watchDir, filter, Path::compareTo, p -> {
             callback.accept(p);
 
             return false;
@@ -136,7 +139,7 @@ public class WatchUtils {
      * @param waitFor Path to wait for.
      * @param callback Callback to be notified.
      */
-    public void waitFor(Path waitFor, Consumer<Path> callback) {
+    public void waitFor(Path waitFor, Consumer<Path> callback) throws InterruptedException {
         waitFor(waitFor.getParent(), waitFor::equals, callback);
     }
 }
