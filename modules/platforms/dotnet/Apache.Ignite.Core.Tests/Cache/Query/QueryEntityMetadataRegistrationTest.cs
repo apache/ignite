@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using System.IO;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
+    using NUnit.Framework;
 
     /// <summary>
     /// Tests that <see cref="QueryEntity.KeyTypeName"/> and <see cref="QueryEntity.ValueTypeName"/>
@@ -39,10 +40,29 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         // * Code config
         // * Spring config
         // * Local and remote node check
-        // * Java config with .NET types? 
+
+        /// <summary>
+        /// Tests that starting a cache from code with a <see cref="QueryEntity"/> causes binary type registration
+        /// for key and value types.
+        /// </summary>
+        [Test]
+        public void CacheStartFromCodeRegistersMetaForQueryEntityTypes()
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Tests that starting a cache from Spring XML with a <see cref="QueryEntity"/> causes binary type registration
+        /// for key and value types.
+        /// </summary>
+        [Test]
+        public void CacheStartFromSpringRegistersMetaForQueryEntityTypes()
+        {
+            // TODO
+        }
 
         /** */
-        public class Key1
+        private class Key1
         {
             /** */
             public string Foo;
@@ -53,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
         
         /** */
-        public class Value1
+        private class Value1
         {
             /** */
             public string Name { get; set; }
@@ -63,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
         
         /** */
-        public class Key2
+        private class Key2
         {
             /** */
             public string Baz;
@@ -74,7 +94,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
         
         /** */
-        public class Value2
+        private class Value2
         {
             /** */
             public string Name { get; set; }
