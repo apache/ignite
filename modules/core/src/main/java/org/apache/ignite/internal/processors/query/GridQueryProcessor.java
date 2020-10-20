@@ -328,7 +328,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void onCacheKernalStart() throws IgniteCheckedException {
         registerMetadataForRegisteredCaches();
 
-        rerunPendingSchemaProposals();
+        synchronized (stateMux) {
+            exchangeReady = true;
+
+            // Re-run pending top-level proposals.
+            for (SchemaOperation schemaOp : schemaOps.values())
+                onSchemaPropose(schemaOp.proposeMessage());
+        }
     }
 
     /**
@@ -342,19 +348,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             disconnected = false;
 
-            rerunPendingSchemaProposals();
-        }
-    }
-
-    /**
-     * Re-run pending top-level schema proposals.
-     */
-    private void rerunPendingSchemaProposals() {
-        synchronized (stateMux) {
-            exchangeReady = true;
-
-            for (SchemaOperation schemaOp : schemaOps.values())
-                onSchemaPropose(schemaOp.proposeMessage());
+            onCacheKernalStart();
         }
     }
 
