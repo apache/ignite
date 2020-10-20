@@ -38,7 +38,7 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  */
 public class UuidDataStreamerApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
-    @Override public void run(JsonNode jNode) throws InterruptedException {
+    @Override public void run(JsonNode jNode) {
         String cacheName = jNode.get("cacheName").asText();
 
         int dataSize = Optional.ofNullable(jNode.get("dataSize"))
