@@ -1389,11 +1389,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             }
         });
 
-        log.error("TEST 1");
-
         if (stopCrd) {
-            log.error("TEST 2");
-
             spi0.stop = true;
 
             latch2.countDown();
@@ -1401,19 +1397,13 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             ignite0.close();
         }
         else {
-            log.error("TEST 3");
-
             U.sleep(500);
 
             latch2.countDown();
-
-            log.error("TEST 4");
         }
 
         fut1.get();
-        log.error("TEST 5");
         fut2.get();
-        log.error("TEST 6");
 
         IgniteCache<Object, Object> cache = grid(2).cache(CACHE_NAME);
 
@@ -1423,13 +1413,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         assertEquals(1, cache.get(1));
 
-        log.error("TEST 7");
-
         nodeSpi.set(new TestCustomEventRaceSpi());
 
         Ignite ignite = startGrid(3);
-
-        log.error("TEST 8");
 
         cache = ignite.cache(CACHE_NAME);
 
