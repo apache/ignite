@@ -3,6 +3,7 @@
 <a href="https://ignite.apache.org/"><img src="https://ignite.apache.org/images/ignite_logo_full.svg" hspace="20" width="300px" /></a>
 
 <a href="https://www.nuget.org/packages?q=Apache.Ignite"><img src="https://img.shields.io/nuget/v/Apache.Ignite.svg" /></a>
+
 ## Getting Started
 
 For information on how to get started with Apache Ignite, please visit: [Getting Started][getting-started].
