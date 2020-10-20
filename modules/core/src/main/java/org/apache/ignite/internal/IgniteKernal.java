@@ -3795,7 +3795,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
-        cluster().state(active ? ClusterState.ACTIVE : ClusterState.INACTIVE);
+        cluster().active(active);
     }
 
     /** */
@@ -4490,7 +4490,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         reg.register("longJVMPauseLastEvents", this::getLongJVMPauseLastEvents, Map.class,
             LONG_JVM_PAUSE_LAST_EVENTS_DESC);
 
-        reg.register("active", () -> ctx.state().clusterState().state() != ClusterState.INACTIVE, Boolean.class,
+        reg.register("active", () -> ctx.state().clusterState().state().active(), Boolean.class,
             ACTIVE_DESC);
 
         reg.register("clusterState", this::clusterState, String.class, CLUSTER_STATE_DESC);
