@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using System.Linq;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -90,8 +91,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 }
             };
 
-            Ignition.GetIgnite("0").CreateCache<object, object>(cfg);
-            
+            var cache = Ignition.GetIgnite("0").CreateCache<Key1, Value1>(cfg);
+
             foreach (var ignite in Ignition.GetAll())
             {
                 // Do not use GetBinaryType which always returns something.
@@ -110,6 +111,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 Assert.IsNull(valType.AffinityKeyFieldName);
                 Assert.IsEmpty(valType.Fields);
+            }
+            
+            // Verify put/get on server and client.
+            cache[new Key1{Foo = "a", Bar = 2}] = new Value1 {Name = "x", Value = 1};
+
+            using (var client = Ignition.StartClient(new IgniteClientConfiguration("localhost")))
+            {
+                var clientCache = client.GetCache<Key1, Value1>(cache.Name);
+                var val = clientCache.Get(new Key1 {Foo = "a", Bar = 2});
+                
+                Assert.AreEqual("x", val.Name);
+                Assert.AreEqual(1, val.Value);
             }
         }
 
