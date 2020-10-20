@@ -27,7 +27,7 @@ from typing import NamedTuple
 from ducktape.mark import matrix
 from ducktape.mark.resource import cluster
 
-from ignitetest.services.ignite import IgniteAwareService, IgniteService, pattern_time, node_failed_event_pattern
+from ignitetest.services.ignite import IgniteAwareService, IgniteService, get_event_time, node_failed_event_pattern
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
@@ -208,7 +208,7 @@ class DiscoveryTest(IgniteTest):
 
         for failed_id in ids_to_wait:
             logged_timestamps.append(
-                pattern_time(servers, survived_node, node_failed_event_pattern(failed_id)))
+                get_event_time(servers, survived_node, node_failed_event_pattern(failed_id)))
 
         self._check_failed_number(failed_nodes, survived_node)
         self._check_not_segmented(failed_nodes)

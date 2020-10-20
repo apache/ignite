@@ -153,9 +153,9 @@ def node_failed_event_pattern(failed_node_id=None):
            ".\\{1,\\}\\(isClient\\|client\\)=false"
 
 
-def pattern_time(service, log_node, log_pattern, from_the_beginning=True, timeout=15):
+def get_event_time(service, log_node, log_pattern, from_the_beginning=True, timeout=15):
     """
-    Extracts time of the pattern from ignite log.
+    Extracts event time from ignite log by pattern .
     :param service: ducktape service (ignite service) responsible to search log.
     :param log_node: ducktape node to search ignite log on.
     :param log_pattern: pattern to search ignite log for.
