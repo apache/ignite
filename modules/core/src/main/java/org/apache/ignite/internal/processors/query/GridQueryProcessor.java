@@ -285,6 +285,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     ctxs.queries().evictDetailMetrics();
             }
         }, QRY_DETAIL_METRICS_EVICTION_FREQ, QRY_DETAIL_METRICS_EVICTION_FREQ);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        super.onKernalStart(active);
 
         registerMetadataForRegisteredCaches();
     }
