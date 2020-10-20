@@ -16,6 +16,7 @@
  */
 
 // ReSharper disable UnusedMember.Local
+// ReSharper disable NotAccessedField.Local
 #pragma warning disable 649 // Unassigned field
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
