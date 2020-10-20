@@ -1524,8 +1524,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @param locked Locked entries.
      */
     private void unlockEntries(Iterable<GridCacheEntryEx> locked) {
-        lockedEntriesInfo.removeForCurrentThread();
-
         for (GridCacheEntryEx entry : locked)
             entry.unlockEntry();
 

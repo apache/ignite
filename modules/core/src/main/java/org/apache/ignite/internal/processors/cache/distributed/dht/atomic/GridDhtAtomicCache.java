@@ -3158,9 +3158,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
         finally {
-            if (size > 1) // Single-entry operations are not published to lockedEntriesInfo.
-                lockedEntriesInfo.removeForCurrentThread();
-
             // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
             // an attempt to use cleaned resources.
             // That's why releasing locks in the finally block..

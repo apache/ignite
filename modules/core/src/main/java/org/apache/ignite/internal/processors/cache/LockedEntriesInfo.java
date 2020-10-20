@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,78 +31,77 @@ public class LockedEntriesInfo {
     private final Map<Long, LockedEntries> lockedEntriesPerThread = new ConcurrentHashMap<>();
 
     /**
-     * Make an attempt to lock the entries and updates per-thread locked entries info. If lock attempt is successful,
-     * locked entries info for the current thread should be removed later by {@link #removeForCurrentThread} method.
+     * Attempt to lock all provided entries avoiding deadlocks.
      *
      * @param entries Entries to lock.
      * @return {@code True} if entries were successfully locked, {@code false} if possible deadlock detected or
      *      some entries are obsolete (lock attempt should be retried in this case).
      */
     public boolean tryLockEntries(GridCacheEntryEx[] entries) {
-        LockedEntries lockedEntries = lockedEntriesPerThread.computeIfAbsent(Thread.currentThread().getId(),
-                threadId -> new LockedEntries(entries));
+        long threadId = Thread.currentThread().getId();
+
+        LockedEntries lockedEntries = new LockedEntries(entries);
+
+        lockedEntriesPerThread.put(threadId,lockedEntries);
 
         boolean wasInterrupted = false;
 
-        for (int i = 0; i < entries.length; i++) {
-            GridCacheEntryEx entry = entries[i];
+        try {
+            for (int i = 0; i < entries.length; i++) {
+                GridCacheEntryEx entry = entries[i];
 
-            if (entry == null)
-                continue;
+                if (entry == null)
+                    continue;
 
-            boolean retry = false;
+                boolean retry = false;
 
-            while (true) {
-                if (entry.tryLockEntry(DEADLOCK_DETECTION_TIMEOUT))
-                    break; // Successfully locked.
-                else {
-                    wasInterrupted |= Thread.interrupted(); // Clear thread interruption flag.
+                while (true) {
+                    if (entry.tryLockEntry(DEADLOCK_DETECTION_TIMEOUT))
+                        break; // Successfully locked.
+                    else {
+                        wasInterrupted |= Thread.interrupted(); // Clear thread interruption flag.
 
-                    if (hasLockCollisions(entry, lockedEntries)) {
-                        // Possible deadlock detected, unlock all locked entries and retry again.
-                        retry = true;
+                        if (hasLockCollisions(entry, lockedEntries)) {
+                            // Possible deadlock detected, unlock all locked entries and retry again.
+                            retry = true;
 
-                        break;
+                            break;
+                        }
+                        // Possible deadlock not detected, just retry lock on current entry.
                     }
-                    // Possible deadlock not detected, just retry lock on current entry.
-                }
-            }
-
-            if (!retry && entry.obsolete()) {
-                entry.unlockEntry();
-
-                retry = true;
-            }
-
-            if (retry) {
-                lockedEntries.lockedIdx = -1;
-
-                // Unlock all previously locked.
-                for (int j = 0; j < i; j++) {
-                    if (entries[j] != null)
-                        entries[j].unlockEntry();
                 }
 
-                if (wasInterrupted)
-                    Thread.currentThread().interrupt();
+                if (!retry && entry.obsolete()) {
+                    entry.unlockEntry();
 
-                return false;
+                    retry = true;
+                }
+
+                if (retry) {
+                    lockedEntries.lockedIdx = -1;
+
+                    // Unlock all previously locked.
+                    for (int j = 0; j < i; j++) {
+                        if (entries[j] != null)
+                            entries[j].unlockEntry();
+                    }
+
+                    return false;
+                }
+
+                lockedEntries.lockedIdx = i;
             }
 
-            lockedEntries.lockedIdx = i;
+            return true;
         }
+        finally {
+            if (wasInterrupted)
+                Thread.currentThread().interrupt();
 
-        if (wasInterrupted)
-            Thread.currentThread().interrupt();
-
-        return true;
-    }
-
-    /**
-     * Remove locked entries info for current thread.
-     */
-    public void removeForCurrentThread() {
-        lockedEntriesPerThread.remove(Thread.currentThread().getId());
+            // Already acuired all locks or released all locks here, deadlock is not possible by this thread anymore,
+            // can safely delete locks information.
+            lockedEntriesPerThread.remove(threadId);
+        }
     }
 
     /**
@@ -119,15 +117,9 @@ public class LockedEntriesInfo {
                 // Skip current thread and threads started to lock after the current thread.
                 continue;
 
-            GridCacheEntryEx[] otherThreadLocks = otherLockedEntries.entries.get();
+            GridCacheEntryEx[] otherThreadLocks = otherLockedEntries.entries;
 
             int otherThreadLockedIdx = otherLockedEntries.lockedIdx;
-
-            if (otherThreadLocks == null) { // In case of thread fail.
-                lockedEntriesPerThread.remove(other.getKey());
-
-                continue;
-            }
 
             // Visibility guarantees provided by volatile lockedIdx field.
             for (int i = 0; i <= otherThreadLockedIdx; i++) {
@@ -145,14 +137,14 @@ public class LockedEntriesInfo {
         private final long ts = System.nanoTime();
 
         /** Entries to lock. */
-        private final WeakReference<GridCacheEntryEx[]> entries;
+        private final GridCacheEntryEx[] entries;
 
         /** Current locked entry index. */
         private volatile int lockedIdx = -1;
 
         /** */
         private LockedEntries(GridCacheEntryEx[] entries) {
-            this.entries = new WeakReference<>(entries);
+            this.entries = entries;
         }
     }
 }
