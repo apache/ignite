@@ -80,6 +80,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestCacheStartFromCodeRegistersMetaForQueryEntityTypes()
         {
+            // TODO: Test scenario with missing class using a Java-only node
             var cfg = new CacheConfiguration
             {
                 Name = TestUtils.TestName,
@@ -139,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestCacheStartFromThinClientRegistersMetaForQueryEntityTypes()
         {
-            // TODO: How can we test a scenario with missing class?
+            // TODO: Test scenario with missing class using a Java-only node
             var cfg = new CacheClientConfiguration
             {
                 Name = TestUtils.TestName,
