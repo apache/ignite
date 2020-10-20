@@ -24,8 +24,6 @@ import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -60,33 +58,6 @@ public class SqlCacheStartStopTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-    }
-
-    /**
-     */
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    @Test
-    public void testCustomAffinity() throws Exception {
-        IgniteConfiguration srvCfg = getConfiguration("server");
-
-        IgniteEx srv = startGrid(srvCfg);
-
-        CacheConfiguration cfg = new CacheConfiguration("mycache")
-                .setQueryEntities(Collections.singletonList(new QueryEntity(MyKey.class, String.class)));
-
-        IgniteCache cache = srv.getOrCreateCache(cfg);
-
-        MyKey key1 = new MyKey();
-        key1.Data = "data1";
-        key1.AffinityKey = 1;
-
-        MyKey key2 = new MyKey();
-        key2.Data = "data2";
-        key2.AffinityKey = 1;
-
-        Affinity<Object> aff = srv.affinity(cache.getName());
-
-        assertEquals(aff.partition(key1), aff.partition(key2));
     }
 
     /**
@@ -355,13 +326,5 @@ public class SqlCacheStartStopTest extends GridCommonAbstractTest {
         public Val(String s) {
             this.s = s;
         }
-    }
-
-    public static class MyKey {
-        @QuerySqlField
-        public String Data;
-
-        @AffinityKeyMapped
-        public long AffinityKey;
     }
 }
