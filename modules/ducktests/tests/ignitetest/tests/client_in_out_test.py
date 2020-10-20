@@ -49,7 +49,7 @@ class ClientTest(IgniteTest):
     @parametrize(cluster=7,
                  static_clients=2,
                  temp_client=3,
-                 iteration_count=1,
+                 iteration_count=3,
                  client_work_time=30)
     # pylint: disable=R0913
     def test_ignite_start_stop_nodes(self, ignite_version,
@@ -65,7 +65,7 @@ class ClientTest(IgniteTest):
     @parametrize(cluster=7,
                  static_clients=2,
                  temp_client=3,
-                 iteration_count=1,
+                 iteration_count=3,
                  client_work_time=30)
     # pylint: disable=R0913
     def test_ignite_kill_start_nodes(self, ignite_version,
