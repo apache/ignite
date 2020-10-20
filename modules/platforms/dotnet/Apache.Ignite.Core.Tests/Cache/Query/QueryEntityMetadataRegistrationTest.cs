@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -79,8 +80,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestCacheStartFromCodeRegistersMetaForQueryEntityTypes()
         {
-            // TODO: Test this for thin clients - it won't work?
-            // What about Java Thin?
             var cfg = new CacheConfiguration
             {
                 Name = TestUtils.TestName,
@@ -126,6 +125,55 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 
                 Assert.AreEqual("x", val.Name);
                 Assert.AreEqual(1, val.Value);
+            }
+        }
+
+        /// <summary>
+        /// Tests that starting a cache from thin client with a <see cref="QueryEntity"/>
+        /// causes binary type registration for key and value types.
+        /// <para />
+        /// * Start a new cache with code configuration from thin client.
+        /// * Check that query entity is populated correctly
+        /// * Check that key and value types are registered in the cluster 
+        /// </summary>
+        [Test]
+        public void TestCacheStartFromThinClientRegistersMetaForQueryEntityTypes()
+        {
+            // TODO: How can we test a scenario with missing class?
+            var cfg = new CacheClientConfiguration
+            {
+                Name = TestUtils.TestName,
+                QueryEntities = new[]
+                {
+                    new QueryEntity
+                    {
+                        KeyType = typeof(Key1),
+                        ValueType = typeof(Value1)
+                    }
+                }
+            };
+
+            using (var client = Ignition.StartClient(new IgniteClientConfiguration("localhost")))
+            {
+                client.CreateCache<Key1, Value1>(cfg);
+            }
+
+            foreach (var ignite in Ignition.GetAll())
+            {
+                var types = ignite.GetBinary().GetBinaryTypes();
+                var qryEntity = ignite.GetCache<object, object>(cfg.Name).GetConfiguration().QueryEntities.Single();
+
+                var keyType = types.Single(t => t.TypeName == qryEntity.KeyTypeName);
+                var valType = types.Single(t => t.TypeName == qryEntity.ValueTypeName);
+
+                Assert.AreEqual(typeof(Key1).FullName, qryEntity.KeyTypeName);
+                Assert.AreEqual(typeof(Value1).FullName, qryEntity.ValueTypeName);
+
+                Assert.AreEqual("Bar", keyType.AffinityKeyFieldName);
+                Assert.IsEmpty(keyType.Fields);
+
+                Assert.IsNull(valType.AffinityKeyFieldName);
+                Assert.IsEmpty(valType.Fields);
             }
         }
 
