@@ -85,7 +85,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -1282,9 +1281,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (cls != null)
                 binProc.binaryContext().registerClass(cls, true, false, true);
-            else {
+            else
                 registerPlatformTypeLocally(clsName, binProc);
-            }
         }
     }
 
