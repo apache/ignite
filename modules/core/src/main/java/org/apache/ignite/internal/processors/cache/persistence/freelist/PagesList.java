@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
@@ -1495,7 +1496,7 @@ public abstract class PagesList extends DataStructure {
             long pageAddr = pageMem.writeLock(grpId, pageId, page);
 
             try {
-                return initReusedPage(pageId, page, pageAddr, PageIdUtils.partId(pageId), flag, null);
+                return initReusedPage(pageId, page, pageAddr, PageIdUtils.partId(pageId), flag, flag == FLAG_DATA ? DataPageIO.VERSIONS.latest() : null);
             }
             finally {
                 pageMem.writeUnlock(grpId, pageId, page, null, true);
