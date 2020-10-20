@@ -977,7 +977,7 @@ public class GridDhtPartitionDemander {
                     if (log.isTraceEnabled())
                         log.trace("Rebalancing key [key=" + info.key() + ", part=" + p + ", node=" + from.id() + ']');
 
-                    if (cached.mvccPreloadEntry(history)) {
+                    if (cached.mvccPreloadEntry(history, topVer)) {
                         cached.touch(); // Start tracking.
 
                         if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())

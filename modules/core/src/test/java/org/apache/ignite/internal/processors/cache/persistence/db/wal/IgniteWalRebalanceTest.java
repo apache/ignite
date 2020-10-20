@@ -763,7 +763,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                     new GridCacheVersion(0, 1, 1, 0),
                     0,
                     0,
-                    0
+                    0,
+                    true
                 )));
 
                 File walDir = U.field(walMgr, "walWorkDir");

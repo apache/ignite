@@ -631,7 +631,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     writeVersion(),
                                                     0,
                                                     txEntry.key().partition(),
-                                                    txEntry.updateCounter()
+                                                    txEntry.updateCounter(),
+                                                    cacheCtx.affinity().primaryByPartition(cctx.localNode(), txEntry.key().partition(), topVer)
                                                 ),
                                                 txEntry
                                             )
@@ -807,6 +808,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             List<DataEntry> entriesWithCounters = dataEntries.stream()
                                 .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
                                 .collect(Collectors.toList());
+
+                            System.out.println("entriesWithCounters = " + entriesWithCounters.size());
 
                             ptr = cctx.wal().log(new DataRecord(entriesWithCounters));
                         }

@@ -400,7 +400,8 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 expireTime,
                 partId,
                 partCntr,
-                mvccVer
+                mvccVer,
+                true
             );
         }
         else
@@ -417,7 +418,8 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 expireTime,
                 partId,
                 partCntr,
-                mvccVer);
+                mvccVer,
+                true);
     }
 
     /** {@inheritDoc} */

@@ -50,6 +50,7 @@ public class UnwrapMvccDataEntry extends MvccDataEntry implements UnwrappedDataE
      * @param mvccVer Mvcc version.
      * @param cacheObjValCtx cache object value context for unwrapping objects.
      * @param keepBinary disable unwrapping for non primitive objects, Binary Objects would be returned instead.
+     * @param primary {@code True} if node is primary for partition in the moment of logging.
      */
     public UnwrapMvccDataEntry(
         final int cacheId,
@@ -63,8 +64,9 @@ public class UnwrapMvccDataEntry extends MvccDataEntry implements UnwrappedDataE
         final long partCnt,
         MvccVersion mvccVer,
         final CacheObjectValueContext cacheObjValCtx,
-        final boolean keepBinary) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, mvccVer);
+        final boolean keepBinary,
+        final boolean primary) {
+        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, mvccVer, primary);
 
         this.cacheObjValCtx = cacheObjValCtx;
         this.keepBinary = keepBinary;

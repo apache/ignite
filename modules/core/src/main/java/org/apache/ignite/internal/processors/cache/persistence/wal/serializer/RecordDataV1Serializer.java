@@ -2007,7 +2007,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     writeVer,
                     expireTime,
                     partId,
-                    partCntr
+                    partCntr,
+                    true
             );
         }
         else
@@ -2023,7 +2024,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     writeVer,
                     expireTime,
                     partId,
-                    partCntr);
+                    partCntr,
+                    true);
     }
 
     /**
@@ -2192,7 +2194,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     public static class EncryptedDataEntry extends DataEntry {
         /** Constructor. */
         EncryptedDataEntry() {
-            super(0, null, null, READ, null, null, 0, 0, 0);
+            super(0, null, null, READ, null, null, 0, 0, 0, true);
         }
     }
 }
