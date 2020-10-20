@@ -51,7 +51,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -1148,20 +1147,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (cacheGroup.isLocal())
                         return null;
 
-                    cctx.database().checkpointReadLock();
+                    cacheGroup.offheap().restorePartitionStates(Collections.emptyMap());
 
-                    try {
-                        cacheGroup.offheap().restorePartitionStates(Collections.emptyMap());
+                    if (cacheGroup.localStartVersion().equals(fut.initialVersion()))
+                        cacheGroup.topology().afterStateRestored(fut.initialVersion());
 
-                        if (cacheGroup.localStartVersion().equals(fut.initialVersion()))
-                            cacheGroup.topology().afterStateRestored(fut.initialVersion());
-
-                        fut.timeBag().finishLocalStage("Restore partition states " +
-                            "[grp=" + cacheGroup.cacheOrGroupName() + "]");
-                    }
-                    finally {
-                        cctx.database().checkpointReadUnlock();
-                    }
+                    fut.timeBag().finishLocalStage("Restore partition states " +
+                        "[grp=" + cacheGroup.cacheOrGroupName() + "]");
 
                     return null;
                 }
