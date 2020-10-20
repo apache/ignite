@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// * Check that key and value types are registered in the cluster 
         /// </summary>
         [Test]
-        public void CacheStartFromCodeRegistersMetaForQueryEntityTypes()
+        public void TestCacheStartFromCodeRegistersMetaForQueryEntityTypes()
         {
             var cfg = new CacheConfiguration
             {
@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// * Check that key and value types are registered in the cluster 
         /// </summary>
         [Test]
-        public void CacheStartFromSpringRegistersMetaForQueryEntityTypes()
+        public void TestCacheStartFromSpringRegistersMetaForQueryEntityTypes()
         {
             foreach (var ignite in Ignition.GetAll())
             {
