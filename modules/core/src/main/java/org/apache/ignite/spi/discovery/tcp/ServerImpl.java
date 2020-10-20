@@ -3493,8 +3493,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             // Restore ring.
                             try {
-                                long tsNanos = System.nanoTime();
-
                                 sock = spi.openSocket(addr, timeoutHelper);
 
                                 out = spi.socketStream(sock);
@@ -3671,7 +3669,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     // Resetting timeout control object to let the code below to use a new one
                                     // for the next bunch of operations.
                                     timeoutHelper = null;
-                                    sndState = null;
                                 }
                             }
                         }
