@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void CacheStartFromCodeRegistersMetaForQueryEntityTypes()
         {
-            var cacheCfg = new CacheConfiguration
+            var cfg = new CacheConfiguration
             {
                 Name = TestUtils.TestName,
                 QueryEntities = new[]
@@ -91,14 +91,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 }
             };
 
-            Ignition.GetIgnite("0").CreateCache<object, object>(cacheCfg);
+            Ignition.GetIgnite("0").CreateCache<object, object>(cfg);
             
             foreach (var ignite in Ignition.GetAll())
             {
                 // Do not use GetBinaryType which always returns something.
                 // Use GetBinaryTypes to make sure that types are actually registered.
                 var types = ignite.GetBinary().GetBinaryTypes();
-                var qryEntity = ignite.GetCache<object, object>(CacheName).GetConfiguration().QueryEntities.Single();
+                var qryEntity = ignite.GetCache<object, object>(cfg.Name).GetConfiguration().QueryEntities.Single();
 
                 var keyType = types.Single(t => t.TypeName == qryEntity.KeyTypeName);
                 var valType = types.Single(t => t.TypeName == qryEntity.ValueTypeName);
@@ -107,12 +107,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Assert.AreEqual(typeof(Value1).FullName, qryEntity.ValueTypeName);
 
                 Assert.AreEqual("Bar", keyType.AffinityKeyFieldName);
-                CollectionAssert.AreEquivalent(new[] {"Foo", "Bar"}, keyType.Fields);
-                Assert.AreEqual("Integer", keyType.GetFieldTypeName("Bar"));
+                Assert.IsEmpty(keyType.Fields);
 
                 Assert.IsNull(valType.AffinityKeyFieldName);
-                CollectionAssert.AreEquivalent(new[] {"Name", "Value"}, valType.Fields);
-                Assert.AreEqual("String", valType.GetFieldTypeName("Name"));
+                Assert.IsEmpty(valType.Fields);
             }
         }
 
@@ -141,12 +139,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Assert.AreEqual(typeof(Value2).FullName, qryEntity.ValueTypeName);
 
                 Assert.AreEqual("AffKey", keyType.AffinityKeyFieldName);
-                CollectionAssert.AreEquivalent(new[] {"Baz", "AffKey"}, keyType.Fields);
-                Assert.AreEqual("String", keyType.GetFieldTypeName("Baz"));
+                Assert.IsEmpty(keyType.Fields);
 
                 Assert.IsNull(valType.AffinityKeyFieldName);
-                CollectionAssert.AreEquivalent(new[] {"Name", "Price"}, valType.Fields);
-                Assert.AreEqual("Double", valType.GetFieldTypeName("Price"));
+                Assert.IsEmpty(valType.Fields);
             }
         }
 
