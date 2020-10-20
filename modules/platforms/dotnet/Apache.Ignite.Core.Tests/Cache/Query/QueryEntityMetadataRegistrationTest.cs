@@ -45,7 +45,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureSetUp]
         public void StartGrids()
         {
-            // TODO: Test with type names that can't be resolved
             for (int i = 0; i < 2; i++)
             {
                 var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
@@ -111,6 +110,44 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 Assert.IsNull(valType.AffinityKeyFieldName);
                 Assert.IsEmpty(valType.Fields);
+            }
+        }
+
+        /// <summary>
+        /// Tests that starting a cache from code with a <see cref="QueryEntity"/> skips binary type registration
+        /// for key and value types when those types can't be resolved.
+        /// <para />
+        /// * Start a new cache with code configuration and invalid key/value entity type names
+        /// * Check that query entity is populated correctly
+        /// </summary>
+        [Test]
+        public void TestCacheStartFromCodeSkipsInvalidQueryEntityTypes()
+        {
+            var cfg = new CacheConfiguration
+            {
+                Name = TestUtils.TestName,
+                QueryEntities = new[]
+                {
+                    new QueryEntity
+                    {
+                        KeyTypeName = "Invalid_Name",
+                        ValueTypeName = "Invalid_Name"
+                    }
+                }
+            };
+
+            Ignition.GetIgnite("0").CreateCache<object, object>(cfg);
+            
+            foreach (var ignite in Ignition.GetAll())
+            {
+                var types = ignite.GetBinary().GetBinaryTypes();
+                var qryEntity = ignite.GetCache<object, object>(cfg.Name).GetConfiguration().QueryEntities.Single();
+
+                var keyType = types.FirstOrDefault(t => t.TypeName == qryEntity.KeyTypeName);
+                var valType = types.FirstOrDefault(t => t.TypeName == qryEntity.ValueTypeName);
+
+                Assert.IsNull(keyType);
+                Assert.IsNull(valType);
             }
         }
 
