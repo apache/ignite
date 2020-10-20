@@ -32,6 +32,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -1374,7 +1375,10 @@ public abstract class PagesList extends DataStructure {
                             PageIdUtils.itemId(pageId) > 0 && PageIdUtils.itemId(pageId) <= MAX_ITEMID_NUM
                             : "Incorrectly recycled pageId in reuse bucket: " + U.hexLong(pageId);
 
-                        dataPageId = pageId;
+                        if (isReuseBucket(bucket))
+                            dataPageId = initReusedPage0(pageId, pageFlag);
+                        else
+                            dataPageId = pageId;
 
                         if (io.isEmpty(tailAddr)) {
                             long prevId = io.getPreviousId(tailAddr);
@@ -1474,7 +1478,7 @@ public abstract class PagesList extends DataStructure {
             long pageAddr = pageMem.writeLock(grpId, pageId, page);
 
             try {
-                return initReusedPage(pageId, page, pageAddr, PageIdUtils.partId(pageId), flag, null);
+                return initReusedPage(pageId, page, pageAddr, PageIdAllocator.INDEX_PARTITION, flag, null);
             }
             finally {
                 pageMem.writeUnlock(grpId, pageId, page, null, true);
@@ -1500,7 +1504,6 @@ public abstract class PagesList extends DataStructure {
      */
     protected final long initReusedPage(long reusedPageId, long reusedPage, long reusedPageAddr,
         int partId, byte flag, PageIO initIo) throws IgniteCheckedException {
-        // ah yes, flag !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         long newPageId = PageIdUtils.pageId(partId, flag, PageIdUtils.pageIndex(reusedPageId));
 

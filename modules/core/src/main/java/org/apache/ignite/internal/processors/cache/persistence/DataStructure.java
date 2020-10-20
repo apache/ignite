@@ -146,6 +146,10 @@ public abstract class DataStructure {
 
         assert pageId != 0;
 
+        assert PageIdUtils.flag(pageId) == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
+            PageIdUtils.flag(pageId) != FLAG_IDX && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID :
+            PageIdUtils.toDetailString(pageId);
+
         assert PageIdUtils.flag(pageId) != FLAG_DATA || PageIdUtils.itemId(pageId) == 0 : PageIdUtils.toDetailString(pageId);
 
         return pageId;
