@@ -1032,6 +1032,7 @@ public class CommandHandlerParsingTest {
             cmd == CommandList.METADATA ||
             cmd == CommandList.WARM_UP ||
             cmd == CommandList.PROPERTY ||
-            cmd == CommandList.SYSTEM_VIEW;
+            cmd == CommandList.SYSTEM_VIEW ||
+            cmd == CommandList.METRIC;
     }
 }

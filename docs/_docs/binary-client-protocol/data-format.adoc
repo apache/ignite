@@ -1,0 +1,1072 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Data Format
+
+Standard data types are represented as a combination of type code and value.
+
+:table_opts: cols="1,1,4",opts="header"
+
+[{table_opts}]
+|===
+|Field |  Size in bytes |  Description
+|`type_code` |  1 |   Signed one-byte integer code that indicates the type of the value.
+|`value` |  Variable|    Value itself. Its format and size depends on the type_code
+|===
+
+
+Below you can find description of the supported types and their format.
+
+
+== Primitives
+
+Primitives are the very basic types, such as numbers.
+
+
+=== Byte
+[{table_opts}]
+|===
+| Field  | Size in bytes  | Description
+|Type |   1|   1
+|Value  | 1  | Single byte value.
+
+|===
+
+=== Short
+
+Type code: 2;
+
+2-bytes long signed integer number. Little-endian.
+
+Structure:
+
+
+[{table_opts}]
+|===
+| Field |   Size in bytes | Description
+| `Value`  |  2|   The value.
+|===
+
+
+=== Int
+
+Type code: 3;
+
+4-bytes long signed integer number. Little-endian.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|`value`|   4|   The value.
+|===
+
+=== Long
+
+Type code: 4;
+
+8-bytes long signed integer number. Little-endian.
+
+Structure:
+
+
+[{table_opts}]
+|===
+|Field|   Size in bytes |  Description
+|`value` |   8  | The value.
+|===
+
+
+=== Float
+
+Type code: 5;
+
+4-byte long IEEE 754 floating-point number. Little-endian.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field |   Size in bytes|   Description
+| value|   4|   The value.
+|===
+
+=== Double
+Type code: 6;
+
+8-byte long IEEE 754 floating-point number. Little-endian.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|value  | 8|   The value.
+
+|===
+
+=== Char
+Type code: 7;
+
+Single UTF-16 code unit. Little-endian.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|value |   2 |   The UTF-16 code unit in little-endian.
+|===
+
+
+=== Bool
+
+Type code: 8;
+
+Boolean value. Zero for false and non-zero for true.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field |   Size in bytes |   Description
+
+|value |  1 |  The value. Zero for false and non-zero for true.
+
+|===
+
+=== NULL
+
+Type code: 101;
+
+This is not exactly a type. It's just a null value, which can be assigned to object of any type.
+Has no payload, only consists of the type code.
+
+== Standard objects
+
+=== String
+
+Type code: 9;
+
+String in UTF-8 encoding. Should always be a valid UTF-8 string.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field |   Size in bytes |   Description
+|length|  4|   Signed integer number in little-endian. Length of the string in UTF-8 code units, i.e. in bytes.
+| data |    length |  String data in UTF-8 encoding. Without BOM.
+
+|===
+
+=== UUID (Guid)
+
+
+Type code: 10;
+
+A universally unique identifier (UUID) is a 128-bit number used to identify information in computer systems.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|most_significant_bits|   8|   64-bit number in little endian, representing 64 most significant bits of UUID.
+|least_significant_bits|  8|   64-bit number in little endian, representing 64 least significant bits of UUID.
+
+|===
+
+=== Timestamp
+
+Type code: 33;
+
+More precise than a Date data type. Except for a milliseconds since epoch, contains a nanoseconds fraction of a last millisecond, which value could be in a range from 0 to 999999. It means, the full time stamp in nanoseconds can be obtained with the following expression: `msecs_since_epoch \* 1000000 + msec_fraction_in_nsecs`.
+
+NOTE: The nanoseconds time stamp evaluation expression is provided for clarification purposes only. One should not use the expression in production code, as in some languages the expression may result in integer number overflow.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes  | Description
+|`msecs_since_epoch`|   8|   Signed integer number in little-endian. Number of milliseconds elapsed since 00:00:00 1 Jan 1970 UTC. This format widely known as a Unix or POSIX time.
+|`msec_fraction_in_nsecs`|  4|   Signed integer number in little-endian. Nanosecond fraction of a millisecond.
+
+|===
+
+=== Date
+
+Type code: 11;
+
+Date, represented as a number of milliseconds elapsed since 00:00:00 1 Jan 1970 UTC. This format widely known as a Unix or POSIX time.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|`msecs_since_epoch`|   8|   The value. Signed integer number in little-endian.
+|===
+
+=== Time
+
+Type code: 36;
+
+Time, represented as a number of milliseconds elapsed since midnight, i.e. 00:00:00 UTC.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|value|   8|   Signed integer number in little-endian. Number of milliseconds elapsed since 00:00:00 UTC.
+
+|===
+
+=== Decimal
+
+Type code: 30;
+
+Numeric value of any desired precision and scale.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field |   Size in bytes|   Description
+|scale|   4|   Signed integer number in little-endian. Effectively, a power of the ten, on which the unscaled value should be divided. For example, 42 with scale 3 is 0.042, 42 with scale -3 is 42000, and 42 with scale 1 is 42.
+|length|  4|   Signed integer number in little-endian. Length of the number in bytes.
+|data|    length|  First bit is the flag of negativity. If it's set to 1, then value is negative. Other bits form signed integer number of variable length in big-endian format.
+
+|===
+
+=== Enum
+
+Type code: 28;
+
+Value of an enumerable type. For such types defined only a finite number of named values.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|type_id| 4|   Signed integer number in little-endian. See <<Type ID>> for details.
+|ordinal| 4|   Signed integer number stored in little-endian. Enumeration value ordinal . Its position in its enum declaration, where the initial constant is assigned an ordinal of zero.
+
+|===
+
+== Arrays of primitives
+
+Arrays of this kind only contain payloads of values as elements. They all have similar format. See format description in a table below for details. Pay attention that array only contains payloads, not type codes.
+
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|`length`|  4|   Signed integer number. Number of elements in the array.
+|`element_0_payload`|   Depends on the type.|    Payload of the value 0.
+|`element_1_payload`|   Depends on the type.|    Payload of the value 1.
+|... |... |...
+|`element_N_payload`|   Depends on the type. |   Payload of the value N.
+
+|===
+
+=== Byte array
+
+Type code: 12;
+
+Array of bytes. May be either a piece of raw data, or array of small signed integer numbers.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|length|  4|   Signed integer number. Number of elements in the array.
+|elements|    length|  Elements sequence. Every element is a payload of type "byte".
+
+|===
+
+Short array
+
+Type code: 13;
+
+Array of short signed integer numbers.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field |   Size in bytes|   Description
+|length|  4|   Signed integer number. Number of elements in the array.
+|elements|    `length * 2`|  Elements sequence. Every element is a payload of type "short".
+
+|===
+
+=== Int array
+
+Type code: 14;
+
+Array of signed integer numbers.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|length|  4|   Signed integer number. Number of elements in the array.
+|elements|    `length * 4`|  Elements sequence. Every element is a payload of type "int".
+
+|===
+
+=== Long array
+
+Type code: 15;
+
+Array of long signed integer numbers.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|length|  4|   Signed integer number. Number of elements in the array.
+|elements|    `length * 8`|  Elements sequence. Every element is a payload of type "long".
+
+|===
+
+=== Float array
+
+Type code: 16;
+
+Array of floating point numbers.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|length|  4|   Signed integer number. Number of elements in the array.
+|elements|    `length * 4` | Elements sequence. Every element is a payload of type "float".
+
+|===
+
+=== Double array
+
+Type code: 17;
+
+Array of floating point numbers with double precision.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes |  Description
+|length|  4|   Signed integer number. Number of elements in the array.
+|elements|    `length * 8`|  Elements sequence. Every element is a payload of type "double".
+
+|===
+
+=== Char array
+
+Type code: 18;
+
+Array of UTF-16 code units. Unlike string, this type is not necessary contains valid UTF-16 text.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field |   Size in bytes|   Description
+|length | 4|   Signed integer number. Number of elements in the array.
+|elements|    length * 2|  Elements sequence. Every element is a payload of type "char".
+
+|===
+
+=== Bool array
+
+Type code: 19;
+
+Array of boolean values.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes |  Description
+|length|  4|   Signed integer number. Number of elements in the array.
+|elements|    length|  Elements sequence. Every element is a payload of type "bool".
+
+|===
+
+== Arrays of standard objects
+
+Arrays of this kind contain full values as elements. It means, their elements contain type code as well as payload. This format allows for elements of such collections to be NULL values. That's why they are called "objects". They all have similar format. See format description in a table below for details.
+
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|`length` | 4|   Signed integer number.  Number of elements in the array.
+|`element_0_full_value`|    Depends on value type.|  Full value of the element 0. Contains of type code and payload. Also, can be NULL.
+|`element_1_full_value`|    Depends on value type.|  Full value of the element 1 or NULL.
+|... |...| ...
+|`element_N_full_value`|    Depends on value type.|  Full value of the element N or NULL.
+
+|===
+
+=== String array
+
+Type code: 20;
+
+Array of UTF-8 string values.
+
+Structure:
+
+
+[{table_opts}]
+|===
+|Field |   Size in bytes|   Description
+|length|  4|   Signed integer number. Number of elements in the array.
+|elements|    Variable. Depends on every string length. Every element size is either `5 + value_length` for string, or 1 for `NULL`.|  Elements sequence. Every element is a full value of type "string", including type code, or `NULL`.
+
+|===
+
+=== UUID (Guid) array
+
+Type code: 21;
+
+Array of UUIDs (Guids).
+
+Structure:
+
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|length|  4|   Signed integer number. Number of elements in the array.
+|elements|    Variable. Every element size is either 17 for UUID, or 1 for NULL.|  Elements sequence. Every element is a full value of type "UUID", including type code, or NULL.
+
+|===
+
+=== Timestamp array
+
+Type code: 34;
+
+Array of timestamp values.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes |  Description
+|length|  4|   Signed integer number. Number of elements in the array.
+|elements|    Variable. Every element size is either 13 for Timestamp, or 1 for NULL.| Elements sequence. Every element is a full value of type "timestamp", including type code, or NULL.
+
+|===
+
+=== Date array
+
+Type code: 22;
+
+Array of dates.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|length|  4|   Signed integer number. Number of elements in the array.
+|elements|    Variable. Every element size is either 9 for Date, or 1 for NULL.|   Elements sequence. Every element is a full value of type "date", including type code, or NULL.
+
+|===
+
+=== Time array
+
+Type code: 37;
+
+Array of time values.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field |   Size in bytes|   Description
+|length|  4|   Signed integer number. Number of elements in the array.
+|elements   | Variable. Every element size is either 9 for Time, or 1 for NULL.|   Elements sequence. Every element is a full value of type "time", including type code, or NULL.
+
+|===
+
+=== Decimal array
+
+Type code: 31;
+
+Array of decimal values.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|length|  4|   Signed integer number. Number of elements in the array.
+|elements|    Variable. Every element size is either `9 + value_length` for Decimal, or 1 for NULL.| Elements sequence. Every element is a full value of type "decimal", including type code, or NULL.
+
+|===
+
+== Object collections
+
+=== Object array
+
+Type code: 23;
+
+Array of objects of any type. Can contain objects of any type. This includes standard objects of any type, as well as complex objects of various types, NULL values and any combinations of them. This also means, that collections may contain other collections.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|type_id |4|   Type identifier of the contained objects. For example, in Java this type is used to de-serialize to a Type[]. Obviously, all values in array should have Type as a parent. It is parent type of any object type. For example, in Java this always can be java.lang.Object. Type ID for such "root" object type is -1. See <<Type ID>> for details.
+|length|  4|   Signed integer number. Number of elements in the array.
+|elements|    Variable. Depends on sizes of the objects.|  Elements sequence. Every element is a full value of any type or NULL.
+
+|===
+
+=== Collection
+
+Type code: 24;
+
+General collection type. Just as an object array, contains objects, but unlike array, it have a hint for a deserialization to a platform-specific collection of a certain type, not just an array. There are following collection types:
+
+
+*  `USER_SET` = -1. This is a general set type, which can not be mapped to more specific set type. Still, it is known, that it is set. It makes sense to deserialize such a collection to the basic and most widely used set-like type on your platform, e.g. hash set.
+*    `USER_COL` = 0. This is a general collection type, which can not be mapped to any more specific collection type. It makes sense to deserialize such a collection to the basic and most widely used collection type on your platform, e.g. resizeable array.
+*    `ARR_LIST` = 1. This is in fact a resizeable array type.
+*    `LINKED_LIST` = 2. This is a linked list type.
+*    `HASH_SET` = 3. This is a basic hash set type.
+*    `LINKED_HASH_SET` = 4. This is a hash set type, which maintains element order.
+*    `SINGLETON_LIST` = 5. This is a collection that only contains a single element, but behaves as a collection. Could be used by platforms for optimization purposes. If not applicable, any collection type could be used.
+
+[NOTE]
+====
+Collection type byte is used as a hint by a certain platform to deserialize a collection to the most suitable type. For example, in Java HASH_SET deserialized to java.util.HashSet, while LINKED_HASH_SET deserialized to java.util.LinkedHashSet. It is recommended for a thin client implementation to try and use the most suitable collection type on serialization and deserialization. But still, it is only a hint, which user can ignore if it is not relevant or not applicable for the platform.
+====
+
+Structure:
+
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|length|  4|   Signed integer number. Number of elements in the collection.
+|type|    1|   Type of the collection. See description for details.
+elements  |  Variable. Depends on sizes of the objects.  Elements sequence. Every element is a full value of any type or NULL.
+
+|===
+
+=== Map
+
+Type code: 25;
+
+Map-like collection type. Contains pairs of key and value objects. Both key and value objects can be objects of a various types. It includes standard objects of various type, as well as complex objects of various types and any combinations of them. Have a hint for a deserialization to a map of a certain type. There are following map types:
+
+*   `HASH_MAP` = 1. This is a basic hash map.
+*   `LINKED_HASH_MAP` = 2. This is a hash map, which maintains element order.
+
+[NOTE]
+====
+Map type byte is used as a hint by a certain platform to deserialize a collection to the most suitable type. It is recommended for a thin client implementation to try and use the most suitable map type on serialization and deserialization. But still, it is only a hint, which user can ignore if it is not relevant or not applicable for the platform.
+====
+
+Structure:
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|length|  4|   Signed integer number. Number of elements in the collection.
+|type|    1|   Type of the collection. See description for details.
+|elements|    Variable. Depends on sizes of the objects.|  Elements sequence. Elements here are keys and values, followed one by one in pairs. Every element is a full value of any type or NULL.
+
+|===
+
+=== Enum array
+
+Type code: 29;
+
+Array of enumerable type value. Element could be either enumerable value or null. So, any element either occupies 9 bytes or 1 byte.
+
+Structure:
+
+
+[{table_opts}]
+|===
+|Field|   Size in bytes|   Description
+|type_id| 4|   Type identifier of the contained objects. For example, in Java this type is used to de-serialize to a EnumType[]. Obviously, all values in array should have EnumType as a parent. It is parent type of any enumerable object type. See <<Type ID>> for details.
+|length|  4|   Signed integer number. Number of elements in the collection.
+|elements|    Variable. Depends on sizes of the objects. | Elements sequence. Every element is a full value of enum type or NULL.
+
+|===
+
+== Complex object
+
+Type code: 103;
+
+Complex object consist of a 24-byte header, set of fields (data objects), and a schema (field IDs and positions). Depending on an operation and your data model, a data object can be of a primitive type or complex type (set of fields).
+
+Structure:
+
+[{table_opts}]
+|===
+|Field |   Size in bytes|   Optionality
+|`version`| 1|   Mandatory
+|`flags`|   2|   Mandatory
+|`type_id`| 4|   Mandatory
+|`hash_code`|   4|   Mandatory
+|`length`|  4|   Mandatory
+|`schema_id`|   4|   Mandatory
+|`object_fields`|   Variable| length.    Optional
+|`schema`|  Variable| length.    Optional
+|`raw_data_offset`| 4|   Optional
+
+|===
+
+
+== Version
+
+This is a field, indicating complex object layout version. It is needed for backward compatibility. Clients should check this field and indicate error to a user, if the object layout version is unknown to them, to prevent data corruption and unpredictable results of the de-serialization.
+
+== Flags
+
+This field is 16-bit long little-endian bitmask. Contains object flags, which indicate how the object instance should be handled by a reader. There are following flags:
+
+*    `USER_TYPE = 0x0001` - Indicates that type is a user type. Should be always set for any client type. Can be ignored on a de-serialization.
+*    `HAS_SCHEMA = 0x0002` - Indicates that object layout contains schema in the footer. See <<Schema>> for details.
+*    `HAS_RAW_DATA = 0x0004` - Indicating that object has raw data. See <<Raw data offset>> for details.
+*    `OFFSET_ONE_BYTE = 0x0008` - Indicating that schema field offset is one byte long. See <<Schema>> for details.
+*    `OFFSET_TWO_BYTES = 0x0010` - Indicating that schema field offset is two byte long. See <<Schema>> for details.
+*    `COMPACT_FOOTER = 0x0020` - Indicating that footer does not contain field IDs, only offsets. See <<Schema>> for details.
+
+== Type ID
+
+This field contains a unique type identifier. It is 4 bytes long and stored in little-endian. By default, Type ID is obtained as a Java-style hash code of the type name. Type ID evaluation algorithm should be the same across all platforms in the cluster for all platforms to be able to operate with objects of this type. Default type ID calculation algorithm, which is recommended for use by all thin clients, can be found below.
+
+[tabs]
+--
+
+tab:Java[]
+[source, java]
+----
+static int hashCode(String str) {
+  int len = str.length;
+
+  int h = 0;
+
+  for (int i = 0; i < len; i++) {
+    int c = str.charAt(i);
+
+    c = Character.toLowerCase(c);
+
+    h = 31 * h + c;
+  }
+
+  return h;
+}
+----
+
+tab:C[]
+
+[source, c]
+----
+int32_t HashCode(const char* val, size_t size)
+{
+  if (!val && size == 0)
+    return 0;
+
+  int32_t hash = 0;
+
+  for (size_t i = 0; i < size; ++i)
+  {
+    char c = val[i];
+
+    if ('A' <= c && c <= 'Z')
+      c |= 0x20;
+
+    hash = 31 * hash + c;
+  }
+
+  return hash;
+}
+----
+
+--
+
+
+
+
+
+== Hash code
+
+Hash code of the value. It is stored as a 4-byte long little-endian value and calculated as a Java-style hash of contents without header. Used by Ignite engine for comparisons, for example - to compare keys. Hash calculation algorithm can be found below.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+static int dataHashCode(byte[] data) {
+  int len = data.length;
+
+  int h = 0;
+
+  for (int i = 0; i < len; i++)
+    h = 31 * h + data[i];
+
+  return h;
+}
+----
+tab:C[]
+
+[source, c]
+----
+int32_t GetDataHashCode(const void* data, size_t size)
+{
+  if (!data)
+    return 0;
+
+  int32_t hash = 1;
+  const int8_t* bytes = static_cast<const int8_t*>(data);
+
+  for (int i = 0; i < size; ++i)
+    hash = 31 * hash + bytes[i];
+
+  return hash;
+}
+----
+
+--
+
+
+
+
+== Length
+
+This field contains full length of the object including header. It is stored as a 4-byte long little-endian integer number. Using this field you can easily skip the whole object by simply increasing current data stream position by the value of this field.
+
+== Schema ID
+
+Object schema identifier. It is stored as a 4-byte long little-endian value and calculated as a hash of all object field IDs. It is used for complex object size optimization. Ignite uses schema ID to avoid writing of the whole schema to the end of the every complex object value. Instead, it stores all schemas in the binary metadata store and only writes field offsets to the object. This optimization helps to significantly reduce size for the complex object containing a lot of short fields (such as ints).
+
+If the schema is missing (e.g. the whole object is written in raw mode, or have no fields at all), the schema ID field is 0.
+
+See <<Schema>> for details on schema structure.
+
+[NOTE]
+====
+Schema ID can not be determined using Type ID as objects of the same type (and thus, having the same Type ID) can have a multiple schemas, i.e. field sequence.
+====
+
+Schema ID calculation algorithm can be found below:
+
+[tabs]
+--
+
+tab:Java[]
+
+[source, java]
+----
+/** FNV1 hash offset basis. */
+private static final int FNV1_OFFSET_BASIS = 0x811C9DC5;
+
+/** FNV1 hash prime. */
+private static final int FNV1_PRIME = 0x01000193;
+
+static int calculateSchemaId(int fieldIds[])
+{
+  if (fieldIds == null || fieldIds.length == 0)
+    return 0;
+
+  int len = fieldIds.length;
+
+  int schemaId = FNV1_OFFSET_BASIS;
+
+  for (size_t i = 0; i < len; ++i)
+  {
+    fieldId = fieldIds[i];
+
+    schemaId = schemaId ^ (fieldId & 0xFF);
+    schemaId = schemaId * FNV1_PRIME;
+    schemaId = schemaId ^ ((fieldId >> 8) & 0xFF);
+    schemaId = schemaId * FNV1_PRIME;
+    schemaId = schemaId ^ ((fieldId >> 16) & 0xFF);
+    schemaId = schemaId * FNV1_PRIME;
+    schemaId = schemaId ^ ((fieldId >> 24) & 0xFF);
+    schemaId = schemaId * FNV1_PRIME;
+  }
+}
+----
+
+
+tab:C[]
+
+[source, c]
+----
+/** FNV1 hash offset basis. */
+enum { FNV1_OFFSET_BASIS = 0x811C9DC5 };
+
+/** FNV1 hash prime. */
+enum { FNV1_PRIME = 0x01000193 };
+
+int32_t CalculateSchemaId(const int32_t* fieldIds, size_t num)
+{
+  if (!fieldIds || num == 0)
+    return 0;
+
+  int32_t schemaId = FNV1_OFFSET_BASIS;
+
+  for (size_t i = 0; i < num; ++i)
+  {
+    fieldId = fieldIds[i];
+
+    schemaId ^= fieldId & 0xFF;
+    schemaId *= FNV1_PRIME;
+    schemaId ^= (fieldId >> 8) & 0xFF;
+    schemaId *= FNV1_PRIME;
+    schemaId ^= (fieldId >> 16) & 0xFF;
+    schemaId *= FNV1_PRIME;
+    schemaId ^= (fieldId >> 24) & 0xFF;
+    schemaId *= FNV1_PRIME;
+  }
+}
+----
+
+
+--
+
+
+
+== Object Fields
+
+Object fields. Every field is a binary object and could be either complex or standard type. Note that a complex object that has no fields at all is a valid object and may be encountered. Every field can have or not have a name. For named fields there is an offset written in the object schema, by which they can be located in object without de-serialization of the whole object. Fields without name are always stored after the named fields and are written in a so called "raw mode".
+
+Thus, fields that have been written in a raw mode can only be accessed by sequential read in the same order as they were written, while named fields can be read in a random order.
+
+== Schema
+
+Object schema. Any complex object may have or have no schema, so this field is optional. Schema is not present in object, if there is no named fields in object. It also includes cases, when the object does not have fields at all. You should check the HAS_SCHEMA object flag to determine if the object has schema.
+
+The main purpose of a schema is to allow for fast search of object fields. For this purpose, schema contains a sequence of offsets of object fields in the object payload. Field offsets themselves can be of a different size. The size of these fields determined on a write by a max offset value. If it is in the range of [24..255] bytes, then 1-byte offset is used, if it's in the range of [256..65535] bytes, then 2-byte offset is used. In all other cases 4-byte offsets are used. To determine the size of the offsets on read, clients should check `OFFSET_ONE_BYTE` and `OFFSET_TWO_BYTES` flags. If the `OFFSET_ONE_BYTE` flag is set, then offsets are 1 byte long, else if `OFFSET_TWO_BYTES` flag is set, then offsets are 2-byte long, otherwise offsets are 4-byte long.
+
+There are two formats of schema supported:
+
+* Full schema approach - simpler to implement but uses more resources.
+*  Compact footer approach - harder to implement, but provides better performance and reduces memory consumption; thus it is recommended for new clients to implement this approach.
+
+You can find more details on both formats below.
+
+Note that the flag COMPACT_FOOTER should be checked by clients to determine which approach is used in every specific object.
+
+=== Full schema approach
+
+When this approach is used, COMPACT_FOOTER flag is not set and the whole object schema is written to the footer of the object. In this case only complex object itself is needed for a de-serialization - schema_id field is ignored and no additional data is required. The structure of the schema field of the complex object in this case can be found below:
+
+[cols="1,1,2",opts="header"]
+|===
+|Field |  Size in bytes |  Description
+|`field_id_0`|  4|   ID of the field with the index 0. 4-byte long hash stored in little-endian. The Field ID calculated using field name the same way it is done for a <<Type ID>>.
+|`field_offset_0`|  Variable, depending on the size of the object: 1, 2 or 4. |  Unsigned integer number stored in little-endian Offset of the field in object, starting from the very first byte of the full object value (i.e. type_code position).
+|`field_id_1`|  4|   4-byte long hash stored in little-endian. ID of the field with the index 1.
+|`field_offset_1` | Variable, depending on the size of the object: 1, 2 or 4.|   Unsigned integer number stored in little-endian. Offset of the field in object.
+|...| ...| ...
+|`field_id_N`|  4|   4-byte long hash stored in little-endian. ID of the field with the index N.
+|`field_offset_N`|  Variable, depending on the size of the object: 1, 2 or 4. |   Unsigned integer number stored in little-endian. Offset of the field in object.
+
+|===
+
+=== Compact footer approach
+
+In this approach, COMPACT_FOOTER flag is set and only field offset sequence is written to the object footer. In this case client uses schema_id field to search objects schema in a previously stored meta store to find out fields order and associate field with its offset.
+
+If this approach is used, client needs to keep schemas in a special meta store and send/retrieve them to Ignite servers. See link:check[Binary Types] for details.
+
+The structure of the schema in this case can be found below:
+
+[cols="1,1,2",opts="header"]
+|===
+|Field |  Size in bytes |  Description
+|`field_offset_0` | Variable, depending on the size of the object: 1, 2 or 4. |  Unsigned integer number stored in little-endian. Offset of the field 0 in the object, starting from the very first byte of the full object value (i.e. type_code position).
+|`field_offset_1`|  Variable, depending on the size of the object: 1, 2 or 4. |  Unsigned integer number stored in little-endian. Offset of the 1-st field in object.
+|...| ...| ...
+|`field_id_N`|  Variable, depending on the size of the object: 1, 2 or 4.  | Unsigned integer number stored in little-endian.
+Offset of the N-th field in object.
+
+|===
+
+== Raw data offset
+
+Optional field. Only present in object, if there is any fields, that have been written in a raw mode. In this case, HAS_RAW_DATA flag is set and the raw data offset field is present and is stored as an 4-byte long little-endian value, which points to the offset of the raw data in complex object, starting from the very first byte of the header (i.e. this field always greater than a header length).
+
+This field is used to position stream for user to start reading in a raw mode.
+
+== Special types
+
+=== Wrapped Data
+
+Type code: 27;
+
+One or more binary objects can be wrapped in an array. This allows reading, storing, passing and writing objects efficiently without understanding their contents, performing simple byte copy.
+All cache operations return complex objects inside a wrapper (but not primitives).
+
+Structure:
+
+[{table_opts}]
+|===
+|Field |   Size |    Description
+|length|  4|   Signed integer number stored in little-endian. Size of the wrapped data in bytes.
+|payload| length|  Payload.
+|offset|  4|   Signed integer number stored in little-endian. Offset of the object within an array. Array can contain an object graph, this offset points to the root object.
+
+|===
+
+=== Binary enum
+
+Type code: 38
+
+Wrapped enumerable type. This type can be returned by the engine in place of the ordinary enum type. Enums should be written in this form when Binary API is used.
+
+Structure:
+
+[{table_opts}]
+|===
+|Field |  Size  |  Description
+|type_id| 4|   Signed integer number in little-endian. See <<Type ID>> for details.
+|ordinal| 4|   Signed integer number stored in little-endian. Enumeration value ordinal . Its position in its enum declaration, where the initial constant is assigned an ordinal of zero.
+
+|===
+
+== Serialization and Deserialization examples
+
+=== Reading objects
+
+A code template below shows how to read data of various types from an input byte stream:
+
+
+[source, java]
+----
+private static Object readDataObject(DataInputStream in) throws IOException {
+  byte code = in.readByte();
+
+  switch (code) {
+    case 1:
+      return in.readByte();
+    case 2:
+      return readShortLittleEndian(in);
+    case 3:
+      return readIntLittleEndian(in);
+    case 4:
+      return readLongLittleEndian(in);
+    case 27: {
+      int len = readIntLittleEndian(in);
+      // Assume 0 offset for simplicity
+      Object res = readDataObject(in);
+      int offset = readIntLittleEndian(in);
+      return res;
+    }
+    case 103:
+      byte ver = in.readByte();
+      assert ver == 1; // version
+      short flags = readShortLittleEndian(in);
+      int typeId = readIntLittleEndian(in);
+      int hash = readIntLittleEndian(in);
+      int len = readIntLittleEndian(in);
+      int schemaId = readIntLittleEndian(in);
+      int schemaOffset = readIntLittleEndian(in);
+      byte[] data = new byte[len - 24];
+      in.read(data);
+      return "Binary Object: " + typeId;
+    default:
+      throw new Error("Unsupported type: " + code);
+  }
+}
+----
+
+=== Int
+
+The following code snippet shows how to write and read a data object of type int, using a socket based output/input stream.
+
+
+[source, java]
+----
+// Write int data object
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+int val = 11;
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(val, out);
+
+// Read int data object
+DataInputStream in = new DataInputStream(socket.getInputStream());
+int typeCode = readByteLittleEndian(in);
+int val = readIntLittleEndian(in);
+----
+
+Refer to the link:example[example section] for implementation of `write...()` and `read..()` methods shown above.
+
+As another example, for String type, the structure would be:
+
+
+
+[cols="1,2",opts="header"]
+|===
+|Type |    Description
+| byte |    String type code, 9.
+|int | String length in UTF-8 bytes.
+|bytes |   Actual string.
+|===
+
+=== String
+
+The code snippet below shows how to write and read a String value following this format:
+
+
+[source, java]
+----
+private static void writeString (String str, DataOutputStream out) throws IOException {
+  writeByteLittleEndian(9, out); // type code for String
+
+  int strLen = str.getBytes("UTF-8").length; // length of the string
+  writeIntLittleEndian(strLen, out);
+
+  out.writeBytes(str);
+}
+
+private static String readString(DataInputStream in) throws IOException {
+  int type = readByteLittleEndian(in); // type code
+
+  int strLen = readIntLittleEndian(in); // length of the string
+
+  byte[] buf = new byte[strLen];
+
+  readFully(in, buf, 0, strLen);
+
+  return new String(buf);
+}
+----
+
+
+
+
+

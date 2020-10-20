@@ -37,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -292,10 +293,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
 
-        ctx.systemView().registerView(NODES_SYS_VIEW, NODES_SYS_VIEW_DESC,
-            new ClusterNodeViewWalker(),
-            () -> F.concat(false, allNodes(), daemonNodes()),
-            ClusterNodeView::new);
+        if (ctx.systemView().view(NODES_SYS_VIEW) == null) {
+            ctx.systemView().registerView(NODES_SYS_VIEW, NODES_SYS_VIEW_DESC,
+                new ClusterNodeViewWalker(),
+                () -> F.concat(false, allNodes(), daemonNodes()),
+                ClusterNodeView::new);
+        }
     }
 
     /** {@inheritDoc} */

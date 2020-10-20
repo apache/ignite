@@ -226,7 +226,8 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
         ignitionStart(serverConfiguration(2), finishLatch);
         ignitionStart(serverConfiguration(3), finishLatch);
 
-        awaitPartitionMapExchange();
+        // TODO: https://issues.apache.org/jira/browse/IGNITE-13572
+        awaitPartitionMapExchange(true, true, null);
 
         assertFalse(tblFut.isDone());
 
@@ -331,7 +332,8 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
 
         ignitionStart(serverConfiguration(4));
 
-        awaitPartitionMapExchange();
+        // TODO: https://issues.apache.org/jira/browse/IGNITE-13572
+        awaitPartitionMapExchange(true, true, null);
 
         tblFut.get();
 
@@ -493,7 +495,8 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
         // Check that only one successful attempt.
         assertEquals(1, success.get());
 
-        awaitPartitionMapExchange();
+        // TODO: https://issues.apache.org/jira/browse/IGNITE-13572
+        awaitPartitionMapExchange(true, true, null);
 
         for (Ignite g: G.allGrids()) {
             assertEquals(LARGE_NUM_ENTRIES, query(g, SELECT_ALL_QUERY).size());

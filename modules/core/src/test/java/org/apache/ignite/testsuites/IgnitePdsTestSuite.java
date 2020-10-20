@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.ActiveOnStartPropertyTest;
 import org.apache.ignite.internal.processors.cache.AutoActivationPropertyTest;
 import org.apache.ignite.internal.processors.cache.ClusterStateOnStartPropertyTest;
@@ -27,10 +28,12 @@ import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactiva
 import org.apache.ignite.internal.processors.cache.IgnitePdsDataRegionMetricsTxTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheConfigurationFileConsistencyCheckTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsClientNearCachePutGetTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheWithoutCheckpointsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDiscoDataHandlingInNewClusterTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRemoveDuringRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSporadicDataRecordsOnBackupTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
@@ -38,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataR
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest2;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimpleTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.IgniteMetaStorageBasicTest;
@@ -45,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTree
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.FillFactorMetricTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IndexStoragePageMemoryImplTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageIdDistributionTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplNoLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryLazyAllocationTest;
@@ -53,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSmokeTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.UsedPagesMetricTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.UsedPagesMetricTestPersistence;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIOTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.CpTriggeredWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ExplicitWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBufferTest;
@@ -91,15 +97,15 @@ public class IgnitePdsTestSuite {
         addRealPageStoreTestsLongRunning(suite, ignoredTests);
 
         // Basic PageMemory tests.
-        //GridTestUtils.addTestIfNeeded(suite, PageMemoryNoLoadSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PageMemoryNoLoadSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageMemoryImplNoLoadTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageMemoryNoStoreLeakTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageMemoryLazyAllocationTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageMemoryLazyAllocationWithPDSTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IndexStoragePageMemoryImplTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageMemoryImplTest.class, ignoredTests);
-        //GridTestUtils.addTestIfNeeded(suite, PageIdDistributionTest.class, ignoredTests);
-        //GridTestUtils.addTestIfNeeded(suite, TrackingPageIOTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PageIdDistributionTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TrackingPageIOTest.class, ignoredTests);
 
         // BTree tests with store page memory.
         GridTestUtils.addTestIfNeeded(suite, BPlusTreePageMemoryImplTest.class, ignoredTests);
@@ -152,11 +158,9 @@ public class IgnitePdsTestSuite {
      * @param ignoredTests Ignored tests.
      */
     public static void addRealPageStoreTests(List<Class<?>> suite, Collection<Class> ignoredTests) {
-
         // Checkpointing smoke-test.
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointSimulationWithRealCpDisabledTest.class, ignoredTests);
-        //GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointSimpleTest.class, ignoredTests);
-        //GridTestUtils.addTestIfNeeded(suite, IgnitePersistenceSequentialCheckpointTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointSimpleTest.class, ignoredTests);
 
         // Basic API tests.
         GridTestUtils.addTestIfNeeded(suite, IgniteDbSingleNodePutGetTest.class, ignoredTests);
@@ -167,8 +171,7 @@ public class IgnitePdsTestSuite {
         // Persistence-enabled.
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsSingleNodePutGetPersistenceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsDynamicCacheTest.class, ignoredTests);
-        // TODO uncomment when https://issues.apache.org/jira/browse/IGNITE-7510 is fixed
-        // GridTestUtils.addTestIfNeeded(suite, IgnitePdsClientNearCachePutGetTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsClientNearCachePutGetTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteDbPutGetWithCacheStoreTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest2.class, ignoredTests);
@@ -181,7 +184,7 @@ public class IgnitePdsTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsDataRegionMetricsTxTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsDestroyCacheTest.class, ignoredTests);
-        //GridTestUtils.addTestIfNeeded(suite, IgnitePdsRemoveDuringRebalancingTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsRemoveDuringRebalancingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsDestroyCacheWithoutCheckpointsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheConfigurationFileConsistencyCheckTest.class, ignoredTests);
 

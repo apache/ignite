@@ -1,0 +1,15 @@
+﻿Thin Client Feature,Java,.NET,C++,Python,Node.js,PHP
+Scan Query,{yes},{yes},No,{yes},{yes},{yes}
+Scan Query with a filter,{yes},{yes},No,No,No,No
+SqlFieldsQuery,{yes},{yes},No,{yes},{yes},{yes}
+Binary Object API,{yes},{yes},No,No,{yes},{yes}
+Async Operations,No,{yes},No,{yes},{yes},{yes}
+SSL/TLS,{yes},{yes},{yes},{yes},{yes},{yes}
+Authentication,{yes},{yes},{yes},{yes},{yes},{yes}
+Partition Awareness,{yes},{yes},{yes},{yes},{yes},No
+Failover,{yes},No,{yes},{yes},{yes},{yes}
+Transactions,{yes},No,No,No,No,No
+Cluster API,{yes},{yes},No,No,No,No
+Cluster discovery,No,{yes},No,No,No,No
+Compute,{yes},{yes},No,No,No,No
+Service invocation,{yes},No,No,No,No,No
