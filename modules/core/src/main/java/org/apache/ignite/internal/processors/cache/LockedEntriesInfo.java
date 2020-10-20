@@ -42,7 +42,7 @@ public class LockedEntriesInfo {
 
         LockedEntries lockedEntries = new LockedEntries(entries);
 
-        lockedEntriesPerThread.put(threadId,lockedEntries);
+        lockedEntriesPerThread.put(threadId, lockedEntries);
 
         boolean wasInterrupted = false;
 
