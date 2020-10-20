@@ -126,6 +126,13 @@ public class CheckpointReadWriteLock {
     }
 
     /**
+     * @return {@code true} if current thread hold the write lock.
+     */
+    public boolean isWriteLockHeldByCurrentThread() {
+        return checkpointLock.writeLock().isHeldByCurrentThread();
+    }
+
+    /**
      * Release the checkpoint write lock
      */
     public void writeUnlock() {

@@ -87,34 +87,34 @@ fi
 #
 # ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 #
-if [ -z "${JVM_OPTS:-}" ] ; then
+if [ -z "${CONTROL_JVM_OPTS:-}" ] ; then
     if [[ `"$JAVA" -version 2>&1 | egrep "1\.[7]\."` ]]; then
-        JVM_OPTS="-Xms256m -Xmx1g"
+        CONTROL_JVM_OPTS="-Xms256m -Xmx1g"
     else
-        JVM_OPTS="-Xms256m -Xmx1g"
+        CONTROL_JVM_OPTS="-Xms256m -Xmx1g"
     fi
 fi
 
 #
 # Uncomment to enable experimental commands [--wal]
 #
-# JVM_OPTS="${JVM_OPTS} -DIGNITE_ENABLE_EXPERIMENTAL_COMMAND=true"
+# CONTROL_JVM_OPTS="${CONTROL_JVM_OPTS} -DIGNITE_ENABLE_EXPERIMENTAL_COMMAND=true"
 
 #
 # Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
 #
-# JVM_OPTS="$JVM_OPTS -XX:+UseG1GC"
+# CONTROL_JVM_OPTS="$CONTROL_JVM_OPTS -XX:+UseG1GC"
 
 #
 # Uncomment if you get StackOverflowError.
 # On 64 bit systems this value can be larger, e.g. -Xss16m
 #
-# JVM_OPTS="${JVM_OPTS} -Xss4m"
+# CONTROL_JVM_OPTS="${CONTROL_JVM_OPTS} -Xss4m"
 
 #
 # Uncomment to set preference for IPv4 stack.
 #
-# JVM_OPTS="${JVM_OPTS} -Djava.net.preferIPv4Stack=true"
+# CONTROL_JVM_OPTS="${CONTROL_JVM_OPTS} -Djava.net.preferIPv4Stack=true"
 
 #
 # Assertions are disabled by default since version 3.5.
@@ -126,7 +126,7 @@ ENABLE_ASSERTIONS="1"
 # Set '-ea' options if assertions are enabled.
 #
 if [ "${ENABLE_ASSERTIONS:-}" = "1" ]; then
-    JVM_OPTS="${JVM_OPTS} -ea"
+    CONTROL_JVM_OPTS="${CONTROL_JVM_OPTS} -ea"
 fi
 
 #
@@ -140,18 +140,18 @@ fi
 # Remote debugging (JPDA).
 # Uncomment and change if remote debugging is required.
 #
-# JVM_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 ${JVM_OPTS}"
+# CONTROL_JVM_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 ${CONTROL_JVM_OPTS}"
 
 #
-# Final JVM_OPTS for Java 9+ compatibility
+# Final CONTROL_JVM_OPTS for Java 9+ compatibility
 #
 if [ $version -eq 8 ] ; then
-    JVM_OPTS="\
+    CONTROL_JVM_OPTS="\
         -XX:+AggressiveOpts \
-         ${JVM_OPTS}"
+         ${CONTROL_JVM_OPTS}"
 
 elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
-    JVM_OPTS="\
+    CONTROL_JVM_OPTS="\
         -XX:+AggressiveOpts \
         --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
         --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
@@ -160,10 +160,10 @@ elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
         --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
         --illegal-access=permit \
         --add-modules=java.xml.bind \
-        ${JVM_OPTS}"
+        ${CONTROL_JVM_OPTS}"
 
 elif [ $version -ge 11 ] ; then
-    JVM_OPTS="\
+    CONTROL_JVM_OPTS="\
         --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
         --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
         --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
@@ -171,17 +171,22 @@ elif [ $version -ge 11 ] ; then
         --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
         --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED \
         --illegal-access=permit \
-        ${JVM_OPTS}"
+        ${CONTROL_JVM_OPTS}"
+fi
+
+if [ -n "${JVM_OPTS}" ] ; then
+  echo "JVM_OPTS environment variable is set, but will not be used. To pass JVM options use CONTROL_JVM_OPTS"
+  echo "JVM_OPTS=${JVM_OPTS}"
 fi
 
 case $osname in
     Darwin*)
-        "$JAVA" ${JVM_OPTS} ${QUIET:-} "${DOCK_OPTS}" ${JMX_MON:-} \
+        "$JAVA" ${CONTROL_JVM_OPTS} ${QUIET:-} "${DOCK_OPTS}" ${JMX_MON:-} \
          -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
          -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
     ;;
     *)
-        "$JAVA" ${JVM_OPTS} ${QUIET:-} ${JMX_MON:-} \
+        "$JAVA" ${CONTROL_JVM_OPTS} ${QUIET:-} ${JMX_MON:-} \
          -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
          -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
     ;;

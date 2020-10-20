@@ -277,7 +277,10 @@ BOOST_AUTO_TEST_CASE(TestTimeInsert)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    SQL_TIME_STRUCT data = { 0 };
+    SQL_TIME_STRUCT data;
+
+    std::memset(&data, 0, sizeof(data));
+
     data.hour = 19;
     data.minute = 54;
     data.second = 1;

@@ -1,0 +1,182 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Data Types
+
+
+The page contains a list of SQL data types available in Ignite such as string, numeric, and date/time types.
+
+Every SQL type is mapped to a programming language or driver specific type that is supported by Ignite natively.
+
+== BOOLEAN
+Possible values: TRUE and FALSE.
+
+Mapped to:
+
+- Java/JDBC: `java.lang.Boolean`
+- .NET/C#: `bool`
+- C/C++: `bool`
+- ODBC: `SQL_BIT`
+
+== BIGINT
+Possible values: [`-9223372036854775808`, `9223372036854775807`].
+
+Mapped to:
+
+- Java/JDBC: `java.lang.Long`
+- .NET/C#: `long`
+- C/C++: `int64_t`
+- ODBC: `SQL_BIGINT`
+
+== DECIMAL
+Possible values: Data type with fixed precision and scale.
+
+Mapped to:
+
+- Java/JDBC: `java.math.BigDecimal`
+- .NET/C#: `decimal`
+- C/C++: `ignite::Decimal`
+- ODBC: `SQL_DECIMAL`
+
+== DOUBLE
+Possible values: A floating point number.
+
+Mapped to:
+
+- Java/JDBC: `java.lang.Double`
+- .NET/C#: `double`
+- C/C++: `double`
+- ODBC: `SQL_DOUBLE`
+
+== INT
+Possible values: [`-2147483648`, `2147483647`].
+
+Mapped to:
+
+- Java/JDBC: `java.lang.Integer`
+- .NET/C#: `int`
+- C/C++: `int32_t`
+- ODBC: `SQL_INTEGER`
+
+== REAL
+Possible values: A single precision floating point number.
+
+Mapped to:
+
+- Java/JDBC: `java.lang.Float`
+- .NET/C#: `float`
+- C/C++: `float`
+- ODBC: `SQL_FLOAT`
+
+== SMALLINT
+Possible values: [`-32768`, `32767`].
+
+Mapped to:
+
+- Java/JDBC: `java.lang.Short`
+- .NET/C#: `short`
+- C/C++: `int16_t`
+- ODBC: `SQL_SMALLINT`
+
+== TINYINT
+Possible values: [`-128`, `127`].
+
+Mapped to:
+
+- Java/JDBC: `java.lang.Byte`
+- .NET/C#: `sbyte`
+- C/C++: `int8_t`
+- ODBC: `SQL_TINYINT`
+
+== CHAR
+Possible values: A unicode String. This type is supported for compatibility with other databases and older applications.
+
+Mapped to:
+
+- Java/JDBC: `java.lang.String`
+- .NET/C#: `string`
+- C/C++: `std::string`
+- ODBC: `SQL_CHAR`
+
+== VARCHAR
+Possible values: A Unicode String.
+
+Mapped to:
+
+- Java/JDBC: `java.lang.String`
+- .NET/C#: `string`
+- C/C++: `std::string`
+- ODBC: `SQL_VARCHAR`
+
+== DATE
+Possible values: The date data type. The format is `yyyy-MM-dd`.
+
+Mapped to:
+
+Java/JDBC: `java.sql.Date`
+- .NET/C#: N/A
+- C/C++: `ignite::Date`
+- ODBC: `SQL_TYPE_DATE`
+
+NOTE: Use the <<TIMESTAMP>> type instead of DATE whenever possible. The DATE type is serialized/deserialized very inefficiently resulting in performance degradation.
+
+== TIME
+Possible values: The time data type. The format is `hh:mm:ss`.
+
+Mapped to:
+
+- Java/JDBC: `java.sql.Time`
+- .NET/C#: N/A
+- C/C++: `ignite::Time`
+- ODBC: `SQL_TYPE_TIME`
+
+== TIMESTAMP
+Possible values: The timestamp data type. The format is `yyyy-MM-dd hh:mm:ss[.nnnnnnnnn]`.
+
+Mapped to:
+
+- Java/JDBC: `java.sql.Timestamp`
+- .NET/C#: `System.DateTime`
+- C/C++: `ignite::Timestamp`
+- ODBC: `SQL_TYPE_TIMESTAMP`
+
+== BINARY
+Possible values: Represents a byte array.
+
+Mapped to:
+
+- Java/JDBC: `byte[]`
+- .NET/C#: `byte[]`
+- C/C++: `int8_t[]`
+- ODBC: `SQL_BINARY`
+
+== GEOMETRY
+Possible values: A spatial geometry type, based on the `com.vividsolutions.jts` library. Normally represented in a textual format using the WKT (well-known text) format.
+
+Mapped to:
+
+- Java/JDBC: Types from the `com.vividsolutions.jts` package.
+- .NET/C#: N/A
+- C/C++: N/A
+- ODBC: N/A
+
+== UUID
+Possible values: Universally unique identifier. This is a 128 bit value.
+
+Mapped to:
+
+- Java/JDBC: `java.util.UUID`
+- .NET/C#: `System.Guid`
+- C/C++: `ignite::Guid`
+- ODBC: `SQL_GUID`

@@ -103,7 +103,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInne
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInputImpl;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -363,12 +363,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case CHECKPOINT_RECORD:
                 CheckpointRecord cpRec = (CheckpointRecord)record;
 
-                assert cpRec.checkpointMark() == null || cpRec.checkpointMark() instanceof FileWALPointer :
-                        "Invalid WAL record: " + cpRec;
-
                 int cacheStatesSize = cacheStatesSize(cpRec.cacheGroupStates());
 
-                FileWALPointer walPtr = (FileWALPointer)cpRec.checkpointMark();
+                WALPointer walPtr = cpRec.checkpointMark();
 
                 return 18 + cacheStatesSize + (walPtr == null ? 0 : 16);
 
@@ -589,7 +586,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 boolean end = in.readByte() != 0;
 
-                FileWALPointer walPtr = hasPtr ? new FileWALPointer(idx, off, len) : null;
+                WALPointer walPtr = hasPtr ? new WALPointer(idx, off, len) : null;
 
                 CheckpointRecord cpRec = new CheckpointRecord(new UUID(msb, lsb), walPtr, end);
 
@@ -1276,11 +1273,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case CHECKPOINT_RECORD:
                 CheckpointRecord cpRec = (CheckpointRecord)rec;
-
-                assert cpRec.checkpointMark() == null || cpRec.checkpointMark() instanceof FileWALPointer :
-                        "Invalid WAL record: " + cpRec;
-
-                FileWALPointer walPtr = (FileWALPointer)cpRec.checkpointMark();
+                WALPointer walPtr = cpRec.checkpointMark();
                 UUID cpId = cpRec.checkpointId();
 
                 buf.putLong(cpId.getMostSignificantBits());

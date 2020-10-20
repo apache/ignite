@@ -65,6 +65,8 @@ import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
+import org.apache.ignite.client.ClientReconnectedException;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -222,10 +224,10 @@ class TcpClientChannel implements ClientChannel {
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
-    ) throws ClientConnectionException, ClientAuthorizationException, ClientServerError, ClientException {
-        long id = send(op, payloadWriter);
+    ) throws ClientException {
+        ClientRequestFuture fut = send(op, payloadWriter);
 
-        return receive(id, payloadReader);
+        return receive(fut, payloadReader);
     }
 
     /** {@inheritDoc} */
@@ -235,9 +237,9 @@ class TcpClientChannel implements ClientChannel {
             Function<PayloadInputChannel, T> payloadReader
     ) {
         try {
-            long id = send(op, payloadWriter);
+            ClientRequestFuture fut = send(op, payloadWriter);
 
-            return receiveAsync(id, payloadReader);
+            return receiveAsync(fut, payloadReader);
         } catch (Throwable t) {
             CompletableFuture<T> fut = new CompletableFuture<>();
             fut.completeExceptionally(t);
@@ -249,10 +251,10 @@ class TcpClientChannel implements ClientChannel {
     /**
      * @param op Operation.
      * @param payloadWriter Payload writer to stream or {@code null} if request has no payload.
-     * @return Request ID.
+     * @return Request future.
      */
-    private long send(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
-        throws ClientException, ClientConnectionException {
+    private ClientRequestFuture send(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
+        throws ClientException {
         long id = reqId.getAndIncrement();
 
         // Only one thread at a time can have access to write to the channel.
@@ -264,7 +266,9 @@ class TcpClientChannel implements ClientChannel {
 
             initReceiverThread(); // Start the receiver thread with the first request.
 
-            pendingReqs.put(id, new ClientRequestFuture());
+            ClientRequestFuture fut = new ClientRequestFuture();
+
+            pendingReqs.put(id, fut);
 
             BinaryOutputStream req = payloadCh.out();
 
@@ -278,6 +282,8 @@ class TcpClientChannel implements ClientChannel {
             req.writeInt(0, req.position() - 4); // Actual size.
 
             write(req.array(), req.position());
+
+            return fut;
         }
         catch (Throwable t) {
             pendingReqs.remove(id);
@@ -287,21 +293,15 @@ class TcpClientChannel implements ClientChannel {
         finally {
             sndLock.unlock();
         }
-
-        return id;
     }
 
     /**
-     * @param reqId ID of the request to receive the response for.
+     * @param pendingReq Request future.
      * @param payloadReader Payload reader from stream.
      * @return Received operation payload or {@code null} if response has no payload.
      */
-    private <T> T receive(long reqId, Function<PayloadInputChannel, T> payloadReader)
-        throws ClientServerError, ClientException, ClientConnectionException, ClientAuthorizationException {
-        ClientRequestFuture pendingReq = pendingReqs.get(reqId);
-
-        assert pendingReq != null : "Pending request future not found for request " + reqId;
-
+    private <T> T receive(ClientRequestFuture pendingReq, Function<PayloadInputChannel, T> payloadReader)
+        throws ClientException {
         try {
             byte[] payload = pendingReq.get();
 
@@ -311,50 +311,32 @@ class TcpClientChannel implements ClientChannel {
             return payloadReader.apply(new PayloadInputChannel(this, payload));
         }
         catch (IgniteCheckedException e) {
-            if (e.getCause() instanceof ClientError)
-                throw new ClientException(e.getMessage(), e.getCause());
-
-            if (e.getCause() instanceof ClientConnectionException)
-                throw new ClientConnectionException(e.getMessage(), e.getCause());
-
-            if (e.getCause() instanceof ClientException)
-                throw new ClientException(e.getMessage(), e.getCause());
-
-            throw new ClientException(e.getMessage(), e);
-        }
-        finally {
-            pendingReqs.remove(reqId);
+            throw convertException(e);
         }
     }
 
     /**
      * Receives the response asynchronously.
      *
-     * @param reqId ID of the request to receive the response for.
+     * @param pendingReq Request future.
      * @param payloadReader Payload reader from stream.
      * @return Future for the operation.
      */
-    private <T> CompletableFuture<T> receiveAsync(long reqId, Function<PayloadInputChannel, T> payloadReader) {
-        ClientRequestFuture pendingReq = pendingReqs.get(reqId);
-
-        assert pendingReq != null : "Pending request future not found for request " + reqId;
-
+    private <T> CompletableFuture<T> receiveAsync(ClientRequestFuture pendingReq, Function<PayloadInputChannel, T> payloadReader) {
         CompletableFuture<T> fut = new CompletableFuture<>();
 
         pendingReq.listen(payloadFut -> asyncContinuationExecutor.execute(() -> {
             try {
                 byte[] payload = payloadFut.get();
 
-                if (payload == null || payloadReader == null) {
+                if (payload == null || payloadReader == null)
                     fut.complete(null);
-                } else {
+                else {
                     T res = payloadReader.apply(new PayloadInputChannel(this, payload));
                     fut.complete(res);
                 }
             } catch (Throwable t) {
                 fut.completeExceptionally(convertException(t));
-            } finally {
-                pendingReqs.remove(reqId);
             }
         }));
 
@@ -370,8 +352,24 @@ class TcpClientChannel implements ClientChannel {
         if (e.getCause() instanceof ClientError)
             return new ClientException(e.getMessage(), e.getCause());
 
+        // For every known class derived from ClientException, wrap cause in a new instance.
+        // We could rethrow e.getCause() when instanceof ClientException,
+        // but this results in an incomplete stack trace from the receiver thread.
+        // This is similar to IgniteUtils.exceptionConverters.
         if (e.getCause() instanceof ClientConnectionException)
             return new ClientConnectionException(e.getMessage(), e.getCause());
+
+        if (e.getCause() instanceof ClientReconnectedException)
+            return new ClientReconnectedException(e.getMessage(), e.getCause());
+
+        if (e.getCause() instanceof ClientAuthenticationException)
+            return new ClientAuthenticationException(e.getMessage(), e.getCause());
+
+        if (e.getCause() instanceof ClientAuthorizationException)
+            return new ClientAuthorizationException(e.getMessage(), e.getCause());
+
+        if (e.getCause() instanceof ClientFeatureNotSupportedByServerException)
+            return new ClientFeatureNotSupportedByServerException(e.getMessage(), e.getCause());
 
         if (e.getCause() instanceof ClientException)
             return new ClientException(e.getMessage(), e.getCause());
@@ -410,14 +408,15 @@ class TcpClientChannel implements ClientChannel {
      * Process next message from the input stream and complete corresponding future.
      */
     private void processNextMessage() throws ClientProtocolError, ClientConnectionException {
-        int msgSize = dataInput.readInt();
+        // blocking read a message header not to fall into a busy loop
+        int msgSize = dataInput.readInt(2048);
 
         if (msgSize <= 0)
             throw new ClientProtocolError(String.format("Invalid message size: %s", msgSize));
 
         long bytesReadOnStartMsg = dataInput.totalBytesRead();
 
-        long resId = dataInput.readLong();
+        long resId = dataInput.spinReadLong();
 
         int status = 0;
 
@@ -426,11 +425,11 @@ class TcpClientChannel implements ClientChannel {
         BinaryInputStream resIn;
 
         if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
-            short flags = dataInput.readShort();
+            short flags = dataInput.spinReadShort();
 
             if ((flags & ClientFlag.AFFINITY_TOPOLOGY_CHANGED) != 0) {
-                long topVer = dataInput.readLong();
-                int minorTopVer = dataInput.readInt();
+                long topVer = dataInput.spinReadLong();
+                int minorTopVer = dataInput.spinReadInt();
 
                 srvTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
 
@@ -439,7 +438,7 @@ class TcpClientChannel implements ClientChannel {
             }
 
             if ((flags & ClientFlag.NOTIFICATION) != 0) {
-                short notificationCode = dataInput.readShort();
+                short notificationCode = dataInput.spinReadShort();
 
                 notificationOp = ClientOperation.fromCode(notificationCode);
 
@@ -448,10 +447,10 @@ class TcpClientChannel implements ClientChannel {
             }
 
             if ((flags & ClientFlag.ERROR) != 0)
-                status = dataInput.readInt();
+                status = dataInput.spinReadInt();
         }
         else
-            status = dataInput.readInt();
+            status = dataInput.spinReadInt();
 
         int hdrSize = (int)(dataInput.totalBytesRead() - bytesReadOnStartMsg);
 
@@ -460,12 +459,12 @@ class TcpClientChannel implements ClientChannel {
 
         if (status == 0) {
             if (msgSize > hdrSize)
-                res = dataInput.read(msgSize - hdrSize);
+                res = dataInput.spinRead(msgSize - hdrSize);
         }
         else if (status == ClientStatus.SECURITY_VIOLATION)
             err = new ClientAuthorizationException();
         else {
-            resIn = new BinaryHeapInputStream(dataInput.read(msgSize - hdrSize));
+            resIn = new BinaryHeapInputStream(dataInput.spinRead(msgSize - hdrSize));
 
             String errMsg = ClientUtils.createBinaryReader(null, resIn).readString();
 
@@ -473,7 +472,7 @@ class TcpClientChannel implements ClientChannel {
         }
 
         if (notificationOp == null) { // Respone received.
-            ClientRequestFuture pendingReq = pendingReqs.get(resId);
+            ClientRequestFuture pendingReq = pendingReqs.remove(resId);
 
             if (pendingReq == null)
                 throw new ClientProtocolError(String.format("Unexpected response ID [%s]", resId));
@@ -713,47 +712,81 @@ class TcpClientChannel implements ClientChannel {
             this.in = in;
         }
 
+        /** Read bytes from the input stream. */
+        public byte[] read(int len) throws ClientConnectionException {
+            byte[] bytes = new byte[len];
+
+            read(bytes, len, 0);
+
+            return bytes;
+        }
+
+        /** Read bytes from the input stream. */
+        public byte[] spinRead(int len) {
+            byte[] bytes = new byte[len];
+
+            read(bytes, len, Integer.MAX_VALUE);
+
+            return bytes;
+        }
+
         /**
          * Read bytes from the input stream to the buffer.
          *
          * @param bytes Bytes buffer.
          * @param len Length.
+         * @param tryReadCnt Number of reads before falling into blocking read.
          */
-        private void read(byte[] bytes, int len) throws ClientConnectionException {
-            int bytesNum;
-            int readBytesNum = 0;
+        public void read(byte[] bytes, int len, int tryReadCnt) throws ClientConnectionException {
+            int offset = 0;
 
-            while (readBytesNum < len) {
-                try {
-                    bytesNum = in.read(bytes, readBytesNum, len - readBytesNum);
+            try {
+                while (offset < len) {
+                    int toRead;
+
+                    if (tryReadCnt == 0)
+                        toRead = len - offset;
+                    else if ((toRead = Math.min(in.available(), len - offset)) == 0) {
+                        tryReadCnt--;
+
+                        continue;
+                    }
+
+                    int read = in.read(bytes, offset, toRead);
+
+                    if (read < 0)
+                        throw handleIOError(null);
+
+                    offset += read;
+                    totalBytesRead += read;
                 }
-                catch (IOException e) {
-                    throw handleIOError(e);
-                }
-
-                if (bytesNum < 0)
-                    throw handleIOError(null);
-
-                readBytesNum += bytesNum;
             }
-
-            totalBytesRead += readBytesNum;
-        }
-
-        /** Read bytes from the input stream. */
-        public byte[] read(int len) throws ClientConnectionException {
-            byte[] bytes = new byte[len];
-
-            read(bytes, len);
-
-            return bytes;
+            catch (IOException e) {
+                throw handleIOError(e);
+            }
         }
 
         /**
          * Read long value from the input stream.
          */
         public long readLong() throws ClientConnectionException {
-            read(tmpBuf, Long.BYTES);
+            return readLong(0);
+        }
+
+        /**
+         * Read long value from the input stream.
+         */
+        public long spinReadLong() throws ClientConnectionException {
+            return readLong(Integer.MAX_VALUE);
+        }
+
+        /**
+         * Read long value from the input stream.
+         *
+         * @param tryReadCnt Number of reads before falling into blocking read.
+         */
+        private long readLong(int tryReadCnt) throws ClientConnectionException {
+            read(tmpBuf, Long.BYTES, tryReadCnt);
 
             return BinaryPrimitives.readLong(tmpBuf, 0);
         }
@@ -762,7 +795,23 @@ class TcpClientChannel implements ClientChannel {
          * Read int value from the input stream.
          */
         public int readInt() throws ClientConnectionException {
-            read(tmpBuf, Integer.BYTES);
+            return readInt(0);
+        }
+
+        /**
+         * Read int value from the input stream.
+         */
+        public int spinReadInt() throws ClientConnectionException {
+            return readInt(Integer.MAX_VALUE);
+        }
+
+        /**
+         * Read int value from the input stream.
+         *
+         * @param tryReadCnt Number of reads before falling into blocking read.
+         */
+        private int readInt(int tryReadCnt) throws ClientConnectionException {
+            read(tmpBuf, Integer.BYTES, tryReadCnt);
 
             return BinaryPrimitives.readInt(tmpBuf, 0);
         }
@@ -771,7 +820,23 @@ class TcpClientChannel implements ClientChannel {
          * Read short value from the input stream.
          */
         public short readShort() throws ClientConnectionException {
-            read(tmpBuf, Short.BYTES);
+            return readShort(0);
+        }
+
+        /**
+         * Read short value from the input stream.
+         */
+        public short spinReadShort() throws ClientConnectionException {
+            return readShort(Integer.MAX_VALUE);
+        }
+
+        /**
+         * Read short value from the input stream.
+         *
+         * @param tryReadCnt Number of reads before falling into blocking read.
+         */
+        public short readShort(int tryReadCnt) throws ClientConnectionException {
+            read(tmpBuf, Short.BYTES, tryReadCnt);
 
             return BinaryPrimitives.readShort(tmpBuf, 0);
         }

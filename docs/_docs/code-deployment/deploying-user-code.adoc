@@ -1,0 +1,96 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Deploying User Code
+:javaFile: {javaCodeDir}/UserCodeDeployment.java
+
+In addition to link:code-deployment/peer-class-loading[peer class loading], you can deploy user code by configuring `UriDeploymentSpi`. With this approach, you specify the location of your libraries in the node configuration.
+Ignite scans the location periodically and redeploys the classes if they change.
+The location may be a file system directory or an HTTP(S) location.
+When Ignite detects that the libraries are removed from the location, the classes are undeployed from the cluster.
+
+You can specify multiple locations (of different types) by providing both directory paths and http(s) URLs.
+
+//TODO NOTE: peer class loading vs. URL deployment
+
+
+== Deploying from a Local Directory
+
+To deploy libraries from a file system directory, add the directory path to the list of URIs in the `UriDeploymentSpi` configuration.
+The directory must exist on the nodes where it is specified and contain jar files with the classes you want to deploy.
+Note that the path must be specified using the "file://" scheme.
+You can specify different directories on different nodes.
+
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+include::code-snippets/xml/deployment.xml[tags=!*;ignite-config;from-local-dir, indent=0]
+----
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=from-local-dir, indent=0]
+----
+tab:C#/.NET[]
+
+tab:C++[]
+--
+
+You can pass the following parameter in the URL:
+
+[cols="1,2,1",opts="header"]
+|===
+|Parameter | Description | Default Value
+| `freq` |  Scanning frequency in milliseconds. | `5000`
+|===
+
+
+== Deploying from a URL
+
+To deploy libraries from an http(s) location, add the URL to the list of URIs in the `UriDeploymentSpi` configuration.
+
+Ignite parses the HTML file to find the HREF attributes of all `<a>` tags on the page.
+The references must point to the jar files you want to deploy.
+//It's important that only HTTP scanner uses the URLConnection.getLastModified() method to check if there were any changes since last iteration for each GAR-file before redeploying.
+
+[tabs]
+--
+tab:XML[]
+
+[source, xml]
+----
+include::code-snippets/xml/deployment.xml[tags=!*;ignite-config;from-url, indent=0]
+----
+
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=from-url, indent=0]
+----
+
+tab:C#/.NET[]
+tab:C++[]
+--
+
+You can pass the following parameter in the URL:
+
+[cols="1,2,1",opts="header"]
+|===
+|Parameter | Description | Default Value
+| `freq` |  Scanning frequency in milliseconds. | `300000`
+|===
+

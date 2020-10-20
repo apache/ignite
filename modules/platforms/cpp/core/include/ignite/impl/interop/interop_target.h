@@ -78,6 +78,16 @@ namespace ignite
                  * Internal out operation.
                  *
                  * @param opType Operation type.
+                 * @param inMem Input memory.
+                 * @param err Error.
+                 * @return Result.
+                 */
+                bool OutOp(int32_t opType, InteropMemory& inMem, IgniteError& err);
+
+                /**
+                 * Internal out operation.
+                 *
+                 * @param opType Operation type.
                  * @param inOp Input.
                  * @param err Error.
                  * @return Result.
@@ -145,6 +155,16 @@ namespace ignite
                 OperationResult::Type InStreamOutLong(int32_t opType, InteropMemory& outInMem, IgniteError& err);
 
                 /**
+                 * In stream out long operation.
+                 *
+                 * @param opType Type of operation.
+                 * @param inOp Input opeartion.
+                 * @param err Error.
+                 * @return Operation result or long value.
+                 */
+                int64_t InStreamOutLong(int32_t opType, InputOperation& inOp, IgniteError& err);
+
+                /**
                  * In stream out object operation.
                  *
                  * @param opType Type of operation.
@@ -153,6 +173,16 @@ namespace ignite
                  * @return Java object references.
                  */
                 jobject InStreamOutObject(int32_t opType, InteropMemory& outInMem, IgniteError& err);
+
+                /**
+                 * In stream out stream operation.
+                 *
+                 * @param opType Type of operation.
+                 * @param inMem Input memory.
+                 * @param outMem Output memory.
+                 * @param err Error.
+                 */
+                 void InStreamOutStream(int32_t opType, InteropMemory& inMem, InteropMemory& outMem, IgniteError& err);
 
                 /**
                 * Internal out-in operation.
@@ -204,7 +234,7 @@ namespace ignite
                 /** javaRef release flag. */
                 bool skipJavaRefRelease;
 
-                IGNITE_NO_COPY_ASSIGNMENT(InteropTarget)
+                IGNITE_NO_COPY_ASSIGNMENT(InteropTarget);
 
                 /**
                  * Write data to memory.
