@@ -111,9 +111,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestAffinityKeyMappedWithQueryEntity()
         {
-            var cacheCfg = new CacheConfiguration("mycache")
+            var cacheCfg = new CacheConfiguration(TestUtils.TestName)
             {
-                // Without QueryEntities tests passes.
                 QueryEntities = new List<QueryEntity>
                 {
                     new QueryEntity(typeof(QueryEntityKey), typeof(QueryEntityValue))
