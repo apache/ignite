@@ -1303,11 +1303,11 @@ public class PlatformCallbackGateway {
      *
      * @param memPtr Ptr to a stream with serialized type name. Result is returned in the same stream.
      */
-    public void binaryTypeGet(long memPtr) {
+    public long binaryTypeGet(long memPtr) {
         enter();
 
         try {
-            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.BinaryTypeGet, memPtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.BinaryTypeGet, memPtr);
         }
         finally {
             leave();

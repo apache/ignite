@@ -1238,16 +1238,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     var marsh = _ignite.Marshaller;
                     var typeName = marsh.StartUnmarshal(stream).ReadString();
-
-                    // TODO: Check if type was found.
                     var desc = marsh.GetDescriptor(typeName);
+
+                    if (desc == null || desc.Type == null)
+                        return 0;
+
                     var meta = new BinaryType(desc, marsh);
                     
                     stream.Reset();
                     marsh.Marshal(stream, w => BinaryProcessor.WriteBinaryType(w, meta));
+                    
+                    return 1;
                 }
-                
-                return 0;
             });
         }
 
