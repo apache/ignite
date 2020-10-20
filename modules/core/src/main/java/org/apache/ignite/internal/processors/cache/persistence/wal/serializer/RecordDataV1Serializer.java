@@ -1881,6 +1881,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         buf.putInt(entry.partitionId());
         buf.putLong(entry.partitionCounter());
         buf.putLong(entry.expireTime());
+        buf.put((byte)(entry.primary() ? 1 : 0));
     }
 
     /**
@@ -1985,6 +1986,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         int partId = in.readInt();
         long partCntr = in.readLong();
         long expireTime = in.readLong();
+        boolean primary = in.readByte() == 1;
 
         GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
@@ -2008,7 +2010,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     expireTime,
                     partId,
                     partCntr,
-                    true
+                    primary
             );
         }
         else
@@ -2025,7 +2027,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     expireTime,
                     partId,
                     partCntr,
-                    true);
+                    primary);
     }
 
     /**
@@ -2161,7 +2163,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             /*write ver*/CacheVersionIO.size(entry.writeVersion(), false) +
             /*part ID*/4 +
             /*expire Time*/8 +
-            /*part cnt*/8;
+            /*part cnt*/8 +
+            /*primary*/1;
     }
 
     /**

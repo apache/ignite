@@ -131,6 +131,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Backup count */
     private int backupCnt = 0;
 
+    /** DataEntry from primary flag. */
+    private boolean primary = true;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -270,7 +273,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                         KeyCacheObject key = entry.key();
                         CacheObject val = entry.value();
 
-                        assertTrue(entry.primary());
+                        assertEquals(primary, entry.primary());
 
                         if (DUMP_RECORDS)
                             log.info("Op: " + entry.op() + ", Key: " + key + ", Value: " + val);
@@ -1017,7 +1020,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         backupCnt = 0;
 
-        int cntEntries = 1000;
+        int cntEntries = 100;
 
         List<Integer> keys = findKeys(ignite.localNode(), cache, cntEntries, 0, 0);
 
@@ -1064,7 +1067,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             null, drHnd
         );
 
-/*
+        primary = false;
+
         scanIterateAndCount(
             factory,
             createIteratorParametersBuilder(workDir, subfolderName2)
@@ -1077,14 +1081,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             null,
             drHnd
         );
-*/
-        Integer createsFound = operationsFound.get(CREATE);
 
-        assertTrue("Create operations should be found in log: " + operationsFound,
-            createsFound != null && createsFound > 0);
-
-        assertTrue("Create operations count should be at least " + cntEntries + " in log: " + operationsFound,
-            createsFound >= cntEntries);
+        primary = true;
     }
 
     /**
@@ -1457,7 +1455,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                         List<DataEntry> entries = dataRecord.writeEntries();
 
                         for (DataEntry entry : entries) {
-                            assertTrue(entry.primary());
+                            assertEquals(primary, entry.primary());
 
                             GridCacheVersion globalTxId = entry.nearXidVersion();
 

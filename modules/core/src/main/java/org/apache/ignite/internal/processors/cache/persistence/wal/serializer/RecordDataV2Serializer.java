@@ -375,6 +375,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
         int partId = in.readInt();
         long partCntr = in.readLong();
         long expireTime = in.readLong();
+        boolean primary = in.readByte() == 1;
 
         MvccVersion mvccVer = txRecordSerializer.readMvccVersion(in);
 
@@ -401,7 +402,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 partId,
                 partCntr,
                 mvccVer,
-                true
+                primary
             );
         }
         else
@@ -419,7 +420,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 partId,
                 partCntr,
                 mvccVer,
-                true);
+                primary);
     }
 
     /** {@inheritDoc} */
