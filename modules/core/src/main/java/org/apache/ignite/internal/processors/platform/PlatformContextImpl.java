@@ -661,13 +661,11 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
             writer.writeString(typeName);
             out.synchronize();
 
-            gateway().binaryTypeGet(mem0.pointer());
+            if (gateway().binaryTypeGet(mem0.pointer()) == 0)
+                return null;
 
             PlatformInputStream in = mem0.input();
             in.synchronize();
-
-            if (!in.readBoolean())
-                return null;
 
             return PlatformUtils.readBinaryMetadata(reader(in));
         }
