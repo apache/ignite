@@ -187,14 +187,14 @@ class IgniteService(IgniteAwareService):
 
         node.account.ssh(f"cp -r {self.SNAPSHOT}/{snapshot_name}/db {self.WORK_DIR}", allow_fail=False)
 
-    def await_rebalance(self, timeout_sec=60):
+    def await_rebalance(self, timeout_sec=180):
         """
         Waiting for the rebalance to complete.
         """
         delta_time = datetime.now() + timedelta(seconds=timeout_sec)
 
         while datetime.now() < delta_time:
-            for node in self._cluster.nodes:
+            for node in self.nodes:
                 mbean = JmxClient(node).find_mbean('cluster')
                 rebalanced = bool(list(mbean.__getattr__('Rebalanced'))[0])
 

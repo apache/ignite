@@ -17,9 +17,9 @@
 This module contains Cellular Affinity tests.
 """
 
-import time
+import os
 from ducktape.mark.resource import cluster
-from ducktape.tests.status import FAIL
+
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
@@ -27,9 +27,8 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
+from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware, PersistenceAware
 from ignitetest.tests.cellular_affinity_test import start_cell
-from ignitetest.tests.snapshot_test import load
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -74,13 +73,12 @@ class TwoPhasedRebalancedTest(IgniteTest):
                                  cache_name=self.CACHE_NAME,
                                  data_storage=data_storage)
 
-        ControlUtility(cells[0], self.test_context).activate()
+        control_utility = ControlUtility(cells[0], self.test_context)
+        control_utility.activate()
 
-        client_config = IgniteConfiguration(
-            client_mode=True,
-            version=IgniteVersion(ignite_version),
-            discovery_spi=from_ignite_cluster(cells[0]),
-        )
+        client_config = IgniteConfiguration(client_mode=True,
+                                            version=IgniteVersion(ignite_version),
+                                            discovery_spi=from_ignite_cluster(cells[0]))
 
         streamer = IgniteApplicationService(
             self.test_context,
@@ -102,7 +100,8 @@ class TwoPhasedRebalancedTest(IgniteTest):
             }
         )
 
-        load(streamer, duration=300)
+        streamer.start()
+        streamer.await_stopped(15 * 60)
 
         node = cells[0].nodes[0]
         cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=30)
@@ -116,6 +115,10 @@ class TwoPhasedRebalancedTest(IgniteTest):
         deleter.await_stopped(timeout_sec=(15 * 60))
 
         cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=30)
+
+        control_utility.validate_indexes(check_assert=True)
+        dump_1 = control_utility.idle_verify_dump(node=node, return_path=True)
+        dump_1 = self.move_dump(node, dump_1)
 
         pds = self.pds_size(cells)
 
@@ -157,6 +160,14 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         self.logger.warn("After rebalancing complate on nodes 0, 1. PDS")
         self.logger.warn(pds)
+
+        control_utility.validate_indexes(check_assert=True)
+        dump_2 = control_utility.idle_verify_dump(node=node, return_path=True)
+        dump_2 = self.move_dump(node, dump_2)
+
+        diff = node.account.ssh_output(f'diff {dump_1} {dump_2}')
+        assert len(diff) == 0, diff
+
 
     def start_cells(self, ignite_version: str, cells_cnt: int, cell_nodes_cnt: int, cache_name: str,
                     data_storage: DataStorageConfiguration = None):
@@ -209,7 +220,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
                 cell.stop_node(node)
                 cell.remove(node, cell.WORK_DIR)
 
-    def start_idx_node_on_cell(self, cells: [IgniteService], *idx: int, timeout_sec=60):
+    def start_idx_node_on_cell(self, cells: [IgniteService], *idx: int, timeout_sec=180):
         for cell in cells:
             size = len(cell.nodes)
             for i in idx:
@@ -221,12 +232,21 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
                 cell.await_node_started(node, timeout_sec)
 
-    def copy_service_logs(self, test_status):
-        """
-        Copy logs from service nodes to the results directory.
-        If the the test failed, root directory will be collected too.
-        """
-        super().copy_service_logs(test_status=test_status)
+    # def copy_service_logs(self, test_status):
+    #     """
+    #     Copy logs from service nodes to the results directory.
+    #     If the the test failed, root directory will be collected too.
+    #     """
+    #     super().copy_service_logs(test_status=test_status)
+    #
+    #     if test_status == FAIL:
+    #         self.copy_ignite_root_dir()
 
-        if test_status == FAIL:
-            self.copy_ignite_root_dir()
+    def move_dump(self, node, dump_path: str):
+        """
+        Move dump file to logs directory.
+        @:return new path to dump_file.
+        """
+        node.account.ssh_output(f'mv {dump_path} {PersistenceAware.PATH_TO_LOGS_DIR}')
+
+        return dump_path.replace(IgnitePersistenceAware.WORK_DIR, PersistenceAware.PATH_TO_LOGS_DIR)
