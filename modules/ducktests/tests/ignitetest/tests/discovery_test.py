@@ -136,6 +136,8 @@ class DiscoveryTest(IgniteTest):
         return self._perform_node_fail_scenario(test_config)
 
     def _perform_node_fail_scenario(self, test_config):
+        results = {}
+
         modules = ['zookeeper'] if test_config.with_zk else None
 
         if test_config.with_zk:
@@ -159,6 +161,8 @@ class DiscoveryTest(IgniteTest):
 
         servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config, modules)
 
+        results['Ignite cluster start time (s)'] = start_servers_sec
+
         failed_nodes, survived_node = choose_node_to_kill(servers, test_config.nodes_to_kill,
                                                           test_config.sequential_failure)
 
@@ -177,14 +181,10 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
 
-        data = {}
+        results.update(self._simulate_nodes_failure(servers, node_fail_task(ignite_config, test_config), failed_nodes,
+                                                    survived_node))
 
-        data.update(self._simulate_nodes_failure(servers, node_fail_task(ignite_config, test_config), failed_nodes,
-                                                 survived_node))
-
-        data['Ignite cluster start time (s)'] = start_servers_sec
-
-        return data
+        return results
 
     def _simulate_nodes_failure(self, servers, kill_node_task, failed_nodes, survived_node):
         """
