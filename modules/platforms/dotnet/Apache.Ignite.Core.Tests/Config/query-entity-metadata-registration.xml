@@ -42,6 +42,19 @@
                         </list>
                     </property>
                 </bean>
+                
+                <!-- Query entity with key/value types that don't exist -->
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache2"/>
+                    <property name="queryEntities">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="keyType" value="Apache.Ignite.Core.Tests.Cache.Query.QueryEntityMetadataRegistrationTest+ERR"/>
+                                <property name="valueType" value="Apache.Ignite.Core.Tests.Cache.Query.QueryEntityMetadataRegistrationTest+ERR"/>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
             </list>
         </property>
 
