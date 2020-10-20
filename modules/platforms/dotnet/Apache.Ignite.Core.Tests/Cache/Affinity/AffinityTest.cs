@@ -98,10 +98,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
         }
 
+        /// <summary>
+        /// Tests that <see cref="AffinityKeyMappedAttribute"/> works when used on a property of a type that is
+        /// specified as <see cref="QueryEntity.KeyType"/> or <see cref="QueryEntity.ValueType"/> and
+        /// configured in a Spring XML file. 
+        /// </summary>
         [Test]
         public void TestAffinityKeyMappedWithQueryEntitySpringXml()
         {
-            // TODO
+            TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-0"), "cache1");
+            TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-1"), "cache1");
         }
 
         /// <summary>
@@ -118,11 +124,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                     new QueryEntity(typeof(QueryEntityKey), typeof(QueryEntityValue))
                 }
             };
-            
-            var ignite = Ignition.GetIgnite("grid-0");
 
-            ignite.GetOrCreateCache<QueryEntityKey, int>(cacheCfg);
-            var aff = ignite.GetAffinity(cacheCfg.Name);
+            Ignition.GetIgnite("grid-0").GetOrCreateCache<QueryEntityKey, int>(cacheCfg);
+            
+            TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-0"), cacheCfg.Name);
+            TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-1"), cacheCfg.Name);
+        }
+
+        /// <summary>
+        /// Checks affinity mapping.
+        /// </summary>
+        private static void TestAffinityKeyMappedWithQueryEntity0(IIgnite ignite, string cacheName)
+        {
+            var aff = ignite.GetAffinity(cacheName);
 
             var key1 = new QueryEntityKey {Data = "data1", AffinityKey = 1};
             var key2 = new QueryEntityKey {Data = "data2", AffinityKey = 1};

@@ -33,7 +33,6 @@
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache1"/>
-
                     <property name="queryEntities">
                         <list>
                             <bean class="org.apache.ignite.cache.QueryEntity">
