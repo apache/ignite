@@ -105,8 +105,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         }
 
         /// <summary>
-        /// Tests AffinityKeyMapped attribute should map to the same partitions
-        /// for the same field value.
+        /// Tests that <see cref="AffinityKeyMappedAttribute"/> works when used on a property of a type that is
+        /// specified as <see cref="QueryEntity.KeyType"/> or <see cref="QueryEntity.ValueType"/>. 
         /// </summary>
         [Test]
         public void TestAffinityKeyMappedWithQueryEntity()
