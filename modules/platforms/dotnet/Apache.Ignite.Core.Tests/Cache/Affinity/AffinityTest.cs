@@ -126,12 +126,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             };
 
             var cache = Ignition.GetIgnite("grid-0").GetOrCreateCache<QueryEntityKey, QueryEntityValue>(cacheCfg);
+            var cache2 = Ignition.GetIgnite("grid-1").GetOrCreateCache<QueryEntityKey, QueryEntityValue>(cacheCfg);
 
             TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-0"), cacheCfg.Name);
             TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-1"), cacheCfg.Name);
 
-            // TODO: Check put/get
-            cache[new QueryEntityKey {Data = "x", AffinityKey = 123}] = new QueryEntityValue {Name = "y", AffKey = 321};
+            // Check put/get.
+            var key = new QueryEntityKey {Data = "x", AffinityKey = 123};
+            cache[key] = new QueryEntityValue {Name = "y", AffKey = 321};
+
+            var val = cache2[key];
+            Assert.AreEqual("y", val.Name);
+            Assert.AreEqual(321, val.AffKey);
         }
 
         /// <summary>

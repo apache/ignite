@@ -201,6 +201,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private class Key1
         {
             /** */
+            [QuerySqlField]
             public string Foo;
 
             /** */
@@ -212,9 +213,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private class Value1
         {
             /** */
+            [QuerySqlField]
             public string Name { get; set; }
             
             /** */
+            [QuerySqlField]
             public long Value { get; set; }
         }
         
