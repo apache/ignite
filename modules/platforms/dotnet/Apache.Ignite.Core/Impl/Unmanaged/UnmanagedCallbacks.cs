@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
@@ -220,6 +221,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.OnAffinityTopologyVersionChanged, OnAffinityTopologyVersionChanged);
             AddHandler(UnmanagedCallbackOp.ComputeOutFuncExecute, ComputeOutFuncExecute);
             AddHandler(UnmanagedCallbackOp.ComputeActionExecute, ComputeActionExecute);
+            AddHandler(UnmanagedCallbackOp.BinaryTypeGet, BinaryTypeGet);
         }
 
         /// <summary>
@@ -1226,6 +1228,27 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             _ignite.PluginProcessor.Stop(val != 0);
 
             return 0;
+        }
+        
+        private long BinaryTypeGet(long memPtr)
+        {
+            return SafeCall(() =>
+            {
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var marsh = _ignite.Marshaller;
+                    var typeName = marsh.StartUnmarshal(stream).ReadString();
+
+                    // TODO: Check if type was found.
+                    var desc = marsh.GetDescriptor(typeName);
+                    var meta = new BinaryType(desc, marsh);
+                    
+                    stream.Reset();
+                    marsh.Marshal(stream, w => BinaryProcessor.WriteBinaryType(w, meta));
+                }
+                
+                return 0;
+            });
         }
 
         #endregion
