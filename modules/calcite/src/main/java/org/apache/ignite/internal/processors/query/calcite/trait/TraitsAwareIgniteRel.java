@@ -20,59 +20,23 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.DeriveMode;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
-
 /** */
 public interface TraitsAwareIgniteRel extends IgniteRel {
     /** {@inheritDoc} */
     @Override public default RelNode passThrough(RelTraitSet required) {
-        required = fixTraits(required);
-
-        List<RelNode> nodes = TraitsPropagationContext.forPassingThrough(this, required)
-            .propagate(this::passThroughCollation)
-            .propagate(this::passThroughDistribution)
-            .propagate(this::passThroughRewindability)
-            .nodes(this::createNode);
-
-        RelOptPlanner planner = getCluster().getPlanner();
-
-        assert planner instanceof VolcanoPlanner;
-
-        for (RelNode node : nodes) {
-            RelTraitSet traits = node.getTraitSet();
-
-            // try to fix traits somehow.
-            if (!traits.satisfies(required))
-                node = TraitUtils.enforce(node, required);
-
-            if (node != null) {
-                boolean satisfies = node.getTraitSet().satisfies(required);
-
-                assert satisfies : "current rel=" + getRelTypeName() + ", traits=" + traits + ", required=" + required;
-
-                planner.register(node, this);
-            }
-        }
-
-        return RelOptRule.convert(this, required);
+        return TraitUtils.passThrough(this, required);
     }
 
     /** {@inheritDoc} */
     @Override public default List<RelNode> derive(List<List<RelTraitSet>> inTraits) {
-        return TraitsPropagationContext.forDerivation(this, inTraits)
-            .propagate(this::deriveCollation)
-            .propagate(this::deriveDistribution)
-            .propagate(this::deriveRewindability)
-            .nodes(this::createNode);
+        return TraitUtils.derive(this, inTraits);
     }
 
     /** {@inheritDoc} */

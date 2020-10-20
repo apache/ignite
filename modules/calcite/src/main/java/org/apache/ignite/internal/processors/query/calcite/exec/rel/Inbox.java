@@ -216,7 +216,7 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
     /** */
     private void pushOrdered() throws IgniteCheckedException {
          PriorityQueue<Pair<Row, Buffer>> heap =
-            new PriorityQueue<>(buffers.size(), Map.Entry.comparingByKey(comp));
+            new PriorityQueue<>(Math.max(buffers.size(), 1), Map.Entry.comparingByKey(comp));
 
         Iterator<Buffer> it = buffers.iterator();
 

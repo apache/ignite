@@ -176,8 +176,6 @@ public class RexUtils {
             if (F.isEmpty(collFldPreds))
                 break;
 
-            boolean lowerBoundBelow = !fc.getDirection().isDescending();
-
             RexNode bestUpper = null;
             RexNode bestLower = null;
 
@@ -188,6 +186,7 @@ public class RexUtils {
                     assert idxOpSupports(cond) : cond;
                 }
 
+                boolean lowerBoundBelow = !fc.getDirection().isDescending();
                 SqlOperator op = pred.getOperator();
                 switch (op.kind) {
                     case EQUALS:

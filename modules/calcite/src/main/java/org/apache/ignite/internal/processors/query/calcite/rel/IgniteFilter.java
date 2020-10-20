@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -33,7 +32,6 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
  * Relational expression that iterates over its input
@@ -73,7 +71,8 @@ public class IgniteFilter extends Filter implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
-        required = fixTraits(required);
+        if (required.getConvention() != IgniteConvention.INSTANCE)
+            return null;
 
         return Pair.of(required, ImmutableList.of(required));
     }
@@ -82,7 +81,8 @@ public class IgniteFilter extends Filter implements IgniteRel {
     @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
         assert childId == 0;
 
-        childTraits = fixTraits(childTraits);
+        if (childTraits.getConvention() != IgniteConvention.INSTANCE)
+            return null;
 
         return Pair.of(childTraits, ImmutableList.of(childTraits));
     }

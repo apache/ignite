@@ -17,35 +17,41 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import org.apache.calcite.rel.rules.AggregateReduceFunctionsRule;
-import org.apache.calcite.rel.rules.JoinCommuteRule;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rel.logical.LogicalJoin;
+import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.logical.LogicalSort;
+import org.apache.calcite.rel.rules.AggregateMergeRule;
+import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule;
+import org.apache.calcite.rel.rules.FilterJoinRule.JoinConditionPushRule;
+import org.apache.calcite.rel.rules.FilterMergeRule;
+import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
+import org.apache.calcite.rel.rules.JoinPushExpressionsRule;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
+import org.apache.calcite.rel.rules.ProjectMergeRule;
+import org.apache.calcite.rel.rules.ProjectRemoveRule;
 import org.apache.calcite.rel.rules.SortRemoveRule;
-import org.apache.calcite.rel.rules.SubQueryRemoveRule;
-import org.apache.calcite.rel.rules.UnionMergeRule;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.ignite.internal.processors.query.calcite.rule.AggregateConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.CorrelatedNestedLoopJoinConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.ExposeIndexRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.CorrelatedNestedLoopJoinRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.FilterScanMergeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.NestedLoopJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.ProjectScanMergeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterJoinRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalFilterMergeRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalFilterProjectTransposeRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.ExposeIndexRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterScanMergeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalOrToUnionRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalProjectMergeRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalProjectRemoveRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.ProjectScanMergeRule;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.cbo;
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.hep;
@@ -59,9 +65,9 @@ public enum PlannerPhase {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
             return RuleSets.ofList(
-                SubQueryRemoveRule.FILTER,
-                SubQueryRemoveRule.PROJECT,
-                SubQueryRemoveRule.JOIN);
+                CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
+                CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
+                CoreRules.JOIN_SUB_QUERY_TO_CORRELATE);
         }
 
         /** {@inheritDoc} */
@@ -75,36 +81,80 @@ public enum PlannerPhase {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
             return RuleSets.ofList(
+                FilterMergeRule.Config.DEFAULT
+                    .withOperandFor(LogicalFilter.class).toRule(),
+
+                JoinPushThroughJoinRule.Config.LEFT
+                    .withOperandFor(LogicalJoin.class).toRule(),
+
+                JoinPushThroughJoinRule.Config.RIGHT
+                    .withOperandFor(LogicalJoin.class).toRule(),
+
+                JoinPushExpressionsRule.Config.DEFAULT
+                    .withOperandFor(LogicalJoin.class).toRule(),
+
+                JoinConditionPushRule.Config.DEFAULT
+                    .withOperandSupplier(b -> b.operand(LogicalJoin.class)
+                        .anyInputs()).toRule(),
+
+                FilterIntoJoinRule.Config.DEFAULT
+                    .withOperandSupplier(b0 ->
+                        b0.operand(LogicalFilter.class).oneInput(b1 ->
+                            b1.operand(LogicalJoin.class).anyInputs())).toRule(),
+
+                FilterProjectTransposeRule.Config.DEFAULT
+                    .withOperandFor(LogicalFilter.class, f -> true, LogicalProject.class, p -> true).toRule(),
+
+                ProjectFilterTransposeRule.Config.DEFAULT
+                    .withOperandFor(LogicalProject.class, LogicalFilter.class).toRule(),
+
+                ProjectMergeRule.Config.DEFAULT
+                    .withOperandFor(LogicalProject.class).toRule(),
+
+                ProjectRemoveRule.Config.DEFAULT
+                    .withOperandSupplier(b ->
+                        b.operand(LogicalProject.class)
+                            .predicate(ProjectRemoveRule::isTrivial)
+                            .anyInputs()).toRule(),
+
+                AggregateMergeRule.Config.DEFAULT
+                    .withOperandSupplier(b0 ->
+                        b0.operand(LogicalAggregate.class)
+                            .oneInput(b1 ->
+                                b1.operand(LogicalAggregate.class)
+                                    .predicate(Aggregate::isSimple)
+                                    .anyInputs())).toRule(),
+
+                SortRemoveRule.Config.DEFAULT
+                    .withOperandSupplier(b ->
+                        b.operand(LogicalSort.class)
+                            .anyInputs()).toRule(),
+
+                CoreRules.UNION_MERGE,
+                CoreRules.UNION_REMOVE,
+                CoreRules.JOIN_COMMUTE,
+                CoreRules.AGGREGATE_REMOVE,
+                CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
+
+                ExposeIndexRule.INSTANCE,
+                ProjectScanMergeRule.TABLE_SCAN,
+                ProjectScanMergeRule.INDEX_SCAN,
+                FilterScanMergeRule.TABLE_SCAN,
+                FilterScanMergeRule.INDEX_SCAN,
+
+                LogicalOrToUnionRule.INSTANCE,
+                CorrelatedNestedLoopJoinRule.INSTANCE,
+
                 ValuesConverterRule.INSTANCE,
                 LogicalScanConverterRule.INDEX_SCAN,
                 LogicalScanConverterRule.TABLE_SCAN,
-                ExposeIndexRule.INSTANCE,
                 AggregateConverterRule.INSTANCE,
                 NestedLoopJoinConverterRule.INSTANCE,
-                CorrelatedNestedLoopJoinConverterRule.INSTANCE,
-                FilterJoinRule.PUSH_JOIN_CONDITION,
-                FilterJoinRule.FILTER_ON_JOIN,
                 ProjectConverterRule.INSTANCE,
-                LogicalProjectMergeRule.INSTANCE,
-                LogicalProjectRemoveRule.INSTANCE,
-                ProjectScanMergeRule.TABLE_SCAN,
-                ProjectScanMergeRule.INDEX_SCAN,
                 FilterConverterRule.INSTANCE,
-                LogicalFilterMergeRule.INSTANCE,
-                LogicalFilterProjectTransposeRule.INSTANCE,
-                FilterScanMergeRule.TABLE_SCAN,
-                FilterScanMergeRule.INDEX_SCAN,
                 TableModifyConverterRule.INSTANCE,
-                ProjectFilterTransposeRule.INSTANCE,
-                LogicalOrToUnionRule.INSTANCE,
-                UnionMergeRule.INSTANCE,
                 UnionConverterRule.INSTANCE,
-                SortConverterRule.INSTANCE,
-                JoinCommuteRule.INSTANCE,
-                JoinPushThroughJoinRule.LEFT,
-                JoinPushThroughJoinRule.RIGHT,
-                AggregateReduceFunctionsRule.INSTANCE,
-                SortRemoveRule.INSTANCE);
+                SortConverterRule.INSTANCE);
         }
 
         /** {@inheritDoc} */

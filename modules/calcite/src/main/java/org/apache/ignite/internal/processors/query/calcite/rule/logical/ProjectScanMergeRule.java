@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.rule;
+package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;

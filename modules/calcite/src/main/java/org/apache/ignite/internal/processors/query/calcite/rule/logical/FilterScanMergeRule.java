@@ -14,12 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.rule;
+package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -33,7 +31,6 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
-import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.mapping.Mappings;
@@ -44,7 +41,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Rule that pushes filter into the scan. This might be useful for index range scans.
@@ -81,6 +77,12 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
             operand(tableClass, none())),
             RelFactories.LOGICAL_BUILDER,
             desc);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean matches(RelOptRuleCall call) {
+        T rel = call.rel(1);
+        return rel.condition() == null;
     }
 
     /** {@inheritDoc} */
@@ -131,31 +133,11 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
             remaining = RexUtil.composeConjunction(builder, remaining0, true);
         }
 
-        RexSimplify simplifier = RexUtils.simplifier(cluster);
-
-        // Let's remove from the condition common with the scan filter parts.
-        condition = simplifier
-            .withPredicates(mq.getPulledUpPredicates(scan))
-            .simplifyUnknownAsFalse(condition);
-
         // We need to replace RexInputRef with RexLocalRef because TableScan doesn't have inputs.
-        condition = RexUtils.replaceInputRefs(condition);
-
-        // Combine the condition with the scan filter.
-        condition = RexUtil.composeConjunction(builder, F.asList(condition, scan.condition()));
-
-        // Final simplification. We need several phases because simplifier sometimes
-        // (see RexSimplify.simplifyGenericNode) leaves UNKNOWN nodes that can be
-        // eliminated on next simplify attempt. We limit attempts count not to break
-        // planning performance on complex condition.
-        Set<RexNode> nodes = new HashSet<>();
-        while (nodes.add(condition) && nodes.size() < 3)
-            condition = simplifier.simplifyUnknownAsFalse(condition);
+        // TODO SEARCH support
+        condition = RexUtils.replaceInputRefs(RexUtil.expandSearch(builder, null, condition));
 
         RelNode res = createNode(cluster, scan, condition);
-
-        if (res == null)
-            return;
 
         if (remaining != null) {
             res = relBuilderFactory.create(cluster, null)

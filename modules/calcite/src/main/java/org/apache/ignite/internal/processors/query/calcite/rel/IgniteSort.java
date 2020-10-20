@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -31,7 +30,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
  * Ignite sort operator.
@@ -77,23 +75,27 @@ public class IgniteSort extends Sort implements IgniteRel {
     }
 
     /** {@inheritDoc} */
+    @Override public RelCollation collation() {
+        return collation;
+    }
+
+    /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
-        required = fixTraits(required);
+        if (isEnforcer() || required.getConvention() != IgniteConvention.INSTANCE)
+            return null;
 
         RelCollation collation = TraitUtils.collation(required);
 
-        if (!collation().satisfies(collation))
-            return null;
-
-        return Pair.of(required.replace(collation()), ImmutableList.of(required.replace(RelCollations.EMPTY)));
+        return Pair.of(required.replace(collation), ImmutableList.of(required.replace(RelCollations.EMPTY)));
     }
 
     /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
         assert childId == 0;
 
-        childTraits = fixTraits(childTraits);
+        if (isEnforcer() || childTraits.getConvention() != IgniteConvention.INSTANCE)
+            return null;
 
-        return Pair.of(childTraits.replace(collation()), ImmutableList.of(childTraits.replace(RelCollations.EMPTY)));
+        return Pair.of(childTraits.replace(collation()), ImmutableList.of(childTraits));
     }
 }

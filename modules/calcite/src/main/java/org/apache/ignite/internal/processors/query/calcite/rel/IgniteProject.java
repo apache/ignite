@@ -113,8 +113,6 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         ImmutableIntList keys = distribution.getKeys();
         List<Integer> srcKeys = new ArrayList<>(keys.size());
 
-        distribution = distribution.apply(mapping);
-
         for (int key : keys) {
             int src = mapping.getSourceOpt(key);
 

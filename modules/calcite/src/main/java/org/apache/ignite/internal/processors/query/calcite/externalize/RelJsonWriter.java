@@ -22,13 +22,11 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
-import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteException;
@@ -76,9 +74,7 @@ public class RelJsonWriter implements RelWriter {
 
     /** {@inheritDoc} */
     @Override public final void explain(RelNode rel, List<Pair<String, Object>> valueList) {
-        try (RexNode.Closeable ignored = withRexNormalize()) {
-            explain_(rel, valueList);
-        }
+        explain_(rel, valueList);
     }
 
     /** {@inheritDoc} */
@@ -107,7 +103,7 @@ public class RelJsonWriter implements RelWriter {
 
     /** */
     public String asString() {
-        try (RexNode.Closeable ignored = withRexNormalize()) {
+        try {
             StringWriter writer = new StringWriter();
             ObjectMapper mapper = new ObjectMapper();
 

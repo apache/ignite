@@ -94,7 +94,7 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
 
         RelTraitSet in = inputTraits.get(0);
 
-        ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
+        List<Pair<RelTraitSet, List<RelTraitSet>>> res = new ArrayList<>();
 
         IgniteDistribution distribution = TraitUtils.distribution(nodeTraits);
 
@@ -103,10 +103,10 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
         switch (distrType) {
             case SINGLETON:
             case BROADCAST_DISTRIBUTED:
-                b.add(Pair.of(nodeTraits, ImmutableList.of(in.replace(distribution))));
+                res.add(Pair.of(nodeTraits, ImmutableList.of(in.replace(distribution))));
 
                 if (isSimple(this))
-                    b.add(Pair.of(nodeTraits, ImmutableList.of(in.replace(random())))); // Map-reduce aggregate
+                    res.add(Pair.of(nodeTraits, ImmutableList.of(in.replace(random())))); // Map-reduce aggregate
 
                 break;
 
@@ -115,12 +115,8 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
                     IgniteDistribution outDistr = hash(range(0, groupSet.cardinality()));
                     IgniteDistribution inDistr = hash(groupSet.asList());
 
-                    b.add(Pair.of(nodeTraits.replace(outDistr), ImmutableList.of(in.replace(inDistr))));
-
-                    break;
+                    res.add(Pair.of(nodeTraits.replace(outDistr), ImmutableList.of(in.replace(inDistr))));
                 }
-
-                b.add(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
 
                 break;
 
@@ -143,13 +139,11 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
                     }
 
                     if (srcKeys.size() == keys.size()) {
-                        b.add(Pair.of(nodeTraits, ImmutableList.of(in.replace(hash(srcKeys, distribution.function())))));
+                        res.add(Pair.of(nodeTraits, ImmutableList.of(in.replace(hash(srcKeys, distribution.function())))));
 
                         break;
                     }
                 }
-
-                b.add(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
 
                 break;
 
@@ -157,7 +151,10 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
                 break;
         }
 
-        return b.build();
+        if (!res.isEmpty())
+            return res;
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
     }
 
     /** {@inheritDoc} */
@@ -191,7 +188,7 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
 
         RelTraitSet in = inputTraits.get(0);
 
-        ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
+        List<Pair<RelTraitSet, List<RelTraitSet>>> res = new ArrayList<>();
 
         IgniteDistribution distribution = TraitUtils.distribution(in);
 
@@ -200,7 +197,7 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
         switch (distrType) {
             case SINGLETON:
             case BROADCAST_DISTRIBUTED:
-                b.add(Pair.of(nodeTraits.replace(distribution), ImmutableList.of(in)));
+                res.add(Pair.of(nodeTraits.replace(distribution), ImmutableList.of(in)));
 
                 break;
 
@@ -214,32 +211,19 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
 
                         IgniteDistribution outDistr = distribution.apply(mapping);
 
-                        if (outDistr.getType() == HASH_DISTRIBUTED) {
-                            b.add(Pair.of(nodeTraits.replace(outDistr), ImmutableList.of(in)));
-
-                            break;
-                        }
+                        if (outDistr.getType() == HASH_DISTRIBUTED)
+                            res.add(Pair.of(nodeTraits.replace(outDistr), ImmutableList.of(in)));
                     }
-
-                    b.add(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(random()))));
-
-                    break;
                 }
-
-                b.add(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
 
                 break;
 
             case RANDOM_DISTRIBUTED:
                 // Map-reduce aggregates
                 if (isSimple(this)) {
-                    b.add(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(random()))));
-                    b.add(Pair.of(nodeTraits.replace(broadcast()), ImmutableList.of(in.replace(random()))));
-
-                    break;
+                    res.add(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(random()))));
+                    res.add(Pair.of(nodeTraits.replace(broadcast()), ImmutableList.of(in.replace(random()))));
                 }
-
-                b.add(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
 
                 break;
 
@@ -247,7 +231,10 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
                 break;
         }
 
-        return b.build();
+        if (!res.isEmpty())
+            return res;
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
     }
 
     /** {@inheritDoc} */

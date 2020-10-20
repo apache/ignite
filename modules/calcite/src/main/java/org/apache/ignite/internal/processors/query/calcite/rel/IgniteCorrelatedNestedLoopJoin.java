@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 import java.util.Set;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
@@ -97,33 +96,26 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
             ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(RelCollations.EMPTY))));
     }
 
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits) {
+        return super.deriveDistribution(nodeTraits, inputTraits);
+    }
+
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits) {
+        return super.passThroughDistribution(nodeTraits, inputTraits);
+    }
+
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // Correlated nested loop requires rewindable right edge.
 
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
-        ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
+        RewindabilityTrait rewindability = TraitUtils.rewindability(left);
 
-        RewindabilityTrait leftRewindability = TraitUtils.rewindability(left);
-
-        RelTraitSet outTraits, leftTraits, rightTraits;
-
-        outTraits = nodeTraits.replace(RewindabilityTrait.ONE_WAY);
-        leftTraits = left.replace(RewindabilityTrait.ONE_WAY);
-        rightTraits = right.replace(RewindabilityTrait.REWINDABLE);
-
-        b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-        if (leftRewindability.rewindable()) {
-            outTraits = nodeTraits.replace(RewindabilityTrait.REWINDABLE);
-            leftTraits = left.replace(RewindabilityTrait.REWINDABLE);
-            rightTraits = right.replace(RewindabilityTrait.REWINDABLE);
-
-            b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-        }
-
-        return b.build();
+        return ImmutableList.of(Pair.of(nodeTraits.replace(rewindability),
+            ImmutableList.of(left, right.replace(RewindabilityTrait.REWINDABLE))));
     }
 
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
@@ -143,15 +135,10 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
 
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
-        RelTraitSet outTraits, leftTraits, rightTraits;
-
         RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
 
-        outTraits = nodeTraits.replace(rewindability);
-        leftTraits = left.replace(rewindability);
-        rightTraits = right.replace(RewindabilityTrait.REWINDABLE);
-
-        return ImmutableList.of(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+        return ImmutableList.of(Pair.of(nodeTraits.replace(rewindability),
+            ImmutableList.of(left.replace(rewindability), right.replace(RewindabilityTrait.REWINDABLE))));
     }
 
     /** {@inheritDoc} */
