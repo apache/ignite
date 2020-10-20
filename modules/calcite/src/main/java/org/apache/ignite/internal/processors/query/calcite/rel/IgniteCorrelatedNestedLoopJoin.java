@@ -96,16 +96,6 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
             ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(RelCollations.EMPTY))));
     }
 
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits,
-        List<RelTraitSet> inputTraits) {
-        return super.deriveDistribution(nodeTraits, inputTraits);
-    }
-
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits,
-        List<RelTraitSet> inputTraits) {
-        return super.passThroughDistribution(nodeTraits, inputTraits);
-    }
-
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // Correlated nested loop requires rewindable right edge.
