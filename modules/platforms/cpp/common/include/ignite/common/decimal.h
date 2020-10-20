@@ -409,7 +409,7 @@ namespace ignite
                     is.ignore();
                     c = is.peek();
 
-                    if (part >= 1000000000000000000ULL)
+                    if (part >= 1000000000000000000U)
                     {
                         common::BigInteger::GetPowerOfTen(partDigits, pow);
                         mag.Multiply(pow, mag);
