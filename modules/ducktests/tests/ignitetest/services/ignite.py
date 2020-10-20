@@ -22,7 +22,7 @@ import operator
 import os
 import signal
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from threading import Thread
 
 from time import monotonic
@@ -31,6 +31,7 @@ from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.utils.jmx_utils import JmxClient
 
 
 class IgniteService(IgniteAwareService):
@@ -185,6 +186,27 @@ class IgniteService(IgniteAwareService):
         assert len(self.pids(node)) == 0
 
         node.account.ssh(f"cp -r {self.SNAPSHOT}/{snapshot_name}/db {self.WORK_DIR}", allow_fail=False)
+
+    def await_rebalance(self, timeout_sec=60):
+        """
+        Waiting for the rebalance to complete.
+        """
+        delta_time = datetime.now() + timedelta(seconds=timeout_sec)
+
+        while datetime.now() < delta_time:
+            for node in self._cluster.nodes:
+                mbean = JmxClient(node).find_mbean('cluster')
+                rebalanced = bool(list(mbean.__getattr__('Rebalanced'))[0])
+
+                self.logger.debug(f'Hostname={node.account.hostname}, '
+                                  f'Rebalanced={rebalanced}')
+
+                if rebalanced:
+                    return
+
+            time.sleep(1)
+
+        raise TimeoutError(f'Rebalancing was not completed within the time {timeout_sec}')
 
     def thread_dump(self, node):
         """

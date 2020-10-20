@@ -38,7 +38,7 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cacheName);
 
-        int cnt = 0;
+        log.info(">>> Cache size before: " + cache.size());
 
         markInitialized();
 
@@ -47,6 +47,8 @@ public class DeleteDataApplication extends IgniteAwareApplication {
         Iterator<Cache.Entry<Object, Object>> iter = cache.iterator();
 
         Set<Object> keys = new HashSet<>();
+
+        int cnt = 0;
 
         while (iter.hasNext() && cnt < iterSize) {
             keys.add(iter.next().getKey());
@@ -58,7 +60,7 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
         cache.removeAll(keys);
 
-        log.info(">>> Cache size: " + cache.size());
+        log.info(">>> Cache size after: " + cache.size());
 
         recordResult("DURATION", System.currentTimeMillis() - start);
 

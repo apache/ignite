@@ -115,23 +115,23 @@ class TwoPhasedRebalancedTest(IgniteTest):
         deleter.start()
         deleter.await_stopped(timeout_sec=(15 * 60))
 
+        cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=30)
+
         pds = self.pds_size(cells)
 
-        self.logger.warn("Delete 80%, PDS")
+        self.logger.warn("After Delete 80%, PDS")
         self.logger.warn(pds)
 
         self.stop_clean_idx_node_on_cell(cells, 2, 3)
 
         self.start_idx_node_on_cell(cells, 2, 3)
 
-        cells[0].await_event('Skipping rebalancing (nothing scheduled)', timeout_sec=5 * 60)
+        cells[0].await_rebalance(timeout_sec=15 * 60)
 
-        pds = self.pds_size(cells)
-
-        self.logger.warn("Clean and restart nodes 2, 3. PDS")
-        self.logger.warn(pds)
-
-        time.sleep(5 * 60)
+        # pds = self.pds_size(cells)
+        #
+        # self.logger.warn("Clean and restart nodes 2, 3. PDS")
+        # self.logger.warn(pds)
 
         pds = self.pds_size(cells)
 
@@ -142,16 +142,16 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         self.start_idx_node_on_cell(cells, 0, 1)
 
-        cells[0].await_event('Skipping rebalancing (nothing scheduled)', timeout_sec=5 * 60)
+        cells[0].await_rebalance(timeout_sec=15 * 60)
 
-        pds = self.pds_size(cells)
+        # pds = self.pds_size(cells)
 
-        self.logger.warn("Clean and restart nodes 0, 1. PDS")
-        self.logger.warn(pds)
-
-        # cells[0].await_event()
-
-        time.sleep(5 * 60)
+        # self.logger.warn("Clean and restart nodes 0, 1. PDS")
+        # self.logger.warn(pds)
+        #
+        # # cells[0].await_event()
+        #
+        # time.sleep(5 * 60)
 
         pds = self.pds_size(cells)
 
