@@ -111,29 +111,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestAffinityKeyMappedWithQueryEntity()
         {
-            // Cause:
-            // * CacheObjectBinaryProcessorImpl.java:1086 caches empty value
-            // * It is called from QueryUtils.java:527 on cache start
-            
-            // Java does not have this problem:
-            // * GridQueryProcessor#registerBinaryMetadata scans all query entities and registers binary meta
-            //   for key and val classes.
-            
-            // Possible fixes:
-            // * Register binary types manually from .NET side on cache creation
-            //   - Pros: pure .NET fix, simple
-            //   - Cons: race condition (meta is registered after cache is ready)
-            // * Callback to Platforms from GridQueryProcessor#registerBinaryMetadata
-            
-            // TODO:
-            // * Affinity key field name is used for queries (how?) - add a test for that as well
-            //   (see where GridQueryTypeDescriptor#affinityKey is used - we should ensure it is passed correctly).
-            
-            // TODO:
-            // * Spring XML can be used to specify .NET types in QueryEntity - add test for that
-            //   Example: cache-query-continuous.xml
-            IIgnite g = Ignition.GetIgnite("grid-0");
-
             var cacheCfg = new CacheConfiguration("mycache")
             {
                 // Without QueryEntities tests passes.
@@ -142,12 +119,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                     new QueryEntity(typeof(MyKey), typeof(int))
                 }
             };
-            g.GetOrCreateCache<MyKey, int>(cacheCfg);
+            
+            var ignite = Ignition.GetIgnite("grid-0");
+
+            ignite.GetOrCreateCache<MyKey, int>(cacheCfg);
+            var aff = ignite.GetAffinity(cacheCfg.Name);
 
             var key1 = new MyKey {Data = "data1", AffinityKey = 1};
             var key2 = new MyKey {Data = "data2", AffinityKey = 1};
 
-            ICacheAffinity aff = g.GetAffinity(cacheCfg.Name);
             Assert.AreEqual(aff.GetPartition(key1), aff.GetPartition(key2));
         }
 
