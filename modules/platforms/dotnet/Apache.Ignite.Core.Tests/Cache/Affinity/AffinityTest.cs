@@ -128,7 +128,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             var key1 = new QueryEntityKey {Data = "data1", AffinityKey = 1};
             var key2 = new QueryEntityKey {Data = "data2", AffinityKey = 1};
 
+            var val1 = new QueryEntityValue {Name = "foo", AffKey = 100};
+            var val2 = new QueryEntityValue {Name = "bar", AffKey = 100};
+
             Assert.AreEqual(aff.GetPartition(key1), aff.GetPartition(key2));
+            Assert.AreEqual(aff.GetPartition(val1), aff.GetPartition(val2));
         }
 
         /// <summary>
