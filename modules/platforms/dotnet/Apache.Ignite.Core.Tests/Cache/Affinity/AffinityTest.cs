@@ -116,29 +116,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 // Without QueryEntities tests passes.
                 QueryEntities = new List<QueryEntity>
                 {
-                    new QueryEntity(typeof(MyKey), typeof(int))
+                    new QueryEntity(typeof(QueryEntityKey), typeof(QueryEntityValue))
                 }
             };
             
             var ignite = Ignition.GetIgnite("grid-0");
 
-            ignite.GetOrCreateCache<MyKey, int>(cacheCfg);
+            ignite.GetOrCreateCache<QueryEntityKey, int>(cacheCfg);
             var aff = ignite.GetAffinity(cacheCfg.Name);
 
-            var key1 = new MyKey {Data = "data1", AffinityKey = 1};
-            var key2 = new MyKey {Data = "data2", AffinityKey = 1};
+            var key1 = new QueryEntityKey {Data = "data1", AffinityKey = 1};
+            var key2 = new QueryEntityKey {Data = "data2", AffinityKey = 1};
 
             Assert.AreEqual(aff.GetPartition(key1), aff.GetPartition(key2));
-        }
-
-        [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
-        private class MyKey
-        {
-            [QuerySqlField]
-            public string Data { get; set; }
-            
-            [AffinityKeyMapped]
-            public long AffinityKey { get; set; }
         }
 
         /// <summary>
@@ -177,6 +167,36 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             {
                 return _id;
             }
+        }
+        
+        /// <summary>
+        /// Query entity key.
+        /// </summary>
+        [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
+        private class QueryEntityKey
+        {
+            /** */
+            [QuerySqlField]
+            public string Data { get; set; }
+            
+            /** */
+            [AffinityKeyMapped]
+            public long AffinityKey { get; set; }
+        }
+        
+        /// <summary>
+        /// Query entity key.
+        /// </summary>
+        [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
+        private class QueryEntityValue
+        {
+            /** */
+            [QuerySqlField]
+            public string Name { get; set; }
+            
+            /** */
+            [AffinityKeyMapped]
+            public long AffKey { get; set; }
         }
     }
 }
