@@ -153,10 +153,20 @@ def node_failed_pattern(failed_node_id=None):
            ".\\{1,\\}\\(isClient\\|client\\)=false"
 
 
-def node_fail_time(overseer, failed_node_id):
-    """Extracts time of filed node."""
-    _, stdout, _ = overseer.account.ssh_client.exec_command(
-        "grep '%s' %s" % (node_failed_pattern(failed_node_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
+def pattern_time(service, log_node, log_pattern, from_the_beginning=True, timeout=15):
+    """
+    Extracts time of the pattern from ignite log.
+    :param service: ducktape service (ignite service) responsible to search log.
+    :param log_node: ducktape node to search ignite log on.
+    :param log_pattern: pattern to search ignite log for.
+    :param from_the_beginning: switches searching log from its beginning.
+    :param timeout: timeout to wait for the patters in the log.
+    """
+    service.await_event_on_node(log_pattern, log_node, timeout, from_the_beginning=from_the_beginning,
+                                backoff_sec=0.3)
+
+    _, stdout, _ = log_node.account.ssh_client.exec_command(
+        "grep '%s' %s" % (log_pattern, IgniteAwareService.STDOUT_STDERR_CAPTURE))
 
     return datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
                              "[%Y-%m-%d %H:%M:%S,%f]")
