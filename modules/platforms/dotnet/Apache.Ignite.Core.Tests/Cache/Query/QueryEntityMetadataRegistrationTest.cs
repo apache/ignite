@@ -79,6 +79,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestCacheStartFromCodeRegistersMetaForQueryEntityTypes()
         {
+            // TODO: Test this for thin clients - it won't work?
+            // What about Java Thin?
             var cfg = new CacheConfiguration
             {
                 Name = TestUtils.TestName,
