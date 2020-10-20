@@ -1238,6 +1238,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     var marsh = _ignite.Marshaller;
                     var typeName = marsh.StartUnmarshal(stream).ReadString();
+                    
+                    // TODO: This does not register type name with type ID
+                    // Create a test to reproduce (with thin client or remote node).
                     var desc = marsh.GetDescriptor(typeName, requiresType: true);
 
                     if (desc == null || desc.Type == null)
