@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [TestFixtureSetUp]
         public void StartGrids()
         {
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < 3; i++)
             {
                 var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
