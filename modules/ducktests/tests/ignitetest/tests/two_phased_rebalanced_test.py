@@ -39,13 +39,13 @@ class TwoPhasedRebalancedTest(IgniteTest):
     """
     Tests Cellular Affinity scenarios.
     """
-    NUM_NODES = 3
+    NUM_NODES = 4
 
     ATTRIBUTE = "CELL"
 
     CACHE_NAME = "test-cache"
 
-    @cluster(num_nodes=NUM_NODES * 3 + 1)
+    @cluster(num_nodes=NUM_NODES * 2 + 2)
     @ignite_versions(str(DEV_BRANCH))
     def two_phased_rebalance_test(self, ignite_version):
         """
@@ -68,8 +68,8 @@ class TwoPhasedRebalancedTest(IgniteTest):
                                                 checkpoint_frequency=30000)
 
         cells = self.start_cells(ignite_version=ignite_version,
-                                 cells_cnt=1,
-                                 cell_nodes_cnt=4,
+                                 cells_cnt=2,
+                                 cell_nodes_cnt=self.NUM_NODES,
                                  cache_name=self.CACHE_NAME,
                                  data_storage=data_storage)
 
@@ -86,7 +86,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.UuidStreamerApplication",
             params={
                 "cacheName": "test-cache",
-                "iterSize": 100 * 1024
+                "iterSize": 500 * 1024
             }
         )
 
@@ -96,7 +96,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.DeleteDataApplication",
             params={
                 "cacheName": "test-cache",
-                "iterSize": 80 * 1024
+                "iterSize": 400 * 1024
             }
         )
 
@@ -118,7 +118,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         control_utility.validate_indexes(check_assert=True)
         dump_1 = control_utility.idle_verify_dump(node=node, return_path=True)
-        dump_1 = self.move_dump(node, dump_1)
+        dump_1 = self.move_dump_to_logs(node, dump_1)
 
         pds = self.pds_size(cells)
 
@@ -131,11 +131,6 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         cells[0].await_rebalance(timeout_sec=15 * 60)
 
-        # pds = self.pds_size(cells)
-        #
-        # self.logger.warn("Clean and restart nodes 2, 3. PDS")
-        # self.logger.warn(pds)
-
         pds = self.pds_size(cells)
 
         self.logger.warn("After rebalancing complate on nodes 2, 3. PDS")
@@ -147,15 +142,6 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         cells[0].await_rebalance(timeout_sec=15 * 60)
 
-        # pds = self.pds_size(cells)
-
-        # self.logger.warn("Clean and restart nodes 0, 1. PDS")
-        # self.logger.warn(pds)
-        #
-        # # cells[0].await_event()
-        #
-        # time.sleep(5 * 60)
-
         pds = self.pds_size(cells)
 
         self.logger.warn("After rebalancing complate on nodes 0, 1. PDS")
@@ -163,7 +149,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         control_utility.validate_indexes(check_assert=True)
         dump_2 = control_utility.idle_verify_dump(node=node, return_path=True)
-        dump_2 = self.move_dump(node, dump_2)
+        dump_2 = self.move_dump_to_logs(node, dump_2)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}')
         assert len(diff) == 0, diff
@@ -232,17 +218,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
                 cell.await_node_started(node, timeout_sec)
 
-    # def copy_service_logs(self, test_status):
-    #     """
-    #     Copy logs from service nodes to the results directory.
-    #     If the the test failed, root directory will be collected too.
-    #     """
-    #     super().copy_service_logs(test_status=test_status)
-    #
-    #     if test_status == FAIL:
-    #         self.copy_ignite_root_dir()
-
-    def move_dump(self, node, dump_path: str):
+    def move_dump_to_logs(self, node, dump_path: str):
         """
         Move dump file to logs directory.
         @:return new path to dump_file.
