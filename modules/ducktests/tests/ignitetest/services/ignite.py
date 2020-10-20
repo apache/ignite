@@ -147,7 +147,7 @@ class IgniteService(IgniteAwareService):
             return []
 
 
-def node_failed_pattern(failed_node_id=None):
+def node_failed_event_pattern(failed_node_id=None):
     """Failed node pattern in log."""
     return "Node FAILED: .\\{1,\\}Node \\[id=" + (failed_node_id if failed_node_id else "") + \
            ".\\{1,\\}\\(isClient\\|client\\)=false"

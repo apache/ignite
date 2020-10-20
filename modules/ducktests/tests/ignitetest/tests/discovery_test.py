@@ -27,7 +27,7 @@ from typing import NamedTuple
 from ducktape.mark import matrix
 from ducktape.mark.resource import cluster
 
-from ignitetest.services.ignite import IgniteAwareService, IgniteService, pattern_time, node_failed_pattern
+from ignitetest.services.ignite import IgniteAwareService, IgniteService, pattern_time, node_failed_event_pattern
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
@@ -208,7 +208,7 @@ class DiscoveryTest(IgniteTest):
 
         for failed_id in ids_to_wait:
             logged_timestamps.append(
-                pattern_time(servers, survived_node, node_failed_pattern(failed_id)))
+                pattern_time(servers, survived_node, node_failed_event_pattern(failed_id)))
 
         self._check_failed_number(failed_nodes, survived_node)
         self._check_not_segmented(failed_nodes)
@@ -226,13 +226,13 @@ class DiscoveryTest(IgniteTest):
 
     def _check_failed_number(self, failed_nodes, survived_node):
         """Ensures number of failed nodes is correct."""
-        cmd = "grep '%s' %s | wc -l" % (node_failed_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE)
+        cmd = "grep '%s' %s | wc -l" % (node_failed_event_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE)
 
         failed_cnt = int(str(survived_node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding()))
 
         if failed_cnt != len(failed_nodes):
             failed = str(survived_node.account.ssh_client.exec_command(
-                "grep '%s' %s" % (node_failed_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE))[1].read(),
+                "grep '%s' %s" % (node_failed_event_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE))[1].read(),
                          sys.getdefaultencoding())
 
             self.logger.warn("Node '%s' (%s) has detected the following failures:%s%s" % (
