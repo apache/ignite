@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 }
             };
 
-            Ignition.GetIgnite("grid-0").GetOrCreateCache<QueryEntityKey, int>(cacheCfg);
+            Ignition.GetIgnite("grid-0").GetOrCreateCache<int, int>(cacheCfg);
             
             TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-0"), cacheCfg.Name);
             TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-1"), cacheCfg.Name);

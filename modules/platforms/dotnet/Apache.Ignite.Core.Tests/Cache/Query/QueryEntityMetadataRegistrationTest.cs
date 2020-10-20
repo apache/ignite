@@ -45,7 +45,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureSetUp]
         public void StartGrids()
         {
-            // TODO: Test for KeyFieldName and ValueFieldName, and combined with QuerySqlField
             // TODO: Test with type names that can't be resolved
             for (int i = 0; i < 2; i++)
             {
