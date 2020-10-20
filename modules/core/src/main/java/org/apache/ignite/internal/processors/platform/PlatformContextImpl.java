@@ -40,6 +40,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -669,6 +670,14 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
             return PlatformUtils.readBinaryMetadata(reader(in));
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getMarshallerPlatformId() {
+        // Only .NET has a specific marshaller ID, C++ does not have it.
+        return platform.equals(PlatformUtils.PLATFORM_DOTNET)
+                ? MarshallerPlatformIds.DOTNET_ID
+                : MarshallerPlatformIds.JAVA_ID;
     }
 
     /** {@inheritDoc} */

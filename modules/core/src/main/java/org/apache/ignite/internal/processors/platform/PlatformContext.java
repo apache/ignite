@@ -326,4 +326,10 @@ public interface PlatformContext {
      * @return Metadata when type exists; null otherwise.
      */
     @Nullable BinaryMetadata getBinaryType(String typeName);
+
+    /**
+     * Gets marshaller platform id (see {@link org.apache.ignite.internal.MarshallerPlatformIds}).
+     * @return Marshaller platform id.
+     */
+    byte getMarshallerPlatformId();
 }
