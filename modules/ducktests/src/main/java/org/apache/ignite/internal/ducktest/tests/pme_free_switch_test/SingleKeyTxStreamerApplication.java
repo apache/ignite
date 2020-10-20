@@ -31,13 +31,10 @@ public class SingleKeyTxStreamerApplication extends IgniteAwareApplication {
 
         int warmup = jsonNode.get("warmup").asInt();
 
-        long max = -1;
-
-        int key = 10_000_000;
-
+        int key = 0;
         int cnt = 0;
-
         long initTime = 0;
+        long maxLatency = -1;
 
         boolean record = false;
 
@@ -46,11 +43,9 @@ public class SingleKeyTxStreamerApplication extends IgniteAwareApplication {
 
             long start = System.currentTimeMillis();
 
-            cache.put(key++, key);
+            cache.put(key++ % 100, key); // Cycled update.
 
-            long finish = System.currentTimeMillis();
-
-            long time = finish - start;
+            long latency = System.currentTimeMillis() - start;
 
             if (!record && cnt > warmup) {
                 record = true;
@@ -61,15 +56,15 @@ public class SingleKeyTxStreamerApplication extends IgniteAwareApplication {
             }
 
             if (record) {
-                if (max < time)
-                    max = time;
+                if (maxLatency < latency)
+                    maxLatency = latency;
             }
 
             if (cnt % 1000 == 0)
-                log.info("APPLICATION_STREAMED " + cnt + " transactions [max=" + max + "]");
+                log.info("APPLICATION_STREAMED " + cnt + " transactions [max=" + maxLatency + "]");
         }
 
-        recordResult("WORST_LATENCY", max);
+        recordResult("WORST_LATENCY", maxLatency);
         recordResult("STREAMED", cnt - warmup);
         recordResult("MEASURE_DURATION", System.currentTimeMillis() - initTime);
 
