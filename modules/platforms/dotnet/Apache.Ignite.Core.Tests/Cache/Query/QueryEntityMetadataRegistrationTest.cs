@@ -52,6 +52,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             {
                 var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
+                    // TODO: Add caches here and test them too
                     SpringConfigUrl = Path.Combine("Config", "query-entity-metadata-registration.xml"),
                     IgniteInstanceName = i.ToString()
                 };
