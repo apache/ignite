@@ -191,7 +191,8 @@ class TwoPhasedRebalancedTest(IgniteTest):
         for cell in cells:
             cll = {}
             for node in cell.nodes:
-                cmd = f'du -sk {IgnitePersistenceAware.WORK_DIR}/db/{node.account.hostname} | ' + "awk '{print $1}'"
+                consistent_id = str(node.account.hostname).replace('.', '_').replace('-', '_')
+                cmd = f'du -sk {IgnitePersistenceAware.WORK_DIR}/db/{consistent_id} | ' + "awk '{print $1}'"
                 cll[node.account.hostname] = node.account.ssh_output(cmd).decode("utf-8").replace('\n', 'kb')
 
             res.append(cll)
