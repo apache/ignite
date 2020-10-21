@@ -26,7 +26,7 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, 
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
-from ignitetest.services.utils.util import remove, move_file_to_logs
+from ignitetest.services.utils.util import move_file_to_logs
 from ignitetest.tests.cellular_affinity_test import start_cell
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
@@ -202,13 +202,10 @@ def restart_with_clean_idx_node_on_cell(cells: [IgniteService], idxs: [int], tim
             node = cell.nodes[i]
 
             cell.stop_node(node)
-            remove(node, cell.WORK_DIR)
+            cell.clean_work_dir(node)
 
     for cell in cells:
-        size = len(cell.nodes)
         for i in idxs:
-            assert i < size
-
             node = cell.nodes[i]
 
             cell.start_node(node)

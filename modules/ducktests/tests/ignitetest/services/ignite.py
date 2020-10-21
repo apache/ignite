@@ -151,6 +151,13 @@ class IgniteService(IgniteAwareService):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
         node.account.ssh("sudo rm -rf -- %s" % self.PERSISTENT_ROOT, allow_fail=False)
 
+    def clean_work_dir(self, node):
+        """
+        Cleaning the working directory.
+        """
+        assert len(self.pids(node)) == 0
+        node.account.ssh("sudo rm -rf -- %s" % self.WORK_DIR, allow_fail=False)
+
     def rename_db(self, new_db_name: str):
         """
         Rename db.
