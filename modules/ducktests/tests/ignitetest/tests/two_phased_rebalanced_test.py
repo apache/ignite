@@ -17,9 +17,7 @@
 This module contains Cellular Affinity tests.
 """
 
-import os
 from ducktape.mark.resource import cluster
-
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
@@ -37,7 +35,7 @@ from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 # pylint: disable=W0223
 class TwoPhasedRebalancedTest(IgniteTest):
     """
-    Tests Cellular Affinity scenarios.
+    Two-phase rebalancing test case.
     """
     NUM_NODES = 4
 
@@ -104,7 +102,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
         streamer.await_stopped(15 * 60)
 
         node = cells[0].nodes[0]
-        cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=30)
+        cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=60)
 
         pds = self.pds_size(cells)
 
@@ -114,7 +112,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
         deleter.start()
         deleter.await_stopped(timeout_sec=(15 * 60))
 
-        cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=30)
+        cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=60)
 
         control_utility.validate_indexes(check_assert=True)
         dump_1 = control_utility.idle_verify_dump(node=node, return_path=True)
@@ -154,7 +152,6 @@ class TwoPhasedRebalancedTest(IgniteTest):
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}')
         assert len(diff) == 0, diff
 
-
     def start_cells(self, ignite_version: str, cells_cnt: int, cell_nodes_cnt: int, cache_name: str,
                     data_storage: DataStorageConfiguration = None):
         """
@@ -176,7 +173,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         return cells
 
-    def pds_size(self, cells):
+    def pds_size(self, cells: [IgniteService]):
         """
         Pds size.
         """
