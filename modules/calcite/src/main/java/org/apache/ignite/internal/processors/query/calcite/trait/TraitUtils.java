@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import com.google.common.collect.ImmutableList;
@@ -40,16 +40,15 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -309,44 +308,6 @@ public class TraitUtils {
         };
     }
 
-    /**
-     * Replaces input traits into a set of source traits combinations.
-     */
-    public static Collection<List<RelTraitSet>> inputTraits(List<List<RelTraitSet>> inTraits) {
-        assert !F.isEmpty(inTraits);
-
-        try {
-            return fill(inTraits, ImmutableSet.builder(), ImmutableList.builder(), 0).build();
-        }
-        catch (Util.FoundOne e) {
-            return Collections.emptySet();
-        }
-    }
-
-    /** */
-    private static ImmutableSet.Builder<List<RelTraitSet>> fill(List<List<RelTraitSet>> in,
-        ImmutableSet.Builder<List<RelTraitSet>> out, ImmutableList.Builder<RelTraitSet> template, int srcIdx) {
-        if (srcIdx < in.size()) {
-            List<RelTraitSet> sourceTraits = in.get(srcIdx);
-
-            if (F.isEmpty(sourceTraits))
-                // see a special case in OptimizeTask.RelNodeOptTask#execute
-                throw Util.FoundOne.NULL;
-
-            for (RelTraitSet traits : sourceTraits) {
-                ImmutableList.Builder<RelTraitSet> newTemplate = ImmutableList.<RelTraitSet>builder()
-                    .addAll(template.build())
-                    .add(traits);
-
-                fill(in, out, newTemplate, srcIdx + 1);
-            }
-        }
-        else
-            out.add(template.build());
-
-        return out;
-    }
-
     /** */
     public static RelCollation projectCollation(RelCollation collation, List<RexNode> projects, RelDataType inputRowType) {
         if (collation.getFieldCollations().isEmpty())
@@ -368,8 +329,37 @@ public class TraitUtils {
     }
 
     /** */
+    public static RelNode passThrough(TraitsAwareIgniteRel rel, RelTraitSet outTraits) {
+        if (outTraits.getConvention() != IgniteConvention.INSTANCE || rel.getInputs().isEmpty())
+            return null;
+
+        List<RelTraitSet> inTraits = Collections.nCopies(rel.getInputs().size(),
+            rel.getCluster().traitSetOf(IgniteConvention.INSTANCE));
+
+        List<RelNode> nodes = new PropagationContext(ImmutableSet.of(Pair.of(outTraits, inTraits)))
+            .propagate(rel::passThroughCollation)
+            .propagate(rel::passThroughDistribution)
+            .propagate(rel::passThroughRewindability)
+            .nodes(rel::createNode);
+
+        if (nodes.isEmpty())
+            return null;
+
+        return new RelRegistrar(rel.getCluster(), outTraits, rel, nodes);
+    }
+
+    /** */
     public static List<RelNode> derive(TraitsAwareIgniteRel rel, List<List<RelTraitSet>> inTraits) {
-        return TraitsPropagationContext.forDerivation(rel, inTraits)
+        assert !F.isEmpty(inTraits);
+
+        RelTraitSet outTraits = rel.getCluster().traitSetOf(IgniteConvention.INSTANCE);
+        Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations = new HashSet<>();
+        fill(outTraits, inTraits, combinations, new RelTraitSet[inTraits.size()],0);
+
+        if (combinations.isEmpty())
+            return ImmutableList.of();
+
+        return new PropagationContext(combinations)
             .propagate(rel::deriveCollation)
             .propagate(rel::deriveDistribution)
             .propagate(rel::deriveRewindability)
@@ -377,78 +367,43 @@ public class TraitUtils {
     }
 
     /** */
-    public static RelNode passThrough(TraitsAwareIgniteRel rel, RelTraitSet required) {
-        List<RelNode> nodes = TraitsPropagationContext.forPassingThrough(rel, required)
-            .propagate(rel::passThroughCollation)
-            .propagate(rel::passThroughDistribution)
-            .propagate(rel::passThroughRewindability)
-            .nodes(rel::createNode);
+    private static void fill(RelTraitSet outTraits, List<List<RelTraitSet>> inTraits,
+        Set<Pair<RelTraitSet, List<RelTraitSet>>> res, RelTraitSet[] holder, int idx) throws ControlFlowException {
+        boolean last = idx == inTraits.size() - 1;
+        for (RelTraitSet t : inTraits.get(idx)) {
+            if (t.getConvention() != IgniteConvention.INSTANCE)
+                continue;
 
-        if (!nodes.isEmpty())
-            return new RelRegistrar(rel.getCluster(), required, rel, nodes);
+            holder[idx] = t;
 
-        return null;
+            if (last)
+                res.add(Pair.of(outTraits, ImmutableList.copyOf(holder)));
+            else
+                fill(outTraits, inTraits, res, holder, idx + 1);
+        }
     }
 
     /** */
-    private static class TraitsPropagationContext {
-        /** */
-        private static final TraitsPropagationContext EMPTY = new TraitsPropagationContext(ImmutableSet.of());
-
+    private static class PropagationContext {
         /** */
         private final Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations;
 
-        /**
-         * Creates a context for up-to-bottom traits propagation.
-         *
-         * @param node Target node.
-         * @param outTrait Desired relational node output trait.
-         * @return Newly created context.
-         */
-        public static TraitsPropagationContext forPassingThrough(RelNode node, RelTraitSet outTrait) {
-            if (outTrait.getConvention() != IgniteConvention.INSTANCE)
-                return EMPTY;
-
-            ImmutableSet<Pair<RelTraitSet, List<RelTraitSet>>> variants = ImmutableSet.of(
-                Pair.of(fixTraits(outTrait),
-                    Commons.transform(node.getInputs(), i -> fixTraits(i.getCluster().traitSet()))));
-            return new TraitsPropagationContext(variants);
-        }
-
-        /**
-         * Creates a context for bottom-up traits propagation.
-         *
-         * @param node Target node.
-         * @param inTraits Input traits.
-         * @return Newly created context.
-         */
-        public static TraitsPropagationContext forDerivation(RelNode node, List<List<RelTraitSet>> inTraits) {
-            ImmutableSet.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableSet.builder();
-            RelTraitSet out = node.getCluster().traitSetOf(IgniteConvention.INSTANCE);
-            for (List<RelTraitSet> srcTraits : inputTraits(inTraits)) {
-                if (srcTraits.stream().allMatch(t -> t.getConvention() == IgniteConvention.INSTANCE))
-                    b.add(Pair.of(out, srcTraits));
-            }
-
-            return new TraitsPropagationContext(b.build());
-        }
-
         /** */
-        private TraitsPropagationContext(Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations) {
+        private PropagationContext(Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations) {
             this.combinations = combinations;
         }
 
         /**
          * Propagates traits in bottom-up or up-to-bottom manner using given traits propagator.
          */
-        public TraitsPropagationContext propagate(TraitsPropagator processor) {
+        public PropagationContext propagate(TraitsPropagator processor) {
             if (combinations.isEmpty())
                 return this;
 
             ImmutableSet.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableSet.builder();
             for (Pair<RelTraitSet, List<RelTraitSet>> variant : combinations)
                 b.addAll(processor.propagate(variant.left, variant.right));
-            return new TraitsPropagationContext(b.build());
+            return new PropagationContext(b.build());
         }
 
         /**
@@ -463,5 +418,17 @@ public class TraitUtils {
                 b.add(nodesCreator.create(variant.left, variant.right));
             return b.build();
         }
+    }
+
+    /** */
+    private interface TraitsPropagator {
+        /**
+         * Propagates traits in bottom-up or up-to-bottom manner.
+         *
+         * @param outTraits Relational node traits.
+         * @param inTraits Relational node input traits.
+         * @return List of possible input-output traits combinations.
+         */
+        List<Pair<RelTraitSet, List<RelTraitSet>>> propagate(RelTraitSet outTraits, List<RelTraitSet> inTraits);
     }
 }
