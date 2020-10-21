@@ -360,8 +360,7 @@ public class TraitUtils {
         assert !F.isEmpty(inTraits);
 
         RelTraitSet outTraits = rel.getCluster().traitSetOf(IgniteConvention.INSTANCE);
-        Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations = new HashSet<>();
-        fill(outTraits, inTraits, combinations, new RelTraitSet[inTraits.size()],0);
+        Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations = combinations(outTraits, inTraits);
 
         if (combinations.isEmpty())
             return ImmutableList.of();
@@ -374,20 +373,29 @@ public class TraitUtils {
     }
 
     /** */
-    private static void fill(RelTraitSet outTraits, List<List<RelTraitSet>> inTraits,
-        Set<Pair<RelTraitSet, List<RelTraitSet>>> res, RelTraitSet[] holder, int idx) throws ControlFlowException {
-        boolean last = idx == inTraits.size() - 1;
+    private static Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations(RelTraitSet outTraits, List<List<RelTraitSet>> inTraits) {
+        Set<Pair<RelTraitSet, List<RelTraitSet>>> out = new HashSet<>();
+        fillRecursive(outTraits, inTraits, out, new RelTraitSet[inTraits.size()],0);
+        return out;
+    }
+
+    /** */
+    private static boolean fillRecursive(RelTraitSet outTraits, List<List<RelTraitSet>> inTraits,
+        Set<Pair<RelTraitSet, List<RelTraitSet>>> result, RelTraitSet[] combination, int idx) throws ControlFlowException {
+        boolean processed = false, last = idx == inTraits.size() - 1;
         for (RelTraitSet t : inTraits.get(idx)) {
             if (t.getConvention() != IgniteConvention.INSTANCE)
                 continue;
 
-            holder[idx] = t;
+            processed = true;
+            combination[idx] = t;
 
             if (last)
-                res.add(Pair.of(outTraits, ImmutableList.copyOf(holder)));
-            else
-                fill(outTraits, inTraits, res, holder, idx + 1);
+                result.add(Pair.of(outTraits, ImmutableList.copyOf(combination)));
+            else if (!fillRecursive(outTraits, inTraits, result, combination, idx + 1))
+                return false;
         }
+        return processed;
     }
 
     /** */
