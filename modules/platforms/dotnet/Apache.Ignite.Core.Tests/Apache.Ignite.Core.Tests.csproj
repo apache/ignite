@@ -147,6 +147,8 @@
     <Compile Include="Cache\Query\QueryEntityMetadataRegistrationTest.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestCodeConfig.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestSharedFactory.cs" />
+    <Compile Include="Client\Cache\ClientQueryEntityMetadataRegistrationTest.cs" />
+    <Compile Include="Client\Cache\ClientQueryEntityMetadataRegistrationTestJavaOnlyServer.cs" />
     <Compile Include="Client\Cache\ContinuousQueryTest.cs" />
     <Compile Include="Client\Cache\CacheClientAbstractTxTest.cs" />
     <Compile Include="Client\Cache\CacheClientLocalTxTest.cs" />
