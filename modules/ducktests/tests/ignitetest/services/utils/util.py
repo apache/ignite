@@ -16,12 +16,32 @@
 """
 This module contains utility methods.
 """
+import os
+
+from ignitetest.services.utils.ignite_persistence import PersistenceAware
 
 
 def compress_cmd(src_path, dest_tgz):
     """
     Return bash command which compresses the given path to a tarball.
     """
-    compres_cmd = f'cd {src_path} ; tar czf "{dest_tgz}" *;'
+    return f'cd {src_path} ; tar czf "{dest_tgz}" *;'
 
-    return compres_cmd
+
+def move_file_to_logs(node, file_path: str):
+    """
+    Move file to logs directory.
+    @:return new path to file.
+    """
+    node.account.ssh_output(f'mv {file_path} {PersistenceAware.PATH_TO_LOGS_DIR}')
+
+    file_name = os.path.basename(file_path)
+
+    return os.path.join(PersistenceAware.PATH_TO_LOGS_DIR, file_name)
+
+
+def remove(node, path: str):
+    """
+    Remove on node.
+    """
+    node.account.ssh("sudo rm -rf -- %s" % path, allow_fail=False)

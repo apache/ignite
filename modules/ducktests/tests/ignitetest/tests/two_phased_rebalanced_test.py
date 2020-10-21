@@ -16,7 +16,6 @@
 """
 This module contains Cellular Affinity tests.
 """
-
 import ducktape
 from ducktape.mark.resource import cluster
 
@@ -26,7 +25,8 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware, PersistenceAware
+from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
+from ignitetest.services.utils.util import remove, move_file_to_logs
 from ignitetest.tests.cellular_affinity_test import start_cell
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
@@ -47,11 +47,11 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES_CELL * NUM_CELL + 2)
     @ignite_versions(str(DEV_BRANCH))
-    def two_phased_rebalance_test(self, ignite_version):
+    def two_phased_rebalancing_test(self, ignite_version):
         """
-        Two-phase rebalancing test case.
+        Test case of two-phase rebalancing.
         Preparations.
-            1. Start 3 cells.
+            1. Start 2 cells.
             2. Load data to cache with the mentioned above affinity function and fix PDS size on all nodes.
             3. Delete 80% of data and fix PDS size on all nodes.
         Phase 1.
@@ -121,33 +121,30 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         control_utility.validate_indexes(check_assert=True)
         dump_1 = control_utility.idle_verify_dump(node=node, return_path=True)
-        dump_1 = self.move_dump_to_logs(node, dump_1)
+        dump_1 = move_file_to_logs(node, dump_1)
 
         self.pds_size(cells, "After Delete 80%, PDS")
 
-        self.stop_clean_idx_node_on_cell(cells, 2, 3)
-
-        self.start_idx_node_on_cell(cells, 2, 3)
-
-        cells[0].await_rebalance(timeout_sec=15 * 60)
-
-        self.pds_size(cells, "After rebalancing complate on nodes 2, 3. PDS")
-
-        self.stop_clean_idx_node_on_cell(cells, 0, 1)
-
-        self.start_idx_node_on_cell(cells, 0, 1)
+        restart_with_clean_idx_node_on_cell(cells, [0, 1])
 
         cells[0].await_rebalance(timeout_sec=15 * 60)
 
         self.pds_size(cells, "After rebalancing complate on nodes 0, 1. PDS")
 
+        restart_with_clean_idx_node_on_cell(cells, [2, 3])
+
+        cells[0].await_rebalance(timeout_sec=15 * 60)
+
+        self.pds_size(cells, "After rebalancing complate on nodes 2, 3. PDS")
+
         control_utility.validate_indexes(check_assert=True)
         dump_2 = control_utility.idle_verify_dump(node=node, return_path=True)
-        dump_2 = self.move_dump_to_logs(node, dump_2)
+        dump_2 = move_file_to_logs(node, dump_2)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
         assert len(diff) == 0, diff
 
+    # pylint: disable=R0913
     def start_cells(self, ignite_version: str, cells_cnt: int, cell_nodes_cnt: int, cache_name: str,
                     data_storage: DataStorageConfiguration = None):
         """
@@ -191,35 +188,29 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         return res
 
-    def stop_clean_idx_node_on_cell(self, cells: [IgniteService], *idx: int):
-        for cell in cells:
-            size = len(cell.nodes)
 
-            for i in idx:
-                assert i < size
+def restart_with_clean_idx_node_on_cell(cells: [IgniteService], idxs: [int], timeout_sec=180):
+    """
+    Restart idxs nodes on cells with cleaning working directory.
+    """
+    for cell in cells:
+        size = len(cell.nodes)
 
-                node = cell.nodes[i]
+        for i in idxs:
+            assert i < size
 
-                cell.stop_node(node)
-                cell.remove(node, cell.WORK_DIR)
+            node = cell.nodes[i]
 
-    def start_idx_node_on_cell(self, cells: [IgniteService], *idx: int, timeout_sec=180):
-        for cell in cells:
-            size = len(cell.nodes)
-            for i in idx:
-                assert i < size
+            cell.stop_node(node)
+            remove(node, cell.WORK_DIR)
 
-                node = cell.nodes[i]
+    for cell in cells:
+        size = len(cell.nodes)
+        for i in idxs:
+            assert i < size
 
-                cell.start_node(node)
+            node = cell.nodes[i]
 
-                cell.await_node_started(node, timeout_sec)
+            cell.start_node(node)
 
-    def move_dump_to_logs(self, node, dump_path: str):
-        """
-        Move dump file to logs directory.
-        @:return new path to dump_file.
-        """
-        node.account.ssh_output(f'mv {dump_path} {PersistenceAware.PATH_TO_LOGS_DIR}')
-
-        return dump_path.replace(IgnitePersistenceAware.WORK_DIR, PersistenceAware.PATH_TO_LOGS_DIR)
+            cell.await_node_started(node, timeout_sec)

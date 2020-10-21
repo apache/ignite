@@ -26,7 +26,7 @@ import javax.cache.Cache;
 import java.util.*;
 
 /**
- * Loading random uuids in cache.
+ * Deleting data from the cache.
  */
 public class DeleteDataApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
@@ -35,7 +35,11 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
         int iterSize = Optional.ofNullable(jNode.get("iterSize"))
                 .map(JsonNode::asInt)
-                .orElse(50);
+                .orElse(100);
+
+        int bachSize = Optional.ofNullable(jNode.get("bachSize"))
+                .map(JsonNode::asInt)
+                .orElse(1000);
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cacheName);
 
@@ -60,19 +64,18 @@ public class DeleteDataApplication extends IgniteAwareApplication {
         log.info(">>> Start removing: " + keys.size());
 
         int listSize = keys.size();
-        int bachSize = 1000;
+
+        List<IgniteFuture<Void>> futures = new LinkedList<>();
 
         int fromIdx = 0;
         int toIdx = 0;
-
-        List<IgniteFuture<Void>> futures = new LinkedList<>();
 
         while(fromIdx < listSize) {
             toIdx = Math.min(fromIdx + bachSize, listSize);
 
             futures.add(cache.removeAllAsync(new TreeSet<>(keys.subList(fromIdx, toIdx))));
 
-            fromIdx=toIdx+1;
+            fromIdx=toIdx + 1;
         }
 
         futures.forEach(IgniteFuture::get);

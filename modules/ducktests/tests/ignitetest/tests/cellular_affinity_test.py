@@ -201,6 +201,7 @@ class CellularAffinity(IgniteTest):
         return nodes, prepared_tx_streamer
 
 
+# pylint: disable=R0913
 def start_cell(
         test_context,
         version: str,
