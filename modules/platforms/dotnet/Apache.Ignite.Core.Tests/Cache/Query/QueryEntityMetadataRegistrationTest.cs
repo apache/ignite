@@ -71,7 +71,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Ignition.Start(cfg);
             }
 
-            _javaNodeName = Ignition.GetAll().First().GetCompute().ExecuteJavaTask<string>(StartTask, springConfig);
+            var ignite = Ignition.GetAll().First();
+            _javaNodeName = ignite.GetCompute().ExecuteJavaTask<string>(StartTask, springConfig);
+
+            Assert.IsTrue(ignite.WaitTopology(3, 5000));
         }
 
         /// <summary>
@@ -80,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureTearDown]
         public void StopGrids()
         {
-            Ignition.GetAll().First().GetCompute().ExecuteJavaTask<string>(StopTask, _javaNodeName);
+            Ignition.GetAll().First().GetCompute().ExecuteJavaTask<object>(StopTask, _javaNodeName);
 
             Ignition.StopAll(true);
         }
@@ -149,6 +152,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests that starting a cache from thin client with a <see cref="QueryEntity"/>
         /// causes binary type registration for key and value types.
         /// <para />
+        /// * Connect .NET thin client to a Java-only node.
         /// * Start a new cache with code configuration from thin client.
         /// * Check that query entity is populated correctly
         /// * Check that key and value types are registered in the cluster
@@ -156,7 +160,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestCacheStartFromThinClientRegistersMetaForQueryEntityTypes()
         {
-            // TODO: Test scenario with missing class using a Java-only node
             var cfg = new CacheClientConfiguration
             {
                 Name = TestUtils.TestName,
@@ -164,15 +167,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 {
                     new QueryEntity
                     {
-                        KeyType = typeof(Key1),
-                        ValueType = typeof(Value1)
+                        KeyType = typeof(Key3),
+                        ValueType = typeof(Value3)
                     }
                 }
             };
 
-            using (var client = Ignition.StartClient(new IgniteClientConfiguration("localhost")))
+            using (var client = Ignition.StartClient(new IgniteClientConfiguration("localhost:10802")))
             {
-                client.CreateCache<Key1, Value1>(cfg);
+                client.CreateCache<Key3, Value3>(cfg);
             }
 
             foreach (var ignite in Ignition.GetAll())
@@ -183,10 +186,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 var keyType = types.Single(t => t.TypeName == qryEntity.KeyTypeName);
                 var valType = types.Single(t => t.TypeName == qryEntity.ValueTypeName);
 
-                Assert.AreEqual(typeof(Key1).FullName, qryEntity.KeyTypeName);
-                Assert.AreEqual(typeof(Value1).FullName, qryEntity.ValueTypeName);
+                Assert.AreEqual(typeof(Key3).FullName, qryEntity.KeyTypeName);
+                Assert.AreEqual(typeof(Value3).FullName, qryEntity.ValueTypeName);
 
-                Assert.AreEqual("Bar", keyType.AffinityKeyFieldName);
+                Assert.AreEqual("AffKey", keyType.AffinityKeyFieldName);
                 Assert.IsNull(valType.AffinityKeyFieldName);
             }
         }
@@ -298,6 +301,27 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
         /** */
         private class Value2
+        {
+            /** */
+            public string Name { get; set; }
+
+            /** */
+            public decimal Price { get; set; }
+        }
+
+        /** */
+        private class Key3
+        {
+            /** */
+            public string Baz;
+
+            /** */
+            [AffinityKeyMapped]
+            public long AffKey;
+        }
+
+        /** */
+        private class Value3
         {
             /** */
             public string Name { get; set; }
