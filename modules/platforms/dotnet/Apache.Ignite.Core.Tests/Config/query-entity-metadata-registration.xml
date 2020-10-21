@@ -42,10 +42,10 @@
                         </list>
                     </property>
                 </bean>
-                
+
                 <!-- Query entity with key/value types that don't exist -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="cache2"/>
+                    <property name="name" value="cache_bad"/>
                     <property name="queryEntities">
                         <list>
                             <bean class="org.apache.ignite.cache.QueryEntity">

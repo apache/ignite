@@ -41,6 +41,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /** */
         private const string CacheName = "cache1";
 
+        /** */
+        private const string CacheName2 = "cache2";
+
         /// <summary>
         /// Fixture set up.
         /// </summary>
@@ -53,9 +56,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             {
                 var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    // TODO: Add caches here and test them too
                     SpringConfigUrl = springConfig,
-                    IgniteInstanceName = i.ToString()
+                    IgniteInstanceName = i.ToString(),
+
+                    // Cache configs will be merged with Spring cache configs.
+                    CacheConfiguration = new[]
+                    {
+                        new CacheConfiguration
+                        {
+                            Name = CacheName2,
+                            QueryEntities = new[]
+                            {
+                                new QueryEntity
+                                {
+                                    KeyType = typeof(Key3),
+                                    ValueType = typeof(string)
+                                }
+                            }
+                        }
+                    }
                 };
 
                 Ignition.Start(cfg);
@@ -200,6 +219,29 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             }
         }
 
+        /// <summary>
+        /// Tests that starting a cache from <see cref="IgniteConfiguration.CacheConfiguration"/>
+        /// with a <see cref="QueryEntity"/> causes binary type registration for key and value types.
+        /// <para />
+        /// * Get the cache started from <see cref="IgniteConfiguration.CacheConfiguration"/>
+        /// * Check that query entity is populated correctly
+        /// * Check that key and value types are registered in the cluster
+        /// </summary>
+        [Test]
+        public void TestCacheStartIgniteConfigurationRegistersMetaForQueryEntityTypes()
+        {
+            foreach (var ignite in Ignition.GetAll())
+            {
+                var types = ignite.GetBinary().GetBinaryTypes();
+                var qryEntity = ignite.GetCache<object, object>(CacheName2).GetConfiguration().QueryEntities.Single();
+
+                var keyType = types.Single(t => t.TypeName == qryEntity.KeyTypeName);
+
+                Assert.AreEqual(typeof(Key3).FullName, qryEntity.KeyTypeName);
+                Assert.AreEqual("Aff", keyType.AffinityKeyFieldName);
+            }
+        }
+
         /** */
         private class Key1
         {
@@ -243,6 +285,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             /** */
             public decimal Price { get; set; }
+        }
+
+        /** */
+        private class Key3
+        {
+            /** */
+            public string Qux;
+
+            /** */
+            [AffinityKeyMapped]
+            public long Aff;
         }
     }
 }
