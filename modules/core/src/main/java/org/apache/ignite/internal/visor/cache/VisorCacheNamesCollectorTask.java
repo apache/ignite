@@ -68,10 +68,10 @@ public class VisorCacheNamesCollectorTask extends VisorOneNodeTask<Void, VisorCa
             Map<String, IgniteUuid> caches = new HashMap<>();
             Set<String> groups = new HashSet<>();
 
-            for (Map.Entry<String, DynamicCacheDescriptor> item : cacheProc.cacheDescriptors().entrySet()) {
+            for (Map.Entry<Integer, DynamicCacheDescriptor> item : cacheProc.cacheDescriptors().entrySet()) {
                 DynamicCacheDescriptor cd = item.getValue();
 
-                caches.put(item.getKey(), cd.deploymentId());
+                caches.put(cd.cacheName(), cd.deploymentId());
 
                 String grp = cd.groupDescriptor().groupName();
 

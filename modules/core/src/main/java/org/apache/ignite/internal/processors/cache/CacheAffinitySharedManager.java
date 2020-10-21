@@ -204,7 +204,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     public IgniteInternalFuture<?> initCachesOnLocalJoin(
         Map<Integer, CacheGroupDescriptor> grpDescs,
-        Map<String, DynamicCacheDescriptor> cacheDescs
+        Map<Integer, DynamicCacheDescriptor> cacheDescs
     ) {
         return cachesRegistry.init(grpDescs, cacheDescs);
     }

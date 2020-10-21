@@ -75,7 +75,7 @@ public class CachesRegistry {
      */
     public IgniteInternalFuture<?> init(
         Map<Integer, CacheGroupDescriptor> groupDescriptors,
-        Map<String, DynamicCacheDescriptor> cacheDescriptors
+        Map<Integer, DynamicCacheDescriptor> cacheDescriptors
     ) {
         unregisterAll();
 

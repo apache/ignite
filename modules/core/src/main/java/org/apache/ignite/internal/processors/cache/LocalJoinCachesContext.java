@@ -49,7 +49,7 @@ public class LocalJoinCachesContext {
 
     /** */
     @GridToStringInclude
-    private Map<String, DynamicCacheDescriptor> cacheDescs;
+    private Map<Integer, DynamicCacheDescriptor> cacheDescs;
 
     /**
      * @param locJoinStartCaches Local caches to start on join.
@@ -61,7 +61,7 @@ public class LocalJoinCachesContext {
         List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches,
         List<DynamicCacheDescriptor> locJoinInitCaches,
         Map<Integer, CacheGroupDescriptor> cacheGrpDescs,
-        Map<String, DynamicCacheDescriptor> cacheDescs
+        Map<Integer, DynamicCacheDescriptor> cacheDescs
     ) {
         this.locJoinStartCaches = locJoinStartCaches;
         this.locJoinInitCaches = locJoinInitCaches;
@@ -93,7 +93,7 @@ public class LocalJoinCachesContext {
     /**
      * @return Cache descriptors.
      */
-    public Map<String, DynamicCacheDescriptor> cacheDescriptors() {
+    public Map<Integer, DynamicCacheDescriptor> cacheDescriptors() {
         return cacheDescs;
     }
 

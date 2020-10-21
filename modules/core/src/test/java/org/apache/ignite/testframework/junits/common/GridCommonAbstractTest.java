@@ -2071,12 +2071,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected final void checkCacheDiscoveryDataConsistent() {
         Map<Integer, CacheGroupDescriptor> cacheGrps = null;
-        Map<String, DynamicCacheDescriptor> caches = null;
+        Map<Integer, DynamicCacheDescriptor> caches = null;
 
         for (Ignite node : G.allGrids()) {
             Map<Integer, CacheGroupDescriptor> cacheGrps0 =
                 ((IgniteKernal)node).context().cache().cacheGroupDescriptors();
-            Map<String, DynamicCacheDescriptor> caches0 =
+            Map<Integer, DynamicCacheDescriptor> caches0 =
                 ((IgniteKernal)node).context().cache().cacheDescriptors();
 
             assertNotNull(cacheGrps0);
@@ -2097,7 +2097,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     checkGroupDescriptorsData(desc, desc0);
                 }
 
-                for (Map.Entry<String, DynamicCacheDescriptor> e : caches.entrySet()) {
+                for (Map.Entry<Integer, DynamicCacheDescriptor> e : caches.entrySet()) {
                     DynamicCacheDescriptor desc = e.getValue();
                     DynamicCacheDescriptor desc0 = caches.get(e.getKey());
 

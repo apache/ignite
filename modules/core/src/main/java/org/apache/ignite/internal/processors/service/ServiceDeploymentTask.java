@@ -198,9 +198,9 @@ class ServiceDeploymentTask {
                             if (change != null) {
                                 Set<String> names = new HashSet<>();
 
-                                ctx.cache().cacheDescriptors().forEach((name, desc) -> {
+                                ctx.cache().cacheDescriptors().values().forEach(desc -> {
                                     if (change.containsKey(desc.groupId()))
-                                        names.add(name);
+                                        names.add(desc.cacheName());
                                 });
 
                                 services.forEach((srvcId, desc) -> {

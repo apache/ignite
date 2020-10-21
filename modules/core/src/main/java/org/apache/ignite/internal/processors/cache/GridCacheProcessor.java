@@ -1618,7 +1618,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (start) {
-            for (Map.Entry<String, DynamicCacheDescriptor> e : cachesInfo.registeredCaches().entrySet()) {
+            for (Map.Entry<Integer, DynamicCacheDescriptor> e : cachesInfo.registeredCaches().entrySet()) {
                 DynamicCacheDescriptor desc = e.getValue();
 
                 if (!desc.cacheType().userCache() || desc.cacheConfiguration().getCacheMode() == LOCAL)
@@ -3173,7 +3173,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             for (String cacheName : msg.caches()) {
-                DynamicCacheDescriptor desc = cachesInfo.registeredCaches().get(cacheName);
+                DynamicCacheDescriptor desc = cachesInfo.registeredCaches().get(CU.cacheId(cacheName));
 
                 if (desc != null) {
                     if (desc.cacheConfiguration().isStatisticsEnabled() != msg.enabled()) {
@@ -4566,13 +4566,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Descriptor.
      */
     public DynamicCacheDescriptor cacheDescriptor(String name) {
-        return cachesInfo.registeredCaches().get(name);
+        return cachesInfo.registeredCaches().get(CU.cacheId(name));
     }
 
     /**
      * @return Cache descriptors.
      */
-    public Map<String, DynamicCacheDescriptor> cacheDescriptors() {
+    public Map<Integer, DynamicCacheDescriptor> cacheDescriptors() {
         return cachesInfo.registeredCaches();
     }
 
@@ -4624,16 +4624,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache descriptor.
      */
     public @Nullable DynamicCacheDescriptor cacheDescriptor(int cacheId) {
-        for (DynamicCacheDescriptor cacheDesc : cacheDescriptors().values()) {
-            CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
-            assert ccfg != null : cacheDesc;
-
-            if (CU.cacheId(ccfg.getName()) == cacheId)
-                return cacheDesc;
-        }
-
-        return null;
+        return cacheDescriptors().get(cacheId);
     }
 
     /**

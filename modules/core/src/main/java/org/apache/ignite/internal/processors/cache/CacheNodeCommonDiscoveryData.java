@@ -47,7 +47,7 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
     private final Map<String, Map<UUID, Boolean>> clientNodesMap;
 
     /** */
-    private Collection<String> restartingCaches;
+    private final Collection<Integer> restartingCaches;
 
     /**
      * @param caches Started caches.
@@ -59,7 +59,7 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
         Map<String, CacheData> templates,
         Map<Integer, CacheGroupData> cacheGrps,
         Map<String, Map<UUID, Boolean>> clientNodesMap,
-        Collection<String> restartingCaches
+        Collection<Integer> restartingCaches
     ) {
         assert caches != null;
         assert templates != null;
@@ -104,7 +104,7 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
     /**
      * @return A collection of restarting cache names.
      */
-    Collection<String> restartingCaches() {
+    Collection<Integer> restartingCaches() {
         return restartingCaches;
     }
 

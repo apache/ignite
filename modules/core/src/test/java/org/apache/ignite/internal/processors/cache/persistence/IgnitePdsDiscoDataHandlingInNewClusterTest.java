@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -162,12 +163,12 @@ public class IgnitePdsDiscoDataHandlingInNewClusterTest extends GridCommonAbstra
 
     /** */
     private void verifyCachesAndGroups(IgniteEx ig) {
-        Map<String, DynamicCacheDescriptor> caches = ig.context().cache().cacheDescriptors();
+        Map<Integer, DynamicCacheDescriptor> caches = ig.context().cache().cacheDescriptors();
 
         assertEquals(3, caches.size());
-        assertTrue(caches.keySet().contains(GridCacheUtils.UTILITY_CACHE_NAME));
-        assertTrue(caches.keySet().contains(STATIC_CACHE_NAME_0));
-        assertTrue(caches.keySet().contains(DYNAMIC_CACHE_NAME_0));
+        assertTrue(caches.containsKey(CU.cacheId(GridCacheUtils.UTILITY_CACHE_NAME)));
+        assertTrue(caches.containsKey(CU.cacheId(STATIC_CACHE_NAME_0)));
+        assertTrue(caches.containsKey(CU.cacheId(DYNAMIC_CACHE_NAME_0)));
 
         Map<Integer, CacheGroupDescriptor> groups = ig.context().cache().cacheGroupDescriptors();
 

@@ -108,9 +108,9 @@ public class ViewCacheClosure implements IgniteCallable<List<CacheInfo>> {
                 return cacheInfo;
 
             default:
-                Map<String, DynamicCacheDescriptor> descMap = k.context().cache().cacheDescriptors();
+                Map<Integer, DynamicCacheDescriptor> descMap = k.context().cache().cacheDescriptors();
 
-                for (Map.Entry<String, DynamicCacheDescriptor> entry : descMap.entrySet()) {
+                for (Map.Entry<Integer, DynamicCacheDescriptor> entry : descMap.entrySet()) {
                     DynamicCacheDescriptor desc = entry.getValue();
 
                     if (!desc.cacheType().userCache() || !compiled.matcher(desc.cacheName()).find())

@@ -716,7 +716,7 @@ public class ValidationOnNodeJoinUtils {
     @Nullable static IgniteNodeValidationResult validateHashIdResolvers(
         ClusterNode node,
         GridKernalContext ctx,
-        Map<String, DynamicCacheDescriptor> map
+        Map<Integer, DynamicCacheDescriptor> map
     ) {
         if (!node.isClient()) {
             for (DynamicCacheDescriptor desc : map.values()) {

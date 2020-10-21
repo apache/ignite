@@ -87,7 +87,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             cacheGroupIds.put(cacheDesc.groupId(), grp);
         }
 
-        Map<String, DynamicCacheDescriptor> allCaches = ctx.kernalContext().cache().cacheDescriptors();
+        Map<Integer, DynamicCacheDescriptor> allCaches = ctx.kernalContext().cache().cacheDescriptors();
 
         // As a second step, check all other caches and add them to groups they are compatible with.
         for (DynamicCacheDescriptor cacheDesc: allCaches.values()) {

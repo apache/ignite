@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -27,6 +29,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -198,11 +201,12 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
 
     /** */
     private void verifyCachesAndGroups(IgniteEx ignite, Collection<String> cacheNames) {
-        Map<String, DynamicCacheDescriptor> caches = ignite.context().cache().cacheDescriptors();
+        Collection<Integer> hashedCacheNames = cacheNames.stream().map(CU::cacheId).collect(Collectors.toList());
+        Map<Integer, DynamicCacheDescriptor> caches = ignite.context().cache().cacheDescriptors();
 
         assertEquals(cacheNames.size() + 1, caches.size());
-        assertTrue(caches.keySet().contains(GridCacheUtils.UTILITY_CACHE_NAME));
-        assertTrue(caches.keySet().containsAll(cacheNames));
+        assertTrue(caches.containsKey(CU.cacheId(GridCacheUtils.UTILITY_CACHE_NAME)));
+        assertTrue(caches.keySet().containsAll(hashedCacheNames));
 
         Map<Integer, CacheGroupDescriptor> groups = ignite.context().cache().cacheGroupDescriptors();
 
