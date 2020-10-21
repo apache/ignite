@@ -17,6 +17,7 @@
 This module contains Cellular Affinity tests.
 """
 
+import ducktape
 from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
@@ -102,7 +103,10 @@ class TwoPhasedRebalancedTest(IgniteTest):
         streamer.await_stopped(15 * 60)
 
         node = cells[0].nodes[0]
-        cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=60)
+        try:
+            cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=60)
+        except ducktape.errors.TimeoutError as ex:
+            self.logger.warn(ex)
 
         pds = self.pds_size(cells)
 
@@ -112,7 +116,10 @@ class TwoPhasedRebalancedTest(IgniteTest):
         deleter.start()
         deleter.await_stopped(timeout_sec=(15 * 60))
 
-        cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=60)
+        try:
+            cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=60)
+        except ducktape.errors.TimeoutError as ex:
+            self.logger.warn(ex)
 
         control_utility.validate_indexes(check_assert=True)
         dump_1 = control_utility.idle_verify_dump(node=node, return_path=True)
