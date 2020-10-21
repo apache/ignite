@@ -19,7 +19,6 @@
 #pragma warning disable 649
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
-    using System.IO;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
