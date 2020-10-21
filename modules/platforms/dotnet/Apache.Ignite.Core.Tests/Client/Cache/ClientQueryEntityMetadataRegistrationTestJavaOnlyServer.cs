@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// However, query engine requires metadata for key/value types on cache start, so an eager registration
     /// should be performed.
     /// </summary>
+    [Ignore("IGNITE-13607")]
     public class ClientQueryEntityMetadataRegistrationTestJavaOnlyServer : ClientQueryEntityMetadataRegistrationTest
     {
         /** */
