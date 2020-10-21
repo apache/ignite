@@ -135,25 +135,28 @@ class ClientTest(IgniteTest):
             temp_clients.start()
             current_top_v += temp_client
 
-            static_clients.await_event(f'ver={current_top_v}, locNode=', timeout_sec=80,
-                                       from_the_beginning=True, backoff_sec=1)
+            await_event(static_clients, f'ver={current_top_v}, locNode=')
             check_topology(control_utility, current_top_v)
 
-            temp_clients.await_event(f'clients={static_clients_num + temp_client}',
-                                     timeout_sec=80,
-                                     from_the_beginning=True,
-                                     backoff_sec=1)
+            await_event(temp_clients, f'clients={static_clients_num + temp_client}')
 
             time.sleep(client_work_time)
             temp_clients.stop(correct_stop_temp_node)
 
             current_top_v += temp_client
 
-        static_clients.await_event(f'ver={current_top_v}, locNode=', timeout_sec=80,
-                                   from_the_beginning=True, backoff_sec=0.1)
+        await_event(static_clients, f'ver={current_top_v}, locNode=')
         static_clients.stop()
 
         check_topology(control_utility, fin_top_ver)
+
+
+def await_event(service: IgniteApplicationService, message):
+    """
+    :param service: target service for wait
+    :param message: message
+    """
+    service.await_event(message, timeout_sec=80, from_the_beginning=True)
 
 
 def check_topology(control_utility: ControlUtility, fin_top_ver: int):
