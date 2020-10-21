@@ -84,10 +84,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Tests that starting a cache from thin client with a <see cref="QueryEntity"/>
         /// causes binary type registration for key and value types.
         /// <para />
-        /// * Connect .NET thin client to a Java-only node.
-        /// * Start a new cache with code configuration from thin client.
-        /// * Check that query entity is populated correctly
-        /// * Check that key and value types are registered in the cluster
+        /// * Connect .NET thin client to a Java-only node
+        /// * Start a new cache with code configuration from thin client
+        /// * Check that key and value types are registered in the cluster correctly
         /// </summary>
         [Test]
         public void TestCacheStartFromThinClientRegistersMetaForQueryEntityTypes()
@@ -108,6 +107,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             using (var client = Ignition.StartClient(new IgniteClientConfiguration("localhost:10801")))
             {
                 client.CreateCache<Key1, Value1>(cfg);
+
+                var type = client.GetBinary().GetBinaryType(typeof(Key1));
+
+                Assert.AreEqual("Bar", type.AffinityKeyFieldName);
             }
         }
 
