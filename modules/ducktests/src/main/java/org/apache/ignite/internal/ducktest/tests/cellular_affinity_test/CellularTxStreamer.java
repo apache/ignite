@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.ducktest.tests.cellular_affinity_test;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
@@ -50,10 +52,9 @@ public class CellularTxStreamer extends IgniteAwareApplication {
         int precision = 5;
 
         long[] latencies = new long[precision];
-        long[] opStartTimes = new long[precision];
+        LocalDateTime[] opStartTimes = new LocalDateTime[precision];
 
         Arrays.fill(latencies, -1);
-        Arrays.fill(opStartTimes, -1);
 
         int cnt = 0;
 
@@ -70,11 +71,14 @@ public class CellularTxStreamer extends IgniteAwareApplication {
         while (cellKeys.size() < 100) {
             Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(++candidate);
 
-            Map<Object, Long> stat = nodes.stream().collect(
-                Collectors.groupingBy(n -> n.attributes().get(attr), Collectors.counting()));
+            Set<ClusterNode> stat = nodes.stream()
+                .filter(n -> n.attributes().get(attr).equals(cell))
+                .collect(Collectors.toSet());
 
-            if (!stat.containsKey(cell))
+            if (stat.isEmpty())
                 continue;
+
+            assert nodes.size() == stat.size();
 
             cellKeys.add(candidate);
         }
@@ -82,11 +86,13 @@ public class CellularTxStreamer extends IgniteAwareApplication {
         while (!terminated()) {
             cnt++;
 
-            long start = System.currentTimeMillis();
+            LocalDateTime start = LocalDateTime.now();
+
+            long from = System.nanoTime();
 
             cache.put(cellKeys.get(cnt % cellKeys.size()), cnt); // Cycled update.
 
-            long latency = System.currentTimeMillis() - start;
+            long latency = System.nanoTime() - from;
 
             if (!record && cnt > warmup) {
                 record = true;
@@ -115,17 +121,10 @@ public class CellularTxStreamer extends IgniteAwareApplication {
         }
 
         List<String> result = new ArrayList<>();
-        Calendar calendar = Calendar.getInstance();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
-        for (int i = 0; i < precision; i++) {
-            calendar.setTimeInMillis(opStartTimes[i]);
-
-            result.add(latencies[i] + "ms started "
-                + calendar.get(Calendar.HOUR_OF_DAY) + ":"
-                + calendar.get(Calendar.MINUTE) + ":"
-                + calendar.get(Calendar.SECOND) + "."
-                + calendar.get(Calendar.MILLISECOND));
-        }
+        for (int i = 0; i < precision; i++)
+            result.add(Duration.ofNanos(latencies[i]).toMillis() + " ms at " + formatter.format(opStartTimes[i]));
 
         recordResult("WORST_LATENCY", result.toString());
         recordResult("STREAMED", cnt - warmup);

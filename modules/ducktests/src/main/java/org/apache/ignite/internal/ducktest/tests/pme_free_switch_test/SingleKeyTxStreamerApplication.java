@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.ducktest.tests.pme_free_switch_test;
 
+import java.time.Duration;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
@@ -41,11 +42,11 @@ public class SingleKeyTxStreamerApplication extends IgniteAwareApplication {
         while (!terminated()) {
             cnt++;
 
-            long start = System.currentTimeMillis();
+            long from = System.nanoTime();
 
             cache.put(key++ % 100, key); // Cycled update.
 
-            long latency = System.currentTimeMillis() - start;
+            long latency = System.nanoTime() - from;
 
             if (!record && cnt > warmup) {
                 record = true;
@@ -64,7 +65,7 @@ public class SingleKeyTxStreamerApplication extends IgniteAwareApplication {
                 log.info("APPLICATION_STREAMED " + cnt + " transactions [max=" + maxLatency + "]");
         }
 
-        recordResult("WORST_LATENCY", maxLatency);
+        recordResult("WORST_LATENCY", Duration.ofNanos(maxLatency).toMillis());
         recordResult("STREAMED", cnt - warmup);
         recordResult("MEASURE_DURATION", System.currentTimeMillis() - initTime);
 
