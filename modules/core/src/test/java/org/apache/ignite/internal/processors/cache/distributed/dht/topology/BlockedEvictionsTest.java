@@ -72,7 +72,7 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setRebalanceThreadPoolSize(ThreadLocalRandom.current().nextInt(4) + 1);
+        cfg.setRebalanceThreadPoolSize(ThreadLocalRandom.current().nextInt(3) + 2);
         cfg.setSystemThreadPoolSize(sysPoolSize);
         cfg.setConsistentId(igniteInstanceName);
 
@@ -268,12 +268,12 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
 
         PartitionsEvictManager mgr = grid(0).context().cache().context().evict();
 
-        // Group eviction context should remain in map. TODO leak ?
+        // Group eviction context should remain in map.
         Map evictionGroupsMap = U.field(mgr, "evictionGroupsMap");
 
-        assertEquals(1, evictionGroupsMap.size());
+        assertEquals("Group context must be cleaned up", 0, evictionGroupsMap.size());
 
-        IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(cacheConfiguration());
+        grid(0).getOrCreateCache(cacheConfiguration());
 
         assertEquals(0, evictionGroupsMap.size());
 

@@ -1473,4 +1473,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             }
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean rent(int p) {
+        return false;
+    }
 }

@@ -1,0 +1,68 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Amazon EKS Deployment
+:command: kubectl
+:soft_name: Kubernetes
+:serviceName: Amazon EKS
+:configDir: ../../code-snippets/k8s
+:script: ../../code-snippets/k8s/setup.sh
+:javaFile: ../../{javaCodeDir}/k8s/K8s.java
+
+
+This page is a step-by-step guide on how to deploy an Ignite cluster on Amazon EKS.
+
+include::installation/kubernetes/generic-configuration.adoc[tag=intro]
+
+include::installation/kubernetes/generic-configuration.adoc[tag=kube-version]
+
+In this guide, we will use the `eksctl` command line tool to create a Kubernetes cluster.
+Follow link:https://docs.aws.amazon.com/eks/latest/userguide/getting-started-eksctl.html[this guide,window=_blank] to install the required resources and get familiar with the tool.
+
+
+== Creating an Amazon EKS Cluster
+
+First of all, you need to create an Amazon EKS cluster that will provide resources for our Kubernetes pods.
+You can create a cluster using the following command:
+
+[source, shell]
+----
+eksctl create cluster --name ignitecluster --nodes 2 --nodes-min 1 --nodes-max 4
+----
+
+Check the link:https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html[EKS documentation,window=_blank] for the full list of options.
+The provisioning of a cluster can take up to 15 minutes.
+Check the status of the cluster using the following command:
+
+[source, shell]
+----
+$ eksctl get cluster -n ignitecluster
+NAME            VERSION STATUS  CREATED                 VPC                     SUBNETS                                                                                                 SECURITYGROUPS
+ignitecluster 1.14    ACTIVE  2019-12-16T09:57:09Z    vpc-0ebf4a6ee3de12c63   subnet-00fa7e85aaebcd54d,subnet-06134ae545a5cc04c,subnet-063d9fdb481e727d2,subnet-0a087062ddc47c341     sg-06a6800a67ea95528
+----
+
+When the status of the cluster becomes ACTIVE, you can start creating Kubernetes resources.
+
+Verify that your `kubectl` is configured correctly:
+
+[source, shell]
+----
+$ kubectl get svc
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.100.0.1   <none>        443/TCP   6m49s
+----
+
+== Kubernetes Configuration
+
+include::installation/kubernetes/generic-configuration.adoc[tag=kubernetes-config]

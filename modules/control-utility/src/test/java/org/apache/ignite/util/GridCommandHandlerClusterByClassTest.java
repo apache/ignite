@@ -128,7 +128,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     protected static final String ERROR_STACK_TRACE_PREFIX = "Error stack trace:";
 
     /**
-     * Very basic tests for running the command in different enviroment which other command are running in.
+     * Very basic tests for running the command in different environment which other command are running in.
      */
     @Test
     public void testFindAndDeleteGarbage() {
@@ -1599,15 +1599,14 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         cmdArgs.put(TRACING_CONFIGURATION, Collections.singletonList("get_all"));
 
         String warning = String.format(
-            "For use experimental command add %s=true to JVM_OPTS in %s",
-            IGNITE_ENABLE_EXPERIMENTAL_COMMAND,
+            "To use experimental command add --enable-experimental parameter for %s",
             UTILITY_NAME
         );
 
         stream(CommandList.values()).filter(cmd -> cmd.command().experimental())
             .peek(cmd -> assertTrue("Not contains " + cmd, cmdArgs.containsKey(cmd)))
             .forEach(cmd -> cmdArgs.get(cmd).forEach(cmdArg -> {
-                assertEquals(EXIT_CODE_OK, execute(cmd.text(), cmdArg));
+                assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(cmd.text(), cmdArg));
 
                 assertContains(log, testOut.toString(), warning);
             }));
