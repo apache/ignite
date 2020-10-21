@@ -581,6 +581,7 @@ public class Checkpointer extends GridWorker {
                 tracker.pagesWriteDuration(),
                 tracker.fsyncDuration(),
                 tracker.totalDuration(),
+                tracker.checkpointStartTime(),
                 chp.pagesSize,
                 tracker.dataPagesWritten(),
                 tracker.cowPagesWritten()
