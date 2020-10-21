@@ -31,7 +31,7 @@ IMAGE_NAME="${IMAGE_NAME:-$default_image_name}"
 # DuckerTest parameters are specified with options to the script
 
 # Path to ducktests
-TC_PATHS="./ignitetest/tests/cellular_affinity_test.py"
+TC_PATHS="./ignitetest/"
 # Global parameters to pass to ducktape util with --global param
 GLOBALS="{}"
 # Ducktests parameters to pass to ducktape util with --parameters param
