@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Fixture set up.
         /// </summary>
         [TestFixtureSetUp]
-        public void StartGrids()
+        public void FixtureSetUp()
         {
             var springConfig = Path.Combine("Config", "query-entity-metadata-registration.xml");
 
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// Fixture tear down.
         /// </summary>
         [TestFixtureTearDown]
-        public void StopGrids()
+        public void FixtureTearDown()
         {
             using (var ignite = Ignition.Start(TempConfig))
             {
