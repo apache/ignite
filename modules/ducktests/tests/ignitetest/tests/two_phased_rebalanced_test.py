@@ -108,13 +108,10 @@ class TwoPhasedRebalancedTest(IgniteTest):
         except ducktape.errors.TimeoutError as ex:
             self.logger.warn(ex)
 
-        pds = self.pds_size(cells)
-
-        self.logger.warn("Step prepare, load data. PDS")
-        self.logger.warn(pds)
+        self.pds_size(cells, "Step prepare, load data. PDS")
 
         deleter.start()
-        deleter.await_stopped(timeout_sec=(15 * 60))
+        deleter.await_stopped(timeout_sec=(30 * 60))
 
         try:
             cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=60)
@@ -125,10 +122,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
         dump_1 = control_utility.idle_verify_dump(node=node, return_path=True)
         dump_1 = self.move_dump_to_logs(node, dump_1)
 
-        pds = self.pds_size(cells)
-
-        self.logger.warn("After Delete 80%, PDS")
-        self.logger.warn(pds)
+        self.pds_size(cells, "After Delete 80%, PDS")
 
         self.stop_clean_idx_node_on_cell(cells, 2, 3)
 
@@ -136,10 +130,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         cells[0].await_rebalance(timeout_sec=15 * 60)
 
-        pds = self.pds_size(cells)
-
-        self.logger.warn("After rebalancing complate on nodes 2, 3. PDS")
-        self.logger.warn(pds)
+        self.pds_size(cells, "After rebalancing complate on nodes 2, 3. PDS")
 
         self.stop_clean_idx_node_on_cell(cells, 0, 1)
 
@@ -147,10 +138,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         cells[0].await_rebalance(timeout_sec=15 * 60)
 
-        pds = self.pds_size(cells)
-
-        self.logger.warn("After rebalancing complate on nodes 0, 1. PDS")
-        self.logger.warn(pds)
+        self.pds_size(cells, "After rebalancing complate on nodes 0, 1. PDS")
 
         control_utility.validate_indexes(check_assert=True)
         dump_2 = control_utility.idle_verify_dump(node=node, return_path=True)
@@ -180,7 +168,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         return cells
 
-    def pds_size(self, cells: [IgniteService]):
+    def pds_size(self, cells: [IgniteService], msg: str):
         """
         Pds size.
         """
@@ -196,6 +184,9 @@ class TwoPhasedRebalancedTest(IgniteTest):
                 cll[node.account.hostname] = node.account.ssh_output(cmd).decode("utf-8").replace('\n', 'kb')
 
             res.append(cll)
+
+        self.logger.warn(msg)
+        self.logger.warn(res)
 
         return res
 
