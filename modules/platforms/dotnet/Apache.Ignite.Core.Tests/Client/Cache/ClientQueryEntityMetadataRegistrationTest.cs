@@ -37,47 +37,22 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// </summary>
     public class ClientQueryEntityMetadataRegistrationTest
     {
-        /** */
-        private const string CacheName = "cache1";
-
-        /** */
-        private const string StartTask = "org.apache.ignite.platform.PlatformStartIgniteTask";
-
-        /** */
-        private const string StopTask = "org.apache.ignite.platform.PlatformStopIgniteTask";
-
-        /** */
-        private static readonly IgniteConfiguration TempConfig =TestUtils.GetTestConfiguration(name: "tmp");
-
-        /** */
-        private string _javaNodeName;
-
         /// <summary>
         /// Fixture set up.
         /// </summary>
         [TestFixtureSetUp]
-        public void FixtureSetUp()
+        public virtual void FixtureSetUp()
         {
-            var springConfig = Path.Combine("Config", "query-entity-metadata-registration.xml");
-
-            using (var ignite = Ignition.Start(TempConfig))
-            {
-                _javaNodeName = ignite.GetCompute().ExecuteJavaTask<string>(StartTask, springConfig);
-                Assert.IsTrue(ignite.WaitTopology(2, 5000));
-            }
+            Ignition.Start(TestUtils.GetTestConfiguration());
         }
 
         /// <summary>
         /// Fixture tear down.
         /// </summary>
         [TestFixtureTearDown]
-        public void FixtureTearDown()
+        public virtual void FixtureTearDown()
         {
-            using (var ignite = Ignition.Start(TempConfig))
-            {
-                ignite.GetCompute().ExecuteJavaTask<object>(StopTask, _javaNodeName);
-                Assert.IsTrue(ignite.WaitTopology(1, 5000));
-            }
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -104,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 }
             };
 
-            using (var client = Ignition.StartClient(new IgniteClientConfiguration("localhost:10801")))
+            using (var client = Ignition.StartClient(new IgniteClientConfiguration("localhost:10800..10801")))
             {
                 client.CreateCache<Key1, Value1>(cfg);
 
