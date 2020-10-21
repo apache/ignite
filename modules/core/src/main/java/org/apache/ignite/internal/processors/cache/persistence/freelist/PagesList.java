@@ -1556,7 +1556,7 @@ public abstract class PagesList extends DataStructure {
                 newPageId = PageIdUtils.link(newPageId, itemId);
         }
 
-        if (needWalDeltaRecord && reusedPageId != newPageId) {
+        if (reusedPageId != newPageId) {
             PageIO.setPageId(reusedPageAddr, newPageId);
 
             if (needWalDeltaRecord)
