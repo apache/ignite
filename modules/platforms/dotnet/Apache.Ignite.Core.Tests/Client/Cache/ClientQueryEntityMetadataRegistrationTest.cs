@@ -47,6 +47,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         private const string StopTask = "org.apache.ignite.platform.PlatformStopIgniteTask";
 
         /** */
+        private static readonly IgniteConfiguration TempConfig =TestUtils.GetTestConfiguration(name: "tmp");
+
+        /** */
         private string _javaNodeName;
 
         /// <summary>
@@ -57,7 +60,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var springConfig = Path.Combine("Config", "query-entity-metadata-registration.xml");
 
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite = Ignition.Start(TempConfig))
             {
                 _javaNodeName = ignite.GetCompute().ExecuteJavaTask<string>(StartTask, springConfig);
                 Assert.IsTrue(ignite.WaitTopology(2, 5000));
@@ -70,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestFixtureTearDown]
         public void StopGrids()
         {
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite = Ignition.Start(TempConfig))
             {
                 ignite.GetCompute().ExecuteJavaTask<object>(StopTask, _javaNodeName);
                 Assert.IsTrue(ignite.WaitTopology(1, 5000));
