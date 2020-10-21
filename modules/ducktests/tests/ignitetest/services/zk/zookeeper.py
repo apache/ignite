@@ -27,11 +27,14 @@ class ZookeeperSettings:
     """
     Settings for zookeeper quorum nodes.
     """
-    def __init__(self, tick_time=1000, init_limit=10, sync_limit=5, client_port=2181):
-        self.tick_time = tick_time
-        self.init_limit = init_limit
-        self.sync_limit = sync_limit
-        self.client_port = client_port
+    def __init__(self, **kwargs):
+        self.tick_time = kwargs.get('tick_time', 1000)
+        self.min_session_timeout = kwargs.get('min_session_timeout', 2000)
+        self.init_limit = kwargs.get('init_limit', 10)
+        self.sync_limit = kwargs.get('sync_limit', 5)
+        self.client_port = kwargs.get('client_port', 2181)
+
+        assert self.tick_time <= self.min_session_timeout // 2, "'tick_time' must be <= 'min_session_timeout' / 2"
 
 
 class ZookeeperService(Service):

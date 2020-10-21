@@ -15,12 +15,11 @@
  limitations under the License.
 #}
 
-tickTime={{ settings.tick_time }}
-minSessionTimeout={{ settings.min_session_timeout }}
-initLimit={{ settings.init_limit }}
-syncLimit={{ settings.sync_limit }}
-dataDir={{ DATA_DIR }}
-clientPort={{ settings.client_port }}
-{% for node in nodes %}
-server.{{ loop.index }}={{ node.account.hostname }}:2888:3888
-{% endfor %}
+{% macro communication_spi(spi) %}
+    <property name="communicationSpi">
+        <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+            <property name="localPort" value="{{ spi.port }}"/>
+            <property name="localPortRange" value="{{ spi.port_range }}"/>
+        </bean>
+    </property>
+{% endmacro %}
