@@ -38,13 +38,14 @@ class TwoPhasedRebalancedTest(IgniteTest):
     """
     Two-phase rebalancing test case.
     """
-    NUM_NODES = 4
+    NUM_NODES_CELL = 4
+    NUM_CELL = 2
 
     ATTRIBUTE = "CELL"
 
     CACHE_NAME = "test-cache"
 
-    @cluster(num_nodes=NUM_NODES * 2 + 2)
+    @cluster(num_nodes=NUM_NODES_CELL * NUM_CELL + 2)
     @ignite_versions(str(DEV_BRANCH))
     def two_phased_rebalance_test(self, ignite_version):
         """
@@ -67,8 +68,8 @@ class TwoPhasedRebalancedTest(IgniteTest):
                                                 checkpoint_frequency=30000)
 
         cells = self.start_cells(ignite_version=ignite_version,
-                                 cells_cnt=2,
-                                 cell_nodes_cnt=self.NUM_NODES,
+                                 cells_cnt=self.NUM_CELL,
+                                 cell_nodes_cnt=self.NUM_NODES_CELL,
                                  cache_name=self.CACHE_NAME,
                                  data_storage=data_storage)
 
@@ -104,7 +105,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
 
         node = cells[0].nodes[0]
         try:
-            cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=60)
+            cells[0].await_event_on_node('Skipping checkpoint', node, timeout_sec=60)
         except ducktape.errors.TimeoutError as ex:
             self.logger.warn(ex)
 
@@ -114,7 +115,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
         deleter.await_stopped(timeout_sec=(30 * 60))
 
         try:
-            cells[0].await_event_on_node('Checkpoint finished', node, timeout_sec=60)
+            cells[0].await_event_on_node('Skipping checkpoint', node, timeout_sec=60)
         except ducktape.errors.TimeoutError as ex:
             self.logger.warn(ex)
 
@@ -144,7 +145,7 @@ class TwoPhasedRebalancedTest(IgniteTest):
         dump_2 = control_utility.idle_verify_dump(node=node, return_path=True)
         dump_2 = self.move_dump_to_logs(node, dump_2)
 
-        diff = node.account.ssh_output(f'diff {dump_1} {dump_2}')
+        diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
         assert len(diff) == 0, diff
 
     def start_cells(self, ignite_version: str, cells_cnt: int, cell_nodes_cnt: int, cache_name: str,

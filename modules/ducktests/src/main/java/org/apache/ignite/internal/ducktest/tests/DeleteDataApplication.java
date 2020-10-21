@@ -20,6 +20,7 @@ package org.apache.ignite.internal.ducktest.tests;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
+import org.apache.ignite.lang.IgniteFuture;
 
 import javax.cache.Cache;
 import java.util.*;
@@ -46,7 +47,7 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
         Iterator<Cache.Entry<Object, Object>> iter = cache.iterator();
 
-        Set<Object> keys = new HashSet<>();
+        ArrayList<Object> keys = new ArrayList<>(iterSize);
 
         int cnt = 0;
 
@@ -58,7 +59,23 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
         log.info(">>> Start removing: " + keys.size());
 
-        cache.removeAll(keys);
+        int listSize = keys.size();
+        int bachSize = 1000;
+
+        int fromIdx = 0;
+        int toIdx = 0;
+
+        List<IgniteFuture<Void>> futures = new LinkedList<>();
+
+        while(fromIdx < listSize) {
+            toIdx = Math.min(fromIdx + bachSize, listSize);
+
+            futures.add(cache.removeAllAsync(new TreeSet<>(keys.subList(fromIdx, toIdx))));
+
+            fromIdx=toIdx+1;
+        }
+
+        futures.forEach(IgniteFuture::get);
 
         log.info(">>> Cache size after: " + cache.size());
 
