@@ -32,16 +32,31 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestParser;
 import org.apache.ignite.internal.util.IgniteStopwatch;
+import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
+import org.apache.ignite.internal.util.nio.GridNioFilter;
+import org.apache.ignite.internal.util.nio.GridNioParser;
+import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.nio.GridNioServerListener;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.java.JavaLogger;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -49,6 +64,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.Charset;
@@ -222,6 +238,104 @@ public class ConnectionTest {
                 client.close();
             } catch (IOException ioException) {
                 ioException.printStackTrace();
+            }
+        });
+
+        return fut;
+    }
+
+    /** ? */
+    private CompletableFuture<Integer> handshakeGridNioServer() throws Exception {
+        CompletableFuture<Integer> fut = new CompletableFuture<>();
+
+        IgniteLogger gridLog = new JavaLogger(false);
+
+        GridNioFilter[] filters;
+
+        GridNioFilter codecFilter = new GridNioCodecFilter(new GridNioParser() {
+            @Override
+            public @Nullable Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
+                return null;
+            }
+
+            @Override
+            public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
+                return null;
+            }
+        }, gridLog, false);
+
+//        if (sslCtx != null) {
+//            GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog);
+//
+//            sslFilter.directMode(false);
+//
+//            filters = new GridNioFilter[]{codecFilter, sslFilter};
+//        }
+//        else
+            filters = new GridNioFilter[]{codecFilter};
+
+        GridNioServer srv = GridNioServer.builder().address(U.getLocalHost())
+                .port(-1)
+                .listener(new GridNioServerListener<Object>() {
+                    @Override
+                    public void onConnected(GridNioSession ses) {
+
+                    }
+
+                    @Override
+                    public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
+
+                    }
+
+                    @Override
+                    public void onMessageSent(GridNioSession ses, Object msg) {
+
+                    }
+
+                    @Override
+                    public void onMessage(GridNioSession ses, Object msg) {
+
+                    }
+
+                    @Override
+                    public void onSessionWriteTimeout(GridNioSession ses) {
+
+                    }
+
+                    @Override
+                    public void onSessionIdleTimeout(GridNioSession ses) {
+
+                    }
+
+                    @Override
+                    public void onFailure(FailureType failureType, Throwable failure) {
+
+                    }
+                })
+                .filters(filters)
+                .logger(gridLog)
+                .selectorCount(Runtime.getRuntime().availableProcessors())
+                .sendQueueLimit(1024)
+                .byteOrder(ByteOrder.nativeOrder())
+                .directBuffer(true)
+                .directMode(false)
+                .socketReceiveBufferSize(0)
+                .socketSendBufferSize(0)
+                .idleTimeout(Long.MAX_VALUE)
+                .igniteInstanceName("thinClient")
+                .serverName("tcp-client")
+                .build();
+
+        srv.start();
+
+        srv.createSession(null, null, true, new CI1<IgniteInternalFuture<GridNioSession>>() {
+            @Override
+            public void apply(IgniteInternalFuture<GridNioSession> sesFut) {
+                try {
+                    sesFut.get().send(null);
+                } catch (IgniteCheckedException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
