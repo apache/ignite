@@ -35,30 +35,43 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// Normally, binary metadata is registered in the cluster when an object of the given type is first serialized
     /// (for cache storage or other purposes - Services, Compute, etc).
     /// However, query engine requires metadata for key/value types on cache start, so an eager registration
-    /// should be performed. 
+    /// should be performed.
     /// </summary>
     public class QueryEntityMetadataRegistrationTest
     {
         /** */
         private const string CacheName = "cache1";
-        
+
+        /** */
+        private const string StartTask = "org.apache.ignite.platform.PlatformStartIgniteTask";
+
+        /** */
+        private const string StopTask = "org.apache.ignite.platform.PlatformStopIgniteTask";
+
+        /** */
+        private string _javaNodeName;
+
         /// <summary>
         /// Fixture set up.
         /// </summary>
         [TestFixtureSetUp]
         public void StartGrids()
         {
+            var springConfig = Path.Combine("Config", "query-entity-metadata-registration.xml");
+
             for (int i = 0; i < 2; i++)
             {
                 var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
                     // TODO: Add caches here and test them too
-                    SpringConfigUrl = Path.Combine("Config", "query-entity-metadata-registration.xml"),
+                    SpringConfigUrl = springConfig,
                     IgniteInstanceName = i.ToString()
                 };
 
                 Ignition.Start(cfg);
             }
+
+            _javaNodeName = Ignition.GetAll().First().GetCompute().ExecuteJavaTask<string>(StartTask, springConfig);
         }
 
         /// <summary>
@@ -67,6 +80,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureTearDown]
         public void StopGrids()
         {
+            Ignition.GetAll().First().GetCompute().ExecuteJavaTask<string>(StopTask, _javaNodeName);
+
             Ignition.StopAll(true);
         }
 
@@ -76,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <para />
         /// * Start a new cache with code configuration
         /// * Check that query entity is populated correctly
-        /// * Check that key and value types are registered in the cluster 
+        /// * Check that key and value types are registered in the cluster
         /// </summary>
         [Test]
         public void TestCacheStartFromCodeRegistersMetaForQueryEntityTypes()
@@ -116,7 +131,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Assert.IsNull(valType.AffinityKeyFieldName);
                 Assert.IsEmpty(valType.Fields);
             }
-            
+
             // Verify put/get on server and client.
             cache[new Key1{Foo = "a", Bar = 2}] = new Value1 {Name = "x", Value = 1};
 
@@ -124,7 +139,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             {
                 var clientCache = client.GetCache<Key1, Value1>(cache.Name);
                 var val = clientCache.Get(new Key1 {Foo = "a", Bar = 2});
-                
+
                 Assert.AreEqual("x", val.Name);
                 Assert.AreEqual(1, val.Value);
             }
@@ -136,7 +151,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <para />
         /// * Start a new cache with code configuration from thin client.
         /// * Check that query entity is populated correctly
-        /// * Check that key and value types are registered in the cluster 
+        /// * Check that key and value types are registered in the cluster
         /// </summary>
         [Test]
         public void TestCacheStartFromThinClientRegistersMetaForQueryEntityTypes()
@@ -172,10 +187,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Assert.AreEqual(typeof(Value1).FullName, qryEntity.ValueTypeName);
 
                 Assert.AreEqual("Bar", keyType.AffinityKeyFieldName);
-                Assert.IsEmpty(keyType.Fields);
-
                 Assert.IsNull(valType.AffinityKeyFieldName);
-                Assert.IsEmpty(valType.Fields);
             }
         }
 
@@ -203,7 +215,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             };
 
             Ignition.GetIgnite("0").CreateCache<object, object>(cfg);
-            
+
             foreach (var ignite in Ignition.GetAll())
             {
                 var types = ignite.GetBinary().GetBinaryTypes();
@@ -223,7 +235,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <para />
         /// * Get the cache started from Spring XML
         /// * Check that query entity is populated correctly
-        /// * Check that key and value types are registered in the cluster 
+        /// * Check that key and value types are registered in the cluster
         /// </summary>
         [Test]
         public void TestCacheStartFromSpringRegistersMetaForQueryEntityTypes()
@@ -260,19 +272,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             [AffinityKeyMapped]
             public int Bar;
         }
-        
+
         /** */
         private class Value1
         {
             /** */
             [QuerySqlField]
             public string Name { get; set; }
-            
+
             /** */
             [QuerySqlField]
             public long Value { get; set; }
         }
-        
+
         /** */
         private class Key2
         {
@@ -283,13 +295,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             [AffinityKeyMapped]
             public long AffKey;
         }
-        
+
         /** */
         private class Value2
         {
             /** */
             public string Name { get; set; }
-            
+
             /** */
             public decimal Price { get; set; }
         }
