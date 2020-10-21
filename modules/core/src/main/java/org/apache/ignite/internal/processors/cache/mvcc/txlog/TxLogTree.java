@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.mvcc.txlog;
 
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -48,8 +49,7 @@ public class TxLogTree extends BPlusTree<TxKey, TxRow> {
         ReuseList reuseList,
         FailureProcessor failureProcessor,
         boolean initNew,
-        PageLockListener lockLsnr,
-        byte pageFlag
+        PageLockListener lockLsnr
     ) throws IgniteCheckedException {
         super(
             TxLog.TX_LOG_CACHE_NAME,
@@ -62,7 +62,7 @@ public class TxLogTree extends BPlusTree<TxKey, TxRow> {
             reuseList,
             TxLogInnerIO.VERSIONS,
             TxLogLeafIO.VERSIONS,
-            pageFlag,
+            PageIdAllocator.FLAG_IDX,
             failureProcessor,
             lockLsnr
         );

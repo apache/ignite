@@ -49,6 +49,7 @@ public class PartitionMetaStorageImpl<T extends Storable> extends AbstractFreeLi
      * @param wal Wal.
      * @param metaPageId Meta page id.
      * @param initNew Initialize new.
+     * @param pageFlag Default flag value for allocated pages.
      */
     public PartitionMetaStorageImpl(
         int cacheId, String name,

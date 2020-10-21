@@ -61,7 +61,7 @@ public class BPlusTreeFakeReuseSelfTest extends BPlusTreeSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public long initReusedPage(long pageId, byte flag) throws IgniteCheckedException {
+        @Override public long initRecycledPage(long pageId, byte flag) throws IgniteCheckedException {
             return pageId;
         }
     }

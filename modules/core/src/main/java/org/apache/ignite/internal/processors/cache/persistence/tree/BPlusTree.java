@@ -751,6 +751,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param reuseList Reuse list.
      * @param innerIos Inner IO versions.
      * @param leafIos Leaf IO versions.
+     * @param pageFlag Default flag value for allocated pages.
      * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
      */
@@ -795,6 +796,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param globalRmvId Remove ID.
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
+     * @param pageFlag Default flag value for allocated pages.
      * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
      */

@@ -74,6 +74,7 @@ public abstract class DataStructure {
      * @param grpName Cache group name.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
+     * @param pageFlag Default flag value for allocated pages.
      */
     public DataStructure(
         int cacheGrpId,
@@ -135,9 +136,8 @@ public abstract class DataStructure {
 
             // Recycled. "pollFreePage" result should be reinitialized to move rotatedId to itemId.
             if (pageId != 0)
-                pageId = reuseList.initReusedPage(pageId, pageFlag);
-
-            if (pageId == 0)
+                pageId = reuseList.initRecycledPage(pageId, pageFlag);
+            else
                 pageId = reuseList.takeRecycledPage();
         }
 

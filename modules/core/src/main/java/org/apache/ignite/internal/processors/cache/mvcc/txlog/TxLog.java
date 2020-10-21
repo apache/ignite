@@ -192,8 +192,7 @@ public class TxLog implements CheckpointListener {
                     reuseList,
                     ctx.failure(),
                     isNew,
-                    txLogLockLsnr,
-                    FLAG_IDX
+                    txLogLockLsnr
                 );
 
                 ((GridCacheDatabaseSharedManager)mgr).addCheckpointListener(this);
@@ -219,8 +218,7 @@ public class TxLog implements CheckpointListener {
                 reuseList1,
                 ctx.failure(),
                 true,
-                txLogLockLsnr,
-                FLAG_IDX
+                txLogLockLsnr
             );
         }
     }

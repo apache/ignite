@@ -50,6 +50,8 @@ import org.apache.ignite.internal.util.GridCursorIteratorWrapper;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+
 /**
  */
 public abstract class AbstractFreeList<T extends Storable> extends PagesList implements FreeList<T>, ReuseList {
@@ -425,6 +427,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @param wal Write ahead log manager.
      * @param metaPageId Metadata page ID.
      * @param initNew {@code True} if new metadata should be initialized.
+     * @param pageFlag Default flag value for allocated pages.
      * @throws IgniteCheckedException If failed.
      */
     public AbstractFreeList(
@@ -567,7 +570,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private long allocateDataPage(int part) throws IgniteCheckedException {
         assert part <= PageIdAllocator.MAX_PARTITION_ID;
 
-        return pageMem.allocatePage(grpId, part, PageIdAllocator.FLAG_DATA);
+        return pageMem.allocatePage(grpId, part, FLAG_DATA);
     }
 
     /** {@inheritDoc} */
@@ -726,10 +729,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         if (pageId == 0L)
             return 0;
 
-        if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) // Page is taken from reuse bucket.
-            return initReusedPage(row, pageId, statHolder);
-        else // Page is taken from free space bucket. For in-memory mode partition must be changed.
-            return PageIdUtils.changePartitionId(pageId, row.partition());
+        return PageIdUtils.changePartitionId(pageId, row.partition());
     }
 
     /**
@@ -912,8 +912,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** {@inheritDoc} */
-    @Override public long initReusedPage(long pageId, byte flag) throws IgniteCheckedException {
-        return initReusedPage0(pageId, flag);
+    @Override public long initRecycledPage(long pageId, byte flag) throws IgniteCheckedException {
+        return initRecycledPage0(pageId, flag);
     }
 
     /** {@inheritDoc} */

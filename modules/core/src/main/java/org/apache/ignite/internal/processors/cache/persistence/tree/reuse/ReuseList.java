@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree.reuse;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 
 /**
  * Reuse list.
@@ -41,6 +43,16 @@ public interface ReuseList {
      */
     public long recycledPagesCount() throws IgniteCheckedException;
 
-    /** */
-    long initReusedPage(long pageId, byte flag) throws IgniteCheckedException;
+    /**
+     * Converts recycled page id back to a usable id. Might modify page content as well if flag is changing.
+     *
+     * @param pageId Id of the recycled page.
+     * @param flag Flag value for the page. One of {@link PageIdAllocator#FLAG_DATA}, {@link PageIdAllocator#FLAG_IDX}
+     *      or {@link PageIdAllocator#FLAG_AUX}.
+     * @return Updated page id.
+     * @throws IgniteCheckedException If failed.
+     *
+     * @see FullPageId
+     */
+    long initRecycledPage(long pageId, byte flag) throws IgniteCheckedException;
 }

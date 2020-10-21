@@ -48,6 +48,7 @@ public class ReuseListImpl extends PagesList implements ReuseList {
      * @param wal       Write ahead log manager.
      * @param metaPageId Metadata page ID.
      * @param initNew {@code True} if new metadata should be initialized.
+     * @param pageFlag Default flag value for allocated pages.
      * @throws IgniteCheckedException If failed.
      */
     public ReuseListImpl(
@@ -99,8 +100,8 @@ public class ReuseListImpl extends PagesList implements ReuseList {
     }
 
     /** {@inheritDoc} */
-    @Override public long initReusedPage(long pageId, byte flag) throws IgniteCheckedException {
-        return initReusedPage0(pageId, flag);
+    @Override public long initRecycledPage(long pageId, byte flag) throws IgniteCheckedException {
+        return initRecycledPage0(pageId, flag);
     }
 
     /** {@inheritDoc} */

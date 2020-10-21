@@ -32,6 +32,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -204,6 +205,7 @@ public abstract class PagesList extends DataStructure {
      * @param buckets Number of buckets.
      * @param wal Write ahead log manager.
      * @param metaPageId Metadata page ID.
+     * @param pageFlag Default flag value for allocated pages.
      */
     protected PagesList(
         int cacheId,
@@ -1377,23 +1379,9 @@ public abstract class PagesList extends DataStructure {
                             : "Incorrectly recycled pageId in reuse bucket: " + U.hexLong(pageId);
 
                         if (isReuseBucket(bucket)) {
-                            byte flag;
+                            byte flag = getFlag(initIoVers);
 
-                            if (initIoVers != null) {
-                                PageIO pageIO = initIoVers.latest();
-
-                                if (pageIO.getType() == PageIO.T_DATA || pageIO.getType() == T_META)
-                                    flag = FLAG_DATA;
-                                else
-                                    flag = pageFlag;
-                            }
-                            else {
-                                assert 0 == PageIO.getRotatedIdPart(tailAddr);
-
-                                flag = pageFlag;
-                            }
-
-                            dataPageId = initReusedPage0(pageId, flag);
+                            dataPageId = initRecycledPage0(pageId, flag);
                         }
                         else
                             dataPageId = pageId;
@@ -1434,25 +1422,9 @@ public abstract class PagesList extends DataStructure {
 
                         decrementBucketSize(bucket);
 
-                        PageIO pageIO;
+                        byte flag = getFlag(initIoVers);
 
-                        byte flag;
-
-                        if (initIoVers != null) {
-                            pageIO = initIoVers.latest();
-
-                            if (pageIO.getType() == PageIO.T_DATA || pageIO.getType() == T_META)
-                                flag = FLAG_DATA;
-                            else
-                                flag = pageFlag;
-                        }
-                        else {
-                            assert 0 == PageIO.getRotatedIdPart(tailAddr);
-
-                            pageIO = null;
-
-                            flag = pageFlag;
-                        }
+                        PageIO pageIO = initIoVers != null ? initIoVers.latest() : null;
 
                         dataPageId = initReusedPage(tailId, tailPage, tailAddr, PageIdUtils.partId(tailId), flag, pageIO);
 
@@ -1488,8 +1460,33 @@ public abstract class PagesList extends DataStructure {
         }
     }
 
-    /** */
-    protected long initReusedPage0(long pageId, byte flag) throws IgniteCheckedException {
+    /**
+     * @param initIoVers Optional IO versions list that will be used later to init the page.
+     * @return {@link PageIdAllocator#FLAG_DATA} for cache group metas and data pages,
+     *      {@link #pageFlag} otherwise.
+     */
+    private byte getFlag(IOVersions<?> initIoVers) {
+        if (initIoVers != null) {
+            PageIO pageIO = initIoVers.latest();
+
+            if (pageIO.getType() == PageIO.T_DATA || pageIO.getType() == T_META)
+                return FLAG_DATA;
+        }
+
+        return pageFlag;
+    }
+
+    /**
+     * Create new page id and update page content accordingly if it's necessary.
+     *
+     * @param pageId Id of the recycled page from reuse bucket.
+     * @param flag New flag for the page.
+     * @return New page id.
+     * @throws IgniteCheckedException If failed.
+     *
+     * @see PagesList#initReusedPage(long, long, long, int, byte, PageIO)
+     */
+    protected long initRecycledPage0(long pageId, byte flag) throws IgniteCheckedException {
         long page = pageMem.acquirePage(grpId, pageId);
 
         try {
@@ -1508,7 +1505,7 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
-     * Reused page must obtain correctly assembled page id, then initialized by proper {@link PageIO} instance and
+     * Reused page must obtain correctly assaembled page id, then initialized by proper {@link PageIO} instance and
      * non-zero {@code itemId} of reused page id must be saved into special place.
      *
      * @param reusedPageId Reused page id.
@@ -1556,11 +1553,13 @@ public abstract class PagesList extends DataStructure {
                 newPageId = PageIdUtils.link(newPageId, itemId);
         }
 
-        if (reusedPageId != newPageId) {
+        long storedPageId = getPageId(reusedPageAddr);
+
+        if (storedPageId != newPageId) {
             PageIO.setPageId(reusedPageAddr, newPageId);
 
             if (needWalDeltaRecord)
-                wal.log(new RecycleRecord(grpId, reusedPageId, newPageId));
+                wal.log(new RecycleRecord(grpId, storedPageId, newPageId));
         }
 
         return newPageId;

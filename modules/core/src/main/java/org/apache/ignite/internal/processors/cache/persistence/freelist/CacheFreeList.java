@@ -41,6 +41,7 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
      * @param wal Wal.
      * @param metaPageId Meta page id.
      * @param initNew Initialize new.
+     * @param pageFlag Default flag value for allocated pages.
      */
     public CacheFreeList(
         int cacheId,

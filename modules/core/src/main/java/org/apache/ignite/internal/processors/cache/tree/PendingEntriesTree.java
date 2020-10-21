@@ -43,6 +43,7 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
      * @param initNew Initialize new index.
+     * @param pageFlag Default flag value for allocated pages.
      * @throws IgniteCheckedException If failed.
      */
     public PendingEntriesTree(
