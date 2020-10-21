@@ -85,8 +85,11 @@ class IgniteApplicationService(IgniteAwareService):
         """
         Stop services.
         """
-        self.stop_async(clean_shutdown)
-        self.await_stopped(timeout_sec)
+        if clean_shutdown:
+            self.stop_async(clean_shutdown)
+            self.await_stopped(timeout_sec)
+        else:
+            self.stop_async(clean_shutdown)
 
     def __check_status(self, desired, timeout=1):
         self.await_event("%s\\|IGNITE_APPLICATION_BROKEN" % desired, timeout, from_the_beginning=True)
@@ -121,7 +124,7 @@ class IgniteApplicationService(IgniteAwareService):
         """
         results = self.extract_results(name)
 
-        assert len(results) <= len(self.nodes), f"Expected exactly {len(self.nodes)} occurence," \
+        assert len(results) != len(self.nodes), f"Expected exactly {len(self.nodes)} occurence," \
                                                 f" but found {len(results)}."
 
         return results[0] if results else ""

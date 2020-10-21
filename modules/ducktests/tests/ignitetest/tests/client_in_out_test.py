@@ -17,6 +17,9 @@
 This module contains client tests
 """
 import time
+
+from ducktape.mark.resource import cluster
+
 from ducktape.mark import parametrize
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
@@ -46,45 +49,47 @@ class ClientTest(IgniteTest):
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.start_stop_client.IgniteCachePutClient"
 
     @ignite_versions(str(V_2_8_1), str(DEV_BRANCH))
-    @parametrize(cluster=7,
+    @cluster(num_nodes=7)
+    @parametrize(num_nodes=7,
                  static_clients=2,
                  temp_client=3,
                  iteration_count=3,
                  client_work_time=30)
     # pylint: disable=R0913
     def test_ignite_start_stop_nodes(self, ignite_version,
-                                     cluster, static_clients, temp_client, iteration_count, client_work_time):
+                                     num_nodes, static_clients, temp_client, iteration_count, client_work_time):
         """
         Start and stop clients node test without kill java process.
         Check topology.
         """
-        self.ignite_start_stop(ignite_version, False, cluster, static_clients,
+        self.ignite_start_stop(ignite_version, False, num_nodes, static_clients,
                                temp_client, iteration_count, client_work_time)
 
     @ignite_versions(str(V_2_8_1), str(DEV_BRANCH))
-    @parametrize(cluster=7,
+    @cluster(num_nodes=7)
+    @parametrize(num_nodes=7,
                  static_clients=2,
                  temp_client=3,
                  iteration_count=3,
                  client_work_time=30)
     # pylint: disable=R0913
     def test_ignite_kill_start_nodes(self, ignite_version,
-                                     cluster, static_clients, temp_client, iteration_count, client_work_time):
+                                     num_nodes, static_clients, temp_client, iteration_count, client_work_time):
         """
         Start and kill client nodes, Check topology
         """
-        self.ignite_start_stop(ignite_version, True, cluster, static_clients,
+        self.ignite_start_stop(ignite_version, True, num_nodes, static_clients,
                                temp_client, iteration_count, client_work_time)
 
     # pylint: disable=R0914
     # pylint: disable=R0913
     def ignite_start_stop(self, ignite_version, kill_temp_nodes,
-                          cluster, static_clients_num, temp_client, iteration_count, client_work_time):
+                          nodes_num, static_clients_num, temp_client, iteration_count, client_work_time):
         """
         Test for starting and stopping fat clients.
         """
 
-        servers_count = cluster - static_clients_num - temp_client
+        servers_count = nodes_num - static_clients_num - temp_client
 
         current_top_v = servers_count
         # Topology version after test.
@@ -140,7 +145,7 @@ class ClientTest(IgniteTest):
                                      backoff_sec=1)
 
             time.sleep(client_work_time)
-            stop_service_nodes(temp_clients, kill_temp_nodes)
+            temp_clients.stop(kill_temp_nodes)
 
             current_top_v += temp_client
 
@@ -149,19 +154,6 @@ class ClientTest(IgniteTest):
         static_clients.stop()
 
         check_topology(control_utility, fin_top_ver)
-
-
-def stop_service_nodes(service: IgniteApplicationService, kill_nodes):
-    """
-    Base service stop command.
-    If kill_nodes=True kill node.
-    If kill_nodes=False then the node is shutting down correctly
-    """
-    if kill_nodes:
-        for node in service.nodes:
-            service.stop_node(node=node, clean_shutdown=False)
-    else:
-        service.stop(clean_shutdown=True)
 
 
 def check_topology(control_utility: ControlUtility, fin_top_ver: int):
