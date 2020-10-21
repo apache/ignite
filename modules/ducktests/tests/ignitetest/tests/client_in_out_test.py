@@ -62,7 +62,7 @@ class ClientTest(IgniteTest):
         Start and stop clients node test without kill java process.
         Check topology.
         """
-        self.ignite_start_stop(ignite_version, False, num_nodes, static_clients,
+        self.ignite_start_stop(ignite_version, True, num_nodes, static_clients,
                                temp_client, iteration_count, client_work_time)
 
     @ignite_versions(str(V_2_8_1), str(DEV_BRANCH))
@@ -78,7 +78,7 @@ class ClientTest(IgniteTest):
         """
         Start and kill client nodes, Check topology
         """
-        self.ignite_start_stop(ignite_version, True, num_nodes, static_clients,
+        self.ignite_start_stop(ignite_version, False, num_nodes, static_clients,
                                temp_client, iteration_count, client_work_time)
 
     # pylint: disable=R0914
