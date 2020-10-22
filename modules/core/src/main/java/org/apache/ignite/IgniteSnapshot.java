@@ -48,4 +48,11 @@ public interface IgniteSnapshot {
      * @return Future which will be completed when cancel operation finished.
      */
     public IgniteFuture<Void> cancelSnapshot(String name);
+
+    /**
+     * Status snapshot operation.
+     *
+     * @return Future which will be completed when cancel operation finished.
+     */
+    public IgniteFuture<Boolean> statusSnapshot();
 }

@@ -47,4 +47,9 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     @Override public void cancelSnapshot(String snpName) {
         mgr.cancelSnapshot(snpName).get();
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean statusSnapshot() {
+        return mgr.statusSnapshot().get();
+    }
 }

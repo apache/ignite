@@ -40,4 +40,10 @@ public interface SnapshotMXBean {
      */
     @MXBeanDescription("Cancel started cluster-wide snapshot on the node initiator.")
     public void cancelSnapshot(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName);
+
+    /**
+     * Status snapshot.
+     */
+    @MXBeanDescription("If true, then a snapshot operation in progress.")
+    public boolean statusSnapshot();
 }

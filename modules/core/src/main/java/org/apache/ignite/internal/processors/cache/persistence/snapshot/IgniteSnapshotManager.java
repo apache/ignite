@@ -699,6 +699,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         return new IgniteFutureImpl<>(fut0);
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> statusSnapshot() {
+        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
+
+        IgniteInternalFuture<Boolean> fut0 = cctx.kernalContext().closure()
+                .callAsyncNoFailover(BROADCAST,
+                        new StatusSnapshotCallable(),
+                        cctx.discovery().aliveServerNodes(),
+                        false,
+                        0,
+                        true);
+
+        return new IgniteFutureImpl<>(fut0);
+    }
+
     /**
      * @param name Snapshot name to cancel operation on local node.
      */
@@ -1453,6 +1468,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotTask(snpName);
 
             return null;
+        }
+    }
+
+    /** Start creation of cluster snapshot closure. */
+    @GridInternal
+    private static class StatusSnapshotCallable implements IgniteCallable<Boolean> {
+        /** Serial version UID. */
+        private static final long serialVersionUID = 0L;
+
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
+        /** */
+        public StatusSnapshotCallable() {
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean call() throws Exception {
+            return ignite.context().cache().context().snapshotMgr().isSnapshotCreating();
         }
     }
 

@@ -29,7 +29,10 @@ public enum SnapshotSubcommand {
     CREATE("create"),
 
     /** Sub-command to cancel running snapshot. */
-    CANCEL("cancel");
+    CANCEL("cancel"),
+
+    /** Sub-command to get snapshot status. */
+    STATUS("status");
 
     /** Sub-command name. */
     private final String name;

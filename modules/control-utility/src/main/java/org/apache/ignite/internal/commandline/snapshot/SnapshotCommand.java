@@ -26,6 +26,7 @@ import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
 import static java.util.Collections.singletonMap;
@@ -33,6 +34,7 @@ import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CANCEL;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CREATE;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.STATUS;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.of;
 
 /**
@@ -92,6 +94,12 @@ public class SnapshotCommand implements Command<Object> {
 
                 break;
 
+            case STATUS:
+                taskName = VisorSnapshotStatusTask.class.getName();
+                taskArgs = null;
+
+                break;
+
             default:
                 throw new IllegalArgumentException("Unknown snapshot sub-command: " + cmd);
         }
@@ -104,6 +112,8 @@ public class SnapshotCommand implements Command<Object> {
 
         Command.usage(log, "Cancel running snapshot:", SNAPSHOT, singletonMap("snapshot_name", "Snapshot name."),
             CANCEL.toString(), "snapshot_name");
+
+        Command.usage(log, "Status snapshot:", SNAPSHOT, STATUS.toString());
     }
 
     /** {@inheritDoc} */
