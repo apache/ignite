@@ -104,7 +104,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override public long initRecycledPage(long pageId, byte flag) throws IgniteCheckedException {
+        @Override public long initRecycledPage(long pageId, byte flag, PageIO initIO) throws IgniteCheckedException {
             return pageId;
         }
 

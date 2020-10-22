@@ -71,6 +71,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.internal.pagemem.PageIdUtils.MAX_ITEMID_NUM;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA_METASTORAGE;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA_PART;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_META;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageId;
 
@@ -1473,8 +1474,9 @@ public abstract class PagesList extends DataStructure {
             PageIO pageIO = initIoVers.latest();
 
             switch (pageIO.getType()) {
-                case T_DATA:
                 case T_META:
+                case T_DATA:
+                case T_DATA_PART:
                 case T_DATA_METASTORAGE:
                     return FLAG_DATA;
             }

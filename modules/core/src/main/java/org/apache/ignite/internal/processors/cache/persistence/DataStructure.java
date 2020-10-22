@@ -134,11 +134,12 @@ public abstract class DataStructure {
         if (useRecycled && reuseList != null) {
             pageId = bag != null ? bag.pollFreePage() : 0;
 
+            if (pageId == 0)
+                pageId = reuseList.takeRecycledPage();
+
             // Recycled. "pollFreePage" result should be reinitialized to move rotatedId to itemId.
             if (pageId != 0)
-                pageId = reuseList.initRecycledPage(pageId, pageFlag);
-            else
-                pageId = reuseList.takeRecycledPage();
+                pageId = reuseList.initRecycledPage(pageId, pageFlag, null);
         }
 
         if (pageId == 0)

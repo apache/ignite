@@ -722,8 +722,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         }
 
         if (pageId == 0L) { // Handle reuse bucket.
-            pageId = reuseList == this ?
-                takeEmptyPage(REUSE_BUCKET, row.ioVersions(), statHolder) : reuseList.takeRecycledPage();
+            if (reuseList == this)
+                pageId = takeEmptyPage(REUSE_BUCKET, row.ioVersions(), statHolder);
+            else {
+                pageId = reuseList.takeRecycledPage();
+
+                if (pageId != 0)
+                    pageId = reuseList.initRecycledPage(pageId, FLAG_DATA, row.ioVersions().latest());
+            }
         }
 
         if (pageId == 0L)
@@ -915,8 +921,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** {@inheritDoc} */
-    @Override public long initRecycledPage(long pageId, byte flag) throws IgniteCheckedException {
-        return initRecycledPage0(pageId, flag, null);
+    @Override public long initRecycledPage(long pageId, byte flag, PageIO initIO) throws IgniteCheckedException {
+        return initRecycledPage0(pageId, flag, initIO);
     }
 
     /** {@inheritDoc} */
