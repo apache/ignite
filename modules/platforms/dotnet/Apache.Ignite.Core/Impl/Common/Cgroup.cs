@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Common
             if (memIdx < 0)
                 return null;
 
-            var parts = mountInfo.Split(" ");
+            var parts = mountInfo.Split(' ');
 
             if (parts.Length < 5)
                 return null;
@@ -158,9 +158,9 @@ namespace Apache.Ignite.Core.Impl.Common
 
             foreach (var line in lines)
             {
-                var parts = line.Split(":", 3);
+                var parts = line.Split(new[] {':'}, 3);
 
-                if (parts.Length == 3 && parts[1].Split(",").Contains(subsystem, StringComparer.Ordinal))
+                if (parts.Length == 3 && parts[1].Split(',').Contains(subsystem, StringComparer.Ordinal))
                 {
                     return parts[2];
                 }
