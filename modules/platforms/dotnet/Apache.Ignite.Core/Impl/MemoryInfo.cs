@@ -70,17 +70,18 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets total physical memory.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static ulong? GetTotalPhysicalMemory()
         {
-            if (Os.IsWindows)
-            {
-                return NativeMethodsWindows.GlobalMemoryStatusExTotalPhys();
-            }
-
-            const string memInfo = "/proc/meminfo";
-
             try
             {
+                if (Os.IsWindows)
+                {
+                    return NativeMethodsWindows.GlobalMemoryStatusExTotalPhys();
+                }
+
+                const string memInfo = "/proc/meminfo";
+
                 var kbytes = File.ReadAllLines(memInfo).Select(x => Regex.Match(x, @"MemTotal:\s+([0-9]+) kB"))
                     .Where(x => x.Success)
                     .Select(x => x.Groups[1].Value).FirstOrDefault();
@@ -90,9 +91,9 @@ namespace Apache.Ignite.Core.Impl
                     return ulong.Parse(kbytes) * 1024;
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                // Ignore.
+                Console.Error.WriteLine("Failed to determine physical memory size: " + e);
             }
 
             return null;
