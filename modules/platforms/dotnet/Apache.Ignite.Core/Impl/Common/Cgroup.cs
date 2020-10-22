@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// Reads cgroup limits for the current process.
     /// <para />
     /// Based on cgroup handling in CLR:
-    /// https://github.com/tmds/coreclr/blob/master/src/gc/unix/cgroup.cpp
+    /// https://github.com/dotnet/runtime/blob/master/src/coreclr/src/gc/unix/cgroup.cpp
     /// </summary>
     internal static class CGroup
     {
@@ -53,6 +53,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static ulong? GetMemoryLimitInBytes()
         {
+            // TODO: Cgroup v2 support
             try
             {
                 var memMount = FindHierarchyMount(MemorySubsystem);
