@@ -101,7 +101,7 @@ public class ReuseListImpl extends PagesList implements ReuseList {
 
     /** {@inheritDoc} */
     @Override public long initRecycledPage(long pageId, byte flag) throws IgniteCheckedException {
-        return initRecycledPage0(pageId, flag);
+        return initRecycledPage0(pageId, flag, null);
     }
 
     /** {@inheritDoc} */

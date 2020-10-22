@@ -1382,7 +1382,9 @@ public abstract class PagesList extends DataStructure {
                         if (isReuseBucket(bucket)) {
                             byte flag = getFlag(initIoVers);
 
-                            dataPageId = initRecycledPage0(pageId, flag);
+                            PageIO initIO = initIoVers == null ? null : initIoVers.latest();
+
+                            dataPageId = initRecycledPage0(pageId, flag, initIO);
                         }
                         else
                             dataPageId = pageId;
@@ -1491,14 +1493,14 @@ public abstract class PagesList extends DataStructure {
      *
      * @see PagesList#initReusedPage(long, long, long, int, byte, PageIO)
      */
-    protected long initRecycledPage0(long pageId, byte flag) throws IgniteCheckedException {
+    protected long initRecycledPage0(long pageId, byte flag, PageIO initIO) throws IgniteCheckedException {
         long page = pageMem.acquirePage(grpId, pageId);
 
         try {
             long pageAddr = pageMem.writeLock(grpId, pageId, page);
 
             try {
-                return initReusedPage(pageId, page, pageAddr, PageIdUtils.partId(pageId), flag, null);
+                return initReusedPage(pageId, page, pageAddr, PageIdUtils.partId(pageId), flag, initIO);
             }
             finally {
                 pageMem.writeUnlock(grpId, pageId, page, null, true);

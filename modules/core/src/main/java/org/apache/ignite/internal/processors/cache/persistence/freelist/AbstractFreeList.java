@@ -916,7 +916,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** {@inheritDoc} */
     @Override public long initRecycledPage(long pageId, byte flag) throws IgniteCheckedException {
-        return initRecycledPage0(pageId, flag);
+        return initRecycledPage0(pageId, flag, null);
     }
 
     /** {@inheritDoc} */
