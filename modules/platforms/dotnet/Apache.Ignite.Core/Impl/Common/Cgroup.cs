@@ -28,42 +28,52 @@ namespace Apache.Ignite.Core.Impl.Common
     /// </summary>
     internal static class CGroup
     {
-        private const string MemorySubsystem = "memory";
-
-        private const string MemoryLimitFileName = "memory.limit_in_bytes";
-
-        private const string ProcMountInfoFileName = "/proc/self/mountinfo";
-
-        private const string ProcCGroupFileName = "/proc/self/cgroup";
-
+        /// <summary>
+        /// Gets cgroup memory limit in bytes.
+        /// </summary>
         public static readonly ulong? MemoryLimitInBytes = GetMemoryLimitInBytes();
 
+        /** */
+        private const string MemorySubsystem = "memory";
+
+        /** */
+        private const string MemoryLimitFileName = "memory.limit_in_bytes";
+
+        /** */
+        private const string ProcMountInfoFileName = "/proc/self/mountinfo";
+
+        /** */
+        private const string ProcCGroupFileName = "/proc/self/cgroup";
+
+        /// <summary>
+        /// Gets memory limit in bytes.
+        /// </summary>
         private static ulong? GetMemoryLimitInBytes()
         {
-            var memMount = FindHierarchyMount(MemorySubsystem);
-            if (memMount == null)
-            {
-                return null;
-            }
-
-            var cgroupPathRelativeToMount = FindCGroupPath(MemorySubsystem);
-            if (cgroupPathRelativeToMount == null)
-            {
-                return null;
-            }
-
-            var hierarchyMount = memMount.Value.Key;
-            var hierarchyRoot = memMount.Value.Value;
-
-            // Host CGroup: append the relative path
-            // In Docker: root and relative path are the same
-            var groupPath =
-                string.Equals(hierarchyRoot, cgroupPathRelativeToMount, StringComparison.Ordinal)
-                    ? hierarchyMount
-                    : hierarchyMount + cgroupPathRelativeToMount;
-
             try
             {
+                var memMount = FindHierarchyMount(MemorySubsystem);
+                if (memMount == null)
+                {
+                    return null;
+                }
+
+                var cgroupPathRelativeToMount = FindCGroupPath(MemorySubsystem);
+                if (cgroupPathRelativeToMount == null)
+                {
+                    return null;
+                }
+
+                var hierarchyMount = memMount.Value.Key;
+                var hierarchyRoot = memMount.Value.Value;
+
+                // Host CGroup: append the relative path
+                // In Docker: root and relative path are the same
+                var groupPath =
+                    string.Equals(hierarchyRoot, cgroupPathRelativeToMount, StringComparison.Ordinal)
+                        ? hierarchyMount
+                        : hierarchyMount + cgroupPathRelativeToMount;
+
                 var memLimitFile = Path.Combine(groupPath, MemoryLimitFileName);
                 var memLimitText = File.ReadAllText(memLimitFile);
 
@@ -81,13 +91,27 @@ namespace Apache.Ignite.Core.Impl.Common
             return null;
         }
 
+        /// <summary>
+        /// Finds the hierarchy mount and root for the current process.
+        /// </summary>
         private static KeyValuePair<string, string>? FindHierarchyMount(string subsystem)
         {
-            return File.ReadAllLines(ProcMountInfoFileName)
-                .Select(line => GetHierarchyMount(line, subsystem))
-                .FirstOrDefault(x => x != null);
+            foreach (var line in File.ReadAllLines(ProcMountInfoFileName))
+            {
+                var mount = GetHierarchyMount(line, subsystem);
+
+                if (mount != null)
+                {
+                    return mount;
+                }
+            }
+
+            return null;
         }
 
+        /// <summary>
+        /// Get the hierarchy mount and root.
+        /// </summary>
         private static KeyValuePair<string, string>? GetHierarchyMount(string mountInfo, string subsystem)
         {
             // Example: 41 34 0:35 / /sys/fs/cgroup/memory rw,nosuid,nodev shared:17 - cgroup cgroup rw,memory
@@ -116,6 +140,9 @@ namespace Apache.Ignite.Core.Impl.Common
             return new KeyValuePair<string, string>(parts[4], parts[3]);
         }
 
+        /// <summary>
+        /// Finds the cgroup path for the current process.
+        /// </summary>
         private static string FindCGroupPath(string subsystem)
         {
             var lines = File.ReadAllLines(ProcCGroupFileName);
