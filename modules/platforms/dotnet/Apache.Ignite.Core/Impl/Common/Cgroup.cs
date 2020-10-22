@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Reads cgroup limits for the current process.
@@ -53,6 +54,11 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static ulong? GetMemoryLimitInBytes()
         {
+            if (Os.IsWindows)
+            {
+                return null;
+            }
+
             // TODO: Cgroup v2 support
             try
             {
@@ -162,6 +168,18 @@ namespace Apache.Ignite.Core.Impl.Common
             }
 
             return null;
+        }
+
+        private static bool IsCgroupV2()
+        {
+            try
+            {
+                return File.ReadAllText("/proc/filesystems").Contains("cgroup2");
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
     }
 }
