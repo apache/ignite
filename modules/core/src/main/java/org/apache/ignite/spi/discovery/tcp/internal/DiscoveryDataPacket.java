@@ -31,7 +31,6 @@ import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC;
@@ -460,31 +459,14 @@ public class DiscoveryDataPacket implements Serializable {
     }
 
     /**
-     * @param marsh Marsh.
-     * @param clsLdr Class loader.
-     * @param clientNode Client node.
-     * @param log Logger.
      * Returns {@link DiscoveryDataBag} aware of components with already initialized common data
      * (e.g. on nodes prior in cluster to the one where this method is called).
      */
-    public DiscoveryDataBag bagForDataCollection(
-        Marshaller marsh,
-        ClassLoader clsLdr,
-        boolean clientNode,
-        IgniteLogger log
-    ) {
+    public DiscoveryDataBag bagForDataCollection() {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, commonData.keySet(), joiningNodeClient);
 
         if (unmarshalledJoiningNodeData != null)
             dataBag.joiningNodeData(unmarshalledJoiningNodeData);
-
-        try {
-            if (commonData != null && !commonData.isEmpty())
-                dataBag.commonData(unmarshalData(commonData, marsh, clsLdr, clientNode, log, true));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteSpiException(e);
-        }
 
         return dataBag;
     }

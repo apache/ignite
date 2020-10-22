@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.zk;
 
 import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
-import org.apache.ignite.internal.encryption.EncryptedCacheNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryTransactionalSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicMultiNodeFullApiSelfTest;
@@ -43,8 +42,7 @@ import org.junit.runners.Suite;
     GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class,
     IgniteCacheReplicatedQuerySelfTest.class,
     DistributedMetaStorageTest.class,
-    DistributedMetaStoragePersistentTest.class,
-    EncryptedCacheNodeJoinTest.class
+    DistributedMetaStoragePersistentTest.class
 })
 public class ZookeeperDiscoverySpiTestSuite4 {
     /** */
