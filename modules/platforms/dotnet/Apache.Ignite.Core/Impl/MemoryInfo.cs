@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl
 {
+    using System;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
@@ -41,7 +42,7 @@ namespace Apache.Ignite.Core.Impl
 
             const string memInfo = "/proc/meminfo";
 
-            if (File.Exists(memInfo))
+            try
             {
                 var kbytes = File.ReadAllLines(memInfo).Select(x => Regex.Match(x, @"MemTotal:\s+([0-9]+) kB"))
                     .Where(x => x.Success)
@@ -51,6 +52,10 @@ namespace Apache.Ignite.Core.Impl
                 {
                     return ulong.Parse(kbytes) * 1024;
                 }
+            }
+            catch (Exception)
+            {
+                // Ignore.
             }
 
             return defaultValue;

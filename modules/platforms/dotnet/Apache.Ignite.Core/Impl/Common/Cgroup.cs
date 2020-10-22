@@ -1,0 +1,136 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+namespace Apache.Ignite.Core.Impl.Common
+{
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+
+    /// <summary>
+    /// Reads CGroup limits for the current process.
+    /// </summary>
+    internal static class CGroup
+    {
+        private const string MemorySubsystem = "memory";
+
+        private const string MemoryLimitFileName = "memory.limit_in_bytes";
+
+        private const string ProcMountInfoFileName = "/proc/self/mountinfo";
+
+        private const string ProcCGroupFileName = "/proc/self/cgroup";
+
+        public static readonly long? MemoryLimitInBytes = GetMemoryLimitInBytes();
+
+        private static long? GetMemoryLimitInBytes()
+        {
+            var memMount = FindHierarchyMount(MemorySubsystem);
+            if (memMount == null)
+            {
+                return null;
+            }
+
+            var cgroupPathRelativeToMount = FindCGroupPath(MemorySubsystem);
+            if (cgroupPathRelativeToMount == null)
+            {
+                return null;
+            }
+
+            var hierarchyMount = memMount.Value.Key;
+            var hierarchyRoot = memMount.Value.Value;
+
+            // Host CGroup: append the relative path
+            // In Docker: root and relative path are the same
+            var groupPath =
+                string.Equals(hierarchyRoot, cgroupPathRelativeToMount, StringComparison.Ordinal)
+                    ? hierarchyMount
+                    : hierarchyMount + cgroupPathRelativeToMount;
+
+            try
+            {
+                var memLimitFile = Path.Combine(groupPath, MemoryLimitFileName);
+                var memLimitText = File.ReadAllText(memLimitFile);
+
+                long memLimit;
+                if (long.TryParse(memLimitText, out memLimit))
+                {
+                    return memLimit;
+                }
+            }
+            catch (Exception)
+            {
+                // Ignore
+            }
+
+            return null;
+        }
+
+        private static KeyValuePair<string, string>? FindHierarchyMount(string subsystem)
+        {
+            return File.ReadAllLines(ProcMountInfoFileName)
+                .Select(line => GetHierarchyMount(line, subsystem))
+                .FirstOrDefault(x => x != null);
+        }
+
+        private static KeyValuePair<string, string>? GetHierarchyMount(string mountInfo, string subsystem)
+        {
+            // Example: 41 34 0:35 / /sys/fs/cgroup/memory rw,nosuid,nodev shared:17 - cgroup cgroup rw,memory
+            const string cGroup = " - cgroup ";
+
+            var cgroupIdx = mountInfo.IndexOf(cGroup, StringComparison.Ordinal);
+
+            if (cgroupIdx < 0)
+                return null;
+
+            var optionsIdx = mountInfo.LastIndexOf(" ", cgroupIdx + cGroup.Length, StringComparison.Ordinal);
+
+            if (optionsIdx < 0)
+                return null;
+
+            var memIdx = mountInfo.IndexOf(subsystem, optionsIdx + 1, StringComparison.Ordinal);
+
+            if (memIdx < 0)
+                return null;
+
+            var parts = mountInfo.Split(" ");
+
+            if (parts.Length < 5)
+                return null;
+
+            return new KeyValuePair<string, string>(parts[4], parts[3]);
+        }
+
+        private static string FindCGroupPath(string subsystem)
+        {
+            var lines = File.ReadAllLines(ProcCGroupFileName);
+
+            foreach (var line in lines)
+            {
+                var parts = line.Split(":", 3);
+
+                if (parts.Length == 3 && parts[1].Split(",").Contains(subsystem, StringComparer.Ordinal))
+                {
+                    return parts[2];
+                }
+            }
+
+            return null;
+        }
+    }
+}
