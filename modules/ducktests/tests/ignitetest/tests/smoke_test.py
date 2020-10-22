@@ -87,28 +87,3 @@ class SmokeServicesTest(IgniteTest):
         zookeeper = ZookeeperService(self.test_context, num_nodes=3)
         zookeeper.start()
         zookeeper.stop()
-
-    @cluster(num_nodes=4)
-    @ignite_versions(str(DEV_BRANCH))
-    def test_ignite_clock_sync(self, ignite_version):
-        """
-        Tests that clocks are synchronized between nodes.
-        """
-        num_nodes = 4
-
-        server_config = IgniteConfiguration(
-            version=IgniteVersion(ignite_version),
-            include_event_types = ["org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT"])
-        ignites = IgniteService(self.test_context, config=server_config, num_nodes=num_nodes-1)
-        ignites.start()
-
-        client_config = server_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites))
-        app = IgniteApplicationService(
-            self.test_context,
-            config=client_config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.smoke_test.ClockSyncCheckerApplication",
-            params={"maxClockDivergencyMs": 300})
-        app.start()
-        app.await_stopped()
-
-        ignites.stop()
