@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Encryption.Keystore;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Tests.Plugin;
@@ -611,11 +612,20 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(DataRegionConfiguration.DefaultEmptyPagesPoolSize, cfg.EmptyPagesPoolSize);
             Assert.AreEqual(DataRegionConfiguration.DefaultEvictionThreshold, cfg.EvictionThreshold);
             Assert.AreEqual(DataRegionConfiguration.DefaultInitialSize, cfg.InitialSize);
-            Assert.AreEqual(DataRegionConfiguration.DefaultMaxSize, cfg.MaxSize);
             Assert.AreEqual(DataRegionConfiguration.DefaultPersistenceEnabled, cfg.PersistenceEnabled);
             Assert.AreEqual(DataRegionConfiguration.DefaultMetricsRateTimeInterval, cfg.MetricsRateTimeInterval);
             Assert.AreEqual(DataRegionConfiguration.DefaultMetricsSubIntervalCount, cfg.MetricsSubIntervalCount);
             Assert.AreEqual(default(long), cfg.CheckpointPageBufferSize);
+
+            if (DataRegionConfiguration.DefaultMaxSize != cfg.MaxSize)
+            {
+                // Java respects cgroup limits only in recent JDK versions.
+                // We don't know which version is used for tests, so we should expect both variants
+                var physMem = MemoryInfo.TotalPhysicalMemory;
+                Assert.IsNotNull(physMem);
+
+                Assert.AreEqual((long) physMem / 5, cfg.MaxSize);
+            }
         }
 
         /// <summary>
