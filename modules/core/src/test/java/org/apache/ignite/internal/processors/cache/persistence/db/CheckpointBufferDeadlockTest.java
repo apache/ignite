@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -230,11 +232,21 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
                         PageMemoryImpl pageMem = (PageMemoryImpl)region.pageMemory();
 
+                        ByteBuffer buf = ByteBuffer.allocate(store.getPageSize());
+                        buf.order(ByteOrder.nativeOrder());
+
                         while (pickedPagesSet.size() < PAGES_TOUCHED_UNDER_CP_LOCK) {
                             int pageIdx = ThreadLocalRandom.current().nextInt(
                                 PAGES_TOUCHED_UNDER_CP_LOCK, pages - PAGES_TOUCHED_UNDER_CP_LOCK);
 
                             long pageId = PageIdUtils.pageId(0, PageIdAllocator.FLAG_DATA, pageIdx);
+
+                            buf.rewind();
+
+                            store.read(pageId, buf, false);
+
+                            if (pageId != PageIO.getPageId(buf))
+                                continue;
 
                             pickedPagesSet.add(new FullPageId(pageId, CU.cacheId(cacheName)));
                         }
