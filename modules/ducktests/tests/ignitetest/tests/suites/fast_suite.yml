@@ -15,6 +15,7 @@
 
 smoke:
   - ../smoke_test.py
+  - ../self_test.py
 
 control_utility:
   - ../control_utility

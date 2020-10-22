@@ -16,8 +16,10 @@
 """
 This module contains smoke tests that checks that ducktape works as expected
 """
+import operator
 
 from ducktape.mark.resource import cluster
+from ducktape.services.background_thread import BackgroundThreadService
 
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
@@ -28,9 +30,9 @@ from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 
 # pylint: disable=W0223
-class SmokeSelfTest(IgniteTest):
+class SelfTest(IgniteTest):
     """
-    Self test
+    Self tests
     """
 
     @cluster(num_nodes=1)
@@ -53,3 +55,38 @@ class SmokeSelfTest(IgniteTest):
         else:
             app.stop()
             assert False
+
+    def test_clock_sync(self):
+        """
+        Tests if clocks are synchronized between nodes.
+        """
+
+        service = GetTimeService(self.test_context, self.test_context.cluster.num_available_nodes())
+        service.start()
+
+        res = sorted(service.clocks.items(), key=operator.itemgetter(1))
+
+        for _ in res:
+            self.logger.info("NodeClock[%s] = %d" % (_[0], _[1]))
+
+        max_clock_spread_ms = 300
+        min_res = res[0]
+        max_res = res[-1]
+        assert max_res[1] - min_res[1] < max_clock_spread_ms, \
+            "Clock difference between %s and %s exceeds %d ms." % (min_res[0], max_res[0], max_clock_spread_ms)
+
+
+class GetTimeService(BackgroundThreadService):
+    """
+    Collects clock timestamps from a set of nodes.
+    """
+
+    def __init__(self, context, num_nodes):
+        super().__init__(context, num_nodes)
+        self.clocks = {}
+
+    def start_node(self, node):
+        self.clocks[node.name] = int(node.account.ssh_output("date +%s"))
+
+    def stop_node(self, node):
+        pass
