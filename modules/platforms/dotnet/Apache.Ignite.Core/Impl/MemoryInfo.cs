@@ -38,24 +38,24 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         public static ulong GetMemoryLimit(ulong defaultValue)
         {
+            // TODO: Cache result of this method
             if (Os.IsWindows)
             {
                 return NativeMethodsWindows.GlobalMemoryStatusExTotalPhys();
             }
 
             var physical = GetTotalPhysicalMemoryUnix();
+
             if (physical == null)
             {
                 return defaultValue;
             }
 
             var limit = CGroup.MemoryLimitInBytes;
-            if (limit == null || limit.Value < physical)
-            {
-                return defaultValue;
-            }
 
-            return limit.Value;
+            return limit != null && limit < physical
+                ? limit.Value
+                : physical.Value;
         }
 
         /// <summary>
