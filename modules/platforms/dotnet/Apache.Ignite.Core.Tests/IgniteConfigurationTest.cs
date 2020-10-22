@@ -624,7 +624,11 @@ namespace Apache.Ignite.Core.Tests
                 var physMem = MemoryInfo.TotalPhysicalMemory;
                 Assert.IsNotNull(physMem);
 
-                Assert.AreEqual((long) physMem / 5, cfg.MaxSize);
+                var expected = (long) physMem / 5;
+
+                Assert.AreEqual(expected, cfg.MaxSize,
+                    string.Format("Expected max size with cgroup limit: '{0}', without: '{1}'",
+                        DataRegionConfiguration.DefaultMaxSize, expected));
             }
         }
 
