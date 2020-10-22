@@ -92,9 +92,9 @@ namespace Apache.Ignite.Core.Impl.Common
                     return memLimit;
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                // Ignore
+                Console.Error.WriteLine("Failed to determine cgroup memory limit: " + e);
             }
 
             return null;
