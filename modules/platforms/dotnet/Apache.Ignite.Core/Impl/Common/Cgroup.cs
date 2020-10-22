@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Linq;
 
     /// <summary>
-    /// Reads CGroup limits for the current process.
+    /// Reads cgroup limits for the current process.
     /// </summary>
     internal static class CGroup
     {
