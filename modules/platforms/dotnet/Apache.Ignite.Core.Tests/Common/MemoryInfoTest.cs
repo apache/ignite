@@ -39,8 +39,13 @@ namespace Apache.Ignite.Core.Tests.Common
             }
 
             Assert.IsNotNull(MemoryInfo.TotalPhysicalMemory);
+            Assert.Greater(MemoryInfo.TotalPhysicalMemory, 655360);
+
             Assert.IsNotNull(MemoryInfo.MemoryLimit);
+            Assert.Greater(MemoryInfo.MemoryLimit, 655360);
+
             Assert.IsNotNull(CGroup.MemoryLimitInBytes);
+            Assert.Greater(CGroup.MemoryLimitInBytes, 655360);
 
             if (CGroup.MemoryLimitInBytes > MemoryInfo.TotalPhysicalMemory)
             {
