@@ -24,10 +24,8 @@
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:util="http://www.springframework.org/schema/util"
-       xsi:schemaLocation="
-           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                            http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="workDirectory" value="{{ work_dir }}" />
         <property name="gridLogger">
@@ -39,14 +37,6 @@
         <property name="clientMode" value="{{ config.client_mode or False | lower }}"/>
         <property name="consistentId" value="{{ config.consistent_id }}"/>
         <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
-
-        <property name="includeEventTypes">
-            <list>
-            {% for type in config.include_event_types %}
-                <util:constant static-field="{{ type }}"/>
-            {% endfor %}
-            </list>
-        </property>
 
         {{ misc_utils.cluster_state(config.cluster_state, config.version) }}
 

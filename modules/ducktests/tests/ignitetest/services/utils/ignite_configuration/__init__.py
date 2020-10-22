@@ -37,7 +37,6 @@ class IgniteConfiguration(NamedTuple):
     properties: str = None
     data_storage: DataStorageConfiguration = None
     caches: list = []
-    include_event_types: list = []
 
 
 class IgniteClientConfiguration(IgniteConfiguration):
