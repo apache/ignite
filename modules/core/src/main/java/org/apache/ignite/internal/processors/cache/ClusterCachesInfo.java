@@ -1864,9 +1864,10 @@ public class ClusterCachesInfo {
 
     /**
      * @param data Joining node data.
+     * @param joiningNodeClient Joining node is client flag.
      * @return Message with error or null if everything was OK.
      */
-    public String validateJoiningNodeData(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
+    public String validateJoiningNodeData(DiscoveryDataBag.JoiningNodeDiscoveryData data, boolean joiningNodeClient) {
         if (data.hasJoiningNodeData()) {
             Serializable joiningNodeData = data.joiningNodeData();
 
@@ -1903,6 +1904,32 @@ public class ClusterCachesInfo {
                         "Joining node has caches with data which are not presented on cluster, " +
                             "it could mean that they were already destroyed, to add the node to cluster - " +
                             "remove directories with the caches[", "]"));
+
+                if (!joiningNodeClient)
+                    return null;
+
+                for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.caches().values()) {
+                    CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
+
+                    if (!cfg.isEncryptionEnabled())
+                        continue;
+
+                    if (registeredCaches.containsKey(cfg.getName()))
+                        continue;
+
+                    if (problemCaches == null)
+                        problemCaches = new HashSet<>();
+
+                    problemCaches.add(cfg.getName());
+                }
+
+                if (F.isEmpty(problemCaches))
+                    return null;
+
+                return problemCaches.stream().collect(Collectors.joining(", ",
+                    "Joining client node has encrypted caches that are not present on the cluster, " +
+                        "such caches cannot be started when the client node joins the cluster, they can be " +
+                        "started manually (dynamically) after node is joined [caches=", "]"));
             }
         }
 
