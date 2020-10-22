@@ -44,9 +44,6 @@ namespace Apache.Ignite.Core.Impl.Common
         private const string MemoryLimitFileName = "memory.limit_in_bytes";
 
         /** */
-        private const string MemoryLimitFileName2 = "memory.max";
-
-        /** */
         private const string ProcMountInfoFileName = "/proc/self/mountinfo";
 
         /** */
@@ -62,7 +59,6 @@ namespace Apache.Ignite.Core.Impl.Common
                 return null;
             }
 
-            // TODO: Cgroup v2 support
             try
             {
                 var memMount = FindHierarchyMount(MemorySubsystem);
@@ -87,13 +83,7 @@ namespace Apache.Ignite.Core.Impl.Common
                         ? hierarchyMount
                         : hierarchyMount + cgroupPathRelativeToMount;
 
-                var memLimitFilName = IsCgroupV2()
-                    ? MemoryLimitFileName2
-                    : MemoryLimitFileName;
-
-                var memLimitFilePath = Path.Combine(
-                    groupPath,
-                    memLimitFilName);
+                var memLimitFilePath = Path.Combine(groupPath, MemoryLimitFileName);
 
                 var memLimitText = File.ReadAllText(memLimitFilePath);
 
@@ -178,18 +168,6 @@ namespace Apache.Ignite.Core.Impl.Common
             }
 
             return null;
-        }
-
-        private static bool IsCgroupV2()
-        {
-            try
-            {
-                return File.ReadAllText("/proc/filesystems").Contains("cgroup2");
-            }
-            catch (Exception)
-            {
-                return false;
-            }
         }
     }
 }
