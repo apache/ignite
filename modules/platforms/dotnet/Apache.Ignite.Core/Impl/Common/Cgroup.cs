@@ -36,9 +36,9 @@ namespace Apache.Ignite.Core.Impl.Common
 
         private const string ProcCGroupFileName = "/proc/self/cgroup";
 
-        public static readonly long? MemoryLimitInBytes = GetMemoryLimitInBytes();
+        public static readonly ulong? MemoryLimitInBytes = GetMemoryLimitInBytes();
 
-        private static long? GetMemoryLimitInBytes()
+        private static ulong? GetMemoryLimitInBytes()
         {
             var memMount = FindHierarchyMount(MemorySubsystem);
             if (memMount == null)
@@ -67,8 +67,8 @@ namespace Apache.Ignite.Core.Impl.Common
                 var memLimitFile = Path.Combine(groupPath, MemoryLimitFileName);
                 var memLimitText = File.ReadAllText(memLimitFile);
 
-                long memLimit;
-                if (long.TryParse(memLimitText, out memLimit))
+                ulong memLimit;
+                if (ulong.TryParse(memLimitText, out memLimit))
                 {
                     return memLimit;
                 }

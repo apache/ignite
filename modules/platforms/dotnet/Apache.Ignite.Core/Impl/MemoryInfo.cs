@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text.RegularExpressions;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
@@ -31,15 +32,37 @@ namespace Apache.Ignite.Core.Impl
     internal static class MemoryInfo
     {
         /// <summary>
-        /// Gets the total physical memory.
+        /// Gets the memory limit.
+        /// <para />
+        /// When memory is limited with cgroups, returns that limit. Otherwise, returns total physical memory.
         /// </summary>
-        public static ulong GetTotalPhysicalMemory(ulong defaultValue)
+        public static ulong GetMemoryLimit(ulong defaultValue)
         {
             if (Os.IsWindows)
             {
                 return NativeMethodsWindows.GlobalMemoryStatusExTotalPhys();
             }
 
+            var physical = GetTotalPhysicalMemoryUnix();
+            if (physical == null)
+            {
+                return defaultValue;
+            }
+
+            var limit = CGroup.MemoryLimitInBytes;
+            if (limit == null || limit.Value < physical)
+            {
+                return defaultValue;
+            }
+
+            return limit.Value;
+        }
+
+        /// <summary>
+        /// Gets total physical memory.
+        /// </summary>
+        private static ulong? GetTotalPhysicalMemoryUnix()
+        {
             const string memInfo = "/proc/meminfo";
 
             try
@@ -58,8 +81,9 @@ namespace Apache.Ignite.Core.Impl
                 // Ignore.
             }
 
-            return defaultValue;
+            return null;
         }
+
 
         /// <summary>
         /// Native methods.
