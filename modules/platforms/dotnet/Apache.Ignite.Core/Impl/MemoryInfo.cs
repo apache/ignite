@@ -32,23 +32,32 @@ namespace Apache.Ignite.Core.Impl
     internal static class MemoryInfo
     {
         /// <summary>
+        /// Gets total physical memory.
+        /// </summary>
+        public static readonly ulong? TotalPhysicalMemory = GetTotalPhysicalMemory();
+
+        /// <summary>
+        /// Gets memory limit (when set by cgroups) or the value of <see cref="TotalPhysicalMemory"/>.
+        /// </summary>
+        public static readonly ulong? MemoryLimit = GetMemoryLimit();
+
+        /// <summary>
         /// Gets the memory limit.
         /// <para />
         /// When memory is limited with cgroups, returns that limit. Otherwise, returns total physical memory.
         /// </summary>
-        public static ulong GetMemoryLimit(ulong defaultValue)
+        private static ulong? GetMemoryLimit()
         {
-            // TODO: Cache result of this method
             if (Os.IsWindows)
             {
-                return NativeMethodsWindows.GlobalMemoryStatusExTotalPhys();
+                return null;
             }
 
-            var physical = GetTotalPhysicalMemoryUnix();
+            var physical = TotalPhysicalMemory;
 
             if (physical == null)
             {
-                return defaultValue;
+                return null;
             }
 
             var limit = CGroup.MemoryLimitInBytes;
@@ -61,8 +70,13 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets total physical memory.
         /// </summary>
-        private static ulong? GetTotalPhysicalMemoryUnix()
+        private static ulong? GetTotalPhysicalMemory()
         {
+            if (Os.IsWindows)
+            {
+                return NativeMethodsWindows.GlobalMemoryStatusExTotalPhys();
+            }
+
             const string memInfo = "/proc/meminfo";
 
             try
