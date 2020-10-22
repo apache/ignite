@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
@@ -70,6 +69,8 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.MAX_ITEMID_NUM;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA_METASTORAGE;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_META;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageId;
 
@@ -1469,8 +1470,12 @@ public abstract class PagesList extends DataStructure {
         if (initIoVers != null) {
             PageIO pageIO = initIoVers.latest();
 
-            if (pageIO.getType() == PageIO.T_DATA || pageIO.getType() == T_META)
-                return FLAG_DATA;
+            switch (pageIO.getType()) {
+                case T_DATA:
+                case T_META:
+                case T_DATA_METASTORAGE:
+                    return FLAG_DATA;
+            }
         }
 
         return pageFlag;
@@ -1493,7 +1498,7 @@ public abstract class PagesList extends DataStructure {
             long pageAddr = pageMem.writeLock(grpId, pageId, page);
 
             try {
-                return initReusedPage(pageId, page, pageAddr, PageIdUtils.partId(pageId), flag, flag == FLAG_DATA ? DataPageIO.VERSIONS.latest() : null);
+                return initReusedPage(pageId, page, pageAddr, PageIdUtils.partId(pageId), flag, null);
             }
             finally {
                 pageMem.writeUnlock(grpId, pageId, page, null, true);

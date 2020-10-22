@@ -729,6 +729,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         if (pageId == 0L)
             return 0;
 
+        assert PageIdUtils.flag(pageId) == FLAG_DATA
+            : "rowVersions=" + row.ioVersions() + ", pageId=" + PageIdUtils.toDetailString(pageId);
+
         return PageIdUtils.changePartitionId(pageId, row.partition());
     }
 
