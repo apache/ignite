@@ -45,7 +45,7 @@ public class LongTxStreamerApplication extends IgniteAwareApplication {
 
         log.info("Starting Long Tx...");
 
-        for (int i = 0; i < TX_CNT; i++) {
+        for (int i = -1; i >= -TX_CNT; i--) { // Negative keys to have no intersection with load.
             int finalI = i;
 
             new Thread(() -> {

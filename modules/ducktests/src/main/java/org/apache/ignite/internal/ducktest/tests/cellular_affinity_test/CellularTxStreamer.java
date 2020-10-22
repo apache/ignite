@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.ducktest.tests.cellular_affinity_test;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
@@ -44,11 +49,12 @@ public class CellularTxStreamer extends IgniteAwareApplication {
 
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheName);
 
-        long[] max = new long[20];
+        int precision = 5;
 
-        Arrays.fill(max, -1);
+        long[] latencies = new long[precision];
+        LocalDateTime[] opStartTimes = new LocalDateTime[precision];
 
-        int key = 0;
+        Arrays.fill(latencies, -1);
 
         int cnt = 0;
 
@@ -58,26 +64,35 @@ public class CellularTxStreamer extends IgniteAwareApplication {
 
         Affinity<Integer> aff = ignite.affinity(cacheName);
 
-        while (!terminated()) {
-            key++;
+        List<Integer> cellKeys = new ArrayList<>();
 
-            Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
+        int candidate = 0;
 
-            Map<Object, Long> stat = nodes.stream().collect(
-                Collectors.groupingBy(n -> n.attributes().get(attr), Collectors.counting()));
+        while (cellKeys.size() < 100) {
+            Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(++candidate);
 
-            if (!stat.containsKey(cell))
+            Set<ClusterNode> stat = nodes.stream()
+                .filter(n -> n.attributes().get(attr).equals(cell))
+                .collect(Collectors.toSet());
+
+            if (stat.isEmpty())
                 continue;
 
+            assert nodes.size() == stat.size();
+
+            cellKeys.add(candidate);
+        }
+
+        while (!terminated()) {
             cnt++;
 
-            long start = System.currentTimeMillis();
+            LocalDateTime start = LocalDateTime.now();
 
-            cache.put(key, key);
+            long from = System.nanoTime();
 
-            long finish = System.currentTimeMillis();
+            cache.put(cellKeys.get(cnt % cellKeys.size()), cnt); // Cycled update.
 
-            long time = finish - start;
+            long latency = System.nanoTime() - from;
 
             if (!record && cnt > warmup) {
                 record = true;
@@ -88,11 +103,13 @@ public class CellularTxStreamer extends IgniteAwareApplication {
             }
 
             if (record) {
-                for (int i = 0; i < max.length; i++) {
-                    if (max[i] <= time) {
-                        System.arraycopy(max, i, max, i + 1, max.length - i - 1);
+                for (int i = 0; i < latencies.length; i++) {
+                    if (latencies[i] <= latency) {
+                        System.arraycopy(latencies, i, latencies, i + 1, latencies.length - i - 1);
+                        System.arraycopy(opStartTimes, i, opStartTimes, i + 1, opStartTimes.length - i - 1);
 
-                        max[i] = time;
+                        latencies[i] = latency;
+                        opStartTimes[i] = start;
 
                         break;
                     }
@@ -100,10 +117,16 @@ public class CellularTxStreamer extends IgniteAwareApplication {
             }
 
             if (cnt % 1000 == 0)
-                log.info("APPLICATION_STREAMED " + cnt + " transactions [worst_latency=" + Arrays.toString(max) + "]");
+                log.info("APPLICATION_STREAMED " + cnt + " transactions [worst_latency=" + Arrays.toString(latencies) + "]");
         }
 
-        recordResult("WORST_LATENCY", Arrays.toString(max));
+        List<String> result = new ArrayList<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+
+        for (int i = 0; i < precision; i++)
+            result.add(Duration.ofNanos(latencies[i]).toMillis() + " ms at " + formatter.format(opStartTimes[i]));
+
+        recordResult("WORST_LATENCY", result.toString());
         recordResult("STREAMED", cnt - warmup);
         recordResult("MEASURE_DURATION", System.currentTimeMillis() - initTime);
 
