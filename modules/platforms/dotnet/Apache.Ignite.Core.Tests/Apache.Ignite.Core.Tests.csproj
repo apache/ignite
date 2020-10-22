@@ -206,6 +206,7 @@
     <Compile Include="Client\Services\TestServiceGenericMethods.cs" />
     <Compile Include="Client\Services\TestServiceOverloads.cs" />
     <Compile Include="Common\IgniteProductVersionTests.cs" />
+    <Compile Include="Common\MemoryInfoTest.cs" />
     <Compile Include="Compute\ComputeApiTest.JavaTask.cs" />
     <Compile Include="Compute\ComputeWithExecutorTest.cs" />
     <Compile Include="Deployment\CacheGetFunc.cs" />
