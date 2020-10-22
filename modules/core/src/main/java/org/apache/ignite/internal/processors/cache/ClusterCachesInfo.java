@@ -1875,6 +1875,7 @@ public class ClusterCachesInfo {
                 CacheJoinNodeDiscoveryData joinData = (CacheJoinNodeDiscoveryData)joiningNodeData;
 
                 Set<String> problemCaches = null;
+                Set<String> encClientCaches = null;
 
                 for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.caches().values()) {
                     CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
@@ -1895,6 +1896,15 @@ public class ClusterCachesInfo {
                                 problemCaches = new HashSet<>();
 
                             problemCaches.add(cfg.getName());
+
+                            continue;
+                        }
+
+                        if (joiningNodeClient && cfg.isEncryptionEnabled()) {
+                            if (encClientCaches == null)
+                                encClientCaches = new HashSet<>();
+
+                            encClientCaches.add(cfg.getName());
                         }
                     }
                 }
@@ -1905,31 +1915,12 @@ public class ClusterCachesInfo {
                             "it could mean that they were already destroyed, to add the node to cluster - " +
                             "remove directories with the caches[", "]"));
 
-                if (!joiningNodeClient)
-                    return null;
-
-                for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.caches().values()) {
-                    CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
-
-                    if (!cfg.isEncryptionEnabled())
-                        continue;
-
-                    if (registeredCaches.containsKey(cfg.getName()))
-                        continue;
-
-                    if (problemCaches == null)
-                        problemCaches = new HashSet<>();
-
-                    problemCaches.add(cfg.getName());
+                if (!F.isEmpty(encClientCaches)) {
+                    return encClientCaches.stream().collect(Collectors.joining(", ",
+                        "Joining client node has encrypted caches that are not present on the cluster, encrypted" +
+                            " caches configured on client cannot be started when the client node joins the cluster, " +
+                            "they can be started manually (dynamically) after node is joined [caches=", "]"));
                 }
-
-                if (F.isEmpty(problemCaches))
-                    return null;
-
-                return problemCaches.stream().collect(Collectors.joining(", ",
-                    "Joining client node has encrypted caches that are not present on the cluster, " +
-                        "such caches cannot be started when the client node joins the cluster, they can be " +
-                        "started manually (dynamically) after node is joined [caches=", "]"));
             }
         }
 
