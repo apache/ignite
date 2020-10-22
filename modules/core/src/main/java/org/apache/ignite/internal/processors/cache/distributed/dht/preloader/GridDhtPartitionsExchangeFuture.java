@@ -4776,9 +4776,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     markAffinityReassign();
             }
 
-            if (cctx.kernalContext().clientNode() && stateChangeExchange() && exchActions.activate())
-                ensureClientCachesStarted();
-
             onDone(resTopVer, null);
         }
         catch (IgniteCheckedException e) {

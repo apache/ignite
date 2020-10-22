@@ -2838,11 +2838,34 @@ public class ZookeeperDiscoveryImpl {
                 else {
                     joiningData = unmarshalJoinData(joinedEvtData.nodeId, joinedEvtData.joinDataPrefixId);
 
-                    DiscoveryDataBag dataBag = new DiscoveryDataBag(joinedEvtData.nodeId, joiningData.node().isClient());
+                    DiscoveryDataBag dataBag =
+                        new DiscoveryDataBag(joinedEvtData.nodeId, joiningData.node().isClient());
 
                     dataBag.joiningNodeData(joiningData.discoveryData());
 
                     exchange.onExchange(dataBag);
+
+                    if (!locNode.isDaemon()) {
+                        String path = zkPaths.joinEventDataPathForJoined(evtData.eventId());
+
+                        byte[] dataForJoinedBytes =
+                            readMultipleParts(rtState.zkClient, path, evtData.dataForJoinedPartCnt);
+
+                        ZkJoinEventDataForJoined dataForJoined = unmarshalZip(dataForJoinedBytes);
+
+                        byte[] discoDataBytes = dataForJoined.discoveryDataForNode(joinedEvtData.topVer);
+
+                        Map<Integer, Serializable> commonDiscoData =
+                            marsh.unmarshal(discoDataBytes, U.resolveClassLoader(spi.ignite().configuration()));
+
+                        DiscoveryDataBag collectBag = new DiscoveryDataBag(
+                            joinedEvtData.nodeId, commonDiscoData.keySet(), joiningData.node().isClient());
+
+                        collectBag.joiningNodeData(joiningData.discoveryData());
+                        collectBag.commonData(commonDiscoData);
+
+                        exchange.collect(collectBag);
+                    }
                 }
 
                 if (joinedEvtData.secSubjPartCnt > 0 && joiningData.node().attribute(ATTR_SECURITY_SUBJECT_V2) == null)

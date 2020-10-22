@@ -2084,7 +2084,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         assert dataPacket.joiningNodeId() != null;
 
         //create data bag, pass it to exchange.collect
-        DiscoveryDataBag dataBag = dataPacket.bagForDataCollection();
+        DiscoveryDataBag dataBag = dataPacket.bagForDataCollection(
+            marsh,
+            U.resolveClassLoader(ignite().configuration()),
+            locNode.clientRouterNodeId() != null,
+            log);
 
         exchange.collect(dataBag);
 

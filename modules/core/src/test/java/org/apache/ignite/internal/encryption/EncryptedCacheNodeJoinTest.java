@@ -276,6 +276,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         startGrid(GRID_0);
         startGrid(GRID_3);
+        startGrid(GRID_4);
 
         IgniteEx client1 = startClientGrid("client1");
 
@@ -301,6 +302,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
             cache.put(i, String.valueOf(i));
 
         checkEncryptedCaches(grid(GRID_0), grid(GRID_3));
+        checkEncryptedCaches(grid(GRID_3), grid(GRID_4));
         checkEncryptedCaches(grid(GRID_0), client1);
         checkData(client1);
 
