@@ -44,6 +44,9 @@ namespace Apache.Ignite.Core.Impl.Common
         private const string MemoryLimitFileName = "memory.limit_in_bytes";
 
         /** */
+        private const string MemoryLimitFileName2 = "memory.max";
+
+        /** */
         private const string ProcMountInfoFileName = "/proc/self/mountinfo";
 
         /** */
@@ -84,8 +87,15 @@ namespace Apache.Ignite.Core.Impl.Common
                         ? hierarchyMount
                         : hierarchyMount + cgroupPathRelativeToMount;
 
-                var memLimitFile = Path.Combine(groupPath, MemoryLimitFileName);
-                var memLimitText = File.ReadAllText(memLimitFile);
+                var memLimitFilName = IsCgroupV2()
+                    ? MemoryLimitFileName2
+                    : MemoryLimitFileName;
+
+                var memLimitFilePath = Path.Combine(
+                    groupPath,
+                    memLimitFilName);
+
+                var memLimitText = File.ReadAllText(memLimitFilePath);
 
                 ulong memLimit;
                 if (ulong.TryParse(memLimitText, out memLimit))
