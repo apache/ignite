@@ -73,7 +73,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         else:
             config = self.config
 
-        config.discovery_spi.prepare_on_start(cluster=self)
+        config.discovery_spi.prepare_on_start(cluster=self, node=node)
 
         node_config = self.spec.config_template.render(config_dir=self.PERSISTENT_ROOT, work_dir=self.WORK_DIR,
                                                        config=config)
