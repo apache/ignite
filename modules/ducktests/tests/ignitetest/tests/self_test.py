@@ -75,7 +75,8 @@ class SelfTest(IgniteTest):
         min_res = service.clocks[0]
         max_res = service.clocks[-1]
         assert max_res[1] - min_res[1] < max_clock_spread_ms, \
-            "Clock difference between %s and %s exceeds %d ms." % (min_res[0], max_res[0], max_clock_spread_ms)
+            "Clock difference between %s (%d) and %s (%d) exceeds %d ms." \
+            % (min_res[0], min_res[1], max_res[0], max_res[1], max_clock_spread_ms)
 
 
 class GetTimeService(BackgroundThreadService):
