@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
+import org.apache.ignite.internal.processors.metric.sources.ClusterMetricSource;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridTimerTask;
@@ -109,18 +110,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** Periodic version check delay. */
     private static final long PERIODIC_VER_CHECK_CONN_TIMEOUT = 10 * 1000; // 10 seconds.
-
-    /** Total server nodes count metric name. */
-    public static final String TOTAL_SERVER_NODES = "TotalServerNodes";
-
-    /** Total client nodes count metric name. */
-    public static final String TOTAL_CLIENT_NODES = "TotalClientNodes";
-
-    /** Total baseline nodes count metric name. */
-    public static final String TOTAL_BASELINE_NODES = "TotalBaselineNodes";
-
-    /** Active baseline nodes count metric name. */
-    public static final String ACTIVE_BASELINE_NODES = "ActiveBaselineNodes";
 
     /** @see IgniteSystemProperties#IGNITE_UPDATE_NOTIFIER */
     public static final boolean DFLT_UPDATE_NOTIFIER = true;
@@ -673,31 +662,11 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /**  Registers cluster metrics. */
     public void registerMetrics() {
-        //TODO: Use metric source
-/*
-        MetricRegistry reg = ctx.metric().registry(CLUSTER_METRICS);
+        ClusterMetricSource metricSrc = new ClusterMetricSource(ctx);
 
-        reg.register(TOTAL_SERVER_NODES,
-            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forServers().nodes().size(),
-            "Server nodes count.");
+        ctx.metric().registerSource(metricSrc);
 
-        reg.register(TOTAL_CLIENT_NODES,
-            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forClients().nodes().size(),
-            "Client nodes count.");
-
-        reg.register(TOTAL_BASELINE_NODES,
-            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : F.size(cluster.currentBaselineTopology()),
-            "Total baseline nodes count.");
-
-        reg.register(ACTIVE_BASELINE_NODES, () -> {
-            if (ctx.isStopping() || ctx.clientDisconnected())
-                return -1;
-
-            Collection<Object> srvIds = F.nodeConsistentIds(cluster.forServers().nodes());
-
-            return F.size(cluster.currentBaselineTopology(), node -> srvIds.contains(node.consistentId()));
-        }, "Active baseline nodes count.");
-*/
+        ctx.metric().addRegistry(metricSrc.enable());
     }
 
     /**

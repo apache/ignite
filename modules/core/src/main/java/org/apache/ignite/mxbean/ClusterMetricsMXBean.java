@@ -262,33 +262,33 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     public long getCurrentPmeDuration();
 
     /**
-     * Get count of total baseline nodes.
+     * Returns number of total baseline nodes.
      *
-     * @return Count of total baseline nodes.
+     * @return Number of total baseline nodes.
      */
     @MXBeanDescription("Total baseline nodes count.")
     public int getTotalBaselineNodes();
 
     /**
-     * Get count of active baseline nodes.
+     * Returns number of active baseline nodes.
      *
-     * @return Count of active baseline nodes.
+     * @return Number of active baseline nodes.
      */
     @MXBeanDescription("Active baseline nodes count.")
     public int getActiveBaselineNodes();
 
     /**
-     * Get count of server nodes.
+     * Returns number of server nodes.
      *
-     * @return Count of server nodes.
+     * @return Number of server nodes.
      */
     @MXBeanDescription("Server nodes count.")
     public int getTotalServerNodes();
 
     /**
-     * Get count of client nodes.
+     * Returns number of client nodes.
      *
-     * @return Count of client nodes.
+     * @return Number of client nodes.
      */
     @MXBeanDescription("Client nodes count.")
     public int getTotalClientNodes();

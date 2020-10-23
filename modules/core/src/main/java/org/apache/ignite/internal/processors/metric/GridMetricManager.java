@@ -609,8 +609,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param svc Executor.
      */
     private void monitorStripedPool(String name, StripedExecutor svc) {
-        //TODO: Add striped pool name
-        StripedPoolMetricSource src = new StripedPoolMetricSource(ctx, svc);
+        StripedPoolMetricSource src = new StripedPoolMetricSource(name, ctx, svc);
 
         registerSource(src);
 

@@ -25,15 +25,9 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.sources.ClusterMetricSource;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
-import org.apache.ignite.spi.metric.IntMetric;
-
-import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.ACTIVE_BASELINE_NODES;
-import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_BASELINE_NODES;
-import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_CLIENT_NODES;
-import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_SERVER_NODES;
 
 /**
  * Cluster metrics MBean.
@@ -51,17 +45,8 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     /** Cluster metrics update mutex. */
     private final Object clusterMetricsMux = new Object();
 
-    /** Total server nodes count metric. */
-    private final IntMetric srvNodes;
-
-    /** Total client nodes count metric. */
-    private final IntMetric clientNodes;
-
-    /** Total baseline nodes count metric. */
-    private final IntMetric bltNodes;
-
-    /** Active baseline nodes count metric. */
-    private final IntMetric activeBltNodes;
+    /** Cluster metric source. */
+    private final ClusterMetricSource metricSrc;
 
     /**
      * @param cluster Cluster group to manage.
@@ -71,14 +56,7 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
         assert cluster != null;
 
         this.cluster = cluster;
-
-        //TODO: use metric source
-        MetricRegistry clusterReg = ctx.metric().getRegistry(/*CLUSTER_METRICS*/ "cluster");
-
-        srvNodes = clusterReg.findMetric(TOTAL_SERVER_NODES);
-        clientNodes = clusterReg.findMetric(TOTAL_CLIENT_NODES);
-        bltNodes = clusterReg.findMetric(TOTAL_BASELINE_NODES);
-        activeBltNodes = clusterReg.findMetric(ACTIVE_BASELINE_NODES);
+        this.metricSrc = ctx.metric().source(ClusterMetricSource.CLUSTER_METRICS);
     }
 
     /**
@@ -393,22 +371,22 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public int getTotalBaselineNodes() {
-        return bltNodes.value();
+        return metricSrc.totalBaselineNodes();
     }
 
     /** {@inheritDoc} */
     @Override public int getActiveBaselineNodes() {
-        return activeBltNodes.value();
+        return metricSrc.activeBaselineNodes();
     }
 
     /** {@inheritDoc} */
     @Override public int getTotalServerNodes() {
-        return srvNodes.value();
+        return metricSrc.totalServerNodes();
     }
 
     /** {@inheritDoc} */
     @Override public int getTotalClientNodes() {
-        return clientNodes.value();
+        return metricSrc.totalClientNodes();
     }
 
     /** {@inheritDoc} */

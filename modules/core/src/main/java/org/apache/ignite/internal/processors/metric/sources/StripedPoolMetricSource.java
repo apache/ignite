@@ -34,11 +34,12 @@ public class StripedPoolMetricSource extends AbstractMetricSource<StripedPoolMet
     /**
      * Creates metric source for striped pool.
      *
+     * @param name Striped thread pool name.
      * @param ctx Kernal context.
      * @param exec Wrapped striped pool.
      */
-    public StripedPoolMetricSource(GridKernalContext ctx, StripedExecutor exec) {
-        super(metricName(THREAD_POOLS, "StripedExecutor"), ctx);
+    public StripedPoolMetricSource(String name, GridKernalContext ctx, StripedExecutor exec) {
+        super(metricName(THREAD_POOLS, name), ctx);
 
         this.exec = exec;
     }

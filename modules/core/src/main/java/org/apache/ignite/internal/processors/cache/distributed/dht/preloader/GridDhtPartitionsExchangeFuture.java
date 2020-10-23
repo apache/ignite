@@ -111,7 +111,6 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.sources.PartitionExchangeMetricSource;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
@@ -150,7 +149,6 @@ import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvent
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
-import static org.apache.ignite.internal.processors.metric.sources.PartitionExchangeMetricSource.PME_METRICS;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 
@@ -2611,7 +2609,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (err == null) {
                 updateDurationHistogram(System.currentTimeMillis() - initTime);
 
-                cctx.exchange().clusterRebalancedMetric().value(rebalanced());
+                cctx.exchange().clusterRebalanced(rebalanced());
             }
 
             if (log.isInfoEnabled()) {
@@ -2680,12 +2678,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param duration The total duration of the current PME.
      */
     private void updateDurationHistogram(long duration) {
-        GridMetricManager metric = cctx.kernalContext().metric();
+        PartitionExchangeMetricSource metricSrc = cctx.exchange().metricSource();
 
-        //TODO: Change to direct source instance access.
-        PartitionExchangeMetricSource src = (PartitionExchangeMetricSource) metric.source(PME_METRICS);
-
-        src.updateDurationHistogram(duration, changedAffinity());
+        metricSrc.updateDurationHistogram(duration, changedAffinity());
     }
 
     /**
@@ -2838,7 +2833,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         while (true) {
             GridCacheVersion old = lastVer.get();
 
-            if (old == null || Long.compare(old.order(), ver.order()) < 0) {
+            if (old == null || old.order() < ver.order()) {
                 if (lastVer.compareAndSet(old, ver))
                     break;
             }

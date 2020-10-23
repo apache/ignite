@@ -119,7 +119,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
-import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
+import org.apache.ignite.internal.processors.metric.sources.ClusterMetricSource;
 import org.apache.ignite.internal.processors.metric.sources.PartitionExchangeMetricSource;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -177,6 +177,7 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
+import static org.apache.ignite.internal.processors.metric.sources.ClusterMetricSource.CLUSTER_METRICS;
 import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FUTURE;
 
 /**
@@ -291,9 +292,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** Delay before rebalancing code is start executing after exchange completion. For tests only. */
     private volatile long rebalanceDelay;
-
-    /** Metric that shows whether cluster is in fully rebalanced state. */
-    private volatile BooleanMetricImpl rebalanced;
 
     /** */
     private final ReentrantLock dumpLongRunningOpsLock = new ReentrantLock();
@@ -509,15 +507,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         ctx.metric().registerSource(metricSrc);
         ctx.metric().enableMetrics(metricSrc);
-
-        //TODO: Move to corresponding metric source
-/*
-        MetricRegistry clusterReg = cctx.kernalContext().metric().registry(CLUSTER_METRICS);
-
-        rebalanced = clusterReg.booleanMetric(REBALANCED,
-                "True if the cluster has achieved fully rebalanced state. Note that an inactive cluster always has" +
-                        " this metric in False regardless of the real partitions state.");
-*/
     }
 
     /**
@@ -2930,9 +2919,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         return metricSrc;
     }
 
-    /** @return Metric that shows whether cluster is in fully rebalanced state. */
-    public BooleanMetricImpl clusterRebalancedMetric() {
-        return rebalanced;
+    /** Sets flag that shows whether cluster is in fully rebalanced state. */
+    public void clusterRebalanced(boolean rebalanced) {
+        ClusterMetricSource clusterMetricSrc = cctx.kernalContext().metric().source(CLUSTER_METRICS);
+
+        clusterMetricSrc.rebalanced(rebalanced);
     }
 
     /**
