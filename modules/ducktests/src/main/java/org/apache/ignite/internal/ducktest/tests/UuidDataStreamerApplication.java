@@ -48,6 +48,9 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
                 .map(JsonNode::asLong)
                 .orElse(1024L);
 
+        assert dataSize > 0;
+        assert iterSize > 0;
+
         CacheConfiguration<UUID, byte[]> cacheCfg = new CacheConfiguration<>(cacheName);
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setBackups(2);
@@ -68,10 +71,12 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void workParallel(Ignite ignite, String cacheName, long iterSize, int dataSize) throws InterruptedException {
+    private void workParallel(Ignite ignite, String cacheName, long iterSize, int dataSize)
+            throws InterruptedException {
+
         int threads = Runtime.getRuntime().availableProcessors() / 2;
 
-        long iterCore = iterSize > 0 ? (iterSize / threads) : iterSize;
+        long iterCore = iterSize / threads;
 
         CountDownLatch latch = new CountDownLatch(threads);
 
@@ -120,7 +125,7 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
             try (IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
                 dataStreamer.autoFlushFrequency(100L);
 
-                while (cnt != iterSize) {
+                while (cnt <= iterSize) {
                     UUID uuid = UUID.randomUUID();
 
                     byte[] data = new byte[dataSize];
