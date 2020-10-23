@@ -1897,8 +1897,6 @@ public class ClusterCachesInfo {
                                 problemCaches = new HashSet<>();
 
                             problemCaches.add(cfg.getName());
-
-                            continue;
                         }
 
                         if (joiningNodeClient && cfg.isEncryptionEnabled()) {
