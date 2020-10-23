@@ -17,6 +17,7 @@
 This module contains smoke tests that checks that ducktape works as expected
 """
 import operator
+import threading
 
 from ducktape.mark.resource import cluster
 from ducktape.services.background_thread import BackgroundThreadService
@@ -63,13 +64,14 @@ class SelfTest(IgniteTest):
 
         service = GetTimeService(self.test_context, self.test_context.cluster.num_available_nodes())
         service.start()
+        service.wait(5)
 
         service.clocks.sort(key=operator.itemgetter(1))
 
         for _ in service.clocks:
             self.logger.info("NodeClock[%s] = %d" % (_[0], _[1]))
 
-        max_clock_spread_ms = 300
+        max_clock_spread_ms = 100
         min_res = service.clocks[0]
         max_res = service.clocks[-1]
         assert max_res[1] - min_res[1] < max_clock_spread_ms, \
@@ -83,10 +85,12 @@ class GetTimeService(BackgroundThreadService):
 
     def __init__(self, context, num_nodes):
         super().__init__(context, num_nodes)
+        self.start_barrier = threading.Barrier(num_nodes)
         self.clocks = []
 
-    def start_node(self, node):
-        self.clocks.append((node.name, int(node.account.ssh_output("date +%s"))))
+    def _worker(self, _, node):
+        self.start_barrier.wait(5)
+        self.clocks.append((node.name, float(node.account.ssh_output('date +%s%3N'))))  # list is thread-safe
 
     def stop_node(self, node):
         pass
