@@ -68,7 +68,6 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
     /** */
     private void workParallel(Ignite ignite, String cacheName, int dataSize)
             throws InterruptedException {
-
         int threads = Runtime.getRuntime().availableProcessors() / 2;
 
         CountDownLatch latch = new CountDownLatch(threads);
@@ -121,8 +120,9 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
                     dataStreamer.addData(uuid, data);
                 }
             }
-
-            latch.countDown();
+            finally {
+                latch.countDown();
+            }
         }
     }
 }
