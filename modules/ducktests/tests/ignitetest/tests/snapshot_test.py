@@ -16,7 +16,6 @@
 """
 Module contains discovery tests.
 """
-import ducktape
 from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
@@ -86,7 +85,7 @@ class SnapshotTest(IgniteTest):
             }
         )
 
-        load(streamer, duration=300)
+        load(streamer)
 
         node = service.nodes[0]
 
@@ -126,12 +125,9 @@ class SnapshotTest(IgniteTest):
         assert len(diff) == 0, diff
 
 
-def load(service_load: IgniteApplicationService, duration: int = 60):
+def load(service_load: IgniteApplicationService, duration: int = 300):
     """
     Load.
     """
     service_load.start()
-    try:
-        service_load.await_stopped(duration)
-    except (AssertionError, ducktape.errors.TimeoutError):
-        service_load.stop()
+    service_load.await_stopped(duration)
