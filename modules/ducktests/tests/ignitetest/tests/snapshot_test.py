@@ -138,4 +138,4 @@ def load(service_load: IgniteApplicationService, duration: int = 60):
     try:
         service_load.stop()
     except ducktape.errors.TimeoutError:  # data streamer use graceful shutdown.
-        service_load.await_stopped(timeout_sec=30)
+        service_load.await_stopped(timeout_sec=60)

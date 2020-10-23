@@ -109,7 +109,7 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
         /** {@inheritDoc} */
         @Override public void run() {
             try (IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
-                dataStreamer.autoFlushFrequency(50);
+                dataStreamer.autoFlushFrequency(100L);
 
                 while (!terminated()) {
                     UUID uuid = UUID.randomUUID();
