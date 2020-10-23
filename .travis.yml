@@ -50,3 +50,11 @@ matrix:
       dotnet: 3.1.101
       script:
         - dotnet build modules/platforms/dotnet/Apache.Ignite.DotNetCore.sln
+
+    - language: python
+      python:
+        - "3.8"
+      install: pip install tox-travis
+      before_script: cd modules/ducktests/tests
+      script:
+        - tox
