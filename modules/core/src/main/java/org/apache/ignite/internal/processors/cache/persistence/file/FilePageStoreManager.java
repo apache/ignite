@@ -758,9 +758,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             CacheDefragmentationContext defrgCtx = cctx.database().defragmentationContext();
 
-            if (defrgCtx != null && idxStore.exists())
-                defrgCtx.onPageStoreCreated(grpId, cacheWorkDir, INDEX_PARTITION, idxStore);
-
             for (int partId = 0; partId < partStores.length; partId++) {
                 final int p = partId;
 
@@ -771,9 +768,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         allocatedTracker);
 
                     partStores[partId] = partStore;
-
-                if (defrgCtx != null && partStore.exists())
-                    defrgCtx.onPageStoreCreated(grpId, cacheWorkDir, p, partStore);
             }
 
             return new CacheStoreHolder(idxStore, partStores);

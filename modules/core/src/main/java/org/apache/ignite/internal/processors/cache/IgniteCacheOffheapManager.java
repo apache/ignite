@@ -603,8 +603,7 @@ public interface IgniteCacheOffheapManager {
     interface CacheDataStore {
 
         /**
-         *
-         * @return
+         * @return Cache data tree object.
          */
         public CacheDataTree tree();
 

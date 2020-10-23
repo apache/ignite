@@ -15,35 +15,35 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DefragmentationWorkflowCallback implements MaintenanceWorkflowCallback {
     /** Defragmentation manager. */
-    private final CachePartitionDefragmentationManager defragmentationManager;
+    private final CachePartitionDefragmentationManager defrgMgr;
 
     /** Logger provider. */
-    private final Function<Class, IgniteLogger> loggerProvider;
+    private final Function<Class<?>, IgniteLogger> logProvider;
 
     /**
-     * @param loggerProvider Logger provider.
-     * @param manager Defragmentation manager.
+     * @param logProvider Logger provider.
+     * @param defrgMgr Defragmentation manager.
      */
     public DefragmentationWorkflowCallback(
-        Function<Class, IgniteLogger> loggerProvider,
-        CachePartitionDefragmentationManager manager
+        Function<Class<?>, IgniteLogger> logProvider,
+        CachePartitionDefragmentationManager defrgMgr
     ) {
-        defragmentationManager = manager;
-        this.loggerProvider = loggerProvider;
+        this.defrgMgr = defrgMgr;
+        this.logProvider = logProvider;
     }
 
     /** {@inheritDoc} */
     @Override public boolean shouldProceedWithMaintenance() {
-        return defragmentationManager.groupIdsForDefragmentation().length > 0;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public @NotNull List<MaintenanceAction<?>> allActions() {
-        return Collections.singletonList(new StopDefragmentationAction(defragmentationManager));
+        return Collections.singletonList(new StopDefragmentationAction(defrgMgr));
     }
 
     /** {@inheritDoc} */
     @Override public @Nullable MaintenanceAction<Boolean> automaticAction() {
-        return new ExecuteDefragmentationAction(loggerProvider, defragmentationManager);
+        return new ExecuteDefragmentationAction(logProvider, defrgMgr);
     }
 }

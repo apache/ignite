@@ -314,8 +314,7 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
         }
 
         /** {@inheritDoc} */
-        @Override
-        public H2Row getLookupRow(BPlusTree<H2Row, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
+        @Override public H2Row getLookupRow(BPlusTree<H2Row, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
             return lookupRow(tree, pageAddr, idx, this);
         }
 

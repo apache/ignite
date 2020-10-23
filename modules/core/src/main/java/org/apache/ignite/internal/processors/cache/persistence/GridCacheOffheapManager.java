@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CacheDefragmentationContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
@@ -242,11 +241,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ((GridCacheDatabaseSharedManager) ctx.database()).cancelOrWaitPartitionDestroy(grp.groupId(), p);
 
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
-
-        CacheDefragmentationContext defrgCtx = ctx.database().defragmentationContext();
-
-        if (defrgCtx != null)
-            defrgCtx.onCacheStoreCreated(grp, p, busyLock);
 
         return new GridCacheDataStore(grp, p, exists, busyLock, log);
     }
@@ -1262,6 +1256,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
             }
         }
+    }
+
+    /** */
+    public GridSpinBusyLock busyLock() {
+        return busyLock;
     }
 
     /**

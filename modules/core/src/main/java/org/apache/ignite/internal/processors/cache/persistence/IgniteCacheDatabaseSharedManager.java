@@ -819,8 +819,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         return dataRegionMap.values();
     }
 
-
-
     /**
      * @return DataRegionMetrics for all MemoryPolicies configured in Ignite instance.
      */

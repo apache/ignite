@@ -409,7 +409,7 @@ public class Checkpointer extends GridWorker {
                             String.format(
                                 CHECKPOINT_STARTED_LOG_FORMAT,
                                 chp.cpEntry == null ? "" : chp.cpEntry.checkpointId(),
-                                chp.cpEntry == null ? "" :chp.cpEntry.checkpointMark(),
+                                chp.cpEntry == null ? "" : chp.cpEntry.checkpointMark(),
                                 tracker.beforeLockDuration(),
                                 tracker.lockWaitDuration(),
                                 tracker.listenersExecuteDuration(),

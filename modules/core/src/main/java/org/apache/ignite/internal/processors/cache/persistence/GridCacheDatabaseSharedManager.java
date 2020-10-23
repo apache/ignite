@@ -667,7 +667,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         defrgCtx = new CacheDefragmentationContext(
             kernalCtx,
             this,
-            log,
             cacheGroupIds
         );
 
@@ -715,8 +714,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Registering region for checkpoint after it was added.
      */
-    @Override
-    protected DataRegion addDataRegion(DataStorageConfiguration dataStorageCfg, DataRegionConfiguration dataRegionCfg,
+    @Override protected DataRegion addDataRegion(DataStorageConfiguration dataStorageCfg, DataRegionConfiguration dataRegionCfg,
         boolean trackable, PageReadWriteManager pmPageMgr) throws IgniteCheckedException {
         DataRegion region = super.addDataRegion(dataStorageCfg, dataRegionCfg, trackable, pmPageMgr);
 

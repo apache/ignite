@@ -17,26 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
-import java.io.File;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManagerImpl;
-import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.collection.BitSetIntSet;
-import org.apache.ignite.internal.util.collection.IntHashMap;
-import org.apache.ignite.internal.util.collection.IntMap;
-import org.apache.ignite.internal.util.collection.IntRWHashMap;
-import org.apache.ignite.internal.util.collection.IntSet;
 
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DEFRAGMENTATION_MAPPING_REGION_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DEFRAGMENTATION_PART_REGION_NAME;
@@ -56,41 +46,21 @@ public class CacheDefragmentationContext {
     private final PageStoreMap mappingPageStoresMap = new PageStoreMap();
 
     /** */
-    private final PageStoreMap oldPageStoresMap = new PageStoreMap();
-
-    /** GroupId -> { PartId } */
-    private final IntMap<IntSet> partitionsByGrpId = new IntRWHashMap<>();
-
-    /** GroupId -> WorkDir */
-    private final IntMap<File> cacheWorkDirsByGrpId = new IntHashMap<>();
-
-    /** GroupId -> CacheGroupContext */
-    private final IntMap<CacheGroupContext> grpContextsByGrpId = new IntHashMap<>();
-
-    /** Logger. */
-    public final IgniteLogger log;
-
-    /** Busy lock. */
-    private volatile GridSpinBusyLock busyLock;
-
     private final Set<Integer> cacheGroupsForDefragmentation;
 
     /**
      * @param ctx Context.
      * @param dbMgr Database manager.
-     * @param log Logger.
      * @param cacheGroupsForDefragmentation Cache group ids for defragmentation.
      */
     public CacheDefragmentationContext(
         GridKernalContext ctx,
         GridCacheDatabaseSharedManager dbMgr,
-        IgniteLogger log,
         List<Integer> cacheGroupsForDefragmentation
     ) {
         this.ctx = ctx;
         this.dbMgr = dbMgr;
 
-        this.log = log;
         this.cacheGroupsForDefragmentation = new HashSet<>(cacheGroupsForDefragmentation);
     }
 
@@ -152,81 +122,6 @@ public class CacheDefragmentationContext {
     }
 
     /**
-     * @param grpId Group id.
-     *
-     * @return Work dir for cache group. It has partitions and index.bin among other files.
-     */
-    public File workDirForGroupId(int grpId) {
-        return cacheWorkDirsByGrpId.get(grpId);
-    }
-
-    /**
-     * @return Busy lock.
-     */
-    public GridSpinBusyLock busyLock() {
-        return busyLock;
-    }
-
-    /**
-     * @return Arrays of group ids for all non-system cache groups.
-     */
-    public int[] groupIdsForDefragmentation() {
-        int[] grpIds = partitionsByGrpId.keys();
-
-        Arrays.sort(grpIds);
-
-        return grpIds;
-    }
-
-    /**
-     * @param grpId Group id.
-     * @return Actual partition files for cache group that were present on the storage during the start of the node.
-     */
-    public int[] partitionsForGroupId(int grpId) {
-        IntSet partitions = partitionsByGrpId.get(grpId);
-
-        return partitions == null ? null : partitions.toIntArray();
-    }
-
-    /**
-     * @param grpId Grou pid.
-     * @return Cache group context.
-     */
-    public CacheGroupContext groupContextByGroupId(int grpId) {
-        return grpContextsByGrpId.get(grpId);
-    }
-
-    /**
-     * @param grpId Group id.
-     * @param partId Partition id.
-     * @return Page store oject for given partition.
-     */
-    public PageStore pageStore(int grpId, int partId) {
-        return oldPageStoresMap.getStore(grpId, partId);
-    }
-
-    /**
-     * Registers work dir and partition store for given partition.
-     *
-     * @param grpId Group id.
-     * @param cacheWorkDir Work dir.
-     * @param partId Partition id.
-     * @param partStore Partition store.
-     *
-     * @see CacheDefragmentationContext#workDirForGroupId(int)
-     * @see CacheDefragmentationContext#pageStore(int, int)
-     */
-    public void onPageStoreCreated(int grpId, File cacheWorkDir, int partId, PageStore partStore) {
-        //TODO defragmenting all groups despite the input for easier testing
-//        if (!cacheGroupsForDefragmentation.contains(grpId))
-//            return;
-
-        cacheWorkDirsByGrpId.putIfAbsent(grpId, cacheWorkDir);
-
-        oldPageStoresMap.addPageStore(grpId, partId, partStore);
-    }
-
-    /**
      * @return Data region to use for results of defragmentation.
      * @throws IgniteCheckedException Effectively impossible.
      */
@@ -242,40 +137,9 @@ public class CacheDefragmentationContext {
         return dbMgr.dataRegion(DEFRAGMENTATION_MAPPING_REGION_NAME);
     }
 
-    /**
-     * Registers information about cache group.
-     *
-     * @param grp Cache group context.
-     * @param partId Partition id.
-     * @param busyLock Busy lock.
-     *
-     * @see CacheDefragmentationContext#groupContextByGroupId(int)
-     * @see CacheDefragmentationContext#partitionsForGroupId(int)
-     */
-    public void onCacheStoreCreated(CacheGroupContext grp, int partId, GridSpinBusyLock busyLock) {
-        if (!grp.userCache())// || !cacheGroupsForDefragmentation.contains(grp.groupId()))
-            return;
-
-        if (this.busyLock == null)
-            this.busyLock = busyLock;
-
-        int grpId = grp.groupId();
-        grpContextsByGrpId.putIfAbsent(grpId, grp);
-
-        try {
-            if (!grp.shared().pageStore().exists(grpId, partId))
-                return;
-
-            IntSet partitions = partitionsByGrpId.get(grpId);
-
-            if (partitions == null)
-                partitionsByGrpId.put(grpId, partitions = new BitSetIntSet());
-
-            partitions.add(partId);
-        }
-        catch (IgniteCheckedException ignore) {
-            // No-op.
-        }
+    /** */
+    public Set<Integer> cacheGroupsForDefragmentation() {
+        return cacheGroupsForDefragmentation;
     }
 
     /** */

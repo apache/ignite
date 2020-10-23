@@ -16,24 +16,24 @@ class ExecuteDefragmentationAction implements MaintenanceAction<Boolean> {
     private final IgniteLogger log;
 
     /** Defragmentation manager. */
-    private final CachePartitionDefragmentationManager defragmentationManager;
+    private final CachePartitionDefragmentationManager defrgMgr;
 
     /**
-     * @param loggerFunction Logger provider.
-     * @param manager Defragmentation manager.
+     * @param logFunction Logger provider.
+     * @param defrgMgr Defragmentation manager.
      */
     public ExecuteDefragmentationAction(
-        Function<Class, IgniteLogger> loggerFunction,
-        CachePartitionDefragmentationManager manager
+        Function<Class<?>, IgniteLogger> logFunction,
+        CachePartitionDefragmentationManager defrgMgr
     ) {
-        this.log = loggerFunction.apply(ExecuteDefragmentationAction.class);
-        this.defragmentationManager = manager;
+        this.log = logFunction.apply(ExecuteDefragmentationAction.class);
+        this.defrgMgr = defrgMgr;
     }
 
     /** {@inheritDoc} */
     @Override public Boolean execute() {
         try {
-            defragmentationManager.executeDefragmentation();
+            defrgMgr.executeDefragmentation();
         }
         catch (IgniteCheckedException e) {
             log.error("Defragmentation is failed", e);

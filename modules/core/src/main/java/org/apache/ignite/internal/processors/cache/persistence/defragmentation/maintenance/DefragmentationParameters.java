@@ -11,15 +11,17 @@ import static org.apache.ignite.internal.processors.cache.persistence.defragment
  * Maintenance task for defragmentation.
  */
 public class DefragmentationParameters {
-
+    /** */
     public static final String CACHE_GROUP_ID_SEPARATOR = ",";
-    private final List<Integer> cacheGroupIds;
+
+    /** */
+    private final List<Integer> cacheGrpIds;
 
     /**
-     * @param cacheGroupIds Id of cache group for defragmentations.
+     * @param cacheGrpIds Id of cache group for defragmentations.
      */
-    private DefragmentationParameters(List<Integer> cacheGroupIds) {
-        this.cacheGroupIds = cacheGroupIds;
+    private DefragmentationParameters(List<Integer> cacheGrpIds) {
+        this.cacheGrpIds = cacheGrpIds;
     }
 
     /**
@@ -43,9 +45,8 @@ public class DefragmentationParameters {
      * @return Defragmentation parameters.
      */
     public static DefragmentationParameters fromStore(MaintenanceTask rawTask) {
-        return new DefragmentationParameters(Arrays.asList(rawTask.parameters()
+        return new DefragmentationParameters(Arrays.stream(rawTask.parameters()
             .split(CACHE_GROUP_ID_SEPARATOR))
-            .stream()
             .map(Integer::valueOf)
             .collect(Collectors.toList())
         );
@@ -55,6 +56,6 @@ public class DefragmentationParameters {
      * @return Cache groups ids.
      */
     public List<Integer> cacheGroupIds() {
-        return cacheGroupIds;
+        return cacheGrpIds;
     }
 }
