@@ -24,15 +24,15 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
+import org.apache.ignite.internal.processors.metric.sources.CommunicationMetricSource;
 import org.apache.ignite.internal.processors.metric.sources.ComputeMetricSource;
 import org.apache.ignite.internal.processors.metric.sources.PartitionExchangeMetricSource;
 import org.apache.ignite.internal.processors.metric.sources.SystemMetricSource;
-import org.apache.ignite.internal.processors.metric.sources.CommunicationMetricSource;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.metric.sources.CommunicationMetricSource.COMM_METRICS;
 import static org.apache.ignite.internal.processors.metric.sources.ComputeMetricSource.COMPUTE_METRICS;
 import static org.apache.ignite.internal.processors.metric.sources.SystemMetricSource.SYS_METRICS;
-import static org.apache.ignite.internal.processors.metric.sources.CommunicationMetricSource.COMM_METRICS;
 
 /**
  * Cluster metrics proxy.
@@ -401,7 +401,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     @Override public long getCurrentPmeDuration() {
         PartitionExchangeMetricSource pmeMetricSrc = ctx.cache().context().exchange().metricSource();
 
-        return pmeMetricSrc !=null ? pmeMetricSrc.currentPmeDuration() : -1L;
+        return pmeMetricSrc != null ? pmeMetricSrc.currentPmeDuration() : -1L;
     }
 
     /**

@@ -290,7 +290,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private DataStorageMetricsImpl persStoreMetrics;
 
+    /** Metric source. */
     private DataStorageMetricSource metricSrc;
+
     /**
      * MetaStorage instance. Value {@code null} means storage not initialized yet.
      * Guarded by {@link GridCacheDatabaseSharedManager#checkpointReadLock()}

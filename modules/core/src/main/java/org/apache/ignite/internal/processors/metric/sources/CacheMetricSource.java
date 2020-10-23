@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.metric.sources;
 
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -726,7 +725,7 @@ public class CacheMetricSource extends AbstractMetricSource<CacheMetricSource.Ho
     public long entryProcessorMinInvocationTime() {
         Holder hldr = holder();
 
-        return hldr != null ? hldr.entryProcessorMinInvocationTime.value(): 0;
+        return hldr != null ? hldr.entryProcessorMinInvocationTime.value() : 0;
     }
 
     /**
@@ -1362,7 +1361,6 @@ public class CacheMetricSource extends AbstractMetricSource<CacheMetricSource.Ho
                 delegate.reset();
         }
     }
-
 
     /**
      * Entries and partitions metrics holder class.

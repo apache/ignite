@@ -41,8 +41,8 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMe
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
-import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.HistogramMetric;
+import org.apache.ignite.spi.metric.Metric;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;

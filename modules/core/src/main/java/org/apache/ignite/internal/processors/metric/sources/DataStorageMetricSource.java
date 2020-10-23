@@ -149,7 +149,7 @@ public class DataStorageMetricSource extends AbstractMetricSource<DataStorageMet
      * Sets collection of data regions metric sources.
      */
     //TODO: Unsafe and may lead to errors. Reconsider approach if possible.
-    public void regionMetrics(Collection<DataRegionMetricSource> regionMetricSrcs){
+    public void regionMetrics(Collection<DataRegionMetricSource> regionMetricSrcs) {
         this.regionMetricSrcs = regionMetricSrcs;
     }
 
@@ -284,7 +284,7 @@ public class DataStorageMetricSource extends AbstractMetricSource<DataStorageMet
     public long lastCheckpointMarkDuration() {
         Holder hldr = holder();
 
-        return hldr != null ? hldr.lastCpMarkDuration.value()  : -1;
+        return hldr != null ? hldr.lastCpMarkDuration.value() : -1;
     }
 
     /**
@@ -396,7 +396,7 @@ public class DataStorageMetricSource extends AbstractMetricSource<DataStorageMet
      * @param walSizeProvider Wal size provider.
      */
     //TODO: Replace by direct calls from WAL.
-    public void walSizeProvider(IgniteOutClosure<Long> walSizeProvider){
+    public void walSizeProvider(IgniteOutClosure<Long> walSizeProvider) {
         this.walSizeProvider = walSizeProvider;
     }
 
@@ -759,7 +759,7 @@ public class DataStorageMetricSource extends AbstractMetricSource<DataStorageMet
      * Could be calculated by external tools (aggregated value).
      */
     @Deprecated
-    public long checkpointBufferSize(){
+    public long checkpointBufferSize() {
         if (!enabled())
             return -1;
 

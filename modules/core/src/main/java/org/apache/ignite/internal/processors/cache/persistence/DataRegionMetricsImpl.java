@@ -90,7 +90,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override  public float getEvictionRate() {
+    @Override public float getEvictionRate() {
         return metricSrc.evictionRate();
     }
 

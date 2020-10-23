@@ -374,7 +374,7 @@ public class CacheGroupMetricSource extends AbstractMetricSource<CacheGroupMetri
     public long sparseStorageSize() {
         Holder hldr = holder();
 
-        return hldr !=null ? hldr.sparseStorageSize.value() : 0;
+        return hldr != null ? hldr.sparseStorageSize.value() : 0;
     }
 
     /**

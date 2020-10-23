@@ -34,14 +34,14 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.processors.metric.sources.StripedPoolMetricSource;
-import org.apache.ignite.internal.processors.metric.sources.SystemMetricSource;
-import org.apache.ignite.internal.processors.metric.sources.ThreadPoolExecutorMetricSource;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.sources.StripedPoolMetricSource;
+import org.apache.ignite.internal.processors.metric.sources.SystemMetricSource;
+import org.apache.ignite.internal.processors.metric.sources.ThreadPoolExecutorMetricSource;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -191,7 +191,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     public void enableMetrics(String name) {
         MetricSource src = sources.get(name);
 
-        assert src != null : "There is no registered metric source \"" + name + "\"." ;
+        assert src != null : "There is no registered metric source \"" + name + "\".";
 
         enableMetrics(src);
     }
@@ -217,7 +217,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         MetricSource src = sources.get(name);
 
-        assert src != null : "There is no registered metric source \"" + name + "\"." ;
+        assert src != null : "There is no registered metric source \"" + name + "\".";
 
         disableMetrics(src);
     }
@@ -327,7 +327,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     public void unregisterSource(MetricSource src) {
         sources.remove(src.name());
     }
-
 
     /**
      * Reads value from {@link #roMetastorage}.

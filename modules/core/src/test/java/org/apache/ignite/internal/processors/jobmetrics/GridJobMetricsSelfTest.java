@@ -44,13 +44,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.metric.sources.ComputeMetricSource.ACTIVE;
 import static org.apache.ignite.internal.processors.metric.sources.ComputeMetricSource.CANCELED;
 import static org.apache.ignite.internal.processors.metric.sources.ComputeMetricSource.COMPUTE_METRICS;
 import static org.apache.ignite.internal.processors.metric.sources.ComputeMetricSource.EXECUTION_TIME;
 import static org.apache.ignite.internal.processors.metric.sources.ComputeMetricSource.FINISHED;
 import static org.apache.ignite.internal.processors.metric.sources.ComputeMetricSource.REJECTED;
 import static org.apache.ignite.internal.processors.metric.sources.ComputeMetricSource.STARTED;
-import static org.apache.ignite.internal.processors.metric.sources.ComputeMetricSource.ACTIVE;
 import static org.apache.ignite.internal.processors.metric.sources.ComputeMetricSource.WAITING;
 import static org.apache.ignite.internal.processors.metric.sources.ComputeMetricSource.WAITING_TIME;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -163,7 +163,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
     public void testGridJobMetrics() throws Exception {
         latch = new CountDownLatch(1);
 
-        try(IgniteEx g = startGrid(0)) {
+        try (IgniteEx g = startGrid(0)) {
             MetricRegistry mreg = g.context().metric().getRegistry(COMPUTE_METRICS);
 
             LongMetric started = mreg.findMetric(STARTED);

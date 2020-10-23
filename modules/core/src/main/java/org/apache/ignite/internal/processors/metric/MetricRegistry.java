@@ -76,13 +76,11 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
     }
 
     /** @return Group name. */
-    @Override
-    public String name() {
+    @Override public String name() {
         return name;
     }
 
     //TODO: Reimplement all below
-
     /**
      * Creates and register hit rate metric.
      *

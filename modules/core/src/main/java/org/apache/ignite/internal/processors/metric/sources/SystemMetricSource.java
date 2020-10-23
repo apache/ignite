@@ -314,7 +314,6 @@ public class SystemMetricSource extends AbstractMetricSource<SystemMetricSource.
         return hldr != null ? hldr.lastDataVer.value() : -1;
     }
 
-
     //TODO: Consider moving to some utility package
     /**
      * Returns the current memory usage of the heap.

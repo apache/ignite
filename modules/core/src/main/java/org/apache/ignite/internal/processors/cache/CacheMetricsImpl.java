@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -28,10 +31,6 @@ import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.sources.CacheMetricSource;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * Adapter for cache metrics.
@@ -54,7 +53,6 @@ public class CacheMetricsImpl implements CacheMetrics {
     //TODO: Move to metric source
     /** Rollback time. */
     private HistogramMetricImpl rollbackTime;
-
 
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
