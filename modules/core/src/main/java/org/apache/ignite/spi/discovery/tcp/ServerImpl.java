@@ -6523,10 +6523,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         long lastOperationNanos) {
         long absoluteThreshold = -1;
 
-        // Active send-state means we lost connection to next node and have to find an other one to connect to.
+        // Active send-state means we lost connection to next node and have to find another.
         // We don't know how many nodes failed. May be several failed in a row. But we got only one
         // connectionRecoveryTimeout to establish new connection to the ring. We can't spend this timeout wholly on one
-        // or two next nodes. We should slice it and try to travers majority of next nodes in the ring.
+        // or two next nodes. We should slice it and try to travers as many as we can.
         if (sndState != null) {
             int nodesLeft = ring.serverNodes().size() - 1 - sndState.failedNodes;
 
