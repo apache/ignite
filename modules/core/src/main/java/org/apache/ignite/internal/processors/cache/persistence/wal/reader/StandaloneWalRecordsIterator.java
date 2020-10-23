@@ -485,7 +485,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 dataEntry.partitionCounter(),
                 ((MvccDataEntry)dataEntry).mvccVer(),
                 coCtx,
-                keepBinary);
+                keepBinary,
+                dataEntry.primary());
         else
             return new UnwrapDataEntry(
                 dataEntry.cacheId(),
@@ -498,7 +499,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 dataEntry.partitionId(),
                 dataEntry.partitionCounter(),
                 coCtx,
-                keepBinary);
+                keepBinary,
+                dataEntry.primary());
     }
 
     /** {@inheritDoc} */

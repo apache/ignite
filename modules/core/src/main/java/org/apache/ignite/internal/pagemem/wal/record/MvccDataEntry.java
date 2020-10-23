@@ -43,6 +43,7 @@ public class MvccDataEntry extends DataEntry {
      * @param partId Partition ID.
      * @param partCnt Partition counter.
      * @param mvccVer Mvcc version.
+     * @param primary {@code True} if node is primary for partition in the moment of logging.
      */
     public MvccDataEntry(
         int cacheId,
@@ -54,9 +55,10 @@ public class MvccDataEntry extends DataEntry {
         long expireTime,
         int partId,
         long partCnt,
-        MvccVersion mvccVer
+        MvccVersion mvccVer,
+        boolean primary
     ) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt);
+        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, primary);
 
         this.mvccVer = mvccVer;
     }

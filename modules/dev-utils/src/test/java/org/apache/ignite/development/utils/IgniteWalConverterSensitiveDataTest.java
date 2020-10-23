@@ -331,7 +331,8 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
             new GridCacheVersion(),
             0,
             0,
-            0
+            0,
+            true
         );
 
         byte[] sensitiveDataBytes = SENSITIVE_DATA_VALUE_PREFIX.getBytes(StandardCharsets.UTF_8);
