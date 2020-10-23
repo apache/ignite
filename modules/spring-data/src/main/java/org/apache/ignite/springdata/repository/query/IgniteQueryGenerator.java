@@ -21,6 +21,8 @@ import java.lang.reflect.Method;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mapping.PropertyPath;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.query.parser.Part;
 import org.springframework.data.repository.query.parser.PartTree;
@@ -35,7 +37,14 @@ public class IgniteQueryGenerator {
      * @param metadata Metadata.
      */
     @NotNull public static IgniteQuery generateSql(Method mtd, RepositoryMetadata metadata) {
-        PartTree parts = new PartTree(mtd.getName(), metadata.getDomainType());
+        PartTree parts;
+
+        try {
+            parts = new PartTree(mtd.getName(), metadata.getDomainType());
+        }
+        catch (PropertyReferenceException e) {
+            parts = new PartTree(mtd.getName(), metadata.getIdType());
+        }
 
         StringBuilder sql = new StringBuilder();
 
@@ -61,7 +70,7 @@ public class IgniteQueryGenerator {
             for (PartTree.OrPart orPart : parts) {
                 sql.append("(");
                 for (Part part : orPart) {
-                    handleQueryPart(sql, part);
+                    handleQueryPart(sql, part, metadata.getDomainType());
                     sql.append(" AND ");
                 }
 
@@ -162,12 +171,24 @@ public class IgniteQueryGenerator {
     }
 
     /**
+     * Check and correct table name if using column name from compound key.
+     */
+    private static String getColumnName(Part part, Class<?> domainType) {
+        PropertyPath prperty = part.getProperty();
+
+        if (prperty.getType() != domainType)
+            return domainType.getSimpleName() + "." + prperty.getSegment();
+        else
+            return part.toString();
+    }
+
+    /**
      * Transform part to sql expression
      */
-    private static void handleQueryPart(StringBuilder sql, Part part) {
+    private static void handleQueryPart(StringBuilder sql, Part part, Class<?> domainType) {
         sql.append("(");
 
-        sql.append(part.getProperty());
+        sql.append(getColumnName(part, domainType));
 
         switch (part.getType()) {
             case SIMPLE_PROPERTY:

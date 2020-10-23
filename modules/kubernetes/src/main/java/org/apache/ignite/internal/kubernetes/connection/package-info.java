@@ -17,7 +17,7 @@
 
 /**
  * <!-- Package description. -->
- * Contains utility port scanner.
+ * Contains Kubernetes connection classes.
  */
 
-package org.apache.ignite.internal.util.portscanner;
+package org.apache.ignite.internal.kubernetes.connection;
