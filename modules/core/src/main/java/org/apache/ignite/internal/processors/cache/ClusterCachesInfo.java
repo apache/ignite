@@ -66,6 +66,7 @@ import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -1909,18 +1910,25 @@ public class ClusterCachesInfo {
                     }
                 }
 
-                if (!F.isEmpty(problemCaches))
-                    return problemCaches.stream().collect(Collectors.joining(", ",
-                        "Joining node has caches with data which are not presented on cluster, " +
-                            "it could mean that they were already destroyed, to add the node to cluster - " +
-                            "remove directories with the caches[", "]"));
+                if (F.isEmpty(problemCaches) && F.isEmpty(encClientCaches))
+                    return null;
+
+                SB buf = new SB("Joining node has caches with data which are not presented on cluster");
+
+                if (!F.isEmpty(problemCaches)) {
+                    buf.a(problemCaches.stream().collect(Collectors.joining(", ",
+                        ", it could mean that they were already destroyed, to add the node to cluster - " +
+                            "remove directories with the caches[", "]")));
+                }
 
                 if (!F.isEmpty(encClientCaches)) {
-                    return encClientCaches.stream().collect(Collectors.joining(", ",
-                        "Joining client node has encrypted caches that are not present on the cluster, encrypted" +
-                            " caches configured on client cannot be started when the client node joins the cluster, " +
-                            "they can be started manually (dynamically) after node is joined [caches=", "]"));
+                    buf.a(encClientCaches.stream().collect(Collectors.joining(", ",
+                        ", encrypted caches configured on client node cannot be started when such node joins " +
+                            "the cluster, these caches can be started manually (dynamically) after node is joined " +
+                            "[caches=", "]")));
                 }
+
+                return buf.toString();
             }
         }
 
