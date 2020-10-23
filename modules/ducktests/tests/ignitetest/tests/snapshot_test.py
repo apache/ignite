@@ -16,6 +16,9 @@
 """
 Module contains discovery tests.
 """
+import time
+import ducktape
+
 from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
@@ -81,11 +84,10 @@ class SnapshotTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.UuidDataStreamerApplication",
             params={
                 "cacheName": "test-cache",
-                "iterSize": 512 * 1024
             }
         )
 
-        load(streamer)
+        load(streamer, duration=300)
 
         node = service.nodes[0]
 
@@ -125,9 +127,15 @@ class SnapshotTest(IgniteTest):
         assert len(diff) == 0, diff
 
 
-def load(service_load: IgniteApplicationService, duration: int = 300):
+def load(service_load: IgniteApplicationService, duration: int = 60):
     """
     Load.
     """
     service_load.start()
-    service_load.await_stopped(duration)
+
+    time.sleep(duration)
+
+    try:
+        service_load.stop()
+    except ducktape.errors.TimeoutError:  # data streamer use graceful shutdown.
+        service_load.await_stopped(timeout_sec=30)

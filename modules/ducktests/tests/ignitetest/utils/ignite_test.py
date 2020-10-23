@@ -22,7 +22,6 @@ from time import monotonic
 from ducktape.utils.local_filesystem_utils import mkdir_p
 from ducktape.tests.test import Test, TestContext
 from ignitetest.services.ignite import IgniteService
-from ignitetest.services.utils.util import compress_cmd
 
 
 # pylint: disable=W0223
@@ -66,9 +65,9 @@ class IgniteTest(Test):
                         if not os.path.isdir(dest):
                             mkdir_p(dest)
 
-                        tgz_work = '%s.tgz' % service.WORK_DIR
+                        tgz_work = f'{service.WORK_DIR}.tgz'
 
-                        node.account.ssh(compress_cmd(service.WORK_DIR, tgz_work))
+                        node.account.ssh(f'cd {service.WORK_DIR} ; tar czf "{tgz_work}" *;')
                         node.account.copy_from(tgz_work, dest)
                 except Exception as ex:  # pylint: disable=W0703
                     self.logger.warn(
