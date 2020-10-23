@@ -27,8 +27,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -99,14 +98,14 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
 
         assertTrue("Expected that at least resIdx greater than 0, real is " + resIdx, resIdx > 0);
 
-            FileWALPointer lowPtr = (FileWALPointer)dbMgr.checkpointHistory().firstCheckpointPointer();
+        WALPointer lowPtr = dbMgr.checkpointHistory().firstCheckpointPointer();
 
         assertTrue("Expected that dbMbr returns valid resIdx", lowPtr.index() == resIdx);
 
         // Reserve previous WAL segment.
-        wal.reserve(new FileWALPointer(resIdx - 1, 0, 0));
+        wal.reserve(new WALPointer(resIdx - 1, 0, 0));
 
-        int resCnt = wal.reserved(new FileWALPointer(resIdx - 1, 0, 0), new FileWALPointer(resIdx, 0, 0));
+        int resCnt = wal.reserved(new WALPointer(resIdx - 1, 0, 0), new WALPointer(resIdx, 0, 0));
 
         assertTrue("Expected resCnt is 2, real is " + resCnt, resCnt == 2);
     }
@@ -129,12 +128,12 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
 
         assertTrue("Expected that at least resIdx greater than 0, real is " + resIdx, resIdx > 0);
 
-            FileWALPointer lowPtr = (FileWALPointer) dbMgr.checkpointHistory().firstCheckpointPointer();
+        WALPointer lowPtr = dbMgr.checkpointHistory().firstCheckpointPointer();
 
         assertTrue("Expected that dbMbr returns valid resIdx", lowPtr.index() == resIdx);
 
         // Reserve previous WAL segment.
-        wal.reserve(new FileWALPointer(resIdx - 1, 0, 0));
+        wal.reserve(new WALPointer(resIdx - 1, 0, 0));
 
         int numDel = wal.truncate(null, lowPtr);
 
@@ -151,7 +150,7 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private IgniteEx prepareGrid(int cnt) throws Exception {
-        IgniteEx ig0 = (IgniteEx)startGrids(cnt);
+        IgniteEx ig0 = startGrids(cnt);
 
         ig0.cluster().active(true);
 
@@ -173,8 +172,6 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
      * @param dbMgr Database shared manager.
      */
     private long getReservedWalSegmentIndex(GridCacheDatabaseSharedManager dbMgr) {
-        CheckpointHistory cpHist = dbMgr.checkpointHistory();
-
-        return ((FileWALPointer) cpHist.firstCheckpointPointer()).index();
+        return dbMgr.checkpointHistory().firstCheckpointPointer().index();
     }
 }

@@ -19,6 +19,7 @@ This module contains IgniteConfiguration classes and utilities.
 
 from typing import NamedTuple
 
+from ignitetest.services.utils.ignite_configuration.communication import CommunicationSpi, TcpCommunicationSpi
 from ignitetest.services.utils.ignite_configuration.data_storage import DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import DiscoverySpi, TcpDiscoverySpi
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
@@ -29,11 +30,13 @@ class IgniteConfiguration(NamedTuple):
     Ignite configuration.
     """
     discovery_spi: DiscoverySpi = TcpDiscoverySpi()
+    communication_spi: CommunicationSpi = TcpCommunicationSpi()
     version: IgniteVersion = DEV_BRANCH
     cluster_state: str = 'ACTIVE'
     client_mode: bool = False
     consistent_id: str = None
     failure_detection_timeout: int = 10000
+    sys_worker_blocked_timeout: int = 10000
     properties: str = None
     data_storage: DataStorageConfiguration = None
     caches: list = []

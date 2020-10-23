@@ -17,25 +17,24 @@
 Module contains discovery tests.
 """
 
+import os
 import random
-import re
+import sys
 from enum import IntEnum
-from datetime import datetime
 from time import monotonic
 from typing import NamedTuple
 
 from ducktape.mark import matrix
 from ducktape.mark.resource import cluster
 
-from ignitetest.services.ignite import IgniteAwareService
-from ignitetest.services.ignite import IgniteService
+from ignitetest.services.ignite import IgniteAwareService, IgniteService, get_event_time, node_failed_event_pattern
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster, \
     TcpDiscoverySpi
 from ignitetest.services.utils.time_utils import epoch_mills
-from ignitetest.services.zk.zookeeper import ZookeeperService
+from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
 from ignitetest.utils import ignite_versions, version_if
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, V_2_8_0, IgniteVersion
@@ -56,8 +55,8 @@ class DiscoveryTestConfig(NamedTuple):
     """
     version: IgniteVersion
     nodes_to_kill: int = 1
-    kill_coordinator: bool = False
     load_type: ClusterLoad = ClusterLoad.NONE
+    sequential_failure: bool = False
     with_zk: bool = False
 
 
@@ -69,46 +68,76 @@ class DiscoveryTest(IgniteTest):
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
-    NUM_NODES = 7
+    NUM_NODES = 9
 
-    FAILURE_DETECTION_TIMEOUT = 2000
+    FAILURE_DETECTION_TIMEOUT_TCP = 1000
+
+    FAILURE_DETECTION_TIMEOUT_ZK = 3000
 
     DATA_AMOUNT = 5_000_000
 
     WARMUP_DATA_AMOUNT = 10_000
 
+    def __init__(self, test_context):
+        super().__init__(test_context=test_context)
+
+        self.netfilter_store_path = None
+
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
-    @matrix(kill_coordinator=[False, True],
-            nodes_to_kill=[1, 2],
+    @matrix(nodes_to_kill=[1, 2],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_node_fail_tcp(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
+    def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type):
         """
-        Test nodes failure scenario with TcpDiscoverySpi.
-        :param load_type: How to load cluster during the test: 0 - no loading; 1 - do some loading; 2 - transactional.
+        Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
         """
-        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), kill_coordinator=kill_coordinator,
-                                          nodes_to_kill=nodes_to_kill, load_type=load_type, with_zk=False)
+        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
+                                          load_type=load_type, sequential_failure=False)
+
+        return self._perform_node_fail_scenario(test_config)
+
+    @cluster(num_nodes=NUM_NODES)
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
+    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type):
+        """
+        Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
+        """
+        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2, load_type=load_type,
+                                          sequential_failure=True)
 
         return self._perform_node_fail_scenario(test_config)
 
     @cluster(num_nodes=NUM_NODES + 3)
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
-    @matrix(kill_coordinator=[False, True],
-            nodes_to_kill=[1, 2],
+    @matrix(nodes_to_kill=[1, 2],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_node_fail_zk(self, ignite_version, kill_coordinator, nodes_to_kill, load_type):
+    def test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type):
         """
-        Test node failure scenario with ZooKeeperSpi.
-        :param load_type: How to load cluster during the test: 0 - no loading; 1 - do some loading; 2 - transactional.
+        Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
         """
-        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), kill_coordinator=kill_coordinator,
-                                          nodes_to_kill=nodes_to_kill, load_type=load_type, with_zk=True)
+        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
+                                          load_type=load_type, sequential_failure=False, with_zk=True)
+
+        return self._perform_node_fail_scenario(test_config)
+
+    @cluster(num_nodes=NUM_NODES + 3)
+    @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
+    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    def test_2_nodes_fail_sequential_zk(self, ignite_version, load_type):
+        """
+        Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
+        """
+        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2, load_type=load_type,
+                                          sequential_failure=True, with_zk=True)
 
         return self._perform_node_fail_scenario(test_config)
 
     def _perform_node_fail_scenario(self, test_config):
+        results = {}
+
         modules = ['zookeeper'] if test_config.with_zk else None
 
         if test_config.with_zk:
@@ -121,7 +150,8 @@ class DiscoveryTest(IgniteTest):
         ignite_config = IgniteConfiguration(
             version=test_config.version,
             discovery_spi=discovery_spi,
-            failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT,
+            failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT_ZK if test_config.with_zk
+            else self.FAILURE_DETECTION_TIMEOUT_TCP,
             caches=[CacheConfiguration(
                 name='test-cache',
                 backups=1,
@@ -131,14 +161,16 @@ class DiscoveryTest(IgniteTest):
 
         servers, start_servers_sec = start_servers(self.test_context, self.NUM_NODES - 1, ignite_config, modules)
 
-        failed_nodes, survived_node = choose_node_to_kill(servers, test_config.kill_coordinator,
-                                                          test_config.nodes_to_kill)
+        results['Ignite cluster start time (s)'] = start_servers_sec
+
+        failed_nodes, survived_node = choose_node_to_kill(servers, test_config.nodes_to_kill,
+                                                          test_config.sequential_failure)
 
         if test_config.load_type is not ClusterLoad.NONE:
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
                 ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
 
-            tran_nodes = [n.discovery_info().node_id for n in failed_nodes] \
+            tran_nodes = [node_id(n) for n in failed_nodes] \
                 if test_config.load_type == ClusterLoad.TRANSACTIONAL else None
 
             params = {"cacheName": "test-cache",
@@ -149,18 +181,128 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
 
-        data = simulate_nodes_failure(servers, failed_nodes, survived_node)
+        results.update(self._simulate_nodes_failure(servers, node_fail_task(ignite_config, test_config), failed_nodes,
+                                                    survived_node))
 
-        data['Ignite cluster start time (s)'] = start_servers_sec
+        return results
+
+    def _simulate_nodes_failure(self, servers, kill_node_task, failed_nodes, survived_node):
+        """
+        Perform node failure scenario
+        """
+        for node in failed_nodes:
+            self.logger.info(
+                "Simulating failure of node '%s' (order %d) on '%s'" % (node_id(node), order(node), node.name))
+
+        ids_to_wait = [node_id(n) for n in failed_nodes]
+
+        _, first_terminated = servers.exec_on_nodes_async(failed_nodes, kill_node_task)
+
+        for node in failed_nodes:
+            self.logger.debug(
+                "Netfilter activated on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+
+        # Keeps dates of logged node failures.
+        logged_timestamps = []
+        data = {}
+
+        for failed_id in ids_to_wait:
+            logged_timestamps.append(
+                get_event_time(servers, survived_node, node_failed_event_pattern(failed_id)))
+
+        self._check_failed_number(failed_nodes, survived_node)
+        self._check_not_segmented(failed_nodes)
+
+        logged_timestamps.sort(reverse=True)
+
+        first_kill_time = epoch_mills(first_terminated)
+        detection_delay = epoch_mills(logged_timestamps[0]) - first_kill_time
+
+        data['Detection of node(s) failure (ms)'] = detection_delay
+        data['All detection delays (ms):'] = str([epoch_mills(ts) - first_kill_time for ts in logged_timestamps])
+        data['Nodes failed'] = len(failed_nodes)
 
         return data
+
+    def _check_failed_number(self, failed_nodes, survived_node):
+        """Ensures number of failed nodes is correct."""
+        cmd = "grep '%s' %s | wc -l" % (node_failed_event_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE)
+
+        failed_cnt = int(str(survived_node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding()))
+
+        if failed_cnt != len(failed_nodes):
+            failed = str(survived_node.account.ssh_client.exec_command(
+                "grep '%s' %s" % (node_failed_event_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE))[1].read(),
+                         sys.getdefaultencoding())
+
+            self.logger.warn("Node '%s' (%s) has detected the following failures:%s%s" % (
+                survived_node.name, node_id(survived_node), os.linesep, failed))
+
+            raise AssertionError(
+                "Wrong number of failed nodes: %d. Expected: %d. Check the logs." % (failed_cnt, len(failed_nodes)))
+
+    def _check_not_segmented(self, failed_nodes):
+        """Ensures only target nodes failed"""
+        for service in [srv for srv in self.test_context.services if isinstance(srv, IgniteAwareService)]:
+            for node in [srv_node for srv_node in service.nodes if srv_node not in failed_nodes]:
+                cmd = "grep -i '%s' %s | wc -l" % ("local node segmented", IgniteAwareService.STDOUT_STDERR_CAPTURE)
+
+                failed = str(node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding())
+
+                if int(failed) > 0:
+                    raise AssertionError(
+                        "Wrong node failed (segmented) on '%s'. Check the logs." % node.name)
+
+    def setup(self):
+        super().setup()
+
+        self.netfilter_store_path = os.path.join(self.tmp_path_root, "iptables.bak")
+
+        # Store current network filter settings.
+        for node in self.test_context.cluster.nodes:
+            cmd = "sudo iptables-save | tee " + self.netfilter_store_path
+
+            exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+
+            if "Warning: iptables-legacy tables present" in exec_error:
+                cmd = "sudo iptables-legacy-save | tee " + self.netfilter_store_path
+
+                exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+
+            assert len(exec_error) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, exec_error)
+
+            self.logger.debug("Netfilter before launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+
+    def teardown(self):
+        # Restore previous network filter settings.
+        cmd = "sudo iptables-restore < " + self.netfilter_store_path
+
+        errors = []
+
+        for node in self.test_context.cluster.nodes:
+            exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+
+            if len(exec_error) > 0:
+                errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, exec_error))
+            else:
+                self.logger.debug("Netfilter after launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+
+        if len(errors) > 0:
+            self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))
+
+            raise RuntimeError("Unable to restore node states. See the log above.")
+
+        super().teardown()
 
 
 def start_zookeeper(test_context, num_nodes):
     """
     Start zookeeper cluster.
     """
-    zk_quorum = ZookeeperService(test_context, num_nodes)
+    zk_settings = ZookeeperSettings(min_session_timeout=DiscoveryTest.FAILURE_DETECTION_TIMEOUT_ZK,
+                                    tick_time=DiscoveryTest.FAILURE_DETECTION_TIMEOUT_ZK // 3)
+
+    zk_quorum = ZookeeperService(test_context, num_nodes, settings=zk_settings)
     zk_quorum.start()
     return zk_quorum
 
@@ -182,76 +324,73 @@ def start_load_app(test_context, ignite_config, params, modules=None):
     """
     Start loader application.
     """
-    loader = IgniteApplicationService(
+    IgniteApplicationService(
         test_context,
         config=ignite_config,
         java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
         modules=modules,
         # mute spam in log.
         jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"],
-        params=params)
-
-    loader.start()
+        params=params).start()
 
 
-def failed_pattern(failed_node_id):
-    """
-    Failed node pattern in log
-    """
-    return "Node FAILED: .\\{1,\\}Node \\[id=" + failed_node_id
-
-
-def choose_node_to_kill(servers, kill_coordinator, nodes_to_kill):
+def choose_node_to_kill(servers, nodes_to_kill, sequential):
     """Choose node to kill during test"""
-    assert nodes_to_kill > 0, "   No nodes to kill passed. Check the parameters."
+    assert nodes_to_kill > 0, "No nodes to kill passed. Check the parameters."
 
-    nodes = servers.nodes
-    coordinator = nodes[0].discovery_info().coordinator
-    to_kill = []
+    idx = random.randint(0, len(servers.nodes)-1)
 
-    if kill_coordinator:
-        to_kill.append(next(node for node in nodes if node.discovery_info().node_id == coordinator))
-        nodes_to_kill -= 1
+    to_kill = servers.nodes[idx:] + servers.nodes[:idx-1]
 
-    if nodes_to_kill > 0:
-        choice = random.sample([n for n in nodes if n.discovery_info().node_id != coordinator], nodes_to_kill)
-        to_kill.extend([choice] if not isinstance(choice, list) else choice)
+    if not sequential:
+        to_kill = to_kill[0::2]
+
+    idx = random.randint(0, len(to_kill) - nodes_to_kill)
+    to_kill = to_kill[idx:idx + nodes_to_kill]
 
     survive = random.choice([node for node in servers.nodes if node not in to_kill])
+
+    assert len(to_kill) == nodes_to_kill, "Unable to pick up required number of nodes to kill."
+
+    assert survive, "Unable to select survived node to monitor the cluster on it."
 
     return to_kill, survive
 
 
-def simulate_nodes_failure(servers, failed_nodes, survived_node):
+def order(node):
+    """Return discovery order of the node."""
+    return node.discovery_info().order
+
+
+def node_id(node):
+    """Return node id."""
+    return node.discovery_info().node_id
+
+
+def node_fail_task(ignite_config, test_config):
     """
-    Perform node failure scenario
+    Creates proper task to simulate network failure depending on the configurations.
     """
-    ids_to_wait = [node.discovery_info().node_id for node in failed_nodes]
+    cm_spi = ignite_config.communication_spi
+    dsc_spi = ignite_config.discovery_spi
 
-    _, first_terminated = servers.stop_nodes_async(failed_nodes, clean_shutdown=False, wait_for_stop=False)
+    cm_ports = str(cm_spi.port) if cm_spi.port_range < 1 else str(cm_spi.port) + ':' + str(
+        cm_spi.port + cm_spi.port_range)
 
-    # Keeps dates of logged node failures.
-    logged_timestamps = []
-    data = {}
+    if test_config.with_zk:
+        dsc_ports = str(ignite_config.discovery_spi.port)
+    else:
+        dsc_ports = str(dsc_spi.port) if dsc_spi.port_range < 1 else str(dsc_spi.port) + ':' + str(
+            dsc_spi.port + dsc_spi.port_range)
 
-    for failed_id in ids_to_wait:
-        servers.await_event_on_node(failed_pattern(failed_id), survived_node, 20,
-                                    from_the_beginning=True, backoff_sec=0.1)
+    cmd = f"sudo iptables -I %s 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"
 
-        _, stdout, _ = survived_node.account.ssh_client.exec_command(
-            "grep '%s' %s" % (failed_pattern(failed_id), IgniteAwareService.STDOUT_STDERR_CAPTURE))
+    return lambda node: (node.account.ssh_client.exec_command(cmd % "INPUT"),
+                         node.account.ssh_client.exec_command(cmd % "OUTPUT"))
 
-        logged_timestamps.append(
-            datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
-                              "[%Y-%m-%dT%H:%M:%S,%f]"))
 
-    logged_timestamps.sort(reverse=True)
-
-    first_kill_time = epoch_mills(first_terminated)
-    detection_delay = epoch_mills(logged_timestamps[0]) - first_kill_time
-
-    data['Detection of node(s) failure (ms)'] = detection_delay
-    data['All detection delays (ms):'] = str([epoch_mills(ts) - first_kill_time for ts in logged_timestamps])
-    data['Nodes failed'] = len(failed_nodes)
-
-    return data
+def dump_netfilter_settings(node):
+    """
+    Reads current netfilter settings on the node for debugging purposes.
+    """
+    return str(node.account.ssh_client.exec_command("sudo iptables -L -n")[1].read(), sys.getdefaultencoding())

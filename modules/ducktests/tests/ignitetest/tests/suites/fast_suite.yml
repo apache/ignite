@@ -28,5 +28,8 @@ cellular_affinity:
 rebalance:
   - ../add_node_rebalance_test.py
 
+clients:
+  - ../client_in_out_test.py
+
 snapshot:
   - ../snapshot_test.py

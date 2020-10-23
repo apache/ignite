@@ -70,7 +70,7 @@ namespace ignite
                     sql(sql),
                     schema(),
                     pageSize(1024),
-                    loc(false),
+                    loc(loc),
                     distributedJoins(false),
                     enforceJoinOrder(false),
                     lazy(false),

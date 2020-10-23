@@ -45,7 +45,7 @@ namespace
             /** SQL data type. */
             DATA_TYPE,
 
-            /** Data source–dependent data type name. */
+            /** Data source-dependent data type name. */
             TYPE_NAME,
 
             /** Column size. */
@@ -75,7 +75,7 @@ namespace ignite
     {
         namespace query
         {
-            ColumnMetadataQuery::ColumnMetadataQuery(diagnostic::Diagnosable& diag, 
+            ColumnMetadataQuery::ColumnMetadataQuery(diagnostic::Diagnosable& diag,
                 Connection& connection, const std::string& schema,
                 const std::string& table, const std::string& column) :
                 Query(diag, QueryType::COLUMN_METADATA),
@@ -95,8 +95,8 @@ namespace ignite
 
                 columnsMeta.reserve(12);
 
-                const std::string sch("");
-                const std::string tbl("");
+                const std::string sch;
+                const std::string tbl;
 
                 columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_CAT",      IGNITE_TYPE_STRING));
                 columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_SCHEM",    IGNITE_TYPE_STRING));

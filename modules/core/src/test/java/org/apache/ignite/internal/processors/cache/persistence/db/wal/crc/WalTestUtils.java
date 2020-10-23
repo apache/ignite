@@ -24,13 +24,12 @@ import java.util.List;
 import java.util.Random;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -53,23 +52,23 @@ public class WalTestUtils {
      * @throws IOException If IO exception.
      * @throws IgniteCheckedException If iterator failed.
      */
-    public static FileWALPointer corruptWalSegmentFile(
+    public static WALPointer corruptWalSegmentFile(
         FileDescriptor desc,
         IgniteWalIteratorFactory iterFactory,
         @Nullable Random random
     ) throws IOException, IgniteCheckedException {
-        List<FileWALPointer> pointers = new ArrayList<>();
+        List<WALPointer> pointers = new ArrayList<>();
 
         try (WALIterator it = iterFactory.iterator(desc.file())) {
             for (IgniteBiTuple<WALPointer, WALRecord> tuple : it)
-                pointers.add((FileWALPointer)tuple.get1());
+                pointers.add(tuple.get1());
         }
 
         // Should have a previous record to return and another value before that to ensure that "lastReadPtr"
         // in a test will always exist.
         int idxCorrupted = random != null ? 2 + random.nextInt(pointers.size() - 2) : pointers.size() - 1;
 
-        FileWALPointer pointer = pointers.get(idxCorrupted);
+        WALPointer pointer = pointers.get(idxCorrupted);
 
         corruptWalSegmentFile(desc, pointer);
 
@@ -84,7 +83,7 @@ public class WalTestUtils {
      */
     public static void corruptWalSegmentFile(
         FileDescriptor desc,
-        FileWALPointer pointer
+        WALPointer pointer
     ) throws IOException {
 
         int crc32Off = pointer.fileOffset() + pointer.length() - CRC_SIZE;
@@ -105,17 +104,17 @@ public class WalTestUtils {
      * @param recordType filter by RecordType
      * @return List of pointers.
      */
-    public static List<FileWALPointer> getPointers(
+    public static List<WALPointer> getPointers(
         FileDescriptor desc,
         IgniteWalIteratorFactory iterFactory,
         WALRecord.RecordType recordType
     ) throws IgniteCheckedException {
-        List<FileWALPointer> cpPointers = new ArrayList<>();
+        List<WALPointer> cpPointers = new ArrayList<>();
 
         try (WALIterator it = iterFactory.iterator(desc.file())) {
             for (IgniteBiTuple<WALPointer, WALRecord> tuple : it) {
                 if (recordType.equals(tuple.get2().type()))
-                    cpPointers.add((FileWALPointer)tuple.get1());
+                    cpPointers.add(tuple.get1());
             }
         }
 
@@ -128,17 +127,17 @@ public class WalTestUtils {
      * @param recordPurpose Filter by RecordPurpose
      * @return List of pointers.
      */
-    public static List<FileWALPointer> getPointers(
+    public static List<WALPointer> getPointers(
         FileDescriptor desc,
         IgniteWalIteratorFactory iterFactory,
         WALRecord.RecordPurpose recordPurpose
     ) throws IgniteCheckedException {
-        List<FileWALPointer> cpPointers = new ArrayList<>();
+        List<WALPointer> cpPointers = new ArrayList<>();
 
         try (WALIterator it = iterFactory.iterator(desc.file())) {
             for (IgniteBiTuple<WALPointer, WALRecord> tuple : it) {
                 if (recordPurpose.equals(tuple.get2().type().purpose()))
-                    cpPointers.add((FileWALPointer)tuple.get1());
+                    cpPointers.add(tuple.get1());
             }
         }
 

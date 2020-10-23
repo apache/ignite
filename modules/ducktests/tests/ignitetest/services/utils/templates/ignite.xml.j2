@@ -17,6 +17,7 @@
  limitations under the License.
 #}
 
+{% import 'communication_macro.j2' as communication %}
 {% import 'discovery_macro.j2' as disco_utils %}
 {% import 'cache_macro.j2' as cache_utils %}
 {% import 'datastorage_macro.j2' as datastorage_utils %}
@@ -37,6 +38,7 @@
         <property name="clientMode" value="{{ config.client_mode or False | lower }}"/>
         <property name="consistentId" value="{{ config.consistent_id }}"/>
         <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
+        <property name="systemWorkerBlockedTimeout" value="{{ config.sys_worker_blocked_timeout }}"/>
 
         {% if config.version >= '2.8.0' %}
             <property name="metricExporterSpi">
@@ -45,6 +47,8 @@
         {% endif %}
 
         {{ misc_utils.cluster_state(config.cluster_state, config.version) }}
+
+        {{ communication.communication_spi(config.communication_spi) }}
 
         {{ disco_utils.discovery_spi(config.discovery_spi) }}
 

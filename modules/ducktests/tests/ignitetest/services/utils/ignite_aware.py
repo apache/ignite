@@ -122,7 +122,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
                 monitor.offset = 0
 
             monitor.wait_until(evt_message, timeout_sec=timeout_sec, backoff_sec=backoff_sec,
-                               err_msg="Event [%s] was not triggered in %d seconds" % (evt_message, timeout_sec))
+                               err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
+                                                                                               timeout_sec))
 
     def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=5):
         """

@@ -17,9 +17,8 @@
 This module contains class to start ignite cluster node.
 """
 
-import functools
-import operator
 import os
+import re
 import signal
 import time
 from datetime import datetime
@@ -84,7 +83,7 @@ class IgniteService(IgniteAwareService):
         sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
 
         for pid in pids:
-            self.__stop_node(node, pid, sig)
+            node.account.signal(pid, sig, allow_fail=False)
 
         try:
             wait_until(lambda: len(self.pids(node)) == 0, timeout_sec=timeout_sec,
@@ -93,21 +92,22 @@ class IgniteService(IgniteAwareService):
             self.thread_dump(node)
             raise
 
-    def stop_nodes_async(self, nodes, delay_ms=0, clean_shutdown=True, timeout_sec=20, wait_for_stop=False):
+    def exec_on_nodes_async(self, nodes, task, simultaneously=True, delay_ms=0, timeout_sec=20):
         """
-        Stops the nodes asynchronously.
+        Executes given task on the nodes.
+        :param task: a 'lambda: node'.
+        :param simultaneously: Enables or disables simultaneous start of the task on each node.
+        :param delay_ms: delay before task run. Begins with 0, grows by delay_ms for each next node in nodes.
+        :param timeout_sec: timeout to wait the task.
         """
-        sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
-
-        sem = CountDownLatch(len(nodes))
+        sem = CountDownLatch(len(nodes)) if simultaneously else None
         time_holder = AtomicValue()
 
         delay = 0
         threads = []
 
         for node in nodes:
-            thread = Thread(target=self.__stop_node,
-                            args=(node, next(iter(self.pids(node))), sig, sem, delay, time_holder))
+            thread = Thread(target=self.__exec_on_node, args=(node, task, sem, delay, time_holder))
 
             threads.append(thread)
 
@@ -118,19 +118,10 @@ class IgniteService(IgniteAwareService):
         for thread in threads:
             thread.join(timeout_sec)
 
-        if wait_for_stop:
-            try:
-                wait_until(lambda: len(functools.reduce(operator.iconcat, (self.pids(n) for n in nodes), [])) == 0,
-                           timeout_sec=timeout_sec, err_msg="Ignite node failed to stop in %d seconds" % timeout_sec)
-            except Exception:
-                for node in nodes:
-                    self.thread_dump(node)
-                raise
-
         return time_holder.get()
 
     @staticmethod
-    def __stop_node(node, pid, sig, start_waiter=None, delay_ms=0, time_holder=None):
+    def __exec_on_node(node, task, start_waiter=None, delay_ms=0, time_holder=None):
         if start_waiter:
             start_waiter.count_down()
             start_waiter.wait()
@@ -144,7 +135,7 @@ class IgniteService(IgniteAwareService):
 
             time_holder.compare_and_set(None, (mono, timestamp))
 
-        node.account.signal(pid, sig, False)
+        task(node)
 
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
@@ -198,3 +189,28 @@ class IgniteService(IgniteAwareService):
             return pid_arr
         except (RemoteCommandError, ValueError):
             return []
+
+
+def node_failed_event_pattern(failed_node_id=None):
+    """Failed node pattern in log."""
+    return "Node FAILED: .\\{1,\\}Node \\[id=" + (failed_node_id if failed_node_id else "") + \
+           ".\\{1,\\}\\(isClient\\|client\\)=false"
+
+
+def get_event_time(service, log_node, log_pattern, from_the_beginning=True, timeout=15):
+    """
+    Extracts event time from ignite log by pattern .
+    :param service: ducktape service (ignite service) responsible to search log.
+    :param log_node: ducktape node to search ignite log on.
+    :param log_pattern: pattern to search ignite log for.
+    :param from_the_beginning: switches searching log from its beginning.
+    :param timeout: timeout to wait for the patters in the log.
+    """
+    service.await_event_on_node(log_pattern, log_node, timeout, from_the_beginning=from_the_beginning,
+                                backoff_sec=0.3)
+
+    _, stdout, _ = log_node.account.ssh_client.exec_command(
+        "grep '%s' %s" % (log_pattern, IgniteAwareService.STDOUT_STDERR_CAPTURE))
+
+    return datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
+                             "[%Y-%m-%d %H:%M:%S,%f]")

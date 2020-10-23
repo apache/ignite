@@ -22,15 +22,15 @@ namespace gcj = ignite::jni::java;
 
 /* --- Target methods. --- */
 extern "C" {
-    int IGNITE_CALL IgniteReallocate(long long memPtr, int cap) {
+    int IGNITE_CALL IgniteReallocate(int64_t memPtr, int cap) {
         return gcj::JniContext::Reallocate(memPtr, cap);
     }
 
-    void IGNITE_CALL IgniteIgnitionStart(gcj::JniContext* ctx, char* cfgPath, char* name, int factoryId, long long dataPtr) {
+    void IGNITE_CALL IgniteIgnitionStart(gcj::JniContext* ctx, char* cfgPath, char* name, int factoryId, int64_t dataPtr) {
         ctx->IgnitionStart(cfgPath, name, factoryId, dataPtr);
     }
 
-    long long IGNITE_CALL IgniteIgnitionEnvironmentPointer(gcj::JniContext* ctx, char* name) {
+    int64_t IGNITE_CALL IgniteIgnitionEnvironmentPointer(gcj::JniContext* ctx, char* name) {
         return ctx->IgnitionEnvironmentPointer(name);
     }
 
@@ -42,27 +42,27 @@ extern "C" {
         return ctx->IgnitionStopAll(cancel);
     }
 
-    long long IGNITE_CALL IgniteTargetInLongOutLong(gcj::JniContext* ctx, void* obj, int opType, long long val) {
+    int64_t IGNITE_CALL IgniteTargetInLongOutLong(gcj::JniContext* ctx, void* obj, int opType, int64_t val) {
         return ctx->TargetInLongOutLong(static_cast<jobject>(obj), opType, val);
     }
 
-    long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
+    int64_t IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, int64_t memPtr) {
         return ctx->TargetInStreamOutLong(static_cast<jobject>(obj), opType, memPtr);
     }
 
-    void IGNITE_CALL IgniteTargetInStreamOutStream(gcj::JniContext* ctx, void* obj, int opType, long long inMemPtr, long long outMemPtr) {
+    void IGNITE_CALL IgniteTargetInStreamOutStream(gcj::JniContext* ctx, void* obj, int opType, int64_t inMemPtr, int64_t outMemPtr) {
         ctx->TargetInStreamOutStream(static_cast<jobject>(obj), opType, inMemPtr, outMemPtr);
     }
 
-    void* IGNITE_CALL IgniteTargetInStreamOutObject(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
+    void* IGNITE_CALL IgniteTargetInStreamOutObject(gcj::JniContext* ctx, void* obj, int opType, int64_t memPtr) {
         return ctx->TargetInStreamOutObject(static_cast<jobject>(obj), opType, memPtr);
     }
 
-    void* IGNITE_CALL IgniteTargetInObjectStreamOutObjectStream(gcj::JniContext* ctx, void* obj, int opType, void* arg, long long inMemPtr, long long outMemPtr) {
+    void* IGNITE_CALL IgniteTargetInObjectStreamOutObjectStream(gcj::JniContext* ctx, void* obj, int opType, void* arg, int64_t inMemPtr, int64_t outMemPtr) {
         return ctx->TargetInObjectStreamOutObjectStream(static_cast<jobject>(obj), opType, arg, inMemPtr, outMemPtr);
     }
 
-    void IGNITE_CALL IgniteTargetOutStream(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
+    void IGNITE_CALL IgniteTargetOutStream(gcj::JniContext* ctx, void* obj, int opType, int64_t memPtr) {
         ctx->TargetOutStream(static_cast<jobject>(obj), opType, memPtr);
     }
 
@@ -70,11 +70,11 @@ extern "C" {
         return ctx->TargetOutObject(static_cast<jobject>(obj), opType);
     }
 
-    void IGNITE_CALL IgniteTargetInStreamAsync(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
+    void IGNITE_CALL IgniteTargetInStreamAsync(gcj::JniContext* ctx, void* obj, int opType, int64_t memPtr) {
         ctx->TargetInStreamAsync(static_cast<jobject>(obj), opType, memPtr);
     }
 
-    void* IGNITE_CALL IgniteTargetInStreamOutObjectAsync(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
+    void* IGNITE_CALL IgniteTargetInStreamOutObjectAsync(gcj::JniContext* ctx, void* obj, int opType, int64_t memPtr) {
         return ctx->TargetInStreamOutObjectAsync(static_cast<jobject>(obj), opType, memPtr);
     }
 

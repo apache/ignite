@@ -15,20 +15,22 @@
  limitations under the License.
 #}
 
-{% macro ip_finder(finder) %}
-    {% if finder %}
+{% macro ip_finder(spi) %}
+    {% if spi.ip_finder and spi.ip_finder.type == 'VM' %}
         <property name="ipFinder">
-            {% if finder.type == 'VM' %}
-                <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
-                    <property name="addresses">
-                        <list>
-                            {% for address in finder.addresses %}
-                                <value>{{ address }}</value>
-                            {% endfor %}
-                        </list>
-                    </property>
-                </bean>
-            {% endif %}
+            <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                <property name="addresses">
+                    <list>
+                        {% for address in spi.ip_finder.addresses %}
+                            {% if spi.port_range > 0 %}
+                                <value>{{ address }}:{{ spi.port }}..{{ spi.port + spi.port_range }}</value>
+                            {% else %}
+                                <value>{{ address }}:{{ spi.port }}</value>
+                            {% endif %}
+                        {% endfor %}
+                    </list>
+                </property>
+            </bean>
         </property>
     {% endif %}
 {% endmacro %}
@@ -42,7 +44,9 @@
 
 {% macro tcp_discovery_spi(spi) %}
     <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
-        {{ ip_finder(spi.ip_finder) }}
+        <property name="localPort" value="{{ spi.port }}"/>
+        <property name="localPortRange" value="{{ spi.port_range }}"/>
+        {{ ip_finder(spi) }}
     </bean>
 {% endmacro %}
 
