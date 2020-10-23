@@ -2050,7 +2050,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 new GridCacheVersion(),
                 0L,
                 partId,
-                updateCntr
+                updateCntr,
+                true
             );
 
             GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ctx.shared().database();
