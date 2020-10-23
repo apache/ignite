@@ -105,9 +105,6 @@ public class CachePartitionDefragmentationManager {
     /** */
     public static final String DEFRAGMENTATION_MNTC_TASK_NAME = "defragmentationMaintenanceTask";
 
-    /** */
-    @Deprecated public static final String SKIP_CP_ENTRIES = "SKIP_CP_ENTRIES";
-
     /** Cache shared context. */
     private final GridCacheSharedContext<?, ?> sharedCtx;
 
@@ -179,206 +176,199 @@ public class CachePartitionDefragmentationManager {
 
         TreeIterator treeIter = new TreeIterator(pageSize);
 
-        System.setProperty(SKIP_CP_ENTRIES, "true");
+        DataRegion partRegion = defrgCtx.partitionsDataRegion();
 
-        try {
-            DataRegion partRegion = defrgCtx.partitionsDataRegion();
+        IgniteInternalFuture<?> idxDfrgFut = null;
+        DataPageEvictionMode prevPageEvictionMode = null;
 
-            IgniteInternalFuture<?> idxDfrgFut = null;
-            DataPageEvictionMode prevPageEvictionMode = null;
+        for (int grpId : defrgCtx.groupIdsForDefragmentation()) {
+            File workDir = defrgCtx.workDirForGroupId(grpId);
 
-            for (int grpId : defrgCtx.groupIdsForDefragmentation()) {
-                File workDir = defrgCtx.workDirForGroupId(grpId);
+            if (skipAlreadyDefragmentedCacheGroup(workDir, grpId, log))
+                continue;
 
-                if (skipAlreadyDefragmentedCacheGroup(workDir, grpId, log))
-                    continue;
+            int[] parts = defrgCtx.partitionsForGroupId(grpId);
 
-                int[] parts = defrgCtx.partitionsForGroupId(grpId);
+            if (workDir != null && parts != null) {
+                CacheGroupContext oldGrpCtx = defrgCtx.groupContextByGroupId(grpId);
 
-                if (workDir != null && parts != null) {
-                    CacheGroupContext oldGrpCtx = defrgCtx.groupContextByGroupId(grpId);
+                // We can't start defragmentation of new group on the region that has wrong eviction mode.
+                // So waiting of the previous cache group defragmentation is inevitable.
+                DataPageEvictionMode curPageEvictionMode = oldGrpCtx.dataRegion().config().getPageEvictionMode();
 
-                    // We can't start defragmentation of new group on the region that has wrong eviction mode.
-                    // So waiting of the previous cache group defragmentation is inevitable.
-                    DataPageEvictionMode curPageEvictionMode = oldGrpCtx.dataRegion().config().getPageEvictionMode();
+                if (prevPageEvictionMode == null || prevPageEvictionMode != curPageEvictionMode) {
+                    prevPageEvictionMode = curPageEvictionMode;
 
-                    if (prevPageEvictionMode == null || prevPageEvictionMode != curPageEvictionMode) {
-                        prevPageEvictionMode = curPageEvictionMode;
+                    partRegion.config().setPageEvictionMode(curPageEvictionMode);
 
-                        partRegion.config().setPageEvictionMode(curPageEvictionMode);
-
-                        if (idxDfrgFut != null)
-                            idxDfrgFut.get();
-                    }
-
-                    GridCacheOffheapManager offheap = (GridCacheOffheapManager)oldGrpCtx.offheap();
-
-                    IntMap<CacheDataStore> cacheDataStores = new IntHashMap<>();
-
-                    for (CacheDataStore store : offheap.cacheDataStores()) {
-                        // Tree can be null for not yet initialized partitions.
-                        // This would mean that these partitions are empty.
-                        assert store.tree() == null || store.tree().groupId() == grpId;
-
-                        if (store.tree() != null)
-                            cacheDataStores.put(store.partId(), store);
-                    }
-
-                    //TODO ensure that there are no races.
-                    databaseSharedManager.checkpointedDataRegions().remove(oldGrpCtx.dataRegion());
-
-                    // Another cheat. Ttl cleanup manager knows too much shit.
-                    oldGrpCtx.caches().stream()
-                        .filter(cacheCtx -> cacheCtx.groupId() == grpId)
-                        .forEach(cacheCtx -> cacheCtx.ttl().unregister());
-
-                    // Technically wal is already disabled, but "PageHandler.isWalDeltaRecordNeeded" doesn't care and
-                    // WAL records will be allocated anyway just to be ignored later if we don't disable WAL for
-                    // cache group explicitly.
-                    oldGrpCtx.localWalEnabled(false, false);
-
-                    boolean encrypted = oldGrpCtx.config().isEncryptionEnabled();
-
-                    FilePageStoreFactory pageStoreFactory = filePageStoreMgr.getPageStoreFactory(grpId, encrypted);
-
-                    createIndexPageStore(grpId, workDir, pageStoreFactory, val -> {}); //TODO Allocated tracker.
-
-                    GridCompoundFuture<Object, Object> cmpFut = new GridCompoundFuture<>();
-
-                    PageMemoryEx oldPageMem = (PageMemoryEx)oldGrpCtx.dataRegion().pageMemory();
-
-                    CacheGroupContext newGrpCtx = new CacheGroupContext(
-                        sharedCtx,
-                        grpId,
-                        oldGrpCtx.receivedFrom(),
-                        CacheType.USER,
-                        oldGrpCtx.config(),
-                        oldGrpCtx.affinityNode(),
-                        partRegion,
-                        oldGrpCtx.cacheObjectContext(),
-                        null,
-                        null,
-                        oldGrpCtx.localStartVersion(),
-                        true,
-                        false,
-                        true
-                    );
-
-                    // This will initialize partition meta in index partition - meta tree and reuse list.
-                    newGrpCtx.start();
-
-                    IntMap<LinkMap> linkMapByPart = new IntHashMap<>();
-
-                    for (int partId : parts) {
-                        PartitionContext partCtx = new PartitionContext(
-                            workDir,
-                            grpId,
-                            partId,
-                            partRegion,
-                            defrgCtx.mappingDataRegion(),
-                            oldGrpCtx,
-                            newGrpCtx,
-                            cacheDataStores.get(partId),
-                            pageStoreFactory
-                        );
-
-                        if (skipAlreadyDefragmentedPartition(workDir, grpId, partId, log)) {
-                            partCtx.createMappingPageStore();
-
-                            linkMapByPart.put(partId, partCtx.createLinkMapTree(false));
-
-                            continue;
-                        }
-
-                        partCtx.createMappingPageStore();
-
-                        linkMapByPart.put(partId, partCtx.createLinkMapTree(true));
-
-                        partCtx.createPartPageStore();
-
-                        copyPartitionData(partCtx, treeIter);
-
-                        //TODO Move inside of defragmentSinglePartition.
-                        IgniteInClosure<IgniteInternalFuture<?>> cpLsnr = fut -> {
-                            if (fut.error() == null) {
-                                log.info(S.toString(
-                                    "Partition defragmented",
-                                    "grpId", grpId, false,
-                                    "partId", partId, false,
-                                    "oldPages", defrgCtx.pageStore(grpId, partId).pages(), false,
-                                    "newPages", partCtx.partPagesAllocated.get(), false,
-                                    "bytesSaved", (defrgCtx.pageStore(grpId, partId).pages() - partCtx.partPagesAllocated.get()) * pageSize, false,
-                                    "mappingPages", partCtx.mappingPagesAllocated.get(), false,
-                                    "partFile", defragmentedPartFile(workDir, partId).getName(), false,
-                                    "workDir", workDir, false
-                                ));
-
-                                oldPageMem.invalidate(grpId, partId);
-
-                                partCtx.partPageMemory.invalidate(grpId, partId);
-
-                                defrgCtx.removePartPageStore(grpId, partId); // Yes, it'll be invalid in a second.
-
-                                try {
-                                    renameTempPartitionFile(workDir, partId);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    throw new IgniteException(e);
-                                }
-                            }
-                        };
-
-                        GridFutureAdapter<?> cpFut = defragmentationCheckpoint
-                            .forceCheckpoint("partition defragmented", null)
-                            .futureFor(CheckpointState.FINISHED);
-
-                        cpFut.listen(cpLsnr);
-
-                        cmpFut.add((IgniteInternalFuture<Object>)cpFut);
-                    }
-
-                    // A bit too general for now, but I like it more then saving only the last checkpoint future.
-                    cmpFut.markInitialized().get();
-
-                    idxDfrgFut = new GridFinishedFuture<>();
-
-                    if (filePageStoreMgr.hasIndexStore(grpId)) {
-                        defragmentIndexPartition(oldGrpCtx, newGrpCtx, linkMapByPart);
-
-                        idxDfrgFut = defragmentationCheckpoint
-                            .forceCheckpoint("index defragmented", null)
-                            .futureFor(CheckpointState.FINISHED);
-                    }
-
-                    idxDfrgFut.listen(fut -> {
-                        oldPageMem.invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
-                        ((PageMemoryEx)partRegion.pageMemory()).invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
-
-                        try {
-                            renameTempIndexFile(workDir);
-
-                            writeDefragmentationCompletionMarker(filePageStoreMgr.getPageStoreFileIoFactory(), workDir, log);
-
-                            batchRenameDefragmentedCacheGroupPartitions(workDir, log);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-
-                        defrgCtx.onCacheGroupDefragmented(grpId);
-                    });
+                    if (idxDfrgFut != null)
+                        idxDfrgFut.get();
                 }
 
-                // I guess we should wait for it?
-                if (idxDfrgFut != null)
-                    idxDfrgFut.get();
+                GridCacheOffheapManager offheap = (GridCacheOffheapManager)oldGrpCtx.offheap();
+
+                IntMap<CacheDataStore> cacheDataStores = new IntHashMap<>();
+
+                for (CacheDataStore store : offheap.cacheDataStores()) {
+                    // Tree can be null for not yet initialized partitions.
+                    // This would mean that these partitions are empty.
+                    assert store.tree() == null || store.tree().groupId() == grpId;
+
+                    if (store.tree() != null)
+                        cacheDataStores.put(store.partId(), store);
+                }
+
+                //TODO ensure that there are no races.
+                databaseSharedManager.checkpointedDataRegions().remove(oldGrpCtx.dataRegion());
+
+                // Another cheat. Ttl cleanup manager knows too much shit.
+                oldGrpCtx.caches().stream()
+                    .filter(cacheCtx -> cacheCtx.groupId() == grpId)
+                    .forEach(cacheCtx -> cacheCtx.ttl().unregister());
+
+                // Technically wal is already disabled, but "PageHandler.isWalDeltaRecordNeeded" doesn't care and
+                // WAL records will be allocated anyway just to be ignored later if we don't disable WAL for
+                // cache group explicitly.
+                oldGrpCtx.localWalEnabled(false, false);
+
+                boolean encrypted = oldGrpCtx.config().isEncryptionEnabled();
+
+                FilePageStoreFactory pageStoreFactory = filePageStoreMgr.getPageStoreFactory(grpId, encrypted);
+
+                createIndexPageStore(grpId, workDir, pageStoreFactory, val -> {}); //TODO Allocated tracker.
+
+                GridCompoundFuture<Object, Object> cmpFut = new GridCompoundFuture<>();
+
+                PageMemoryEx oldPageMem = (PageMemoryEx)oldGrpCtx.dataRegion().pageMemory();
+
+                CacheGroupContext newGrpCtx = new CacheGroupContext(
+                    sharedCtx,
+                    grpId,
+                    oldGrpCtx.receivedFrom(),
+                    CacheType.USER,
+                    oldGrpCtx.config(),
+                    oldGrpCtx.affinityNode(),
+                    partRegion,
+                    oldGrpCtx.cacheObjectContext(),
+                    null,
+                    null,
+                    oldGrpCtx.localStartVersion(),
+                    true,
+                    false,
+                    true
+                );
+
+                // This will initialize partition meta in index partition - meta tree and reuse list.
+                newGrpCtx.start();
+
+                IntMap<LinkMap> linkMapByPart = new IntHashMap<>();
+
+                for (int partId : parts) {
+                    PartitionContext partCtx = new PartitionContext(
+                        workDir,
+                        grpId,
+                        partId,
+                        partRegion,
+                        defrgCtx.mappingDataRegion(),
+                        oldGrpCtx,
+                        newGrpCtx,
+                        cacheDataStores.get(partId),
+                        pageStoreFactory
+                    );
+
+                    if (skipAlreadyDefragmentedPartition(workDir, grpId, partId, log)) {
+                        partCtx.createMappingPageStore();
+
+                        linkMapByPart.put(partId, partCtx.createLinkMapTree(false));
+
+                        continue;
+                    }
+
+                    partCtx.createMappingPageStore();
+
+                    linkMapByPart.put(partId, partCtx.createLinkMapTree(true));
+
+                    partCtx.createPartPageStore();
+
+                    copyPartitionData(partCtx, treeIter);
+
+                    //TODO Move inside of defragmentSinglePartition.
+                    IgniteInClosure<IgniteInternalFuture<?>> cpLsnr = fut -> {
+                        if (fut.error() == null) {
+                            log.info(S.toString(
+                                "Partition defragmented",
+                                "grpId", grpId, false,
+                                "partId", partId, false,
+                                "oldPages", defrgCtx.pageStore(grpId, partId).pages(), false,
+                                "newPages", partCtx.partPagesAllocated.get(), false,
+                                "bytesSaved", (defrgCtx.pageStore(grpId, partId).pages() - partCtx.partPagesAllocated.get()) * pageSize, false,
+                                "mappingPages", partCtx.mappingPagesAllocated.get(), false,
+                                "partFile", defragmentedPartFile(workDir, partId).getName(), false,
+                                "workDir", workDir, false
+                            ));
+
+                            oldPageMem.invalidate(grpId, partId);
+
+                            partCtx.partPageMemory.invalidate(grpId, partId);
+
+                            defrgCtx.removePartPageStore(grpId, partId); // Yes, it'll be invalid in a second.
+
+                            try {
+                                renameTempPartitionFile(workDir, partId);
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw new IgniteException(e);
+                            }
+                        }
+                    };
+
+                    GridFutureAdapter<?> cpFut = defragmentationCheckpoint
+                        .forceCheckpoint("partition defragmented", null)
+                        .futureFor(CheckpointState.FINISHED);
+
+                    cpFut.listen(cpLsnr);
+
+                    cmpFut.add((IgniteInternalFuture<Object>)cpFut);
+                }
+
+                // A bit too general for now, but I like it more then saving only the last checkpoint future.
+                cmpFut.markInitialized().get();
+
+                idxDfrgFut = new GridFinishedFuture<>();
+
+                if (filePageStoreMgr.hasIndexStore(grpId)) {
+                    defragmentIndexPartition(oldGrpCtx, newGrpCtx, linkMapByPart);
+
+                    idxDfrgFut = defragmentationCheckpoint
+                        .forceCheckpoint("index defragmented", null)
+                        .futureFor(CheckpointState.FINISHED);
+                }
+
+                idxDfrgFut.listen(fut -> {
+                    oldPageMem.invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
+                    ((PageMemoryEx)partRegion.pageMemory()).invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
+
+                    try {
+                        renameTempIndexFile(workDir);
+
+                        writeDefragmentationCompletionMarker(filePageStoreMgr.getPageStoreFileIoFactory(), workDir, log);
+
+                        batchRenameDefragmentedCacheGroupPartitions(workDir, log);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+
+                    defrgCtx.onCacheGroupDefragmented(grpId);
+                });
             }
 
-            mntcReg.unregisterMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
+            // I guess we should wait for it?
+            if (idxDfrgFut != null)
+                idxDfrgFut.get();
         }
-        finally {
-            System.clearProperty(SKIP_CP_ENTRIES);
-        }
+
+        mntcReg.unregisterMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
     }
 
     /** */

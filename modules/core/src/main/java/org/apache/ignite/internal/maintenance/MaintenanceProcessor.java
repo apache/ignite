@@ -181,11 +181,11 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
      */
     private void proceedWithMaintenance() {
         for (Map.Entry<String, MaintenanceWorkflowCallback> cbE : workflowCallbacks.entrySet()) {
-            MaintenanceAction mntcAction = cbE.getValue().automaticAction();
+            MaintenanceAction<?> mntcAct = cbE.getValue().automaticAction();
 
-            if (mntcAction != null) {
+            if (mntcAct != null) {
                 try {
-                    mntcAction.execute();
+                    mntcAct.execute();
                 }
                 catch (Throwable t) {
                     log.warning("Failed to execute automatic action for maintenance task: " +

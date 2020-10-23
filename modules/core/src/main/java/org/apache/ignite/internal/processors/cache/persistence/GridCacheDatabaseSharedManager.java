@@ -394,17 +394,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }, identity());
     }
 
-    /**
-     *
-     */
+    /** */
     private void notifyMetastorageReadyForRead() throws IgniteCheckedException {
         for (MetastorageLifecycleListener lsnr : metastorageLifecycleLsnrs)
             lsnr.onReadyForRead(metaStorage);
     }
 
-    /**
-     *
-     */
+    /** */
     private void notifyMetastorageReadyForReadWrite() throws IgniteCheckedException {
         for (MetastorageLifecycleListener lsnr : metastorageLifecycleLsnrs)
             lsnr.onReadyForReadWrite(metaStorage);
