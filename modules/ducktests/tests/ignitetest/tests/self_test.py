@@ -64,14 +64,14 @@ class SelfTest(IgniteTest):
         service = GetTimeService(self.test_context, self.test_context.cluster.num_available_nodes())
         service.start()
 
-        res = sorted(service.clocks.items(), key=operator.itemgetter(1))
+        service.clocks.sort(key=operator.itemgetter(1))
 
-        for _ in res:
+        for _ in service.clocks:
             self.logger.info("NodeClock[%s] = %d" % (_[0], _[1]))
 
         max_clock_spread_ms = 300
-        min_res = res[0]
-        max_res = res[-1]
+        min_res = service.clocks[0]
+        max_res = service.clocks[-1]
         assert max_res[1] - min_res[1] < max_clock_spread_ms, \
             "Clock difference between %s and %s exceeds %d ms." % (min_res[0], max_res[0], max_clock_spread_ms)
 
@@ -83,10 +83,10 @@ class GetTimeService(BackgroundThreadService):
 
     def __init__(self, context, num_nodes):
         super().__init__(context, num_nodes)
-        self.clocks = {}
+        self.clocks = []
 
     def start_node(self, node):
-        self.clocks[node.name] = int(node.account.ssh_output("date +%s"))
+        self.clocks.append((node.name, int(node.account.ssh_output("date +%s"))))
 
     def stop_node(self, node):
         pass
