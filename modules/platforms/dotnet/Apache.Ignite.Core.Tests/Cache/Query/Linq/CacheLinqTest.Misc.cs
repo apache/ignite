@@ -27,7 +27,9 @@
 namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
+    using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Linq;
@@ -353,5 +355,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
         }
+        
+        [Test]
+        public void Test()
+        {
+            var query = GetPersonCache().AsCacheQueryable();
+            Func<ICacheEntry<int, Person>, bool> filter  = entry => entry.Value.OrganizationId == 1;
+            var persons = query;
+                
+                var persons1 = persons.Where(x => filter(x));
+            persons1               .ToList();
+        }
+        
     }
 }
