@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -1696,7 +1697,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 registeredServices.entrySet().removeIf(e -> {
                     ServiceInfo desc = e.getValue();
 
-                    if (desc.cacheName().equals(chReq.cacheName())) {
+                    if (Objects.equals(desc.cacheName(), chReq.cacheName())) {
                         toUndeploy.put(desc.serviceId(), desc);
 
                         return true;
