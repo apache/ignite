@@ -213,4 +213,4 @@ def get_event_time(service, log_node, log_pattern, from_the_beginning=True, time
         "grep '%s' %s" % (log_pattern, IgniteAwareService.STDOUT_STDERR_CAPTURE))
 
     return datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
-                             "[%Y-%m-%d %H:%M:%S,%f]")
+                             "[%Y-%m-%dT%H:%M:%S,%f]")
