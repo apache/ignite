@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- * Loading random uuids in cache.
+ * Streaming random uuids to cache.
  */
 public class UuidDataStreamerApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
@@ -66,8 +66,7 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void workParallel(Ignite ignite, String cacheName, int dataSize)
-            throws InterruptedException {
+    private void workParallel(Ignite ignite, String cacheName, int dataSize) throws InterruptedException {
         int threads = Runtime.getRuntime().availableProcessors() / 2;
 
         CountDownLatch latch = new CountDownLatch(threads);
@@ -120,9 +119,8 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
                     dataStreamer.addData(uuid, data);
                 }
             }
-            finally {
-                latch.countDown();
-            }
+
+            latch.countDown();
         }
     }
 }

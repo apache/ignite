@@ -17,7 +17,6 @@
 Module contains discovery tests.
 """
 import time
-import ducktape
 
 from ducktape.mark.resource import cluster
 
@@ -91,8 +90,8 @@ class SnapshotTest(IgniteTest):
 
         node = service.nodes[0]
 
-        control_utility.idle_verify(check_assert=True)
         control_utility.validate_indexes(check_assert=True)
+        control_utility.idle_verify(check_assert=True)
         dump_1 = control_utility.idle_verify_dump(node, return_path=True)
 
         self.logger.info(f'Path to dump_1 on {node.account.externally_routable_ip}={dump_1}')
@@ -117,8 +116,8 @@ class SnapshotTest(IgniteTest):
 
         control_utility.activate()
 
-        control_utility.idle_verify(check_assert=True)
         control_utility.validate_indexes(check_assert=True)
+        control_utility.idle_verify(check_assert=True)
         dump_3 = control_utility.idle_verify_dump(node, return_path=True)
 
         self.logger.info(f'Path to dump_3 on {node.account.externally_routable_ip}={dump_3}')
@@ -127,7 +126,7 @@ class SnapshotTest(IgniteTest):
         assert len(diff) == 0, diff
 
 
-def load(service_load: IgniteApplicationService, duration: int = 60):
+def load(service_load: IgniteApplicationService, duration: int = 60, timeout_sec: int = 60):
     """
     Load.
     """
@@ -135,7 +134,4 @@ def load(service_load: IgniteApplicationService, duration: int = 60):
 
     time.sleep(duration)
 
-    try:
-        service_load.stop()
-    except ducktape.errors.TimeoutError:  # data streamer use graceful shutdown.
-        service_load.await_stopped(timeout_sec=60)
+    service_load.stop(timeout_sec=timeout_sec)
