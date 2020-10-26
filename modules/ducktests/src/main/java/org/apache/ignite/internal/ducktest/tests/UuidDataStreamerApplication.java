@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- * Streaming random uuids to cache.
+ * Loading random uuids to cache.
  */
 public class UuidDataStreamerApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
@@ -44,7 +44,12 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
                 .map(JsonNode::asInt)
                 .orElse(1024);
 
+        long iterSize = Optional.ofNullable(jNode.get("iterSize"))
+                .map(JsonNode::asLong)
+                .orElse(1024L);
+
         assert dataSize > 0;
+        assert iterSize > 0;
 
         CacheConfiguration<UUID, byte[]> cacheCfg = new CacheConfiguration<>(cacheName);
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
@@ -58,7 +63,7 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
 
         markInitialized();
 
-        workParallel(ignite, cacheName, dataSize);
+        workParallel(ignite, cacheName, iterSize, dataSize);
 
         recordResult("DURATION", System.currentTimeMillis() - start);
 
@@ -66,8 +71,13 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void workParallel(Ignite ignite, String cacheName, int dataSize) throws InterruptedException {
+    private void workParallel(Ignite ignite, String cacheName, long iterSize, int dataSize)
+            throws InterruptedException {
         int threads = Runtime.getRuntime().availableProcessors() / 2;
+
+        long iterThread = iterSize / threads;
+
+        assert iterThread > 0;
 
         CountDownLatch latch = new CountDownLatch(threads);
 
@@ -76,14 +86,14 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
                 .build();
 
         for (int i = 0; i < threads; i++)
-            threadFactory.newThread(new UuidDataStreamer(ignite, cacheName, latch, dataSize))
+            threadFactory.newThread(new UuidDataStreamer(ignite, cacheName, latch, iterThread, dataSize))
                     .start();
 
         latch.await();
     }
 
     /** */
-    private class UuidDataStreamer implements Runnable {
+    private static class UuidDataStreamer implements Runnable {
         /** Ignite. */
         private final Ignite ignite;
 
@@ -93,14 +103,18 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
         /** Latch. */
         private final CountDownLatch latch;
 
+        /** Iteration size. */
+        private final long iterSize;
+
         /** Data size. */
         private final int dataSize;
 
         /** */
-        public UuidDataStreamer(Ignite ignite, String cacheName, CountDownLatch latch, int dataSize) {
+        public UuidDataStreamer(Ignite ignite, String cacheName, CountDownLatch latch, long iterSize, int dataSize) {
             this.ignite = ignite;
             this.cacheName = cacheName;
             this.latch = latch;
+            this.iterSize = iterSize;
             this.dataSize = dataSize;
         }
 
@@ -109,7 +123,7 @@ public class UuidDataStreamerApplication extends IgniteAwareApplication {
             try (IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
                 dataStreamer.autoFlushFrequency(100L);
 
-                while (!terminated()) {
+                for (long i = 0L; i <= iterSize; i++) {
                     UUID uuid = UUID.randomUUID();
 
                     byte[] data = new byte[dataSize];
