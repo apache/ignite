@@ -37,6 +37,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static io.opencensus.trace.AttributeValue.stringAttributeValue;
+import static java.lang.Integer.parseInt;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SOCKET_WRITE_BYTES;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_JOB_EXECUTE_REQUEST;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_JOB_EXECUTE_RESPONSE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_REGULAR_PROCESS;
@@ -325,8 +327,16 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
 
         assertEquals(1, nodejobTraces.stream().filter(it -> it.contains(CUSTOM_JOB_CALL.spanName())).count());
 
+        List<SpanData> sockWriteTraces = data.stream()
+            .filter(span -> span.getName().contains(COMMUNICATION_SOCKET_WRITE.spanName()))
+            .collect(Collectors.toList());
+
         //request + response
-        assertEquals(2, nodejobTraces.stream().filter(it -> it.contains(COMMUNICATION_SOCKET_WRITE.spanName())).count());
+        assertEquals(2, sockWriteTraces.size());
+
+        sockWriteTraces.forEach(span -> assertTrue(
+            parseInt(attributeValueToString(span.getAttributes().getAttributeMap().get(SOCKET_WRITE_BYTES))) > 0));
+
         //request + response
         assertEquals(2, nodejobTraces.stream().filter(it -> it.contains(COMMUNICATION_SOCKET_READ.spanName())).count());
         //request + response

@@ -81,6 +81,9 @@ public class SpanTags {
     /** */
     public static final String MESSAGE = "message";
 
+    /** Number of bytes that were written to the socket. */
+    public static final String SOCKET_WRITE_BYTES = "socket.write.bytes";
+
     /** */
     public static final String MESSAGE_CLASS = "message.class";
 

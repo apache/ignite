@@ -90,6 +90,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SOCKET_WRITE_BYTES;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_SOCKET_WRITE;
 import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
@@ -1246,6 +1247,8 @@ public class GridNioServer<T> {
                         if (log.isTraceEnabled())
                             log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
+                        span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(cnt));
+
                         if (sentBytesCntMetric != null)
                             sentBytesCntMetric.add(cnt);
 
@@ -1574,7 +1577,11 @@ public class GridNioServer<T> {
                 if (writer != null)
                     writer.setCurrentWriteClass(msg.getClass());
 
+                int startPos = buf.position();
+
                 finished = msg.writeTo(buf, writer);
+
+                span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
 
                 if (finished) {
                     pendingRequests.add(req);
@@ -1763,7 +1770,11 @@ public class GridNioServer<T> {
                 if (writer != null)
                     writer.setCurrentWriteClass(msg.getClass());
 
+                int startPos = buf.position();
+
                 finished = msg.writeTo(buf, writer);
+
+                span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
 
                 if (finished) {
                     onMessageWritten(ses, msg);
