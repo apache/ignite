@@ -19,6 +19,7 @@ Module contains classes and utility methods to create discovery configuration fo
 
 from abc import ABCMeta, abstractmethod
 
+import socket
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.zk.zookeeper import ZookeeperService
 
@@ -101,10 +102,11 @@ class TcpDiscoverySpi(DiscoverySpi):
     """
     TcpDiscoverySpi.
     """
-    def __init__(self, ip_finder=TcpDiscoveryVmIpFinder(), port=47500, port_range=100):
+    def __init__(self, ip_finder=TcpDiscoveryVmIpFinder(), port=47500, port_range=100, local_address=None):
         self.ip_finder = ip_finder
         self.port = port
         self.port_range = port_range
+        self.local_address = local_address
 
     @property
     def type(self):
@@ -112,6 +114,11 @@ class TcpDiscoverySpi(DiscoverySpi):
 
     def prepare_on_start(self, **kwargs):
         self.ip_finder.prepare_on_start(**kwargs)
+
+        node = kwargs.get('node', None)
+
+        if node:
+            self.local_address = socket.gethostbyname(node.account.hostname)
 
 
 def from_ignite_cluster(cluster, subset=None):
