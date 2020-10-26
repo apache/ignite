@@ -166,8 +166,6 @@
                 <exclude>org.apache.ignite:ignite-scalar_2.10</exclude>
                 <exclude>org.apache.ignite:ignite-spark</exclude>
                 <exclude>org.apache.ignite:ignite-spark-2.4</exclude>
-                <exclude>org.apache.ignite:ignite-spring-data</exclude>
-                <exclude>org.apache.ignite:ignite-spring-data_2.0</exclude>
                 <exclude>org.apache.ignite:ignite-ssh</exclude>
                 <exclude>org.apache.ignite:ignite-storm</exclude>
                 <exclude>org.apache.ignite:ignite-web</exclude>
