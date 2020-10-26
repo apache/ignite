@@ -90,6 +90,7 @@ class GetTimeService(BackgroundThreadService):
         self.clocks = []
 
     def _worker(self, _, node):
+        node.account.ssh_output('/bin/true')
         self.start_barrier.wait(5)
         self.clocks.append((node.name, float(node.account.ssh_output('date +%s%3N'))))  # list is thread-safe
 
