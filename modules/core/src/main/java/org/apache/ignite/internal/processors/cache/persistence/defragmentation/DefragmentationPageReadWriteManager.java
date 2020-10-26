@@ -17,34 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManagerImpl;
 
 /** */
-public class CacheDefragmentationContext {
-    /** */
-
-    /** */
-    private final Set<Integer> cacheGroupsForDefragmentation;
-
+public class DefragmentationPageReadWriteManager extends PageReadWriteManagerImpl {
     /**
-     * @param cacheGroupsForDefragmentation Cache group ids for defragmentation.
+     * @param ctx Kernal context.
+     * @param name name.
      */
-    public CacheDefragmentationContext(
-        List<Integer> cacheGroupsForDefragmentation
-    ) {
-
-        this.cacheGroupsForDefragmentation = new HashSet<>(cacheGroupsForDefragmentation);
+    public DefragmentationPageReadWriteManager(GridKernalContext ctx, String name) {
+        super(ctx, new PageStoreMap(), name);
     }
 
     /** */
-    public Set<Integer> cacheGroupsForDefragmentation() {
-        return cacheGroupsForDefragmentation;
-    }
-
-    /** */
-    public void onCacheGroupDefragmented(int grpId) {
-        // Invalidate page stores.
+    public PageStoreMap pageStoreMap() {
+        return (PageStoreMap)pageStores;
     }
 }

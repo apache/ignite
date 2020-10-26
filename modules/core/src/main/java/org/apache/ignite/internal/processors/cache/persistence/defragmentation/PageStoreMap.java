@@ -55,6 +55,11 @@ class PageStoreMap implements PageStoreCollection {
             pageStoresMap.remove(partId);
     }
 
+    /** */
+    public void clear(int grpId) {
+        grpPageStoresMap.remove(grpId);
+    }
+
     /** {@inheritDoc} */
     @Override public PageStore getStore(int grpId, int partId) {
         IntMap<PageStore> partPageStoresMap = grpPageStoresMap.get(grpId);

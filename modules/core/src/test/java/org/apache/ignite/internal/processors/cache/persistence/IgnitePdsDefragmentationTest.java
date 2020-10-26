@@ -203,7 +203,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         long[] newPartLen = partitionSizes(workDir);
 
         for (int p = 0; p < PARTS; p++)
-            assertTrue(newPartLen[p] < oldPartLen[p]);
+            assertTrue(newPartLen[p] < oldPartLen[p]); //TODO Fails.
 
         long newIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
 
@@ -424,7 +424,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         stopGrid(0);
 
         // Everything must be completed.
-        startGrid(0);
+        startGrid(0).cluster().state(ClusterState.ACTIVE);
 
         validateCache(grid(0).cache(DEFAULT_CACHE_NAME));
 
@@ -491,7 +491,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             }
         });
 
-        assertNull(cachePartFile.get());
+        assertNull(cachePartFile.get()); //TODO Fails.
         assertNotNull(defragCachePartFile.get());
     }
 

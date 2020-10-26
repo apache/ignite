@@ -76,7 +76,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CacheDefragmentationContext;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -755,8 +754,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     allocatedTracker);
 
             PageStore[] partStores = new PageStore[partitions];
-
-            CacheDefragmentationContext defrgCtx = cctx.database().defragmentationContext();
 
             for (int partId = 0; partId < partStores.length; partId++) {
                 final int p = partId;

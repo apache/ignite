@@ -41,7 +41,7 @@ public class PageReadWriteManagerImpl implements PageReadWriteManager {
 
     /** */
     @GridToStringExclude
-    private final PageStoreCollection pageStores;
+    protected final PageStoreCollection pageStores;
 
     /** */
     @SuppressWarnings("unused")

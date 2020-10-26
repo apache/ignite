@@ -106,7 +106,8 @@ public class Checkpointer extends GridWorker {
         "walCpRecordFsyncDuration=%dms, " +
         "writeCheckpointEntryDuration=%dms, " +
         "splitAndSortCpPagesDuration=%dms, " +
-        "%s pages=%d, " +
+        "%s" +
+        "pages=%d, " +
         "reason='%s']";
 
     /** Skip sync. */
@@ -417,7 +418,7 @@ public class Checkpointer extends GridWorker {
                                 tracker.walCpRecordFsyncDuration(),
                                 tracker.writeCheckpointEntryDuration(),
                                 tracker.splitAndSortCpPagesDuration(),
-                                possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms," : "",
+                                possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms, " : "",
                                 chp.pagesSize,
                                 chp.progress.reason()
                             )

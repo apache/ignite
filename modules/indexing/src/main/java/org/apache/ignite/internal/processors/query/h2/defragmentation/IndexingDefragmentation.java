@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CacheDefragmentationContext;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.GridQueryIndexingDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.TimeTracker;
@@ -97,7 +96,7 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
     @Override public void defragmentate(
         CacheGroupContext grpCtx,
         CacheGroupContext newCtx,
-        CacheDefragmentationContext defrgCtx,
+        PageMemoryEx partPageMem,
         IntMap<LinkMap> mappingByPartition,
         CheckpointTimeoutLock cpLock,
         IgniteLogger log
@@ -108,7 +107,7 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
 
         PageMemoryEx oldCachePageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
 
-        PageMemory newCachePageMemory = defrgCtx.partitionsDataRegion().pageMemory();
+        PageMemory newCachePageMemory = partPageMem;
 
         Collection<GridH2Table> tables = indexing.schemaManager().dataTables();
 

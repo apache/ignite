@@ -121,6 +121,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightC
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.ReservationReason;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CacheDefragmentationContext;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationPageReadWriteManager;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationWorkflowCallback;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -665,16 +666,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         assert CU.isPersistenceEnabled(dsCfg);
 
         defrgCtx = new CacheDefragmentationContext(
-            kernalCtx,
-            this,
             cacheGroupIds
         );
 
         checkpointedDataRegions.remove(
-            addDataRegion(dsCfg, createDefragmentationDataRegionConfig(dsCfg), true, defrgCtx.partPageManager())
+            addDataRegion(
+                dsCfg,
+                createDefragmentationDataRegionConfig(dsCfg),
+                true,
+                new DefragmentationPageReadWriteManager(kernalCtx, "defrgPartitionsStore")
+            )
         );
         checkpointedDataRegions.remove(
-            addDataRegion(dsCfg, createDefragmentationMappingRegionConfig(dsCfg), true, defrgCtx.mappingPageManager())
+            addDataRegion(
+                dsCfg,
+                createDefragmentationMappingRegionConfig(dsCfg),
+                true,
+                new DefragmentationPageReadWriteManager(kernalCtx, "defrgLinkMappingStore")
+            )
         );
 
         List<DataRegion> regions = Arrays.asList(
@@ -682,7 +691,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             dataRegion(DEFRAGMENTATION_PART_REGION_NAME)
         );
 
-        LightCheckpointManager manager = new LightCheckpointManager(
+        LightCheckpointManager lightCheckpointMgr = new LightCheckpointManager(
             kernalCtx::log,
             cctx.igniteInstanceName(),
             "db-checkpoint-thread-defrag",
@@ -698,15 +707,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             kernalCtx.cache()
         );
 
-        manager.start();
+        lightCheckpointMgr.start();
 
         defrgMgr = new CachePartitionDefragmentationManager(
+            cacheGroupIds,
             cctx,
-            defrgCtx,
             this,
             (FilePageStoreManager)cctx.pageStore(),
             checkpointManager,
-            manager,
+            lightCheckpointMgr,
             persistenceCfg.getPageSize()
         );
     }
