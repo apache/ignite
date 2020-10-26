@@ -132,6 +132,7 @@
     <Compile Include="Impl\Client\Services\ServicesClient.cs" />
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
     <Compile Include="Impl\Client\Transactions\ClientCacheTransactionManager.cs" />
+    <Compile Include="Impl\Common\Cgroup.cs" />
     <Compile Include="Impl\Common\PlatformType.cs" />
     <Compile Include="Impl\Client\Transactions\TransactionClient.cs" />
     <Compile Include="Impl\Client\Transactions\TransactionsClient.cs" />
