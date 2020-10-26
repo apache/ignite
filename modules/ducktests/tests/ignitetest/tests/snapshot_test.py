@@ -126,7 +126,7 @@ class SnapshotTest(IgniteTest):
         assert len(diff) == 0, diff
 
 
-def load(service_load: IgniteApplicationService, duration: int = 60, timeout_sec: int = 60):
+def load(service_load: IgniteApplicationService, duration: int = 60, timeout_sec: int = 180):
     """
     Load.
     """
