@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -115,6 +116,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.io.File.separatorChar;
@@ -259,12 +261,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         return ccfg;
     }
 
-    /**
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPersistenceCommand() throws Exception {
+    /** */
+    private File startGridAndPutNodeToMaintenance(CacheConfiguration[] cachesToStart,
+                                                  @Nullable Function<String, Boolean> cacheToCorrupt) throws Exception {
+        assert cachesToStart != null && cachesToStart.length > 0;
+
         IgniteEx ig0 = startGrid(0);
         IgniteEx ig1 = startGrid(1);
 
@@ -272,22 +273,19 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         File dbDir = U.resolveWorkDirectory(ig1.configuration().getWorkDirectory(), "db", false);
 
         File ig1LfsDir = new File(dbDir, ig1Folder);
-        File ig1CpDir = new File(ig1LfsDir, "cp");
 
         ig0.cluster().baselineAutoAdjustEnabled(false);
         ig0.cluster().state(ACTIVE);
 
-        String cacheName1 = DEFAULT_CACHE_NAME + "1";
+        IgniteCache dfltCache = ig0.getOrCreateCache(cachesToStart[0]);
 
-        CacheConfiguration defaultCache = cacheConfiguration(DEFAULT_CACHE_NAME).setGroupName("default-group");
-
-        CacheConfiguration cache1Cfg = cacheConfiguration(cacheName1).setGroupName("default-group1");
-
-        IgniteCache<Integer, Integer> cache = ig0.getOrCreateCache(defaultCache);
-        ig0.getOrCreateCache(cache1Cfg);
+        if (cachesToStart.length > 1) {
+            for (int i = 1; i < cachesToStart.length; i++)
+                ig0.getOrCreateCache(cachesToStart[i]);
+        }
 
         for (int k = 0; k < 1000; k++)
-            cache.put(k, k);
+            dfltCache.put(k, k);
 
         GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager) ig0.context().cache().context().database();
         GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager) ig1.context().cache().context().database();
@@ -295,21 +293,17 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         dbMrg0.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
         dbMrg1.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
 
-        ig0.context().cache().context().walState().changeWalMode(Arrays.asList(DEFAULT_CACHE_NAME), false);
-        ig0.cluster().disableWal(cacheName1);
+        Arrays.stream(cachesToStart)
+            .map(ccfg -> ccfg.getName())
+            .filter(name -> cacheToCorrupt.apply(name))
+            .forEach(name -> ig0.cluster().disableWal(name));
 
         for (int k = 1000; k < 2000; k++)
-            cache.put(k, k);
+            dfltCache.put(k, k);
 
         stopGrid(1);
 
-        ig0.context().cache().context().walState().changeWalMode(Arrays.asList(DEFAULT_CACHE_NAME), true);
-        ig0.cluster().enableWal(cacheName1);
-
-        for (int k = 2000; k < 3000; k++)
-            cache.put(k, k);
-
-        File[] cpMarkers = ig1CpDir.listFiles();
+        File[] cpMarkers = new File(ig1LfsDir, "cp").listFiles();
 
         for (File cpMark : cpMarkers) {
             if (cpMark.getName().contains("-END"))
@@ -318,13 +312,110 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertThrows(log, () -> startGrid(1), Exception.class, null);
 
-        ig1 = startGrid(1);
+        return ig1LfsDir;
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPersistenceCleanSpecifiedCachesCommand() throws Exception {
+        String cacheName0 = DEFAULT_CACHE_NAME + "0";
+        String cacheName1 = DEFAULT_CACHE_NAME + "1";
+        String cacheName2 = DEFAULT_CACHE_NAME + "2";
+        String cacheName3 = DEFAULT_CACHE_NAME + "3";
+
+        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+            new CacheConfiguration[]{
+                cacheConfiguration(cacheName0),
+                cacheConfiguration(cacheName1),
+                cacheConfiguration(cacheName2),
+                cacheConfiguration(cacheName3)
+            },
+            s -> !s.equals(cacheName3));
+
+        IgniteEx ig1 = startGrid(1);
 
         String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
 
-//        execute("--persistence", "clean", "caches", DEFAULT_CACHE_NAME, "--host", "localhost", "--port", port);
+        assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "caches",
+            cacheName0 + "," + cacheName1,
+            "--host", "localhost", "--port", port));
 
-        execute("--persistence", "backup", "caches", DEFAULT_CACHE_NAME + "," + cacheName1, "--host", "localhost", "--port", port);
+        boolean cleanedEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(f -> f.getName().contains(cacheName0) || f.getName().contains(cacheName1))
+            .map(f -> f.listFiles().length == 1)
+            .reduce(true, (t, u) -> t && u);
+
+        assertTrue(cleanedEmpty);
+
+        boolean nonCleanedNonEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(f -> f.getName().contains(cacheName2) || f.getName().contains(cacheName3))
+            .map(f -> f.listFiles().length > 1)
+            .reduce(true, (t, u) -> t && u);
+
+        assertTrue(nonCleanedNonEmpty);
+
+        stopGrid(1);
+
+        ig1 = startGrid(1);
+
+        assertTrue(ig1.context().maintenanceRegistry().isMaintenanceMode());
+
+        assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "caches",
+            cacheName2,
+            "--host", "localhost", "--port", port));
+
+        stopGrid(1);
+
+        ig1 = startGrid(1);
+
+        assertFalse(ig1.context().maintenanceRegistry().isMaintenanceMode());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testPersistenceCleanAllCorruptedCachesCommand() throws Exception {
+        String cacheName0 = DEFAULT_CACHE_NAME + "0";
+        String cacheName1 = DEFAULT_CACHE_NAME + "1";
+        String cacheName2 = DEFAULT_CACHE_NAME + "2";
+        String cacheName3 = DEFAULT_CACHE_NAME + "3";
+
+        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+            new CacheConfiguration[]{
+                cacheConfiguration(cacheName0),
+                cacheConfiguration(cacheName1),
+                cacheConfiguration(cacheName2),
+                cacheConfiguration(cacheName3)
+            },
+            s -> !s.equals(cacheName3));
+
+        IgniteEx ig1 = startGrid(1);
+
+        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+
+        assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "corrupted",
+            "--host", "localhost", "--port", port));
+
+        boolean cleanedEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(f ->
+                f.getName().contains(cacheName0)
+                || f.getName().contains(cacheName1)
+                || f.getName().contains(cacheName2)
+            )
+            .map(f -> f.listFiles().length == 1)
+            .reduce(true, (t, u) -> t && u);
+
+        assertTrue(cleanedEmpty);
+
+        stopGrid(1);
+
+        ig1 = startGrid(1);
+
+        assertFalse(ig1.context().maintenanceRegistry().isMaintenanceMode());
     }
 
     /**
