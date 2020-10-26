@@ -239,7 +239,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
                             int pageIdx = ThreadLocalRandom.current().nextInt(
                                 PAGES_TOUCHED_UNDER_CP_LOCK, pages - PAGES_TOUCHED_UNDER_CP_LOCK);
 
-                            long pageId = PageIdUtils.pageId(0, PageIdAllocator.FLAG_DATA, pageIdx);
+                            long pageId = PageIdUtils.pageId(0, PageIdAllocator.FLAG_AUX, pageIdx);
 
                             buf.rewind();
 
