@@ -430,7 +430,7 @@ public class CachePartitionDefragmentationManager {
             mntcReg.unregisterMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
         }
         finally {
-            nodeCheckpoint.stop(true);
+            defragmentationCheckpoint.stop(true);
         }
     }
 
@@ -856,13 +856,13 @@ public class CachePartitionDefragmentationManager {
                 log
             );
 
-            nodeCheckpoint.checkpointTimeoutLock().checkpointReadLock();
+            defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadLock();
 
             try {
                 newCacheDataStore.init();
             }
             finally {
-                nodeCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
+                defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
             }
 
             this.newCacheDataStore = newCacheDataStore;
