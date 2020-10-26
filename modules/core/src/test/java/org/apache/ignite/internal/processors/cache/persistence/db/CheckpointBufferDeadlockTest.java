@@ -232,21 +232,22 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
                         PageMemoryImpl pageMem = (PageMemoryImpl)region.pageMemory();
 
-                        ByteBuffer buf = ByteBuffer.allocate(store.getPageSize());
-                        buf.order(ByteOrder.nativeOrder());
-
                         while (pickedPagesSet.size() < PAGES_TOUCHED_UNDER_CP_LOCK) {
                             int pageIdx = ThreadLocalRandom.current().nextInt(
                                 PAGES_TOUCHED_UNDER_CP_LOCK, pages - PAGES_TOUCHED_UNDER_CP_LOCK);
 
-                            long pageId = PageIdUtils.pageId(0, PageIdAllocator.FLAG_AUX, pageIdx);
+                            long pageId = PageIdUtils.pageId(0, PageIdAllocator.FLAG_DATA, pageIdx);
 
-                            buf.rewind();
+                            long page = pageMem.acquirePage(CU.cacheId(cacheName), pageId);
 
-                            store.read(pageId, buf, false);
-
-                            if (pageId != PageIO.getPageId(buf))
-                                continue;
+                            try {
+                                // We do not know correct flag(FLAG_DATA or FLAG_AUX). Skip page if no luck.
+                                if (pageId != PageIO.getPageId(page + PageMemoryImpl.PAGE_OVERHEAD))
+                                    continue;
+                            }
+                            finally {
+                                pageMem.releasePage(CU.cacheId(cacheName), pageId, page);
+                            }
 
                             pickedPagesSet.add(new FullPageId(pageId, CU.cacheId(cacheName)));
                         }
