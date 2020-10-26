@@ -281,4 +281,11 @@ public class GridDhtPartitionsReservation implements GridReservable {
 
         return result;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "[cache=" + cctx.name() +
+            ", partitions=" + Arrays.toString(parts.get()) +
+            ", topology=" + topVer.toString();
+    }
 }

@@ -105,6 +105,9 @@ public class SpanTags {
     /** Number of cache entries to be updated as a result of DML query. */
     public static final String SQL_CACHE_UPDATES = "sql.cache.updates";
 
+    /** Whether parsing of the SQL query was skipped due to the cached result. */
+    public static final String SQL_PARSER_CACHE_HIT = "sql.parser.cache.hit";
+
     /** */
     private SpanTags() {}
 
