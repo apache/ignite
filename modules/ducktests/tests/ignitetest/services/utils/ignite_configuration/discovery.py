@@ -117,7 +117,7 @@ class TcpDiscoverySpi(DiscoverySpi):
 
         node = kwargs.get('node', None)
 
-        if node:
+        if not self.local_address and node:
             self.local_address = socket.gethostbyname(node.account.hostname)
 
 
