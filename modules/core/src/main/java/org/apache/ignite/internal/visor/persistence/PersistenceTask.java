@@ -284,10 +284,12 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             if (cleanCorruptedActionOpt.isPresent()) {
                 cleanCorruptedActionOpt.get().execute();
 
+                MaintenanceTask corruptedTask = mntcReg.activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID);
+
                 mntcReg.unregisterMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID);
 
                 res.handledCaches(
-                    corruptedCacheDirectories(mntcReg.activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID))
+                    corruptedCacheDirectories(corruptedTask)
                 );
 
                 res.maintenanceTaskCompleted(true);
