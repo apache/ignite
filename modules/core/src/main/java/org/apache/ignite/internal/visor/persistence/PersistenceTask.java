@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -206,6 +207,25 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             DataStorageConfiguration dsCfg = ignite.context().config().getDataStorageConfiguration();
             IgnitePageStoreManager pageStore = cacheProc.context().pageStore();
 
+            AtomicReference<String> missedCache = new AtomicReference<>();
+
+            Boolean allExist = cacheNames
+                .stream()
+                .map(name -> {
+                    if (cacheProc.cacheDescriptor(name) != null)
+                        return true;
+                    else {
+                        missedCache.set(name);
+
+                        return false;
+                    }
+                })
+                .reduce(true, (t, u) -> t && u);
+
+            if (!allExist)
+                throw new IllegalArgumentException("Cache with name " + missedCache.get() +
+                    " not found, no caches will be cleaned.");
+
             for (String name : cacheNames) {
                 DynamicCacheDescriptor cacheDescr = cacheProc.cacheDescriptor(name);
 
@@ -346,6 +366,24 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             GridCacheProcessor cacheProc = ignite.context().cache();
 
             DataStorageConfiguration dsCfg = ignite.configuration().getDataStorageConfiguration();
+
+            AtomicReference<String> missedCache = new AtomicReference<>();
+
+            Boolean allExist = cacheNames.stream()
+                .map(s -> {
+                    if (cacheProc.cacheDescriptor(s) != null)
+                        return true;
+                    else {
+                        missedCache.set(s);
+
+                        return false;
+                    }
+                })
+                .reduce(true, (u, v) -> u && v);
+
+            if (!allExist)
+                throw new IllegalArgumentException("Cache with name " + missedCache.get() +
+                    " not found, no caches will be backed up.");
 
             return cacheNames.stream()
                 .filter(s -> cacheProc.cacheDescriptor(s) != null)
