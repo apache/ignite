@@ -186,12 +186,16 @@ public class CachePartitionDefragmentationManager {
     //TODO How will we handle constant fail and restart scenario?
     public void executeDefragmentation() throws IgniteCheckedException {
         try {
-            // These pages must be checkpointed with valid marker files.
-            // But current defragmentation implementation sets system property that forbids markers creation.
-            // It happens during checkpoint so updated metapages from THIS start may be restored on NEXT start
-            // on top of defragmented partition. This WILL lead to data corruption.
+            // Checkpointer must be enabled so all pages on disk are in their latest valid state.
+            dbMgr.resumeWalLogging();
+
+            dbMgr.onStateRestored(null);
+
             nodeCheckpoint.forceCheckpoint("beforeDefragmentation", null).futureFor(FINISHED).get();
 
+            sharedCtx.wal().onDeActivate(sharedCtx.kernalContext());
+
+            // Now the actual process starts.
             TreeIterator treeIter = new TreeIterator(pageSize);
 
             IgniteInternalFuture<?> idxDfrgFut = null;

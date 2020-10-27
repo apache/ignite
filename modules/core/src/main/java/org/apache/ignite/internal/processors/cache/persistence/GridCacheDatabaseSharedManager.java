@@ -68,7 +68,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalker;
@@ -926,7 +925,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 walTail = CheckpointStatus.NULL_PTR.equals(status.endPtr) ? null : status.endPtr;
             }
 
-            cctx.wal().resumeLogging(walTail);
+            resumeWalLogging();
 
             walTail = null;
 
@@ -1822,13 +1821,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             checkpointReadUnlock();
         }
 
-        ((GridKernalContextImpl)kctx).recoveryMode(false); //TODO Oooo, this is shit!
-
-        onStateRestored(null);
-
         walTail = tailPointer(logicalState);
 
         cctx.wal().onDeActivate(kctx);
+    }
+
+    /** */
+    public void resumeWalLogging() throws IgniteCheckedException {
+        cctx.wal().resumeLogging(walTail);
     }
 
     /**
