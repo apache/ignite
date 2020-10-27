@@ -42,7 +42,7 @@ public final class DefragmentationConfiguration implements Serializable {
     private long mappingRegionSize = DFLT_MAPPIN_REGION_SIZE;
 
     /**
-     * @return
+     * @return Region size.
      */
     public long getRegionSize() {
         return regionSize;
@@ -58,7 +58,7 @@ public final class DefragmentationConfiguration implements Serializable {
     }
 
     /**
-     * @return
+     * @return Mapping region size.
      */
     public long getMappingRegionSize() {
         return mappingRegionSize;
