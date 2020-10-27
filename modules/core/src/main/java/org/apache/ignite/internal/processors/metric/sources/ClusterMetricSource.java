@@ -128,6 +128,7 @@ public class ClusterMetricSource extends AbstractMetricSource<ClusterMetricSourc
     }
 
     /** */
+    @SuppressWarnings("ClassNameSameAsAncestorName")
     protected static class Holder implements AbstractMetricSource.Holder<Holder> {
         /** Total server nodes count metric. */
         private IntMetric srvNodes;

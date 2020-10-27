@@ -17,19 +17,21 @@
 
 package org.apache.ignite.spi.communication.tcp.internal;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+
+import org.apache.ignite.internal.processors.metric.sources.CommunicationMetricSource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
 
 /**
  * MBean implementation for TcpCommunicationSpi.
  */
 public class TcpCommunicationSpiMBeanImpl extends IgniteSpiMBeanAdapter implements TcpCommunicationSpiMBean {
-    /** Statistics. */
-    private final TcpCommunicationMetricsListener metricsLsnr;
+    /** Metric source. */
+    private final CommunicationMetricSource metricsSrc;
 
     /** Config. */
     private final TcpCommunicationConfiguration cfg;
@@ -39,18 +41,18 @@ public class TcpCommunicationSpiMBeanImpl extends IgniteSpiMBeanAdapter implemen
 
     /**
      * @param spiAdapter Spi adapter.
-     * @param metricsLsnr Metrics listener.
+     * @param metricSrc Metric source.
      * @param cfg Config.
      * @param stateProvider State provider.
      */
     public TcpCommunicationSpiMBeanImpl(
         IgniteSpiAdapter spiAdapter,
-        TcpCommunicationMetricsListener metricsLsnr,
+        CommunicationMetricSource metricSrc,
         TcpCommunicationConfiguration cfg,
         ClusterStateProvider stateProvider
     ) {
         super(spiAdapter);
-        this.metricsLsnr = metricsLsnr;
+        this.metricsSrc = metricSrc;
         this.cfg = cfg;
         this.stateProvider = stateProvider;
     }
@@ -172,42 +174,46 @@ public class TcpCommunicationSpiMBeanImpl extends IgniteSpiMBeanAdapter implemen
 
     /** {@inheritDoc} */
     @Override public int getSentMessagesCount() {
-        return metricsLsnr.sentMessagesCount();
+        return metricsSrc.sentMessagesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getSentBytesCount() {
-        return metricsLsnr.sentBytesCount();
+        return metricsSrc.sentBytesCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getReceivedMessagesCount() {
-        return metricsLsnr.receivedMessagesCount();
+        return metricsSrc.receivedMessagesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getReceivedBytesCount() {
-        return metricsLsnr.receivedBytesCount();
+        return metricsSrc.receivedBytesCount();
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, Long> getReceivedMessagesByType() {
-        return metricsLsnr.receivedMessagesByType();
+        //TODO: collect values from metric sources
+        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
     @Override public Map<UUID, Long> getReceivedMessagesByNode() {
-        return metricsLsnr.receivedMessagesByNode();
+        //TODO: collect values from metric sources
+        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, Long> getSentMessagesByType() {
-        return metricsLsnr.sentMessagesByType();
+        //TODO: collect values from metric sources
+        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
     @Override public Map<UUID, Long> getSentMessagesByNode() {
-        return metricsLsnr.sentMessagesByNode();
+        //TODO: collect values from metric sources
+        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */

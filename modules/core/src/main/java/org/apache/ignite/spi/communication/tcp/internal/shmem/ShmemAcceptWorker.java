@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.metric.sources.CommunicationMetricSource;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
@@ -52,8 +53,10 @@ public class ShmemAcceptWorker extends GridWorker {
     private final GridNioServerListener<Message> srvLsnr;
 
     /** Statistics. */
-    @Nullable
     private volatile TcpCommunicationMetricsListener metricsLsnr;
+
+    /** Metric source */
+    private final CommunicationMetricSource metricSrc;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -74,7 +77,7 @@ public class ShmemAcceptWorker extends GridWorker {
      * @param igniteInstanceName Ignite instance name.
      * @param srvLsnr Server listener.
      * @param srv Server.
-     * @param metricsLsnr Metrics listener.
+     * @param metricSrc Metrics source.
      * @param log Logger.
      * @param msgFactory Message factory.
      * @param writerFactory Writer factory.
@@ -85,7 +88,7 @@ public class ShmemAcceptWorker extends GridWorker {
         String igniteInstanceName,
         GridNioServerListener<Message> srvLsnr,
         IpcSharedMemoryServerEndpoint srv,
-        TcpCommunicationMetricsListener metricsLsnr,
+        CommunicationMetricSource metricSrc,
         IgniteLogger log,
         MessageFactory msgFactory,
         GridNioMessageWriterFactory writerFactory,
@@ -100,7 +103,7 @@ public class ShmemAcceptWorker extends GridWorker {
         this.tracing = tracing;
         this.srv = srv;
         this.srvLsnr = srvLsnr;
-        this.metricsLsnr = metricsLsnr;
+        this.metricSrc = metricSrc;
         this.log = log;
     }
 
@@ -116,7 +119,7 @@ public class ShmemAcceptWorker extends GridWorker {
                     tracing,
                     ipcEndpoint,
                     srvLsnr,
-                    metricsLsnr,
+                    metricSrc,
                     readerFactory,
                     writerFactory,
                     msgFactory

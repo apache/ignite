@@ -34,6 +34,7 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  */
 public abstract class AbstractMetricSource<T extends AbstractMetricSource.Holder<T>> implements MetricSource {
     /** Holder field updater. */
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<AbstractMetricSource, Holder> HOLDER_FIELD_UPD =
             newUpdater(AbstractMetricSource.class, AbstractMetricSource.Holder.class, "holder");
 

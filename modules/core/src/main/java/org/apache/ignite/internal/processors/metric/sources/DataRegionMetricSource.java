@@ -60,22 +60,22 @@ public class DataRegionMetricSource extends AbstractMetricSource<DataRegionMetri
      * Counter for total allocated pages. Mustn't be in holder because there is no way to calculate this value after
      * disabling and enabling metrics.
      */
-    private LongAdderMetric totalAllocatedPages;
+    private final LongAdderMetric totalAllocatedPages;
 
     /** Time interval (in milliseconds) when allocations/evictions are counted to calculate rate. */
     private volatile long rateTimeInterval;
 
     /** */
-    private volatile int subInts;
+    private final int subInts;
 
     /** Page memory implementation. */
     private PageMemory pageMem;
 
     /** Data region configuration. */
-    private DataRegionConfiguration memPlcCfg;
+    private final DataRegionConfiguration memPlcCfg;
 
     /** Data region metric provider. */
-    private DataRegionMetricsProvider dataRegionMetricsProvider;
+    private final DataRegionMetricsProvider dataRegionMetricsProvider;
 
     //TODO: See getOrAllocateGroupPageAllocationTracker() method.
     /** Page allocation trackers per cache group. */
@@ -779,6 +779,7 @@ public class DataRegionMetricSource extends AbstractMetricSource<DataRegionMetri
     }
 
     /** */
+    @SuppressWarnings("ClassNameSameAsAncestorName")
     protected static class Holder implements AbstractMetricSource.Holder<Holder> {
         /** Allocation rate calculator. */
         private HitRateMetric allocRate;

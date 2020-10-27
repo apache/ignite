@@ -96,6 +96,7 @@ public class StripedPoolMetricSource extends AbstractMetricSource<StripedPoolMet
     }
 
     /** */
+    @SuppressWarnings("ClassNameSameAsAncestorName")
     protected static class Holder implements AbstractMetricSource.Holder<Holder> {
     }
 }

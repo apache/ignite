@@ -522,6 +522,7 @@ public class SystemMetricSource extends AbstractMetricSource<SystemMetricSource.
     }
 
     /** */
+    @SuppressWarnings("ClassNameSameAsAncestorName")
     protected static class Holder implements AbstractMetricSource.Holder<Holder> {
         /** Heap memory metrics. */
         private MemoryUsageMetrics heap;

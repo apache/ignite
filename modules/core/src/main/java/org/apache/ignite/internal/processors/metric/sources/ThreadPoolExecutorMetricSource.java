@@ -146,6 +146,7 @@ public class ThreadPoolExecutorMetricSource extends AbstractMetricSource<ThreadP
     }
 
     /** */
+    @SuppressWarnings("ClassNameSameAsAncestorName")
     protected static class Holder implements AbstractMetricSource.Holder<Holder> {
     }
 }

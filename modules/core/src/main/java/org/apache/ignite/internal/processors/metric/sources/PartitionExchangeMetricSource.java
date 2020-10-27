@@ -149,6 +149,7 @@ public class PartitionExchangeMetricSource extends AbstractMetricSource<Partitio
     }
 
     /** */
+    @SuppressWarnings("ClassNameSameAsAncestorName")
     protected static class Holder implements AbstractMetricSource.Holder<Holder> {
         /** Histogram of PME durations. */
         private HistogramMetricImpl durationHistogram;

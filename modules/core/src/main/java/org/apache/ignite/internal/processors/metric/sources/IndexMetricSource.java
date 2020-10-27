@@ -151,6 +151,7 @@ public class IndexMetricSource extends AbstractMetricSource<IndexMetricSource.Ho
     }
 
     /** */
+    @SuppressWarnings("ClassNameSameAsAncestorName")
     protected static class Holder implements AbstractMetricSource.Holder<Holder> {
         /** */
         private LongAdderMetric logicalReadLeafCtr;

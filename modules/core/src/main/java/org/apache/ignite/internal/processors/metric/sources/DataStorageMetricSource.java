@@ -48,10 +48,10 @@ public class DataStorageMetricSource extends AbstractMetricSource<DataStorageMet
     private volatile Collection<DataRegionMetricSource> regionMetricSrcs;
 
     /** */
-    private volatile long rateTimeInterval;
+    private final long rateTimeInterval;
 
     /** */
-    private volatile int subInts;
+    private final int subInts;
 
     /**
      * Creates data storage metric source.
@@ -782,6 +782,7 @@ public class DataStorageMetricSource extends AbstractMetricSource<DataStorageMet
     }
 
     /** */
+    @SuppressWarnings("ClassNameSameAsAncestorName")
     protected static class Holder implements AbstractMetricSource.Holder<Holder> {
         /** */
         private HitRateMetric walLoggingRate;

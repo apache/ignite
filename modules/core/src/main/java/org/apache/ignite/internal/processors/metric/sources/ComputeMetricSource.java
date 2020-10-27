@@ -210,6 +210,7 @@ public class ComputeMetricSource extends AbstractMetricSource<ComputeMetricSourc
     }
 
     /** */
+    @SuppressWarnings("ClassNameSameAsAncestorName")
     protected static class Holder implements AbstractMetricSource.Holder<Holder> {
         /** Total executed tasks metric. */
         private LongAdderMetric execTasks;

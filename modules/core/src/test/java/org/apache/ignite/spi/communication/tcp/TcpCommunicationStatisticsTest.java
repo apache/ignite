@@ -46,7 +46,6 @@ import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME;
 
@@ -126,13 +125,16 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
             Object node0consistentId = grid(0).localNode().consistentId();
             Object node1consistentId = grid(1).localNode().consistentId();
 
+            //TODO: use metric source instead of metric registry
+            fail("IGNITE-11927");
+
             String node0regName = MetricUtils.metricName(
-                COMMUNICATION_METRICS_GROUP_NAME,
+                "COMMUNICATION_METRICS_GROUP_NAME",
                 node0consistentId.toString()
             );
 
             String node1regName = MetricUtils.metricName(
-                COMMUNICATION_METRICS_GROUP_NAME,
+                "COMMUNICATION_METRICS_GROUP_NAME",
                 node1consistentId.toString()
             );
 

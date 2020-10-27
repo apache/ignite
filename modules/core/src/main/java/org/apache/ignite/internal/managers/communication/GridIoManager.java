@@ -100,7 +100,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.metric.sources.CommunicationMetricSource;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
@@ -384,10 +383,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         retryCnt = ctx.config().getNetworkSendRetryCount();
         netTimeoutMs = (int)ctx.config().getNetworkTimeout();
-
-        CommunicationMetricSource metricSrc = new CommunicationMetricSource(ctx);
-        ctx.metric().registerSource(metricSrc);
-        ctx.metric().enableMetrics(metricSrc);
     }
 
     /**
@@ -2709,51 +2704,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (userLsnr.predLsnr instanceof PlatformMessageFilter)
                 ((PlatformMessageFilter)userLsnr.predLsnr).onClose();
         }
-    }
-
-    /**
-     * Gets sent messages count.
-     *
-     * @return Sent messages count.
-     */
-    public int getSentMessagesCount() {
-        return getSpi().getSentMessagesCount();
-    }
-
-    /**
-     * Gets sent bytes count.
-     *
-     * @return Sent bytes count.
-     */
-    public long getSentBytesCount() {
-        return getSpi().getSentBytesCount();
-    }
-
-    /**
-     * Gets received messages count.
-     *
-     * @return Received messages count.
-     */
-    public int getReceivedMessagesCount() {
-        return getSpi().getReceivedMessagesCount();
-    }
-
-    /**
-     * Gets received bytes count.
-     *
-     * @return Received bytes count.
-     */
-    public long getReceivedBytesCount() {
-        return getSpi().getReceivedBytesCount();
-    }
-
-    /**
-     * Gets outbound messages queue size.
-     *
-     * @return Outbound messages queue size.
-     */
-    public int getOutboundMessagesQueueSize() {
-        return getSpi().getOutboundMessagesQueueSize();
     }
 
     /**

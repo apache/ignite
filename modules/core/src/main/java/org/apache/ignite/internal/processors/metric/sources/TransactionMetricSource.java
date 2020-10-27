@@ -395,6 +395,7 @@ public class TransactionMetricSource extends AbstractMetricSource<TransactionMet
     }
 
     /** */
+    @SuppressWarnings("ClassNameSameAsAncestorName")
     protected static class Holder implements AbstractMetricSource.Holder<Holder> {
         /** Number of transaction commits. */
         private IntMetricImpl txCommits;

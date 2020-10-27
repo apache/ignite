@@ -739,6 +739,7 @@ public class CacheGroupMetricSource extends AbstractMetricSource<CacheGroupMetri
     }
 
     /** */
+    @SuppressWarnings("ClassNameSameAsAncestorName")
     protected static class Holder implements AbstractMetricSource.Holder<Holder> {
         /** Storage size. */
         private LongMetric storageSize;

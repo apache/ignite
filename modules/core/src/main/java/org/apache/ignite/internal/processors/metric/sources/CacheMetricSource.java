@@ -1492,6 +1492,7 @@ public class CacheMetricSource extends AbstractMetricSource<CacheMetricSource.Ho
     }
 
     /** */
+    @SuppressWarnings("ClassNameSameAsAncestorName")
     protected static class Holder implements AbstractMetricSource.Holder<Holder> {
         /** Number of reads. */
         private AtomicLongMetric reads;

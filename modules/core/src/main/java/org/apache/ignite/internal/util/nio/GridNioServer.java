@@ -153,13 +153,7 @@ public class GridNioServer<T> {
     public static final String RECEIVED_BYTES_METRIC_NAME = "receivedBytes";
 
     /** */
-    public static final String RECEIVED_BYTES_METRIC_DESC = "Total number of bytes received by current node";
-
-    /** */
     public static final String SENT_BYTES_METRIC_NAME = "sentBytes";
-
-    /** */
-    public static final String SENT_BYTES_METRIC_DESC = "Total number of bytes sent by current node";
 
     /** Defines how many times selector should do {@code selectNow()} before doing {@code select(long)}. */
     private long selectorSpins;

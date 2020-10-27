@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp.internal.shmem;
 
 import java.util.Set;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.metric.sources.CommunicationMetricSource;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
@@ -34,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 
 /**
  * Shmem grid worker.
@@ -52,8 +52,8 @@ public class ShmemWorker extends GridWorker {
     /** Server listener. */
     private final GridNioServerListener<Message> srvLsnr;
 
-    /** Statistics. */
-    private final TcpCommunicationMetricsListener metricsLsnr;
+    /** Metric source. */
+    private final CommunicationMetricSource metricSrc;
 
     /** Reader factory. */
     private final GridNioMessageReaderFactory readerFactory;
@@ -68,7 +68,7 @@ public class ShmemWorker extends GridWorker {
     private final IgniteLogger log;
 
     /** Tracing. */
-    private Tracing tracing;
+    private final Tracing tracing;
 
     /**
      * @param igniteInstanceName Ignite instance name.
@@ -76,7 +76,7 @@ public class ShmemWorker extends GridWorker {
      * @param tracing Tracing.
      * @param endpoint Endpoint.
      * @param srvLsnr Server listener.
-     * @param metricsLsnr Metrics listener.
+     * @param metricsSrc Metric source.
      * @param readerFactory Reader factory.
      * @param writerFactory Writer factory.
      * @param msgFactory Message factory.
@@ -87,7 +87,7 @@ public class ShmemWorker extends GridWorker {
         Tracing tracing,
         IpcEndpoint endpoint,
         GridNioServerListener<Message> srvLsnr,
-        TcpCommunicationMetricsListener metricsLsnr,
+        CommunicationMetricSource metricsSrc,
         GridNioMessageReaderFactory readerFactory,
         GridNioMessageWriterFactory writerFactory,
         MessageFactory msgFactory
@@ -98,7 +98,7 @@ public class ShmemWorker extends GridWorker {
         this.log = log;
         this.tracing = tracing;
         this.srvLsnr = srvLsnr;
-        this.metricsLsnr = metricsLsnr;
+        this.metricSrc = metricsSrc;
         this.readerFactory = readerFactory;
         this.writerFactory = writerFactory;
         this.msgFactory = msgFactory;
@@ -109,7 +109,7 @@ public class ShmemWorker extends GridWorker {
         try {
 
             IpcToNioAdapter<Message> adapter = new IpcToNioAdapter<>(
-                metricsLsnr.metricRegistry(),
+                metricSrc,
                 log,
                 endpoint,
                 srvLsnr,
