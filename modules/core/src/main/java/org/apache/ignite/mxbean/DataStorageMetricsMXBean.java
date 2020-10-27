@@ -77,7 +77,7 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
     @Override long getLastCheckpointDuration();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Start timestamp of the last checkpoint")
+    @MXBeanDescription("Start timestamp of the last checkpoint.")
     @Override long getLastCheckpointStarted();
 
     /** {@inheritDoc} */
