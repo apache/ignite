@@ -281,7 +281,7 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
                         final Collection<Integer> finalPartIds = partIds;
 
                         MTC.span().addLog(() -> "Cache partitions were reserved [cache=" + cctx.name() +
-                            ", partitions=" + finalPartIds + ", topology=" + topVer.toString() + ']');
+                            ", partitions=" + finalPartIds + ", topology=" + topVer + ']');
 
                         if (explicitParts == null && reservedCnt > 0) {
                             // We reserved all the primary partitions for cache, attempt to add group reservation.
