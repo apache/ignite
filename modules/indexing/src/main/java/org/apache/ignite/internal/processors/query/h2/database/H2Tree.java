@@ -362,10 +362,10 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @throws IgniteCheckedException if failed.
      */
     public H2Row createMvccRow(
-            long link,
-            long mvccCrdVer,
-            long mvccCntr,
-            int mvccOpCntr
+        long link,
+        long mvccCrdVer,
+        long mvccCntr,
+        int mvccOpCntr
     ) throws IgniteCheckedException {
         return createMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr, null);
     }
@@ -420,15 +420,15 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         int partId = PageIdUtils.partId(PageIdUtils.pageId(link));
 
         MvccDataRow row = new MvccDataRow(
-                cctx.group(),
-                0,
-                link,
-                partId,
-                rowData,
-                mvccCrdVer,
-                mvccCntr,
-                mvccOpCntr,
-                true
+            cctx.group(),
+            0,
+            link,
+            partId,
+            rowData,
+            mvccCrdVer,
+            mvccCntr,
+            mvccOpCntr,
+            true
         );
 
         return table.rowDescriptor().createRow(row);

@@ -1948,7 +1948,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     delegate0 = new CacheDataStoreImpl(partId,
                         rowStore,
                         dataTree,
-                        pendingTree0,
+                        () -> pendingTree0,
                         grp,
                         busyLock,
                         log

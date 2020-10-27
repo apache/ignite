@@ -64,7 +64,7 @@ public class ObjectHashInlineIndexColumn extends AbstractInlineIndexColumn {
     /** {@inheritDoc} */
     @Override protected Value get0(long pageAddr, int off) {
         int hashCode = PageUtils.getInt(pageAddr, off + 1);
-        return new ValueObjectHashCode(hashCode);
+        return new ValueObjectHashCode(hashCode); //TODO Is this ok?
     }
 
     /**
@@ -89,7 +89,6 @@ public class ObjectHashInlineIndexColumn extends AbstractInlineIndexColumn {
      * Value for object with hashcode.
      */
     private static class ValueObjectHashCode extends Value {
-
         /**
          * The precision in digits.
          */
@@ -171,7 +170,5 @@ public class ObjectHashInlineIndexColumn extends AbstractInlineIndexColumn {
         @Override public boolean equals(Object other) {
             return other instanceof ValueObjectHashCode && value == ((ValueObjectHashCode) other).value;
         }
-
     }
-
 }

@@ -177,7 +177,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
             }
         }
 
-        ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(this );
+        ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(this);
 
         this.metastorage = metastorage;
     }

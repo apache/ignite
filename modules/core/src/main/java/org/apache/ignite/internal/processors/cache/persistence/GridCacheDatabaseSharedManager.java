@@ -1056,9 +1056,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         releaseFileLock();
     }
 
-    /**
-     *
-     */
+    /** */
     private long[] calculateFragmentSizes(int concLvl, long cacheSize, long chpBufSize) {
         if (concLvl < 2)
             concLvl = Runtime.getRuntime().availableProcessors();

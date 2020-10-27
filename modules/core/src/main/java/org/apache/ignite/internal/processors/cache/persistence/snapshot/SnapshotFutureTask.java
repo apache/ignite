@@ -349,7 +349,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Checkpoin
             );
 
             // Listener will be removed right after first execution.
-            ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(this );
+            ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(this);
 
             if (log.isInfoEnabled()) {
                 log.info("Snapshot operation is scheduled on local node and will be handled by the checkpoint " +

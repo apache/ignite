@@ -3166,5 +3166,4 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public GridQueryIndexingDefragmentation defragmentator() {
         return defragmentation;
     }
-
 }

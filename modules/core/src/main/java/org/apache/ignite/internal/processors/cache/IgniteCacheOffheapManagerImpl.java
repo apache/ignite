@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -1293,7 +1294,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             lsnr
         );
 
-        return new CacheDataStoreImpl(p, rowStore, dataTree, pendingEntries, grp, busyLock, log);
+        return new CacheDataStoreImpl(p, rowStore, dataTree, () -> pendingEntries, grp, busyLock, log);
     }
 
     /** {@inheritDoc} */
@@ -1451,7 +1452,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final CacheDataTree dataTree;
 
         /** */
-        private final PendingEntriesTree pendingEntries;
+        private final Supplier<PendingEntriesTree> pendingEntries;
 
         /** */
         private final CacheGroupContext grp;
@@ -1497,7 +1498,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             int partId,
             CacheDataRowStore rowStore,
             CacheDataTree dataTree,
-            PendingEntriesTree pendingEntries,
+            Supplier<PendingEntriesTree> pendingEntries,
             CacheGroupContext grp,
             GridSpinBusyLock busyLock,
             IgniteLogger log
@@ -3074,7 +3075,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public PendingEntriesTree pendingTree() {
-            return pendingEntries;
+            return pendingEntries.get();
         }
 
         /** {@inheritDoc} */

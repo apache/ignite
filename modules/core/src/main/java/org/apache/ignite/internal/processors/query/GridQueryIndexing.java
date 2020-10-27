@@ -495,5 +495,4 @@ public interface GridQueryIndexing {
      * @return Index defragmentator.
      */
     GridQueryIndexingDefragmentation defragmentator();
-
 }
