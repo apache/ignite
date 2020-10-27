@@ -23,6 +23,7 @@ import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
 class PageStoreMap implements PageStoreCollection {
@@ -35,6 +36,12 @@ class PageStoreMap implements PageStoreCollection {
         int partId,
         PageStore pageStore
     ) {
+        System.out.println(S.toString("Adding page store.",
+            "grpId", grpId, false,
+            "partId", partId, false,
+            "this", hashCode(), false
+        ));
+
         IntMap<PageStore> pageStoresMap = grpPageStoresMap.get(grpId);
 
         //TODO This code cannot be used concurrently. If we deside to parallel defragmentation then we should correct current class.
@@ -49,6 +56,12 @@ class PageStoreMap implements PageStoreCollection {
         int grpId,
         int partId
     ) {
+        System.out.println(S.toString("Removing page store.",
+            "grpId", grpId, false,
+            "partId", partId, false,
+            "this", hashCode(), false
+        ));
+
         IntMap<PageStore> pageStoresMap = grpPageStoresMap.get(grpId);
 
         if (pageStoresMap != null)
@@ -64,11 +77,21 @@ class PageStoreMap implements PageStoreCollection {
     @Override public PageStore getStore(int grpId, int partId) {
         IntMap<PageStore> partPageStoresMap = grpPageStoresMap.get(grpId);
 
-        assert partPageStoresMap != null; //TODO Throw meaningful exception?
+        assert partPageStoresMap != null : S.toString("Page store map not found. ",
+            "grpId", grpId, false,
+            "partId", partId, false,
+            "keys", Arrays.toString(grpPageStoresMap.keys()), false,
+            "this", hashCode(), false
+        ); //TODO Throw meaningful exception?
 
         PageStore pageStore = partPageStoresMap.get(partId);
 
-        assert pageStore != null; //TODO Throw meaningful exception?
+        assert pageStore != null : S.toString("Page store not found. ",
+            "grpId", grpId, false,
+            "partId", partId, false,
+            "keys", Arrays.toString(partPageStoresMap.keys()), false,
+            "this", hashCode(), false
+        ); //TODO Throw meaningful exception?
 
         return pageStore;
     }
