@@ -759,4 +759,56 @@ public class CacheGroupMetricSource extends AbstractMetricSource<CacheGroupMetri
         /** */
         private LongAdderMetric physicalReadCtr;
     }
+
+    //TODO:implement this metrics
+    /*
+CacheGroupMetricsImpl удален в моей ветке но:
+
+- добавлены новые метрики:
+
+
+       if (ctx.config().isEncryptionEnabled()) {
+            mreg.register("ReencryptionFinished",
+                () -> !ctx.shared().kernalContext().encryption().reencryptionInProgress(ctx.groupId()),
+                "The flag indicates whether reencryption is finished or not.");
+
+            mreg.register("ReencryptionPagesLeft",
+                this::getPagesLeftForReencryption,
+                "Number of pages left for reencryption.");
+        }
+
+
+    public long getPagesLeftForReencryption() {
+        if (!ctx.shared().kernalContext().encryption().reencryptionInProgress(ctx.groupId()))
+            return 0;
+
+        long pagesLeft = 0;
+
+        FilePageStoreManager mgr = (FilePageStoreManager)ctx.shared().pageStore();
+
+        GridEncryptionManager encMgr = ctx.shared().kernalContext().encryption();
+
+        try {
+            for (int p = 0; p < ctx.affinity().partitions(); p++) {
+                PageStore pageStore = mgr.getStore(ctx.groupId(), p);
+
+                if (!pageStore.exists())
+                    continue;
+
+                long state = encMgr.getEncryptionState(ctx.groupId(), p);
+
+                pagesLeft += ReencryptStateUtils.pageCount(state) - ReencryptStateUtils.pageIndex(state);
+            }
+
+            long state = encMgr.getEncryptionState(ctx.groupId(), PageIdAllocator.INDEX_PARTITION);
+
+            pagesLeft += ReencryptStateUtils.pageCount(state) - ReencryptStateUtils.pageIndex(state);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+
+        return pagesLeft;
+    }
+     */
 }
