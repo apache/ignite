@@ -22,7 +22,7 @@ import string
 from time import monotonic
 
 from ducktape.tests.test import Test
-
+from ignitetest.services.utils.ignite_persistence import PersistenceAware
 
 # pylint: disable=W0223
 class IgniteTest(Test):
@@ -37,8 +37,8 @@ class IgniteTest(Test):
     def setup(self):
         super().setup()
 
-        self.tmp_path_root = os.path.join("/tmp", ''.join(random.choices(string.ascii_letters + string.digits, k=10)),
-                                          self.test_context.cls_name)
+        self.tmp_path_root = os.path.join(PersistenceAware.PERSISTENT_ROOT, self.test_context.cls_name,
+                                          ''.join(random.choices(string.ascii_letters + string.digits, k=10)))
 
         self.clear_tmp_dir(True)
 
