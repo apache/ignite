@@ -95,10 +95,9 @@ class GetTimeService(BackgroundThreadService):
         start = time.time()
         delay = 5
         output = node.account.ssh_capture("sleep %d && date +%%s.%%3N" % delay)
-        ts = float(output.next())
+        node_ts = float(output.next())
         correction = time.time() - start - delay
-        self.logger.info("Node %s: ts = %8.3f, correction = %8.3f, corrected_ts = %8.3f" % (node.name, ts, correction, ts - correction))
-        self.clocks.append((node.name, ts - correction))  # list is thread-safe
+        self.clocks.append((node.name, node_ts - correction))  # list is thread-safe
 
     def stop_node(self, node):
         pass
