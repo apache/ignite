@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.db;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
