@@ -122,12 +122,15 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
             AtomicLong lastCpLockTs = new AtomicLong(System.currentTimeMillis());
 
             for (GridH2Table table : tables) {
+                GridCacheContext<?, ?> cctx = table.cacheContext();
+
+                if (cctx.groupId() != grpCtx.groupId())
+                    continue; // Not our index.
+
                 GridH2RowDescriptor rowDesc = table.rowDescriptor();
 
                 List<Index> indexes = table.getIndexes();
                 H2TreeIndex oldH2Idx = (H2TreeIndex)indexes.get(2);
-
-                GridCacheContext<?, ?> cctx = table.cacheContext();
 
                 int segments = oldH2Idx.segmentsCount();
 
