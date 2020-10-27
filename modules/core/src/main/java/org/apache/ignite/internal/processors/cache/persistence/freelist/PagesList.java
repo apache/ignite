@@ -1313,6 +1313,14 @@ public abstract class PagesList extends DataStructure {
                     ", pageId=" + pageId + ']');
             }
 
+            if (isReuseBucket(bucket)) {
+                byte flag = getFlag(initIoVers);
+
+                PageIO initIO = initIoVers == null ? null : initIoVers.latest();
+
+                return initRecycledPage0(pageId, flag, initIO);
+            }
+
             return pageId;
         }
 
