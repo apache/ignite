@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -261,7 +263,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         return ccfg;
     }
 
-    /** */
+    /**
+     * Starts cluster of two nodes and prepares situation of corrupted PDS on node2
+     * so it enters maintenance mode on restart.
+     *
+     * @param cachesToStart Configurations of caches that should be started in cluster.
+     * @param cacheToCorrupt Function determining should cache with given name be corrupted or not.
+     */
     private File startGridAndPutNodeToMaintenance(CacheConfiguration[] cachesToStart,
                                                   @Nullable Function<String, Boolean> cacheToCorrupt) throws Exception {
         assert cachesToStart != null && cachesToStart.length > 0;
@@ -316,6 +324,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
+     * Test verifies persistence clean command with explicit list of caches to be cleaned.
      *
      * @throws Exception If failed.
      */
@@ -325,6 +334,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String cacheName1 = DEFAULT_CACHE_NAME + "1";
         String cacheName2 = DEFAULT_CACHE_NAME + "2";
         String cacheName3 = DEFAULT_CACHE_NAME + "3";
+
+        String nonExistingCacheName = DEFAULT_CACHE_NAME + "4";
 
         File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
             new CacheConfiguration[]{
@@ -338,6 +349,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteEx ig1 = startGrid(1);
 
         String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--persistence", "clean", "caches",
+            nonExistingCacheName,
+            "--host", "localhost", "--port", port));
 
         assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "caches",
             cacheName0 + "," + cacheName1,
@@ -375,10 +390,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
+     * Test verifies persistence clean command cleaning only corrupted caches and not touching others.
      *
+     * @throws Exception If failed.
      */
     @Test
-    public void testPersistenceCleanAllCorruptedCachesCommand() throws Exception {
+    public void testPersistenceCleanCorruptedCachesCommand() throws Exception {
         String cacheName0 = DEFAULT_CACHE_NAME + "0";
         String cacheName1 = DEFAULT_CACHE_NAME + "1";
         String cacheName2 = DEFAULT_CACHE_NAME + "2";
@@ -416,6 +433,184 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ig1 = startGrid(1);
 
         assertFalse(ig1.context().maintenanceRegistry().isMaintenanceMode());
+    }
+
+    /**
+     * Test verifies persistence clean all command that cleans all cache directories.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPersistenceCleanAllCachesCommand() throws Exception {
+        String cacheName0 = DEFAULT_CACHE_NAME + "0";
+        String cacheName1 = DEFAULT_CACHE_NAME + "1";
+
+        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+            new CacheConfiguration[]{
+                cacheConfiguration(cacheName0),
+                cacheConfiguration(cacheName1)
+            },
+            s -> s.equals(cacheName0));
+
+        IgniteEx ig1 = startGrid(1);
+
+        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+
+        assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "all",
+            "--host", "localhost", "--port", port));
+
+        boolean allEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(File::isDirectory)
+            .filter(f -> f.getName().startsWith("cache-"))
+            .map(f -> f.listFiles().length == 1)
+            .reduce(true, (t, u) -> t && u);
+
+        assertTrue(allEmpty);
+
+        stopGrid(1);
+
+        ig1 = startGrid(1);
+
+        assertFalse(ig1.context().maintenanceRegistry().isMaintenanceMode());
+    }
+
+    /**
+     * Test verifies that persistence backup command to backup all caches backs up all cache directories.
+     * 
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPersistenceBackupAllCachesCommand() throws Exception {
+        String cacheName0 = DEFAULT_CACHE_NAME + "0";
+        String cacheName1 = DEFAULT_CACHE_NAME + "1";
+
+        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+            new CacheConfiguration[]{
+                cacheConfiguration(cacheName0),
+                cacheConfiguration(cacheName1)
+            },
+            s -> s.equals(cacheName0));
+
+        IgniteEx ig1 = startGrid(1);
+
+        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+
+        assertEquals(EXIT_CODE_OK, execute("--persistence", "backup", "all",
+            "--host", "localhost", "--port", port));
+
+        Set<String> backedUpCacheDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(File::isDirectory)
+            .filter(f -> f.getName().startsWith("backup_"))
+            .map(f -> f.getName().substring("backup_".length()))
+            .collect(Collectors.toCollection(TreeSet::new));
+
+        Set<String> allCacheDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(File::isDirectory)
+            .filter(f -> f.getName().startsWith("cache-"))
+            .map(File::getName)
+            .collect(Collectors.toCollection(TreeSet::new));
+
+        assertEqualsCollections(backedUpCacheDirs, allCacheDirs);
+
+        checkCacheAndBackupDirsContent(mntcNodeWorkDir);
+    }
+
+    /**
+     * Test verifies that persistence backup command copies all corrupted caches content to backup directory
+     * but does not touch other directories.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPersistenceBackupCorruptedCachesCommand() throws Exception {
+        String cacheName0 = DEFAULT_CACHE_NAME + "0";
+        String cacheName1 = DEFAULT_CACHE_NAME + "1";
+
+        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+            new CacheConfiguration[]{
+                cacheConfiguration(cacheName0),
+                cacheConfiguration(cacheName1)
+            },
+            s -> s.equals(cacheName0));
+
+        IgniteEx ig1 = startGrid(1);
+
+        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+
+        assertEquals(EXIT_CODE_OK, execute("--persistence", "backup", "corrupted",
+            "--host", "localhost", "--port", port));
+
+        long backedUpCachesCnt = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(File::isDirectory)
+            .filter(f -> f.getName().startsWith("backup_"))
+            .filter(f -> f.getName().contains(cacheName0))
+            .count();
+
+        assertEquals(1, backedUpCachesCnt);
+
+        checkCacheAndBackupDirsContent(mntcNodeWorkDir);
+    }
+
+    /**
+     * Test verifies that persistence backup command with specified caches copied only content of that caches and
+     * doesn't touch other directories.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPersistenceBackupSpecifiedCachesCommand() throws Exception {
+        String cacheName0 = DEFAULT_CACHE_NAME + "0";
+        String cacheName1 = DEFAULT_CACHE_NAME + "1";
+        String cacheName2 = DEFAULT_CACHE_NAME + "2";
+
+        String nonExistingCacheName = "nonExistingCache";
+
+        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+            new CacheConfiguration[]{
+                cacheConfiguration(cacheName0),
+                cacheConfiguration(cacheName1),
+                cacheConfiguration(cacheName2)
+            },
+            s -> s.equals(cacheName0) || s.equals(cacheName2));
+
+        IgniteEx ig1 = startGrid(1);
+
+        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--persistence", "backup", "caches",
+            nonExistingCacheName,
+            "--host", "localhost", "--port", port));
+
+        assertEquals(EXIT_CODE_OK, execute("--persistence", "backup", "caches",
+            cacheName0 + "," + cacheName2,
+            "--host", "localhost", "--port", port));
+
+        long backedUpCachesCnt = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(File::isDirectory)
+            .filter(f -> f.getName().startsWith("backup_"))
+            .count();
+
+        assertEquals(2, backedUpCachesCnt);
+
+        checkCacheAndBackupDirsContent(mntcNodeWorkDir);
+    }
+
+    /** */
+    private void checkCacheAndBackupDirsContent(File mntcNodeWorkDir) {
+        List<File> backupDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(File::isDirectory)
+            .filter(f -> f.getName().startsWith("backup_"))
+            .collect(Collectors.toList());
+
+        Path mntcNodeWorkDirPath = mntcNodeWorkDir.toPath();
+
+        for (File bDir : backupDirs) {
+            File origCacheDir = mntcNodeWorkDirPath.resolve(bDir.getName().substring("backup_".length())).toFile();
+
+            assertTrue(origCacheDir.isDirectory());
+
+            assertEquals(origCacheDir.listFiles().length, bDir.listFiles().length);
+        }
     }
 
     /**
