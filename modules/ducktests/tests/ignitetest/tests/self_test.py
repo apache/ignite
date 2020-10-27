@@ -18,6 +18,7 @@ This module contains smoke tests that checks that ducktape works as expected
 """
 import operator
 import threading
+import time
 
 from ducktape.mark.resource import cluster
 from ducktape.services.background_thread import BackgroundThreadService
@@ -92,7 +93,10 @@ class GetTimeService(BackgroundThreadService):
     def _worker(self, _, node):
         node.account.ssh_output('/bin/true')
         self.start_barrier.wait(5)
+        start = time.time()
+        self.logger.info("Node %s passed the barrier at %8.3f" % (node.name, start))
         self.clocks.append((node.name, float(node.account.ssh_output('date +%s%3N'))))  # list is thread-safe
+        self.logger.info("Accuracy for node %s is %8.3f" % (node.name, time.time() - start))
 
     def stop_node(self, node):
         pass
