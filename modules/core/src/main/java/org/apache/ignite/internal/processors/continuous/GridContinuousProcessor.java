@@ -37,6 +37,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -430,6 +431,15 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (data != null)
             dataBag.addNodeSpecificData(CONTINUOUS_PROC.ordinal(), data);
+    }
+
+    /** @return Collection of local continuous routines */
+    public Collection<Map.Entry<UUID, ? extends RoutineInfo>> getLocalContinuousQueryRoutines() {
+        return
+                copyLocalInfos(locInfos).
+                        entrySet().stream().
+                        filter(e -> e.getValue().handler().isQuery()).
+                        collect(Collectors.toSet());
     }
 
     /**
