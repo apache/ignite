@@ -55,6 +55,7 @@ public class IgniteFilter extends Filter implements IgniteRel {
         super(cluster, traits, input, condition);
     }
 
+    /** */
     public IgniteFilter(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
     }

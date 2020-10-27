@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -86,7 +87,9 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
@@ -2567,7 +2570,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
             RewindabilityTraitDef.INSTANCE
-
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -2628,6 +2630,182 @@ public class PlannerTest extends GridCommonAbstractTest {
                     "  IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor3.DEPTNO, $t0)):INTEGER, 2)], requiredColunms=[{2}])\n",
                 RelOptUtil.toString(phys));
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLimit() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable testTbl = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("VAL", f.createJavaType(String.class))
+                .build()) {
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("TEST", testTbl);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "SELECT * FROM TEST OFFSET 10 ROWS FETCH FIRST 10 ROWS ONLY";
+
+        RelTraitDef<?>[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE,
+            RewindabilityTraitDef.INSTANCE
+        };
+
+        PlanningContext ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .parameters(2)
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        RelRoot relRoot;
+
+        try (IgnitePlanner planner = ctx.planner()) {
+            assertNotNull(planner);
+
+            String qry = ctx.query();
+
+            assertNotNull(qry);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(qry);
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            relRoot = planner.rel(sqlNode);
+
+            RelNode rel = relRoot.rel;
+
+            RelTraitSet desired = rel.getCluster()
+                .traitSetOf(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single());
+
+            RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+
+            AtomicBoolean limit = new AtomicBoolean();
+            AtomicBoolean sort = new AtomicBoolean();
+
+            relTreeVisit(phys, (node, ordinal, parent) -> {
+                    if (node instanceof IgniteLimit)
+                        limit.set(true);
+
+                    if (node instanceof IgniteSort)
+                        sort.set(true);
+                }
+            );
+
+            assertTrue("Invalid plan: \n" + RelOptUtil.toString(phys), limit.get());
+            assertFalse("Invalid plan: \n" + RelOptUtil.toString(phys), sort.get());
+        }
+
+        sql = "SELECT * FROM TEST ORDER BY ID OFFSET 10 ROWS FETCH FIRST 10 ROWS ONLY";
+
+        ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .parameters(2)
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        try (IgnitePlanner planner = ctx.planner()) {
+            assertNotNull(planner);
+
+            String qry = ctx.query();
+
+            assertNotNull(qry);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(qry);
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            relRoot = planner.rel(sqlNode);
+
+            RelNode rel = relRoot.rel;
+
+            RelTraitSet desired = rel.getCluster()
+                .traitSetOf(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single());
+
+            RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+
+            AtomicBoolean limit = new AtomicBoolean();
+            AtomicBoolean sort = new AtomicBoolean();
+
+            relTreeVisit(phys, (node, ordinal, parent) -> {
+                    if (node instanceof IgniteLimit)
+                        limit.set(true);
+
+                    if (node instanceof IgniteSort)
+                        sort.set(true);
+                }
+            );
+
+            assertTrue("Invalid plan: \n" + RelOptUtil.toString(phys), limit.get());
+            assertFalse("Invalid plan: \n" + RelOptUtil.toString(phys), sort.get());
+        }
+    }
+
+    /** */
+    interface TestVisitor {
+        public void visit(RelNode node, int ordinal, RelNode parent);
+    }
+
+    /** */
+    private static class TestRelVisitor extends RelVisitor {
+        /** */
+        final TestVisitor v;
+
+        /** */
+        TestRelVisitor(TestVisitor v) {
+            this.v = v;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visit(RelNode node, int ordinal, RelNode parent) {
+            v.visit(node, ordinal, parent);
+
+            super.visit(node, ordinal, parent);
+        }
+    }
+
+    /** */
+    protected static void relTreeVisit(RelNode n, TestVisitor v) {
+        v.visit(n, -1, null);
+
+        n.childrenAccept(new TestRelVisitor(v));
     }
 
     /** */

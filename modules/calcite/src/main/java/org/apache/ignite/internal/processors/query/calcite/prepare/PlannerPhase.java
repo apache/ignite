@@ -34,6 +34,7 @@ import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
 import org.apache.calcite.rel.rules.ProjectMergeRule;
 import org.apache.calcite.rel.rules.ProjectRemoveRule;
+import org.apache.calcite.rel.rules.PruneEmptyRules;
 import org.apache.calcite.rel.rules.SortRemoveRule;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
@@ -135,6 +136,13 @@ public enum PlannerPhase {
                 CoreRules.JOIN_COMMUTE,
                 CoreRules.AGGREGATE_REMOVE,
                 CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
+
+                PruneEmptyRules.SortFetchZeroRuleConfig.EMPTY
+                    .withOperandSupplier(b ->
+                        b.operand(LogicalSort.class).anyInputs())
+                    .withDescription("PruneSortLimit0")
+                    .as(PruneEmptyRules.SortFetchZeroRuleConfig.class)
+                    .toRule(),
 
                 ExposeIndexRule.INSTANCE,
                 ProjectScanMergeRule.TABLE_SCAN,
