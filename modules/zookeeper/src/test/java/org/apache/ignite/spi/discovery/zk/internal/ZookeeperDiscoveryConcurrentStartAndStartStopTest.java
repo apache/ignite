@@ -201,6 +201,8 @@ public class ZookeeperDiscoveryConcurrentStartAndStartStopTest extends Zookeeper
 
         startGridsMultiThreaded(3, false);
 
+        checkZkNodesCleanup();
+
         waitForTopology(3);
     }
 

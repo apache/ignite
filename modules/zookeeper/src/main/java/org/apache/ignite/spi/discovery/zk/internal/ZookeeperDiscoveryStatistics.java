@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -23,55 +24,55 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class ZookeeperDiscoveryStatistics {
     /** */
-    private long joinedNodesCnt;
+    private final LongAdder joinedNodesCnt = new LongAdder();
 
     /** */
-    private long failedNodesCnt;
+    private final LongAdder failedNodesCnt = new LongAdder();
 
     /** */
-    private long leftNodesCnt;
+    private final LongAdder leftNodesCnt = new LongAdder();
 
     /** Communication error count. */
-    private long commErrCnt;
+    private final LongAdder commErrCnt = new LongAdder();
 
     /** */
     public long joinedNodesCnt() {
-        return joinedNodesCnt;
+        return joinedNodesCnt.longValue();
     }
 
     /** */
     public long failedNodesCnt() {
-        return failedNodesCnt;
+        return failedNodesCnt.longValue();
     }
 
     /** */
     public long leftNodesCnt() {
-        return leftNodesCnt;
+        return leftNodesCnt.longValue();
     }
 
     /** */
     public long commErrorCount() {
-        return commErrCnt;
+        return commErrCnt.longValue();
     }
 
     /** */
     public void onNodeJoined() {
-        joinedNodesCnt++;
+        joinedNodesCnt.increment();
     }
 
     /** */
     public void onNodeFailed() {
-        failedNodesCnt++;
+        failedNodesCnt.increment();
     }
 
     /** */
     public void onNodeLeft() {
-        leftNodesCnt++;
+        leftNodesCnt.increment();
     }
 
     /** */
     public void onCommunicationError() {
-        commErrCnt++;
+        commErrCnt.increment();
     }
 
     /** {@inheritDoc} */
