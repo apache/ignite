@@ -17,6 +17,8 @@
 This module contains the base class to build services aware of Ignite.
 """
 
+import socket
+
 from abc import abstractmethod, ABCMeta
 
 from ducktape.services.background_thread import BackgroundThreadService
@@ -73,7 +75,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         else:
             config = self.config
 
-        config.discovery_spi.prepare_on_start(cluster=self, node=node)
+        config.discovery_spi.prepare_on_start(cluster=self)
+
+        config.discovery_spi.local_address = socket.gethostbyname(node.account.hostname)
 
         node_config = self.spec.config_template.render(config_dir=self.PERSISTENT_ROOT, work_dir=self.WORK_DIR,
                                                        config=config)
