@@ -824,6 +824,20 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
+     * @return Re-encryption rate limit in megabytes per second ({@code 0} - unlimited).
+     */
+    public double getReencryptionRate() {
+        return pageScanner.getRate();
+    }
+
+    /**
+     * @param rate Re-encryption rate limit in megabytes per second ({@code 0} - unlimited).
+     */
+    public void setReencryptionRate(double rate) {
+        pageScanner.setRate(rate);
+    }
+
+    /**
      * Removes encryption key(s).
      *
      * @param grpId Cache group ID.
@@ -1157,6 +1171,23 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         fut.nodeId(rndNode.id());
 
         ctx.io().sendToGridTopic(rndNode.id(), TOPIC_GEN_ENC_KEY, req, SYSTEM_POOL);
+    }
+
+    /**
+     * Forces re-encryption of the cache group.
+     *
+     * @param grpId Cache group ID.
+     */
+    public void resumeReencryption(int grpId) throws IgniteCheckedException {
+        if (grpKeyChangeProc.inProgress())
+            throw new IgniteCheckedException("Cannot force start reencryption during cache group key change.");
+
+        if (!reencryptionInProgress(grpId))
+            throw new IgniteCheckedException("Re-encryption completed or not required [grpId=" + grpId + "]");
+
+
+
+        startReencryption(Collections.singleton(grpId));
     }
 
     /**

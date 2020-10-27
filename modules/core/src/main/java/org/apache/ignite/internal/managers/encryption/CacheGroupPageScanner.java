@@ -77,14 +77,14 @@ public class CacheGroupPageScanner implements CheckpointListener {
     /** Collection of groups waiting for a checkpoint. */
     private final Collection<GroupScanTask> cpWaitGrps = new ConcurrentLinkedQueue<>();
 
-    /** Page scanning speed limiter. */
-    private final BasicRateLimiter limiter;
-
     /** Single-threaded executor to run cache group scan task. */
     private final ThreadPoolExecutor singleExecSvc;
 
     /** Number of pages that is scanned during reencryption under checkpoint lock. */
     private final int batchSize;
+
+    /** Page scanning speed limiter. */
+    private volatile BasicRateLimiter limiter;
 
     /** Stop flag. */
     private boolean stopped;
@@ -311,6 +311,60 @@ public class CacheGroupPageScanner implements CheckpointListener {
         }
 
         return partStates;
+    }
+
+    /**
+     * @return Re-encryption rate limit in megabytes per second ({@code 0} - unlimited).
+     */
+    public double getRate() {
+        DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
+
+        if (CU.isPersistenceEnabled(dsCfg)) {
+            BasicRateLimiter limiter0 = limiter;
+
+            if (limiter0 != null)
+                return dsCfg.getPageSize() * limiter0.getRate() / MB;
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param rate Re-encryption rate limit in megabytes per second ({@code 0} - unlimited).
+     */
+    public void setRate(double rate) {
+        DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
+
+        if (!CU.isPersistenceEnabled(dsCfg))
+            return;
+
+        BasicRateLimiter limiter0 = limiter;
+
+        if (rate == 0 && limiter0 != null) {
+            limiter = null;
+
+            return;
+        }
+
+        double permits = calcPermits(rate, dsCfg);
+
+        if (limiter0 != null) {
+            limiter0.setRate(permits);
+
+            return;
+        }
+
+        limiter = new BasicRateLimiter(permits);
+    }
+
+    /**
+     * @param rate Maximum scan speed in megabytes per second
+     * @param dsCfg Datastorage configuration.
+     * @return The number of permits allowed per second.
+     */
+    private double calcPermits(double rate, DataStorageConfiguration dsCfg) {
+        return rate * MB /
+            (dsCfg.getPageSize() == 0 ? DataStorageConfiguration.DFLT_PAGE_SIZE : dsCfg.getPageSize());
     }
 
     /**
