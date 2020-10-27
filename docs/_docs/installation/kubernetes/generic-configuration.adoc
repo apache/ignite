@@ -273,7 +273,7 @@ $ {command} logs ignite-cluster-5b69557db6-lcglw -n ignite
 [14:34:01]   ^-- Specify JVM heap max size (add '-Xmx<size>[g|G|m|M|k|K]' to JVM options)
 [14:34:01]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
 [14:34:01]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
-[14:34:01] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:34:01] Refer to this page for more performance suggestions: https://ignite.apache.org/docs/latest/perf-and-troubleshooting/general-perf-tips
 [14:34:01]
 [14:34:01] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
 [14:34:01] Data Regions Configured:

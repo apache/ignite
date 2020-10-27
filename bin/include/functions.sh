@@ -125,31 +125,6 @@ setIgniteHome() {
 }
 
 #
-# Finds available port for JMX.
-# The function exports JMX_MON variable with Java JMX options.
-#
-findAvailableJmxPort() {
-    JMX_PORT=`"$JAVA" -cp "${IGNITE_LIBS}" org.apache.ignite.internal.util.portscanner.GridJmxPortFinder`
-
-    #
-    # This variable defines necessary parameters for JMX
-    # monitoring and management.
-    #
-    # This enables remote unsecure access to JConsole or VisualVM.
-    #
-    # ADD YOUR ADDITIONAL PARAMETERS/OPTIONS HERE
-    #
-    if [ -n "$JMX_PORT" ]; then
-        JMX_MON="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=${JMX_PORT} \
-            -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
-    else
-        # If JMX port wasn't found do not initialize JMX.
-        echo "$0, WARN: Failed to resolve JMX host (JMX will be disabled): $HOSTNAME"
-        JMX_MON=""
-    fi
-}
-
-#
 # Gets correct Java class path separator symbol for the given platform.
 # The function exports SEP variable with class path separator symbol.
 #
