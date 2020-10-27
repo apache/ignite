@@ -38,4 +38,9 @@ public interface IgniteResource {
     /** */
     @Resources.BaseMessage("Illegal aggregate function. {0} is unsupported at the moment.")
     Resources.ExInst<SqlValidatorException> unsupportedAggregationFunction(String a0);
+
+    /** */
+    @Resources.BaseMessage("Illegal value of {0}. The value must be positive and less than Integer.MAX_VALUE " +
+        "(" + Integer.MAX_VALUE + ")." )
+    Resources.ExInst<SqlValidatorException> correctIntegerLimit(String a0);
 }

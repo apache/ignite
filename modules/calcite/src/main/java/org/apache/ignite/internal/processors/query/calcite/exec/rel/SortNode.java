@@ -155,8 +155,10 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
                 }
             }
 
-            if (requested >= 0) {
-                downstream().end();
+            if (rows.isEmpty()) {
+                if (requested > 0)
+                    downstream().end();
+
                 requested = 0;
             }
         }

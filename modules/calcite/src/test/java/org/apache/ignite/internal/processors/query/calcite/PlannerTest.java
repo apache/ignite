@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -87,7 +88,9 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
@@ -2690,9 +2693,6 @@ public class PlannerTest extends GridCommonAbstractTest {
         publicSchema.addTable("T0", t0);
         publicSchema.addTable("T1", t1);
 
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
         String sql = "select * " +
             "from t0 " +
             "join t1 on t0.jid = t1.jid";
@@ -2755,9 +2755,6 @@ public class PlannerTest extends GridCommonAbstractTest {
         publicSchema.addTable("T0", t0);
         publicSchema.addTable("T1", t1);
 
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
         String sql = "select * " +
             "from t0 " +
             "join t1 on t0.jid = t1.jid";
@@ -2780,6 +2777,84 @@ public class PlannerTest extends GridCommonAbstractTest {
         );
 
         assertEquals(1, spoolCnt.get());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLimit() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable testTbl = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("VAL", f.createJavaType(String.class))
+                .build()) {
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("TEST", testTbl);
+
+        String sql = "SELECT * FROM TEST OFFSET 10 ROWS FETCH FIRST 10 ROWS ONLY";
+
+        {
+            RelNode phys = physicalPlan(sql, publicSchema);
+
+            assertNotNull(phys);
+
+            AtomicInteger limit = new AtomicInteger();
+            AtomicBoolean sort = new AtomicBoolean();
+
+            phys.childrenAccept(
+                new RelVisitor() {
+                    @Override public void visit(RelNode node, int ordinal, RelNode parent) {
+                        if (node instanceof IgniteLimit)
+                            limit.incrementAndGet();
+
+                        if (node instanceof IgniteSort)
+                            sort.set(true);
+
+                        super.visit(node, ordinal, parent);
+                    }
+                }
+            );
+
+            assertEquals("Invalid plan: \n" + RelOptUtil.toString(phys), 1, limit.get());
+            assertFalse("Invalid plan: \n" + RelOptUtil.toString(phys), sort.get());
+        }
+
+        sql = "SELECT * FROM TEST ORDER BY ID OFFSET 10 ROWS FETCH FIRST 10 ROWS ONLY";
+
+        {
+            RelNode phys = physicalPlan(sql, publicSchema);
+
+            assertNotNull(phys);
+
+            AtomicInteger limit = new AtomicInteger();
+            AtomicBoolean sort = new AtomicBoolean();
+
+            phys.childrenAccept(
+                new RelVisitor() {
+                    @Override public void visit(RelNode node, int ordinal, RelNode parent) {
+                        if (node instanceof IgniteLimit)
+                            limit.incrementAndGet();
+
+                        if (node instanceof IgniteSort)
+                            sort.set(true);
+
+                        super.visit(node, ordinal, parent);
+                    }
+                }
+            );
+
+            assertEquals("Invalid plan: \n" + RelOptUtil.toString(phys), 1, limit.get());
+            assertFalse("Invalid plan: \n" + RelOptUtil.toString(phys), sort.get());
+        }
     }
 
     /** */
@@ -2997,7 +3072,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean rolledUpColumnValidInsideAgg(String column, SqlCall call, SqlNode parent,
-            CalciteConnectionConfig config) {
+                                                              CalciteConnectionConfig config) {
             throw new AssertionError();
         }
 
