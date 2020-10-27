@@ -17,7 +17,6 @@
 This module contains smoke tests that checks that ducktape works as expected
 """
 import operator
-import sys
 import threading
 import time
 
@@ -66,7 +65,7 @@ class SelfTest(IgniteTest):
 
         service = GetTimeService(self.test_context, self.test_context.cluster.num_available_nodes())
         service.start()
-        service.wait(5)
+        service.wait(10)
 
         service.clocks.sort(key=operator.itemgetter(1))
 
@@ -92,24 +91,14 @@ class GetTimeService(BackgroundThreadService):
         self.clocks = []
 
     def _worker(self, _, node):
-        node.account.ssh_output('/bin/true')
-        self.start_barrier.wait(5)
+        self.start_barrier.wait(1)
         start = time.time()
-        self.logger.info("Node %s passed the barrier at %8.3f" % (node.name, start))
-
-        best_timestamp = 0
-        min_elapsed = sys.float_info.max
-        start = time.time()
-        for ts in node.account.ssh_capture('for i in {1..10}; do date +%s%3N; done'):
-            elapsed = time.time() - start
-            self.logger.info("%8.3f elapsed before next timestamp from %s came" % (elapsed, node.name))
-            if elapsed < min_elapsed:
-                best_timestamp = float(ts)
-                min_elapsed = elapsed
-            start = time.time()
-
-        self.clocks.append((node.name, best_timestamp))  # list is thread-safe
-        self.logger.info("Accuracy for node %s is %8.3f" % (node.name, time.time() - start))
+        delay = 5
+        output = node.account.ssh_capture("sleep %d && date +%%s.%%3N" % delay)
+        ts = float(output.next())
+        correction = time.time() - start - delay
+        self.logger.info("Node %s: ts = %8.3f, correction = %8.3f, corrected_ts = %8.3f" % (node.name, ts, correction, ts - correction))
+        self.clocks.append((node.name, ts - correction))  # list is thread-safe
 
     def stop_node(self, node):
         pass
