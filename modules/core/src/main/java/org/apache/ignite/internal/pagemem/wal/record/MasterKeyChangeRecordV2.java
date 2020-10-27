@@ -17,29 +17,27 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.List;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
+import org.apache.ignite.internal.util.typedef.T2;
 
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD_V2;
 
 /**
  * Logical record that stores encryption keys. Written to the WAL on the master key change.
- *
- * @deprecated Replaced by MasterKeyChangeRecordV2.
  */
-@Deprecated
-public class MasterKeyChangeRecord extends WALRecord {
+public class MasterKeyChangeRecordV2 extends WALRecord {
     /** Master key name. */
     private final String masterKeyName;
 
     /** Group keys encrypted by the master key. */
-    private final Map<Integer, byte[]> grpKeys;
+    private final List<T2<Integer, GroupKeyEncrypted>> grpKeys;
 
     /**
      * @param masterKeyName Master key name.
      * @param grpKeys Encrypted group keys.
      */
-    public MasterKeyChangeRecord(String masterKeyName, Map<Integer, byte[]> grpKeys) {
+    public MasterKeyChangeRecordV2(String masterKeyName, List<T2<Integer, GroupKeyEncrypted>> grpKeys) {
         this.masterKeyName = masterKeyName;
         this.grpKeys = grpKeys;
     }
@@ -50,22 +48,23 @@ public class MasterKeyChangeRecord extends WALRecord {
     }
 
     /** @return Encrypted group keys. */
-    public Map<Integer, byte[]> getGrpKeys() {
+    public List<T2<Integer, GroupKeyEncrypted>> getGrpKeys() {
         return grpKeys;
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return MASTER_KEY_CHANGE_RECORD;
+        return MASTER_KEY_CHANGE_RECORD_V2;
     }
 
     /** @return Record data size. */
     public int dataSize() {
-        int size = /*Master key name length*/4 + masterKeyName.getBytes().length + /*Group keys map size*/4;
+        int size = /*Master key name length*/4 + masterKeyName.getBytes().length + /*list size*/4;
 
-        for (Entry<Integer, byte[]> entry : grpKeys.entrySet())
-            size += /*grpId*/4 + /*grp key size*/4 + entry.getValue().length;
+        for (T2<Integer, GroupKeyEncrypted> entry : grpKeys)
+            size += /*grpId*/4 + /*grp key size*/4 + /*grp key id size*/1 + entry.get2().key().length;
 
         return size;
     }
 }
+
