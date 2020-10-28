@@ -22,6 +22,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
 import java.util.Collection;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Snapshot MBean features.
@@ -52,6 +54,7 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
 
     /** {@inheritDoc} */
     @Override public Collection<Object> statusSnapshot() {
-        return mgr.statusSnapshot().get();
+        return mgr.statusSnapshot().get().stream()
+                .filter(Objects::nonNull).collect(Collectors.toSet());
     }
 }
