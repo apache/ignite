@@ -89,8 +89,6 @@ import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomic
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicStoreSessionTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicStoreSessionWriteBehindTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheJdbcBlobStoreNodeRestartTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDefragmentationRandomLruEvictionTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDefragmentationTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryLocalAtomicSwapDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryPartitionedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryReplicatedAtomicSelfTest;
@@ -190,10 +188,6 @@ public class IgniteCacheMvccTestSuite4 {
         // Skip classes which Mvcc implementations are added in this method below.
         // TODO IGNITE-10175: refactor these tests (use assume) to support both mvcc and non-mvcc modes after moving to JUnit4/5.
         ignoredTests.add(IgniteCrossCacheTxSelfTest.class);
-
-        // Defragmentation.
-        ignoredTests.add(IgnitePdsDefragmentationTest.class);
-        ignoredTests.add(IgnitePdsDefragmentationRandomLruEvictionTest.class);
 
         List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite4.suite(ignoredTests));
 
