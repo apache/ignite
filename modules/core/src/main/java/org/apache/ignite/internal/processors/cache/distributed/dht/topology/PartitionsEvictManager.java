@@ -469,7 +469,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
      * @param c Update closure.
      */
     private void updateMetrics(CacheGroupContext grp, EvictReason reason, BiConsumer<EvictReason, CacheMetricsImpl> c) {
-        for (GridCacheContext cctx : grp.caches()) {
+        for (GridCacheContext<?, ?> cctx : grp.caches()) {
             if (cctx.statisticsEnabled()) {
                 final CacheMetricsImpl metrics = cctx.cache().metrics0();
 

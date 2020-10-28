@@ -31,10 +31,10 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private final GridKernalContext ctx;
 
     /**
-     * @param src Metric source.
+     * @param metricSrc Metric source.
      */
-    public DataStorageMetricsImpl(DataStorageMetricSource src, GridKernalContext ctx) {
-        this.src = src;
+    public DataStorageMetricsImpl(DataStorageMetricSource metricSrc, GridKernalContext ctx) {
+        this.src = metricSrc;
         this.ctx = ctx;
     }
 

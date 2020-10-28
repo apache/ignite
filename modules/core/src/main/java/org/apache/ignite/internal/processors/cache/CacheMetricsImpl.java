@@ -25,9 +25,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.sources.CacheMetricSource;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -44,16 +41,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     //TODO: Move to metric source
     /** Number of currently evicting non-affinity partitions. Not available in the old metrics framework. */
-    private AtomicLongMetric evictingPartitions;
+    private AtomicLongMetric evictingPartitions = new AtomicLongMetric("evictingPartitions", null);
 
     //TODO: Move to metric source
-    /** Commit time. */
-    private HistogramMetricImpl commitTime;
-
-    //TODO: Move to metric source
-    /** Rollback time. */
-    private HistogramMetricImpl rollbackTime;
-
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
 
@@ -66,24 +56,6 @@ public class CacheMetricsImpl implements CacheMetrics {
     //TODO: BEGIN: Support all below
     /** Tx collisions info. */
     private volatile Supplier<List<Map.Entry</* Colliding keys. */ GridCacheMapEntry, /* Collisions queue size. */ Integer>>> txKeyCollisionInfo;
-
-    /** Offheap entries count. */
-    private LongGauge offHeapEntriesCnt;
-
-    /** Offheap primary entries count. */
-    private LongGauge offHeapPrimaryEntriesCnt;
-
-    /** Offheap backup entries count. */
-    private LongGauge offHeapBackupEntriesCnt;
-
-    /** Onheap entries count. */
-    private LongGauge heapEntriesCnt;
-
-    /** Cache size. */
-    private LongGauge cacheSize;
-
-    /** Number of keys processed during index rebuilding. */
-    private LongAdderMetric idxRebuildKeyProcessed;
     //TODO: END: Support all below
 
     /**
@@ -116,32 +88,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         //TODO: Support new metrics
 /*
-        commitTime = mreg.histogram("CommitTime", HISTOGRAM_BUCKETS, "Commit time in nanoseconds.");
-
-        rollbackTime = mreg.histogram("RollbackTime", HISTOGRAM_BUCKETS, "Rollback time in nanoseconds.");
-
         mreg.register("TxKeyCollisions", this::getTxKeyCollisions, String.class, "Tx key collisions. " +
                 "Show keys and collisions queue size. Due transactional payload some keys become hot. Metric shows " +
                 "corresponding keys.");
-
-        offHeapEntriesCnt = mreg.register("OffHeapEntriesCount",
-                () -> getEntriesStat().offHeapEntriesCount(), "Offheap entries count.");
-
-        offHeapPrimaryEntriesCnt = mreg.register("OffHeapPrimaryEntriesCount",
-                () -> getEntriesStat().offHeapPrimaryEntriesCount(), "Offheap primary entries count.");
-
-        offHeapBackupEntriesCnt = mreg.register("OffHeapBackupEntriesCount",
-                () -> getEntriesStat().offHeapBackupEntriesCount(), "Offheap backup entries count.");
-
-        heapEntriesCnt = mreg.register("HeapEntriesCount",
-                () -> getEntriesStat().heapEntriesCount(), "Onheap entries count.");
-
-        cacheSize = mreg.register("CacheSize",
-                () -> getEntriesStat().cacheSize(), "Local cache size.");
-
-        idxRebuildKeyProcessed = mreg.longAdderMetric("IndexRebuildKeyProcessed",
-                "Number of keys processed during index rebuilding.");
-
 */
     }
 
@@ -432,7 +381,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      */
     @Deprecated
     @Override public float getAverageTxCommitTime() {
-        long timeNanos = metricSrc.commitTimeNanos();
+        long timeNanos = metricSrc.commitTimeTotal();
 
         long commitsCnt = metricSrc.txCommits();
 
@@ -451,7 +400,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         if (!metricSrc.enabled())
             return 0;
 
-        long timeNanos = metricSrc.rollbackTimeNanos();
+        long timeNanos = metricSrc.rollbackTimeTotal();
 
         long rollbacksCnt = metricSrc.txRollbacks();
 
@@ -1093,25 +1042,25 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** */
-    //TODO: Move to metric source
+    //TODO: Move to cache group metric source
     public void incrementRebalanceClearingPartitions() {
       //  rebalanceClearingPartitions.increment();
     }
 
     /** */
-    //TODO: Move to metric source
+    //TODO: Move to cache group metric source
     public void decrementRebalanceClearingPartitions() {
       //  rebalanceClearingPartitions.decrement();
     }
 
     /** */
-    //TODO: Move to metric source
+    //TODO: Move to cache group metric source
     public void incrementEvictingPartitions() {
         evictingPartitions.increment();
     }
 
     /** */
-    //TODO: Move to metric source
+    //TODO: Move to cache group metric source
     public void decrementEvictingPartitions() {
         evictingPartitions.decrement();
     }
@@ -1157,15 +1106,13 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    //TODO: Move to metric source
     @Override public long getIndexRebuildKeysProcessed() {
-        return idxRebuildKeyProcessed.value();
+        return metricSrc.indexRebuildKeysProcessed();
     }
 
     /** Reset metric - number of keys processed during index rebuilding. */
-    //TODO: Move to metric source
     public void resetIndexRebuildKeyProcessed() {
-        idxRebuildKeyProcessed.reset();
+        metricSrc.resetIndexRebuildKeyProcessed();
     }
 
     /**
@@ -1173,9 +1120,8 @@ public class CacheMetricsImpl implements CacheMetrics {
      *
      * @param val Number of processed keys.
      */
-    //TODO: Move to metric source
     public void addIndexRebuildKeyProcessed(long val) {
-        idxRebuildKeyProcessed.add(val);
+        metricSrc.addIndexRebuildKeyProcessed(val);
     }
 
     /** {@inheritDoc} */

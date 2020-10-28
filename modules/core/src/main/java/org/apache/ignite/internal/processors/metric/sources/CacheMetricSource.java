@@ -147,10 +147,10 @@ public class CacheMetricSource extends AbstractMetricSource<CacheMetricSource.Ho
         hldr.rmvTimeTotal = bldr.longMetric("RemovalTimeTotal",
                 "The total time of cache removal, in nanoseconds.");
 
-        hldr.commitTimeNanos = bldr.longMetric("CommitTime",
+        hldr.commitTimeTotal = bldr.longMetric("CommitTimeTotal",
                 "The total time of commit, in nanoseconds.");
 
-        hldr.rollbackTimeNanos = bldr.longMetric("RollbackTime",
+        hldr.rollbackTimeTotal = bldr.longMetric("RollbackTimeTotal",
                 "The total time of rollback, in nanoseconds.");
 
         hldr.rebalancedKeys = bldr.longMetric("RebalancedKeys",
@@ -225,6 +225,13 @@ public class CacheMetricSource extends AbstractMetricSource<CacheMetricSource.Ho
         hldr.putTime = bldr.histogram("PutTime", HISTOGRAM_BUCKETS, "Put time in nanoseconds.");
 
         hldr.rmvTime = bldr.histogram("RemoveTime", HISTOGRAM_BUCKETS, "Remove time in nanoseconds.");
+
+        hldr.commitTime = bldr.histogram("CommitTime", HISTOGRAM_BUCKETS, "Commit time in nanoseconds.");
+
+        hldr.rollbackTime = bldr.histogram("RollbackTime", HISTOGRAM_BUCKETS, "Rollback time in nanoseconds.");
+
+        hldr.idxRebuildKeyProcessed = bldr.longAdderMetric("IndexRebuildKeyProcessed",
+                "Number of keys processed during index rebuilding.");
     }
 
     /**
@@ -541,10 +548,10 @@ public class CacheMetricSource extends AbstractMetricSource<CacheMetricSource.Ho
      * @deprecated Should be removed in Apache Ignite 3.0 because client MBeans will be removed.
      */
     @Deprecated
-    public long commitTimeNanos() {
+    public long commitTimeTotal() {
         Holder hldr = holder();
 
-        return hldr != null ? hldr.commitTimeNanos.value() : 0;
+        return hldr != null ? hldr.commitTimeTotal.value() : 0;
     }
 
     /**
@@ -567,10 +574,10 @@ public class CacheMetricSource extends AbstractMetricSource<CacheMetricSource.Ho
      * @deprecated Should be removed in Apache Ignite 3.0 because client MBeans will be removed.
      */
     @Deprecated
-    public long rollbackTimeNanos() {
+    public long rollbackTimeTotal() {
         Holder hldr = holder();
 
-        return hldr != null ? hldr.rollbackTimeNanos.value() : 0;
+        return hldr != null ? hldr.rollbackTimeTotal.value() : 0;
     }
 
     /**
@@ -961,7 +968,8 @@ public class CacheMetricSource extends AbstractMetricSource<CacheMetricSource.Ho
 
         if (hldr != null) {
             hldr.txCommits.increment();
-            hldr.commitTimeNanos.add(duration);
+            hldr.commitTimeTotal.add(duration);
+            hldr.commitTime.value(duration);
 
             if (delegate != null)
                 delegate.onTxCommit(duration);
@@ -978,7 +986,8 @@ public class CacheMetricSource extends AbstractMetricSource<CacheMetricSource.Ho
 
         if (hldr != null) {
             hldr.txRollbacks.increment();
-            hldr.rollbackTimeNanos.add(duration);
+            hldr.rollbackTimeTotal.add(duration);
+            hldr.rollbackTime.value(duration);
 
             if (delegate != null)
                 delegate.onTxRollback(duration);
@@ -1210,6 +1219,38 @@ public class CacheMetricSource extends AbstractMetricSource<CacheMetricSource.Ho
         }
     }
 
+    /**
+     * Returns number of keys processed during index rebuilding.
+     * To get remaining number of keys for rebuilding, subtract current value from cache size.
+     *
+     * @return Number of keys processed during index rebuilding.
+     */
+    public long indexRebuildKeysProcessed() {
+        Holder hldr = holder();
+
+        return hldr != null ? hldr.idxRebuildKeyProcessed.value() : -1;
+    }
+
+    /**
+     * Increases number of keys processed during index rebuilding.
+     *
+     * @param val Number of processed keys.
+     */
+    public void addIndexRebuildKeyProcessed(long val) {
+        Holder hldr = holder();
+
+        if (hldr != null)
+            hldr.idxRebuildKeyProcessed.add(val);
+    }
+
+    /** Resets number of keys processed during index rebuilding. */
+    public void resetIndexRebuildKeyProcessed() {
+        Holder hldr = holder();
+
+        if (hldr != null)
+            hldr.idxRebuildKeyProcessed.reset();
+    }
+
     /** Resets query metrics. */
     public void resetQueryMetrics() {
         Holder hldr = holder();
@@ -1340,8 +1381,8 @@ public class CacheMetricSource extends AbstractMetricSource<CacheMetricSource.Ho
             hldr.putTimeTotal.reset();
             hldr.rmvTimeTotal.reset();
             hldr.getTimeTotal.reset();
-            hldr.commitTimeNanos.reset();
-            hldr.rollbackTimeNanos.reset();
+            hldr.commitTimeTotal.reset();
+            hldr.rollbackTimeTotal.reset();
 
             hldr.entryProcessorPuts.reset();
             hldr.entryProcessorRemovals.reset();
@@ -1354,6 +1395,8 @@ public class CacheMetricSource extends AbstractMetricSource<CacheMetricSource.Ho
             hldr.getTime.reset();
             hldr.putTime.reset();
             hldr.rmvTime.reset();
+            hldr.commitTime.reset();
+            hldr.rollbackTime.reset();
 
             resetRebalanceCounters();
 
@@ -1552,10 +1595,10 @@ public class CacheMetricSource extends AbstractMetricSource<CacheMetricSource.Ho
         private AtomicLongMetric rmvTimeTotal;
 
         /** Commit transaction time taken nanos. */
-        private AtomicLongMetric commitTimeNanos;
+        private AtomicLongMetric commitTimeTotal;
 
         /** Rollback transaction time taken nanos. */
-        private AtomicLongMetric rollbackTimeNanos;
+        private AtomicLongMetric rollbackTimeTotal;
 
         /** Rebalanced keys count. */
         private AtomicLongMetric rebalancedKeys;
@@ -1604,5 +1647,14 @@ public class CacheMetricSource extends AbstractMetricSource<CacheMetricSource.Ho
 
         /** Remove time. */
         private HistogramMetricImpl rmvTime;
+
+        /** Commit time. */
+        private HistogramMetricImpl commitTime;
+
+        /** Rollback time. */
+        private HistogramMetricImpl rollbackTime;
+
+        /** Number of keys processed during index rebuilding. */
+        private LongAdderMetric idxRebuildKeyProcessed;
     }
 }
