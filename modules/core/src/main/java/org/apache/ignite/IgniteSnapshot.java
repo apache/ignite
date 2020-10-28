@@ -54,7 +54,7 @@ public interface IgniteSnapshot {
     /**
      * Status snapshot operation.
      *
-     * @return Future which will be completed when cancel operation finished.
+     * @return Сollection of Consistent ID's where the snapshot operation is in progress.
      */
-    public IgniteFuture<Collection<Boolean>> statusSnapshot();
+    public IgniteFuture<Collection<Object>> statusSnapshot();
 }

@@ -701,10 +701,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Collection<Boolean>> statusSnapshot() {
+    @Override public IgniteFuture<Collection<Object>> statusSnapshot() {
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-        IgniteInternalFuture<Collection<Boolean>> fut0 = cctx.kernalContext().closure()
+        IgniteInternalFuture<Collection<Object>> fut0 = cctx.kernalContext().closure()
                 .broadcast(new StatusSnapshotCallable(),
                         null,
                         cctx.discovery().aliveServerNodes(),
@@ -1472,7 +1472,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Start creation of cluster snapshot closure. */
     @GridInternal
-    private static class StatusSnapshotCallable implements IgniteCallable<Boolean>, IgniteClosure<Void, Boolean> {
+    private static class StatusSnapshotCallable implements IgniteClosure<Void, Object> {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 
@@ -1485,13 +1485,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean call() {
-            return ignite.context().cache().context().snapshotMgr().isSnapshotCreating();
-        }
+        @Override public Object apply(Void unused) {
+            if (ignite.context().cache().context().snapshotMgr().isSnapshotCreating())
+                return ignite.context().discovery().localNode().consistentId();
 
-        /** {@inheritDoc} */
-        @Override public Boolean apply(Void unused) {
-            return call();
+            return null;
         }
     }
 

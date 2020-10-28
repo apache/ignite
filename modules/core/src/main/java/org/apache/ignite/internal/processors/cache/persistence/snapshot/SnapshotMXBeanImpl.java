@@ -21,6 +21,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
+import java.util.Collection;
+
 /**
  * Snapshot MBean features.
  */
@@ -49,9 +51,7 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean statusSnapshot() {
-        return mgr.statusSnapshot().get()
-                .stream()
-                .allMatch(Boolean::booleanValue);
+    @Override public Collection<Object> statusSnapshot() {
+        return mgr.statusSnapshot().get();
     }
 }

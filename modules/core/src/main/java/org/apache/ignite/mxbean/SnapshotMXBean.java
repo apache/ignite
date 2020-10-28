@@ -19,6 +19,9 @@ package org.apache.ignite.mxbean;
 
 import org.apache.ignite.IgniteSnapshot;
 
+import java.util.Collection;
+import java.util.UUID;
+
 /**
  * Snapshot features MBean.
  */
@@ -44,6 +47,6 @@ public interface SnapshotMXBean {
     /**
      * Status snapshot.
      */
-    @MXBeanDescription("If true, then a snapshot operation in progress.")
-    public boolean statusSnapshot();
+    @MXBeanDescription("Сollection of Consistent ID's where the snapshot operation is in progress.")
+    public Collection<Object> statusSnapshot();
 }
