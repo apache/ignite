@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import org.apache.ignite.IgniteSystemProperties;
-
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteSystemProperties;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_LOG_THRESHOLD;
 
@@ -30,6 +29,9 @@ public interface PagesWriteThrottlePolicy {
     /** Max park time. */
     public long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(IgniteSystemProperties.getInteger
             (IGNITE_THROTTLE_LOG_THRESHOLD, 10));
+
+    /** Checkpoint buffer fullfill upper bound. */
+    static final float CP_BUF_FILL_THRESHOLD = 2f / 3;
 
     /**
      * Callback to apply throttling delay.
