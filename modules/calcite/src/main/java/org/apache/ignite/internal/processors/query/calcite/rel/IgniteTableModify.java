@@ -18,21 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-
-import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
  *
@@ -91,36 +84,6 @@ public class IgniteTableModify extends TableModify implements IgniteRel {
             getUpdateColumnList(),
             getSourceExpressionList(),
             isFlattened());
-    }
-
-    /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
-        required = fixTraits(required);
-
-        RelTraitSet outTraits = required.replace(single())
-            .replace(RewindabilityTrait.ONE_WAY)
-            .replace(RelCollations.EMPTY);
-        RelTraitSet inTraits = required.replace(single())
-            .replace(RewindabilityTrait.ONE_WAY)
-            .replace(RelCollations.EMPTY);
-
-        return Pair.of(outTraits, ImmutableList.of(inTraits));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
-        assert childId == 0;
-
-        childTraits = fixTraits(childTraits);
-
-        RelTraitSet outTraits = childTraits.replace(single())
-            .replace(RelCollations.EMPTY)
-            .replace(RewindabilityTrait.ONE_WAY);
-        RelTraitSet inTraits = childTraits.replace(single())
-            .replace(RelCollations.EMPTY)
-            .replace(RewindabilityTrait.ONE_WAY);
-
-        return Pair.of(outTraits, ImmutableList.of(inTraits));
     }
 
     /** {@inheritDoc} */

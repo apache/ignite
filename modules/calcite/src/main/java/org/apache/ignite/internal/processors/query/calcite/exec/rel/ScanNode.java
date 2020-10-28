@@ -75,7 +75,7 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
             push();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            onError(e);
         }
     }
 

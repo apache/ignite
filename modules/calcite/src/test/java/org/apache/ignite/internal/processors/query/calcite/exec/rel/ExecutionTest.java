@@ -798,7 +798,6 @@ public class ExecutionTest extends AbstractExecutionTest {
         RootNode<Object[]> root = new RootNode<>(ctx, aggType);
         root.register(agg);
 
-
         assertTrue(root.hasNext());
         assertEquals(1400, root.next()[0]);
         assertFalse(root.hasNext());

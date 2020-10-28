@@ -531,6 +531,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         switch (sqlNode.getKind()) {
             case SELECT:
             case ORDER_BY:
+            case WITH:
+            case VALUES:
             case UNION:
                 return prepareQuery(sqlNode, ctx);
 

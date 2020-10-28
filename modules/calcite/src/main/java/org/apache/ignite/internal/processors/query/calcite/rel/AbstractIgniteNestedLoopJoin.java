@@ -118,28 +118,23 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
 
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
-        ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
-
         RewindabilityTrait leftRewindability = TraitUtils.rewindability(left);
         RewindabilityTrait rightRewindability = TraitUtils.rewindability(right);
 
         RelTraitSet outTraits, leftTraits, rightTraits;
 
-        outTraits = nodeTraits.replace(RewindabilityTrait.ONE_WAY);
-        leftTraits = left.replace(RewindabilityTrait.ONE_WAY);
-        rightTraits = right.replace(RewindabilityTrait.ONE_WAY);
-
-        b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
         if (leftRewindability.rewindable() && rightRewindability.rewindable()) {
             outTraits = nodeTraits.replace(RewindabilityTrait.REWINDABLE);
             leftTraits = left.replace(RewindabilityTrait.REWINDABLE);
             rightTraits = right.replace(RewindabilityTrait.REWINDABLE);
-
-            b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+        }
+        else {
+            outTraits = nodeTraits.replace(RewindabilityTrait.ONE_WAY);
+            leftTraits = left.replace(RewindabilityTrait.ONE_WAY);
+            rightTraits = right.replace(RewindabilityTrait.ONE_WAY);
         }
 
-        return b.build();
+        return ImmutableList.of(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
     }
 
     /** {@inheritDoc} */
@@ -155,24 +150,28 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
 
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
-        ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
+        List<Pair<RelTraitSet, List<RelTraitSet>>> res = new ArrayList<>();
 
         IgniteDistribution leftDistr = TraitUtils.distribution(left);
         IgniteDistribution rightDistr = TraitUtils.distribution(right);
 
         RelTraitSet outTraits, leftTraits, rightTraits;
 
-        outTraits = nodeTraits.replace(single());
-        leftTraits = left.replace(single());
-        rightTraits = right.replace(single());
+        if (leftDistr == broadcast() || rightDistr == broadcast()) {
+            outTraits = nodeTraits.replace(broadcast());
+            leftTraits = left.replace(broadcast());
+            rightTraits = right.replace(broadcast());
 
-        b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+            res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+        }
 
-        outTraits = nodeTraits.replace(broadcast());
-        leftTraits = left.replace(broadcast());
-        rightTraits = right.replace(broadcast());
+        if (leftDistr == single() || rightDistr == single()) {
+            outTraits = nodeTraits.replace(single());
+            leftTraits = left.replace(single());
+            rightTraits = right.replace(single());
 
-        b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+            res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+        }
 
         if (!F.isEmpty(joinInfo.pairs())) {
             Set<DistributionFunction> functions = new HashSet<>();
@@ -193,17 +192,17 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
 
                 // TODO distribution multitrait support
                 outTraits = nodeTraits.replace(hash(joinInfo.leftKeys, function));
-                b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+                res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
 
                 outTraits = nodeTraits.replace(hash(joinInfo.rightKeys, function));
-                b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+                res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
 
                 if (joinType == INNER || joinType == LEFT) {
                     outTraits = nodeTraits.replace(hash(joinInfo.leftKeys, function));
                     leftTraits = left.replace(hash(joinInfo.leftKeys, function));
                     rightTraits = right.replace(broadcast());
 
-                    b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+                    res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
                 }
 
                 if (joinType == INNER || joinType == RIGHT) {
@@ -211,12 +210,16 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
                     leftTraits = left.replace(broadcast());
                     rightTraits = right.replace(hash(joinInfo.rightKeys, function));
 
-                    b.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+                    res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
                 }
             }
         }
 
-        return b.build();
+        if (!res.isEmpty())
+            return res;
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(single()),
+            ImmutableList.of(left.replace(single()), right.replace(single()))));
     }
 
     /** {@inheritDoc} */
@@ -233,8 +236,6 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
             return ImmutableList.of(Pair.of(nodeTraits,
                 ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(RelCollations.EMPTY))));
 
-        RelTraitSet outTraits, leftTraits, rightTraits;
-
         if (!projectsLeft(collation))
             collation = RelCollations.EMPTY;
         else if (joinType == RIGHT || joinType == JoinRelType.FULL) {
@@ -246,11 +247,8 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
             }
         }
 
-        outTraits = nodeTraits.replace(collation);
-        leftTraits = left.replace(collation);
-        rightTraits = right.replace(RelCollations.EMPTY);
-
-        return ImmutableList.of(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+        return ImmutableList.of(Pair.of(nodeTraits.replace(collation),
+            ImmutableList.of(left.replace(collation), right.replace(RelCollations.EMPTY))));
     }
 
     /** {@inheritDoc} */
@@ -259,15 +257,10 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
 
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
-        RelTraitSet outTraits, leftTraits, rightTraits;
-
         RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
 
-        outTraits = nodeTraits.replace(rewindability);
-        leftTraits = left.replace(rewindability);
-        rightTraits = right.replace(rewindability);
-
-        return ImmutableList.of(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+        return ImmutableList.of(Pair.of(nodeTraits.replace(rewindability),
+            ImmutableList.of(left.replace(rewindability), right.replace(rewindability))));
     }
 
     /** {@inheritDoc} */

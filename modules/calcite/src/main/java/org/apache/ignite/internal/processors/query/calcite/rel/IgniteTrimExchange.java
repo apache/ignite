@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.List;
-
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -29,16 +26,12 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.fixTraits;
 
 /**
  *
@@ -74,27 +67,6 @@ public class IgniteTrimExchange extends Exchange implements IgniteRel {
     /** {@inheritDoc} */
     @Override public boolean isEnforcer() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
-        required = fixTraits(required);
-
-        IgniteDistribution distribution = TraitUtils.distribution(required);
-
-        if (!distribution().satisfies(distribution))
-            return null;
-
-        return Pair.of(required.replace(distribution()), ImmutableList.of(required.replace(IgniteDistributions.broadcast())));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
-        assert childId == 0;
-
-        childTraits = fixTraits(childTraits);
-
-        return Pair.of(childTraits.replace(distribution()), ImmutableList.of(childTraits.replace(IgniteDistributions.broadcast())));
     }
 
     /** {@inheritDoc} */

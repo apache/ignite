@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridIndex;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -214,11 +213,11 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         try {
             for (GridDhtLocalPartition part : toReserve) {
                 if (part == null || !part.reserve())
-                    throw new IgniteSQLException("Failed to reserve partition for query execution. Retry on stable topology.");
+                    throw new ClusterTopologyException("Failed to reserve partition for query execution. Retry on stable topology.");
                 else if (part.state() != GridDhtPartitionState.OWNING) {
                     part.release();
 
-                    throw new IgniteSQLException("Failed to reserve partition for query execution. Retry on stable topology.");
+                    throw new ClusterTopologyException("Failed to reserve partition for query execution. Retry on stable topology.");
                 }
 
                 reserved.add(part);

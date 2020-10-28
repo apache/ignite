@@ -36,11 +36,10 @@ import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.c
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsOneProject;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsProject;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsTableScan;
-import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.notContainsProject;
 import static org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest.Product;
 
 /**
- * Tests projection rule {@code org.apache.ignite.internal.processors.query.calcite.rule.ProjectScanMergeRule}
+ * Tests projection rule {@code org.apache.ignite.internal.processors.query.calcite.rule.logical.ProjectScanMergeRule}
  * This rule have a deal with only useful columns and.
  * For example for tables: T1(f12, f12, f13) and T2(f21, f22, f23)
  * sql execution: SELECT t1.f11, t2.f21 FROM T1 t1 INNER JOIN T2 t2 on t1.f11 = t2.f22"
@@ -136,14 +135,12 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
     public void testNestedProjects() {
         checkQuery("SELECT NAME FROM products WHERE CAT_ID IN (SELECT CAT_ID FROM products WHERE CAT_ID > 1) and ID > 2;")
             .matches(containsIndexScan("PUBLIC", "PRODUCTS"))
-            .matches(notContainsProject("PUBLIC", "PRODUCTS"))
             .returns("noname3")
             .returns("noname4")
             .check();
 
         checkQuery("SELECT NAME FROM products WHERE CAT_ID IN (SELECT DISTINCT CAT_ID FROM products WHERE CAT_ID > 1)")
             .matches(containsIndexScan("PUBLIC", "PRODUCTS"))
-            .matches(notContainsProject("PUBLIC", "PRODUCTS"))
             .returns("noname2")
             .returns("noname3")
             .returns("noname4")
@@ -157,7 +154,6 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
 
         checkQuery("SELECT NAME FROM products WHERE CAT_ID = (SELECT CAT_ID FROM products WHERE SUBCAT_ID = 13)")
             .matches(containsTableScan("PUBLIC", "PRODUCTS"))
-            .matches(containsIndexScan("PUBLIC", "PRODUCTS"))
             .returns("noname4")
             .check();
     }
