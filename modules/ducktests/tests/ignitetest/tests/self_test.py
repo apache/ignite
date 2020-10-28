@@ -17,7 +17,6 @@
 This module contains smoke tests that checks that ducktape works as expected
 """
 import operator
-import threading
 import time
 
 from ducktape.mark.resource import cluster
@@ -87,15 +86,17 @@ class GetTimeService(BackgroundThreadService):
 
     def __init__(self, context, num_nodes):
         super().__init__(context, num_nodes)
-        self.start_barrier = threading.Barrier(num_nodes)
         self.clocks = []
 
     def _worker(self, _, node):
-        self.start_barrier.wait(1)
         start = time.time()
         delay = 5
+
+        # Using ssh_capture instead of ssh_output to get output ASAP.
         output = node.account.ssh_capture("sleep %d && date +%%s.%%3N" % delay)
         node_ts = float(output.next())
+
+        # Assumption: ssh connection establishment takes much more time than command output transmission.
         correction = time.time() - start - delay
         self.clocks.append((node.name, node_ts - correction))  # list is thread-safe
 
