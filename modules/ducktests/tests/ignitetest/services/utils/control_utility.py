@@ -26,7 +26,6 @@ from typing import NamedTuple
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
-from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
 from ignitetest.services.utils.jmx_utils import JmxClient
 
 
@@ -142,8 +141,6 @@ class ControlUtility:
         if check_assert is not None:
             assert (('no issues found.' in data) == check_assert), data
 
-        return data
-
     def idle_verify(self, check_assert: bool = None):
         """
         Idle verify.
@@ -152,8 +149,6 @@ class ControlUtility:
 
         if check_assert is not None:
             assert (('idle_verify check has finished, no conflicts have been found.' in data) == check_assert), data
-
-        return data
 
     def idle_verify_dump(self, node=None, return_path: bool = False):
         """
@@ -176,23 +171,9 @@ class ControlUtility:
         self.logger.info(res)
 
         if ("Command [SNAPSHOT] finished with code: 0" in res) & sync_mode:
-            self.await_snapshot(snapshot_name=snapshot_name, time_out=time_out)
+            self.await_snapshot(time_out)
 
-        return res
-
-    def snapshot_cancel(self, snapshot_name: str):
-        """
-        Cancel snapshot.
-        """
-        return self.__run(f"--snapshot cancel {snapshot_name}")
-
-    def snapshot_kill(self, snapshot_name: str):
-        """
-        Kill snapshot.
-        """
-        return self.__run(f"--kill SNAPSHOT {snapshot_name}")
-
-    def await_snapshot(self, snapshot_name: str, time_out=60):
+    def await_snapshot(self, time_out=60):
         """
         Waiting for the snapshot to complete.
         """
@@ -206,12 +187,6 @@ class ControlUtility:
                 err_msg = list(mbean.__getattr__('LastSnapshotErrorMessage'))[0]
 
                 if (0 < start_time < end_time) & (err_msg == ''):
-                    res = self._cluster.ssh_output_on_all_nodes(
-                        f'du -hs {IgnitePersistenceAware.SNAPSHOT}/{snapshot_name} | ' + "awk '{print $1}'")
-
-                    for items in res.items():
-                        data = items[1].decode("utf-8")
-                        self.logger.info(f'Snapshot {snapshot_name} on {items[0]}: {data}')
                     return
 
             time.sleep(1)
