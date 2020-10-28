@@ -703,15 +703,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     @Override public IgniteFuture<Boolean> statusSnapshot() {
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-        IgniteInternalFuture<Boolean> fut0 = cctx.kernalContext().closure()
-                .callAsyncNoFailover(BROADCAST,
-                        new StatusSnapshotCallable(),
+        IgniteInternalFuture<Collection<Boolean>> fut0 = cctx.kernalContext().closure()
+                .broadcast((v) -> new StatusSnapshotCallable().call(),
+                        null,
                         cctx.discovery().aliveServerNodes(),
-                        false,
-                        0,
-                        true);
+                        null);
 
-        return new IgniteFutureImpl<>(fut0);
+        IgniteInternalFuture<Boolean> res = fut0.chain(f -> {
+            try {
+                return f.get().stream().allMatch(Boolean::booleanValue);
+            } catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+
+        return new IgniteFutureImpl<>(res);
     }
 
     /**
@@ -1486,7 +1493,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean call() throws Exception {
+        @Override public Boolean call() {
             return ignite.context().cache().context().snapshotMgr().isSnapshotCreating();
         }
     }

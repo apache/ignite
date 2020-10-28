@@ -53,13 +53,18 @@ public class SnapshotCommand implements Command<Object> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            return executeTaskByNameOnNode(
-                client,
-                taskName,
-                taskArgs,
-                null,
-                clientCfg
+            Object res = executeTaskByNameOnNode(
+                    client,
+                    taskName,
+                    taskArgs,
+                    null,
+                    clientCfg
             );
+
+            if (taskName.equals(VisorSnapshotStatusTask.class.getName()))
+                log.info(String.valueOf(res));
+
+            return res;
         }
         catch (Throwable e) {
             log.severe("Failed to perform operation.");
