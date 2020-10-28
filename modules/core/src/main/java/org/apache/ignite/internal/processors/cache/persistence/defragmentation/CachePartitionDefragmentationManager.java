@@ -432,6 +432,8 @@ public class CachePartitionDefragmentationManager {
             }
 
             mntcReg.unregisterMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
+
+            log.info("Defragmentation completed. All partitions are defragmented.");
         }
         finally {
             defragmentationCheckpoint.stop(true);
