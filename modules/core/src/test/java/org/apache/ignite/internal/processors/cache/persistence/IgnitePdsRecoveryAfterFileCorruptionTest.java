@@ -339,7 +339,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
                 long writeStart = System.nanoTime();
 
-                storeMgr.write(cacheId, pageId, buf, tag, false);
+                storeMgr.write(cacheId, pageId, buf, tag, true);
 
                 long writeEnd = System.nanoTime();
 
