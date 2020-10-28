@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.mxbean.SnapshotMXBean;
-
 import java.util.Collection;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.mxbean.SnapshotMXBean;
 
 /**
  * Snapshot MBean features.

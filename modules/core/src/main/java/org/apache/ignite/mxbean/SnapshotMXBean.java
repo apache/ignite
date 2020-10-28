@@ -17,10 +17,8 @@
 
 package org.apache.ignite.mxbean;
 
-import org.apache.ignite.IgniteSnapshot;
-
 import java.util.Collection;
-import java.util.UUID;
+import org.apache.ignite.IgniteSnapshot;
 
 /**
  * Snapshot features MBean.

@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.visor.snapshot;
 
+import java.util.Collection;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-
-import java.util.Collection;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * @see IgniteSnapshot#statusSnapshot()

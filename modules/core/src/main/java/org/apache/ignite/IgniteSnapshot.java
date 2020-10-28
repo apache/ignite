@@ -17,9 +17,8 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.lang.IgniteFuture;
-
 import java.util.Collection;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * This interface provides functionality for creating cluster-wide cache data snapshots.
