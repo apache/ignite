@@ -122,7 +122,7 @@ public class ReencryptionRateCommand implements Command<Double> {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
         Command.usage(log, "View/change re-encryption rate limit:", ENCRYPTION,
-            singletonMap("limit", "decimal value to change rate limit (MB/s)"),
+            singletonMap("limit", "Decimal value to change re-encryption rate limit (MB/s)."),
             REENCRYPTION_RATE.toString(), optional(ReencryptionRateCommandArg.LIMIT, "limit"));
     }
 
@@ -132,7 +132,7 @@ public class ReencryptionRateCommand implements Command<Double> {
     }
 
     /**
-     * Warm-up command arguments name.
+     * Reencryption rate command arguments name.
      */
     private enum ReencryptionRateCommandArg implements CommandArg {
         /** Re-encryption rate limit argument. */

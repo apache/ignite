@@ -140,12 +140,10 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
-import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_STATUS;
 import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.CACHE_GROUP_KEY_IDS;
 import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.CHANGE_CACHE_GROUP_KEY;
+import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.GROUP_REENCRYPTION;
 import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_RATE;
-import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_START;
-import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_STOP;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
@@ -2743,7 +2741,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** @throws Exception If failed. */
     @Test
-    public void testReencryptionInterruptAndResume() throws Exception {
+    public void testReencryptionSuspendAndResume() throws Exception {
         encryptionEnabled = true;
         reencryptSpeed = 0.01;
         reencryptBatchSize = 1;
@@ -2762,53 +2760,51 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertTrue(isReencryptionStarted(DEFAULT_CACHE_NAME));
 
-        int ret = execute("--encryption", REENCRYPTION_STATUS.toString(), DEFAULT_CACHE_NAME);
+        int ret = execute("--encryption", GROUP_REENCRYPTION.toString(), DEFAULT_CACHE_NAME);
 
         assertEquals(EXIT_CODE_OK, ret);
 
-        Pattern ptrn = Pattern.compile("(?m)Node: [-0-9a-f]{36}\n\\s+left=(?<left>\\d+) total=(?<total>\\d+).+");
+        Pattern ptrn = Pattern.compile("(?m)Node: [-0-9a-f]{36}\n\\s+(?<left>\\d+) KB of data.+");
         Matcher matcher = ptrn.matcher(testOut.toString());
         int matchesCnt = 0;
 
         while (matcher.find()) {
-            assertEquals(2, matcher.groupCount());
+            assertEquals(1, matcher.groupCount());
 
             int pagesLeft = Integer.parseInt(matcher.group("left"));
-            int pagesTotal = Integer.parseInt(matcher.group("total"));
 
             assertTrue(pagesLeft > 0);
-            assertTrue(pagesLeft < pagesTotal);
 
             matchesCnt++;
         }
 
         assertEquals(srvNodes, matchesCnt);
 
-        ret = execute("--encryption", REENCRYPTION_STOP.toString(), DEFAULT_CACHE_NAME);
+        ret = execute("--encryption", GROUP_REENCRYPTION.toString(), DEFAULT_CACHE_NAME, "--suspend");
 
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(),
-            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has been stopped."));
+            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has been suspended."));
         assertFalse(isReencryptionStarted(DEFAULT_CACHE_NAME));
 
-        ret = execute("--encryption", REENCRYPTION_STOP.toString(), DEFAULT_CACHE_NAME);
+        ret = execute("--encryption", GROUP_REENCRYPTION.toString(), DEFAULT_CACHE_NAME, "--suspend");
 
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(),
-            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has already been stopped."));
+            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has already been suspended."));
 
-        ret = execute("--encryption", REENCRYPTION_START.toString(), DEFAULT_CACHE_NAME);
+        ret = execute("--encryption", GROUP_REENCRYPTION.toString(), DEFAULT_CACHE_NAME, "--resume");
 
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(),
-            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has been started."));
+            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has been resumed."));
         assertTrue(isReencryptionStarted(DEFAULT_CACHE_NAME));
 
-        ret = execute("--encryption", REENCRYPTION_START.toString(), DEFAULT_CACHE_NAME);
+        ret = execute("--encryption", GROUP_REENCRYPTION.toString(), DEFAULT_CACHE_NAME, "--resume");
 
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(),
-            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has already been started."));
+            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has already been resumed."));
     }
 
     /**

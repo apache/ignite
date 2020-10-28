@@ -38,14 +38,8 @@ public enum EncryptionSubcommands {
     /** Subcommand to view current encryption key IDs for specified cache group. */
     CACHE_GROUP_KEY_IDS("cache_key_ids", new CacheGroupKeysCommand()),
 
-    /** Subcommand to view re-encryption status of cache group. */
-    REENCRYPTION_STATUS("reencryption_status", new ReencryptionStatusCommand()),
-
-    /** Subcommand to stop cache group reencryption. */
-    REENCRYPTION_STOP("reencryption_stop", new ReencryptionStopCommand()),
-
-    /** Subcommand to start cache group reencryption. */
-    REENCRYPTION_START("reencryption_start", new ReencryptionStartCommand()),
+    /** Subcommand to control the process of re-encryption of the cache group. */
+    GROUP_REENCRYPTION("group_reencryption", new GroupReencryptionCommand()),
 
     /** Subcommand to view/change cache group re-encryption rate limit. */
     REENCRYPTION_RATE("reencryption_rate", new ReencryptionRateCommand());

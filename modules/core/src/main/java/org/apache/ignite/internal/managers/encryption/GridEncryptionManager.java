@@ -1185,8 +1185,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (!reencryptionInProgress(grpId))
             throw new IgniteCheckedException("Re-encryption completed or not required [grpId=" + grpId + "]");
 
-
-
         startReencryption(Collections.singleton(grpId));
     }
 
