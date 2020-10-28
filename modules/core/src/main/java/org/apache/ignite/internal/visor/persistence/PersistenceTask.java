@@ -60,6 +60,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 @GridVisorManagementTask
 public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, PersistenceTaskResult> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private static final String BACKUP_FOLDER_PREFIX = "backup_";
 
     @Override protected VisorJob<PersistenceTaskArg, PersistenceTaskResult> job(PersistenceTaskArg arg) {
@@ -390,7 +393,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
                 .filter(s ->
                     CU.isPersistentCache(cacheProc.cacheDescriptor(s).cacheConfiguration(), dsCfg))
                 .map(s -> cacheProc.cacheDescriptor(s).cacheConfiguration())
-                .map(ccfg -> cacheDirName(ccfg))
+                .map(FilePageStoreManager::cacheDirName)
                 .distinct()
                 .collect(Collectors.toList());
         }
