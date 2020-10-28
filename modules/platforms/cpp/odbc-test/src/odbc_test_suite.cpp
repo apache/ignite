@@ -584,19 +584,19 @@ namespace ignite
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
             BOOST_TEST_CHECKPOINT("Binding dateFields");
-            ret = SQLBindParameter(stmt, 9, SQL_PARAM_INPUT, SQL_C_DATE, SQL_DATE, 0, 0, dateFields.GetData(), 0, 0);
+            ret = SQLBindParameter(stmt, 9, SQL_PARAM_INPUT, SQL_C_TYPE_DATE, SQL_TYPE_DATE, 0, 0, dateFields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
             BOOST_TEST_CHECKPOINT("Binding timeFields");
-            ret = SQLBindParameter(stmt, 10, SQL_PARAM_INPUT, SQL_C_TIME, SQL_TIME, 0, 0, timeFields.GetData(), 0, 0);
+            ret = SQLBindParameter(stmt, 10, SQL_PARAM_INPUT, SQL_C_TYPE_TIME, SQL_TYPE_TIME, 0, 0, timeFields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
             BOOST_TEST_CHECKPOINT("Binding timestampFields");
-            ret = SQLBindParameter(stmt, 11, SQL_PARAM_INPUT, SQL_C_TIMESTAMP, SQL_TIMESTAMP, 0, 0, timestampFields.GetData(), 0, 0);
+            ret = SQLBindParameter(stmt, 11, SQL_PARAM_INPUT, SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP, 0, 0, timestampFields.GetData(), 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));

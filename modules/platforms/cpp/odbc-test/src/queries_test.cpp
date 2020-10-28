@@ -748,15 +748,15 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    ret = SQLBindCol(stmt, 9, SQL_C_DATE, &dateColumn, 0, &columnLens[8]);
+    ret = SQLBindCol(stmt, 9, SQL_C_TYPE_DATE, &dateColumn, 0, &columnLens[8]);
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    ret = SQLBindCol(stmt, 10, SQL_C_TIME, &timeColumn, 0, &columnLens[9]);
+    ret = SQLBindCol(stmt, 10, SQL_C_TYPE_TIME, &timeColumn, 0, &columnLens[9]);
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    ret = SQLBindCol(stmt, 11, SQL_C_TIMESTAMP, &timestampColumn, 0, &columnLens[10]);
+    ret = SQLBindCol(stmt, 11, SQL_C_TYPE_TIMESTAMP, &timestampColumn, 0, &columnLens[10]);
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
