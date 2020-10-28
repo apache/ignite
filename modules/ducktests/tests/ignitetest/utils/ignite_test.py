@@ -23,6 +23,7 @@ from time import monotonic
 
 from ducktape.tests.test import Test
 
+
 # pylint: disable=W0223
 class IgniteTest(Test):
     """
