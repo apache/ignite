@@ -303,20 +303,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** Received messages metric name. */
     public static final String RECEIVED_MESSAGES_METRIC_NAME = "receivedMessagesCount";
 
-    /** Sent messages by type metric name. */
-    public static final String SENT_MESSAGES_BY_TYPE_METRIC_NAME = "sentMessagesByType";
-
-    /** Sent messages by type metric description. */
-    public static final String SENT_MESSAGES_BY_TYPE_METRIC_DESC =
-        "Total number of messages with given type sent by current node";
-
-    /** Received messages by type metric name. */
-    public static final String RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME = "receivedMessagesByType";
-
-    /** Received messages by type metric description. */
-    public static final String RECEIVED_MESSAGES_BY_TYPE_METRIC_DESC =
-        "Total number of messages with given type received by current node";
-
     /** Sent messages by node consistent id metric name. */
     public static final String SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME = "sentMessagesToNode";
 

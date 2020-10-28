@@ -51,6 +51,12 @@ public class CommunicationMetricSource extends AbstractMetricSource<Communicatio
     /** Received bytes count metric name. */
     public static final String RCVD_BYTES_CNT = "ReceivedBytes";
 
+    /** Sent messages by type metric name. */
+    public static final String SENT_MESSAGES_BY_TYPE_METRIC_NAME = "sentMessagesByType";
+
+    /** Received messages by type metric name. */
+    public static final String RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME = "receivedMessagesByType";
+
     private final IgniteMessageFactory msgFactory;
 
     /**
@@ -64,7 +70,7 @@ public class CommunicationMetricSource extends AbstractMetricSource<Communicatio
 
     /** {@inheritDoc} */
     @Override protected void init(MetricRegistryBuilder bldr, Holder hldr) {
-        hldr.msgCntrsByType = createMessageCounters(msgFactory);
+        hldr.msgCntrsByType = createMessageCounters(msgFactory, bldr);
 
         hldr.outboundMsgCnt = bldr.intMetric(OUTBOUND_MSG_QUEUE_CNT, "Outbound messages queue size.");
 
@@ -205,7 +211,7 @@ public class CommunicationMetricSource extends AbstractMetricSource<Communicatio
      * @param factory Message factory.
      * @return Counters of sent and received messages grouped by direct type.
      */
-    private IntMap<IgniteBiTuple<LongAdderMetric, LongAdderMetric>> createMessageCounters(IgniteMessageFactory factory) {
+    private IntMap<IgniteBiTuple<LongAdderMetric, LongAdderMetric>> createMessageCounters(IgniteMessageFactory factory, MetricRegistryBuilder bldr) {
         IgniteMessageFactoryImpl msgFactory = (IgniteMessageFactoryImpl)factory;
 
         short[] directTypes = msgFactory.registeredDirectTypes();
@@ -213,19 +219,27 @@ public class CommunicationMetricSource extends AbstractMetricSource<Communicatio
         IntMap<IgniteBiTuple<LongAdderMetric, LongAdderMetric>> msgCntrsByType = new IntHashMap<>(directTypes.length);
 
         //TODO: Replace by metric source
-/*
         for (short type : directTypes) {
-            LongAdderMetric sentCnt =
-                    mreg.longAdderMetric(sentMessagesByTypeMetricName(type), SENT_MESSAGES_BY_TYPE_METRIC_DESC);
+            LongAdderMetric sentCnt = bldr.longAdderMetric(sentMessagesByTypeMetricName(type),
+                    "Total number of messages with given type sent by current node");
 
-            LongAdderMetric rcvCnt =
-                    mreg.longAdderMetric(receivedMessagesByTypeMetricName(type), RECEIVED_MESSAGES_BY_TYPE_METRIC_DESC);
+            LongAdderMetric rcvCnt = bldr.longAdderMetric(receivedMessagesByTypeMetricName(type),
+                    "Total number of messages with given type received by current node");
 
             msgCntrsByType.put(type, new IgniteBiTuple<>(sentCnt, rcvCnt));
         }
-*/
 
         return msgCntrsByType;
+    }
+
+    /** Generate metric name by message direct type id. */
+    public static String sentMessagesByTypeMetricName(Short directType) {
+        return metricName(SENT_MESSAGES_BY_TYPE_METRIC_NAME, directType.toString());
+    }
+
+    /** Generate metric name by message direct type id. */
+    public static String receivedMessagesByTypeMetricName(Short directType) {
+        return metricName(RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME, directType.toString());
     }
 
     /** */

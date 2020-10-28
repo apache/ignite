@@ -30,8 +30,6 @@ import org.apache.ignite.spi.IgniteSpiContext;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.metric.sources.NodeCommunicationMetricSource.NODE_COMM_METRICS;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_BY_TYPE_METRIC_NAME;
 
 /**
  * Statistics for {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi}.
@@ -80,7 +78,8 @@ public class TcpCommunicationMetricsListener {
 
             metricSrc.incrementSentMessages(msg.directType());
 
-            nodeMetricSrcProvider.apply(consistentId).incrementSentMessages();
+            //TODO: use node metric source
+            //nodeMetricSrcProvider.apply(consistentId).incrementSentMessages();
         }
     }
 
@@ -99,7 +98,8 @@ public class TcpCommunicationMetricsListener {
 
             metricSrc.incrementReceivedMessages(msg.directType());
 
-            nodeMetricSrcProvider.apply(consistentId).incrementReceivedMessages();
+            //TODO: use node metric source
+            //nodeMetricSrcProvider.apply(consistentId).incrementReceivedMessages();
         }
     }
 
@@ -175,15 +175,5 @@ public class TcpCommunicationMetricsListener {
         GridMetricManager metricMgr = ((IgniteKernal) ignite).context().metric();
 
         metricMgr.unregisterSource(metricName(NODE_COMM_METRICS, consistentId.toString()));
-    }
-
-    /** Generate metric name by message direct type id. */
-    public static String sentMessagesByTypeMetricName(Short directType) {
-        return metricName(SENT_MESSAGES_BY_TYPE_METRIC_NAME, directType.toString());
-    }
-
-    /** Generate metric name by message direct type id. */
-    public static String receivedMessagesByTypeMetricName(Short directType) {
-        return metricName(RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME, directType.toString());
     }
 }

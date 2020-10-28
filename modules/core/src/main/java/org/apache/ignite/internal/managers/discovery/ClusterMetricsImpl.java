@@ -369,26 +369,41 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public int getSentMessagesCount() {
+        if (tcpCommMetricSrc == null)
+            return -1;
+
         return tcpCommMetricSrc.sentMessagesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getSentBytesCount() {
+        if (tcpCommMetricSrc == null)
+            return -1;
+
         return tcpCommMetricSrc.sentBytesCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getReceivedMessagesCount() {
+        if (tcpCommMetricSrc == null)
+            return -1;
+
         return tcpCommMetricSrc.receivedMessagesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getReceivedBytesCount() {
+        if (tcpCommMetricSrc == null)
+            return -1;
+
         return tcpCommMetricSrc.receivedBytesCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
+        if (tcpCommMetricSrc == null)
+            return -1;
+
         return tcpCommMetricSrc.outboundMessagesCount();
     }
 
