@@ -28,9 +28,11 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.DiscoverySpiMBean;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
@@ -52,7 +54,7 @@ public class ZookeeperDiscoveryRandomStopOrFailConcurrentTest extends ZookeeperD
     private static final int NUM_SERVERS = 10;
 
     /** */
-    private static final int ZK_SESSION_TIMEOUT = 3_000;
+    private static final int ZK_SESSION_TIMEOUT = 5_000;
 
     /** */
     @Parameterized.Parameters(name = "stop mode = {0}, with crd = {1}")
@@ -97,6 +99,20 @@ public class ZookeeperDiscoveryRandomStopOrFailConcurrentTest extends ZookeeperD
         sesTimeout = ZK_SESSION_TIMEOUT;
 
         testSockNio = true;
+
+        clientReconnectDisabled = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        for (Ignite g: G.allGrids()) {
+            ZkTestClientCnxnSocketNIO cnxn = ZkTestClientCnxnSocketNIO.forNode(g);
+
+            if (cnxn != null)
+                cnxn.allowConnect();
+        }
+
+        super.afterTest();
     }
 
     /** {@inheritDoc} */
