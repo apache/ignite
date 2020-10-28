@@ -545,16 +545,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /**
-     *
-     */
+    /** */
     public Collection<DataRegion> checkpointedDataRegions() {
         return checkpointedDataRegions;
     }
 
-    /**
-     *
-     */
+    /** */
     private Collection<CacheGroupContext> cacheGroupContexts() {
         return cctx.cache().cacheGroups();
     }
@@ -655,9 +651,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         fileLockHolder.close();
     }
 
-    /**
-     *
-     */
+    /** */
     private void prepareCacheDefragmentation(List<Integer> cacheGroupIds) throws IgniteCheckedException {
         GridKernalContext kernalCtx = cctx.kernalContext();
         DataStorageConfiguration dsCfg = kernalCtx.config().getDataStorageConfiguration();
@@ -719,9 +713,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         );
     }
 
-    /**
-     * Registering region for checkpoint after it was added.
-     */
+    /** {@inheritDoc} */
     @Override protected DataRegion addDataRegion(DataStorageConfiguration dataStorageCfg, DataRegionConfiguration dataRegionCfg,
         boolean trackable, PageReadWriteManager pmPageMgr) throws IgniteCheckedException {
         DataRegion region = super.addDataRegion(dataStorageCfg, dataRegionCfg, trackable, pmPageMgr);
@@ -731,9 +723,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return region;
     }
 
-    /**
-     *
-     */
+    /** */
     private void readMetastore() throws IgniteCheckedException {
         try {
             CheckpointStatus status = readCheckpointStatus();
@@ -903,7 +893,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Restores last valid WAL pointer and resumes logging from that pointer. Re-creates metastorage if needed.
+     * Restores last valid WAL pointer and resumes logging from that pointer.
+     * Re-creates metastorage if needed.
      *
      * @throws IgniteCheckedException If failed.
      */
@@ -959,7 +950,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         MetaStorage storage = new MetaStorage(
             cctx,
             dataRegion(METASTORE_DATA_REGION_NAME),
-            (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME),
+            (DataRegionMetricsImpl) memMetricsMap.get(METASTORE_DATA_REGION_NAME),
             readOnly
         );
 
@@ -1223,8 +1214,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkRegionEvictionProperties(DataRegionConfiguration regCfg,
-        DataStorageConfiguration dbCfg)
+    @Override protected void checkRegionEvictionProperties(DataRegionConfiguration regCfg, DataStorageConfiguration dbCfg)
         throws IgniteCheckedException {
         if (!regCfg.isPersistenceEnabled())
             super.checkRegionEvictionProperties(regCfg, dbCfg);
@@ -1330,7 +1320,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         if (cctx.kernalContext().query().moduleEnabled())
-            cctx.kernalContext().query().beforeExchange(fut);
+           cctx.kernalContext().query().beforeExchange(fut);
     }
 
     /** {@inheritDoc} */
@@ -1531,8 +1521,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Prints detail information about caches which were not reserved and reservation depth for the caches which have
-     * WAL history enough.
+     * Prints detail information about caches which were not reserved
+     * and reservation depth for the caches which have WAL history enough.
      *
      * @param earliestValidCheckpoints Map contains information about caches' reservation.
      */
@@ -2300,8 +2290,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param restore Get page for restore.
      * @throws IgniteCheckedException If failed.
      */
-    private void applyPageDelta(PageMemoryEx pageMem, PageDeltaRecord pageDeltaRecord,
-        boolean restore) throws IgniteCheckedException {
+    private void applyPageDelta(PageMemoryEx pageMem, PageDeltaRecord pageDeltaRecord, boolean restore) throws IgniteCheckedException {
         int grpId = pageDeltaRecord.groupId();
         long pageId = pageDeltaRecord.pageId();
 
@@ -3080,13 +3069,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Checks that checkpoint with timestamp {@code cpTs} is inapplicable as start point for WAL rebalance for given
-     * group {@code grpId}.
+     * Checks that checkpoint with timestamp {@code cpTs} is inapplicable as start point for WAL rebalance for given group {@code grpId}.
      *
      * @param cpTs Checkpoint timestamp.
      * @param grpId Group ID.
-     * @return {@code true} if checkpoint {@code cpTs} is inapplicable as start point for WAL rebalance for {@code
-     * grpId}.
+     * @return {@code true} if checkpoint {@code cpTs} is inapplicable as start point for WAL rebalance for {@code grpId}.
      * @throws IgniteCheckedException If failed to check.
      */
     public boolean isCheckpointInapplicableForWalRebalance(Long cpTs, int grpId) throws IgniteCheckedException {
@@ -3153,8 +3140,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Convert checkpoint timestamp and cache group ID to key for {@link #CHECKPOINT_INAPPLICABLE_FOR_REBALANCE}
-     * metastorage records.
+     * Convert checkpoint timestamp and cache group ID to key for {@link #CHECKPOINT_INAPPLICABLE_FOR_REBALANCE} metastorage records.
      *
      * @param cpTs Checkpoint timestamp.
      * @param grpId Group ID.
@@ -3180,8 +3166,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Method dumps partitions info see {@link #dumpPartitionsInfo(CacheGroupContext, IgniteLogger)} for all persistent
-     * cache groups.
+     * Method dumps partitions info see {@link #dumpPartitionsInfo(CacheGroupContext, IgniteLogger)}
+     * for all persistent cache groups.
      *
      * @param cctx Shared context.
      * @param log Logger.
@@ -3198,8 +3184,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Retrieves from page memory meta information about given {@code grp} group partitions and dumps this information
-     * to log INFO level.
+     * Retrieves from page memory meta information about given {@code grp} group partitions
+     * and dumps this information to log INFO level.
      *
      * @param grp Cache group.
      * @param log Logger.
@@ -3276,8 +3262,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private class MetastorageRecoveryLifecycle implements DatabaseLifecycleListener {
         /** {@inheritDoc} */
-        @Override public void beforeBinaryMemoryRestore(
-            IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+        @Override public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
             cctx.pageStore().initializeForMetastorage();
         }
 
@@ -3323,8 +3308,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * @return WAL records predicate that passes only logical and mixed WAL records + CP record (used for restoring
-     * initial partition states).
+     * @return WAL records predicate that passes only logical and mixed WAL records +
+     * CP record (used for restoring initial partition states).
      */
     private IgniteBiPredicate<WALRecord.RecordType, WALPointer> logicalRecords() {
         return (type, ptr) -> type.purpose() == WALRecord.RecordPurpose.LOGICAL
@@ -3369,12 +3354,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * Advance iterator to the next record.
          *
          * @return WALRecord entry.
-         * @throws IgniteCheckedException If CRC check fail during binary recovery state or another exception
-         * occurring.
+         * @throws IgniteCheckedException If CRC check fail during binary recovery state or another exception occurring.
          */
         public WALRecord next() throws IgniteCheckedException {
             try {
-                for (; ; ) {
+                for (;;) {
                     if (!iterator.hasNextX())
                         return null;
 
@@ -3391,7 +3375,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     // Filter out records by group id.
                     if (rec instanceof WalRecordCacheGroupAware) {
-                        WalRecordCacheGroupAware grpAwareRecord = (WalRecordCacheGroupAware)rec;
+                        WalRecordCacheGroupAware grpAwareRecord = (WalRecordCacheGroupAware) rec;
 
                         if (!cacheGroupPredicate.apply(grpAwareRecord.groupId()))
                             continue;
@@ -3399,7 +3383,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     // Filter out data entries by group id.
                     if (rec instanceof DataRecord)
-                        rec = filterEntriesByGroupId((DataRecord)rec);
+                        rec = filterEntriesByGroupId((DataRecord) rec);
 
                     return rec;
                 }
@@ -3439,6 +3423,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
+         *
          * @return Last read WAL record pointer.
          */
         public WALPointer lastReadRecordPointer() {
@@ -3449,6 +3434,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
+         *
          * @return Flag indicates need throws CRC exception or not.
          */
         public boolean throwsCRCError() {
@@ -3485,8 +3471,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * Advance iterator to the next record.
          *
          * @return WALRecord entry.
-         * @throws IgniteCheckedException If CRC check fail during binary recovery state or another exception
-         * occurring.
+         * @throws IgniteCheckedException If CRC check fail during binary recovery state or another exception occurring.
          */
         @Override public WALRecord next() throws IgniteCheckedException {
             WALRecord rec = super.next();
@@ -3513,6 +3498,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
+         *
          * @return Flag indicates need apply binary record or not.
          */
         public boolean needApplyBinaryUpdate() {
@@ -3520,6 +3506,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
+         *
          * @return Flag indicates need throws CRC exception or not.
          */
         @Override public boolean throwsCRCError() {
