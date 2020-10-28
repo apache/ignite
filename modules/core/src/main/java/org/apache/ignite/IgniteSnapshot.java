@@ -19,6 +19,8 @@ package org.apache.ignite;
 
 import org.apache.ignite.lang.IgniteFuture;
 
+import java.util.Collection;
+
 /**
  * This interface provides functionality for creating cluster-wide cache data snapshots.
  * <p>
@@ -54,5 +56,5 @@ public interface IgniteSnapshot {
      *
      * @return Future which will be completed when cancel operation finished.
      */
-    public IgniteFuture<Boolean> statusSnapshot();
+    public IgniteFuture<Collection<Boolean>> statusSnapshot();
 }

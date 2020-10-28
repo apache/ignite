@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.snapshot;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -51,7 +50,9 @@ public class VisorSnapshotStatusTask extends VisorOneNodeTask<Void, String> {
 
         /** {@inheritDoc} */
         @Override protected String run(Void arg) throws IgniteException {
-            if (new SnapshotMXBeanImpl(ignite.context()).statusSnapshot())
+            if (ignite.context().cache().context().snapshotMgr().statusSnapshot().get()
+                    .stream()
+                    .allMatch(Boolean::booleanValue))
                 return "Snapshot operation in progress.";
 
             return "No snapshot operations.";

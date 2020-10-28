@@ -105,6 +105,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -700,25 +701,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> statusSnapshot() {
+    @Override public IgniteFuture<Collection<Boolean>> statusSnapshot() {
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
         IgniteInternalFuture<Collection<Boolean>> fut0 = cctx.kernalContext().closure()
-                .broadcast((v) -> new StatusSnapshotCallable().call(),
+                .broadcast(new StatusSnapshotCallable(),
                         null,
                         cctx.discovery().aliveServerNodes(),
                         null);
 
-        IgniteInternalFuture<Boolean> res = fut0.chain(f -> {
-            try {
-                return f.get().stream().allMatch(Boolean::booleanValue);
-            } catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-
-        return new IgniteFutureImpl<>(res);
+        return new IgniteFutureImpl<>(fut0);
     }
 
     /**
@@ -1480,7 +1472,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Start creation of cluster snapshot closure. */
     @GridInternal
-    private static class StatusSnapshotCallable implements IgniteCallable<Boolean> {
+    private static class StatusSnapshotCallable implements IgniteCallable<Boolean>, IgniteClosure<Void, Boolean> {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 
@@ -1495,6 +1487,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override public Boolean call() {
             return ignite.context().cache().context().snapshotMgr().isSnapshotCreating();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean apply(Void unused) {
+            return call();
         }
     }
 

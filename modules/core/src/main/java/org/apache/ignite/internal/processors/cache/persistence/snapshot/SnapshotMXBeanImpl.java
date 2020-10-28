@@ -50,6 +50,8 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
 
     /** {@inheritDoc} */
     @Override public boolean statusSnapshot() {
-        return mgr.statusSnapshot().get();
+        return mgr.statusSnapshot().get()
+                .stream()
+                .allMatch(Boolean::booleanValue);
     }
 }
