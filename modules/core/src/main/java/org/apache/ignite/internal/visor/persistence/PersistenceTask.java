@@ -52,7 +52,7 @@ import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_ID;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 
 /** */
@@ -103,7 +103,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             PersistenceCleanAndBackupSettings backupSettings = arg.cleanAndBackupSettings();
 
             MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
-            MaintenanceTask task = mntcReg.activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID);
+            MaintenanceTask task = mntcReg.activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
             File workDir = ((FilePageStoreManager) ignite.context().cache().context().pageStore()).workDir();
 
@@ -246,7 +246,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             if (!failedToCleanCaches.isEmpty())
                 res.failedCaches(failedToCleanCaches);
 
-            List<MaintenanceAction> actions = mntcReg.actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID);
+            List<MaintenanceAction> actions = mntcReg.actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
             Optional<MaintenanceAction> checkActionOpt = actions.stream().filter(a -> a.name().equals(CheckCorruptedCacheStoresCleanAction.ACTION_NAME))
                 .findFirst();
@@ -259,7 +259,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
                 res.maintenanceTaskCompleted(mntcTaskCompleted);
 
                 if (mntcTaskCompleted)
-                    mntcReg.unregisterMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID);
+                    mntcReg.unregisterMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
             }
 
             return res;
@@ -281,7 +281,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
                 throw U.convertException(e);
             }
 
-            mntcReg.unregisterMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID);
+            mntcReg.unregisterMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
             res.maintenanceTaskCompleted(true);
             res.handledCaches(allCacheDirs);
@@ -294,7 +294,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             PersistenceTaskResult res = new PersistenceTaskResult(true);
 
             List<MaintenanceAction> actions = mntcReg
-                .actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID);
+                .actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
             Optional<MaintenanceAction> cleanCorruptedActionOpt = actions
                 .stream()
@@ -304,9 +304,9 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             if (cleanCorruptedActionOpt.isPresent()) {
                 cleanCorruptedActionOpt.get().execute();
 
-                MaintenanceTask corruptedTask = mntcReg.activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID);
+                MaintenanceTask corruptedTask = mntcReg.activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
-                mntcReg.unregisterMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID);
+                mntcReg.unregisterMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
                 res.handledCaches(
                     corruptedCacheDirectories(corruptedTask)
@@ -326,7 +326,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             DataStorageConfiguration dsCfg = ignite.context().config().getDataStorageConfiguration();
 
             List<String> corruptedCacheNames = corruptedCacheDirectories(ignite.context().maintenanceRegistry()
-                .activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_ID));
+                .activeMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME));
 
             Map<String, IgniteBiTuple<Boolean, Boolean>> cachesInfo = new HashMap<>();
 
