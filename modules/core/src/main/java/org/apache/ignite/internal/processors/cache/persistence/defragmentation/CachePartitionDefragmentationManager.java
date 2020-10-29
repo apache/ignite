@@ -57,7 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDa
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIOV2;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIOV3;
 import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
@@ -611,10 +611,10 @@ public class CachePartitionDefragmentationManager {
             PagePartitionMetaIO oldPartMetaIo = PageIO.getPageIO(oldPartMetaPageAddr);
 
             // Newer meta versions may contain new data that we don't copy during defragmentation.
-            assert Arrays.asList(1, 2).contains(oldPartMetaIo.getVersion()) : oldPartMetaIo.getVersion();
+            assert Arrays.asList(1, 2, 3).contains(oldPartMetaIo.getVersion()) : oldPartMetaIo.getVersion();
 
             access(ACCESS_WRITE, partCtx.partPageMemory, partCtx.grpId, partMetaPageId, newPartMetaPageAddr -> {
-                PagePartitionMetaIOV2 newPartMetaIo = PageIO.getPageIO(newPartMetaPageAddr);
+                PagePartitionMetaIOV3 newPartMetaIo = PageIO.getPageIO(newPartMetaPageAddr);
 
                 // Copy partition state.
                 byte partState = oldPartMetaIo.getPartitionState(oldPartMetaPageAddr);
@@ -662,9 +662,11 @@ public class CachePartitionDefragmentationManager {
                     partCtx.newCacheDataStore.partStorage().insertDataRow(gapsDataRow, IoStatisticsHolderNoOp.INSTANCE);
 
                     newPartMetaIo.setGapsLink(newPartMetaPageAddr, gapsDataRow.link());
-
-//                    partCtx.newCacheDataStore.partStorage().saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
                 }
+
+                // Encryption stuff.
+                newPartMetaIo.setEncryptedPageCount(newPartMetaPageAddr, 0);
+                newPartMetaIo.setEncryptedPageIndex(newPartMetaPageAddr, 0);
 
                 return null;
             });
