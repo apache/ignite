@@ -40,7 +40,6 @@ import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
@@ -1135,23 +1134,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return The number of bytes left for re-ecryption.
      */
     public long getBytesLeftForReencryption(int grpId) {
-        long[] states = reencryptGroups.get(grpId);
-
-        if (states == null)
-            return 0;
-
-        long pagesCnt = 0;
-
-        for (int i = 0; i < states.length; i++) {
-            long state = states[i];
-
-            if (state == 0)
-                continue;
-
-            pagesCnt += ReencryptStateUtils.pageCount(state) - ReencryptStateUtils.pageIndex(state);
-        }
-
-        return pagesCnt * ctx.config().getDataStorageConfiguration().getPageSize();
+        return pageScanner.remainingPagesCount(grpId) * ctx.config().getDataStorageConfiguration().getPageSize();
     }
 
     /**

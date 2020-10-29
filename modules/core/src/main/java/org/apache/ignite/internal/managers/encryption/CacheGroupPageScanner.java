@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -210,10 +211,13 @@ public class CacheGroupPageScanner implements CheckpointListener {
             }
 
             Set<Integer> parts = new HashSet<>();
+            long[] pagesLeft = new long[1];
 
             forEachPageStore(grp, new IgniteInClosureX<Integer>() {
                 @Override public void applyx(Integer partId) {
-                    if (ctx.encryption().getEncryptionState(grpId, partId) == 0) {
+                    long encState = ctx.encryption().getEncryptionState(grpId, partId);
+
+                    if (encState == 0) {
                         if (log.isDebugEnabled())
                             log.debug("Skipping partition reencryption [grp=" + grpId + ", p=" + partId + "]");
 
@@ -221,10 +225,12 @@ public class CacheGroupPageScanner implements CheckpointListener {
                     }
 
                     parts.add(partId);
+
+                    pagesLeft[0] += (ReencryptStateUtils.pageCount(encState) - ReencryptStateUtils.pageIndex(encState));
                 }
             });
 
-            GroupScanTask grpScan = new GroupScanTask(grp, parts);
+            GroupScanTask grpScan = new GroupScanTask(grp, parts, pagesLeft[0]);
 
             singleExecSvc.submit(grpScan);
 
@@ -314,6 +320,19 @@ public class CacheGroupPageScanner implements CheckpointListener {
     }
 
     /**
+     * @param grpId Cache group ID.
+     * @return Number of remaining memory pages to scan.
+     */
+    public long remainingPagesCount(int grpId) {
+        GroupScanTask grpScanTask = grps.get(grpId);
+
+        if (grpScanTask != null)
+            return grpScanTask.remainingPagesCount();
+
+        return 0;
+    }
+
+    /**
      * @return Re-encryption rate limit in megabytes per second ({@code 0} - unlimited).
      */
     public double getRate() {
@@ -399,13 +418,17 @@ public class CacheGroupPageScanner implements CheckpointListener {
         /** Page memory. */
         private final PageMemoryEx pageMem;
 
+        /** Total memory pages left for reencryption. */
+        private final AtomicLong remainingPagesCntr;
+
         /**
          * @param grp Cache group.
          */
-        public GroupScanTask(CacheGroupContext grp, Set<Integer> parts) {
+        public GroupScanTask(CacheGroupContext grp, Set<Integer> parts, long remainingPagesCnt) {
             this.grp = grp;
             this.parts = new GridConcurrentHashSet<>(parts);
 
+            remainingPagesCntr = new AtomicLong(remainingPagesCnt);
             pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
         }
 
@@ -421,6 +444,10 @@ public class CacheGroupPageScanner implements CheckpointListener {
          * @return {@code True} if reencryption was cancelled.
          */
         public synchronized boolean excludePartition(int partId) {
+            long state = ctx.encryption().getEncryptionState(groupId(), partId);
+
+            remainingPagesCntr.addAndGet(ReencryptStateUtils.pageIndex(state) - ReencryptStateUtils.pageCount(state));
+
             return parts.remove(partId);
         }
 
@@ -429,6 +456,13 @@ public class CacheGroupPageScanner implements CheckpointListener {
          */
         public int groupId() {
             return grp.groupId();
+        }
+
+        /**
+         * @return Number of remaining memory pages to scan.
+         */
+        public long remainingPagesCount() {
+            return remainingPagesCntr.get();
         }
 
         /** {@inheritDoc} */
@@ -488,6 +522,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
                         ctx.cache().context().database().checkpointReadUnlock();
                     }
                 }
+
+                remainingPagesCntr.addAndGet(-pagesCnt);
 
                 ctx.encryption().setEncryptionState(grp, partId, off, cnt);
             }
