@@ -85,7 +85,7 @@ public class CacheGroupPageScanner implements CheckpointListener {
     private final int batchSize;
 
     /** Page scanning speed limiter. */
-    private volatile BasicRateLimiter limiter;
+    private final BasicRateLimiter limiter;
 
     /** Stop flag. */
     private boolean stopped;
@@ -110,8 +110,7 @@ public class CacheGroupPageScanner implements CheckpointListener {
 
         double rateLimit = dsCfg.getEncryptionConfiguration().getReencryptionRateLimit();
 
-        limiter = rateLimit > 0 ? new BasicRateLimiter(rateLimit * MB /
-            (dsCfg.getPageSize() == 0 ? DataStorageConfiguration.DFLT_PAGE_SIZE : dsCfg.getPageSize())) : null;
+        limiter = new BasicRateLimiter(calcPermits(rateLimit, dsCfg));
 
         batchSize = dsCfg.getEncryptionConfiguration().getReencryptionBatchSize();
 
@@ -338,12 +337,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
     public double getRate() {
         DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
 
-        if (CU.isPersistenceEnabled(dsCfg)) {
-            BasicRateLimiter limiter0 = limiter;
-
-            if (limiter0 != null)
-                return dsCfg.getPageSize() * limiter0.getRate() / MB;
-        }
+        if (CU.isPersistenceEnabled(dsCfg))
+            return dsCfg.getPageSize() * limiter.getRate() / MB;
 
         return 0;
     }
@@ -354,26 +349,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
     public void setRate(double rate) {
         DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
 
-        if (!CU.isPersistenceEnabled(dsCfg))
-            return;
-
-        BasicRateLimiter limiter0 = limiter;
-
-        if (rate == 0 && limiter0 != null) {
-            limiter = null;
-
-            return;
-        }
-
-        double permits = calcPermits(rate, dsCfg);
-
-        if (limiter0 != null) {
-            limiter0.setRate(permits);
-
-            return;
-        }
-
-        limiter = new BasicRateLimiter(permits);
+        if (CU.isPersistenceEnabled(dsCfg))
+            limiter.setRate(calcPermits(rate, dsCfg));
     }
 
     /**
@@ -506,10 +483,7 @@ public class CacheGroupPageScanner implements CheckpointListener {
             while (off < cnt) {
                 int pagesCnt = Math.min(batchSize, cnt - off);
 
-                BasicRateLimiter limiter0 = limiter;
-
-                if (limiter0 != null)
-                    limiter0.acquire(pagesCnt);
+                limiter.acquire(pagesCnt);
 
                 synchronized (this) {
                     if (isDone() || !parts.contains(partId))

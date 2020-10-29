@@ -758,12 +758,12 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         MetricRegistry registry =
             node.context().metric().registry(metricName(CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX, cacheName()));
 
-        LongMetric pagesLeft = registry.findMetric("ReencryptionPagesLeft");
+        LongMetric bytesLeft = registry.findMetric("ReencryptionBytesLeft");
 
         if (finished)
-            assertEquals(0, pagesLeft.value());
+            assertEquals(0, bytesLeft.value());
         else
-            assertTrue(pagesLeft.value() > 0);
+            assertTrue(bytesLeft.value() > 0);
 
         BooleanMetric reencryptionFinished = registry.findMetric("ReencryptionFinished");
 
