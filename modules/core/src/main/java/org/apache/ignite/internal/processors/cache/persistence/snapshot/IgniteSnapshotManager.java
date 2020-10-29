@@ -1470,7 +1470,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    /** Start creation of cluster snapshot closure. */
+    /** Get the status of a cluster snapshot operation. */
     @GridInternal
     private static class StatusSnapshotCallable implements IgniteClosure<Void, Object> {
         /** Serial version UID. */

@@ -54,6 +54,7 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     /** {@inheritDoc} */
     @Override public Collection<Object> statusSnapshot() {
         return mgr.statusSnapshot().get().stream()
-                .filter(Objects::nonNull).collect(Collectors.toSet());
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 }

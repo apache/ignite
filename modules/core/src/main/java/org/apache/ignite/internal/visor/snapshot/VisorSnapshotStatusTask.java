@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.visor.snapshot;
 
-import java.util.Collection;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
@@ -54,23 +54,20 @@ public class VisorSnapshotStatusTask extends VisorOneNodeTask<Void, String> {
 
         /** {@inheritDoc} */
         @Override protected String run(Void arg) throws IgniteException {
-            Collection<Object> ids = ignite.context().cache().context().snapshotMgr().statusSnapshot().get().stream()
+            Set<Object> ids = ignite.context().cache().context().snapshotMgr().statusSnapshot().get().stream()
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
 
-            if (ids.isEmpty() )
+            if (ids.isEmpty())
                 return "No snapshot operations.";
 
-            StringBuilder sb = new StringBuilder("Snapshot operation in progress on nodes with Consistent ID:")
-                    .append(IgniteUtils.nl());
+            StringBuilder sb = new StringBuilder("чSnapshot operation in progress on nodes with Consistent ID:");
 
             ids.stream()
                     .map(String::valueOf)
-                    .forEach(s -> sb.append(s).append(IgniteUtils.nl()));
+                    .forEach(s -> sb.append(IgniteUtils.nl()).append(s));
 
             return sb.toString();
-
-
         }
     }
 }

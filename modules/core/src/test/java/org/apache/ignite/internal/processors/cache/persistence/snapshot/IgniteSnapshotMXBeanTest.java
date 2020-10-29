@@ -81,6 +81,30 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
             mxBean::cancelSnapshot);
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testStatusSnapshot() throws Exception {
+        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        DynamicMBean snpMBean = metricRegistry(ignite.name(), null, SNAPSHOT_METRICS);
+
+        assertEquals("Snapshot end time must be undefined on first snapshot operation starts.",
+                0, getLastSnapshotEndTime(snpMBean));
+
+        SnapshotMXBean mxBean = getMxBean(ignite.name(), "Snapshot", SnapshotMXBeanImpl.class, SnapshotMXBean.class);
+
+        assertTrue(mxBean.statusSnapshot().isEmpty());
+
+        mxBean.createSnapshot(SNAPSHOT_NAME);
+
+        assertFalse(mxBean.statusSnapshot().isEmpty());
+
+        assertTrue("Waiting for snapshot operation failed.",
+                GridTestUtils.waitForCondition(() -> getLastSnapshotEndTime(snpMBean) > 0, 10_000));
+
+        assertTrue(mxBean.statusSnapshot().isEmpty());
+    }
+
     /**
 
      * @param mBean Ignite snapshot MBean.
