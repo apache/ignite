@@ -171,12 +171,11 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             }
 
             proceedWithMaintenance();
-        } else {
-            if (isMaintenanceMode()) {
-                if (log.isInfoEnabled()) {
-                    log.info("All maintenance tasks are fixed, no need to enter maintenance mode. " +
-                        "Restart the node to get it back to normal operations.");
-                }
+        }
+        else if (isMaintenanceMode()) {
+            if (log.isInfoEnabled()) {
+                log.info("All maintenance tasks are fixed, no need to enter maintenance mode. " +
+                    "Restart the node to get it back to normal operations.");
             }
         }
     }
