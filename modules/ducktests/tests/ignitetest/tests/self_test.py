@@ -91,6 +91,8 @@ class GetTimeService(BackgroundThreadService):
         self.clocks = []
 
     def _worker(self, _, node):
+        node.account.ssh("/bin/true")
+
         self.start_barrier.wait(1)
         start = time.time()
         delay = 5
