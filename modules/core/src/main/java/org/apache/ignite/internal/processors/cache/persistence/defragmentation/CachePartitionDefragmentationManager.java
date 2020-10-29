@@ -185,6 +185,8 @@ public class CachePartitionDefragmentationManager {
     /** */
     //TODO How will we handle constant fail and restart scenario?
     public void executeDefragmentation() throws IgniteCheckedException {
+        log.info("Defragmentation started.");
+
         try {
             // Checkpointer must be enabled so all pages on disk are in their latest valid state.
             dbMgr.resumeWalLogging();
