@@ -156,6 +156,7 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec, IgnitePersistenceAware):
 
         self.jvm_opts.extend([
             "-DIGNITE_SUCCESS_FILE=" + self.PERSISTENT_ROOT + "/success_file",
+            "-Dlog4j.configuration=file:" + self.LOG4J_CONFIG_FILE,
             "-Dlog4j.configDebug=true"
         ])
 
