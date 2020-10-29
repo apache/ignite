@@ -17,11 +17,13 @@
 
 namespace Apache.Ignite.Core.Impl
 {
+    using System;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text.RegularExpressions;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
@@ -30,19 +32,56 @@ namespace Apache.Ignite.Core.Impl
     internal static class MemoryInfo
     {
         /// <summary>
-        /// Gets the total physical memory.
+        /// Gets total physical memory.
         /// </summary>
-        public static ulong GetTotalPhysicalMemory(ulong defaultValue)
+        public static readonly ulong? TotalPhysicalMemory = GetTotalPhysicalMemory();
+
+        /// <summary>
+        /// Gets memory limit (when set by cgroups) or the value of <see cref="TotalPhysicalMemory"/>.
+        /// </summary>
+        public static readonly ulong? MemoryLimit = GetMemoryLimit();
+
+        /// <summary>
+        /// Gets the memory limit.
+        /// <para />
+        /// When memory is limited with cgroups, returns that limit. Otherwise, returns total physical memory.
+        /// </summary>
+        private static ulong? GetMemoryLimit()
         {
             if (Os.IsWindows)
             {
-                return NativeMethodsWindows.GlobalMemoryStatusExTotalPhys();
+                return null;
             }
 
-            const string memInfo = "/proc/meminfo";
+            var physical = TotalPhysicalMemory;
 
-            if (File.Exists(memInfo))
+            if (physical == null)
             {
+                return null;
+            }
+
+            var limit = CGroup.MemoryLimitInBytes;
+
+            return limit != null && limit < physical
+                ? limit.Value
+                : physical.Value;
+        }
+
+        /// <summary>
+        /// Gets total physical memory.
+        /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        private static ulong? GetTotalPhysicalMemory()
+        {
+            try
+            {
+                if (Os.IsWindows)
+                {
+                    return NativeMethodsWindows.GlobalMemoryStatusExTotalPhys();
+                }
+
+                const string memInfo = "/proc/meminfo";
+
                 var kbytes = File.ReadAllLines(memInfo).Select(x => Regex.Match(x, @"MemTotal:\s+([0-9]+) kB"))
                     .Where(x => x.Success)
                     .Select(x => x.Groups[1].Value).FirstOrDefault();
@@ -52,9 +91,14 @@ namespace Apache.Ignite.Core.Impl
                     return ulong.Parse(kbytes) * 1024;
                 }
             }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine("Failed to determine physical memory size: " + e);
+            }
 
-            return defaultValue;
+            return null;
         }
+
 
         /// <summary>
         /// Native methods.

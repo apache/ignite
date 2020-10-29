@@ -17,9 +17,13 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
+    using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using NUnit.Framework;
 
@@ -79,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             IIgnite g = Ignition.GetIgnite("grid-0");
 
-            ICacheAffinity aff = g.GetAffinity("default");  
+            ICacheAffinity aff = g.GetAffinity("default");
 
             IBinaryObject affKey = g.GetBinary().ToBinary<IBinaryObject>(new AffinityTestKey(0, 1));
 
@@ -92,6 +96,65 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
                 Assert.AreEqual(node.Id, aff.MapKeyToNode(otherAffKey).Id);
             }
+        }
+
+        /// <summary>
+        /// Tests that <see cref="AffinityKeyMappedAttribute"/> works when used on a property of a type that is
+        /// specified as <see cref="QueryEntity.KeyType"/> or <see cref="QueryEntity.ValueType"/> and
+        /// configured in a Spring XML file. 
+        /// </summary>
+        [Test]
+        public void TestAffinityKeyMappedWithQueryEntitySpringXml()
+        {
+            TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-0"), "cache1");
+            TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-1"), "cache1");
+        }
+
+        /// <summary>
+        /// Tests that <see cref="AffinityKeyMappedAttribute"/> works when used on a property of a type that is
+        /// specified as <see cref="QueryEntity.KeyType"/> or <see cref="QueryEntity.ValueType"/>. 
+        /// </summary>
+        [Test]
+        public void TestAffinityKeyMappedWithQueryEntity()
+        {
+            var cacheCfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                QueryEntities = new List<QueryEntity>
+                {
+                    new QueryEntity(typeof(QueryEntityKey), typeof(QueryEntityValue))
+                }
+            };
+
+            var cache = Ignition.GetIgnite("grid-0").GetOrCreateCache<QueryEntityKey, QueryEntityValue>(cacheCfg);
+            var cache2 = Ignition.GetIgnite("grid-1").GetOrCreateCache<QueryEntityKey, QueryEntityValue>(cacheCfg);
+
+            TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-0"), cacheCfg.Name);
+            TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-1"), cacheCfg.Name);
+
+            // Check put/get.
+            var key = new QueryEntityKey {Data = "x", AffinityKey = 123};
+            cache[key] = new QueryEntityValue {Name = "y", AffKey = 321};
+
+            var val = cache2[key];
+            Assert.AreEqual("y", val.Name);
+            Assert.AreEqual(321, val.AffKey);
+        }
+
+        /// <summary>
+        /// Checks affinity mapping.
+        /// </summary>
+        private static void TestAffinityKeyMappedWithQueryEntity0(IIgnite ignite, string cacheName)
+        {
+            var aff = ignite.GetAffinity(cacheName);
+
+            var key1 = new QueryEntityKey {Data = "data1", AffinityKey = 1};
+            var key2 = new QueryEntityKey {Data = "data2", AffinityKey = 1};
+
+            var val1 = new QueryEntityValue {Name = "foo", AffKey = 100};
+            var val2 = new QueryEntityValue {Name = "bar", AffKey = 100};
+
+            Assert.AreEqual(aff.GetPartition(key1), aff.GetPartition(key2));
+            Assert.AreEqual(aff.GetPartition(val1), aff.GetPartition(val2));
         }
 
         /// <summary>
@@ -130,6 +193,36 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             {
                 return _id;
             }
+        }
+        
+        /// <summary>
+        /// Query entity key.
+        /// </summary>
+        [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
+        private class QueryEntityKey
+        {
+            /** */
+            [QuerySqlField]
+            public string Data { get; set; }
+            
+            /** */
+            [AffinityKeyMapped]
+            public long AffinityKey { get; set; }
+        }
+        
+        /// <summary>
+        /// Query entity key.
+        /// </summary>
+        [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
+        private class QueryEntityValue
+        {
+            /** */
+            [QuerySqlField]
+            public string Name { get; set; }
+            
+            /** */
+            [AffinityKeyMapped]
+            public long AffKey { get; set; }
         }
     }
 }
