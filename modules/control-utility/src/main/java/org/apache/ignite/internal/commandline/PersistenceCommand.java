@@ -152,7 +152,7 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
             if (failedToHandleCaches != null && !failedToHandleCaches.isEmpty()) {
                 String failedToHandleCachesStr = String.join(", ", failedToHandleCaches);
 
-                logger.info("Failed to clean following directories: ["  + failedToHandleCachesStr + ']');
+                logger.info("Failed to clean following directories: [" + failedToHandleCachesStr + ']');
             }
         }
         // backup command
