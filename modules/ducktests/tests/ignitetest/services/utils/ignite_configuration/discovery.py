@@ -101,10 +101,11 @@ class TcpDiscoverySpi(DiscoverySpi):
     """
     TcpDiscoverySpi.
     """
-    def __init__(self, ip_finder=TcpDiscoveryVmIpFinder(), port=47500, port_range=100):
+    def __init__(self, ip_finder=TcpDiscoveryVmIpFinder(), port=47500, port_range=100, local_address=None):
         self.ip_finder = ip_finder
         self.port = port
         self.port_range = port_range
+        self.local_address = local_address
 
     @property
     def type(self):

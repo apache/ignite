@@ -745,7 +745,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 return qryClient.cluster().nodes().size() == (SRV_NODES + 1 /* client node */)
                     - 1 /* Primary node */ - backups;
             }
-        }, 5000L);
+        }, getConfiguration("").getFailureDetectionTimeout() * 2);
 
         awaitPartitionMapExchange();
 

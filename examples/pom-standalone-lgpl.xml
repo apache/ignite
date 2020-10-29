@@ -82,12 +82,6 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring-data_2.0</artifactId>
-            <version>to_be_replaced_by_ignite_version</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-opencensus</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
