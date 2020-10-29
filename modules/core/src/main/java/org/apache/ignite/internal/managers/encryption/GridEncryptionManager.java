@@ -1205,7 +1205,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     public void resumeReencryption(int grpId) throws IgniteCheckedException {
         if (grpKeyChangeProc.inProgress())
-            throw new IgniteCheckedException("Cannot force start reencryption during cache group key change.");
+            throw new IgniteCheckedException("Cannot resume re-encryption during cache group key change.");
 
         if (!reencryptionInProgress(grpId))
             throw new IgniteCheckedException("Re-encryption completed or not required [grpId=" + grpId + "]");

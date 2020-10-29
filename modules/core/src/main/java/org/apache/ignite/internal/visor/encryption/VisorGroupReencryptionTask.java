@@ -25,12 +25,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
-import org.apache.ignite.internal.managers.encryption.ReencryptStateUtils;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
-import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -94,19 +90,22 @@ public class VisorGroupReencryptionTask
                 }
             }
 
+            GridEncryptionManager encMgr = ignite.context().encryption();
+            int grpId = grp.groupId();
+
             try {
                 switch (arg.type()) {
                     case STATUS:
-                        return bytesLeftForReencryption(grp);
+                        return encMgr.getBytesLeftForReencryption(grpId);
 
                     case SUSPEND:
-                        return ignite.context().encryption().reencryptionFuture(grp.groupId()).cancel();
+                        return encMgr.reencryptionFuture(grpId).cancel();
 
                     case RESUME:
-                        if (!ignite.context().encryption().reencryptionFuture(grp.groupId()).isDone())
+                        if (!encMgr.reencryptionFuture(grpId).isDone())
                             return false;
 
-                        ignite.context().encryption().resumeReencryption(grp.groupId());
+                        encMgr.resumeReencryption(grpId);
 
                         return true;
 
@@ -117,41 +116,6 @@ public class VisorGroupReencryptionTask
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
-        }
-
-        /**
-         * @param grp Cache group context.
-         * @return Count of bytes left for reencryption.
-         */
-        private Long bytesLeftForReencryption(CacheGroupContext grp) throws IgniteCheckedException {
-            GridEncryptionManager encMgr = grp.shared().kernalContext().encryption();
-
-            if (!grp.config().isEncryptionEnabled() || !encMgr.reencryptionInProgress(grp.groupId()))
-                return 0L;
-
-            FilePageStoreManager mgr = (FilePageStoreManager)grp.shared().pageStore();
-
-            long completePages = 0;
-            long totalPages = 0;
-
-            for (int p = 0; p < grp.affinity().partitions(); p++) {
-                PageStore pageStore = mgr.getStore(grp.groupId(), p);
-
-                if (!pageStore.exists())
-                    continue;
-
-                long state = encMgr.getEncryptionState(grp.groupId(), p);
-
-                totalPages += ReencryptStateUtils.pageCount(state);
-                completePages += ReencryptStateUtils.pageIndex(state);
-            }
-
-            long state = encMgr.getEncryptionState(grp.groupId(), PageIdAllocator.INDEX_PARTITION);
-
-            totalPages += ReencryptStateUtils.pageCount(state);
-            completePages += ReencryptStateUtils.pageIndex(state);
-
-            return (totalPages - completePages) * grp.dataRegion().pageMemory().pageSize();
         }
     }
 }
