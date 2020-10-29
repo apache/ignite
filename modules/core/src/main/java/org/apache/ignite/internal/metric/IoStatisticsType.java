@@ -21,33 +21,14 @@ package org.apache.ignite.internal.metric;
 /**
  * Type of statistics.
  */
+@Deprecated
 public enum IoStatisticsType {
     /** Cache group. */
-    CACHE_GROUP("io.statistics.cacheGroups"),
+    CACHE_GROUP,
 
     /** Hash index. */
-    HASH_INDEX("io.statistics.hashIndexes"),
+    HASH_INDEX,
 
     /** Sorted index. */
-    SORTED_INDEX("io.statistics.sortedIndexes"),
-
-    /** SQL. */
-    SQL("io.statistics.sql");
-
-    /** Metric group. */
-    private String metricGrpName;
-
-    /**
-     * @param metricGrpName Metric group name.
-     */
-    IoStatisticsType(String metricGrpName) {
-        this.metricGrpName = metricGrpName;
-    }
-
-    /**
-     * @return Metric group name.
-     */
-    public String metricGroupName() {
-        return metricGrpName;
-    }
+    SORTED_INDEX
 }

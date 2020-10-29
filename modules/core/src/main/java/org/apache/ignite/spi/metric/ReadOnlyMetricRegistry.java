@@ -22,6 +22,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Read only metric registry.
  */
+@Deprecated
+//TODO: Remove. Just not needed.
 public interface ReadOnlyMetricRegistry extends Iterable<Metric> {
     /** @return Registry name. */
     public String name();

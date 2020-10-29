@@ -20,191 +20,30 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongGauge;
-import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
-import org.apache.ignite.internal.util.collection.ImmutableIntSet;
-import org.apache.ignite.internal.util.collection.IntSet;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.metric.sources.CacheMetricSource;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 
 /**
  * Adapter for cache metrics.
  */
 public class CacheMetricsImpl implements CacheMetrics {
-    /** Rebalance rate interval. */
-    private static final int REBALANCE_RATE_INTERVAL = IgniteSystemProperties.getInteger(
-        IgniteSystemProperties.IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, 60000);
-
-    /** Onheap peek modes. */
-    private static final CachePeekMode[] ONHEAP_PEEK_MODES = new CachePeekMode[] {
-        CachePeekMode.ONHEAP, CachePeekMode.PRIMARY, CachePeekMode.BACKUP, CachePeekMode.NEAR};
-
     /** */
     private static final long NANOS_IN_MICROSECOND = 1000L;
 
-    /**
-     * Cache metrics registry name first part.
-     * Full name will contain {@link CacheConfiguration#getName()} also.
-     * {@code "cache.sys-cache"}, for example.
-     */
-    public static final String CACHE_METRICS = "cache";
+    /** Cache metric source. */
+    private final CacheMetricSource metricSrc;
 
-    /** Histogram buckets for duration get, put, remove, commit, rollback operations in nanoseconds. */
-    public static final long[] HISTOGRAM_BUCKETS = new long[] {
-        NANOSECONDS.convert(1, MILLISECONDS),
-        NANOSECONDS.convert(10, MILLISECONDS),
-        NANOSECONDS.convert(100, MILLISECONDS),
-        NANOSECONDS.convert(250, MILLISECONDS),
-        NANOSECONDS.convert(1000, MILLISECONDS)
-    };
-
-    /** Number of reads. */
-    private final AtomicLongMetric reads;
-
-    /** Number of invocations caused update. */
-    private final AtomicLongMetric entryProcessorPuts;
-
-    /** Number of invocations caused removal. */
-    private final AtomicLongMetric entryProcessorRemovals;
-
-    /** Number of invocations caused update. */
-    private final AtomicLongMetric entryProcessorReadOnlyInvocations;
-
-    /** Entry processor invoke time taken nanos. */
-    private final AtomicLongMetric entryProcessorInvokeTimeNanos;
-
-    /** So far, the minimum time to execute cache invokes. */
-    private final AtomicLongMetric entryProcessorMinInvocationTime;
-
-    /** So far, the maximum time to execute cache invokes. */
-    private final AtomicLongMetric entryProcessorMaxInvocationTime;
-
-    /** Number of entry processor invokes on keys, which exist in cache. */
-    private final AtomicLongMetric entryProcessorHits;
-
-    /** Number of entry processor invokes on keys, which don't exist in cache. */
-    private final AtomicLongMetric entryProcessorMisses;
-
-    /** Number of writes. */
-    private final AtomicLongMetric writes;
-
-    /** Number of hits. */
-    private final AtomicLongMetric hits;
-
-    /** Number of misses. */
-    private final AtomicLongMetric misses;
-
-    /** Number of transaction commits. */
-    private final AtomicLongMetric txCommits;
-
-    /** Number of transaction rollbacks. */
-    private final AtomicLongMetric txRollbacks;
-
-    /** Number of evictions. */
-    private final AtomicLongMetric evictCnt;
-
-    /** Number of removed entries. */
-    private final AtomicLongMetric rmCnt;
-
-    /** Total put time taken nanos. */
-    private final AtomicLongMetric putTimeTotal;
-
-    /** Total get time taken nanos. */
-    private final AtomicLongMetric getTimeTotal;
-
-    /** Total remove time taken nanos. */
-    private final AtomicLongMetric rmvTimeTotal;
-
-    /** Total commit transaction time taken nanos. */
-    private final AtomicLongMetric commitTimeTotal;
-
-    /** Total rollback transaction time taken nanos. */
-    private final AtomicLongMetric rollbackTimeTotal;
-
-    /** Number of reads from off-heap memory. */
-    private final AtomicLongMetric offHeapGets;
-
-    /** Number of writes to off-heap memory. */
-    private final AtomicLongMetric offHeapPuts;
-
-    /** Number of removed entries from off-heap memory. */
-    private final AtomicLongMetric offHeapRemoves;
-
-    /** Number of evictions from off-heap memory. */
-    private final AtomicLongMetric offHeapEvicts;
-
-    /** Number of off-heap hits. */
-    private final AtomicLongMetric offHeapHits;
-
-    /** Number of off-heap misses. */
-    private final AtomicLongMetric offHeapMisses;
-
-    /** Rebalanced keys count. */
-    private final AtomicLongMetric rebalancedKeys;
-
-    /** Total rebalanced bytes count. */
-    private final AtomicLongMetric totalRebalancedBytes;
-
-    /** Rebalanced start time. */
-    private final AtomicLongMetric rebalanceStartTime;
-
-    /** Estimated rebalancing keys count. */
-    private final AtomicLongMetric estimatedRebalancingKeys;
-
-    /** Rebalancing rate in keys. */
-    private final HitRateMetric rebalancingKeysRate;
-
-    /** Rebalancing rate in bytes. */
-    private final HitRateMetric rebalancingBytesRate;
-
-    /** Number of currently clearing partitions for rebalancing. */
-    private final AtomicLongMetric rebalanceClearingPartitions;
-
+    //TODO: Move to metric source
     /** Number of currently evicting non-affinity partitions. Not available in the old metrics framework. */
-    private final AtomicLongMetric evictingPartitions;
+    private AtomicLongMetric evictingPartitions = new AtomicLongMetric("evictingPartitions", null);
 
-    /** Get time. */
-    private final HistogramMetricImpl getTime;
-
-    /** Put time. */
-    private final HistogramMetricImpl putTime;
-
-    /** Remove time. */
-    private final HistogramMetricImpl rmvTime;
-
-    /** Commit time. */
-    private final HistogramMetricImpl commitTime;
-
-    /** Rollback time. */
-    private final HistogramMetricImpl rollbackTime;
-
-    /** Cache metrics. */
-    @GridToStringExclude
-    private transient CacheMetricsImpl delegate;
-
+    //TODO: Move to metric source
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
 
@@ -212,36 +51,20 @@ public class CacheMetricsImpl implements CacheMetrics {
     private GridCacheContext<?, ?> dhtCtx;
 
     /** Write-behind store, if configured. */
-    private GridCacheWriteBehindStore store;
+    private GridCacheWriteBehindStore<?, ?> store;
 
+    //TODO: BEGIN: Support all below
     /** Tx collisions info. */
     private volatile Supplier<List<Map.Entry</* Colliding keys. */ GridCacheMapEntry, /* Collisions queue size. */ Integer>>> txKeyCollisionInfo;
-
-    /** Offheap entries count. */
-    private final LongGauge offHeapEntriesCnt;
-
-    /** Offheap primary entries count. */
-    private final LongGauge offHeapPrimaryEntriesCnt;
-
-    /** Offheap backup entries count. */
-    private final LongGauge offHeapBackupEntriesCnt;
-
-    /** Onheap entries count. */
-    private final LongGauge heapEntriesCnt;
-
-    /** Cache size. */
-    private final LongGauge cacheSize;
-
-    /** Number of keys processed during index rebuilding. */
-    private final LongAdderMetric idxRebuildKeyProcessed;
+    //TODO: END: Support all below
 
     /**
      * Creates cache metrics.
      *
      * @param cctx Cache context.
      */
-    public CacheMetricsImpl(GridCacheContext<?, ?> cctx) {
-        this(cctx, false);
+    public CacheMetricsImpl(CacheMetricSource metricSrc, GridCacheContext<?, ?> cctx) {
+        this(metricSrc, cctx, false);
     }
 
     /**
@@ -250,8 +73,10 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param cctx Cache context.
      * @param isNear Is near flag.
      */
-    public CacheMetricsImpl(GridCacheContext<?, ?> cctx, boolean isNear) {
+    public CacheMetricsImpl(CacheMetricSource metricSrc, GridCacheContext<?, ?> cctx, boolean isNear) {
         assert cctx != null;
+
+        this.metricSrc = metricSrc;
 
         this.cctx = cctx;
 
@@ -259,163 +84,29 @@ public class CacheMetricsImpl implements CacheMetrics {
             dhtCtx = cctx.near().dht().context();
 
         if (cctx.store().store() instanceof GridCacheWriteBehindStore)
-            store = (GridCacheWriteBehindStore)cctx.store().store();
+            store = (GridCacheWriteBehindStore<?, ?>)cctx.store().store();
 
-        delegate = null;
-
-        MetricRegistry mreg = cctx.kernalContext().metric().registry(cacheMetricsRegistryName(cctx.name(), isNear));
-
-        reads = mreg.longMetric("CacheGets",
-            "The total number of gets to the cache.");
-
-        entryProcessorPuts = mreg.longMetric("EntryProcessorPuts",
-            "The total number of cache invocations, caused update.");
-
-        entryProcessorRemovals = mreg.longMetric("EntryProcessorRemovals",
-            "The total number of cache invocations, caused removals.");
-
-        entryProcessorReadOnlyInvocations = mreg.longMetric("EntryProcessorReadOnlyInvocations",
-            "The total number of cache invocations, caused no updates.");
-
-        entryProcessorInvokeTimeNanos = mreg.longMetric("EntryProcessorInvokeTimeNanos",
-            "The total time of cache invocations, in nanoseconds.");
-
-        entryProcessorMinInvocationTime = mreg.longMetric("EntryProcessorMinInvocationTime",
-            "So far, the minimum time to execute cache invokes.");
-
-        entryProcessorMaxInvocationTime = mreg.longMetric("EntryProcessorMaxInvocationTime",
-            "So far, the maximum time to execute cache invokes.");
-
-        entryProcessorHits = mreg.longMetric("EntryProcessorHits",
-            "The total number of invocations on keys, which exist in cache.");
-
-        entryProcessorMisses = mreg.longMetric("EntryProcessorMisses",
-            "The total number of invocations on keys, which don't exist in cache.");
-
-        writes = mreg.longMetric("CachePuts",
-            "The total number of puts to the cache.");
-
-        hits = mreg.longMetric("CacheHits",
-            "The number of get requests that were satisfied by the cache.");
-
-        misses = mreg.longMetric("CacheMisses",
-            "A miss is a get request that is not satisfied.");
-
-        txCommits = mreg.longMetric("CacheTxCommits",
-            "Total number of transaction commits.");
-
-        txRollbacks = mreg.longMetric("CacheTxRollbacks",
-            "Total number of transaction rollbacks.");
-
-        evictCnt = mreg.longMetric("CacheEvictions",
-            "The total number of evictions from the cache.");
-
-        rmCnt = mreg.longMetric("CacheRemovals", "The total number of removals from the cache.");
-
-        putTimeTotal = mreg.longMetric("PutTimeTotal",
-            "The total time of cache puts, in nanoseconds.");
-
-        getTimeTotal = mreg.longMetric("GetTimeTotal",
-            "The total time of cache gets, in nanoseconds.");
-
-        rmvTimeTotal = mreg.longMetric("RemoveTimeTotal",
-            "The total time of cache removal, in nanoseconds.");
-
-        commitTimeTotal = mreg.longMetric("CommitTimeTotal",
-            "The total time of commit, in nanoseconds.");
-
-        rollbackTimeTotal = mreg.longMetric("RollbackTimeTotal",
-            "The total time of rollback, in nanoseconds.");
-
-        offHeapGets = mreg.longMetric("OffHeapGets",
-            "The total number of get requests to the off-heap memory.");
-
-        offHeapPuts = mreg.longMetric("OffHeapPuts",
-            "The total number of put requests to the off-heap memory.");
-
-        offHeapRemoves = mreg.longMetric("OffHeapRemovals",
-            "The total number of removals from the off-heap memory.");
-
-        offHeapEvicts = mreg.longMetric("OffHeapEvictions",
-            "The total number of evictions from the off-heap memory.");
-
-        offHeapHits = mreg.longMetric("OffHeapHits",
-            "The number of get requests that were satisfied by the off-heap memory.");
-
-        offHeapMisses = mreg.longMetric("OffHeapMisses",
-            "A miss is a get request that is not satisfied by off-heap memory.");
-
-        rebalancedKeys = mreg.longMetric("RebalancedKeys",
-            "Number of already rebalanced keys.");
-
-        totalRebalancedBytes = mreg.longMetric("TotalRebalancedBytes",
-            "Number of already rebalanced bytes.");
-
-        rebalanceStartTime = mreg.longMetric("RebalanceStartTime",
-            "Rebalance start time");
-
-        rebalanceStartTime.value(-1);
-
-        estimatedRebalancingKeys = mreg.longMetric("EstimatedRebalancingKeys",
-            "Number estimated to rebalance keys.");
-
-        rebalancingKeysRate = mreg.hitRateMetric("RebalancingKeysRate",
-            "Estimated rebalancing speed in keys",
-            REBALANCE_RATE_INTERVAL,
-            20);
-
-        rebalancingBytesRate = mreg.hitRateMetric("RebalancingBytesRate",
-            "Estimated rebalancing speed in bytes",
-            REBALANCE_RATE_INTERVAL,
-            20);
-
-        rebalanceClearingPartitions = mreg.longMetric("RebalanceClearingPartitionsLeft",
-            "The number of partitions need to be cleared before actual rebalance start.");
-
-        evictingPartitions = mreg.longMetric("EvictingPartitionsLeft",
-            "The number of non-affinity partitions scheduled for eviction.");
-
-        mreg.register("IsIndexRebuildInProgress", this::isIndexRebuildInProgress,
-            "True if index rebuild is in progress.");
-
-        getTime = mreg.histogram("GetTime", HISTOGRAM_BUCKETS, "Get time in nanoseconds.");
-
-        putTime = mreg.histogram("PutTime", HISTOGRAM_BUCKETS, "Put time in nanoseconds.");
-
-        rmvTime = mreg.histogram("RemoveTime", HISTOGRAM_BUCKETS, "Remove time in nanoseconds.");
-
-        commitTime = mreg.histogram("CommitTime", HISTOGRAM_BUCKETS, "Commit time in nanoseconds.");
-
-        rollbackTime = mreg.histogram("RollbackTime", HISTOGRAM_BUCKETS, "Rollback time in nanoseconds.");
-
+        //TODO: Support new metrics
+/*
         mreg.register("TxKeyCollisions", this::getTxKeyCollisions, String.class, "Tx key collisions. " +
-            "Show keys and collisions queue size. Due transactional payload some keys become hot. Metric shows " +
-            "corresponding keys.");
+                "Show keys and collisions queue size. Due transactional payload some keys become hot. Metric shows " +
+                "corresponding keys.");
+*/
+    }
 
-        offHeapEntriesCnt = mreg.register("OffHeapEntriesCount",
-            () -> getEntriesStat().offHeapEntriesCount(), "Offheap entries count.");
-
-        offHeapPrimaryEntriesCnt = mreg.register("OffHeapPrimaryEntriesCount",
-            () -> getEntriesStat().offHeapPrimaryEntriesCount(), "Offheap primary entries count.");
-
-        offHeapBackupEntriesCnt = mreg.register("OffHeapBackupEntriesCount",
-            () -> getEntriesStat().offHeapBackupEntriesCount(), "Offheap backup entries count.");
-
-        heapEntriesCnt = mreg.register("HeapEntriesCount",
-            () -> getEntriesStat().heapEntriesCount(), "Onheap entries count.");
-
-        cacheSize = mreg.register("CacheSize",
-            () -> getEntriesStat().cacheSize(), "Local cache size.");
-
-        idxRebuildKeyProcessed = mreg.longAdderMetric("IndexRebuildKeyProcessed",
-            "Number of keys processed during index rebuilding.");
+    /**
+     * @return Cache metric source.
+     */
+    public CacheMetricSource metricSource() {
+        return metricSrc;
     }
 
     /**
      * @param delegate Metrics to delegate to.
      */
     public void delegate(CacheMetricsImpl delegate) {
-        this.delegate = delegate;
+        if (delegate != null)
+            metricSrc.delegate(delegate.metricSrc);
     }
 
     /** {@inheritDoc} */
@@ -423,183 +114,223 @@ public class CacheMetricsImpl implements CacheMetrics {
         return cctx.name();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Invalid metric since Apache Ignite 2.0
+     */
+    @Deprecated
     @Override public long getOffHeapGets() {
-        return offHeapGets.value();
+        return -1;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Invalid metric since Apache Ignite 2.0
+     */
+    @Deprecated
     @Override public long getOffHeapPuts() {
-        return offHeapPuts.value();
+        return -1;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Invalid metric since Apache Ignite 2.0
+     */
+    @Deprecated
     @Override public long getOffHeapRemovals() {
-        return offHeapRemoves.value();
+        return -1;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Invalid metric since Apache Ignite 2.0
+     */
+    @Deprecated
     @Override public long getOffHeapEvictions() {
-        return offHeapEvicts.value();
+        return -1;
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapHits() {
-        return offHeapHits.value();
+        return -1;
     }
 
     /** {@inheritDoc} */
     @Override public float getOffHeapHitPercentage() {
-        long hits0 = offHeapHits.value();
-
-        long gets0 = offHeapGets.value();
-
-        if (hits0 == 0)
-            return 0;
-
-        return (float)hits0 / gets0 * 100.0f;
+        return 0;
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapMisses() {
-        return offHeapMisses.value();
+        return -1;
     }
 
     /** {@inheritDoc} */
     @Override public float getOffHeapMissPercentage() {
-        long misses0 = offHeapMisses.value();
-
-        long reads0 = offHeapGets.value();
-
-        if (misses0 == 0)
-            return 0;
-
-        return (float)misses0 / reads0 * 100.0f;
+        return 0;
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
-        return offHeapEntriesCnt.value();
+        return metricSrc.offHeapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapEntriesCount() {
-        return heapEntriesCnt.value();
+        return metricSrc.heapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
-        return offHeapPrimaryEntriesCnt.value();
+        return metricSrc.offHeapPrimaryEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapBackupEntriesCount() {
-        return offHeapBackupEntriesCnt.value();
+        return metricSrc.offHeapBackupEntriesCount();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Invalid metric since Apache Ignite 2.0
+     */
+    @Deprecated
     @Override public long getOffHeapAllocatedSize() {
-        GridCacheAdapter<?, ?> cache = cctx.cache();
-
-        return cache != null ? cache.offHeapAllocatedSize() : -1;
+        return -1;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Use {{@link #getCacheSize()}} instead.
+     */
+    @Deprecated
     @Override public int getSize() {
-        return getEntriesStat().size();
+        return -1;
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheSize() {
-        return cacheSize.value();
+        return metricSrc.localSize();
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public int getKeySize() {
-        return getEntriesStat().keySize();
+        return -1;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated It equals to {@link #getOffHeapEntriesCount()} equals 0.
+     */
+    @Deprecated
     @Override public boolean isEmpty() {
-        return getEntriesStat().isEmpty();
+        return getOffHeapEntriesCount() == 0;
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getDhtEvictQueueCurrentSize() {
         return -1;
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getTxCommitQueueSize() {
         return 0;
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getTxThreadMapSize() {
         return cctx.tm().threadMapSize();
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getTxXidMapSize() {
         return cctx.tm().idMapSize();
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getTxPrepareQueueSize() {
         return 0;
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getTxStartVersionCountsSize() {
         return 0;
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getTxCommittedVersionsSize() {
         return cctx.tm().completedVersionsSize();
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getTxRolledbackVersionsSize() {
         return cctx.tm().completedVersionsSize();
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getTxDhtThreadMapSize() {
         return cctx.tm().threadMapSize();
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getTxDhtXidMapSize() {
         return cctx.isNear() && dhtCtx != null ? dhtCtx.tm().idMapSize() : -1;
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getTxDhtCommitQueueSize() {
         return 0;
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getTxDhtPrepareQueueSize() {
         return 0;
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getTxDhtStartVersionCountsSize() {
         return 0;
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getTxDhtCommittedVersionsSize() {
         return cctx.isNear() && dhtCtx != null ? dhtCtx.tm().completedVersionsSize() : -1;
     }
 
     /** {@inheritDoc} */
+    @Deprecated
+    //TODO: Must be moved to transaction metrics.
     @Override public int getTxDhtRolledbackVersionsSize() {
         return cctx.isNear() && dhtCtx != null ? dhtCtx.tm().completedVersionsSize() : -1;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Doesn't make sense. All related metrics will have {@code -1} value if store isn't configured.
+     * E.g {@link #getWriteBehindFlushSize}.
+     */
+    @Deprecated
     @Override public boolean isWriteBehindEnabled() {
         return store != null;
     }
@@ -641,14 +372,18 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindBufferSize() {
-        return store != null ? store.getWriteBehindBufferSize() : -1;
+        return metricSrc.writeBehindFlushSize();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Should be removed in Apache Ignite 3.0. Metrics aggregation is out of scope and shuld be done with
+     * external systems.
+     */
+    @Deprecated
     @Override public float getAverageTxCommitTime() {
-        long timeNanos = commitTimeTotal.value();
+        long timeNanos = metricSrc.commitTimeTotal();
 
-        long commitsCnt = txCommits.value();
+        long commitsCnt = metricSrc.txCommits();
 
         if (timeNanos == 0 || commitsCnt == 0)
             return 0;
@@ -656,11 +391,18 @@ public class CacheMetricsImpl implements CacheMetrics {
         return ((1f * timeNanos) / commitsCnt) / NANOS_IN_MICROSECOND;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Should be removed in Apache Ignite 3.0. Metrics aggregation is out of scope and shuld be done with
+     * external systems.
+     */
+    @Deprecated
     @Override public float getAverageTxRollbackTime() {
-        long timeNanos = rollbackTimeTotal.value();
+        if (!metricSrc.enabled())
+            return 0;
 
-        long rollbacksCnt = txRollbacks.value();
+        long timeNanos = metricSrc.rollbackTimeTotal();
+
+        long rollbacksCnt = metricSrc.txRollbacks();
 
         if (timeNanos == 0 || rollbacksCnt == 0)
             return 0;
@@ -670,74 +412,38 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getCacheTxCommits() {
-        return txCommits.value();
+        return metricSrc.txCommits();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheTxRollbacks() {
-        return txRollbacks.value();
+        return metricSrc.txRollbacks();
     }
 
     /**
      * Clear metrics.
      */
     public void clear() {
-        reads.reset();
-        writes.reset();
-        rmCnt.reset();
-        hits.reset();
-        misses.reset();
-        evictCnt.reset();
-        txCommits.reset();
-        txRollbacks.reset();
-        putTimeTotal.reset();
-        rmvTimeTotal.reset();
-        getTimeTotal.reset();
-        commitTimeTotal.reset();
-        rollbackTimeTotal.reset();
-
-        entryProcessorPuts.reset();
-        entryProcessorRemovals.reset();
-        entryProcessorReadOnlyInvocations.reset();
-        entryProcessorMisses.reset();
-        entryProcessorHits.reset();
-        entryProcessorInvokeTimeNanos.reset();
-        entryProcessorMaxInvocationTime.reset();
-        entryProcessorMinInvocationTime.reset();
-
-        offHeapGets.reset();
-        offHeapPuts.reset();
-        offHeapRemoves.reset();
-        offHeapHits.reset();
-        offHeapMisses.reset();
-        offHeapEvicts.reset();
-
-        getTime.reset();
-        putTime.reset();
-        rmvTime.reset();
-        commitTime.reset();
-        rollbackTime.reset();
-
-        clearRebalanceCounters();
-
-        if (delegate != null)
-            delegate.clear();
-
-        txKeyCollisionInfo = null;
-
-        idxRebuildKeyProcessed.reset();
+        metricSrc.reset();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheHits() {
-        return hits.value();
+        return metricSrc.cacheHits();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Should be removed in Apache Ignite 3.0. Metrics aggregation is out of scope and shuld be done with
+     * external systems.
+     */
+    @Deprecated
     @Override public float getCacheHitPercentage() {
-        long hits0 = hits.value();
+        if (!metricSrc.enabled())
+            return 0;
 
-        long gets0 = reads.value();
+        long hits0 = metricSrc.cacheHits();
+
+        long gets0 = metricSrc.reads();
 
         if (hits0 == 0)
             return 0;
@@ -747,14 +453,21 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getCacheMisses() {
-        return misses.value();
+        return metricSrc.misses();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Should be removed in Apache Ignite 3.0. Metrics aggregation is out of scope and shuld be done with
+     * external systems.
+     */
+    @Deprecated
     @Override public float getCacheMissPercentage() {
-        long misses0 = misses.value();
+        if (!metricSrc.enabled())
+            return 0;
 
-        long reads0 = reads.value();
+        long misses0 = metricSrc.misses();
+
+        long reads0 = metricSrc.reads();
 
         if (misses0 == 0)
             return 0;
@@ -764,42 +477,58 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getCacheGets() {
-        return reads.value();
+        return metricSrc.reads();
     }
 
     /** {@inheritDoc} */
     @Override public long getCachePuts() {
-        return writes.value();
+        return metricSrc.writes();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorPuts() {
-        return entryProcessorPuts.value();
+        return metricSrc.entryProcessorPuts();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorRemovals() {
-        return entryProcessorRemovals.value();
+        return metricSrc.entryProcessorRemovals();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorReadOnlyInvocations() {
-        return entryProcessorReadOnlyInvocations.value();
+        return metricSrc.entryProcessorReadOnlyInvocations();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Should be removed in Apache Ignite 3.0. Metrics aggregation is out of scope and shuld be done with
+     * external systems.
+     */
+    @Deprecated
     @Override public long getEntryProcessorInvocations() {
-        return entryProcessorReadOnlyInvocations.value() + entryProcessorPuts.value() + entryProcessorRemovals.value();
+        if (!metricSrc.enabled())
+            return 0;
+
+        return metricSrc.entryProcessorReadOnlyInvocations() +
+                metricSrc.entryProcessorPuts() +
+                metricSrc.entryProcessorRemovals();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorHits() {
-        return entryProcessorHits.value();
+        return metricSrc.entryProcessorHits();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Should be removed in Apache Ignite 3.0. Metrics aggregation is out of scope and shuld be done with
+     * external systems.
+     */
+    @Deprecated
     @Override public float getEntryProcessorHitPercentage() {
-        long hits = entryProcessorHits.value();
+        if (!metricSrc.enabled())
+            return 0;
+
+        long hits = metricSrc.entryProcessorHits();
 
         long totalInvocations = getEntryProcessorInvocations();
 
@@ -811,12 +540,19 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorMisses() {
-        return entryProcessorMisses.value();
+        return metricSrc.entryProcessorMisses();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Should be removed in Apache Ignite 3.0. Metrics aggregation is out of scope and shuld be done with
+     * external systems.
+     */
+    @Deprecated
     @Override public float getEntryProcessorMissPercentage() {
-        long misses = entryProcessorMisses.value();
+        if (!metricSrc.enabled())
+            return 0;
+
+        long misses = metricSrc.entryProcessorMisses();
 
         long totalInvocations = getEntryProcessorInvocations();
 
@@ -826,11 +562,18 @@ public class CacheMetricsImpl implements CacheMetrics {
         return (float)misses / totalInvocations * 100.0f;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Should be removed in Apache Ignite 3.0. Metrics aggregation is out of scope and shuld be done with
+     * external systems.
+     */
+    @Deprecated
     @Override public float getEntryProcessorAverageInvocationTime() {
+        if (!metricSrc.enabled())
+            return 0;
+
         long totalInvokes = getEntryProcessorInvocations();
 
-        long timeNanos = entryProcessorInvokeTimeNanos.value();
+        long timeNanos = metricSrc.entryProcessorInvokeTimeNanos();
 
         if (timeNanos == 0 || totalInvokes == 0)
             return 0;
@@ -840,29 +583,42 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public float getEntryProcessorMinInvocationTime() {
-        return (1f * entryProcessorMinInvocationTime.value()) / NANOS_IN_MICROSECOND;
+        if (!metricSrc.enabled())
+            return 0;
+
+        return (1f * metricSrc.entryProcessorMinInvocationTime()) / NANOS_IN_MICROSECOND;
     }
 
     /** {@inheritDoc} */
     @Override public float getEntryProcessorMaxInvocationTime() {
-        return (1f * entryProcessorMaxInvocationTime.value()) / NANOS_IN_MICROSECOND;
+        if (!metricSrc.enabled())
+            return 0;
+
+        return (1f * metricSrc.entryProcessorMaxInvocationTime()) / NANOS_IN_MICROSECOND;
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheRemovals() {
-        return rmCnt.value();
+        return metricSrc.removals();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheEvictions() {
-        return evictCnt.value();
+        return metricSrc.evictions();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Should be removed in Apache Ignite 3.0. Metrics aggregation is out of scope and shuld be done with
+     * external systems.
+     */
+    @Deprecated
     @Override public float getAverageGetTime() {
-        long timeNanos = getTimeTotal.value();
+        if (!metricSrc.enabled())
+            return 0;
 
-        long readsCnt = reads.value();
+        long timeNanos = metricSrc.getTimeTotal();
+
+        long readsCnt = metricSrc.reads();
 
         if (timeNanos == 0 || readsCnt == 0)
             return 0;
@@ -870,11 +626,18 @@ public class CacheMetricsImpl implements CacheMetrics {
         return ((1f * timeNanos) / readsCnt) / NANOS_IN_MICROSECOND;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Should be removed in Apache Ignite 3.0. Metrics aggregation is out of scope and shuld be done with
+     * external systems.
+     */
+    @Deprecated
     @Override public float getAveragePutTime() {
-        long timeNanos = putTimeTotal.value();
+        if (!metricSrc.enabled())
+            return 0;
 
-        long putsCnt = writes.value();
+        long timeNanos = metricSrc.putTimeTotal();
+
+        long putsCnt = metricSrc.writes();
 
         if (timeNanos == 0 || putsCnt == 0)
             return 0;
@@ -882,11 +645,18 @@ public class CacheMetricsImpl implements CacheMetrics {
         return ((1f * timeNanos) / putsCnt) / NANOS_IN_MICROSECOND;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @deprecated Should be removed in Apache Ignite 3.0. Metrics aggregation is out of scope and shuld be done with
+     * external systems.
+     */
+    @Deprecated
     @Override public float getAverageRemoveTime() {
-        long timeNanos = rmvTimeTotal.value();
+        if (!metricSrc.enabled())
+            return 0;
 
-        long removesCnt = rmCnt.value();
+        long timeNanos = metricSrc.removeTimeTotal();
+
+        long removesCnt = metricSrc.removals();
 
         if (timeNanos == 0 || removesCnt == 0)
             return 0;
@@ -899,15 +669,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param isHit Hit or miss flag.
      */
     public void onRead(boolean isHit) {
-        reads.increment();
-
-        if (isHit)
-            hits.increment();
-        else
-            misses.increment();
-
-        if (delegate != null)
-            delegate.onRead(isHit);
+        metricSrc.onRead(isHit);
     }
 
     /**
@@ -915,23 +677,29 @@ public class CacheMetricsImpl implements CacheMetrics {
      *
      * @param coll Key collisions info holder.
      */
+    //TODO: Move to metric source
     public void keyCollisionsInfo(Supplier<List<Map.Entry</* Colliding keys. */ GridCacheMapEntry, /* Collisions queue size. */ Integer>>> coll) {
+/*
         txKeyCollisionInfo = coll;
 
         if (delegate != null)
             delegate.keyCollisionsInfo(coll);
+*/
     }
 
     /** Callback representing current key collisions state.
      *
      * @return Key collisions info holder.
      */
+    //TODO: Move to metric source
     public @Nullable Supplier<List<Map.Entry<GridCacheMapEntry, Integer>>> keyCollisionsInfo() {
         return txKeyCollisionInfo;
     }
 
     /** {@inheritDoc} */
+    //TODO: Move to metric source
     @Override public String getTxKeyCollisions() {
+/*
         SB sb = null;
 
         Supplier<List<Map.Entry<GridCacheMapEntry, Integer>>> collInfo = keyCollisionsInfo();
@@ -954,6 +722,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         }
 
         return sb != null ? sb.toString() : "";
+*/
+        return null; // ^^^
     }
 
     /**
@@ -962,15 +732,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param isHit Hit or miss flag.
      */
     public void onInvokeUpdate(boolean isHit) {
-        entryProcessorPuts.increment();
-
-        if (isHit)
-            entryProcessorHits.increment();
-        else
-            entryProcessorMisses.increment();
-
-        if (delegate != null)
-            delegate.onInvokeUpdate(isHit);
+        metricSrc.onInvokeUpdate(isHit);
     }
 
     /**
@@ -979,15 +741,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param isHit Hit or miss flag.
      */
     public void onInvokeRemove(boolean isHit) {
-        entryProcessorRemovals.increment();
-
-        if (isHit)
-            entryProcessorHits.increment();
-        else
-            entryProcessorMisses.increment();
-
-        if (delegate != null)
-            delegate.onInvokeRemove(isHit);
+        metricSrc.onInvokeRemove(isHit);
     }
 
     /**
@@ -996,15 +750,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param isHit Hit or miss flag.
      */
     public void onReadOnlyInvoke(boolean isHit) {
-        entryProcessorReadOnlyInvocations.increment();
-
-        if (isHit)
-            entryProcessorHits.increment();
-        else
-            entryProcessorMisses.increment();
-
-        if (delegate != null)
-            delegate.onReadOnlyInvoke(isHit);
+        metricSrc.onReadOnlyInvoke(isHit);
     }
 
     /**
@@ -1013,77 +759,28 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration Duration.
      */
     public void addInvokeTimeNanos(long duration) {
-        entryProcessorInvokeTimeNanos.add(duration);
-
-        recalculateInvokeMinTimeNanos(duration);
-
-        recalculateInvokeMaxTimeNanos(duration);
-
-        if (delegate != null)
-            delegate.addInvokeTimeNanos(duration);
-
-    }
-
-    /**
-     * Recalculates invoke operation minimum time nanos.
-     *
-     * @param duration Duration.
-     */
-    private void recalculateInvokeMinTimeNanos(long duration) {
-        long minTime = entryProcessorMinInvocationTime.value();
-
-        while (minTime > duration || minTime == 0) {
-            if (MetricUtils.compareAndSet(entryProcessorMinInvocationTime, minTime, duration))
-                break;
-            else
-                minTime = entryProcessorMinInvocationTime.value();
-        }
-    }
-
-    /**
-     * Recalculates invoke operation maximum time nanos.
-     *
-     * @param duration Duration.
-     */
-    private void recalculateInvokeMaxTimeNanos(long duration) {
-        long maxTime = entryProcessorMaxInvocationTime.value();
-
-        while (maxTime < duration) {
-            if (MetricUtils.compareAndSet(entryProcessorMaxInvocationTime, maxTime, duration))
-                break;
-            else
-                maxTime = entryProcessorMaxInvocationTime.value();
-        }
+        metricSrc.addInvokeTimeNanos(duration);
     }
 
     /**
      * Cache write callback.
      */
     public void onWrite() {
-        writes.increment();
-
-        if (delegate != null)
-            delegate.onWrite();
+        metricSrc.onWrite();
     }
 
     /**
      * Cache remove callback.
      */
     public void onRemove() {
-        rmCnt.increment();
-
-        if (delegate != null)
-            delegate.onRemove();
+        metricSrc.onRemove();
     }
 
     /**
      * Cache remove callback.
      */
     public void onEvict() {
-        evictCnt.increment();
-
-        if (delegate != null)
-            delegate.onEvict();
+        metricSrc.onEvict();
     }
 
     /**
@@ -1092,13 +789,9 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void onTxCommit(long duration) {
-        txCommits.increment();
-        commitTimeTotal.add(duration);
-
-        commitTime.value(duration);
-
-        if (delegate != null)
-            delegate.onTxCommit(duration);
+        //TODO: Add to metric source update of new commitTime metric
+        //commitTime.value(duration);
+        metricSrc.onTxCommit(duration);
     }
 
     /**
@@ -1107,13 +800,9 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void onTxRollback(long duration) {
-        txRollbacks.increment();
-        rollbackTimeTotal.add(duration);
-
-        rollbackTime.value(duration);
-
-        if (delegate != null)
-            delegate.onTxRollback(duration);
+        //TODO: Add to metric source update of new rollbackTime metric
+        //rollbackTime.value(duration);
+        metricSrc.onTxRollback(duration);
     }
 
     /**
@@ -1122,12 +811,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void addGetTimeNanos(long duration) {
-        getTimeTotal.add(duration);
-
-        getTime.value(duration);
-
-        if (delegate != null)
-            delegate.addGetTimeNanos(duration);
+        metricSrc.addGetTimeNanos(duration);
     }
 
     /**
@@ -1136,12 +820,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void addPutTimeNanos(long duration) {
-        putTimeTotal.add(duration);
-
-        putTime.value(duration);
-
-        if (delegate != null)
-            delegate.addPutTimeNanos(duration);
+        metricSrc.addPutTimeNanos(duration);
     }
 
     /**
@@ -1150,12 +829,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void addRemoveTimeNanos(long duration) {
-        rmvTimeTotal.add(duration);
-
-        rmvTime.value(duration);
-
-        if (delegate != null)
-            delegate.addRemoveTimeNanos(duration);
+        metricSrc.addRemoveTimeTotal(duration);
     }
 
     /**
@@ -1164,11 +838,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void addRemoveAndGetTimeNanos(long duration) {
-        rmvTimeTotal.add(duration);
-        getTimeTotal.add(duration);
-
-        if (delegate != null)
-            delegate.addRemoveAndGetTimeNanos(duration);
+        metricSrc.addRemoveAndGetTimeNanos(duration);
     }
 
     /**
@@ -1177,37 +847,53 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void addPutAndGetTimeNanos(long duration) {
-        putTimeTotal.add(duration);
-        getTimeTotal.add(duration);
-
-        if (delegate != null)
-            delegate.addPutAndGetTimeNanos(duration);
+        metricSrc.addPutAndGetTimeNanos(duration);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * @deprecated Not a metric. Should be in system view.
+     */
+    @Deprecated
     @Override public String getKeyType() {
-        CacheConfiguration ccfg = cctx.config();
+        CacheConfiguration<?, ?> ccfg = cctx.config();
 
         return ccfg != null ? ccfg.getKeyType().getName() : null;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * @deprecated Not a metric. Should be in system view.
+     */
+    @Deprecated
     @Override public String getValueType() {
-        CacheConfiguration ccfg = cctx.config();
+        CacheConfiguration<?, ?> ccfg = cctx.config();
 
         return ccfg != null ? ccfg.getValueType().getName() : null;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * @deprecated Not a metric. Should be in system view.
+     */
+    @Deprecated
     @Override public boolean isReadThrough() {
-        CacheConfiguration ccfg = cctx.config();
+        CacheConfiguration<?, ?> ccfg = cctx.config();
 
         return ccfg != null && ccfg.isReadThrough();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * @deprecated Not a metric. Should be in system view.
+     */
+    @Deprecated
     @Override public boolean isWriteThrough() {
-        CacheConfiguration ccfg = cctx.config();
+        CacheConfiguration<?, ?> ccfg = cctx.config();
 
         return ccfg != null && ccfg.isWriteThrough();
     }
@@ -1244,188 +930,75 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public boolean isStoreByValue() {
-        CacheConfiguration ccfg = cctx.config();
+        CacheConfiguration<?, ?> ccfg = cctx.config();
 
         return ccfg != null && ccfg.isStoreByValue();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isStatisticsEnabled() {
-        return cctx.statisticsEnabled();
+        return metricSrc.enabled();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isManagementEnabled() {
-        CacheConfiguration ccfg = cctx.config();
+        CacheConfiguration<?, ?> ccfg = cctx.config();
 
         return ccfg != null && ccfg.isManagementEnabled();
     }
 
-    /**
-     * Calculates entries count/partitions count metrics using one iteration over local partitions for all metrics
-     */
-    public EntriesStatMetrics getEntriesStat() {
-        int owningPartCnt = 0;
-        int movingPartCnt = 0;
-        long offHeapEntriesCnt = 0L;
-        long offHeapPrimaryEntriesCnt = 0L;
-        long offHeapBackupEntriesCnt = 0L;
-        long heapEntriesCnt = 0L;
-        int size = 0;
-        long sizeLong = 0L;
-        boolean isEmpty;
-
-        try {
-            AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
-
-            if (AffinityTopologyVersion.NONE.equals(topVer))
-                return unknownEntriesStat();
-
-            final GridCacheAdapter<?, ?> cache = cctx.cache();
-
-            if (cache != null) {
-                offHeapEntriesCnt = cache.offHeapEntriesCount();
-
-                size = cache.localSize(null);
-                sizeLong = cache.localSizeLong(null);
-            }
-
-            if (cctx.isLocal()) {
-                if (cache != null) {
-                    offHeapPrimaryEntriesCnt = offHeapEntriesCnt;
-
-                    heapEntriesCnt = cache.sizeLong();
-                }
-            }
-            else {
-                IntSet primaries = ImmutableIntSet.wrap(cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
-                IntSet backups = ImmutableIntSet.wrap(cctx.affinity().backupPartitions(cctx.localNodeId(), topVer));
-
-                if (cctx.isNear() && cache != null)
-                    heapEntriesCnt = cache.nearSize();
-
-                for (GridDhtLocalPartition part : cctx.topology().currentLocalPartitions()) {
-                    // Partitions count.
-                    GridDhtPartitionState partState = part.state();
-
-                    if (partState == GridDhtPartitionState.OWNING)
-                        owningPartCnt++;
-
-                    if (partState == GridDhtPartitionState.MOVING)
-                        movingPartCnt++;
-
-                    // Offheap entries count
-                    if (cache == null)
-                        continue;
-
-                    long cacheSize = part.dataStore().cacheSize(cctx.cacheId());
-
-                    if (primaries.contains(part.id()))
-                        offHeapPrimaryEntriesCnt += cacheSize;
-                    else if (backups.contains(part.id()))
-                        offHeapBackupEntriesCnt += cacheSize;
-
-                    heapEntriesCnt += part.publicSize(cctx.cacheId());
-                }
-            }
-        }
-        catch (Exception e) {
-            return unknownEntriesStat();
-        }
-
-        isEmpty = (offHeapEntriesCnt == 0);
-
-        EntriesStatMetrics stat = new EntriesStatMetrics();
-
-        stat.offHeapEntriesCount(offHeapEntriesCnt);
-        stat.offHeapPrimaryEntriesCount(offHeapPrimaryEntriesCnt);
-        stat.offHeapBackupEntriesCount(offHeapBackupEntriesCnt);
-        stat.heapEntriesCount(heapEntriesCnt);
-        stat.size(size);
-        stat.cacheSize(sizeLong);
-        stat.keySize(size);
-        stat.isEmpty(isEmpty);
-        stat.totalPartitionsCount(owningPartCnt + movingPartCnt);
-        stat.rebalancingPartitionsCount(movingPartCnt);
-
-        return stat;
-    }
-
-    /** @return Instance of {@link EntriesStatMetrics} with default values in case of unknown metrics. */
-    private EntriesStatMetrics unknownEntriesStat() {
-        EntriesStatMetrics stat = new EntriesStatMetrics();
-
-        stat.offHeapEntriesCount(-1L);
-        stat.offHeapPrimaryEntriesCount(-1L);
-        stat.offHeapBackupEntriesCount(-1L);
-        stat.heapEntriesCount(-1L);
-        stat.size(-1);
-        stat.cacheSize(-1L);
-        stat.keySize(-1);
-        stat.isEmpty(false);
-        stat.totalPartitionsCount(-1);
-        stat.rebalancingPartitionsCount(0);
-
-        return stat;
-    }
-
     /** {@inheritDoc} */
     @Override public int getTotalPartitionsCount() {
-        return getEntriesStat().totalPartitionsCount();
+        return metricSrc.totalPartitionsCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getRebalancingPartitionsCount() {
-        return getEntriesStat().rebalancingPartitionsCount();
+        return metricSrc.rebalancingPartitionsCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalancedKeys() {
-        return rebalancedKeys.value();
+        return metricSrc.rebalancedKeys();
     }
 
     /** {@inheritDoc} */
     @Override public long getEstimatedRebalancingKeys() {
-        return estimatedRebalancingKeys.value();
+        return metricSrc.estimatedRebalancingKeys();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * @deprecated Transitive. Can be calculated in external system.
+     */
+    @Deprecated
     @Override public long getKeysToRebalanceLeft() {
-        return Math.max(0, estimatedRebalancingKeys.value() - rebalancedKeys.value());
+        return metricSrc.keysToRebalanceLeft();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalancingKeysRate() {
-        return rebalancingKeysRate.value();
+        return metricSrc.rebalancingKeysRate();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalancingBytesRate() {
-        return rebalancingBytesRate.value();
+        return metricSrc.rebalancingBytesRate();
     }
 
     /**
      * Clear rebalance counters.
      */
     public void clearRebalanceCounters() {
-        estimatedRebalancingKeys.reset();
-
-        rebalancedKeys.reset();
-
-        totalRebalancedBytes.reset();
-
-        rebalancingBytesRate.reset();
-
-        rebalancingKeysRate.reset();
-
-        rebalanceStartTime.value(-1L);
+        metricSrc.resetRebalanceCounters();
     }
 
     /**
      *
      */
     public void startRebalance(long delay) {
-        rebalanceStartTime.value(delay + U.currentTimeMillis());
+        metricSrc.startRebalance(delay);
     }
 
     /** {@inheritDoc} */
@@ -1435,48 +1008,59 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long rebalancingStartTime() {
-        return rebalanceStartTime.value();
+        return getRebalancingStartTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getEstimatedRebalancingFinishTime() {
-        long rate = rebalancingKeysRate.value();
-
-        return rate <= 0 ? -1L :
-            ((getKeysToRebalanceLeft() / rate) * REBALANCE_RATE_INTERVAL) + U.currentTimeMillis();
+        return metricSrc.estimatedRebalancingFinishTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalancingStartTime() {
-        return rebalanceStartTime.value();
+        return metricSrc.rebalancingStartTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalanceClearingPartitionsLeft() {
-        return rebalanceClearingPartitions.value();
+        return metricSrc.rebalanceClearingPartitionsLeft();
+    }
+
+    /**
+     * Sets clearing partitions number.
+     * @param partitions Partitions number.
+     */
+    //TODO: May be unused in future sew below
+    public void rebalanceClearingPartitions(int partitions) {
+        metricSrc.rebalanceClearingPartitions(partitions);
     }
 
     /** */
+    //TODO: Move to metric source
     public long evictingPartitionsLeft() {
         return evictingPartitions.value();
     }
 
     /** */
+    //TODO: Move to cache group metric source
     public void incrementRebalanceClearingPartitions() {
-        rebalanceClearingPartitions.increment();
+      //  rebalanceClearingPartitions.increment();
     }
 
     /** */
+    //TODO: Move to cache group metric source
     public void decrementRebalanceClearingPartitions() {
-        rebalanceClearingPartitions.decrement();
+      //  rebalanceClearingPartitions.decrement();
     }
 
     /** */
+    //TODO: Move to cache group metric source
     public void incrementEvictingPartitions() {
         evictingPartitions.increment();
     }
 
     /** */
+    //TODO: Move to cache group metric source
     public void decrementEvictingPartitions() {
         evictingPartitions.decrement();
     }
@@ -1486,19 +1070,14 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param keysCnt Estimated number of keys.
      */
     public void onRebalancingKeysCountEstimateReceived(Long keysCnt) {
-        if (keysCnt == null)
-            return;
-
-        estimatedRebalancingKeys.add(keysCnt);
+        metricSrc.onRebalancingKeysCountEstimateReceived(keysCnt);
     }
 
     /**
      * Rebalance entry store callback.
      */
     public void onRebalanceKeyReceived() {
-        rebalancedKeys.increment();
-
-        rebalancingKeysRate.increment();
+        metricSrc.onRebalanceKeyReceived();
     }
 
     /**
@@ -1507,87 +1086,33 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param batchSize Batch size in bytes.
      */
     public void onRebalanceBatchReceived(long batchSize) {
-        totalRebalancedBytes.add(batchSize);
-
-        rebalancingBytesRate.add(batchSize);
+        metricSrc.onRebalanceBatchReceived(batchSize);
     }
 
-    /**
-     * @return Total number of allocated pages.
-     */
-    public long getTotalAllocatedPages() {
-        return 0;
-    }
-
-    /**
-     * @return Total number of evicted pages.
-     */
-    public long getTotalEvictedPages() {
-        return 0;
-    }
-
-    /**
-     * Off-heap read callback.
-     *
-     * @param hit Hit or miss flag.
-     */
-    public void onOffHeapRead(boolean hit) {
-        offHeapGets.increment();
-
-        if (hit)
-            offHeapHits.increment();
-        else
-            offHeapMisses.increment();
-
-        if (delegate != null)
-            delegate.onOffHeapRead(hit);
-    }
-
-    /**
-     * Off-heap write callback.
-     */
-    public void onOffHeapWrite() {
-        offHeapPuts.increment();
-
-        if (delegate != null)
-            delegate.onOffHeapWrite();
-    }
-
-    /**
-     * Off-heap remove callback.
-     */
-    public void onOffHeapRemove() {
-        offHeapRemoves.increment();
-
-        if (delegate != null)
-            delegate.onOffHeapRemove();
-    }
-
-    /**
-     * Off-heap evict callback.
-     */
-    public void onOffHeapEvict() {
-        offHeapEvicts.increment();
-
-        if (delegate != null)
-            delegate.onOffHeapEvict();
+    /** Calculates statistics for cache entries. */
+    public CacheMetricSource.EntriesStatMetrics getEntriesStat() {
+        return metricSrc.entriesStat();
     }
 
     /** {@inheritDoc} */
+    //TODO: Move to metric source
     @Override public boolean isIndexRebuildInProgress() {
+/*
         IgniteInternalFuture fut = cctx.shared().kernalContext().query().indexRebuildFuture(cctx.cacheId());
 
         return fut != null && !fut.isDone();
+*/
+        return false; // ^^^
     }
 
     /** {@inheritDoc} */
     @Override public long getIndexRebuildKeysProcessed() {
-        return idxRebuildKeyProcessed.value();
+        return metricSrc.indexRebuildKeysProcessed();
     }
 
     /** Reset metric - number of keys processed during index rebuilding. */
     public void resetIndexRebuildKeyProcessed() {
-        idxRebuildKeyProcessed.reset();
+        metricSrc.resetIndexRebuildKeyProcessed();
     }
 
     /**
@@ -1596,186 +1121,11 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param val Number of processed keys.
      */
     public void addIndexRebuildKeyProcessed(long val) {
-        idxRebuildKeyProcessed.add(val);
+        metricSrc.addIndexRebuildKeyProcessed(val);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheMetricsImpl.class, this);
-    }
-
-    /**
-     * Entries and partitions metrics holder class.
-     */
-    public static class EntriesStatMetrics {
-        /** Total partitions count. */
-        private int totalPartsCnt;
-
-        /** Rebalancing partitions count. */
-        private int rebalancingPartsCnt;
-
-        /** Offheap entries count. */
-        private long offHeapEntriesCnt;
-
-        /** Offheap primary entries count. */
-        private long offHeapPrimaryEntriesCnt;
-
-        /** Offheap backup entries count. */
-        private long offHeapBackupEntriesCnt;
-
-        /** Onheap entries count. */
-        private long heapEntriesCnt;
-
-        /** Size. */
-        private int size;
-
-        /** Long size. */
-        private long cacheSize;
-
-        /** Key size. */
-        private int keySize;
-
-        /** Is empty. */
-        private boolean isEmpty;
-
-        /**
-         * @return Total partitions count.
-         */
-        public int totalPartitionsCount() {
-            return totalPartsCnt;
-        }
-
-        /**
-         * @param totalPartsCnt Total partitions count.
-         */
-        public void totalPartitionsCount(int totalPartsCnt) {
-            this.totalPartsCnt = totalPartsCnt;
-        }
-
-        /**
-         * @return Rebalancing partitions count.
-         */
-        public int rebalancingPartitionsCount() {
-            return rebalancingPartsCnt;
-        }
-
-        /**
-         * @param rebalancingPartsCnt Rebalancing partitions count.
-         */
-        public void rebalancingPartitionsCount(int rebalancingPartsCnt) {
-            this.rebalancingPartsCnt = rebalancingPartsCnt;
-        }
-
-        /**
-         * @return Offheap entries count.
-         */
-        public long offHeapEntriesCount() {
-            return offHeapEntriesCnt;
-        }
-
-        /**
-         * @param offHeapEntriesCnt Offheap entries count.
-         */
-        public void offHeapEntriesCount(long offHeapEntriesCnt) {
-            this.offHeapEntriesCnt = offHeapEntriesCnt;
-        }
-
-        /**
-         * @return Offheap primary entries count.
-         */
-        public long offHeapPrimaryEntriesCount() {
-            return offHeapPrimaryEntriesCnt;
-        }
-
-        /**
-         * @param offHeapPrimaryEntriesCnt Offheap primary entries count.
-         */
-        public void offHeapPrimaryEntriesCount(long offHeapPrimaryEntriesCnt) {
-            this.offHeapPrimaryEntriesCnt = offHeapPrimaryEntriesCnt;
-        }
-
-        /**
-         * @return Offheap backup entries count.
-         */
-        public long offHeapBackupEntriesCount() {
-            return offHeapBackupEntriesCnt;
-        }
-
-        /**
-         * @param offHeapBackupEntriesCnt Offheap backup entries count.
-         */
-        public void offHeapBackupEntriesCount(long offHeapBackupEntriesCnt) {
-            this.offHeapBackupEntriesCnt = offHeapBackupEntriesCnt;
-        }
-
-        /**
-         * @return Heap entries count.
-         */
-        public long heapEntriesCount() {
-            return heapEntriesCnt;
-        }
-
-        /**
-         * @param heapEntriesCnt Onheap entries count.
-         */
-        public void heapEntriesCount(long heapEntriesCnt) {
-            this.heapEntriesCnt = heapEntriesCnt;
-        }
-
-        /**
-         * @return Size.
-         */
-        public int size() {
-            return size;
-        }
-
-        /**
-         * @param size Size.
-         */
-        public void size(int size) {
-            this.size = size;
-        }
-
-        /**
-         * @return Key size.
-         */
-        public int keySize() {
-            return keySize;
-        }
-
-        /**
-         * @param keySize Key size.
-         */
-        public void keySize(int keySize) {
-            this.keySize = keySize;
-        }
-
-        /**
-         * @return Long size.
-         */
-        public long cacheSize() {
-            return cacheSize;
-        }
-
-        /**
-         * @param cacheSize Size long.
-         */
-        public void cacheSize(long cacheSize) {
-            this.cacheSize = cacheSize;
-        }
-
-        /**
-         * @return Is empty.
-         */
-        public boolean isEmpty() {
-            return isEmpty;
-        }
-
-        /**
-         * @param isEmpty Is empty flag.
-         */
-        public void isEmpty(boolean isEmpty) {
-            this.isEmpty = isEmpty;
-        }
     }
 }

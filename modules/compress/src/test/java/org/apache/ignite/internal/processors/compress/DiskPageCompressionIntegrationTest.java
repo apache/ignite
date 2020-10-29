@@ -41,16 +41,13 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.metric.LongMetric;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
 import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
-import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  *
@@ -136,15 +133,14 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
         GridCacheContext<?,?> cctx = ignite.cachex(cacheName).context();
 
         int cacheId = cctx.cacheId();
-        int groupId = cctx.groupId();
+        int grpId = cctx.groupId();
 
-        assertEquals(cacheId, groupId);
+        assertEquals(cacheId, grpId);
 
-        MetricRegistry mreg = ignite.context().metric().registry(
-            metricName(CACHE_GROUP_METRICS_PREFIX, cctx.group().cacheOrGroupName()));
+        CacheGroupMetricSource metricSrc = cctx.group().metricSource();
 
-        storeSize = mreg.<LongMetric>findMetric("StorageSize").value();
-        sparseStoreSize = mreg.<LongMetric>findMetric("SparseStorageSize").value();
+        storeSize = metricSrc.storageSize();
+        sparseStoreSize = metricSrc.sparseStorageSize();
 
         assertTrue("storeSize: " + storeSize, storeSize > 0);
 
@@ -200,8 +196,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
 
         IgniteInternalCache<Integer,TestVal> cache = ignite.cachex(cacheName);
 
-        MetricRegistry mreg = ignite.context().metric().registry(
-            metricName(CACHE_GROUP_METRICS_PREFIX, cacheName));
+        CacheGroupMetricSource metricSrc = cache.context().group().metricSource();
 
         GridCacheDatabaseSharedManager dbMgr = ((GridCacheDatabaseSharedManager)ignite.context()
             .cache().context().database());
@@ -214,8 +209,8 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
             if (i % 50_000 == 0) {
                 dbMgr.forceCheckpoint("test").futureFor(FINISHED).get();
 
-                long sparse = mreg.<LongMetric>findMetric("SparseStorageSize").value();
-                long size = mreg.<LongMetric>findMetric("StorageSize").value();
+                long sparse = metricSrc.sparseStorageSize();
+                long size = metricSrc.storageSize();
 
                 System.out.println(i + " >> " + sparse + " / " + size + " = " + ((double)sparse / size));
             }

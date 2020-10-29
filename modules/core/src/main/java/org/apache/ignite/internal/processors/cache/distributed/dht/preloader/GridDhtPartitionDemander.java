@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -78,7 +77,6 @@ import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -95,7 +93,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOAD
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
-import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl.PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -103,7 +100,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.Checkpoint
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.PAGE_SNAPSHOT_TAKEN;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Thread pool for requesting partitions from other nodes and populating local cache.
@@ -120,7 +116,7 @@ public class GridDhtPartitionDemander {
 
     /** Future for preload mode {@link CacheRebalanceMode#SYNC}. */
     @GridToStringInclude
-    private final GridFutureAdapter syncFut = new GridFutureAdapter();
+    private final GridFutureAdapter<Boolean> syncFut = new GridFutureAdapter<>();
 
     /** Rebalance future. */
     @GridToStringInclude
@@ -157,61 +153,40 @@ public class GridDhtPartitionDemander {
             syncFut.onDone();
         }
 
-        String metricGroupName = metricName(CACHE_GROUP_METRICS_PREFIX, grp.cacheOrGroupName());
-
-        MetricRegistry mreg = grp.shared().kernalContext().metric().registry(metricGroupName);
-
-        mreg.register("RebalancingPartitionsLeft", () -> rebalanceFut.partitionsLeft.get(),
-            "The number of cache group partitions left to be rebalanced.");
-
+        //TODO: Move to metric source
+/*
         mreg.register("RebalancingPartitionsTotal",
-            () -> rebalanceFut.partitionsTotal,
-            "The total number of cache group partitions to be rebalanced.");
-
-        mreg.register("RebalancingReceivedKeys", () -> rebalanceFut.receivedKeys.get(),
-            "The number of currently rebalanced keys for the whole cache group.");
-
-        mreg.register("RebalancingReceivedBytes", () -> rebalanceFut.receivedBytes.get(),
-            "The number of currently rebalanced bytes of this cache group.");
-
-        mreg.register("RebalancingStartTime", () -> rebalanceFut.startTime, "The time the first partition " +
-            "demand message was sent. If there are no messages to send, the rebalancing time will be undefined.");
-
-        mreg.register("RebalancingEndTime", () -> rebalanceFut.endTime, "The time the rebalancing was " +
-            "completed. If the rebalancing completed with an error, was cancelled, or the start time was undefined, " +
-            "the rebalancing end time will be undefined.");
-
-        mreg.register("RebalancingLastCancelledTime", () -> lastCancelledTime.get(), "The time the " +
-            "rebalancing was completed with an error or was cancelled. If there were several such cases, the metric " +
-            "stores the last time. The metric displays the value even if there is no rebalancing process.");
+                () -> rebalanceFut.partitionsTotal,
+                "The total number of cache group partitions to be rebalanced.");
 
         mreg.register(
-            "RebalancingFullReceivedKeys",
-            () -> F.viewReadOnly(rebalanceFut.fullReceivedKeys, LongAdder::sum),
-            Map.class,
-            "Currently received keys for full rebalance by supplier."
+                "RebalancingFullReceivedKeys",
+                () -> F.viewReadOnly(rebalanceFut.fullReceivedKeys, LongAdder::sum),
+                Map.class,
+                "Currently received keys for full rebalance by supplier."
         );
 
         mreg.register(
-            "RebalancingHistReceivedKeys",
-            () -> F.viewReadOnly(rebalanceFut.histReceivedKeys, LongAdder::sum),
-            Map.class,
-            "Currently received keys for historical rebalance by supplier."
+                "RebalancingHistReceivedKeys",
+                () -> F.viewReadOnly(rebalanceFut.histReceivedKeys, LongAdder::sum),
+                Map.class,
+                "Currently received keys for historical rebalance by supplier."
         );
 
         mreg.register(
-            "RebalancingFullReceivedBytes",
-            () -> F.viewReadOnly(rebalanceFut.fullReceivedBytes, LongAdder::sum),
-            Map.class,
-            "Currently received bytes for full rebalance by supplier."
+                "RebalancingFullReceivedBytes",
+                () -> F.viewReadOnly(rebalanceFut.fullReceivedBytes, LongAdder::sum),
+                Map.class,
+                "Currently received bytes for full rebalance by supplier."
         );
 
         mreg.register(
-            "RebalancingHistReceivedBytes",
-            () -> F.viewReadOnly(rebalanceFut.histReceivedBytes, LongAdder::sum),
-            Map.class,
-            "Currently received bytes for historical rebalance by supplier."
+                "RebalancingHistReceivedBytes",
+                () -> F.viewReadOnly(rebalanceFut.histReceivedBytes, LongAdder::sum),
+                Map.class,
+                "Currently received bytes for historical rebalance by supplier."
         );
+*/
     }
 
     /**
@@ -398,7 +373,7 @@ public class GridDhtPartitionDemander {
 
             rebalanceFut = fut;
 
-            for (final GridCacheContext cctx : grp.caches()) {
+            for (final GridCacheContext<?, ?> cctx : grp.caches()) {
                 if (cctx.statisticsEnabled()) {
                     final CacheMetricsImpl metrics = cctx.cache().metrics0();
 
@@ -427,7 +402,7 @@ public class GridDhtPartitionDemander {
             return fut;
         }
         else if (delay > 0) {
-            for (GridCacheContext cctx : grp.caches()) {
+            for (GridCacheContext<?, ?> cctx : grp.caches()) {
                 if (cctx.statisticsEnabled()) {
                     final CacheMetricsImpl metrics = cctx.cache().metrics0();
 
@@ -552,7 +527,7 @@ public class GridDhtPartitionDemander {
             fut.receivedBytes.addAndGet(supplyMsg.messageSize());
 
             if (grp.sharedGroup()) {
-                for (GridCacheContext cctx : grp.caches()) {
+                for (GridCacheContext<?, ?> cctx : grp.caches()) {
                     if (cctx.statisticsEnabled()) {
                         long keysCnt = supplyMsg.keysForCache(cctx.cacheId());
 
@@ -565,7 +540,7 @@ public class GridDhtPartitionDemander {
                 }
             }
             else {
-                GridCacheContext cctx = grp.singleCacheContext();
+                GridCacheContext<?, ?> cctx = grp.singleCacheContext();
 
                 if (cctx.statisticsEnabled()) {
                     if (supplyMsg.estimatedKeysCount() != -1)
@@ -784,7 +759,7 @@ public class GridDhtPartitionDemander {
 
         List<GridCacheMvccEntryInfo> entryHist = new ArrayList<>();
 
-        GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
+        GridCacheContext<?, ?> cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
 
         // Loop through all received entries and try to preload them.
         while (infos.hasNext() || !entryHist.isEmpty()) {
@@ -798,20 +773,20 @@ public class GridDhtPartitionDemander {
 
                     GridCacheMvccEntryInfo entry = null;
 
-                    boolean flushHistory;
+                    boolean flushHist;
 
                     if (hasMore) {
                         entry = (GridCacheMvccEntryInfo)infos.next();
 
                         GridCacheMvccEntryInfo prev = entryHist.isEmpty() ? null : entryHist.get(0);
 
-                        flushHistory = prev != null && ((grp.sharedGroup() && prev.cacheId() != entry.cacheId())
+                        flushHist = prev != null && ((grp.sharedGroup() && prev.cacheId() != entry.cacheId())
                             || !prev.key().equals(entry.key()));
                     }
                     else
-                        flushHistory = true;
+                        flushHist = true;
 
-                    if (flushHistory) {
+                    if (flushHist) {
                         assert !entryHist.isEmpty();
 
                         int cacheId = entryHist.get(0).cacheId();
@@ -877,7 +852,7 @@ public class GridDhtPartitionDemander {
 
         updateGroupMetrics();
 
-        GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();
+        GridCacheContext<?, ?> cctx = grp.sharedGroup() ? ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();
 
         if (cctx == null)
             return false;
@@ -947,23 +922,23 @@ public class GridDhtPartitionDemander {
      *
      * @param cctx Cache context.
      * @param from Node which sent entry.
-     * @param history Mvcc entry history.
+     * @param hist Mvcc entry history.
      * @param topVer Topology version.
      * @param p Partition id.
      * @return {@code True} if the initial value was set for the specified cache entry.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private boolean mvccPreloadEntry(
-        GridCacheContext cctx,
+        GridCacheContext<?, ?> cctx,
         ClusterNode from,
-        List<GridCacheMvccEntryInfo> history,
+        List<GridCacheMvccEntryInfo> hist,
         AffinityTopologyVersion topVer,
         int p
     ) throws IgniteCheckedException {
         assert ctx.database().checkpointLockIsHeldByThread();
-        assert !history.isEmpty();
+        assert !hist.isEmpty();
 
-        GridCacheMvccEntryInfo info = history.get(0);
+        GridCacheMvccEntryInfo info = hist.get(0);
 
         assert info.key() != null;
 
@@ -977,8 +952,8 @@ public class GridDhtPartitionDemander {
                     if (log.isTraceEnabled())
                         log.trace("Rebalancing key [key=" + info.key() + ", part=" + p + ", node=" + from.id() + ']');
 
-                    if (cached.mvccPreloadEntry(history)) {
-                        cached.touch(); // Start tracking.
+                if (cached.mvccPreloadEntry(hist)) {
+                    cached.touch(); // Start tracking.
 
                         if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
                             cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
@@ -1036,7 +1011,7 @@ public class GridDhtPartitionDemander {
         // TODO: IGNITE-11330: Update metrics for touched cache only.
         // Due to historical rebalancing "EstimatedRebalancingKeys" metric is currently calculated for the whole cache
         // group (by partition counters), so "RebalancedKeys" and "RebalancingKeysRate" is calculated in the same way.
-        for (GridCacheContext cctx0 : grp.caches()) {
+        for (GridCacheContext<?, ?> cctx0 : grp.caches()) {
             if (cctx0.statisticsEnabled())
                 cctx0.cache().metrics0().onRebalanceKeyReceived();
         }
@@ -1509,6 +1484,60 @@ public class GridDhtPartitionDemander {
          */
         public boolean isInitial() {
             return topVer == null;
+        }
+
+        /**
+         * Returns the number of cache group partitions left to be rebalanced.
+         *
+         * @return The number of cache group partitions left to be rebalanced.
+         */
+        public long partitionsLeft() {
+            return partitionsLeft.get();
+        }
+
+        /**
+         * Returns rebalanced keys count.
+         *
+         * @return Rebalanced keys count.
+         */
+        public long receivedKeys() {
+            return receivedKeys.get();
+        }
+
+        /**
+         * Returns rebalanced bytes count.
+         *
+         * @return Rebalanced bytes count.
+         */
+        public long receivedBytes() {
+            return receivedBytes.get();
+        }
+
+        /**
+         * Returns rebalancing start time.
+         *
+         * @return Rebalancing start time.
+         */
+        public long startTime() {
+            return startTime;
+        }
+
+        /**
+         * Returns rebalancing end time.
+         *
+         * @return Rebalancing end time.
+         */
+        public long endTime() {
+            return endTime;
+        }
+
+        /**
+         * Returns rebalancing last cancelled time.
+         *
+         * @return Rebalancing last cancelled time.
+         */
+        public long lastCancelledTime() {
+            return lastCancelledTime.get();
         }
 
         /**

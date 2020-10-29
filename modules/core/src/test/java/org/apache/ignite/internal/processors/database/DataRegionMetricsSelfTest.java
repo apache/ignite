@@ -21,10 +21,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -32,6 +34,8 @@ import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.Test;
 
 import static java.lang.Thread.sleep;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource.DATAREGION_METRICS_PREFIX;
 
 /**
  *
@@ -70,13 +74,22 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        DataRegionConfiguration plcCfg = new DataRegionConfiguration();
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration()
+                .setMetricsEnabled(true);
 
         IgniteConfiguration cfg = new IgniteConfiguration().setMetricExporterSpi(new NoopMetricExporterSpi());
 
-        memMetrics = new DataRegionMetricsImpl(plcCfg,
-            new GridMetricManager(new GridTestKernalContext(new GridTestLog4jLogger(), cfg)),
-            NO_OP_METRICS);
+        String dataRegionName = U.maskName(plcCfg.getName());
+
+        String metricSrcName = metricName(DATAREGION_METRICS_PREFIX, dataRegionName);
+
+        GridTestKernalContext ctx = new GridTestKernalContext(new GridTestLog4jLogger(), cfg);
+
+        DataRegionMetricSource metricSrc = new DataRegionMetricSource(metricSrcName, ctx, plcCfg, NO_OP_METRICS);
+
+        memMetrics = new DataRegionMetricsImpl(ctx, dataRegionName, metricSrc, dsCfg.getPageSize());
 
         memMetrics.enableMetrics();
     }
@@ -165,7 +178,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
         startLatch.countDown();
 
         for (int i = 0; i < 10; i++) {
-            Thread.sleep(25);
+            U.sleep(25);
 
             memMetrics.rateTimeInterval(((2 + i * 5) % 3 + 1) * 1000);
         }
@@ -196,7 +209,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
         startLatch.countDown();
 
         for (int i = 0; i < 10; i++) {
-            Thread.sleep(25);
+            U.sleep(25);
 
             memMetrics.subIntervals((2 + i * 5) % 3 + 2);
         }
@@ -215,11 +228,11 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
      * @param size Size.
      */
     private void alignWithTimeInterval(int rateTimeInterval, int size) throws InterruptedException {
-        int subIntervalLength = rateTimeInterval / size;
+        int subIntervalLen = rateTimeInterval / size;
 
-        long subIntCurTime = System.currentTimeMillis() % subIntervalLength;
+        long subIntCurTime = System.currentTimeMillis() % subIntervalLen;
 
-        Thread.sleep(subIntervalLength - subIntCurTime);
+        Thread.sleep(subIntervalLen - subIntCurTime);
     }
 
     /**
@@ -314,14 +327,14 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
                 for (int i = 0; i < iterationsCnt; i++) {
                     memMetrics.totalAllocatedPages().increment();
 
-                    sleep(delay);
+                    U.sleep(delay);
                 }
             }
             catch (InterruptedException ignore) {
                 // No-op.
             }
             catch (Exception e) {
-                e.printStackTrace();
+                log.error("Unexpected exception:", e);
             }
         }
     }
@@ -366,14 +379,14 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
                     prevRate = memMetrics.getAllocationRate();
 
-                    sleep(delay);
+                    U.sleep(delay);
                 }
             }
             catch (InterruptedException ignore) {
                 // No-op.
             }
             catch (Exception e) {
-                e.printStackTrace();
+                log.error("Unexpected exception:", e);
             }
         }
     }

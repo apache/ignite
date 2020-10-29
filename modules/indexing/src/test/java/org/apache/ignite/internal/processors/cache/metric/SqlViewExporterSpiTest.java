@@ -116,7 +116,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 new DataRegionConfiguration().setName("in-memory").setMaxSize(100L * 1024 * 1024))
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setPersistenceEnabled(true)));
+                    .setPersistenceEnabled(true)
+                    .setMetricsEnabled(true)));
 
         return cfg;
     }

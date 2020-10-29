@@ -22,80 +22,71 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.cache.query.QueryMetrics;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
-import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.processors.metric.sources.CacheMetricSource;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Adapter for {@link QueryMetrics}.
  */
 public class GridCacheQueryMetricsAdapter implements QueryMetrics {
-    /** Minimum time of execution. */
-    private final AtomicLongMetric minTime;
-
-    /** Maximum time of execution. */
-    private final AtomicLongMetric maxTime;
-
-    /** Sum of execution time for all completed queries. */
-    private final LongAdderMetric sumTime;
-
-    /** Number of executions. */
-    private final LongAdderMetric execs;
-
-    /** Number of completed executions. */
-    private final LongAdderMetric completed;
-
-    /** Number of fails. */
-    private final LongAdderMetric fails;
+    /** Cache metric source. */
+    private final CacheMetricSource metricSrc;
 
     /**
-     * @param mmgr Metrics manager.
-     * @param cacheName Cache name.
-     * @param isNear Is near flag.
+     * @param metricSrc Metric source.
      */
-    public GridCacheQueryMetricsAdapter(GridMetricManager mmgr, String cacheName, boolean isNear) {
-        MetricRegistry mreg = mmgr.registry(MetricUtils.cacheMetricsRegistryName(cacheName, isNear));
-
-        minTime = mreg.longMetric("QueryMinimalTime", null);
-        minTime.value(Long.MAX_VALUE);
-
-        maxTime = mreg.longMetric("QueryMaximumTime", null);
-        sumTime = mreg.longAdderMetric("QuerySumTime", null);
-        execs = mreg.longAdderMetric("QueryExecuted", null);
-        completed = mreg.longAdderMetric("QueryCompleted", null);
-        fails = mreg.longAdderMetric("QueryFailed", null);
+    public GridCacheQueryMetricsAdapter(CacheMetricSource metricSrc) {
+        this.metricSrc = metricSrc;
     }
 
     /** {@inheritDoc} */
     @Override public long minimumTime() {
-        long min = minTime.value();
+        if (!metricSrc.enabled())
+            return -1;
+
+        long min = metricSrc.minQueryTime();
 
         return min == Long.MAX_VALUE ? 0 : min;
     }
 
     /** {@inheritDoc} */
     @Override public long maximumTime() {
-        return maxTime.value();
+        if (!metricSrc.enabled())
+            return -1;
+
+        return metricSrc.maxQueryTime();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * @deprecated Should be removed in Apache Ignite 3.0. Metrics aggregation is out of scope and shuld be done with
+     * external systems.
+     */
+    @Deprecated
     @Override public double averageTime() {
-        double val = completed.value();
+        if (!metricSrc.enabled())
+            return Double.NaN;
 
-        return val > 0 ? sumTime.value() / val : 0.0;
+        double val = metricSrc.completedQueries();
+
+        return val > 0 ? metricSrc.queriesTotalTime() / val : 0.0;
     }
 
     /** {@inheritDoc} */
     @Override public int executions() {
-        return (int)execs.value();
+        if (!metricSrc.enabled())
+            return -1;
+
+        return (int)metricSrc.queriesExecuted();
     }
 
     /** {@inheritDoc} */
     @Override public int fails() {
-        return (int)fails.value();
+        if (!metricSrc.enabled())
+            return -1;
+
+        return (int)metricSrc.queriesFailed();
     }
 
     /**
@@ -105,41 +96,24 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
      * @param fail {@code True} query executed unsuccessfully {@code false} otherwise.
      */
     public void update(long duration, boolean fail) {
-        if (fail) {
-            execs.increment();
-            fails.increment();
-        }
-        else {
-            execs.increment();
-            completed.increment();
-
-            MetricUtils.setIfLess(minTime, duration);
-            MetricUtils.setIfGreater(maxTime, duration);
-
-            sumTime.add(duration);
-        }
+        metricSrc.updateQueryMetrics(duration, fail);
     }
 
     /** @return Current metrics values. */
     public QueryMetrics snapshot() {
-        long minTimeVal = minTime.value();
+        long minTimeVal = metricSrc.minQueryTime();
 
         return new QueryMetricsSnapshot(
             minTimeVal == Long.MAX_VALUE ? 0 : minTimeVal,
-            maxTime.value(),
+            metricSrc.maxQueryTime(),
             averageTime(),
-            (int)execs.value(),
-            (int)fails.value());
+            (int)metricSrc.queriesExecuted(),
+            (int)metricSrc.queriesFailed());
     }
 
     /** Resets query metrics. */
     public void reset() {
-        minTime.value(Long.MAX_VALUE);
-        maxTime.reset();
-        sumTime.reset();
-        execs.reset();
-        completed.reset();
-        fails.reset();
+        metricSrc.resetQueryMetrics();
     }
 
     /** {@inheritDoc} */

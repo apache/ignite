@@ -24,15 +24,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.metric.sources.IndexMetricSource;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
 
 /**
  * Tasks that cleans up index tree.
@@ -98,11 +96,11 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
 
             GridCacheContext cctx = ctx.cache().context().cacheContext(CU.cacheId(cacheName));
 
-            IoStatisticsHolderIndex stats = new IoStatisticsHolderIndex(
-                SORTED_INDEX,
+            IndexMetricSource metricSrc = new IndexMetricSource(
+                IndexMetricSource.SORTED_IDX,
                 cctx.name(),
                 idxName,
-                cctx.kernalContext().metric()
+                cctx.kernalContext()
             );
 
             for (int i = 0; i < rootPages.size(); i++) {
@@ -139,7 +137,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                         null,
                         ctx.failure(),
                         null,
-                        stats,
+                        metricSrc,
                         null,
                         0
                     );

@@ -26,7 +26,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.metric.MetricCommandArg;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
@@ -36,16 +35,18 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandList.METRIC;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.NODE_ID;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommand.COLUMN_SEPARATOR;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.IGNITE_METRICS;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.sources.SystemMetricSource.SYS_METRICS;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /** Tests output of {@link CommandList#METRIC} command. */
 public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** Command line argument for printing metric values. */
     private static final String CMD_METRIC = METRIC.text();
+
+    //TODO: remove after adding corresponding metric source
+    public static final String IGNITE_METRICS = "ignite";
 
     /** Test node with 0 index. */
     private IgniteEx ignite0;
@@ -119,10 +120,14 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testHistogramMetrics() {
         String mregName = "histogram-registry";
 
-        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+        //TODO: use metric source
+        fail();
+
+        MetricRegistry mreg = ignite0.context().metric().getRegistry(mregName);
 
         long[] bounds = new long[] {50, 500};
 
+/*
         HistogramMetricImpl histogram = mreg.histogram("histogram", bounds, null);
 
         histogram.value(10);
@@ -140,6 +145,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         histogram.value(600);
         histogram.value(600);
         histogram.value(600);
+*/
 
         assertEquals("1", metric(ignite0, metricName(mregName, "histogram_0_50")));
         assertEquals("2", metric(ignite0, metricName(mregName, "histogram_50_500")));
@@ -157,6 +163,10 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testNodeIdArgument() {
         String mregName = "boolean-metric-registry";
 
+        //TODO: use metric source
+        fail();
+
+/*
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         mreg.booleanMetric("boolean-metric", "");
@@ -164,6 +174,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         mreg = ignite(1).context().metric().registry(mregName);
 
         mreg.booleanMetric("boolean-metric", "").value(true);
+*/
 
         assertEquals("false", metric(ignite0, metricName(mregName, "boolean-metric")));
         assertEquals("true", metric(ignite(1), metricName(mregName, "boolean-metric")));
@@ -174,6 +185,10 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testRegistryMetrics() {
         String mregName = "test-metric-registry";
 
+        //TODO: use metric source
+        fail();
+
+/*
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         mreg.booleanMetric("boolean-metric", "");
@@ -188,6 +203,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
                 return "test-object";
             }
         });
+*/
 
         Map<String, String> metrics = metrics(ignite0, mregName);
 
@@ -205,6 +221,10 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testBooleanMetrics() {
         String mregName = "boolean-metric-registry";
 
+        //TODO: use metric source
+        fail();
+
+/*
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         mreg.booleanMetric("boolean-metric", "");
@@ -214,6 +234,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         mreg.register("boolean-gauge", () -> true, "");
 
         assertEquals("true", metric(ignite0, metricName(mregName, "boolean-gauge")));
+*/
     }
 
     /** */
@@ -221,6 +242,10 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testLongMetrics() {
         String mregName = "long-metric-registry";
 
+        //TODO: use metric source
+        fail();
+
+/*
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         mreg.longMetric("long-metric", "").add(Long.MAX_VALUE);
@@ -230,6 +255,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         mreg.register("long-gauge", () -> 0L, "");
 
         assertEquals("0", metric(ignite0, metricName(mregName, "long-gauge")));
+*/
     }
 
     /** */
@@ -237,6 +263,10 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testIntegerMetrics() {
         String mregName = "int-metric-registry";
 
+        //TODO: use metric source
+        fail();
+
+/*
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         mreg.intMetric("int-metric", "").add(Integer.MAX_VALUE);
@@ -246,6 +276,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         mreg.register("int-gauge", () -> 0, "");
 
         assertEquals("0", metric(ignite0, metricName(mregName, "int-gauge")));
+*/
     }
 
     /** */
@@ -253,6 +284,10 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testDoubleMetrics() {
         String mregName = "int-double-registry";
 
+        //TODO: use metric source
+        fail();
+
+/*
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         mreg.doubleMetric("double-metric", "").add(111.222);
@@ -262,12 +297,18 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         mreg.register("double-gauge", () -> 0D, "");
 
         assertEquals("0.0", metric(ignite0, metricName(mregName, "double-gauge")));
+*/
     }
 
     /** */
     @Test
     public void testObjectMetrics() {
         String mregName = "object-registry";
+
+        //TODO: use metric source
+        fail();
+
+/*
 
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
@@ -284,6 +325,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         mreg.register("object-gauge", () -> metricVal, Object.class, "");
 
         assertEquals("test-object", metric(ignite0, metricName(mregName, "object-gauge")));
+*/
     }
 
     /** */
@@ -291,11 +333,9 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testHitrateMetrics() {
         String mregName = "hitrate-registry";
 
-        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+        //TODO: use metric source
+        fail();
 
-        mreg.hitRateMetric("hitrate-metric", "", getTestTimeout(), 2).add(Integer.MAX_VALUE);
-
-        assertEquals(Integer.toString(Integer.MAX_VALUE), metric(ignite0, metricName(mregName, "hitrate-metric")));
     }
 
     /**

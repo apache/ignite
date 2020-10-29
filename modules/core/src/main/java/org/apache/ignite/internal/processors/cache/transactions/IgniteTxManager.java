@@ -45,6 +45,7 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -94,6 +95,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetect
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.sources.TransactionMetricSource;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -249,6 +251,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** TX handler. */
     private IgniteTxHandler txHnd;
+
+    /** Tx metrics. */
+    private TransactionMetricsAdapter txMetrics;
 
     /**
      * Shows if dump requests from local node to near node are allowed, when long running transaction
@@ -417,7 +422,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
 
-        cctx.txMetrics().onTxManagerStarted();
+        GridKernalContext kernalCtx = cctx.kernalContext();
+
+        TransactionMetricSource txMetricSrc = new TransactionMetricSource(kernalCtx);
+        kernalCtx.metric().registerSource(txMetricSrc);
+        kernalCtx.metric().enableMetrics(txMetricSrc);
+
+        txMetrics = new TransactionMetricsAdapter(kernalCtx, txMetricSrc);
 
         cctx.kernalContext().systemView().registerView(TXS_MON_LIST, TXS_MON_LIST_DESC,
             new TransactionViewWalker(),
@@ -435,6 +446,20 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     @Override protected void onKernalStart0(boolean active) {
         suspendResumeForPessimisticSupported = IgniteFeatures.allNodesSupports(
             cctx.discovery().remoteNodes(), IgniteFeatures.SUSPEND_RESUME_PESSIMISTIC_TX);
+    }
+
+    /**
+     * @return Transactional metrics adapter.
+     */
+    public TransactionMetricsAdapter txMetrics() {
+        return txMetrics;
+    }
+
+    /**
+     * Resets tx metrics.
+     */
+    public void resetTxMetrics() {
+        txMetrics.reset();
     }
 
     /**
@@ -1674,7 +1699,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             // 11. Update metrics.
             if (!tx.dht() && tx.local()) {
                 if (!tx.system())
-                    cctx.txMetrics().onTxCommit();
+                    txMetrics.onTxCommit();
 
                 tx.txState().onTxEnd(cctx, tx, true);
             }
@@ -1743,7 +1768,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             // 10. Update metrics.
             if (!tx.dht() && tx.local()) {
                 if (!tx.system())
-                    cctx.txMetrics().onTxRollback();
+                    txMetrics.onTxRollback();
 
                 tx.txState().onTxEnd(cctx, tx, false);
             }
@@ -1793,9 +1818,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (!tx.dht() && tx.local()) {
                 if (!tx.system()) {
                     if (commit)
-                        cctx.txMetrics().onTxCommit();
+                        txMetrics.onTxCommit();
                     else
-                        cctx.txMetrics().onTxRollback();
+                        txMetrics.onTxRollback();
                 }
 
                 tx.txState().onTxEnd(cctx, tx, commit);

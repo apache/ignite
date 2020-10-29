@@ -111,7 +111,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.sources.PartitionExchangeMetricSource;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -2609,7 +2609,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (err == null) {
                 updateDurationHistogram(System.currentTimeMillis() - initTime);
 
-                cctx.exchange().clusterRebalancedMetric().value(rebalanced());
+                cctx.exchange().clusterRebalanced(rebalanced());
             }
 
             if (log.isInfoEnabled()) {
@@ -2673,16 +2673,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Updates the {@link GridMetricManager#PME_OPS_BLOCKED_DURATION_HISTOGRAM} and {@link
-     * GridMetricManager#PME_DURATION_HISTOGRAM} metrics if needed.
+     * Updates the metrics if needed.
      *
      * @param duration The total duration of the current PME.
      */
     private void updateDurationHistogram(long duration) {
-        cctx.exchange().durationHistogram().value(duration);
+        PartitionExchangeMetricSource metricSrc = cctx.exchange().metricSource();
 
-        if (changedAffinity())
-            cctx.exchange().blockingDurationHistogram().value(duration);
+        metricSrc.updateDurationHistogram(duration, changedAffinity());
     }
 
     /**
@@ -2835,7 +2833,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         while (true) {
             GridCacheVersion old = lastVer.get();
 
-            if (old == null || Long.compare(old.order(), ver.order()) < 0) {
+            if (old == null || old.order() < ver.order()) {
                 if (lastVer.compareAndSet(old, ver))
                     break;
             }

@@ -18,8 +18,9 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import javax.management.MalformedObjectNameException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -30,17 +31,17 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_READS_INNER;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_READS_LEAF;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.PHYSICAL_READS_INNER;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.PHYSICAL_READS_LEAF;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderQuery.LOGICAL_READS;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderQuery.PHYSICAL_READS;
-import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
-import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
-import static org.apache.ignite.internal.metric.MetricsConfigurationTest.metricsBean;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource.CACHE_GROUP_METRICS_PREFIX;
+import static org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource.LOGICAL_READS;
+import static org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource.PHYSICAL_READS;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.HASH_IDX;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.HASH_PK_IDX_NAME;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.LOGICAL_READS_INNER;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.LOGICAL_READS_LEAF;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.PHYSICAL_READS_INNER;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.PHYSICAL_READS_LEAF;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.SORTED_IDX;
 
 /**
  * Test of local node IO statistics MX bean.
@@ -53,8 +54,9 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(name);
 
-        final CacheConfiguration cCfg = new CacheConfiguration()
-            .setName(DEFAULT_CACHE_NAME);
+        final CacheConfiguration<?, ?> cCfg = new CacheConfiguration<>()
+            .setName(DEFAULT_CACHE_NAME)
+            .setStatisticsEnabled(true);
 
         cfg.setCacheConfiguration(cCfg);
 
@@ -75,14 +77,14 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
      */
     @Test
     public void testIndexBasic() throws Exception {
-        resetMetric(ignite, metricName(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
+        resetAllIoMetrics(ignite);
 
         int cnt = 100;
 
         populateCache(cnt);
 
         MetricRegistry mreg = ignite.context().metric()
-            .registry(metricName(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
+            .getRegistry(metricName(HASH_IDX, DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
 
         long idxLeafLogicalCnt = mreg.<LongMetric>findMetric(LOGICAL_READS_LEAF).value();
 
@@ -114,12 +116,12 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
 
         clearCache(cnt);
 
-        resetMetric(ignite, metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
+        resetAllIoMetrics(ignite);
 
         populateCache(cnt);
 
         MetricRegistry mreg = ignite.context().metric()
-            .registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
+            .getRegistry(metricName(CACHE_GROUP_METRICS_PREFIX, DEFAULT_CACHE_NAME));
 
         long cacheLogicalReadsCnt = mreg.<LongMetric>findMetric(LOGICAL_READS).value();
 
@@ -151,29 +153,18 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
      *
      * @param ignite Ignite.
      */
-    public static void resetAllIoMetrics(IgniteEx ignite) throws MalformedObjectNameException {
+    public static void resetAllIoMetrics(IgniteEx ignite) {
         GridMetricManager mmgr = ignite.context().metric();
 
-        StreamSupport.stream(mmgr.spliterator(), false)
+        List<String> regs = StreamSupport.stream(mmgr.spliterator(), false)
             .map(ReadOnlyMetricRegistry::name)
-            .filter(name -> {
-                for (IoStatisticsType type : IoStatisticsType.values()) {
-                    if (name.startsWith(type.metricGroupName()))
-                        return true;
-                }
+            .filter(name -> (name.startsWith(CACHE_GROUP_METRICS_PREFIX) || name.startsWith(HASH_IDX) || name.startsWith(SORTED_IDX)))
+            .collect(Collectors.toList());
 
-                return false;
-            })
-            .forEach(grpName -> resetMetric(ignite, grpName));
+        for (String name : regs) {
+            mmgr.disableMetrics(name);
 
-    }
-
-    /**
-     * Resets all metrics for a given prefix.
-     *
-     * @param grpName Group name to reset metrics.
-     */
-    public static void resetMetric(IgniteEx ignite, String grpName) {
-        metricsBean(ignite).resetMetrics(grpName);
+            mmgr.enableMetrics(name);
+        }
     }
 }

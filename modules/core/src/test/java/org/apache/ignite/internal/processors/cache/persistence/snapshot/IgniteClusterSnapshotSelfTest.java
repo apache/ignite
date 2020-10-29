@@ -750,7 +750,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         CountDownLatch deltaBlock = new CountDownLatch(1);
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        MetricRegistry mreg0 = ignite.context().metric().registry(SNAPSHOT_METRICS);
+        MetricRegistry mreg0 = ignite.context().metric().getRegistry(SNAPSHOT_METRICS);
 
         LongMetric startTime = mreg0.findMetric("LastSnapshotStartTime");
         LongMetric endTime = mreg0.findMetric("LastSnapshotEndTime");
@@ -790,7 +790,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         assertThrowsWithCause((Callable<Object>)fut1::get, IgniteException.class);
 
-        MetricRegistry mreg1 = grid(1).context().metric().registry(SNAPSHOT_METRICS);
+        MetricRegistry mreg1 = grid(1).context().metric().getRegistry(SNAPSHOT_METRICS);
 
         LongMetric startTime1 = mreg1.findMetric("LastSnapshotStartTime");
         LongMetric endTime1 = mreg1.findMetric("LastSnapshotEndTime");

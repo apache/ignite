@@ -66,7 +66,7 @@ import static org.apache.ignite.internal.processors.cache.transactions.Transacti
 import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_TOTAL_SYSTEM_TIME;
 import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_TOTAL_USER_TIME;
 import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_USER_TIME_HISTOGRAM;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
+import static org.apache.ignite.internal.processors.metric.sources.TransactionMetricSource.TX_METRICS;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 

@@ -133,6 +133,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource;
+import org.apache.ignite.internal.processors.metric.sources.DataStorageMetricSource;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCountDownCallback;
@@ -288,6 +290,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private DataStorageMetricsImpl persStoreMetrics;
 
+    /** Metric source. */
+    private DataStorageMetricSource metricSrc;
+
     /**
      * MetaStorage instance. Value {@code null} means storage not initialized yet.
      * Guarded by {@link GridCacheDatabaseSharedManager#checkpointReadLock()}
@@ -328,12 +333,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         lockWaitTime = persistenceCfg.getLockWaitTime();
 
+        //TODO: Check that all is ok
+/*
         persStoreMetrics = new DataStorageMetricsImpl(
             ctx.metric(),
             persistenceCfg.isMetricsEnabled(),
             persistenceCfg.getMetricsRateTimeInterval(),
             persistenceCfg.getMetricsSubIntervalCount()
         );
+*/
+
+        DataStorageMetricSource src = new DataStorageMetricSource(ctx);
+
+        ctx.metric().registerSource(src);
+
+        persStoreMetrics = new DataStorageMetricsImpl(src, ctx);
+        metricSrc = src;
     }
 
     /**
@@ -421,7 +436,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             false
         );
 
-        persStoreMetrics.regionMetrics(memMetricsMap.values());
+        metricSrc.regionMetrics(dataRegionMetricMap.values());
     }
 
     /**
@@ -438,6 +453,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         cfg.setMaxSize(storageCfg.getSystemRegionMaxSize());
         cfg.setPersistenceEnabled(true);
         cfg.setLazyMemoryAllocation(false);
+        cfg.setMetricsEnabled(true);
 
         return cfg;
     }
@@ -487,8 +503,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             acquireFileLock(preLocked);
 
             cleanupTempCheckpointDirectory();
-
-            persStoreMetrics.wal(cctx.wal());
         }
     }
 
@@ -805,7 +819,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         MetaStorage storage = new MetaStorage(
             cctx,
             dataRegion(METASTORE_DATA_REGION_NAME),
-            (DataRegionMetricsImpl) memMetricsMap.get(METASTORE_DATA_REGION_NAME),
+            dataRegionMetricMap.get(METASTORE_DATA_REGION_NAME),
             readOnly
         );
 
@@ -926,46 +940,46 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override protected PageMemory createPageMemory(
         DirectMemoryProvider memProvider,
         DataStorageConfiguration memCfg,
-        DataRegionConfiguration plcCfg,
-        DataRegionMetricsImpl memMetrics,
+        DataRegionConfiguration dataRegionCfg,
+        DataRegionMetricSource metricSrc,
         final boolean trackable
     ) {
-        if (!plcCfg.isPersistenceEnabled())
-            return super.createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable);
+        if (!dataRegionCfg.isPersistenceEnabled())
+            return super.createPageMemory(memProvider, memCfg, dataRegionCfg, metricSrc, trackable);
 
-        memMetrics.persistenceEnabled(true);
-
-        long cacheSize = plcCfg.getMaxSize();
+        long cacheSize = dataRegionCfg.getMaxSize();
 
         // Checkpoint buffer size can not be greater than cache size, it does not make sense.
-        long chpBufSize = checkpointBufferSize(plcCfg);
+        long chpBufSize = checkpointBufferSize(dataRegionCfg);
 
         if (chpBufSize > cacheSize) {
             U.quietAndInfo(log,
                 "Configured checkpoint page buffer size is too big, setting to the max region size [size="
-                    + U.readableSize(cacheSize, false) + ",  memPlc=" + plcCfg.getName() + ']');
+                    + U.readableSize(cacheSize, false) + ",  memPlc=" + dataRegionCfg.getName() + ']');
 
             chpBufSize = cacheSize;
         }
 
         GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
 
-        if (trackable)
+        if (trackable) {
             changeTracker = new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
                 @Override public void applyx(
-                    Long page,
-                    FullPageId fullId,
-                    PageMemoryEx pageMem
+                        Long page,
+                        FullPageId fullId,
+                        PageMemoryEx pageMem
                 ) throws IgniteCheckedException {
                     if (trackable)
                         snapshotMgr.onChangeTrackerPage(page, fullId, pageMem);
                 }
             };
+        }
         else
             changeTracker = null;
 
         PageMemoryImpl pageMem = new PageMemoryImpl(
-            wrapMetricsMemoryProvider(memProvider, memMetrics),
+            dataRegionCfg,
+            wrapMetricsMemoryProvider(memProvider, metricSrc),
             calculateFragmentSizes(
                 memCfg.getConcurrencyLevel(),
                 cacheSize,
@@ -974,7 +988,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cctx,
             memCfg.getPageSize(),
             (fullId, pageBuf, tag) -> {
-                memMetrics.onPageWritten();
+                metricSrc.onPageWritten();
 
                 // We can write only page from disk into snapshot.
                 snapshotMgr.beforePageWrite(fullId);
@@ -986,7 +1000,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             },
             changeTracker,
             this,
-            memMetrics,
+            metricSrc,
             resolveThrottlingPolicy(),
             new IgniteOutClosure<CheckpointProgress>() {
                 @Override public CheckpointProgress apply() {
@@ -995,19 +1009,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         );
 
-        memMetrics.pageMemory(pageMem);
+        metricSrc.pageMemory(pageMem);
 
         return pageMem;
     }
 
-    /**
-     * @param memoryProvider0 Memory provider.
-     * @param memMetrics Memory metrics.
-     * @return Wrapped memory provider.
-     */
+    /** {@inheritDoc} */
     @Override protected DirectMemoryProvider wrapMetricsMemoryProvider(
-        final DirectMemoryProvider memoryProvider0,
-        final DataRegionMetricsImpl memMetrics
+            final DirectMemoryProvider memoryProvider0,
+            final DataRegionMetricSource metricSrc
     ) {
         return new DirectMemoryProvider() {
             private AtomicInteger checkPointBufferIdxCnt = new AtomicInteger();
@@ -1036,9 +1046,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 // Checkpoint chunk last in the long[] chunkSizes.
                 if (idx != 0)
-                    memMetrics.updateOffHeapSize(chunkSize);
+                    metricSrc.updateOffHeapSize(chunkSize);
                 else
-                    memMetrics.updateCheckpointBufferSize(chunkSize);
+                    metricSrc.updateCheckpointBufferSize(chunkSize);
 
                 return nextMemoryRegion;
             }
@@ -2849,6 +2859,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     public DataStorageMetricsImpl persistentStoreMetricsImpl() {
         return persStoreMetrics;
+    }
+
+    /**
+     * Retrieves data storage metric source.
+     *
+     * @return Data storage metrics source.
+     */
+    public DataStorageMetricSource metricSource() {
+        return metricSrc;
     }
 
     /** {@inheritDoc} */

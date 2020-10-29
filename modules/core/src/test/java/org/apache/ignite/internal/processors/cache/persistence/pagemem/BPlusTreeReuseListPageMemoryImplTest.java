@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.Arrays;
 import java.util.Collections;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -28,12 +29,12 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
@@ -53,8 +54,7 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
     @Override protected PageMemory createPageMemory() throws Exception {
         long[] sizes = new long[CPUS + 1];
 
-        for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 1024 * MB / CPUS;
+        Arrays.fill(sizes, 1024 * MB / CPUS);
 
         sizes[CPUS] = 10 * MB;
 
@@ -104,7 +104,10 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
             }
         };
 
+        DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration();
+
         PageMemory mem = new PageMemoryImpl(
+            dataRegionCfg,
             provider, sizes,
             sharedCtx,
             PAGE_SIZE,
@@ -116,7 +119,7 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
                 }
             },
             () -> true,
-            new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx.metric(), NO_OP_METRICS),
+            new DataRegionMetricSource("test", new GridTestKernalContext(log), dataRegionCfg, NO_OP_METRICS),
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
             clo
         );

@@ -100,6 +100,8 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         ccfg.setQueryEntities(Collections.singletonList(entity));
 
+        ccfg.setStatisticsEnabled(true);
+
         return ccfg;
     }
 
@@ -238,7 +240,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
      * @return Gets {@code IsIndexRebuildInProgress} metric for given cache.
      */
     private <M extends Metric> M indexRebuildMetric(IgniteEx ignite, String cacheName, String name) {
-        MetricRegistry mreg = ignite.context().metric().registry(cacheMetricsRegistryName(cacheName, false));
+        MetricRegistry mreg = ignite.context().metric().getRegistry(cacheMetricsRegistryName(cacheName, false));
 
         return mreg.findMetric(name);
     }

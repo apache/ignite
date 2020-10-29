@@ -38,7 +38,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
+import static org.apache.ignite.internal.processors.metric.sources.TransactionMetricSource.TX_METRICS;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -103,7 +103,7 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         TransactionMetricsMxBean txMXBean = getMxBean(getTestIgniteInstanceName(0), "TransactionMetrics",
             TransactionMetricsMxBeanImpl.class, TransactionMetricsMxBean.class);
 
-        MetricRegistry mreg = grid(0).context().metric().registry(TX_METRICS);
+        MetricRegistry mreg = grid(0).context().metric().getRegistry(TX_METRICS);
 
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -183,7 +183,7 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         IgniteEx primaryNode2 = startGrid(1);
         IgniteEx nearNode = startGrid(2);
 
-        MetricRegistry mreg = grid(2).context().metric().registry(TX_METRICS);
+        MetricRegistry mreg = grid(2).context().metric().getRegistry(TX_METRICS);
 
         awaitPartitionMapExchange();
 

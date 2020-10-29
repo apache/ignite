@@ -50,7 +50,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -63,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendi
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.metric.sources.IndexMetricSource;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
@@ -729,7 +729,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
          * @param rowCache Row cache.
          * @param failureProcessor if the tree is corrupted.
          * @param log Logger.
-         * @param stats Statistics holder.
+         * @param metricSrc Metric source.
          * @throws IgniteCheckedException If failed.
          */
         public H2TreeTest(
@@ -756,7 +756,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
             @Nullable H2RowCache rowCache,
             @Nullable FailureProcessor failureProcessor,
             IgniteLogger log,
-            IoStatisticsHolder stats,
+            IndexMetricSource metricSrc,
             InlineIndexColumnFactory factory,
             int configuredInlineSize
         ) throws IgniteCheckedException {
@@ -784,7 +784,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
                 rowCache,
                 failureProcessor,
                 log,
-                stats,
+                metricSrc,
                 factory,
                 configuredInlineSize
             );

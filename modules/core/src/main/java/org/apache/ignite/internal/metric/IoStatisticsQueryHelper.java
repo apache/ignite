@@ -75,7 +75,7 @@ public class IoStatisticsQueryHelper {
      *
      * @param pageAddr Address of page.
      */
-    static void trackLogicalReadQuery(long pageAddr) {
+    public static void trackLogicalReadQuery(long pageAddr) {
         IoStatisticsHolderQuery currQryStatisticsHolder = CUR_QRY_STATS.get();
 
         if (currQryStatisticsHolder != null)
@@ -88,7 +88,7 @@ public class IoStatisticsQueryHelper {
      *
      * @param pageAddr Address of page.
      */
-    static void trackPhysicalAndLogicalReadQuery(long pageAddr) {
+    public static void trackPhysicalAndLogicalReadQuery(long pageAddr) {
         IoStatisticsHolderQuery currQryStatisticsHolder = CUR_QRY_STATS.get();
 
         if (currQryStatisticsHolder != null)

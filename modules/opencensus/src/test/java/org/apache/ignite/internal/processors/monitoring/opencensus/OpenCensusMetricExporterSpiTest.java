@@ -28,9 +28,12 @@ import org.apache.commons.io.IOUtils;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
+import org.apache.ignite.internal.processors.metric.MetricRegistryBuilder;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.processors.metric.sources.AbstractMetricSource;
 import org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi;
 import org.junit.Test;
 
@@ -78,7 +81,7 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         PrometheusStatsCollector.createAndRegister();
 
-        HTTPServer server = new HTTPServer(HOST, PORT, true);
+        HTTPServer srv = new HTTPServer(HOST, PORT, true);
 
         ignite = startGrid(0);
     }
@@ -124,52 +127,38 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testFilterAndExport() throws Exception {
-        createAdditionalMetrics(ignite);
-
-        String[] expectedMetrics = new String[] {
-            "other_prefix_test\\{.*\\} 42",
-            "other_prefix_test2\\{.*\\} 43",
-            "other_prefix2_test3\\{.*\\} 44"};
-
-        assertTrue("Additional metrics should be exported via http", checkHttpMetrics(expectedMetrics));
-    }
-
-    /** */
-    @Test
     public void testHistogram() throws Exception {
         String registryName = "test_registry";
-        String histogramName = "test_histogram";
-        String histogramDesc = "Test histogram description.";
 
-        long[] bounds = new long[] {10, 100};
-        long[] testValues = new long[] {5, 50, 50, 500, 500, 500};
-
-        String[] expectedValuesPtrn = new String[] {
+        String[] expValuesPtrn = new String[] {
             "test_registry_test_histogram_0_10.* 1",
             "test_registry_test_histogram_10_100.* 2",
             "test_registry_test_histogram_100_inf.* 3"};
 
-        HistogramMetricImpl histogramMetric =
-            ignite.context().metric().registry(registryName).histogram(histogramName, bounds, histogramDesc);
+        long[] testValues = new long[] {5, 50, 50, 500, 500, 500};
+
+        HistMetricSource src = new HistMetricSource(registryName, ignite.context());
+
+        ignite.context().metric().registerSource(src);
+        ignite.context().metric().enableMetrics(src);
 
         for (long value : testValues)
-            histogramMetric.value(value);
+            src.histogramMetric().value(value);
 
-        assertTrue("Histogram metrics should be exported via http", checkHttpMetrics(expectedValuesPtrn));
+        assertTrue("Histogram metrics should be exported via http", checkHttpMetrics(expValuesPtrn));
 
-        bounds = new long[] {50};
+        src.bounds = new long[] {50};
 
-        histogramMetric.reset(bounds);
+        src.histogramMetric().reset(src.bounds);
 
         for (long value : testValues)
-            histogramMetric.value(value);
+            src.histogramMetric().value(value);
 
-        expectedValuesPtrn = new String[] {
+        expValuesPtrn = new String[] {
             "test_registry_test_histogram_0_50.* 3",
             "test_registry_test_histogram_50_inf.* 3"};
 
-        assertTrue("Updated histogram metrics should be exported via http", checkHttpMetrics(expectedValuesPtrn));
+        assertTrue("Updated histogram metrics should be exported via http", checkHttpMetrics(expValuesPtrn));
     }
 
     /**
@@ -206,6 +195,46 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         try (InputStream in = con.getInputStream()) {
             return IOUtils.toString(in, con.getContentEncoding());
+        }
+    }
+
+    /** */
+    private static class HistMetricSource extends AbstractMetricSource {
+        /** Histogram name. */
+        String histogramName = "test_histogram";
+
+        /** Histogram description. */
+        String histogramDesc = "Test histogram description.";
+
+        /** Bounds. */
+        long[] bounds = new long[] {10, 100};
+
+        /** Metric. */
+        HistogramMetricImpl metric;
+
+        /**
+         * Base constructor for all metric source implemnetations.
+         *
+         * @param name Metric source name.
+         * @param ctx Kernal context.
+         */
+        protected HistMetricSource(String name, GridKernalContext ctx) {
+            super(name, ctx);
+        }
+
+        /** */
+        public HistogramMetricImpl histogramMetric() {
+            return metric;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void init(MetricRegistryBuilder bldr, Holder hldr) {
+            metric = bldr.histogram(histogramName, bounds, histogramDesc);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Holder createHolder() {
+            return null;
         }
     }
 }

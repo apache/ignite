@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.benchmarks.jol;
 
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryBuilder;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
@@ -100,8 +101,6 @@ public class GridMetricsJolBenchmark {
         for (int i = 0; i < LONG_ADDER_CNT; i++)
             metrics[start + i] = new LongAdderMetric(LONG_ADDER_METRIC + i, null);
 
-        start += LONG_ADDER_CNT;
-
         long sz = GraphLayout.parseInstance(metrics).totalSize();
 
         System.out.println("Total size of " + TOTAL + " metric array is " + (sz / 1024) + "KiB, " + sz + " bytes.");
@@ -111,22 +110,24 @@ public class GridMetricsJolBenchmark {
      * Calculates and prints the size of metric registry of {@code TOTAL} size;
      */
     private static void measureMetricRegistry() {
-        MetricRegistry mreg = new MetricRegistry("test", name -> null, name -> null, null);
+        MetricRegistryBuilder bldr = MetricRegistryBuilder.newInstance("test", null);
 
         for (int i = 0; i < BOOLEAN_CNT; i++)
-            mreg.booleanMetric(BOOLEAN_METRIC + i, null);
+            bldr.booleanMetric(BOOLEAN_METRIC + i, null);
 
         for (int i = 0; i < DOUBLE_CNT; i++)
-            mreg.doubleMetric(DOUBLE_METRIC + i, null);
+            bldr.doubleMetric(DOUBLE_METRIC + i, null);
 
         for (int i = 0; i < INT_CNT; i++)
-            mreg.doubleMetric(INT_METRIC + i, null);
+            bldr.doubleMetric(INT_METRIC + i, null);
 
         for (int i = 0; i < LONG_CNT; i++)
-            mreg.longMetric(LONG_METRIC + i, null);
+            bldr.longMetric(LONG_METRIC + i, null);
 
         for (int i = 0; i < LONG_ADDER_CNT; i++)
-            mreg.longMetric(LONG_ADDER_METRIC + i, null);
+            bldr.longMetric(LONG_ADDER_METRIC + i, null);
+
+        MetricRegistry mreg = bldr.build();
 
         long sz = GraphLayout.parseInstance(mreg).totalSize();
 

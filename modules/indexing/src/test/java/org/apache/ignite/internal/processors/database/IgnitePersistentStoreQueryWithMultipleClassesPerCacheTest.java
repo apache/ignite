@@ -61,7 +61,7 @@ public class IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest extends G
      * @param name Cache name.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheCfg(String name) {
+    private CacheConfiguration<?, ?> cacheCfg(String name) {
         CacheConfiguration<?, ?> cfg = new CacheConfiguration<>();
 
         cfg.setName(name);
@@ -108,8 +108,7 @@ public class IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest extends G
         List<List<?>> all = ig0.cache(CACHE_NAME)
                 .query(new SqlFieldsQuery("select depId FROM \"" + CACHE_NAME + "\".Person")).getAll();
 
-        assert all.size() == 1;
-
+        assertEquals(1, all.size());
     }
 
     /**

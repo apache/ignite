@@ -160,7 +160,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     private static final int BATCH_SIZE = 1000;
 
     /** */
-    protected GridCacheSharedContext ctx;
+    protected GridCacheSharedContext<?, ?> ctx;
 
     /** */
     protected CacheGroupContext grp;
@@ -1464,7 +1464,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final AtomicLong storageSize = new AtomicLong();
 
         /** */
-        private final IntMap<AtomicLong> cacheSizes = new IntRWHashMap();
+        private final IntMap<AtomicLong> cacheSizes = new IntRWHashMap<>();
 
         /** Mvcc remove handler. */
         private final PageHandler<MvccUpdateDataRow, Boolean> mvccUpdateMarker = new MvccMarkUpdatedHandler();
@@ -1751,7 +1751,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             DataRow dataRow = makeDataRow(key, val, ver, expireTime, cacheId);
 
-            if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow, grp.statisticsHolderData()))
+            if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow, grp.cacheStatisticsHolder()))
                 dataRow.link(oldRow.link());
             else {
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
@@ -1759,7 +1759,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 key.valueBytes(coCtx);
                 val.valueBytes(coCtx);
 
-                rowStore.addRow(dataRow, grp.statisticsHolderData());
+                rowStore.addRow(dataRow, grp.cacheStatisticsHolder());
             }
 
             assert dataRow.link() != 0 : dataRow;
@@ -1777,7 +1777,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                rowStore.addRows(F.view(rows, row -> row.value() != null), grp.statisticsHolderData());
+                rowStore.addRows(F.view(rows, row -> row.value() != null), grp.cacheStatisticsHolder());
 
                 boolean cacheIdAwareGrp = grp.sharedGroup() || grp.storeCacheIdInDataPage();
 
@@ -1785,7 +1785,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     row.storeCacheId(cacheIdAwareGrp);
 
                     if (!initPred.applyx(row) && row.value() != null)
-                        rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                        rowStore.removeRow(row.link(), grp.cacheStatisticsHolder());
                 }
             }
             finally {
@@ -1857,12 +1857,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     if (!grp.storeCacheIdInDataPage() && updateRow.cacheId() != CU.UNDEFINED_CACHE_ID) {
                         updateRow.cacheId(CU.UNDEFINED_CACHE_ID);
 
-                        rowStore.addRow(updateRow, grp.statisticsHolderData());
+                        rowStore.addRow(updateRow, grp.cacheStatisticsHolder());
 
                         updateRow.cacheId(cctx.cacheId());
                     }
                     else
-                        rowStore.addRow(updateRow, grp.statisticsHolderData());
+                        rowStore.addRow(updateRow, grp.cacheStatisticsHolder());
 
                     dataTree.putx(updateRow);
 
@@ -1932,7 +1932,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     if (!grp.storeCacheIdInDataPage() && cacheId != CU.UNDEFINED_CACHE_ID)
                         row.cacheId(CU.UNDEFINED_CACHE_ID);
 
-                    rowStore.addRow(row, grp.statisticsHolderData());
+                    rowStore.addRow(row, grp.cacheStatisticsHolder());
 
                     row.cacheId(cacheId);
 
@@ -2099,7 +2099,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     // Mark old version as removed.
                     if (res == ResultType.PREV_NOT_NULL) {
-                        rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, updateRow, grp.statisticsHolderData());
+                        rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, updateRow, grp.cacheStatisticsHolder());
 
                         if (op == CacheInvokeEntry.Operation.REMOVE) {
                             updateRow.resultType(ResultType.REMOVED_NOT_NULL);
@@ -2115,17 +2115,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         assert op != CacheInvokeEntry.Operation.REMOVE;
                 }
                 else if (oldRow != null)
-                    rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, updateRow, grp.statisticsHolderData());
+                    rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, updateRow, grp.cacheStatisticsHolder());
 
                 if (!grp.storeCacheIdInDataPage() && updateRow.cacheId() != CU.UNDEFINED_CACHE_ID) {
                     updateRow.cacheId(CU.UNDEFINED_CACHE_ID);
 
-                    rowStore.addRow(updateRow, grp.statisticsHolderData());
+                    rowStore.addRow(updateRow, grp.cacheStatisticsHolder());
 
                     updateRow.cacheId(cctx.cacheId());
                 }
                 else
-                    rowStore.addRow(updateRow, grp.statisticsHolderData());
+                    rowStore.addRow(updateRow, grp.cacheStatisticsHolder());
 
                 if (needHistory) {
                     assert updateRow.link() != 0;
@@ -2275,7 +2275,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     assert oldRow != null && oldRow.link() != 0 : oldRow;
 
-                    rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, updateRow, grp.statisticsHolderData());
+                    rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, updateRow, grp.cacheStatisticsHolder());
 
                     clearPendingEntries(cctx, oldRow);
                 }
@@ -2383,7 +2383,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                             clearPendingEntries(cctx, row);
                     }
 
-                    rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                    rowStore.removeRow(row.link(), grp.cacheStatisticsHolder());
 
                     if (first)
                         first = false;
@@ -2448,7 +2448,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     clearPendingEntries(cctx, oldRow);
 
-                    rowStore.removeRow(cleanupRow.link(), grp.statisticsHolderData());
+                    rowStore.removeRow(cleanupRow.link(), grp.cacheStatisticsHolder());
 
                     res++;
                 }
@@ -2467,7 +2467,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             CacheDataRow row0 = dataTree.findOne(row, CacheDataRowAdapter.RowData.LINK_ONLY);
 
             if (row0 != null)
-                rowStore.updateDataRow(row0.link(), mvccUpdateTxStateHint, null, grp.statisticsHolderData());
+                rowStore.updateDataRow(row0.link(), mvccUpdateTxStateHint, null, grp.cacheStatisticsHolder());
         }
 
         /** {@inheritDoc} */
@@ -2500,13 +2500,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
-                if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow, grp.statisticsHolderData())) {
+                if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow, grp.cacheStatisticsHolder())) {
                     old = oldRow;
 
                     dataRow.link(oldRow.link());
                 }
                 else {
-                    rowStore.addRow(dataRow, grp.statisticsHolderData());
+                    rowStore.addRow(dataRow, grp.cacheStatisticsHolder());
 
                     assert dataRow.link() != 0 : dataRow;
 
@@ -2584,19 +2584,19 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     assert oldRow != null && oldRow.link() != 0 : oldRow;
 
-                    rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, updateRow, grp.statisticsHolderData());
+                    rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, updateRow, grp.cacheStatisticsHolder());
                 }
 
                 if (val != null) {
                     if (!grp.storeCacheIdInDataPage() && updateRow.cacheId() != CU.UNDEFINED_CACHE_ID) {
                         updateRow.cacheId(CU.UNDEFINED_CACHE_ID);
 
-                        rowStore.addRow(updateRow, grp.statisticsHolderData());
+                        rowStore.addRow(updateRow, grp.cacheStatisticsHolder());
 
                         updateRow.cacheId(cctx.cacheId());
                     }
                     else
-                        rowStore.addRow(updateRow, grp.statisticsHolderData());
+                        rowStore.addRow(updateRow, grp.cacheStatisticsHolder());
 
                     boolean old = dataTree.putx(updateRow);
 
@@ -2649,7 +2649,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 assert oldRow.link() != 0 : oldRow;
 
                 if (newRow.link() != oldRow.link())
-                    rowStore.removeRow(oldRow.link(), grp.statisticsHolderData());
+                    rowStore.removeRow(oldRow.link(), grp.cacheStatisticsHolder());
             }
         }
 
@@ -2718,8 +2718,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (qryMgr.enabled())
                 qryMgr.remove(key, oldRow);
 
+            //TODO: may be cacheStatisticsHolder() should be renamed to statisticsHolderData()
             if (oldRow != null)
-                rowStore.removeRow(oldRow.link(), grp.statisticsHolderData());
+                rowStore.removeRow(oldRow.link(), grp.cacheStatisticsHolder());
         }
 
         /**
@@ -2727,7 +2728,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param oldRow Old row.
          * @throws IgniteCheckedException If failed.
          */
-        private void clearPendingEntries(GridCacheContext cctx, CacheDataRow oldRow)
+        private void clearPendingEntries(GridCacheContext<?, ?> cctx, CacheDataRow oldRow)
             throws IgniteCheckedException {
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
@@ -2945,7 +2946,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             dataTree.destroy(new IgniteInClosure<CacheSearchRow>() {
                 @Override public void apply(CacheSearchRow row) {
                     try {
-                        rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                        rowStore.removeRow(row.link(), grp.cacheStatisticsHolder());
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to remove row [link=" + row.link() + "]");
@@ -3001,7 +3002,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     assert res : row;
 
-                    rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                    rowStore.removeRow(row.link(), grp.cacheStatisticsHolder());
 
                     decrementSize(cacheId);
                 }
@@ -3195,7 +3196,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     if (!grp.storeCacheIdInDataPage() && cacheId != CU.UNDEFINED_CACHE_ID)
                         cacheId(CU.UNDEFINED_CACHE_ID);
 
-                    rowStore().addRow(this, grp.statisticsHolderData());
+                    rowStore().addRow(this, grp.cacheStatisticsHolder());
 
                     cacheId(cacheId);
                 }
@@ -3208,7 +3209,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         oldRow.newMvccOperationCounter() != newMvccOperationCounter() ||
                         oldRow.newMvccTxState() != newMvccTxState()) {
 
-                        rowStore().updateDataRow(oldRow.link(), mvccApplyChanges, this, grp.statisticsHolderData());
+                        rowStore().updateDataRow(oldRow.link(), mvccApplyChanges, this, grp.cacheStatisticsHolder());
                     }
                 }
             }

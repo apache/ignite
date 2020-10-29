@@ -82,10 +82,16 @@ public class JmxSystemViewExporterSpi extends AbstractSystemViewExporterSpi {
             return;
 
         for (ObjectName bean : mBeans)
-            unregBean(ignite, bean);
+            unregisterBean(ignite, bean);
     }
 
-    private void unregBean(Ignite ignite, ObjectName bean) {
+    /**
+     * Unregisters MBean.
+     *
+     * @param ignite Ignite.
+     * @param bean MBean.
+     */
+    private void unregisterBean(Ignite ignite, ObjectName bean) {
         MBeanServer jmx = ignite.configuration().getMBeanServer();
 
         try {

@@ -39,7 +39,6 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
@@ -47,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
+import org.apache.ignite.internal.processors.metric.sources.DataStorageMetricSource;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -131,7 +131,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
     private final long fsyncDelay;
 
     /** Persistence metrics tracker. */
-    private final DataStorageMetricsImpl metrics;
+    private final DataStorageMetricSource metricSrc;
 
     /** WAL segment size in bytes. This is maximum value, actual segments may be shorter. */
     private final long maxWalSegmentSize;
@@ -155,7 +155,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      * @param cctx Context.
      * @param fileIO I/O file interface to use
      * @param serializer Serializer.
-     * @param metrics Data storage metrics.
+     * @param metricSrc Data storage metrics source.
      * @param writer WAL writer.
      * @param pos Initial position.
      * @param mode WAL mode.
@@ -166,16 +166,16 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      * @throws IOException If failed.
      */
     FileWriteHandleImpl(
-        GridCacheSharedContext cctx, SegmentIO fileIO, SegmentedRingByteBuffer rbuf, RecordSerializer serializer,
-        DataStorageMetricsImpl metrics, FileHandleManagerImpl.WALWriter writer, long pos, WALMode mode, boolean mmap,
-        boolean resume, long fsyncDelay, long maxWalSegmentSize) throws IOException {
+            GridCacheSharedContext cctx, SegmentIO fileIO, SegmentedRingByteBuffer rbuf, RecordSerializer serializer,
+            DataStorageMetricSource metricSrc, FileHandleManagerImpl.WALWriter writer, long pos, WALMode mode, boolean mmap,
+            boolean resume, long fsyncDelay, long maxWalSegmentSize) throws IOException {
         super(fileIO);
         assert serializer != null;
 
         this.mmap = mmap;
         this.mode = mode;
         this.fsyncDelay = fsyncDelay;
-        this.metrics = metrics;
+        this.metricSrc = metricSrc;
         this.maxWalSegmentSize = maxWalSegmentSize;
         this.log = cctx.logger(FileWriteHandleImpl.class);
         this.cctx = cctx;
@@ -398,7 +398,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                 // Fsync position must be behind.
                 assert lastFsyncPos0 < written0 : "lastFsyncPos=" + lastFsyncPos0 + ", written=" + written0;
 
-                boolean metricsEnabled = metrics.metricsEnabled();
+                boolean metricsEnabled = metricSrc.enabled();
 
                 long start = metricsEnabled ? System.nanoTime() : 0;
 
@@ -431,7 +431,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                 long end = metricsEnabled ? System.nanoTime() : 0;
 
                 if (metricsEnabled)
-                    metrics.onFsync(end - start);
+                    metricSrc.onFsync(end - start);
             }
         }
         finally {

@@ -108,6 +108,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
+import org.apache.ignite.internal.processors.metric.sources.CacheMetricSource;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -284,6 +285,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @GridToStringExclude
     private IgniteConfiguration gridCfg;
 
+    /** Cache metric source. */
+    private CacheMetricSource metricSrc;
+
     /** Cache metrics. */
     protected CacheMetricsImpl metrics;
 
@@ -350,7 +354,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         log = ctx.logger(getClass());
         txLockMsgLog = ctx.shared().txLockMessageLogger();
 
-        metrics = new CacheMetricsImpl(ctx, isNear());
+        metricSrc = new CacheMetricSource(ctx, isNear());
+        ctx.kernalContext().metric().registerSource(metricSrc);
+
+        if (ctx.statisticsEnabled())
+            ctx.kernalContext().metric().enableMetrics(metricSrc);
+
+        metrics = new CacheMetricsImpl(metricSrc, ctx, isNear());
 
         locMxBean = new CacheLocalMetricsMXBeanImpl(this);
         clusterMxBean = new CacheClusterMetricsMXBeanImpl(this);
@@ -653,8 +663,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         // Nulling thread local reference to ensure values will be eventually GCed
         // no matter what references these futures are holding.
         lastFut = null;
+
+        ctx.kernalContext().metric().disableMetrics(metricSrc);
+        ctx.kernalContext().metric().unregisterSource(metricSrc);
     }
 
+    //TODO: what is this?
     /** Remove cache metrics. */
     public void removeMetrics() {
         if (!ctx.kernalContext().isStopping())

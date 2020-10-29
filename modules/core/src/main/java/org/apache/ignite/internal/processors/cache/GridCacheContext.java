@@ -94,6 +94,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricSource;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
@@ -456,7 +458,12 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         assert locMacs != null;
 
-        this.statisticsEnabled = clusterWideDesc.cacheConfiguration().isStatisticsEnabled();
+        boolean statisticsEnabled = clusterWideDesc.cacheConfiguration().isStatisticsEnabled();
+
+        onMetricsModeChanged(cache, statisticsEnabled);
+
+        this.statisticsEnabled = statisticsEnabled;
+
         this.dynamicDeploymentId = clusterWideDesc.deploymentId();
     }
 
@@ -2341,10 +2348,40 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param statisticsEnabled Statistics enabled flag.
      */
     public void statisticsEnabled(boolean statisticsEnabled) {
+        onMetricsModeChanged(cache, statisticsEnabled);
+
         this.statisticsEnabled = statisticsEnabled;
 
-        if (isNear())
-            near().dht().context().statisticsEnabled = statisticsEnabled;
+        if (isNear()) {
+            GridDhtCacheAdapter<?, ?> dht = near().dht();
+
+            GridCacheContext<?, ?> ctx = dht.context();
+
+            onMetricsModeChanged(dht, statisticsEnabled);
+
+            ctx.statisticsEnabled = statisticsEnabled;
+        }
+    }
+
+    /**
+     * @param cache Grid cache adapter.
+     * @param enabled Enabled.
+     */
+    private void onMetricsModeChanged(GridCacheAdapter<?, ?> cache, boolean enabled) {
+        GridMetricManager metricMgr = kernalContext().metric();
+
+        if (cache != null) {
+            MetricSource src = cache.metrics.metricSource();
+
+            if (enabled) {
+                if (!src.enabled())
+                    metricMgr.enableMetrics(src);
+            }
+            else {
+                if (src.enabled())
+                    metricMgr.disableMetrics(src);
+            }
+        }
     }
 
     /**

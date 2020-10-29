@@ -119,9 +119,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.processors.metric.sources.ClusterMetricSource;
+import org.apache.ignite.internal.processors.metric.sources.PartitionExchangeMetricSource;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -178,13 +177,7 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION_HISTOGRAM;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
+import static org.apache.ignite.internal.processors.metric.sources.ClusterMetricSource.CLUSTER_METRICS;
 import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FUTURE;
 
 /**
@@ -294,17 +287,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** List of exchange aware components. */
     private final List<PartitionsExchangeAware> exchangeAwareComps = new CopyOnWriteArrayList<>();
 
-    /** Histogram of PME durations. */
-    private volatile HistogramMetricImpl durationHistogram;
-
-    /** Histogram of blocking PME durations. */
-    private volatile HistogramMetricImpl blockingDurationHistogram;
+    /** Partition map exchange metric source. */
+    private volatile PartitionExchangeMetricSource metricSrc;
 
     /** Delay before rebalancing code is start executing after exchange completion. For tests only. */
     private volatile long rebalanceDelay;
-
-    /** Metric that shows whether cluster is in fully rebalanced state. */
-    private volatile BooleanMetricImpl rebalanced;
 
     /** */
     private final ReentrantLock dumpLongRunningOpsLock = new ReentrantLock();
@@ -514,24 +501,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
-        MetricRegistry mreg = cctx.kernalContext().metric().registry(PME_METRICS);
+        GridKernalContext ctx = cctx.kernalContext();
 
-        mreg.register(PME_DURATION,
-            () -> currentPMEDuration(false),
-            "Current PME duration in milliseconds.");
+        metricSrc = new PartitionExchangeMetricSource(ctx);
 
-        mreg.register(PME_OPS_BLOCKED_DURATION,
-            () -> currentPMEDuration(true),
-            "Current PME cache operations blocked duration in milliseconds.");
-
-        durationHistogram = mreg.findMetric(PME_DURATION_HISTOGRAM);
-        blockingDurationHistogram = mreg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
-
-        MetricRegistry clusterReg = cctx.kernalContext().metric().registry(CLUSTER_METRICS);
-
-        rebalanced = clusterReg.booleanMetric(REBALANCED,
-            "True if the cluster has achieved fully rebalanced state. Note that an inactive cluster always has" +
-            " this metric in False regardless of the real partitions state.");
+        ctx.metric().registerSource(metricSrc);
+        ctx.metric().enableMetrics(metricSrc);
     }
 
     /**
@@ -1012,6 +987,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         busyLock.writeLock().lock();
 
         exchFuts.clear();
+
+        cctx.kernalContext().metric().disableMetrics(metricSrc);
+        cctx.kernalContext().metric().unregisterSource(metricSrc);
     }
 
     /**
@@ -2935,29 +2913,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param blocked {@code True} if take into account only cache operations blocked PME.
-     * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} If there is no
-     * running PME or {@code blocked} was set to {@code true} and current PME don't block cache operations.
+     * @return Partition map exchange metric source.
      */
-    private long currentPMEDuration(boolean blocked) {
-        GridDhtPartitionsExchangeFuture fut = lastTopologyFuture();
-
-        return fut == null ? 0 : fut.currentPMEDuration(blocked);
+    public PartitionExchangeMetricSource metricSource() {
+        return metricSrc;
     }
 
-    /** @return Histogram of PME durations metric. */
-    public HistogramMetricImpl durationHistogram() {
-        return durationHistogram;
-    }
+    /** Sets flag that shows whether cluster is in fully rebalanced state. */
+    public void clusterRebalanced(boolean rebalanced) {
+        ClusterMetricSource clusterMetricSrc = cctx.kernalContext().metric().source(CLUSTER_METRICS);
 
-    /** @return Histogram of blocking PME durations metric. */
-    public HistogramMetricImpl blockingDurationHistogram() {
-        return blockingDurationHistogram;
-    }
-
-    /** @return Metric that shows whether cluster is in fully rebalanced state. */
-    public BooleanMetricImpl clusterRebalancedMetric() {
-        return rebalanced;
+        clusterMetricSrc.rebalanced(rebalanced);
     }
 
     /**

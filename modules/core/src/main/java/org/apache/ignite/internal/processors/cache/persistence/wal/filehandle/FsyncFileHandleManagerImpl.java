@@ -24,11 +24,11 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
+import org.apache.ignite.internal.processors.metric.sources.DataStorageMetricSource;
 
 /**
  * Implementation of {@link FileWriteHandle} for FSYNC mode.
@@ -44,7 +44,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     private final WALMode mode;
 
     /** Persistence metrics tracker. */
-    private final DataStorageMetricsImpl metrics;
+    private final DataStorageMetricSource metricSrc;
 
     /** */
     protected final RecordSerializer serializer;
@@ -63,7 +63,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
 
     /**
      * @param cctx Context.
-     * @param metrics Data storage metrics.
+     * @param metricSrc Metric source.
      * @param serializer Serializer.
      * @param handle Current handle supplier.
      * @param mode WAL mode.
@@ -73,7 +73,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
      */
     public FsyncFileHandleManagerImpl(
         GridCacheSharedContext cctx,
-        DataStorageMetricsImpl metrics,
+        DataStorageMetricSource metricSrc,
         RecordSerializer serializer,
         Supplier<FileWriteHandle> handle,
         WALMode mode,
@@ -84,7 +84,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
         this.cctx = cctx;
         this.log = cctx.logger(FsyncFileHandleManagerImpl.class);
         this.mode = mode;
-        this.metrics = metrics;
+        this.metricSrc = metricSrc;
         this.serializer = serializer;
         currentHandleSupplier = handle;
         this.maxWalSegmentSize = maxWalSegmentSize;
@@ -96,7 +96,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     @Override public FileWriteHandle initHandle(SegmentIO fileIO, long position,
         RecordSerializer serializer) throws IOException {
         return new FsyncFileWriteHandle(
-            cctx, fileIO, metrics, serializer, position,
+            cctx, fileIO, metricSrc, serializer, position,
             mode, maxWalSegmentSize, tlbSize, fsyncDelay
         );
     }
@@ -105,7 +105,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     @Override public FileWriteHandle nextHandle(SegmentIO fileIO,
         RecordSerializer serializer) throws IOException {
         return new FsyncFileWriteHandle(
-            cctx, fileIO, metrics, serializer, 0,
+            cctx, fileIO, metricSrc, serializer, 0,
             mode, maxWalSegmentSize, tlbSize, fsyncDelay
         );
     }

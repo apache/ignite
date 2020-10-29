@@ -45,7 +45,8 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.sources.CommunicationMetricSource;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.processors.tracing.MTC;
@@ -206,6 +207,9 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionInde
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
+    /** */
+    public static final String ATTR_FORCE_CLIENT_SERVER_CONNECTIONS = "comm.force.client.srv.connections";
+
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower).";
@@ -296,34 +300,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** Handshake wait message type. */
     public static final short HANDSHAKE_WAIT_MSG_TYPE = -28;
 
-    /** Communication metrics group name. */
-    public static final String COMMUNICATION_METRICS_GROUP_NAME = MetricUtils.metricName("communication", "tcp");
-
-    /** Sent messages metric name. */
-    public static final String SENT_MESSAGES_METRIC_NAME = "sentMessagesCount";
-
-    /** Sent messages metric description. */
-    public static final String SENT_MESSAGES_METRIC_DESC = "Total number of messages sent by current node";
-
     /** Received messages metric name. */
     public static final String RECEIVED_MESSAGES_METRIC_NAME = "receivedMessagesCount";
-
-    /** Received messages metric description. */
-    public static final String RECEIVED_MESSAGES_METRIC_DESC = "Total number of messages received by current node";
-
-    /** Sent messages by type metric name. */
-    public static final String SENT_MESSAGES_BY_TYPE_METRIC_NAME = "sentMessagesByType";
-
-    /** Sent messages by type metric description. */
-    public static final String SENT_MESSAGES_BY_TYPE_METRIC_DESC =
-        "Total number of messages with given type sent by current node";
-
-    /** Received messages by type metric name. */
-    public static final String RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME = "receivedMessagesByType";
-
-    /** Received messages by type metric description. */
-    public static final String RECEIVED_MESSAGES_BY_TYPE_METRIC_DESC =
-        "Total number of messages with given type received by current node";
 
     /** Sent messages by node consistent id metric name. */
     public static final String SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME = "sentMessagesToNode";
@@ -375,10 +353,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** State provider. */
     private volatile ClusterStateProvider stateProvider;
 
-    /**
-     *
-     */
-    public static final String ATTR_FORCE_CLIENT_SERVER_CONNECTIONS = "comm.force.client.srv.connections";
+    /** Communication metric source. */
+    private volatile CommunicationMetricSource metricSrc;
 
     /** Logger. */
     @LoggerResource
@@ -438,42 +414,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             return 0;
 
         return metricsLsnr.receivedBytesCount();
-    }
-
-    /**
-     * Gets received messages counts (grouped by type).
-     *
-     * @return Map containing message types and respective counts.
-     */
-    public Map<String, Long> getReceivedMessagesByType() {
-        return metricsLsnr.receivedMessagesByType();
-    }
-
-    /**
-     * Gets received messages counts (grouped by node).
-     *
-     * @return Map containing sender nodes and respective counts.
-     */
-    public Map<UUID, Long> getReceivedMessagesByNode() {
-        return metricsLsnr.receivedMessagesByNode();
-    }
-
-    /**
-     * Gets sent messages counts (grouped by type).
-     *
-     * @return Map containing message types and respective counts.
-     */
-    public Map<String, Long> getSentMessagesByType() {
-        return metricsLsnr.sentMessagesByType();
-    }
-
-    /**
-     * Gets sent messages counts (grouped by node).
-     *
-     * @return Map containing receiver nodes and respective counts.
-     */
-    public Map<UUID, Long> getSentMessagesByNode() {
-        return metricsLsnr.sentMessagesByNode();
     }
 
     /** {@inheritDoc} */
@@ -645,6 +585,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         cfg.failureDetectionTimeout(ignite.configuration().getFailureDetectionTimeout());
 
+        metricSrc = new CommunicationMetricSource(((IgniteEx)ignite).context());
+
         attributeNames = new AttributeNames(
             createSpiAttributeName(ATTR_PAIRED_CONN),
             createSpiAttributeName(ATTR_SHMEM_PORT),
@@ -749,7 +691,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             cfg,
             attributeNames,
             log,
-            metricsLsnr,
+            metricSrc,
             locNodeSupplier,
             nodeGetter,
             null,
@@ -838,7 +780,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                 "due to message queues growth on sender and receiver sides.");
 
         if (shmemSrv != null) {
-
             MessageFactory msgFactory = new MessageFactory() {
                 private MessageFactory impl;
 
@@ -887,7 +828,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                 igniteInstanceName,
                 srvLsnr,
                 shmemSrv,
-                metricsLsnr,
+                metricSrc,
                 log,
                 msgFactory,
                 writerFactory,
@@ -942,12 +883,17 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         ctxInitLatch.countDown();
 
-        metricsLsnr = new TcpCommunicationMetricsListener(ignite, spiCtx);
+        GridMetricManager metricMgr = ((IgniteKernal)ignite).context().metric();
 
-        registerMBean(igniteInstanceName, new TcpCommunicationSpiMBeanImpl(this, metricsLsnr, cfg, stateProvider), TcpCommunicationSpiMBean.class);
+        metricMgr.registerSource(metricSrc);
+
+        metricMgr.enableMetrics(metricSrc);
+
+        metricsLsnr = new TcpCommunicationMetricsListener(ignite, metricSrc, spiCtx);
+
+        registerMBean(igniteInstanceName, new TcpCommunicationSpiMBeanImpl(this, metricSrc, cfg, stateProvider), TcpCommunicationSpiMBean.class);
 
         srvLsnr.metricsListener(metricsLsnr);
-        clientPool.metricsListener(metricsLsnr);
         ((CommunicationDiscoveryEventListener)discoLsnr).metricsListener(metricsLsnr);
 
         if (shmemAcceptWorker != null)

@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
-import org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -147,9 +146,6 @@ public class GridCacheSharedContext<K, V> {
 
     /** Cache contexts map. */
     private final ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
-
-    /** Tx metrics. */
-    private final TransactionMetricsAdapter txMetrics;
 
     /** Cache diagnostic manager. */
     private CacheDiagnosticManager diagnosticMgr;
@@ -263,8 +259,6 @@ public class GridCacheSharedContext<K, V> {
         );
 
         this.storeSesLsnrs = storeSesLsnrs;
-
-        txMetrics = new TransactionMetricsAdapter(kernalCtx);
 
         ctxMap = new ConcurrentHashMap<>();
 
@@ -671,20 +665,6 @@ public class GridCacheSharedContext<K, V> {
         GridCacheContext<?, ?> cacheCtx = F.first(cacheContexts());
 
         return cacheCtx.dataCenterId();
-    }
-
-    /**
-     * @return Transactional metrics adapter.
-     */
-    public TransactionMetricsAdapter txMetrics() {
-        return txMetrics;
-    }
-
-    /**
-     * Resets tx metrics.
-     */
-    public void resetTxMetrics() {
-        txMetrics.reset();
     }
 
     /**

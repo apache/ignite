@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.processors.metric.sources.CacheMetricSource;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -378,7 +379,7 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
         offHeapHits = m.getOffHeapHits();
         offHeapMisses = m.getOffHeapMisses();
 
-        CacheMetricsImpl.EntriesStatMetrics entriesStat = m.getEntriesStat();
+        CacheMetricSource.EntriesStatMetrics entriesStat = m.getEntriesStat();
 
         offHeapEntriesCnt = entriesStat.offHeapEntriesCount();
         heapEntriesCnt = entriesStat.heapEntriesCount();
@@ -387,10 +388,10 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
 
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
 
-        cacheSize = entriesStat.cacheSize();
-        keySize = entriesStat.keySize();
-        size = entriesStat.size();
-        isEmpty = entriesStat.isEmpty();
+        cacheSize = entriesStat.localSize();
+        keySize = 0;
+        size = 0;
+        isEmpty = cacheSize == 0;
 
         dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
         txThreadMapSize = m.getTxThreadMapSize();

@@ -2979,7 +2979,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param grp Name of the group.
      * @param metrics Metrics.
      * @return MX bean.
-     * @throws Exception If failed.
+     * @throws MalformedObjectNameException If failed.
      */
     public DynamicMBean metricRegistry(
         String igniteInstanceName,

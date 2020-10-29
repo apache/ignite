@@ -35,6 +35,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.metric.sources.CommunicationMetricSource;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
@@ -53,7 +54,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.communication.tcp.AttributeNames;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.shmem.SHMemHandshakeClosure;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
@@ -85,9 +85,8 @@ public class ConnectionClientPool {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Statistics. */
-    @Nullable
-    private volatile TcpCommunicationMetricsListener metricsLsnr;
+    /** Metric src */
+    private final CommunicationMetricSource metricSrc;
 
     /** Local node supplier. */
     private final Supplier<ClusterNode> locNodeSupplier;
@@ -124,7 +123,7 @@ public class ConnectionClientPool {
      * @param cfg Config.
      * @param attrs Attributes.
      * @param log Logger.
-     * @param metricsLsnr Metrics listener.
+     * @param metricSrc Metrics source.
      * @param locNodeSupplier Local node supplier.
      * @param nodeGetter Node getter.
      * @param msgFormatterSupplier Message formatter supplier.
@@ -138,7 +137,7 @@ public class ConnectionClientPool {
         TcpCommunicationConfiguration cfg,
         AttributeNames attrs,
         IgniteLogger log,
-        TcpCommunicationMetricsListener metricsLsnr,
+        CommunicationMetricSource metricSrc,
         Supplier<ClusterNode> locNodeSupplier,
         Function<UUID, ClusterNode> nodeGetter,
         Supplier<MessageFormatter> msgFormatterSupplier,
@@ -151,7 +150,7 @@ public class ConnectionClientPool {
         this.cfg = cfg;
         this.attrs = attrs;
         this.log = log;
-        this.metricsLsnr = metricsLsnr;
+        this.metricSrc = metricSrc;
         this.locNodeSupplier = locNodeSupplier;
         this.nodeGetter = nodeGetter;
         this.msgFormatterSupplier = msgFormatterSupplier;
@@ -514,7 +513,7 @@ public class ConnectionClientPool {
             try {
                 client = new GridShmemCommunicationClient(
                     connIdx,
-                    metricsLsnr.metricRegistry(),
+                    metricSrc,
                     port,
                     timeoutHelper.nextTimeoutChunk(cfg.connectionTimeout()),
                     log,
@@ -800,12 +799,5 @@ public class ConnectionClientPool {
             else
                 throw handshakeTimeoutException();
         }
-    }
-
-    /**
-     * @param metricsLsnr New statistics.
-     */
-    public void metricsListener(@Nullable TcpCommunicationMetricsListener metricsLsnr) {
-        this.metricsLsnr = metricsLsnr;
     }
 }

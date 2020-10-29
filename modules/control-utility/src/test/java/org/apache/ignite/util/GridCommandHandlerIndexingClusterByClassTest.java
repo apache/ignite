@@ -17,6 +17,8 @@
 
 package org.apache.ignite.util;
 
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -40,6 +42,11 @@ public class GridCommandHandlerIndexingClusterByClassTest extends GridCommandHan
         super.beforeTest();
 
         createAndFillCache(client, CACHE_NAME, GROUP_NAME);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new StopNodeFailureHandler();
     }
 
     /**
@@ -164,17 +171,6 @@ public class GridCommandHandlerIndexingClusterByClassTest extends GridCommandHan
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", DEFAULT_CACHE_NAME, "--check-through", "10"));
-        assertContains(log, testOut.toString(), "no issues found");
-    }
-
-    /**
-     * Test validate_indexes with empty cache list.
-     */
-    @Test
-    public void testCacheValidateIndexesPassEmptyCacheList() throws Exception {
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes"));
         assertContains(log, testOut.toString(), "no issues found");
     }
 

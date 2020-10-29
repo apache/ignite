@@ -217,12 +217,12 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
     /** {@inheritDoc} */
     @Override public TransactionMetrics metrics() {
-        return cctx.txMetrics().snapshot();
+        return cctx.tm().txMetrics().snapshot();
     }
 
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
-        cctx.resetTxMetrics();
+        cctx.tm().resetTxMetrics();
     }
 
     /** {@inheritDoc} */

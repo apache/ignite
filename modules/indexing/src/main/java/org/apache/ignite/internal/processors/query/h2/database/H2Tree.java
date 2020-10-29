@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMeta
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.metric.sources.IndexMetricSource;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.InlineIndexColumnFactory;
@@ -119,8 +120,8 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     /** */
     private final String idxName;
 
-    /** */
-    private final IoStatisticsHolder stats;
+    /** Index metric source. */
+    private final IndexMetricSource metricSrc;
 
     /** */
     private final Comparator<Value> comp = this::compareValues;
@@ -176,7 +177,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @param rowCache Row cache.
      * @param failureProcessor if the tree is corrupted.
      * @param log Logger.
-     * @param stats Statistics holder.
+     * @param metricSrc Index metric source.
      * @param factory Inline helper factory.
      * @param configuredInlineSize Size that has been set by user during
      * index creation.
@@ -206,7 +207,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         @Nullable H2RowCache rowCache,
         @Nullable FailureProcessor failureProcessor,
         IgniteLogger log,
-        IoStatisticsHolder stats,
+        IndexMetricSource metricSrc,
         InlineIndexColumnFactory factory,
         int configuredInlineSize
     ) throws IgniteCheckedException {
@@ -225,7 +226,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
 
         this.cctx = cctx;
         this.table = table;
-        this.stats = stats;
+        this.metricSrc = metricSrc;
         this.log = log;
         this.rowCache = rowCache;
         this.idxName = idxName;
@@ -482,7 +483,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
 
                 for (int i = 0; i < inlineIdxs.size(); i++) {
                     InlineIndexColumn inlineIdx = inlineIdxs.get(i);
-                    
+
                     Value v2 = row.getValue(inlineIdx.columnIndex());
 
                     if (v2 == null)
@@ -705,7 +706,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
 
     /** {@inheritDoc} */
     @Override protected IoStatisticsHolder statisticsHolder() {
-        return stats;
+        return metricSrc;
     }
 
     /**

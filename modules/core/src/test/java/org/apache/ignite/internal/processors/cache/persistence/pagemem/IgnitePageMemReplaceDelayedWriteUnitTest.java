@@ -38,13 +38,13 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -64,7 +64,8 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import static org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest.NO_OP_METRICS;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -122,7 +123,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
             memory.releasePage(1, pageId, ptr);
         }
 
-        GridMultiCollectionWrapper<FullPageId> ids = memory.beginCheckpoint(new GridFinishedFuture());
+        GridMultiCollectionWrapper<FullPageId> ids = memory.beginCheckpoint(new GridFinishedFuture<>());
         int cpPages = ids.size();
         log.info("Started CP with [" + cpPages + "] pages in it, created [" + markDirty + "] pages");
 
@@ -136,11 +137,10 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         assert !stripes.isEmpty();
 
-        for (Collection<FullPageId> pageIds : stripes) {
-            assert pageIds.isEmpty();
-        }
+        for (Collection<FullPageId> pageIds : stripes)
+            assertTrue(pageIds.isEmpty());
 
-        assert totalEvicted.get() > 0;
+        assertTrue(totalEvicted.get() > 0);
 
         memory.stop(true);
     }
@@ -185,7 +185,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
             memory.releasePage(1, pageId, ptr);
         }
 
-        GridMultiCollectionWrapper<FullPageId> ids = memory.beginCheckpoint(new GridFinishedFuture());
+        GridMultiCollectionWrapper<FullPageId> ids = memory.beginCheckpoint(new GridFinishedFuture<>());
         int cpPages = ids.size();
         log.info("Started CP with [" + cpPages + "] pages in it, created [" + markDirty + "] pages");
 
@@ -225,7 +225,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         when(db.checkpointLockIsHeldByThread()).thenReturn(true);
 
-        GridCacheSharedContext sctx = Mockito.mock(GridCacheSharedContext.class);
+        GridCacheSharedContext<?, ?> sctx = Mockito.mock(GridCacheSharedContext.class);
 
         when(sctx.gridConfig()).thenReturn(cfg);
         when(sctx.pageStore()).thenReturn(new NoOpPageStoreManager());
@@ -263,7 +263,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         DataRegionConfiguration regCfg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration();
 
-        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(regCfg, kernalCtx.metric(), NO_OP_METRICS);
+        DataRegionMetricSource metricSrc = new DataRegionMetricSource("test", kernalCtx, regCfg, NO_OP_METRICS);
 
         long[] sizes = prepareSegmentSizes(regCfg.getMaxSize());
 
@@ -275,8 +275,8 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
             }
         };
 
-        PageMemoryImpl memory = new PageMemoryImpl(provider, sizes, sctx, pageSize,
-            pageWriter, null, () -> true, memMetrics, PageMemoryImpl.ThrottlingPolicy.DISABLED,
+        PageMemoryImpl memory = new PageMemoryImpl(regCfg, provider, sizes, sctx, pageSize,
+            pageWriter, null, () -> true, metricSrc, PageMemoryImpl.ThrottlingPolicy.DISABLED,
             clo);
 
         memory.start();
@@ -341,8 +341,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         Object[] stripes = U.field(tracker, "stripes");
 
-        Stream<Collection<FullPageId>> locked = Arrays.asList(stripes).stream().map(stripe ->
-            (Collection<FullPageId>)U.field(stripe, "locked"));
+        Stream<Collection<FullPageId>> locked = Arrays.stream(stripes).map(stripe -> U.field(stripe, "locked"));
 
         return locked.collect(Collectors.toList());
     }
@@ -353,10 +352,10 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
      */
     private long[] prepareSegmentSizes(long overallSize) {
         int segments = CPUS;
+
         long[] sizes = new long[segments + 1];
 
-        for (int i = 0; i < sizes.length; i++)
-            sizes[i] = overallSize / segments;
+        Arrays.fill(sizes, overallSize / segments);
 
         sizes[segments] = overallSize / 100;
 

@@ -2668,7 +2668,7 @@ public class IgniteConfiguration {
     /**
      * Gets page memory configuration.
      *
-     * @return Memory configuration.
+     * @return Memory configuration. {@code null} for client node.
      */
     public DataStorageConfiguration getDataStorageConfiguration() {
         return dsCfg;

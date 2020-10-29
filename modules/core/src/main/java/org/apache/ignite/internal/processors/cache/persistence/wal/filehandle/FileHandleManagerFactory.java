@@ -22,8 +22,8 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
+import org.apache.ignite.internal.processors.metric.sources.DataStorageMetricSource;
 
 /**
  * Factory of {@link FileHandleManager}.
@@ -45,7 +45,7 @@ public class FileHandleManagerFactory {
 
     /**
      * @param cctx Cache context.
-     * @param metrics Data storage metrics.
+     * @param metricSrc Data storage metrics source.
      * @param mmap Using mmap.
      * @param serializer Serializer.
      * @param currHandleSupplier Supplier of current handle.
@@ -53,7 +53,7 @@ public class FileHandleManagerFactory {
      */
     public FileHandleManager build(
         GridCacheSharedContext cctx,
-        DataStorageMetricsImpl metrics,
+        DataStorageMetricSource metricSrc,
         boolean mmap,
         RecordSerializer serializer,
         Supplier<FileWriteHandle> currHandleSupplier
@@ -61,7 +61,7 @@ public class FileHandleManagerFactory {
         if (dsConf.getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker)
             return new FsyncFileHandleManagerImpl(
                 cctx,
-                metrics,
+                metricSrc,
                 serializer,
                 currHandleSupplier,
                 dsConf.getWalMode(),
@@ -72,7 +72,7 @@ public class FileHandleManagerFactory {
         else
             return new FileHandleManagerImpl(
                 cctx,
-                metrics,
+                metricSrc,
                 mmap,
                 serializer,
                 currHandleSupplier,

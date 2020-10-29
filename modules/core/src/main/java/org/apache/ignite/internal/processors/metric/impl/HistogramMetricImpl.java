@@ -121,7 +121,7 @@ public class HistogramMetricImpl extends AbstractMetric implements HistogramMetr
 
             this.bounds = bounds;
 
-            this.measurements = new AtomicLongArray(bounds.length + 1);
+            measurements = new AtomicLongArray(bounds.length + 1);
         }
     }
 }

@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.metric.impl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.metric.HistogramMetric;
 
-import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource.CACHE_GROUP_METRICS_PREFIX;
+import static org.apache.ignite.internal.processors.metric.sources.CacheMetricSource.CACHE_METRICS;
 
 /**
  * Utility class to build or parse metric name in dot notation.
@@ -47,8 +49,8 @@ public class MetricUtils {
      * @return Metric name.
      */
     public static String metricName(String... names) {
-        assert names != null;
-        assert ensureAllNamesNotEmpty(names);
+        A.notNull(names, "names");
+        ensureAllNamesNotEmpty(names);
 
         if (names.length == 1)
             return names[0];
@@ -79,6 +81,14 @@ public class MetricUtils {
             return metricName(CACHE_METRICS, cacheName, "near");
 
         return metricName(CACHE_METRICS, cacheName);
+    }
+
+    /**
+     * @param cacheGrpName Cache group name.
+     * @return Cache group metrics registry name.
+     */
+    public static String cacheGroupMetricsRegistryName(String cacheGrpName) {
+        return metricName(CACHE_GROUP_METRICS_PREFIX, cacheGrpName);
     }
 
     /**
@@ -128,8 +138,12 @@ public class MetricUtils {
      * @return True.
      */
     private static boolean ensureAllNamesNotEmpty(String... names) {
-        for (int i = 0; i < names.length; i++)
-            assert names[i] != null && !names[i].isEmpty() : i + " element is empty [" + String.join(".", names) + "]";
+        for (int i = 0; i < names.length; i++) {
+            String name = names[i];
+
+            if (name == null || name.isEmpty())
+                throw new IllegalArgumentException(i + " element is empty [" + String.join(".", names) + ']');
+        }
 
         return true;
     }

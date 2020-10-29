@@ -33,12 +33,12 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
+import org.apache.ignite.internal.processors.metric.sources.DataStorageMetricSource;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
@@ -74,7 +74,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
     private final WALMode mode;
 
     /** Persistence metrics tracker. */
-    private final DataStorageMetricsImpl metrics;
+    private final DataStorageMetricSource metricSrc;
 
     /** Use mapped byte buffer. */
     private final boolean mmap;
@@ -96,7 +96,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
     /**
      * @param cctx Context.
-     * @param metrics Data storage metrics.
+     * @param metricSrc Data storage metrics source.
      * @param mmap Mmap.
      * @param serializer Serializer.
      * @param currentHandleSupplier Current handle supplier.
@@ -107,7 +107,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
      */
     public FileHandleManagerImpl(
         GridCacheSharedContext cctx,
-        DataStorageMetricsImpl metrics,
+        DataStorageMetricSource metricSrc,
         boolean mmap,
         RecordSerializer serializer,
         Supplier<FileWriteHandle> currentHandleSupplier,
@@ -119,7 +119,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
         this.cctx = cctx;
         log = cctx.logger(FileHandleManagerImpl.class);
         this.mode = mode;
-        this.metrics = metrics;
+        this.metricSrc = metricSrc;
         this.mmap = mmap;
         this.serializer = serializer;
         this.currentHandleSupplier = currentHandleSupplier;
@@ -156,15 +156,15 @@ public class FileHandleManagerImpl implements FileHandleManager {
         if (mmap) {
             MappedByteBuffer buf = fileIO.map((int)maxWalSegmentSize);
 
-            rbuf = new SegmentedRingByteBuffer(buf, metrics);
+            rbuf = new SegmentedRingByteBuffer(buf, metricSrc);
         }
         else
-            rbuf = new SegmentedRingByteBuffer(walBufferSize, maxWalSegmentSize, DIRECT, metrics);
+            rbuf = new SegmentedRingByteBuffer(walBufferSize, maxWalSegmentSize, DIRECT, metricSrc);
 
         rbuf.init(position);
 
         return new FileWriteHandleImpl(
-            cctx, fileIO, rbuf, serializer, metrics, walWriter, position,
+            cctx, fileIO, rbuf, serializer, metricSrc, walWriter, position,
             mode, mmap, true, fsyncDelay, maxWalSegmentSize
         );
     }
@@ -176,14 +176,14 @@ public class FileHandleManagerImpl implements FileHandleManager {
         if (mmap) {
             MappedByteBuffer buf = fileIO.map((int)maxWalSegmentSize);
 
-            rbuf = new SegmentedRingByteBuffer(buf, metrics);
+            rbuf = new SegmentedRingByteBuffer(buf, metricSrc);
         }
         else
             rbuf = currentHandle().buf.reset();
 
         try {
             return new FileWriteHandleImpl(
-                cctx, fileIO, rbuf, serializer, metrics, walWriter, 0,
+                cctx, fileIO, rbuf, serializer, metricSrc, walWriter, 0,
                 mode, mmap, false, fsyncDelay, maxWalSegmentSize
             );
         }
@@ -571,7 +571,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
                 hdl.written += hdl.fileIO.writeFully(buf);
 
-                metrics.onWalBytesWritten(size);
+                metricSrc.onWalBytesWritten(size);
 
                 assert hdl.written == hdl.fileIO.position();
             }

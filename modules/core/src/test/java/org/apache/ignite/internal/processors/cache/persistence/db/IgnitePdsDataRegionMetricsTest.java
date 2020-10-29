@@ -37,10 +37,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -239,11 +239,11 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         ig.cluster().active(true);
 
-        DataRegionMetricsImpl regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
-            .context().group().dataRegion().memoryMetrics();
+        DataRegionMetricSource regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
+            .context().group().dataRegion().metricSource();
 
-        Assert.assertTrue(regionMetrics.getCheckpointBufferSize() != 0);
-        Assert.assertTrue(regionMetrics.getCheckpointBufferSize() <= MAX_REGION_SIZE);
+        Assert.assertTrue(regionMetrics.checkpointBufferSize() != 0);
+        Assert.assertTrue(regionMetrics.checkpointBufferSize() <= MAX_REGION_SIZE);
     }
 
     /**
@@ -257,11 +257,11 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         ig.cluster().active(true);
 
-        final DataRegionMetricsImpl regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
-            .context().group().dataRegion().memoryMetrics();
+        final DataRegionMetricSource regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
+            .context().group().dataRegion().metricSource();
 
-        Assert.assertEquals(0, regionMetrics.getUsedCheckpointBufferPages());
-        Assert.assertEquals(0, regionMetrics.getUsedCheckpointBufferSize());
+        Assert.assertEquals(0, regionMetrics.usedCheckpointBufferPages());
+        Assert.assertEquals(0, regionMetrics.usedCheckpointBufferSize());
 
         load(ig);
 
@@ -275,8 +275,8 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
             load(ig);
 
             metricsResult.onDone(new T2<>(
-                regionMetrics.getUsedCheckpointBufferPages(),
-                regionMetrics.getUsedCheckpointBufferSize()
+                regionMetrics.usedCheckpointBufferPages(),
+                regionMetrics.usedCheckpointBufferSize()
             ));
         });
 

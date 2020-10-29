@@ -72,11 +72,6 @@ public class IoStatisticsHolderQuery implements IoStatisticsHolder {
         return physicalReadCtr.longValue();
     }
 
-    /** {@inheritDoc} */
-    @Override public String metricRegistryName() {
-        return null;
-    }
-
     /**
      * @return Query id.
      */

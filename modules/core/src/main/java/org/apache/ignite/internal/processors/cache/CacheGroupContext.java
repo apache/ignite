@@ -34,12 +34,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
-import org.apache.ignite.internal.metric.IoStatisticsHolderCache;
-import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
-import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -53,7 +51,8 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapM
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource;
+import org.apache.ignite.internal.processors.metric.sources.IndexMetricSource;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -75,8 +74,8 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
-import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.HASH_IDX;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.HASH_PK_IDX_NAME;
 
 /**
  *
@@ -98,7 +97,7 @@ public class CacheGroupContext {
     private final CacheConfiguration<?, ?> ccfg;
 
     /** */
-    private final GridCacheSharedContext ctx;
+    private final GridCacheSharedContext<?, ?> ctx;
 
     /** */
     private volatile boolean affNode;
@@ -173,17 +172,14 @@ public class CacheGroupContext {
     /** Flag indicates that cache group is under recovering and not attached to topology. */
     private final AtomicBoolean recoveryMode;
 
-    /** Statistics holder to track IO operations for PK index pages. */
-    private final IoStatisticsHolder statHolderIdx;
-
-    /** Statistics holder to track IO operations for data pages. */
-    private final IoStatisticsHolder statHolderData;
-
     /** */
     private volatile boolean hasAtomicCaches;
 
-    /** Cache group metrics. */
-    private final CacheGroupMetricsImpl metrics;
+    /** Cache group metric source. */
+    private final CacheGroupMetricSource grpMetricSrc;
+
+    /** Primary key index metric source. */
+    private final IndexMetricSource idxMetricSrc;
 
     /**
      * @param ctx Context.
@@ -201,11 +197,11 @@ public class CacheGroupContext {
      * @param walEnabled Wal enabled flag.
      */
     CacheGroupContext(
-        GridCacheSharedContext ctx,
+        GridCacheSharedContext<?, ?> ctx,
         int grpId,
         UUID rcvdFrom,
         CacheType cacheType,
-        CacheConfiguration ccfg,
+        CacheConfiguration<?, ?> ccfg,
         boolean affNode,
         DataRegion dataRegion,
         CacheObjectContext cacheObjCtx,
@@ -244,22 +240,20 @@ public class CacheGroupContext {
 
         mvccEnabled = ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
 
-        log = ctx.kernalContext().log(getClass());
-
-        metrics = new CacheGroupMetricsImpl(this);
-
-        if (systemCache()) {
-            statHolderIdx = IoStatisticsHolderNoOp.INSTANCE;
-            statHolderData = IoStatisticsHolderNoOp.INSTANCE;
-        }
-        else {
-            GridMetricManager mmgr = ctx.kernalContext().metric();
-
-            statHolderIdx = new IoStatisticsHolderIndex(HASH_INDEX, cacheOrGroupName(), HASH_PK_IDX_NAME, mmgr);
-            statHolderData = new IoStatisticsHolderCache(cacheOrGroupName(), grpId, mmgr);
-        }
-
         hasAtomicCaches = ccfg.getAtomicityMode() == ATOMIC;
+
+        GridKernalContext kernalCtx = ctx.kernalContext();
+
+        log = kernalCtx.log(getClass());
+
+        grpMetricSrc = new CacheGroupMetricSource(this);
+
+        idxMetricSrc = new IndexMetricSource(
+                HASH_IDX,
+                cacheOrGroupName(),
+                HASH_PK_IDX_NAME,
+                ctx.kernalContext()
+        );
     }
 
     /**
@@ -816,6 +810,12 @@ public class CacheGroupContext {
      *
      */
     void stopGroup() {
+        ctx.kernalContext().metric().disableMetrics(grpMetricSrc);
+        ctx.kernalContext().metric().unregisterSource(grpMetricSrc);
+
+        ctx.kernalContext().metric().disableMetrics(idxMetricSrc);
+        ctx.kernalContext().metric().unregisterSource(idxMetricSrc);
+
         offheapMgr.stop();
 
         if (isRecoveryMode())
@@ -1058,24 +1058,31 @@ public class CacheGroupContext {
      * @throws IgniteCheckedException If failed.
      */
     public void start() throws IgniteCheckedException {
+        ctx.kernalContext().metric().registerSource(grpMetricSrc);
+
+        ctx.kernalContext().metric().registerSource(idxMetricSrc);
+        ctx.kernalContext().metric().enableMetrics(idxMetricSrc);
+
         GridAffinityAssignmentCache affCache = ctx.affinity().groupAffinity(grpId);
 
         if (affCache != null)
             aff = affCache;
-        else
+        else {
             aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
-                cacheOrGroupName(),
-                grpId,
-                ccfg.getAffinity(),
-                ccfg.getNodeFilter(),
-                ccfg.getBackups(),
-                ccfg.getCacheMode() == LOCAL
+                    cacheOrGroupName(),
+                    grpId,
+                    ccfg.getAffinity(),
+                    ccfg.getNodeFilter(),
+                    ccfg.getBackups(),
+                    ccfg.getCacheMode() == LOCAL
             );
+        }
 
         if (ccfg.getCacheMode() != LOCAL) {
             top = ctx.kernalContext().resource().resolve(new GridDhtPartitionTopologyImpl(ctx, this));
 
-            metrics.onTopologyInitialized();
+            if (ccfg.isStatisticsEnabled())
+                ctx.kernalContext().metric().enableMetrics(grpMetricSrc);
         }
 
         try {
@@ -1277,15 +1284,15 @@ public class CacheGroupContext {
     /**
      * @return Statistics holder to track cache IO operations.
      */
-    public IoStatisticsHolder statisticsHolderIdx() {
-        return statHolderIdx;
+    public IoStatisticsHolder indexStatisticsHolder() {
+        return idxMetricSrc;
     }
 
     /**
      * @return Statistics holder to track cache IO operations.
      */
-    public IoStatisticsHolder statisticsHolderData() {
-        return statHolderData;
+    public IoStatisticsHolder cacheStatisticsHolder() {
+        return grpMetricSrc;
     }
 
     /**
@@ -1296,20 +1303,9 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return Metrics.
+     * @return Metrics source.
      */
-    public CacheGroupMetricsImpl metrics() {
-        return metrics;
-    }
-
-    /**
-     * Removes statistics metrics registries.
-     */
-    public void removeIOStatistic() {
-        if (statHolderData != IoStatisticsHolderNoOp.INSTANCE)
-            ctx.kernalContext().metric().remove(statHolderData.metricRegistryName());
-
-        if (statHolderIdx != IoStatisticsHolderNoOp.INSTANCE)
-            ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName());
+    public CacheGroupMetricSource metricSource() {
+        return grpMetricSrc;
     }
 }

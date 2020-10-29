@@ -34,8 +34,6 @@ import org.junit.Test;
 import static org.apache.ignite.Ignition.allGrids;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -152,8 +150,9 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
             BooleanMetric rebalancedMetric = ((IgniteEx) ignite)
                 .context()
                 .metric()
-                .registry(CLUSTER_METRICS)
-                .findMetric(REBALANCED);
+                    //TODO: fix test using metric source
+                .getRegistry(/*CLUSTER_METRICS*/ "cluster")
+                .findMetric(/*REBALANCED*/ "rebalanced");
 
             return exp == rebalancedMetric.value();
         }), getTestTimeout()));

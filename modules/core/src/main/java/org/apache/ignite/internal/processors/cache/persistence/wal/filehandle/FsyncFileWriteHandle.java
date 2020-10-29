@@ -36,7 +36,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -44,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
+import org.apache.ignite.internal.processors.metric.sources.DataStorageMetricSource;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -112,7 +112,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
     protected final GridCacheSharedContext cctx;
 
     /** Persistence metrics tracker. */
-    private final DataStorageMetricsImpl metrics;
+    private final DataStorageMetricSource metricSrc;
 
     /** Logger. */
     protected final IgniteLogger log;
@@ -141,7 +141,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
     /**
      * @param cctx Context.
      * @param fileIO I/O file interface to use.
-     * @param metrics Data storage metrics.
+     * @param metricSrc Data storage metrics source.
      * @param serializer Serializer.
      * @param pos Position.
      * @param mode WAL mode.
@@ -151,16 +151,16 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
      * @throws IOException If failed.
      */
     FsyncFileWriteHandle(
-        GridCacheSharedContext cctx, SegmentIO fileIO,
-        DataStorageMetricsImpl metrics, RecordSerializer serializer, long pos,
-        WALMode mode, long maxSegmentSize, int size, long fsyncDelay) throws IOException {
+            GridCacheSharedContext cctx, SegmentIO fileIO,
+            DataStorageMetricSource metricSrc, RecordSerializer serializer, long pos,
+            WALMode mode, long maxSegmentSize, int size, long fsyncDelay) throws IOException {
         super(fileIO);
         assert serializer != null;
 
         this.mode = mode;
         tlbSize = size;
         this.cctx = cctx;
-        this.metrics = metrics;
+        this.metricSrc = metricSrc;
         this.log = cctx.logger(FsyncFileWriteHandle.class);
         this.fsyncDelay = fsyncDelay;
         this.maxSegmentSize = maxSegmentSize;
@@ -590,7 +590,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
             if (lastFsyncPos != written) {
                 assert lastFsyncPos < written; // Fsync position must be behind.
 
-                boolean metricsEnabled = metrics.metricsEnabled();
+                boolean metricsEnabled = metricSrc.enabled();
 
                 long start = metricsEnabled ? System.nanoTime() : 0;
 
@@ -609,7 +609,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
                 long end = metricsEnabled ? System.nanoTime() : 0;
 
                 if (metricsEnabled)
-                    metrics.onFsync(end - start);
+                    metricSrc.onFsync(end - start);
             }
         }
         finally {
@@ -790,7 +790,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
 
                 written += size;
 
-                metrics.onWalBytesWritten(size);
+                metricSrc.onWalBytesWritten(size);
 
                 assert written == fileIO.position();
             }

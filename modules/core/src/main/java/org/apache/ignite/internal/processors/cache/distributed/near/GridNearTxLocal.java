@@ -3948,7 +3948,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             // In some cases totalTimeMillis can be less than systemTimeMillis, as they are calculated with different precision.
             long userTimeMillis = Math.max(totalTimeMillis - systemTimeMillis, 0);
 
-            cctx.txMetrics().onNearTxComplete(systemTimeMillis, userTimeMillis);
+            cctx.tm().txMetrics().onNearTxComplete(systemTimeMillis, userTimeMillis);
 
             boolean willBeSkipped = txDumpsThrottling == null || txDumpsThrottling.skipCurrent();
 

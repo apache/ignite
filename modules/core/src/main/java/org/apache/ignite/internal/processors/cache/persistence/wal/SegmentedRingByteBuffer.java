@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
+import org.apache.ignite.internal.processors.metric.sources.DataStorageMetricSource;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -83,7 +83,7 @@ public class SegmentedRingByteBuffer {
     private volatile boolean waitForConsumer;
 
     /** Metrics. */
-    private final DataStorageMetricsImpl metrics;
+    private final DataStorageMetricSource metricSrc;
 
     /**
      * Creates ring buffer with given capacity.
@@ -102,20 +102,20 @@ public class SegmentedRingByteBuffer {
      * @param cap Buffer's capacity.
      * @param maxSegmentSize Max segment size.
      * @param mode Buffer mode.
-     * @param metrics Metrics.
+     * @param metricSrc Metrics source.
      */
-    public SegmentedRingByteBuffer(int cap, long maxSegmentSize, BufferMode mode, DataStorageMetricsImpl metrics) {
-        this(cap, maxSegmentSize, mode == DIRECT ? allocateDirect(cap) : allocate(cap), mode, metrics);
+    public SegmentedRingByteBuffer(int cap, long maxSegmentSize, BufferMode mode, DataStorageMetricSource metricSrc) {
+        this(cap, maxSegmentSize, mode == DIRECT ? allocateDirect(cap) : allocate(cap), mode, metricSrc);
     }
 
     /**
      * Creates ring buffer with given capacity which mapped to file.
      *
      * @param buf {@link MappedByteBuffer} instance.
-     * @param metrics Metrics.
+     * @param metricSrc Metrics source.
      */
-    public SegmentedRingByteBuffer(MappedByteBuffer buf, DataStorageMetricsImpl metrics) {
-        this(buf.capacity(), buf.capacity(), buf, MAPPED, metrics);
+    public SegmentedRingByteBuffer(MappedByteBuffer buf, DataStorageMetricSource metricSrc) {
+        this(buf.capacity(), buf.capacity(), buf, MAPPED, metricSrc);
     }
 
     /**
@@ -123,21 +123,21 @@ public class SegmentedRingByteBuffer {
      * @param maxSegmentSize Max segment size.
      * @param buf Buffer.
      * @param mode Mode.
-     * @param metrics Metrics.
+     * @param metricSrc Metrics source.
      */
     private SegmentedRingByteBuffer(
         int cap,
         long maxSegmentSize,
         ByteBuffer buf,
         BufferMode mode,
-        DataStorageMetricsImpl metrics
+        DataStorageMetricSource metricSrc
     ) {
         this.cap = cap;
         this.mode = mode;
         this.buf = buf;
         this.buf.order(ByteOrder.nativeOrder());
         this.maxSegmentSize = maxSegmentSize;
-        this.metrics = metrics;
+        this.metricSrc = metricSrc;
     }
 
     /**
@@ -335,8 +335,8 @@ public class SegmentedRingByteBuffer {
             spins++;
         }
 
-        if (metrics != null && metrics.metricsEnabled())
-            metrics.onBuffPollSpin(spins);
+        if (metricSrc != null)
+            metricSrc.onBuffPollSpin(spins);
 
         long head = this.head;
 
@@ -383,7 +383,7 @@ public class SegmentedRingByteBuffer {
      * Resets the state of the buffer and returns new instance but with the same underlying buffer.
      */
     public SegmentedRingByteBuffer reset() {
-        return new SegmentedRingByteBuffer(buf.capacity(), maxSegmentSize, buf, mode, metrics);
+        return new SegmentedRingByteBuffer(buf.capacity(), maxSegmentSize, buf, mode, metricSrc);
     }
 
     /**

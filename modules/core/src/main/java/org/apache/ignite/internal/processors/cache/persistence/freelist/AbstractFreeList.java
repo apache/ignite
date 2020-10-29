@@ -35,7 +35,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
@@ -46,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseB
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource;
 import org.apache.ignite.internal.util.GridCursorIteratorWrapper;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -90,7 +90,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private final PageHandler<T, Boolean> updateRow = new UpdateRowHandler();
 
     /** */
-    private final DataRegionMetricsImpl memMetrics;
+    private final DataRegionMetricSource memMetrics;
 
     /** */
     private final PageEvictionTracker evictionTracker;
@@ -430,7 +430,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     public AbstractFreeList(
         int cacheId,
         String name,
-        DataRegionMetricsImpl memMetrics,
+        DataRegionMetricSource memMetrics,
         DataRegion memPlc,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
@@ -616,7 +616,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 while (evictionTracker.evictionRequired()) {
                     evictionTracker.evictDataPage();
 
-                    memMetrics.updateEvictionRate();
+                    memMetrics.incrementEvictionRate();
                 }
 
                 if (written == COMPLETE) {

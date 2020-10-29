@@ -45,12 +45,12 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -66,7 +66,7 @@ import static org.apache.ignite.internal.TestRecordingCommunicationSpi.blockDema
  */
 public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstractTest {
     /** Block message predicate to set to Communication SPI in node configuration. */
-    private IgniteBiPredicate<ClusterNode, Message> blockMessagePredicate;
+    private IgniteBiPredicate<ClusterNode, Message> blockMsgPred;
 
     /** */
     private static final int CACHE1_PARTS_NUM = 8;
@@ -129,19 +129,22 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         CacheConfiguration ccfg1 = new CacheConfiguration(CACHE1_NAME)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.REPLICATED)
-            .setAffinity(new RendezvousAffinityFunction(false, CACHE1_PARTS_NUM));
+            .setAffinity(new RendezvousAffinityFunction(false, CACHE1_PARTS_NUM))
+            .setStatisticsEnabled(true);
 
         CacheConfiguration ccfg2 = new CacheConfiguration(CACHE2_NAME)
             .setBackups(1)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAffinity(new RendezvousAffinityFunction(false, CACHE2_PARTS_NUM));
+            .setAffinity(new RendezvousAffinityFunction(false, CACHE2_PARTS_NUM))
+            .setStatisticsEnabled(true);
 
-        CacheConfiguration ccfg3 = new CacheConfiguration(CACHE3_NAME)
+        CacheConfiguration<?, ?> ccfg3 = new CacheConfiguration<>(CACHE3_NAME)
             .setBackups(2)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAffinity(new RendezvousAffinityFunction(false, CACHE3_PARTS_NUM));
+            .setAffinity(new RendezvousAffinityFunction(false, CACHE3_PARTS_NUM))
+            .setStatisticsEnabled(true);
 
         cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
 
@@ -161,7 +164,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         }
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
-        commSpi.blockMessages(blockMessagePredicate);
+        commSpi.blockMessages(blockMsgPred);
 
         cfg.setCommunicationSpi(commSpi);
 
@@ -174,7 +177,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
      */
     @Test
     public void testClientJoinsLeavesDuringRebalancing() throws Exception {
-        Ignite ig0 = startGrids(2);
+        IgniteEx ig0 = startGrids(2);
 
         ig0.active(true);
 
@@ -187,11 +190,11 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         cleanPersistenceDir(ig1Name);
 
-        int groupId = ((IgniteEx) ig0).cachex(CACHE3_NAME).context().groupId();
+        int grpId = ig0.cachex(CACHE3_NAME).context().groupId();
 
-        blockMessagePredicate = (node, msg) -> {
+        blockMsgPred = (node, msg) -> {
             if (msg instanceof GridDhtPartitionDemandMessage)
-                return ((GridDhtPartitionDemandMessage) msg).groupId() == groupId;
+                return ((GridDhtPartitionDemandMessage)msg).groupId() == grpId;
 
             return false;
         };
@@ -202,22 +205,22 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         stopGrid("client");
 
-        CacheGroupMetricsImpl metrics = ig1.cachex(CACHE3_NAME).context().group().metrics();
+        CacheGroupMetricSource metrics = ig1.cachex(CACHE3_NAME).context().group().metricSource();
 
-        assertTrue("Unexpected moving partitions count: " + metrics.getLocalNodeMovingPartitionsCount(),
-            metrics.getLocalNodeMovingPartitionsCount() == CACHE3_PARTS_NUM);
+        assertEquals("Unexpected moving partitions count: " + metrics.localNodeMovingPartitionsCount(),
+                CACHE3_PARTS_NUM, metrics.localNodeMovingPartitionsCount());
 
         TestRecordingCommunicationSpi commSpi = (TestRecordingCommunicationSpi) ig1
             .configuration().getCommunicationSpi();
 
         commSpi.stopBlock();
 
-        boolean waitResult = GridTestUtils.waitForCondition(
-            () -> metrics.getLocalNodeMovingPartitionsCount() == 0,
+        boolean waitRes = GridTestUtils.waitForCondition(
+            () -> metrics.localNodeMovingPartitionsCount() == 0,
             30_000);
 
         assertTrue("Failed to wait for owning all partitions, parts in moving state: "
-            + metrics.getLocalNodeMovingPartitionsCount(), waitResult);
+            + metrics.localNodeMovingPartitionsCount(), waitRes);
     }
 
     /**
@@ -247,18 +250,18 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         fillCache(ig0.dataStreamer(CACHE3_NAME), nonAffinityKeysSet, GENERATING_FUNC);
 
-        int groupId = ((IgniteEx) ig0).cachex(CACHE3_NAME).context().groupId();
+        int grpId = ((IgniteEx) ig0).cachex(CACHE3_NAME).context().groupId();
 
-        blockMessagePredicate = (node, msg) -> {
+        blockMsgPred = (node, msg) -> {
             if (msg instanceof GridDhtPartitionDemandMessage)
-                return ((GridDhtPartitionDemandMessage) msg).groupId() == groupId;
+                return ((GridDhtPartitionDemandMessage) msg).groupId() == grpId;
 
             return false;
         };
 
         IgniteEx ig1 = startGrid(1);
 
-        CacheGroupMetricsImpl metrics = ig1.cachex(CACHE3_NAME).context().group().metrics();
+        CacheGroupMetricSource metrics = ig1.cachex(CACHE3_NAME).context().group().metricSource();
 
         TestRecordingCommunicationSpi commSpi = (TestRecordingCommunicationSpi) ig1
             .configuration().getCommunicationSpi();
@@ -268,9 +271,9 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         commSpi.stopBlock();
 
         boolean allOwned = GridTestUtils.waitForCondition(
-            () -> metrics.getLocalNodeMovingPartitionsCount() == 0, 30_000);
+            () -> metrics.localNodeMovingPartitionsCount() == 0, 30_000);
 
-        assertTrue("Partitions were not owned, there are " + metrics.getLocalNodeMovingPartitionsCount() +
+        assertTrue("Partitions were not owned, there are " + metrics.localNodeMovingPartitionsCount() +
             " partitions in MOVING state", allOwned);
     }
 
@@ -301,7 +304,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         useBlockingFileIO = true;
 
         IgniteEx ig1;
-        CacheGroupMetricsImpl metrics;
+        CacheGroupMetricSource metrics;
         int locMovingPartsNum;
 
         try {
@@ -326,8 +329,8 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
             doSleep(500);
 
-            metrics = ig1.cachex(CACHE3_NAME).context().group().metrics();
-            locMovingPartsNum = metrics.getLocalNodeMovingPartitionsCount();
+            metrics = ig1.cachex(CACHE3_NAME).context().group().metricSource();
+            locMovingPartsNum = metrics.localNodeMovingPartitionsCount();
 
             // Partitions remain in MOVING state even after PME and rebalancing when checkpointer is blocked.
             assertTrue("Expected non-zero value for local moving partitions count on node idx = 1: " +
@@ -343,7 +346,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
             fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
         }
 
-        locMovingPartsNum = metrics.getLocalNodeMovingPartitionsCount();
+        locMovingPartsNum = metrics.localNodeMovingPartitionsCount();
         assertTrue("Expected moving partitions count on node idx = 1 equals to all partitions of the cache " +
              CACHE3_NAME + ": " + locMovingPartsNum, locMovingPartsNum == CACHE3_PARTS_NUM);
 
@@ -354,7 +357,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         commSpi.stopBlock();
 
         boolean res = GridTestUtils.waitForCondition(
-            () -> metrics.getLocalNodeMovingPartitionsCount() == 0, 15_000);
+            () -> metrics.localNodeMovingPartitionsCount() == 0, 15_000);
 
         assertTrue("All partitions on node idx = 1 are expected to be owned", res);
 
@@ -485,7 +488,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
     /** */
     private void fillCache(
-        IgniteDataStreamer streamer,
+        IgniteDataStreamer<Integer, String> streamer,
         int cacheSize,
         BiFunction<String, Integer, String> generatingFunc
     ) {
@@ -497,7 +500,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
     /** */
     private void fillCache(
-        IgniteDataStreamer streamer,
+        IgniteDataStreamer<Integer, String> streamer,
         Collection<Integer> keys,
         BiFunction<String, Integer, String> generatingFunc
     ) {
@@ -508,15 +511,15 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
     }
 
     /** */
-    private void verifyCache(IgniteCache cache, BiFunction<String, Integer, String> generatingFunc) {
+    private void verifyCache(IgniteCache<Integer, String> cache, BiFunction<String, Integer, String> generatingFunc) {
         int size = cache.size(CachePeekMode.PRIMARY);
 
         String cacheName = cache.getName();
 
         for (int i = 0; i < size; i++) {
-            String value = (String) cache.get(i);
+            String val = cache.get(i);
 
-            assertEquals(generatingFunc.apply(cacheName, i), value);
+            assertEquals(generatingFunc.apply(cacheName, i), val);
         }
     }
 }

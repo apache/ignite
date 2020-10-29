@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 
 /**
@@ -37,7 +38,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     private final CacheGroupContext ctx;
 
     /** Cache group metrics. */
-    private final CacheGroupMetricsImpl metrics;
+    private final CacheGroupMetricSource metricSrc;
 
     /**
      * Creates Group metrics MBean.
@@ -46,7 +47,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
      */
     public CacheGroupMetricsMXBeanImpl(CacheGroupContext ctx) {
         this.ctx = ctx;
-        this.metrics = ctx.metrics();
+        this.metricSrc = ctx.metricSource();
     }
 
     /** {@inheritDoc} */
@@ -83,57 +84,57 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public int getMinimumNumberOfPartitionCopies() {
-        return metrics.getMinimumNumberOfPartitionCopies();
+        return metricSrc.minimumNumberOfPartitionCopies();
     }
 
     /** {@inheritDoc} */
     @Override public int getMaximumNumberOfPartitionCopies() {
-        return metrics.getMaximumNumberOfPartitionCopies();
+        return metricSrc.maximumNumberOfPartitionCopies();
     }
 
     /** {@inheritDoc} */
     @Override public int getLocalNodeOwningPartitionsCount() {
-        return metrics.getLocalNodeOwningPartitionsCount();
+        return metricSrc.localNodeOwningPartitionsCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getLocalNodeMovingPartitionsCount() {
-        return metrics.getLocalNodeMovingPartitionsCount();
+        return metricSrc.localNodeMovingPartitionsCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getLocalNodeRentingPartitionsCount() {
-        return metrics.getLocalNodeRentingPartitionsCount();
+        return metricSrc.localNodeRentingPartitionsCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getLocalNodeRentingEntriesCount() {
-        return metrics.getLocalNodeRentingEntriesCount();
+        return metricSrc.localNodeRentingEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getClusterOwningPartitionsCount() {
-        return metrics.getClusterOwningPartitionsCount();
+        return metricSrc.clusterOwningPartitionsCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getClusterMovingPartitionsCount() {
-        return metrics.getClusterMovingPartitionsCount();
+        return metricSrc.clusterMovingPartitionsCount();
     }
 
     /** {@inheritDoc} */
     @Override public Map<Integer, Set<String>> getOwningPartitionsAllocationMap() {
-        return metrics.getOwningPartitionsAllocationMap();
+        return metricSrc.owningPartitionsAllocationMap();
     }
 
     /** {@inheritDoc} */
     @Override public Map<Integer, Set<String>> getMovingPartitionsAllocationMap() {
-        return metrics.getMovingPartitionsAllocationMap();
+        return metricSrc.movingPartitionsAllocationMap();
     }
 
     /** {@inheritDoc} */
     @Override public Map<Integer, List<String>> getAffinityPartitionsAssignmentMap() {
-        return metrics.getAffinityPartitionsAssignmentMap();
+        return metricSrc.affinityPartitionsAssignmentMap();
     }
 
     /** {@inheritDoc} */
@@ -145,31 +146,32 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public List<Integer> getPartitionIds() {
-        return metrics.getPartitionIds();
+        return metricSrc.partitionIds();
     }
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        return metrics.getTotalAllocatedPages();
+        return metricSrc.totalAllocatedPages();
     }
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedSize() {
-        return metrics.getTotalAllocatedSize();
+        return metricSrc.totalAllocatedSize();
     }
 
     /** {@inheritDoc} */
     @Override public long getStorageSize() {
-        return metrics.getStorageSize();
+        return metricSrc.storageSize();
     }
 
     /** {@inheritDoc} */
     @Override public long getSparseStorageSize() {
-        return metrics.getSparseStorageSize();
+        return metricSrc.sparseStorageSize();
     }
 
     /** {@inheritDoc} */
     @Override public long getIndexBuildCountPartitionsLeft() {
-        return metrics.getIndexBuildCountPartitionsLeft();
+        return metricSrc.indexBuildCountPartitionsLeft();
     }
 }
+

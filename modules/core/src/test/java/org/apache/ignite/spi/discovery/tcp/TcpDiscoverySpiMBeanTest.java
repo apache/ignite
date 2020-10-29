@@ -85,7 +85,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
             for (int i = 0; i < cnt; i++) {
                 IgniteEx grid = grid(i);
 
-                MetricRegistry discoReg = grid.context().metric().registry(DISCO_METRICS);
+                MetricRegistry discoReg = grid.context().metric().getRegistry(DISCO_METRICS);
 
                 TcpDiscoverySpiMBean bean = getMxBean(grid.context().igniteInstanceName(), "SPIs",
                     TcpDiscoverySpi.class, TcpDiscoverySpiMBean.class);
@@ -161,7 +161,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
             for (int i = 1; i < cnt; i++) {
                 IgniteEx grid = grid(i);
 
-                MetricRegistry discoReg = grid.context().metric().registry(DISCO_METRICS);
+                MetricRegistry discoReg = grid.context().metric().getRegistry(DISCO_METRICS);
 
                 TcpDiscoverySpiMBean bean = getMxBean(grid.context().igniteInstanceName(), "SPIs",
                     TcpDiscoverySpi.class, TcpDiscoverySpiMBean.class);

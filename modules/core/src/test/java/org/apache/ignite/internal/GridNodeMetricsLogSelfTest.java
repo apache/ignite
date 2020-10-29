@@ -23,6 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
@@ -51,6 +52,12 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMetricsLogFrequency(1000);
+
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
+        dsCfg.getDefaultDataRegionConfiguration().setMetricsEnabled(true);
+
+        cfg.setDataStorageConfiguration(dsCfg);
 
         cfg.setExecutorConfiguration(new ExecutorConfiguration(CUSTOM_EXECUTOR_0),
             new ExecutorConfiguration(CUSTOM_EXECUTOR_1));

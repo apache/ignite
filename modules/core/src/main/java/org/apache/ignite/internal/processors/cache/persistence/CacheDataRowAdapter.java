@@ -155,7 +155,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         CacheObjectContext coctx = grp != null ? grp.cacheObjectContext() : null;
         boolean readCacheId = grp == null || grp.storeCacheIdInDataPage();
         int grpId = grp != null ? grp.groupId() : 0;
-        IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
+        IoStatisticsHolder statHolder = grp != null ? grp.cacheStatisticsHolder() : IoStatisticsHolderNoOp.INSTANCE;
 
         doInitFromLink(link, sharedCtx, coctx, pageMem, grpId, statHolder, readCacheId, rowData, null, skipVer);
     }
@@ -187,7 +187,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         CacheObjectContext coctx = grp != null ? grp.cacheObjectContext() : null;
         boolean readCacheId = grp == null || grp.storeCacheIdInDataPage();
         int grpId = grp != null ? grp.groupId() : 0;
-        IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
+        IoStatisticsHolder statHolder = grp != null ? grp.cacheStatisticsHolder() : IoStatisticsHolderNoOp.INSTANCE;
 
         IncompleteObject<?> incomplete = readIncomplete(null, sharedCtx, coctx, pageMem,
             grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);

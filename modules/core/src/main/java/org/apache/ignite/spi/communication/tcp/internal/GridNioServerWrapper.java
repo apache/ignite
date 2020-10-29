@@ -107,7 +107,6 @@ import static org.apache.ignite.internal.IgniteFeatures.CHANNEL_COMMUNICATION;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 import static org.apache.ignite.plugin.extensions.communication.Message.DIRECT_TYPE_SIZE;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONSISTENT_ID_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE;
@@ -924,10 +923,14 @@ public class GridNioServerWrapper {
                     .tracing(tracing)
                     .readWriteSelectorsAssign(cfg.usePairedConnections());
 
+                //TODO: use corersponding metric source
+
+/*
                 if (metricMgr != null) {
                     builder.workerListener(workersRegistry)
                         .metricRegistry(metricMgr.registry(COMMUNICATION_METRICS_GROUP_NAME));
                 }
+*/
 
                 GridNioServer<Message> srvr = builder.build();
 

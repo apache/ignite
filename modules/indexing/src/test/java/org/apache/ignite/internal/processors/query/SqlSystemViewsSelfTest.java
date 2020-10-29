@@ -23,6 +23,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -67,6 +68,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.metric.MetricSource;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -82,7 +85,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertNotEquals;
 
@@ -124,9 +129,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      * @param sql Sql.
      * @param args Args.
      */
-    @SuppressWarnings("unchecked")
     private List<List<?>> execSql(Ignite ignite, String sql, Object... args) {
-        IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<?, ?> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
@@ -217,15 +221,15 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         List<List<?>> clientNodeSchemas = execSql(client, schemasSql);
 
-        Set expSchemasSrv = Sets.newHashSet("PREDIFINED_SCHEMA_1", "PUBLIC", "TST1", systemSchemaName());
+        Set<?> expSchemasSrv = Sets.newHashSet("PREDIFINED_SCHEMA_1", "PUBLIC", "TST1", systemSchemaName());
 
-        Set schemasSrv = srvNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).collect(toSet());
+        Set<?> schemasSrv = srvNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).collect(toSet());
 
         Assert.assertEquals(expSchemasSrv, schemasSrv);
 
-        Set expSchemasCli = Sets.newHashSet("PREDIFINED_SCHEMA_2", "PUBLIC", "TST1", systemSchemaName());
+        Set<?> expSchemasCli = Sets.newHashSet("PREDIFINED_SCHEMA_2", "PUBLIC", "TST1", systemSchemaName());
 
-        Set schemasCli = clientNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).collect(toSet());
+        Set<?> schemasCli = clientNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).collect(toSet());
 
         Assert.assertEquals(expSchemasCli, schemasCli);
     }
@@ -280,7 +284,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         //ToDo: As of now we can see duplicates columns within index due to https://issues.apache.org/jira/browse/IGNITE-11125
 
-        String[][] expectedResults = {
+        String[][] expResults = {
             {"-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "AFFINITY_KEY", "BTREE", "\"ID2\" ASC, \"ID1\" ASC", "false", "false", "10"},
             {"-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", "true", "true", "10"},
             {"-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK__SCAN_", "SCAN", "null", "false", "false", "0"},
@@ -316,7 +320,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         for (int i = 0; i < srvNodeIndexes.size(); i++) {
             List<?> resRow = srvNodeIndexes.get(i);
 
-            String[] expRow = expectedResults[i];
+            String[] expRow = expResults[i];
 
             assertEquals(expRow.length, resRow.size());
 
@@ -414,8 +418,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     /**
      * @return Default cache configuration.
      */
-    protected CacheConfiguration<AbstractSchemaSelfTest.KeyClass, AbstractSchemaSelfTest.ValueClass> cacheConfiguration(String cacheName) throws Exception {
-        CacheConfiguration ccfg = new CacheConfiguration().setName(cacheName);
+    protected CacheConfiguration<AbstractSchemaSelfTest.KeyClass, AbstractSchemaSelfTest.ValueClass> cacheConfiguration(String cacheName) {
+        CacheConfiguration<AbstractSchemaSelfTest.KeyClass, AbstractSchemaSelfTest.ValueClass> ccfg =
+                new CacheConfiguration<AbstractSchemaSelfTest.KeyClass, AbstractSchemaSelfTest.ValueClass>().setName(cacheName);
 
         QueryEntity entity = new QueryEntity();
 
@@ -430,11 +435,13 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         entity.setKeyFields(Collections.singleton("id"));
 
-        entity.setIndexes(Collections.singletonList(
+        entity.setIndexes(singletonList(
             new QueryIndex("key", true, cacheName + "_index")
         ));
 
-        ccfg.setQueryEntities(Collections.singletonList(entity));
+        ccfg.setQueryEntities(singletonList(entity));
+
+        ccfg.setStatisticsEnabled(true);
 
         return ccfg;
     }
@@ -449,7 +456,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         UUID nodeId = ignite.cluster().localNode().id();
 
-        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<?, ?> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         String sql = "SELECT NODE_ID FROM " + systemSchemaName() + ".NODES WHERE NODE_ORDER = 1";
 
@@ -457,22 +464,21 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         qry = new SqlFieldsQuery(sql).setDistributedJoins(true);
 
-        assertEquals(nodeId, ((List<?>)cache.query(qry).getAll().get(0)).get(0));
+        assertEquals(nodeId, cache.query(qry).getAll().get(0).get(0));
 
         qry = new SqlFieldsQuery(sql).setReplicatedOnly(true);
 
-        assertEquals(nodeId, ((List<?>)cache.query(qry).getAll().get(0)).get(0));
+        assertEquals(nodeId, cache.query(qry).getAll().get(0).get(0));
 
         qry = new SqlFieldsQuery(sql).setLocal(true);
 
-        assertEquals(nodeId, ((List<?>)cache.query(qry).getAll().get(0)).get(0));
+        assertEquals(nodeId, cache.query(qry).getAll().get(0).get(0));
     }
 
     /**
      * Test Query history system view.
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testQueryHistoryMetricsModes() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -482,8 +488,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         long tsBeforeRun = System.currentTimeMillis();
 
-        IgniteCache cache = ignite.createCache(
-            new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+        IgniteCache<Integer, String> cache = ignite.createCache(
+            new CacheConfiguration<Integer, String>(DEFAULT_CACHE_NAME)
                 .setIndexedTypes(Integer.class, String.class)
                 .setSqlSchema(SCHEMA_NAME)
                 .setSqlFunctionClasses(GridTestUtils.SqlTestFunctions.class)
@@ -566,8 +572,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     public void testRunningQueriesView() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        IgniteCache cache = ignite.createCache(
-            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, String.class)
+        IgniteCache<Integer, String> cache = ignite.createCache(
+            new CacheConfiguration<Integer, String>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, String.class)
         );
 
         cache.put(100,"200");
@@ -575,7 +581,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION FROM " +
             systemSchemaName() + ".SQL_QUERIES";
 
-        FieldsQueryCursor notClosedFieldQryCursor = cache.query(new SqlFieldsQuery(sql).setLocal(true));
+        FieldsQueryCursor<?> notClosedFieldQryCursor = cache.query(new SqlFieldsQuery(sql).setLocal(true));
 
         List<?> cur = cache.query(new SqlFieldsQuery(sql).setLocal(true)).getAll();
 
@@ -620,7 +626,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         cache.put(100,"200");
 
-        QueryCursor notClosedQryCursor = cache.query(new SqlQuery<>(String.class, "_key=100"));
+        QueryCursor<?> notClosedQryCursor = cache.query(new SqlQuery<>(String.class, "_key=100"));
 
         String expSqlQry = "SELECT \"default\".\"STRING\"._KEY, \"default\".\"STRING\"._VAL FROM " +
             "\"default\".\"STRING\" WHERE _key=100";
@@ -642,7 +648,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         sql = "SELECT SQL, QUERY_ID FROM " + systemSchemaName() + ".SQL_QUERIES WHERE QUERY_ID='" + qryPrefix + "7'";
 
-        assertEquals(qryPrefix + "7", ((List<?>)cache.query(new SqlFieldsQuery(sql)).getAll().get(0)).get(1));
+        assertEquals(qryPrefix + "7", cache.query(new SqlFieldsQuery(sql)).getAll().get(0).get(1));
 
         sql = "SELECT SQL FROM " + systemSchemaName() + ".SQL_QUERIES WHERE DURATION > 100000";
 
@@ -878,7 +884,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
                 log.info("Check metrics for node " + grid.name() + ", attempt " + (i + 1));
 
-                if (metrics.getLastUpdateTime() == ((Timestamp)resMetrics.get(0).get(1)).getTime()) {
+                if (metrics.getLastUpdateTime() == ((Date)resMetrics.get(0).get(1)).getTime()) {
                     assertEquals(metrics.getMaximumActiveJobs(), resMetrics.get(0).get(2));
                     assertEquals(metrics.getCurrentActiveJobs(), resMetrics.get(0).get(3));
                     assertEquals(metrics.getAverageActiveJobs(), resMetrics.get(0).get(4));
@@ -922,8 +928,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                     assertEquals(metrics.getNonHeapMemoryMaximum(), resMetrics.get(0).get(42));
                     assertEquals(metrics.getNonHeapMemoryTotal(), resMetrics.get(0).get(43));
                     assertEquals(metrics.getUpTime(), resMetrics.get(0).get(44));
-                    assertEquals(metrics.getStartTime(), ((Timestamp)resMetrics.get(0).get(45)).getTime());
-                    assertEquals(metrics.getNodeStartTime(), ((Timestamp)resMetrics.get(0).get(46)).getTime());
+                    assertEquals(metrics.getStartTime(), ((Date)resMetrics.get(0).get(45)).getTime());
+                    assertEquals(metrics.getNodeStartTime(), ((Date)resMetrics.get(0).get(46)).getTime());
                     assertEquals(metrics.getLastDataVersion(), resMetrics.get(0).get(47));
                     assertEquals(metrics.getCurrentThreadCount(), resMetrics.get(0).get(48));
                     assertEquals(metrics.getMaximumThreadCount(), resMetrics.get(0).get(49));
@@ -1011,7 +1017,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     /**
      * Test IO statistics SQL system views for cache groups.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     @Test
     public void testIoStatisticsViews() throws Exception {
@@ -1020,6 +1026,12 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         ignite.cluster().active(true);
 
         execSql("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)");
+
+        ignite.cache("SQL_PUBLIC_TST").enableStatistics(true);
+
+        // Work around. There is no valid way to enable metrics for cache group created via DML.
+        MetricSource src = ((IgniteEx)ignite).context().metric().source(MetricUtils.metricName(CACHE_GROUP_METRICS_PREFIX, "SQL_PUBLIC_TST"));
+        src.enable();
 
         for (int i = 0; i < 500; i++)
             execSql("INSERT INTO TST(id, name, age) VALUES (" + i + ",'name-" + i + "'," + i + 1 + ")");
@@ -1107,13 +1119,13 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         // Filter by cache name:
         assertEquals(
-            Collections.singletonList(asList("DFLT_CACHE", "SQL_PUBLIC_DFLT_CACHE")),
+            singletonList(asList("DFLT_CACHE", "SQL_PUBLIC_DFLT_CACHE")),
             execSql("SELECT TABLE_NAME, CACHE_NAME " +
                 "FROM " + systemSchemaName() + ".TABLES " +
                 "WHERE CACHE_NAME LIKE 'SQL\\_PUBLIC\\_%'"));
 
         assertEquals(
-            Collections.singletonList(asList("CACHE_SQL", "cache_sql")),
+            singletonList(asList("CACHE_SQL", "cache_sql")),
             execSql("SELECT TABLE_NAME, CACHE_NAME " +
                 "FROM " + systemSchemaName() + ".TABLES " +
                 "WHERE CACHE_NAME NOT LIKE 'SQL\\_PUBLIC\\_%'"));
@@ -1135,7 +1147,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testTablesDropAndCreate() throws Exception {
-        IgniteEx ignite = startGrid(getConfiguration());
+        startGrid(getConfiguration());
 
         final String selectTabNameCacheName = "SELECT TABLE_NAME, CACHE_NAME FROM " + systemSchemaName() + ".TABLES ORDER BY TABLE_NAME";
 
@@ -1144,7 +1156,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         execSql("CREATE TABLE PUBLIC.TAB1 (ID INT PRIMARY KEY, VAL VARCHAR)");
 
         assertEquals(
-            asList(asList("TAB1", "SQL_PUBLIC_TAB1")),
+            singletonList(asList("TAB1", "SQL_PUBLIC_TAB1")),
             execSql(selectTabNameCacheName));
 
         execSql("CREATE TABLE PUBLIC.TAB2 (ID LONG PRIMARY KEY, VAL_STR VARCHAR) WITH \"cache_name=cache2\"");
@@ -1170,7 +1182,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         execSql("DROP TABLE PUBLIC.TAB3");
 
         assertEquals(
-            asList(asList("TAB1", "SQL_PUBLIC_TAB1")),
+            singletonList(asList("TAB1", "SQL_PUBLIC_TAB1")),
             execSql(selectTabNameCacheName));
 
         execSql("DROP TABLE PUBLIC.TAB1");
@@ -1214,14 +1226,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                     .setTableName("NO_KEY_TABLE")
             )));
 
-        List<List<String>> expected = Collections.singletonList(asList("NO_KEY_TABLE", null));
+        List<List<String>> exp = singletonList(asList("NO_KEY_TABLE", null));
 
-        assertEquals(expected,
+        assertEquals(exp,
             execSql("SELECT TABLE_NAME, AFFINITY_KEY_COLUMN " +
                 "FROM " + systemSchemaName() + ".TABLES " +
                 "WHERE CACHE_NAME = 'NO_KEY_FIELDS_CACHE'"));
 
-        assertEquals(expected,
+        assertEquals(exp,
             execSql("SELECT TABLE_NAME, AFFINITY_KEY_COLUMN " +
                 "FROM " + systemSchemaName() + ".TABLES " +
                 "WHERE AFFINITY_KEY_COLUMN IS NULL"));
@@ -1546,7 +1558,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         ClusterMetricsImpl original = getField(node, "metrics");
 
-        setField(node, "metrics", new MockedClusterMetrics(original));;
+        setField(node, "metrics", new MockedClusterMetrics(original));
 
         List<?> durationMetrics = execSql(ign,
             "SELECT " +
@@ -1658,13 +1670,13 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      * @param fieldName name of the field.
      */
     private static <T> T getField(Object target, String fieldName) throws Exception {
-        Class clazz = target.getClass();
+        Class<?> clazz = target.getClass();
 
         Field fld = clazz.getDeclaredField(fieldName);
 
         fld.setAccessible(true);
 
-        return (T) fld.get(target);
+        return (T)fld.get(target);
     }
 
     /**
@@ -1675,7 +1687,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      * @param val new field value.
      */
     private static void setField(Object target, String fieldName, Object val) throws Exception {
-        Class clazz = target.getClass();
+        Class<?> clazz = target.getClass();
 
         Field fld = clazz.getDeclaredField(fieldName);
 
@@ -1766,19 +1778,27 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
+    /** */
     private static class CustomNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** Attempts before exception. */
         private final int attemptsBeforeException;
 
+        /** Attempts. */
         private volatile int attempts;
 
+        /**
+         * @param attemptsBeforeException Attempts before exception.
+         */
         public CustomNodeFilter(int attemptsBeforeException) {
             this.attemptsBeforeException = attemptsBeforeException;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             if (attempts++ > attemptsBeforeException)
                 throw new NullPointerException("Oops... incorrect customer realization.");

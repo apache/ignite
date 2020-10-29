@@ -25,6 +25,7 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -50,10 +51,12 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        mreg.forEach(this::register);
+        IgniteEx ignite = (IgniteEx)this.ignite;
 
-        mreg.addMetricRegistryCreationListener(this::register);
-        mreg.addMetricRegistryRemoveListener(this::unregister);
+        ReadOnlyMetricManager metricMgr = (ReadOnlyMetricManager)ignite.context().metric();
+
+        metricMgr.addMetricRegistryCreationListener(this::register);
+        metricMgr.addMetricRegistryRemoveListener(this::unregister);
     }
 
     /**
@@ -109,7 +112,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
 
             assert rmv;
 
-            unregBean(ignite, mbeanName);
+            unregisterBean(ignite, mbeanName);
         }
         catch (MalformedObjectNameException e) {
             log.error("MBean for metric registry '" + n.root() + ',' + n.subName() + "' can't be unregistered.", e);
@@ -124,10 +127,16 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
             return;
 
         for (ObjectName bean : mBeans)
-            unregBean(ignite, bean);
+            unregisterBean(ignite, bean);
     }
 
-    private void unregBean(Ignite ignite, ObjectName bean) {
+    /**
+     * Unregisters MBen.
+     *
+     * @param ignite Ignite.
+     * @param bean MBean.
+     */
+    private void unregisterBean(Ignite ignite, ObjectName bean) {
         MBeanServer jmx = ignite.configuration().getMBeanServer();
 
         try {
@@ -143,7 +152,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
 
     /** {@inheritDoc} */
     @Override public void setMetricRegistry(ReadOnlyMetricManager reg) {
-        this.mreg = reg;
+        // No-op.
     }
 
     /** {@inheritDoc} */

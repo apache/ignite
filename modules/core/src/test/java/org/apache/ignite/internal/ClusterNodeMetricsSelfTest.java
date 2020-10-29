@@ -36,9 +36,10 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -71,7 +72,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     private static final int MAX_VALS_AMOUNT = 400;
 
     /** Cache name. */
-    private final String CACHE_NAME = "cache1";
+    private static final String CACHE_NAME = "cache1";
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -86,6 +87,10 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+        dsCfg.getDefaultDataRegionConfiguration().setMetricsEnabled(true);
+        cfg.setDataStorageConfiguration(dsCfg);
 
         cfg.setCacheConfiguration();
         cfg.setMetricsUpdateFrequency(500);
@@ -111,21 +116,19 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     public void testAllocatedMemory() throws Exception {
         IgniteEx ignite = grid();
 
-        final IgniteCache cache = ignite.getOrCreateCache(CACHE_NAME);
+        final IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(CACHE_NAME);
 
         DataRegion dataRegion = getDefaultDataRegion(ignite);
 
-        DataRegionMetricsImpl memMetrics = dataRegion.memoryMetrics();
-
-        memMetrics.enableMetrics();
+        DataRegionMetricSource metricSrc = dataRegion.metricSource();
 
         int pageSize = getPageSize(ignite);
 
-        assertEquals(dataRegion.pageMemory().loadedPages(), memMetrics.getTotalAllocatedPages());
+        assertEquals(dataRegion.pageMemory().loadedPages(), metricSrc.totalAllocatedPages());
 
         fillCache(cache);
 
-        assertTrue(memMetrics.getTotalAllocatedPages() * pageSize > MAX_VALS_AMOUNT * VAL_SIZE);
+        assertTrue(metricSrc.totalAllocatedPages() * pageSize > MAX_VALS_AMOUNT * VAL_SIZE);
     }
 
     /**
@@ -455,6 +458,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
      */
     private static class TestMessage implements Serializable {
         /** */
+        @SuppressWarnings("unused")
         private final byte[] arr = new byte[MSG_SIZE];
     }
 
