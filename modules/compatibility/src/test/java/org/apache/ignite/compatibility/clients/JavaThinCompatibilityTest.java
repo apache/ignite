@@ -54,6 +54,7 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assume;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -95,9 +96,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
 
     /** {@inheritDoc} */
     @Override public void testOldClientToCurrentServer() throws Exception {
-        // Java thin client exists only from 2.5.0 release, skip this test (but not another) for earlier versions.
-        if (ver.compareTo(VER_2_5_0) < 0)
-            return;
+        Assume.assumeTrue("Java thin client exists only from 2.5.0 release", ver.compareTo(VER_2_5_0) >= 0);
 
         super.testOldClientToCurrentServer();
     }

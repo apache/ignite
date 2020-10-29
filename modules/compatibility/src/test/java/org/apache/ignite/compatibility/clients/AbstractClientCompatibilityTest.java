@@ -172,7 +172,7 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
                 Process proc = proxy.getProcess().getProcess();
 
                 // We should wait until process exits, or it can affect next tests.
-                GridTestUtils.waitForCondition(() -> !proc.isAlive(), 5_000L);
+                assertTrue(GridTestUtils.waitForCondition(() -> !proc.isAlive(), 5_000L));
             }
         }
     }
