@@ -1318,7 +1318,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
-        long metaPageId = pageMem.metaPageId(grpId);
+        long metaPageId = PageIdAllocator.META_PAGE_ID;
         long metaPage = pageMem.acquirePage(grpId, metaPageId);
 
         try {
