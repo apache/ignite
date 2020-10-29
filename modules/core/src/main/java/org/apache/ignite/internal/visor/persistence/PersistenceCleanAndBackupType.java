@@ -32,8 +32,8 @@ public enum PersistenceCleanAndBackupType {
     private static final PersistenceCleanAndBackupType[] VALS = values();
 
     /**
-     * @param ordinal
-     * @return
+     * @param ordinal Index of enum value.
+     * @return Value of {@link PersistenceCleanAndBackupType} enum.
      */
     @Nullable public static PersistenceCleanAndBackupType fromOrdinal(int ordinal) {
         return ordinal >= 0 && ordinal < VALS.length ? VALS[ordinal] : null;
