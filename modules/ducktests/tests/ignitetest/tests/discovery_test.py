@@ -68,7 +68,7 @@ class DiscoveryTest(IgniteTest):
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
-    NUM_NODES = 9
+    NUM_NODES = 5
 
     FAILURE_DETECTION_TIMEOUT_TCP = 1000
 
@@ -85,8 +85,8 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
-    @matrix(nodes_to_kill=[1, 2],
-            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    @matrix(nodes_to_kill=[1],
+            load_type=[ClusterLoad.NONE])
     def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type):
         """
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
