@@ -36,31 +36,29 @@ public class VisorReencryptionRateTask extends VisorMultiNodeTask<Double, Map<UU
 
     /** {@inheritDoc} */
     @Override protected VisorJob<Double, Double> job(Double arg) {
-        return new VisorStartReencryptionJob(arg, debug);
+        return new VisorReencryptionRateJob(arg, debug);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override protected Map<UUID, Object> reduce0(List<ComputeJobResult> results) {
-        Map<UUID, Object> errs = new HashMap<>();
+        Map<UUID, Object> resMap = new HashMap<>();
 
         for (ComputeJobResult res : results)
-            errs.put(res.getNode().id(), res.getException() != null ? res.getException() : res.getData());
+            resMap.put(res.getNode().id(), res.getException() != null ? res.getException() : res.getData());
 
-        return errs;
+        return resMap;
     }
 
-    /** The job for getting the master key name. */
-    private static class VisorStartReencryptionJob extends VisorJob<Double, Double> {
+    /** The job for view/change cache group re-encryption rate limit. */
+    private static class VisorReencryptionRateJob extends VisorJob<Double, Double> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
-         * Create job with specified argument.
-         *
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorStartReencryptionJob(Double arg, boolean debug) {
+        protected VisorReencryptionRateJob(Double arg, boolean debug) {
             super(arg, debug);
         }
 

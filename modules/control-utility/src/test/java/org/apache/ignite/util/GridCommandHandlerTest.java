@@ -2694,7 +2694,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, ret);
         assertContains(log, testOut.toString(),
-            "The encryption key has been changed for cache group \"" + DEFAULT_CACHE_NAME + '"');
+            "The encryption key has been changed for the cache group \"" + DEFAULT_CACHE_NAME + '"');
 
         ret = execute("--encryption", CACHE_GROUP_KEY_IDS.toString(), DEFAULT_CACHE_NAME);
 
@@ -2705,7 +2705,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** @throws Exception If failed. */
     @Test
-    public void testCHangeReencryptionRate() throws Exception {
+    public void testChangeReencryptionRate() throws Exception {
         int srvNodes = 2;
 
         IgniteEx ignite = startGrids(srvNodes);
@@ -2717,26 +2717,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         int ret = execute("--encryption", REENCRYPTION_RATE.toString());
 
         assertEquals(EXIT_CODE_OK, ret);
-
-        assertEquals(srvNodes, countSubstrs(testOut.toString(), "reencryption rate is not limited."));
+        assertEquals(srvNodes, countSubstrs(testOut.toString(), "re-encryption rate is not limited."));
 
         ret = execute("--encryption", REENCRYPTION_RATE.toString(), "--limit", "0.01");
 
         assertEquals(EXIT_CODE_OK, ret);
-
-        assertEquals(srvNodes, countSubstrs(testOut.toString(), "reencryption rate has been limited to 0.01 MB/s."));
+        assertEquals(srvNodes, countSubstrs(testOut.toString(), "re-encryption rate has been limited to 0.01 MB/s."));
 
         ret = execute("--encryption", REENCRYPTION_RATE.toString());
 
         assertEquals(EXIT_CODE_OK, ret);
-
-        assertEquals(srvNodes, countSubstrs(testOut.toString(), "reencryption rate is limited to 0.01 MB/s."));
+        assertEquals(srvNodes, countSubstrs(testOut.toString(), "re-encryption rate is limited to 0.01 MB/s."));
 
         ret = execute("--encryption", REENCRYPTION_RATE.toString(), "--limit", "0");
 
         assertEquals(EXIT_CODE_OK, ret);
-
-        assertEquals(srvNodes, countSubstrs(testOut.toString(), "reencryption rate is not limited."));
+        assertEquals(srvNodes, countSubstrs(testOut.toString(), "re-encryption rate is not limited."));
     }
 
     /** @throws Exception If failed. */

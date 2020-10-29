@@ -506,8 +506,10 @@ public class CacheGroupPageScanner implements CheckpointListener {
             while (off < cnt) {
                 int pagesCnt = Math.min(batchSize, cnt - off);
 
-                if (limiter != null)
-                    limiter.acquire(pagesCnt);
+                BasicRateLimiter limiter0 = limiter;
+
+                if (limiter0 != null)
+                    limiter0.acquire(pagesCnt);
 
                 synchronized (this) {
                     if (isDone() || !parts.contains(partId))

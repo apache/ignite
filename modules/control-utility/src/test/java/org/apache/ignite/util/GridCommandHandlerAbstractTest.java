@@ -255,12 +255,12 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
             cfg.setEncryptionSpi(encSpi);
 
-            EncryptionConfiguration encrCfg = new EncryptionConfiguration();
+            EncryptionConfiguration encCfg = new EncryptionConfiguration();
 
-            encrCfg.setReencryptionRateLimit(reencryptSpeed);
-            encrCfg.setReencryptionBatchSize(reencryptBatchSize);
+            encCfg.setReencryptionRateLimit(reencryptSpeed);
+            encCfg.setReencryptionBatchSize(reencryptBatchSize);
 
-            dsCfg.setEncryptionConfiguration(encrCfg);
+            dsCfg.setEncryptionConfiguration(encCfg);
         }
 
         return cfg;

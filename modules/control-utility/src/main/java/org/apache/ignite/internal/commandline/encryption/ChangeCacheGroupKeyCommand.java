@@ -47,7 +47,7 @@ public class ChangeCacheGroupKeyCommand implements Command<String> {
                 clientCfg
             );
 
-            log.info("The encryption key has been changed for cache group \"" + argCacheGrpName + "\".");
+            log.info("The encryption key has been changed for the cache group \"" + argCacheGrpName + "\".");
 
             return null;
         }

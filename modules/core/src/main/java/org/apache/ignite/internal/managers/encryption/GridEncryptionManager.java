@@ -1182,18 +1182,29 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
+     * Suspend re-encryption of the cache group.
+     *
+     * @param grpId Cache group ID.
+     */
+    public boolean suspendReencryption(int grpId) throws IgniteCheckedException {
+        return reencryptionFuture(grpId).cancel();
+    }
+
+    /**
      * Forces re-encryption of the cache group.
      *
      * @param grpId Cache group ID.
      */
-    public void resumeReencryption(int grpId) throws IgniteCheckedException {
-        if (grpKeyChangeProc.inProgress())
-            throw new IgniteCheckedException("Cannot resume re-encryption during cache group key change.");
+    public boolean resumeReencryption(int grpId) throws IgniteCheckedException {
+        if (!reencryptionFuture(grpId).isDone())
+            return false;
 
         if (!reencryptionInProgress(grpId))
             throw new IgniteCheckedException("Re-encryption completed or not required [grpId=" + grpId + "]");
 
         startReencryption(Collections.singleton(grpId));
+
+        return true;
     }
 
     /**

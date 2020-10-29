@@ -25,7 +25,7 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
- * The task for changing the encryption key for the cache group.
+ * The task for changing the encryption key of the cache group.
  *
  * @see IgniteEncryption#changeCacheGroupKey(Collection)
  */
@@ -38,14 +38,12 @@ public class VisorChangeCacheGroupKeyTask extends VisorOneNodeTask<String, Void>
         return new VisorChangeCacheGroupKeyJob(arg, debug);
     }
 
-    /** The job for getting the master key name. */
+    /** The job for changing the encryption key of the cache group. */
     private static class VisorChangeCacheGroupKeyJob extends VisorJob<String, Void> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
-         * Create job with specified argument.
-         *
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */

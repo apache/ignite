@@ -24,7 +24,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -43,7 +42,7 @@ public class VisorGroupReencryptionTask
 
     /** {@inheritDoc} */
     @Override protected VisorJob<VisorGroupReencryptionTaskArg, Object> job(VisorGroupReencryptionTaskArg arg) {
-        return new VisorStartReencryptionJob(arg, debug);
+        return new VisorGroupReencryptionJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -56,18 +55,16 @@ public class VisorGroupReencryptionTask
         return resMap;
     }
 
-    /** The job for getting the master key name. */
-    private static class VisorStartReencryptionJob extends VisorJob<VisorGroupReencryptionTaskArg, Object> {
+    /** The job to control the process of re-encryption of the cache group. */
+    private static class VisorGroupReencryptionJob extends VisorJob<VisorGroupReencryptionTaskArg, Object> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
-         * Create job with specified argument.
-         *
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorStartReencryptionJob(VisorGroupReencryptionTaskArg arg, boolean debug) {
+        protected VisorGroupReencryptionJob(VisorGroupReencryptionTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -90,24 +87,16 @@ public class VisorGroupReencryptionTask
                 }
             }
 
-            GridEncryptionManager encMgr = ignite.context().encryption();
-            int grpId = grp.groupId();
-
             try {
                 switch (arg.type()) {
                     case STATUS:
-                        return encMgr.getBytesLeftForReencryption(grpId);
+                        return ignite.context().encryption().getBytesLeftForReencryption(grp.groupId());
 
                     case SUSPEND:
-                        return encMgr.reencryptionFuture(grpId).cancel();
+                        return ignite.context().encryption().suspendReencryption(grp.groupId());
 
                     case RESUME:
-                        if (!encMgr.reencryptionFuture(grpId).isDone())
-                            return false;
-
-                        encMgr.resumeReencryption(grpId);
-
-                        return true;
+                        return ignite.context().encryption().resumeReencryption(grp.groupId());
 
                     default:
                         throw new UnsupportedOperationException("Not implemented task action: " + arg.type());

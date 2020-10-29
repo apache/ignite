@@ -61,7 +61,7 @@ public class ReencryptionRateCommand implements Command<Double> {
                 String msg;
 
                 if (entry.getValue() instanceof Throwable) {
-                    msg = " failed to " + (read ? "get" : "limit") + " reencryption rate (" +
+                    msg = " failed to " + (read ? "get" : "limit") + " re-encryption rate (" +
                         ((Throwable)entry.getValue()).getMessage() + ").";
                 }
                 else {
@@ -69,9 +69,9 @@ public class ReencryptionRateCommand implements Command<Double> {
                     boolean unlimited = read ? prevRate == 0 : rateLimit == 0;
 
                     if (unlimited)
-                        msg = "reencryption rate is not limited.";
+                        msg = "re-encryption rate is not limited.";
                     else {
-                        msg = "reencryption rate " + (read ?
+                        msg = "re-encryption rate " + (read ?
                             "is limited to " + prevRate :
                             "has been limited to " + rateLimit) + " MB/s.";
                     }
@@ -105,7 +105,7 @@ public class ReencryptionRateCommand implements Command<Double> {
             ReencryptionRateCommandArg cmdArg = CommandArgUtils.of(arg, ReencryptionRateCommandArg.class);
 
             if (cmdArg == ReencryptionRateCommandArg.LIMIT) {
-                String rateLimitArg = argIter.nextArg("Expected decimal value for reencryption rate.");
+                String rateLimitArg = argIter.nextArg("Expected decimal value for re-encryption rate.");
 
                 try {
                     rateLimit = Double.parseDouble(rateLimitArg);
@@ -132,18 +132,16 @@ public class ReencryptionRateCommand implements Command<Double> {
     }
 
     /**
-     * Reencryption rate command arguments name.
+     * Re-encryption rate command arguments name.
      */
     private enum ReencryptionRateCommandArg implements CommandArg {
         /** Re-encryption rate limit argument. */
         LIMIT("--limit");
 
-        /** Option name. */
+        /** Argument name. */
         private final String name;
 
         /**
-         * Constructor.
-         *
          * @param name Argument name.
          */
         ReencryptionRateCommandArg(String name) {

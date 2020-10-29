@@ -25,7 +25,7 @@ import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandList;
 
 /**
- * Commands assosiated with encryption features.
+ * Commands related to encryption functions.
  *
  * @see EncryptionSubcommands
  */

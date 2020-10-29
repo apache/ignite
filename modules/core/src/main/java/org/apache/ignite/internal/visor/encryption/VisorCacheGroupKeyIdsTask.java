@@ -37,7 +37,7 @@ public class VisorCacheGroupKeyIdsTask extends VisorMultiNodeTask<String, Map<UU
 
     /** {@inheritDoc} */
     @Override protected VisorJob<String, List<Integer>> job(String arg) {
-        return new VisorGetCacheGroupKeysJob(arg, debug);
+        return new VisorCacheGroupKeyIdsJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -53,18 +53,16 @@ public class VisorCacheGroupKeyIdsTask extends VisorMultiNodeTask<String, Map<UU
         return resMap;
     }
 
-    /** The job for getting the master key name. */
-    private static class VisorGetCacheGroupKeysJob extends VisorJob<String, List<Integer>> {
+    /** The job for getting encryption key identifiers of the cache group. */
+    private static class VisorCacheGroupKeyIdsJob extends VisorJob<String, List<Integer>> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
-         * Create job with specified argument.
-         *
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorGetCacheGroupKeysJob(String arg, boolean debug) {
+        protected VisorCacheGroupKeyIdsJob(String arg, boolean debug) {
             super(arg, debug);
         }
 
