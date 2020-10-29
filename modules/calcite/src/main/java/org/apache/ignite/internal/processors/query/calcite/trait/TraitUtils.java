@@ -142,6 +142,7 @@ public class TraitUtils {
         if (fromTrait.satisfies(toTrait))
             return rel;
 
+        System.out.println("+++ NEED SPOOL");
         return null; // TODO IndexSpoon
     }
 
