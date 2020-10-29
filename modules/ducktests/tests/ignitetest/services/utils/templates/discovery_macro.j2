@@ -44,6 +44,9 @@
 
 {% macro tcp_discovery_spi(spi) %}
     <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+        {% if spi.local_address %}
+            <property name="localAddress" value="{{ spi.local_address }}"/>
+        {% endif %}
         <property name="localPort" value="{{ spi.port }}"/>
         <property name="localPortRange" value="{{ spi.port_range }}"/>
         {{ ip_finder(spi) }}
