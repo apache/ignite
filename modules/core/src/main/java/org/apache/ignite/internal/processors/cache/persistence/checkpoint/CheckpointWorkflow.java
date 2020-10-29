@@ -750,6 +750,9 @@ public class CheckpointWorkflow {
 
             checkpointCollectPagesInfoPool = null;
         }
+
+        for (CheckpointListener lsnr : lsnrs.keySet())
+            lsnrs.remove(lsnr);
     }
 
     /**
