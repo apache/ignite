@@ -45,7 +45,9 @@ public class PersistenceTaskArg extends IgniteDataTransferObject {
     }
 
     /**
-     * @param op
+     * @param op {@link PersistenceOperation} requested for execution.
+     * @param cleanAndBackupSettings {@link PersistenceCleanAndBackupSettings} specific settings for clean and backup
+     *                                                                        commands.
      */
     public PersistenceTaskArg(PersistenceOperation op, PersistenceCleanAndBackupSettings cleanAndBackupSettings) {
         this.op = op;
@@ -53,14 +55,14 @@ public class PersistenceTaskArg extends IgniteDataTransferObject {
     }
 
     /**
-     * @return
+     * @return {@link PersistenceOperation} operation requested for execution.
      */
     public PersistenceOperation operation() {
         return op;
     }
 
     /**
-     * @return
+     * @return {@link PersistenceCleanAndBackupSettings} specific settings for clean and backup commands.
      */
     public PersistenceCleanAndBackupSettings cleanAndBackupSettings() {
         return cleanAndBackupSettings;

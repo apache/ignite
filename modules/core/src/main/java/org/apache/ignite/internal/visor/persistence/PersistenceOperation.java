@@ -34,9 +34,8 @@ public enum PersistenceOperation {
     private static final PersistenceOperation[] VALS = values();
 
     /**
-     *
-     * @param ordinal
-     * @return
+     * @param ordinal Index of enum value.
+     * @return Value of {@link PersistenceOperation} enum.
      */
     @Nullable public static PersistenceOperation fromOrdinal(int ordinal) {
         return ordinal >= 0 && ordinal < VALS.length ? VALS[ordinal] : null;
