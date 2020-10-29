@@ -23,7 +23,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -143,9 +142,17 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
             List<String> cleanedCaches = res.handledCaches();
 
             if (cleanedCaches != null && !cleanedCaches.isEmpty()) {
-                String cacheDirNames = cleanedCaches.stream().collect(Collectors.joining(", "));
+                String cacheDirNames = String.join(", ", cleanedCaches);
 
                 logger.info("Cache directories were cleaned: [" + cacheDirNames + ']');
+            }
+
+            List<String> failedToHandleCaches = res.failedCaches();
+
+            if (failedToHandleCaches != null && !failedToHandleCaches.isEmpty()) {
+                String failedToHandleCachesStr = String.join(", ", failedToHandleCaches);
+
+                logger.info("Failed to clean following directories: ["  + failedToHandleCachesStr + ']');
             }
         }
         // backup command
@@ -153,9 +160,19 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
             List<String> backupCompletedCaches = res.handledCaches();
 
             if (backupCompletedCaches != null && !backupCompletedCaches.isEmpty()) {
-                String cacheDirNames = backupCompletedCaches.stream().collect(Collectors.joining(", "));
+                String cacheDirNames = String.join(", ", backupCompletedCaches);
 
-                logger.info("Cache data files was backed up to the following directories in node's work directory: [" + cacheDirNames + ']');
+                logger.info("Cache data files was backed up to the following directories in node's work directory: [" +
+                    cacheDirNames + ']');
+            }
+
+            List<String> backupFailedCaches = res.failedCaches();
+
+            if (backupFailedCaches != null && !backupFailedCaches.isEmpty()) {
+                String backupFailedCachesStr = String.join(", ", backupFailedCaches);
+
+                logger.info("Failed to backup the following directories in node's work directory: [" +
+                    backupFailedCachesStr + ']');
             }
         }
     }
@@ -169,7 +186,7 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
     @Override public void printUsage(Logger logger) {
         final String cacheNames = "cache1,cache2,cache3";
 
-        usage(logger, "Without arguments command prints information about caches on local node:",
+        usage(logger, "Print information about potentially corrupted caches on local node:",
             PERSISTENCE);
         usage(logger, "The same information is printed when info subcommand is passed:", PERSISTENCE,
             INFO.text());

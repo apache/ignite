@@ -162,12 +162,22 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             );
         }
 
-        if (!workflowCallbacks.isEmpty())
+        if (!workflowCallbacks.isEmpty()) {
+            if (log.isInfoEnabled()) {
+                String mntcTasksNames = String.join(", ", workflowCallbacks.keySet());
+
+                log.info("Node requires maintenance, non-empty set of maintenance tasks is found: [" +
+                    mntcTasksNames + ']');
+            }
+
             proceedWithMaintenance();
-        else {
-            if (log.isInfoEnabled())
-                log.info("All maintenance tasks are fixed, no need to enter maintenance mode. " +
-                    "Restart the node to get it back to normal operations.");
+        } else {
+            if (isMaintenanceMode()) {
+                if (log.isInfoEnabled()) {
+                    log.info("All maintenance tasks are fixed, no need to enter maintenance mode. " +
+                        "Restart the node to get it back to normal operations.");
+                }
+            }
         }
     }
 
