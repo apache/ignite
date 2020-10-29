@@ -4384,16 +4384,36 @@ public abstract class IgniteUtils {
      * @param sock Socket to close. If it's {@code null} - it's no-op.
      */
     public static void closeQuiet(@Nullable Socket sock) {
+        closeQuiet(sock, false);
+    }
+
+    /**
+     * Quietly closes given {@link Socket} ignoring possible checked exception. Is able not to wait for socket closed.
+     *
+     * @param sock Socket to close. If it's {@code null} - it's no-op.
+     * @param forceClose If {@code True}, closes socket immediatelly, does not wait for rest of the data to send or ack.
+     */
+    public static void closeQuiet(@Nullable Socket sock, boolean forceClose) {
         if (sock == null)
             return;
 
-        try {
-            // Avoid java 12 bug see https://bugs.openjdk.java.net/browse/JDK-8219658
-            sock.shutdownOutput();
-            sock.shutdownInput();
+        if (forceClose) {
+            try {
+                sock.setSoLinger(true, 0);
+            }
+            catch (SocketException ignored) {
+                // No-op.
+            }
         }
-        catch (Exception ignored) {
-            // No-op.
+        else {
+            try {
+                // Avoid java 12 bug see https://bugs.openjdk.java.net/browse/JDK-8219658
+                sock.shutdownOutput();
+                sock.shutdownInput();
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
         }
 
         try {
