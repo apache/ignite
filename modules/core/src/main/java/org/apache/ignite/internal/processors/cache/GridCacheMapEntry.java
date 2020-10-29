@@ -564,7 +564,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             checkObsolete();
 
             if (isStartVersion() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
-                assert row == null || row.key() == key : "Unexpected row key";
+                assert row == null || Objects.equals(row.key(), key) :
+                        "Unexpected row key [row.key=" + row.key() + ", cacheEntry.key=" + key + "]";
 
                 CacheDataRow read = row == null ? cctx.offheap().read(this) : row;
 
@@ -5788,6 +5789,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private CacheDataRow oldRow;
 
         /** */
+        private boolean oldRowExpiredFlag;
+
+        /** */
         private IgniteTree.OperationType treeOp = IgniteTree.OperationType.PUT;
 
         /**
@@ -5856,6 +5860,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             return oldRow;
         }
 
+        /** {@inheritDoc} */
+        @Override public boolean oldRowExpiredFlag() {
+            return oldRowExpiredFlag;
+        }
+
         /**
          * Checks row for expiration and fire expire events if needed.
          *
@@ -5901,6 +5910,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             cctx.continuousQueries().onEntryExpired(entry, entry.key(), expiredVal);
 
             entry.updatePlatformCache(null, null);
+
+            oldRowExpiredFlag = true;
 
             return null;
         }
@@ -6049,6 +6060,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** {@inheritDoc} */
         @Nullable @Override public CacheDataRow oldRow() {
             return oldRow;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean oldRowExpiredFlag() {
+            return oldRowExpiredFlag;
         }
 
         /** {@inheritDoc} */
