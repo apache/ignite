@@ -99,9 +99,9 @@ public interface DataStorageMetrics {
     public long getLastCheckpointDuration();
 
     /**
-     * Start timestamp of the last checkpoint
+     * Returns time when the last checkpoint was started.
      *
-     * @return Timestamp when the last checkpoint was started
+     * @return Time when the last checkpoint was started.
      * */
     public long getLastCheckpointStarted();
 
