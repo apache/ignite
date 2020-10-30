@@ -201,7 +201,8 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
         usage(logger, "Backup data files of corrupted caches only:", PERSISTENCE, BACKUP.text(),
             CORRUPTED.argName());
         usage(logger, "Backup data files of all caches:", PERSISTENCE, BACKUP.text(), ALL.argName());
-        usage(logger, "Backup data files of only given caches:", PERSISTENCE, BACKUP.text(), ALL.argName());
+        usage(logger, "Backup data files of only given caches:", PERSISTENCE, BACKUP.text(),
+            CACHES.argName(), cacheNames);
     }
 
     /** {@inheritDoc} */
