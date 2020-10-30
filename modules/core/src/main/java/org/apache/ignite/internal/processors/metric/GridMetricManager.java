@@ -410,34 +410,33 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param regName Metric registry name.
      */
     public void remove(String regName) {
-        ReadOnlyMetricRegistry mreg = registries.remove(regName);
+        registries.computeIfPresent(regName, (key, mreg) -> {
+            notifyListeners(mreg, metricRegRemoveLsnrs, log);
 
-        if (mreg == null)
-            return;
+            DistributedMetaStorage metastorage0 = metastorage;
 
-        notifyListeners(mreg, metricRegRemoveLsnrs, log);
+            if (metastorage0 == null)
+                return null;
 
-        DistributedMetaStorage metastorage0 = metastorage;
+            try {
+                GridCompoundFuture opsFut = new GridCompoundFuture<>();
 
-        if (metastorage0 == null)
-            return;
+                for (Metric m : mreg) {
+                    if (m instanceof HitRateMetric)
+                        opsFut.add(metastorage0.removeAsync(metricName(HITRATE_CFG_PREFIX, m.name())));
+                    else if (m instanceof HistogramMetric)
+                        opsFut.add(metastorage0.removeAsync(metricName(HISTOGRAM_CFG_PREFIX, m.name())));
+                }
 
-        try {
-            GridCompoundFuture opsFut = new GridCompoundFuture<>();
-
-            for (Metric m : mreg) {
-                if (m instanceof HitRateMetric)
-                    opsFut.add(metastorage0.removeAsync(metricName(HITRATE_CFG_PREFIX, m.name())));
-                else if (m instanceof HistogramMetric)
-                    opsFut.add(metastorage0.removeAsync(metricName(HISTOGRAM_CFG_PREFIX, m.name())));
+                opsFut.markInitialized();
+                opsFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
 
-            opsFut.markInitialized();
-            opsFut.get();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+            return null;
+        });
     }
 
     /**
