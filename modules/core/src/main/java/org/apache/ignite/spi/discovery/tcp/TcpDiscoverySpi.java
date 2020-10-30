@@ -1589,17 +1589,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             assert addr != null;
 
-            if (log.isTraceEnabled()) {
-                log.trace("Connecting to " + resolved + " with timeout " +
-                    timeoutHelper.nextTimeoutChunk(sockTimeout) + '.');
-            }
-
             sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
-
-            if (log.isTraceEnabled()) {
-                log.trace("Sending the header to " + resolved + " with timeout " +
-                    timeoutHelper.nextTimeoutChunk(sockTimeout) + '.');
-            }
 
             writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
 
