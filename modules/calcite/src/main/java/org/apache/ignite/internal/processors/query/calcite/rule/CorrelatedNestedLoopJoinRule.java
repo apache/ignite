@@ -41,6 +41,7 @@ import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBeans;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 
 /** */
@@ -105,8 +106,15 @@ public class CorrelatedNestedLoopJoinRule extends RelRule<CorrelatedNestedLoopJo
             conditionList.add(condition2);
         }
 
+        CorrelationTrait corrTrait = new CorrelationTrait(correlationIds);
+
+        RelTraitSet filterTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
+            .replace(RewindabilityTrait.REWINDABLE);
+
+        RelNode filterInput = convert(rel.getRight(), filterTraits);
+
         // Push a filter with batchSize disjunctions
-        relBuilder.push(rel.getRight()).filter(relBuilder.or(conditionList));
+        relBuilder.push(filterInput).filter(relBuilder.or(conditionList));
         RelNode right = relBuilder.build();
 
         JoinRelType joinType = rel.getJoinType();
@@ -114,7 +122,8 @@ public class CorrelatedNestedLoopJoinRule extends RelRule<CorrelatedNestedLoopJo
         RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet rightInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replace(RewindabilityTrait.REWINDABLE);
+            .replace(RewindabilityTrait.REWINDABLE)
+            .replace(corrTrait);
 
         RelNode left = convert(rel.getLeft(), leftInTraits);
         right = convert(right, rightInTraits);

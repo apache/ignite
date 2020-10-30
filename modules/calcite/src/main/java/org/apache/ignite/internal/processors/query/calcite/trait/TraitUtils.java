@@ -37,6 +37,7 @@ import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
@@ -46,6 +47,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
@@ -129,9 +131,20 @@ public class TraitUtils {
         RelTraitSet traits = rel.getTraitSet().replace(toTrait);
         if (fromTrait.getType() == BROADCAST_DISTRIBUTED && toTrait.getType() == HASH_DISTRIBUTED)
             return new IgniteTrimExchange(rel.getCluster(), traits, rel, toTrait);
-        else
-            return new IgniteExchange(rel.getCluster(),
-                traits.replace(RewindabilityTrait.ONE_WAY), RelOptRule.convert(rel, any()), toTrait);
+        else {
+            return new IgniteExchange(
+                rel.getCluster(),
+                traits
+                    .replace(RewindabilityTrait.ONE_WAY)
+                    .replace(CorrelationTrait.UNCORRELATED),
+                RelOptRule.convert(
+                    rel,
+                    rel.getTraitSet()
+                        .replace(any())
+                        .replace(CorrelationTrait.UNCORRELATED)
+                ),
+                toTrait);
+        }
     }
 
     /** */
@@ -142,8 +155,9 @@ public class TraitUtils {
         if (fromTrait.satisfies(toTrait))
             return rel;
 
-        System.out.println("+++ NEED SPOOL");
-        return null; // TODO IndexSpoon
+        RelTraitSet traits = rel.getTraitSet().replace(toTrait);
+
+        return new IgniteIndexSpool(rel.getCluster(), traits, rel, Spool.Type.LAZY);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

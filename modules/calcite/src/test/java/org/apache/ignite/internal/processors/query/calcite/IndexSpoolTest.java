@@ -17,26 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
-import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.cache.query.QueryCancelledException.ERR_MSG;
 
 /**
  * IndexSpool test.
@@ -103,9 +98,12 @@ public class IndexSpoolTest extends GridCommonAbstractTest {
 
         List<FieldsQueryCursor<List<?>>> cursors =
             engine.query(null, "PUBLIC",
-                "EXPLAIN PLAN FOR SELECT T0.val, T1.val FROM TEST0 as T0 " +
+                "SELECT T0.val, T1.val FROM TEST0 as T0 " +
                     "JOIN TEST1 as T1 on T0.jid = T1.jid " +
                     "WHERE T0.val > 'val_10'",
+//                "EXPLAIN PLAN FOR SELECT T0.val, T1.val FROM TEST0 as T0 " +
+//                    "JOIN TEST1 as T1 on T0.jid = T1.jid " +
+//                    "WHERE T0.val > 'val_10'",
                 X.EMPTY_OBJECT_ARRAY);
 
         List<List<?>> res = cursors.get(0).getAll();
