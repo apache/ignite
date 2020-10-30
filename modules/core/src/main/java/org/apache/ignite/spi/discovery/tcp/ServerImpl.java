@@ -3447,7 +3447,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         debugLog(msg, "New next node [newNext=" + newNext + ", formerNext=" + next +
                             ", ring=" + ring + ", failedNodes=" + failedNodes + ']');
 
-                    U.closeQuiet(sock, true);
+                    U.closeQuiet(sock);
 
                     sock = null;
 
@@ -3535,7 +3535,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         next = ring.nextNode(failedNodes);
                                     }
 
-                                    U.closeQuiet(sock, true);
+                                    U.closeQuiet(sock);
 
                                     sock = null;
 
@@ -3556,7 +3556,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     if (log.isDebugEnabled())
                                         log.debug("Handshake response from local node: " + res);
 
-                                    U.closeQuiet(sock, true);
+                                    U.closeQuiet(sock);
 
                                     sock = null;
 
@@ -3661,7 +3661,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     if (log.isDebugEnabled())
                                         log.debug("Closing socket to next: " + next);
 
-                                    U.closeQuiet(sock, true);
+                                    U.closeQuiet(sock);
 
                                     sock = null;
                                 }
@@ -3837,7 +3837,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (log.isDebugEnabled())
                                     log.debug("Closing socket to next (not sent): " + next);
 
-                                U.closeQuiet(sock, true);
+                                U.closeQuiet(sock);
 
                                 sock = null;
 
