@@ -119,7 +119,6 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightCheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.ReservationReason;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CacheDefragmentationContext;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationPageReadWriteManager;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationWorkflowCallback;
@@ -331,9 +330,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Lock for releasing history for preloading. */
     private ReentrantLock releaseHistForPreloadingLock = new ReentrantLock();
-
-    /** */
-    private volatile CacheDefragmentationContext defrgCtx;
 
     /** */
     private CachePartitionDefragmentationManager defrgMgr;
@@ -659,10 +655,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         DataStorageConfiguration dsCfg = kernalCtx.config().getDataStorageConfiguration();
 
         assert CU.isPersistenceEnabled(dsCfg);
-
-        defrgCtx = new CacheDefragmentationContext(
-            cacheGroupIds
-        );
 
         checkpointedDataRegions.remove(
             addDataRegion(
@@ -1467,11 +1459,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     @Override public void checkpointReadUnlock() {
         checkpointManager.checkpointTimeoutLock().checkpointReadUnlock();
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheDefragmentationContext defragmentationContext() {
-        return defrgCtx;
     }
 
     /** {@inheritDoc} */
