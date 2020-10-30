@@ -25,29 +25,29 @@ class ZkDiscoveryNodeLeaveEventData extends ZkDiscoveryEventData {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private long leavedNodeInternalId;
+    private final long leftNodeInternalId;
 
     /** */
-    private boolean failed = false;
+    private final boolean failed;
 
     /**
      * @param evtId Event ID.
      * @param topVer Topology version.
-     * @param leavedNodeInternalId Failed node ID.
+     * @param leftNodeInternalId Failed node ID.
      */
-    ZkDiscoveryNodeLeaveEventData(long evtId, long topVer, long leavedNodeInternalId) {
-       this(evtId, topVer, leavedNodeInternalId, false);
+    ZkDiscoveryNodeLeaveEventData(long evtId, long topVer, long leftNodeInternalId) {
+       this(evtId, topVer, leftNodeInternalId, false);
     }
 
     /**
      * @param evtId Event ID.
      * @param topVer Topology version.
-     * @param leavedNodeInternalId Left node ID.
+     * @param leftNodeInternalId Left node ID.
      */
-    ZkDiscoveryNodeLeaveEventData(long evtId, long topVer, long leavedNodeInternalId, boolean failed) {
+    ZkDiscoveryNodeLeaveEventData(long evtId, long topVer, long leftNodeInternalId, boolean failed) {
         super(evtId, ZK_EVT_NODE_LEFT, topVer);
 
-        this.leavedNodeInternalId = leavedNodeInternalId;
+        this.leftNodeInternalId = leftNodeInternalId;
 
         this.failed = failed;
     }
@@ -55,8 +55,8 @@ class ZkDiscoveryNodeLeaveEventData extends ZkDiscoveryEventData {
     /**
      * @return Left node ID.
      */
-    long leavedNodeInternalId() {
-        return leavedNodeInternalId;
+    long leftNodeInternalId() {
+        return leftNodeInternalId;
     }
 
     /**
@@ -72,7 +72,7 @@ class ZkDiscoveryNodeLeaveEventData extends ZkDiscoveryEventData {
         return "ZkDiscoveryNodeLeaveEventData [" +
             "evtId=" + eventId() +
             ", topVer=" + topologyVersion() +
-            ", nodeId=" + leavedNodeInternalId +
+            ", nodeId=" + leftNodeInternalId +
             ", failed=" + failed + ']';
     }
 }

@@ -97,7 +97,7 @@ public class ZkIgnitePaths {
      * @return Full path.
      */
     private String zkPath(String path) {
-        return clusterDir + "/" + path;
+        return join(clusterDir, path);
     }
 
     /**
@@ -106,7 +106,7 @@ public class ZkIgnitePaths {
      * @return Path.
      */
     String joiningNodeDataPath(UUID nodeId, UUID prefixId) {
-        return joinDataDir + '/' + prefixId + ":" + nodeId.toString();
+        return join(joinDataDir, prefixId + ":" + nodeId.toString());
     }
 
     /**
@@ -130,7 +130,7 @@ public class ZkIgnitePaths {
         if (node.isClient())
             flags |= CLIENT_NODE_FLAG_MASK;
 
-        return aliveNodesDir + "/" + prefix + ":" + node.id() + ":" + encodeFlags(flags) + "|";
+        return join(aliveNodesDir, prefix + ":" + node.id() + ":" + encodeFlags(flags) + "|");
     }
 
     /**
@@ -169,7 +169,7 @@ public class ZkIgnitePaths {
     String nodeStoppedFlag(ZookeeperClusterNode node) {
         String path = node.id().toString() + '|' + node.internalId();
 
-        return String.join(PATH_SEPARATOR, stoppedNodesFlagsDir, path);
+        return join(stoppedNodesFlagsDir, path);
     }
 
     /**
@@ -239,7 +239,7 @@ public class ZkIgnitePaths {
      * @return Path.
      */
     String createCustomEventPath(String prefix, UUID nodeId, int partCnt) {
-        return customEvtsDir + "/" + prefix + ":" + nodeId + ":" + String.format("%04d", partCnt) + '|';
+        return join(customEvtsDir, prefix + ":" + nodeId + ":" + String.format("%04d", partCnt) + '|');
     }
 
     /**
@@ -248,7 +248,7 @@ public class ZkIgnitePaths {
      * @return Path.
      */
     String customEventPartsBasePath(String prefix, UUID nodeId) {
-        return customEvtsPartsDir + "/" + prefix + ":" + nodeId + ":";
+        return join(customEvtsPartsDir, prefix + ":" + nodeId + ":");
     }
 
     /**
@@ -266,7 +266,7 @@ public class ZkIgnitePaths {
      * @return Event zk path.
      */
     String joinEventDataPathForJoined(long evtId) {
-        return evtsPath + "/fj-" + evtId;
+        return join(evtsPath,"fj-" + evtId);
     }
 
     /**
@@ -274,7 +274,7 @@ public class ZkIgnitePaths {
      * @return Event zk path.
      */
     String joinEventSecuritySubjectPath(long topVer) {
-        return evtsPath + "/s-" + topVer;
+        return join(evtsPath, "s-" + topVer);
     }
 
     /**
@@ -284,7 +284,7 @@ public class ZkIgnitePaths {
     String ackEventDataPath(long origEvtId) {
         assert origEvtId != 0;
 
-        return customEvtsAcksDir + "/" + String.valueOf(origEvtId);
+        return join(customEvtsAcksDir, String.valueOf(origEvtId));
     }
 
     /**
@@ -292,7 +292,7 @@ public class ZkIgnitePaths {
      * @return Future path.
      */
     String distributedFutureBasePath(UUID id) {
-        return evtsPath + "/f-" + id;
+        return join(evtsPath, "f-" + id);
     }
 
     /**
@@ -300,7 +300,7 @@ public class ZkIgnitePaths {
      * @return Future path.
      */
     String distributedFutureResultPath(UUID id) {
-        return evtsPath + "/fr-" + id;
+        return join(evtsPath, "fr-" + id);
     }
 
     /**
@@ -330,6 +330,14 @@ public class ZkIgnitePaths {
         String flagsStr = path.substring(startIdx, startIdx + 2);
 
         return (byte)(Integer.parseInt(flagsStr, 16) - 128);
+    }
+
+    /**
+     * @param paths Paths to join.
+     * @return Paths joined with separator.
+     */
+    public static String join(String... paths) {
+        return String.join(PATH_SEPARATOR, paths);
     }
 
     /**
