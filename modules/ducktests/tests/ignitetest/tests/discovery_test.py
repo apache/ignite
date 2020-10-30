@@ -71,7 +71,7 @@ class DiscoveryTest(IgniteTest):
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
-    NUM_NODES = 5
+    NUM_NODES = 9
 
     DATA_AMOUNT = 5_000_000
 

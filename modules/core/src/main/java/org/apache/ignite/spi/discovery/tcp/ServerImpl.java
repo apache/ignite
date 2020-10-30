@@ -3508,19 +3508,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (changeTop)
                                     hndMsg.changeTopology(ring.previousNodeOf(next).id());
 
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Sending handshake [" + hndMsg + "] with timeout " +
-                                        timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()) + ", sndState=[" +
-                                        sndState + ']');
-                                }
+                                if (log.isDebugEnabled())
+                                    log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState + ']');
 
                                 spi.writeToSocket(sock, out, hndMsg,
                                     timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
-
-                                if (log.isTraceEnabled()) {
-                                    log.trace("Reading handshake response for [" + hndMsg + "] with timeout " +
-                                        timeoutHelper.nextTimeoutChunk(ackTimeout0) + ']');
-                                }
 
                                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null,
                                     timeoutHelper.nextTimeoutChunk(ackTimeout0));
@@ -3612,7 +3604,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         }
                                     }
 
-                                    updateLastSentMessageTime(msg);
+                                    updateLastSentMessageTime();
 
                                     if (log.isDebugEnabled())
                                         log.debug("Initialized connection with next node: " + next.id());
@@ -3714,11 +3706,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     if (timeoutHelper == null)
                                         timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
 
-                                    if (log.isTraceEnabled()) {
-                                        log.trace("Sending pending message [" + pendingMsg + "] with timeout " +
-                                            timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()) + '.');
-                                    }
-
                                     try {
                                         spi.writeToSocket(sock, out, pendingMsg, timeoutHelper.nextTimeoutChunk(
                                             spi.getSocketTimeout()));
@@ -3729,14 +3716,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                     long tsNanos0 = System.nanoTime();
 
-                                    if (log.isTraceEnabled()) {
-                                        log.trace("Reading receipt for pending message [" + pendingMsg +
-                                            "] with timeout " + timeoutHelper.nextTimeoutChunk(ackTimeout0) + '.');
-                                    }
-
                                     int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
-                                    updateLastSentMessageTime(pendingMsg);
+                                    updateLastSentMessageTime();
 
                                     spi.stats.onMessageSent(pendingMsg, U.nanosToMillis(tsNanos0 - tsNanos));
 
@@ -3775,11 +3757,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (latencyCheck && log.isInfoEnabled())
                                     log.info("Latency check message has been written to socket: " + msg.id());
 
-                                if (log.isTraceEnabled()) {
-                                    log.trace("Sending [" + msg + "] to " + U.toShortString(next) +
-                                        " with timeout " + timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()) + ']');
-                                }
-
                                 spi.writeToSocket(newNextNode ? newNext : next,
                                     sock,
                                     out,
@@ -3788,14 +3765,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 long tsNanos0 = System.nanoTime();
 
-                                if (log.isTraceEnabled()) {
-                                    log.trace("Reading receipt for [" + msg + "] from " + U.toShortString(next) +
-                                        " with timeout " + timeoutHelper.nextTimeoutChunk(ackTimeout0) + ']');
-                                }
-
                                 int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
-                                updateLastSentMessageTime(msg);
+                                updateLastSentMessageTime();
 
                                 if (latencyCheck && log.isInfoEnabled())
                                     log.info("Latency check message has been acked: " + msg.id());
@@ -3836,44 +3808,25 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             errs.add(e);
 
-                            if (log.isDebugEnabled()) {
-                                U.error(log, "Failed to send message to next node [next=" + next.id() +
-                                    ", msg=" + msg + ", err=" + e + ']', e);
-                            }
+                            if (log.isDebugEnabled())
+                                U.error(log, "Failed to send message to next node [next=" + next.id() + ", msg=" + msg +
+                                    ", err=" + e + ']', e);
 
                             onException("Failed to send message to next node [next=" + next.id() + ", msg=" + msg + ']',
                                 e);
 
-                            if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e)) {
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Failure detection timeout has been reached: " +
-                                        spi.failureDetectionTimeout());
-                                }
-
+                            if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e))
                                 break;
-                            }
 
                             if (!spi.failureDetectionTimeoutEnabled()) {
-                                if (++reconCnt == spi.getReconnectCount()) {
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("Maximum reconnection number has been reached: " +
-                                            spi.getReconnectCount());
-                                    }
-
+                                if (++reconCnt == spi.getReconnectCount())
                                     break;
-                                }
                                 else if (e instanceof SocketTimeoutException ||
                                     X.hasCause(e, SocketTimeoutException.class)) {
                                     ackTimeout0 *= 2;
 
-                                    if (!checkAckTimeout(ackTimeout0)) {
-                                        if (log.isDebugEnabled()) {
-                                            log.debug("Maximum ack tmeout has been reached: " +
-                                                spi.getMaxAckTimeout());
-                                        }
-
+                                    if (!checkAckTimeout(ackTimeout0))
                                         break;
-                                    }
                                 }
                             }
                         }
@@ -3897,22 +3850,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    Exception err = errs != null ?
-                        U.exceptionWithSuppressed("Failed to send message to next node [msg=" + msg +
-                            ", next=" + U.toShortString(next) + ']', errs) :
-                        null;
-
-                    // If node existed on connection initialization we should check
-                    // whether it has not gone yet.
-                    U.warn(log, "Failed to send message to next node [msg=" + msg + ", next=" + next +
-                        ", errMsg=" + (err != null ? err.getMessage() : "N/A") + ']');
-
-                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
+                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
                         sndState = new CrossRingMessageSendState();
-
-                        if (log.isDebugEnabled())
-                            log.debug("Initialized send state for first fail to send the message: " + state);
-                    }
                     else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
@@ -3922,10 +3861,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                     boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
 
                     if (failedNextNode && !failedNodes.contains(next)) {
-                        if (log.isDebugEnabled())
-                            log.debug("Marking next node [" + U.toShortString(next) + "] as failed.");
-
                         failedNodes.add(next);
+
+                        if (state == CONNECTED) {
+                            Exception err = errs != null ?
+                                U.exceptionWithSuppressed("Failed to send message to next node [msg=" + msg +
+                                    ", next=" + U.toShortString(next) + ']', errs) :
+                                null;
+
+                            // If node existed on connection initialization we should check
+                            // whether it has not gone yet.
+                            U.warn(log, "Failed to send message to next node [msg=" + msg + ", next=" + next +
+                                ", errMsg=" + (err != null ? err.getMessage() : "N/A") + ']');
+                        }
                     }
                     else if (!failedNextNode && sndState != null && sndState.isBackward()) {
                         boolean prev = sndState.markLastFailedNodeAlive();
@@ -3939,9 +3887,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             newNextNode = false;
 
                             next = ring.nextNode(failedNodes);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Trying new next node: " + U.toShortString(next));
                         }
                     }
 
@@ -4096,9 +4041,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             assert msg != null;
 
             if (spi.ensured(msg)) {
-                if (log.isTraceEnabled())
-                    log.trace("Registering pending message: " + msg);
-
                 pendingMsgs.add(msg);
 
                 spi.stats.onPendingMessageRegistered();
@@ -6603,11 +6545,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** Fixates time of last sent message. */
-    private void updateLastSentMessageTime(TcpDiscoveryAbstractMessage msg) {
+    private void updateLastSentMessageTime() {
         lastRingMsgSentTime = System.nanoTime();
-
-        if (log.isTraceEnabled())
-            log.trace("Updated message sent time for message [" + msg + "].");
     }
 
     /** Thread that executes {@link TcpServer}'s code. */
@@ -8309,9 +8248,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         boolean checkTimeout() {
             if (System.nanoTime() >= failTimeNanos) {
                 state = RingMessageSendState.FAILED;
-
-                if (log.isDebugEnabled())
-                    log.debug("Reconnect/resend timeout has been reached. Send state: " + this);
 
                 return true;
             }
