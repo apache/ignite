@@ -49,7 +49,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         # Force eager SSH client creation.
         for node in self.nodes:
-            node.account.ssh("/bin/true")
+            _ = node.account.ssh_client
 
     def start_node(self, node):
         self.init_persistent(node)
