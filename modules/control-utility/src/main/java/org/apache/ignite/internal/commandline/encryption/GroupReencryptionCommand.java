@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline.encryption;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.encryption.VisorGroupReencryptionActionType;
 import org.apache.ignite.internal.visor.encryption.VisorGroupReencryptionTask;
@@ -145,13 +147,18 @@ public class GroupReencryptionCommand implements Command<VisorGroupReencryptionT
         ReencryptionCommandArg cmdArg = ReencryptionCommandArg.STATUS;
         String grpName = argIter.nextArg("Сache group name is expected.");
 
-        while (argIter.hasNextSubArg()) {
+        if (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg("Failed to read command argument.");
 
             cmdArg = CommandArgUtils.of(arg, ReencryptionCommandArg.class);
 
             if (cmdArg == null)
                 throw new IllegalArgumentException("Unexpected command argument: " + arg);
+
+            if (argIter.hasNextSubArg()) {
+                throw new IllegalArgumentException("Only one of the following options is expected: " +
+                    GridFunc.concat(Arrays.asList(ReencryptionCommandArg.values()), ", "));
+            }
         }
 
         taskArg = new VisorGroupReencryptionTaskArg(grpName, VisorGroupReencryptionActionType.valueOf(cmdArg.name()));
@@ -160,9 +167,9 @@ public class GroupReencryptionCommand implements Command<VisorGroupReencryptionT
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
         Command.usage(log, "Control the process of re-encryption of the cache group:", CommandList.ENCRYPTION,
-            U.map("--status", "Display re-encryption status.",
-                "--suspend", "Suspend re-encryption.",
-                "--resume", "Resume re-encryption."),
+            U.map(ReencryptionCommandArg.STATUS.argName(), "Display re-encryption status (default action).",
+                ReencryptionCommandArg.SUSPEND.argName(), "Suspend re-encryption.",
+                ReencryptionCommandArg.RESUME.argName(), "Resume re-encryption."),
             EncryptionSubcommands.GROUP_REENCRYPTION.toString(), "cacheGroupName",
             optional(ReencryptionCommandArg.STATUS, ReencryptionCommandArg.SUSPEND, ReencryptionCommandArg.RESUME));
     }

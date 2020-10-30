@@ -81,7 +81,7 @@ This utility can do the following commands:
     control.(sh|bat) --encryption group_reencryption cacheGroupName [--status --suspend --resume]
 
     Parameters:
-      --status   - Display re-encryption status.
+      --status   - Display re-encryption status (default action).
       --suspend  - Suspend re-encryption.
       --resume   - Resume re-encryption.
 
