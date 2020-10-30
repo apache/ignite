@@ -48,7 +48,7 @@ public class EncryptionCommands extends AbstractCommand<Object> {
         cmd.subcommand().parseArguments(argIter);
 
         if (argIter.hasNextSubArg())
-            throw new IllegalArgumentException("Unexpected argument of --encryptiopn subcommand: " + argIter.peekNextArg());
+            throw new IllegalArgumentException("Unexpected argument of --encryption subcommand: " + argIter.peekNextArg());
 
         this.cmd = cmd;
     }

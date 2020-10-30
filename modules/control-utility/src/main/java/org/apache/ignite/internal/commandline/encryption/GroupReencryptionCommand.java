@@ -143,7 +143,7 @@ public class GroupReencryptionCommand implements Command<VisorGroupReencryptionT
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         ReencryptionCommandArg cmdArg = ReencryptionCommandArg.STATUS;
-        String grpName = argIter.nextArg("Expected cache group name.");
+        String grpName = argIter.nextArg("Сache group name is expected.");
 
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg("Failed to read command argument.");
@@ -169,7 +169,7 @@ public class GroupReencryptionCommand implements Command<VisorGroupReencryptionT
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return EncryptionSubcommands.GROUP_REENCRYPTION.name();
+        return EncryptionSubcommands.GROUP_REENCRYPTION.text().toUpperCase();
     }
 
     /**

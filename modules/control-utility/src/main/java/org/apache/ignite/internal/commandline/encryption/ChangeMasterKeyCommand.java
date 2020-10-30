@@ -82,6 +82,6 @@ public class ChangeMasterKeyCommand implements Command<String> {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return CHANGE_MASTER_KEY.name();
+        return CHANGE_MASTER_KEY.text().toUpperCase();
     }
 }

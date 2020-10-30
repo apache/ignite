@@ -48,22 +48,29 @@ public enum EncryptionSubcommands {
     private final String name;
 
     /** Command. */
-    private final Command command;
+    private final Command<?> cmd;
 
     /**
      * @param name Encryption subcommand name.
-     * @param command Command implementation.
+     * @param cmd Command implementation.
      */
-    EncryptionSubcommands(String name, Command command) {
+    EncryptionSubcommands(String name, Command<?> cmd) {
         this.name = name;
-        this.command = command;
+        this.cmd = cmd;
+    }
+
+    /**
+     * @return Name.
+     */
+    public String text() {
+        return name;
     }
 
     /**
      * @return Cache subcommand implementation.
      */
-    public Command subcommand() {
-        return command;
+    public Command<?> subcommand() {
+        return cmd;
     }
 
     /**

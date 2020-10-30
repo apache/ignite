@@ -56,20 +56,18 @@ public class CacheGroupKeysCommand implements Command<String> {
 
             log.info("Encryption key identifiers for cache: " + argCacheGrpName);
 
-            for (Map.Entry<UUID, List<Integer>> entry : keyIdsMap.entrySet()) {
-                log.info(INDENT + "Node: " + entry.getKey());
-
-                List<Integer> keyIds = entry.getValue();
+            keyIdsMap.forEach((nodeId, keyIds) -> {
+                log.info(INDENT + "Node: " + nodeId);
 
                 if (F.isEmpty(keyIds)) {
                     log.info(DOUBLE_INDENT + "---");
 
-                    continue;
+                    return;
                 }
 
                 for (int i = 0; i < keyIds.size(); i++)
                     log.info(DOUBLE_INDENT + keyIds.get(i) + (i == 0 ? " (active)" : ""));
-            }
+            });
 
             return keyIdsMap;
         }
@@ -88,7 +86,7 @@ public class CacheGroupKeysCommand implements Command<String> {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        argCacheGrpName = argIter.nextArg("Expected cache group name.");
+        argCacheGrpName = argIter.nextArg("Сache group name is expected.");
     }
 
     /** {@inheritDoc} */
@@ -99,6 +97,6 @@ public class CacheGroupKeysCommand implements Command<String> {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return CACHE_GROUP_KEY_IDS.name();
+        return CACHE_GROUP_KEY_IDS.text().toUpperCase();
     }
 }

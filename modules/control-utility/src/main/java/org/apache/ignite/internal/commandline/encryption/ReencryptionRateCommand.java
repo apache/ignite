@@ -128,7 +128,7 @@ public class ReencryptionRateCommand implements Command<Double> {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return REENCRYPTION_RATE.name();
+        return REENCRYPTION_RATE.text().toUpperCase();
     }
 
     /**

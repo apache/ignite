@@ -67,6 +67,6 @@ public class GetMasterKeyNameCommand implements Command<Void> {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return GET_MASTER_KEY_NAME.name();
+        return GET_MASTER_KEY_NAME.text().toUpperCase();
     }
 }

@@ -72,7 +72,7 @@ public class ChangeCacheGroupKeyCommand implements Command<String> {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        argCacheGrpName = argIter.nextArg("Expected cache group name.");
+        argCacheGrpName = argIter.nextArg("Сache group name is expected.");
     }
 
     /** {@inheritDoc} */
@@ -83,6 +83,6 @@ public class ChangeCacheGroupKeyCommand implements Command<String> {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return CHANGE_CACHE_GROUP_KEY.name();
+        return CHANGE_CACHE_GROUP_KEY.text().toUpperCase();
     }
 }
