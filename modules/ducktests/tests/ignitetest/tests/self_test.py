@@ -16,9 +16,9 @@
 """
 This module contains smoke tests that checks that ducktape works as expected
 """
-import operator
 import threading
 import time
+from collections import namedtuple
 
 from ducktape.mark.resource import cluster
 from ducktape.services.background_thread import BackgroundThreadService
@@ -64,20 +64,27 @@ class SelfTest(IgniteTest):
         """
 
         service = GetTimeService(self.test_context, self.test_context.cluster.num_available_nodes())
-        service.start()
-        service.wait(10)
 
-        service.clocks.sort(key=operator.itemgetter(1))
+        spreads = []
+        for _ in range(10):
+            service.reset()
+            service.start()
+            service.wait(10)
 
-        for _ in service.clocks:
-            self.logger.info("NodeClock[%s] = %d" % (_[0], _[1]))
+            for clock in service.clocks:
+                self.logger.info("NodeClock[%s] = %.3f" % (clock.name, clock.ts))
 
-        max_clock_spread_ms = 100
-        min_res = service.clocks[0]
-        max_res = service.clocks[-1]
-        assert max_res[1] - min_res[1] < max_clock_spread_ms, \
-            "Clock difference between %s (%d) and %s (%d) exceeds %d ms." \
-            % (min_res[0], min_res[1], max_res[0], max_res[1], max_clock_spread_ms)
+            service.clocks.sort(key=lambda x: x.ts)
+            spreads.append((service.clocks[0], service.clocks[-1]))
+
+        def dist(pair):
+            return abs(pair[0].ts - pair[1].ts)
+
+        worst_pair = max(spreads, key=dist)
+        max_clock_spread_sec = 0.1
+        assert dist(worst_pair) < max_clock_spread_sec, \
+            "Clock difference between %s (%.3f) and %s (%.3f) exceeds %.3f s." \
+            % (worst_pair[0].name, worst_pair[0].ts, worst_pair[1].name, worst_pair[1].ts, max_clock_spread_sec)
 
 
 class GetTimeService(BackgroundThreadService):
@@ -87,23 +94,31 @@ class GetTimeService(BackgroundThreadService):
 
     def __init__(self, context, num_nodes):
         super().__init__(context, num_nodes)
-        self.start_barrier = threading.Barrier(num_nodes)
         self.clocks = []
+        self.start_barrier = threading.Barrier(self.num_nodes)
+
+    def reset(self):
+        """
+        Reset service so that in could be invoked once again.
+        """
+
+        self.clocks.clear()
+        self.start_barrier.reset()
 
     def _worker(self, _, node):
         node.account.ssh("/bin/true")
 
         self.start_barrier.wait(1)
         start = time.time()
-        delay = 5
 
         # Using ssh_capture instead of ssh_output to get output ASAP.
-        output = node.account.ssh_capture("sleep %d && date +%%s.%%3N" % delay)
+        output = node.account.ssh_capture("date +%s.%3N")
         node_ts = float(output.next())
 
         # Assumption: ssh connection establishment takes much more time than command output transmission.
-        correction = time.time() - start - delay
-        self.clocks.append((node.name, node_ts - correction))  # list is thread-safe
+        correction = time.time() - start
+        NodeTime = namedtuple("NodeTime", ["name", "ts"])
+        self.clocks.append(NodeTime(node.name, node_ts - correction))  # list is thread-safe
 
     def stop_node(self, node):
         pass
