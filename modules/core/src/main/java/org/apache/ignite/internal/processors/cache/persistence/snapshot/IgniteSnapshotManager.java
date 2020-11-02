@@ -47,21 +47,17 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
@@ -705,7 +701,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
         IgniteInternalFuture<Collection<Object>> fut0 = cctx.kernalContext().closure()
-                .broadcast(new StatusSnapshotCallable(),
+                .broadcast(new StatusSnapshotClosure(),
                         null,
                         cctx.discovery().aliveServerNodes(),
                         null);
@@ -1472,7 +1468,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Get the status of a cluster snapshot operation. */
     @GridInternal
-    private static class StatusSnapshotCallable implements IgniteClosure<Void, Object> {
+    private static class StatusSnapshotClosure implements IgniteClosure<Void, Object> {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 
@@ -1481,7 +1477,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private transient IgniteEx ignite;
 
         /** */
-        public StatusSnapshotCallable() {
+        public StatusSnapshotClosure() {
         }
 
         /** {@inheritDoc} */

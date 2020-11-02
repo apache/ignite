@@ -31,7 +31,7 @@ public enum SnapshotSubcommand {
     /** Sub-command to cancel running snapshot. */
     CANCEL("cancel"),
 
-    /** Sub-command to get snapshot status. */
+    /** Sub-command to get Collection of Consistent ID's where the snapshot operation is in progress. */
     STATUS("status");
 
     /** Sub-command name. */

@@ -24,9 +24,9 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
+import org.apache.ignite.internal.visor.snapshot.SnapshotStatusTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
 import static java.util.Collections.singletonMap;
@@ -61,8 +61,7 @@ public class SnapshotCommand implements Command<Object> {
                     clientCfg
             );
 
-            if (taskName.equals(VisorSnapshotStatusTask.class.getName()))
-                log.info(String.valueOf(res));
+            log.info(String.valueOf(res));
 
             return res;
         }
@@ -100,7 +99,7 @@ public class SnapshotCommand implements Command<Object> {
                 break;
 
             case STATUS:
-                taskName = VisorSnapshotStatusTask.class.getName();
+                taskName = SnapshotStatusTask.class.getName();
                 taskArgs = null;
 
                 break;

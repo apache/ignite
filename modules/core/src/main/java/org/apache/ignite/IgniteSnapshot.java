@@ -52,6 +52,7 @@ public interface IgniteSnapshot {
 
     /**
      * Status snapshot operation.
+     * Checks if running snapshot operations exist on nodes.
      *
      * @return Сollection of Consistent ID's where the snapshot operation is in progress.
      */

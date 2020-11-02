@@ -54,14 +54,14 @@ public class VisorSnapshotStatusTask extends VisorOneNodeTask<Void, String> {
 
         /** {@inheritDoc} */
         @Override protected String run(Void arg) throws IgniteException {
-            Set<Object> ids = ignite.context().cache().context().snapshotMgr().statusSnapshot().get().stream()
+            Set<Object> ids = ignite.snapshot().statusSnapshot().get().stream()
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
 
             if (ids.isEmpty())
                 return "No snapshot operations.";
 
-            StringBuilder sb = new StringBuilder("чSnapshot operation in progress on nodes with Consistent ID:");
+            StringBuilder sb = new StringBuilder("Snapshot operation in progress on nodes with Consistent ID:");
 
             ids.stream()
                     .map(String::valueOf)

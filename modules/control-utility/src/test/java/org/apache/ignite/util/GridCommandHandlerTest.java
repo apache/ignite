@@ -2317,6 +2317,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertTrue(h.getLastOperationResult().toString()
                 .contains("Snapshot operation in progress on nodes with Consistent ID:"));
 
+        assertTrue(h.getLastOperationResult().toString()
+                .contains(ig.context().discovery().localNode().consistentId().toString()));
+
         assertTrue("Waiting for snapshot operation end failed.",
                 waitForCondition(() ->
                                 ig.context().metric().registry(SNAPSHOT_METRICS)
