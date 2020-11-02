@@ -130,7 +130,7 @@
                         </goals>
                         <configuration>
                             <excludeGroupIds>org.gridgain</excludeGroupIds>
-                            <outputDirectory>target/libs/optional</outputDirectory>
+                            <outputDirectory>target/libs</outputDirectory>
                             <includeScope>runtime</includeScope>
                             <excludeTransitive>false</excludeTransitive>
                         </configuration>
