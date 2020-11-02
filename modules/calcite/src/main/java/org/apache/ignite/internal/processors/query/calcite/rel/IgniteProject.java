@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import com.google.common.collect.ImmutableList;
+import java.util.Set;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -32,19 +34,26 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.hash;
@@ -189,6 +198,27 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
             TraitUtils.collation(in), getProjects(), getInput().getRowType());
 
         return ImmutableList.of(Pair.of(nodeTraits.replace(collation), ImmutableList.of(in)));
+    }
+
+    /** */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        if (RexUtils.hasCorrelation(getProjects()))
+            return ImmutableList.of();
+
+        return ImmutableList.of(Pair.of(nodeTraits,
+            ImmutableList.of(inTraits.get(0).replace(TraitUtils.correlation(nodeTraits)))));
+    }
+
+    /** */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(getProjects());
+
+        corrIds.addAll(TraitUtils.correlation(inTraits.get(0)).correlationIds());
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)),
+            inTraits));
     }
 
     /** {@inheritDoc} */

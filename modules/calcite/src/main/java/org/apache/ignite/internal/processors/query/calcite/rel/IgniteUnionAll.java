@@ -27,9 +27,11 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -131,5 +133,29 @@ public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
 
         return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
             Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY))));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+
+        if (TraitUtils.correlation(nodeTraits).correlated())
+            return ImmutableList.of();
+
+        return ImmutableList.of(Pair.of(nodeTraits,
+            Commons.transform(inTraits, t -> t.replace(CorrelationTrait.UNCORRELATED))));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+
+        Set<CorrelationId> correlationIds = inTraits.stream()
+            .map(TraitUtils::correlation)
+            .flatMap(corrTr -> corrTr.correlationIds().stream())
+            .collect(Collectors.toSet());
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(correlationIds)),
+            inTraits));
     }
 }

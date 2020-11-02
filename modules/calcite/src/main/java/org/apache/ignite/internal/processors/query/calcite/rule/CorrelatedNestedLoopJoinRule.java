@@ -42,6 +42,7 @@ import org.apache.calcite.util.ImmutableBeans;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 
 /** */
@@ -120,7 +121,7 @@ public class CorrelatedNestedLoopJoinRule extends RelRule<CorrelatedNestedLoopJo
         RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
 
-        CorrelationTrait corrTrait = new CorrelationTrait(correlationIds);
+        CorrelationTrait corrTrait = CorrelationTraitDef.INSTANCE.canonize(new CorrelationTrait(correlationIds));
         RelTraitSet rightInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replace(RewindabilityTrait.REWINDABLE)
             .replace(corrTrait);

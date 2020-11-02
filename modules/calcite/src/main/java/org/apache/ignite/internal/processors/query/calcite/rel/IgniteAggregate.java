@@ -246,6 +246,20 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
     }
 
     /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        return ImmutableList.of(Pair.of(nodeTraits,
+            ImmutableList.of(inTraits.get(0).replace(TraitUtils.correlation(nodeTraits)))));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.correlation(inTraits.get(0))),
+            inTraits));
+    }
+
+    /** {@inheritDoc} */
     @Override public @NotNull RelNode createNode(RelTraitSet outTraits, List<RelTraitSet> inTraits) {
         RelTraitSet in = inTraits.get(0);
 

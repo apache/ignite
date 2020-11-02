@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.List;
-import java.util.Set;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -34,6 +35,7 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -85,6 +87,7 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
         return visitor.visit(this);
     }
 
+    /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // We preserve left edge collation only if batch size == 1
         if (variablesSet.size() == 1)
@@ -108,6 +111,7 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
             ImmutableList.of(left, right.replace(RewindabilityTrait.REWINDABLE))));
     }
 
+    /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // We preserve left edge collation only if batch size == 1
         if (variablesSet.size() == 1)
@@ -135,5 +139,38 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         // Give it some penalty
         return super.computeSelfCost(planner, mq).multiplyBy(5);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        if (TraitUtils.correlation(nodeTraits).correlated())
+            return ImmutableList.of();
+
+        return ImmutableList.of(Pair.of(nodeTraits,
+            ImmutableList.of(
+                inTraits.get(0).replace(CorrelationTrait.UNCORRELATED),
+                inTraits.get(1).replace(CorrelationTrait.correlations(variablesSet))
+            )
+        ));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        Set<CorrelationId> rightCorrIds = TraitUtils.correlation(inTraits.get(1)).correlationIds();
+
+        if (!rightCorrIds.containsAll(variablesSet))
+            return ImmutableList.of();
+
+        Set<CorrelationId> corrIds = new HashSet<>(rightCorrIds);
+
+        // Left + right
+        corrIds.addAll(TraitUtils.correlation(inTraits.get(0)).correlationIds());
+
+        corrIds.removeAll(variablesSet);
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)),
+            inTraits));
     }
 }

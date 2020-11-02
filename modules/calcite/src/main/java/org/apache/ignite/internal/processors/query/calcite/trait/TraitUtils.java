@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
@@ -46,7 +46,6 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -368,6 +367,7 @@ public class TraitUtils {
             .propagate(rel::passThroughCollation)
             .propagate(rel::passThroughDistribution)
             .propagate(rel::passThroughRewindability)
+            .propagate(rel::passThroughCorrelation)
             .nodes(rel::createNode);
 
         if (nodes.isEmpty())
@@ -390,6 +390,7 @@ public class TraitUtils {
             .propagate(rel::deriveCollation)
             .propagate(rel::deriveDistribution)
             .propagate(rel::deriveRewindability)
+            .propagate(rel::deriveCorrelation)
             .nodes(rel::createNode);
     }
 

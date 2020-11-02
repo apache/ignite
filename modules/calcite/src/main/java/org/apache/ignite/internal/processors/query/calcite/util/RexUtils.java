@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,10 +34,12 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.rex.RexFieldAccess;
@@ -47,10 +51,13 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.rex.RexVisitor;
+import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
@@ -392,6 +399,51 @@ public class RexUtils {
 
     public static RexNode replaceInputRefs(RexNode node) {
         return InputRefReplacer.INSTANCE.apply(node);
+    }
+
+    /** */
+    public static boolean hasCorrelation(RexNode node) {
+        return hasCorrelation(Collections.singletonList(node));
+    }
+
+    /** */
+    public static boolean hasCorrelation(List<RexNode> nodes) {
+        try {
+            RexVisitor<Void> v = new RexVisitorImpl<Void>(true) {
+                @Override public Void visitCorrelVariable(RexCorrelVariable correlVariable) {
+                    throw new ControlFlowException();
+                }
+            };
+
+            nodes.forEach(n -> n.accept(v));
+
+            return false;
+        }
+        catch (ControlFlowException e) {
+            return true;
+        }
+    }
+
+    /** */
+    public static Set<CorrelationId> extractCorrelationIds(RexNode node) {
+        return extractCorrelationIds(Collections.singletonList(node));
+    }
+
+    /** */
+    public static Set<CorrelationId> extractCorrelationIds(List<RexNode> nodes) {
+        final Set<CorrelationId> cors = new HashSet<>();
+
+        RexVisitor<Void> v = new RexVisitorImpl<Void>(true) {
+            @Override public Void visitCorrelVariable(RexCorrelVariable correlVariable) {
+                cors.add(correlVariable.id);
+
+                return null;
+            }
+        };
+
+        nodes.forEach(rex -> rex.accept(v));
+
+        return cors;
     }
 
     /** Visitor for replacing scan local refs to input refs. */

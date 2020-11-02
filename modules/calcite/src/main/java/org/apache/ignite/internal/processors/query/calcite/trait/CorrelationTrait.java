@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
@@ -36,7 +37,7 @@ public class CorrelationTrait implements RelTrait {
 
     /** */
     public CorrelationTrait(Collection<CorrelationId> correlationIds) {
-        correlations = ImmutableSet.<CorrelationId>builder().addAll(correlationIds).build();
+        correlations = ImmutableSet.copyOf(correlationIds);
     }
 
     /** */
@@ -83,5 +84,15 @@ public class CorrelationTrait implements RelTrait {
     /** */
     private static CorrelationTrait canonize(CorrelationTrait trait) {
         return CorrelationTraitDef.INSTANCE.canonize(trait);
+    }
+
+    /** */
+    public Set<CorrelationId> correlationIds() {
+        return correlations;
+    }
+
+    /** */
+    public static CorrelationTrait correlations(Collection<CorrelationId> correlationIds) {
+        return canonize(new CorrelationTrait(correlationIds));
     }
 }
