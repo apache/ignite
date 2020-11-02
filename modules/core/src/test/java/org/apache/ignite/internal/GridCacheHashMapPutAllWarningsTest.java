@@ -82,7 +82,8 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGrid(0);
 
-        IgniteCache<Integer, String> c = ignite.getOrCreateCache(new CacheConfiguration<>("exact"));
+        IgniteCache<Integer, String> c = ignite.getOrCreateCache(new CacheConfiguration<Integer, String>("exact")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         HashMap<Integer, String> m = new HashMap<>();
 
@@ -162,7 +163,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid(0);
 
         IgniteCache<Integer, String> c = ignite.getOrCreateCache(new CacheConfiguration<Integer, String>("invoke")
-            .setCacheMode(CacheMode.LOCAL));
+            .setCacheMode(CacheMode.LOCAL).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         c.put(1, "foo");
         c.put(2, "bar");
@@ -380,5 +381,43 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
         }
 
         assertEquals(1, found);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testHashMapAtomic() throws Exception {
+        List<String> messages = Collections.synchronizedList(new ArrayList<>());
+
+        testLog = new ListeningTestLogger(log());
+
+        testLog.registerListener((s) -> {
+            if (s.contains("deadlock"))
+                messages.add(s);
+        });
+
+        Ignite ignite = startGrid(0);
+
+        IgniteCache<Integer, String> c = ignite.getOrCreateCache(new CacheConfiguration<Integer, String>("atomic")
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC));
+
+        HashMap<Integer, String> m = new HashMap<>();
+
+        m.put(1, "foo");
+        m.put(2, "bar");
+
+        c.putAll(m);
+        c.invokeAll(m.keySet(), (k, v) -> v);
+        c.removeAll(m.keySet());
+        c.removeAll();
+
+        assertEquals(0, c.size());
+
+        for (String message : messages) {
+            assertFalse(message.contains("Unordered "));
+
+            assertFalse(message.contains("operation on cache"));
+        }
     }
 }

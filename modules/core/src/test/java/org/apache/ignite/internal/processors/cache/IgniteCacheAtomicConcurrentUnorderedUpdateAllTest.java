@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -53,15 +54,16 @@ public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommo
     private static final int CACHE_SIZE = 1_000;
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "cacheMode={0}, writeThrough={1}")
+    @Parameterized.Parameters(name = "cacheMode={0}, writeThrough={1}, near={2}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(
-            new Object[] {CacheMode.PARTITIONED, Boolean.FALSE},
-            new Object[] {CacheMode.PARTITIONED, Boolean.TRUE},
-            new Object[] {CacheMode.REPLICATED, Boolean.FALSE},
-            new Object[] {CacheMode.REPLICATED, Boolean.TRUE},
-            new Object[] {CacheMode.LOCAL, Boolean.FALSE},
-            new Object[] {CacheMode.LOCAL, Boolean.TRUE}
+            new Object[] {CacheMode.PARTITIONED, Boolean.FALSE, Boolean.FALSE},
+            new Object[] {CacheMode.PARTITIONED, Boolean.TRUE, Boolean.FALSE},
+            new Object[] {CacheMode.PARTITIONED, Boolean.FALSE, Boolean.TRUE},
+            new Object[] {CacheMode.REPLICATED, Boolean.FALSE, Boolean.FALSE},
+            new Object[] {CacheMode.REPLICATED, Boolean.TRUE, Boolean.FALSE},
+            new Object[] {CacheMode.LOCAL, Boolean.FALSE, Boolean.FALSE},
+            new Object[] {CacheMode.LOCAL, Boolean.TRUE, Boolean.FALSE}
         );
     }
 
@@ -72,6 +74,10 @@ public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommo
     /** Write through. */
     @Parameterized.Parameter(1)
     public Boolean writeThrough;
+
+    /** Near cache. */
+    @Parameterized.Parameter(2)
+    public Boolean near;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -92,6 +98,7 @@ public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommo
 
         IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(CACHE_NAME)
             .setWriteThrough(writeThrough).setCacheStoreFactory(cacheStoreFactory)
+            .setNearConfiguration(near ? new NearCacheConfiguration<>() : null)
             .setCacheMode(cacheMode).setAtomicityMode(ATOMIC).setBackups(1));
 
         CyclicBarrier barrier = new CyclicBarrier(THREADS_CNT);
@@ -121,6 +128,8 @@ public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommo
                 }
 
                 cache0.putAll(map);
+
+                cache0.invokeAll(map.keySet(), (k, v) -> v);
 
                 cache0.removeAll(map.keySet());
 
