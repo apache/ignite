@@ -19,9 +19,11 @@ This module contains smoke tests that checks that ducktape works as expected
 
 from ducktape.mark.resource import cluster
 
+from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteClientConfiguration
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -35,7 +37,7 @@ class SmokeSelfTest(IgniteTest):
 
     @cluster(num_nodes=1)
     @ignite_versions(str(DEV_BRANCH))
-    def test_assertion_convertion(self, ignite_version):
+    def est_assertion_convertion(self, ignite_version):
         """
         Test to make sure Java assertions are converted to python exceptions
         """
@@ -53,3 +55,39 @@ class SmokeSelfTest(IgniteTest):
         else:
             app.stop()
             assert False
+
+    @ignite_versions(str(DEV_BRANCH))
+    def test_services_start_stop(self, ignite_version):
+        ignites = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(ignite_version)),
+                                num_nodes=1)
+
+        ignites.start()
+
+        client = IgniteService(self.test_context, IgniteClientConfiguration(version=IgniteVersion(ignite_version)),
+                               num_nodes=1)
+
+        client.start()
+
+        node1 = IgniteApplicationService(
+            self.test_context,
+            IgniteClientConfiguration(version=IgniteVersion(ignite_version),
+                                      discovery_spi=from_ignite_cluster(ignites)),
+            java_class_name="org.apache.ignite.internal.ducktest.tests.self_test.TestKillableApplication",
+            timeout_sec=180)
+
+        node2 = IgniteApplicationService(
+            self.test_context,
+            IgniteClientConfiguration(version=IgniteVersion(ignite_version),
+                                      discovery_spi=from_ignite_cluster(ignites)),
+            java_class_name="org.apache.ignite.internal.ducktest.tests.self_test.TestSelfKillableApplication",
+            timeout_sec=180)
+
+        node1.start()
+
+        node2.run()
+
+        node1.stop()  # logs are broken
+
+        client.stop()
+
+        ignites.stop()

@@ -71,6 +71,8 @@ public class IgniteAwareApplicationService {
                 app.ignite = ignite;
 
                 app.start(jsonNode);
+
+                log.info("Just an info. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
             }
             finally {
                 log.info("Ignite instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
@@ -78,5 +80,11 @@ public class IgniteAwareApplicationService {
         }
         else
             app.start(jsonNode);
+
+        for (int i = 0; i < 10000; i++)
+            System.out.println(" #####                                                                               ");
+
+        for (int i = 0; i < 10000; i++)
+            log.info("  ...                                                                                          ");
     }
 }
