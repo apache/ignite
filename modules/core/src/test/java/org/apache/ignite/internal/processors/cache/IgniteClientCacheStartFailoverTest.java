@@ -131,8 +131,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
             }
         }, "start-cache");
 
-        U.sleep(1000);
-
         assertFalse(fut.isDone());
 
         stopGrid(0);
@@ -200,8 +198,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
                 return null;
             }
         }, "start-cache");
-
-        U.sleep(1000);
 
         assertFalse(fut.isDone());
 
