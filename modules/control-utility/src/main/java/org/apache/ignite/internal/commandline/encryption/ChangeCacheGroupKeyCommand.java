@@ -23,6 +23,7 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
+import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskArg;
 import org.apache.ignite.internal.visor.encryption.VisorChangeCacheGroupKeyTask;
 
 import static org.apache.ignite.internal.commandline.CommandList.ENCRYPTION;
@@ -32,9 +33,9 @@ import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcom
 /**
  * Change cache group key encryption subcommand.
  */
-public class ChangeCacheGroupKeyCommand implements Command<String> {
-    /** Cache group name. */
-    private String argCacheGrpName;
+public class ChangeCacheGroupKeyCommand implements Command<VisorCacheGroupEncryptionTaskArg> {
+    /** Change cache group key task argument. */
+    private VisorCacheGroupEncryptionTaskArg taskArg;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
@@ -42,12 +43,12 @@ public class ChangeCacheGroupKeyCommand implements Command<String> {
             executeTaskByNameOnNode(
                 client,
                 VisorChangeCacheGroupKeyTask.class.getName(),
-                argCacheGrpName,
+                taskArg,
                 null,
                 clientCfg
             );
 
-            log.info("The encryption key has been changed for the cache group \"" + argCacheGrpName + "\".");
+            log.info("The encryption key has been changed for the cache group \"" + taskArg.groupName() + "\".");
 
             return null;
         }
@@ -66,13 +67,18 @@ public class ChangeCacheGroupKeyCommand implements Command<String> {
     }
 
     /** {@inheritDoc} */
-    @Override public String arg() {
-        return argCacheGrpName;
+    @Override public VisorCacheGroupEncryptionTaskArg arg() {
+        return taskArg;
     }
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        argCacheGrpName = argIter.nextArg("Сache group name is expected.");
+        String argCacheGrpName = argIter.nextArg("Сache group name is expected.");
+
+        taskArg = new VisorCacheGroupEncryptionTaskArg(argCacheGrpName);
+
+        if (argIter.hasNextSubArg())
+            throw new IllegalArgumentException("Unexpected command argument: " + argIter.peekNextArg());
     }
 
     /** {@inheritDoc} */

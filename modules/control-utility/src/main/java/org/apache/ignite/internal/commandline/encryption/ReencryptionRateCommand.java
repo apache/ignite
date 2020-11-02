@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline.encryption;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
@@ -27,10 +28,13 @@ import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
+import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskResult;
 import org.apache.ignite.internal.visor.encryption.VisorReencryptionRateTask;
+import org.apache.ignite.internal.visor.encryption.VisorReencryptionRateTaskArg;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.commandline.CommandList.ENCRYPTION;
+import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
@@ -40,44 +44,44 @@ import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcom
 /**
  * View/change cache group re-encryption rate limit subcommand.
  */
-public class ReencryptionRateCommand implements Command<Double> {
-    /** Re-encryption rate limit in megabytes per second.  */
-    private Double rateLimit;
+public class ReencryptionRateCommand implements Command<VisorReencryptionRateTaskArg> {
+    /** Re-encryption rate task argument. */
+    private VisorReencryptionRateTaskArg taskArg;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            Map<UUID, Object> results = executeTaskByNameOnNode(
+            VisorCacheGroupEncryptionTaskResult<Double> res = executeTaskByNameOnNode(
                 client,
                 VisorReencryptionRateTask.class.getName(),
-                rateLimit,
+                taskArg,
                 BROADCAST_UUID,
                 clientCfg
             );
 
-            for (Map.Entry<UUID, Object> entry : results.entrySet()) {
-                boolean read = rateLimit == null;
+            boolean read = taskArg.rate() == null;
 
-                String msg;
+            Map<UUID, IgniteException> exceptions = res.exceptions();
 
-                if (entry.getValue() instanceof Throwable) {
-                    msg = " failed to " + (read ? "get" : "limit") + " re-encryption rate (" +
-                        ((Throwable)entry.getValue()).getMessage() + ").";
-                }
+            for (Map.Entry<UUID, IgniteException> entry : exceptions.entrySet()) {
+                log.info(INDENT + "Node " + entry.getKey() + ":");
+                log.info(String.format("%sfailed to %s re-encryption rate: %s.",
+                    DOUBLE_INDENT, (read ? "get" : "limit"), entry.getValue().getMessage()));
+            }
+
+            Map<UUID, Double> results = res.results();
+
+            for (Map.Entry<UUID, Double> entry : results.entrySet()) {
+                log.info(INDENT + "Node " + entry.getKey() + ":");
+
+                double rateLimit = read ? entry.getValue() : taskArg.rate();
+
+                if (rateLimit == 0)
+                    log.info(DOUBLE_INDENT + "re-encryption rate is not limited.");
                 else {
-                    double prevRate = (double)entry.getValue();
-                    boolean unlimited = read ? prevRate == 0 : rateLimit == 0;
-
-                    if (unlimited)
-                        msg = "re-encryption rate is not limited.";
-                    else {
-                        msg = "re-encryption rate " + (read ?
-                            "is limited to " + prevRate :
-                            "has been limited to " + rateLimit) + " MB/s.";
-                    }
+                    log.info(String.format("%sre-encryption rate %s limited to %.2f MB/s.",
+                        DOUBLE_INDENT, (read ? "is" : "has been"), rateLimit));
                 }
-
-                log.info(INDENT + "Node " + entry.getKey() + ": " + msg);
             }
 
             return null;
@@ -91,13 +95,13 @@ public class ReencryptionRateCommand implements Command<Double> {
     }
 
     /** {@inheritDoc} */
-    @Override public Double arg() {
-        return rateLimit;
+    @Override public VisorReencryptionRateTaskArg arg() {
+        return taskArg;
     }
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        rateLimit = null;
+        Double rateLimit = null;
 
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg("Failed to read command argument.");
@@ -117,6 +121,8 @@ public class ReencryptionRateCommand implements Command<Double> {
             else
                 throw new IllegalArgumentException("Unexpected command argument: " + arg);
         }
+
+        taskArg = new VisorReencryptionRateTaskArg(rateLimit);
     }
 
     /** {@inheritDoc} */

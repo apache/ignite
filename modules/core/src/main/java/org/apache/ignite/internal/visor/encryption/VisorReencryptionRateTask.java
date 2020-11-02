@@ -17,40 +17,62 @@
 
 package org.apache.ignite.internal.visor.encryption;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * View/change cache group re-encryption rate limit.
+ * View/change cache group re-encryption rate limit .
  */
-public class VisorReencryptionRateTask extends VisorMultiNodeTask<Double, Map<UUID, Object>, Double> {
+@GridInternal
+public class VisorReencryptionRateTask extends VisorMultiNodeTask<VisorReencryptionRateTaskArg,
+    VisorCacheGroupEncryptionTaskResult<Double>, VisorReencryptionRateTask.ReencryptionRateJobResult>
+{
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<Double, Double> job(Double arg) {
+    @Override protected VisorJob<VisorReencryptionRateTaskArg, ReencryptionRateJobResult> job(
+        VisorReencryptionRateTaskArg arg) {
         return new VisorReencryptionRateJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Map<UUID, Object> reduce0(List<ComputeJobResult> results) {
-        Map<UUID, Object> resMap = new HashMap<>();
+    @Nullable @Override protected VisorCacheGroupEncryptionTaskResult<Double> reduce0(List<ComputeJobResult> results) {
+        Map<UUID, Double> jobResults = new HashMap<>();
+        Map<UUID, IgniteException> exceptions = new HashMap<>();
 
-        for (ComputeJobResult res : results)
-            resMap.put(res.getNode().id(), res.getException() != null ? res.getException() : res.getData());
+        for (ComputeJobResult res : results) {
+            UUID nodeId = res.getNode().id();
 
-        return resMap;
+            if (res.getException() != null) {
+                exceptions.put(nodeId, res.getException());
+
+                continue;
+            }
+
+            ReencryptionRateJobResult dtoRes = res.getData();
+
+            jobResults.put(nodeId, dtoRes.limit());
+        }
+
+        return new VisorCacheGroupEncryptionTaskResult<>(jobResults, exceptions);
     }
 
     /** The job for view/change cache group re-encryption rate limit. */
-    private static class VisorReencryptionRateJob extends VisorJob<Double, Double> {
+    private static class VisorReencryptionRateJob
+        extends VisorJob<VisorReencryptionRateTaskArg, ReencryptionRateJobResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -58,18 +80,54 @@ public class VisorReencryptionRateTask extends VisorMultiNodeTask<Double, Map<UU
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorReencryptionRateJob(Double arg, boolean debug) {
+        protected VisorReencryptionRateJob(VisorReencryptionRateTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Double run(Double rate) throws IgniteException {
+        @Override protected ReencryptionRateJobResult run(VisorReencryptionRateTaskArg arg) throws IgniteException {
             double prevRate = ignite.context().encryption().getReencryptionRate();
 
-            if (rate != null)
-                ignite.context().encryption().setReencryptionRate(rate);
+            if (arg.rate() != null)
+                ignite.context().encryption().setReencryptionRate(arg.rate());
 
-            return prevRate;
+            return new ReencryptionRateJobResult(prevRate);
+        }
+    }
+
+    /** */
+    protected static class ReencryptionRateJobResult extends IgniteDataTransferObject {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Re-encryption rate limit. */
+        private Double limit;
+
+        /** */
+        public ReencryptionRateJobResult() {
+            // No-op.
+        }
+
+        /** */
+        public ReencryptionRateJobResult(Double limit) {
+            this.limit = limit;
+        }
+
+        /**
+         * @return Re-encryption rate limit.
+         */
+        public Double limit() {
+            return limit;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            out.writeDouble(limit);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
+            limit = in.readDouble();
         }
     }
 }

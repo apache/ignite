@@ -77,13 +77,14 @@ This utility can do the following commands:
   View encryption key identifiers of the cache group:
     control.(sh|bat) --encryption cache_key_ids cacheGroupName
 
-  Control the process of re-encryption of the cache group:
-    control.(sh|bat) --encryption group_reencryption cacheGroupName [--status --suspend --resume]
+  Display re-encryption status of the cache group:
+    control.(sh|bat) --encryption reencryption_status cacheGroupName
 
-    Parameters:
-      --status   - Display re-encryption status (default action).
-      --suspend  - Suspend re-encryption.
-      --resume   - Resume re-encryption.
+  Suspend re-encryption of the cache group:
+    control.(sh|bat) --encryption suspend_reencryption cacheGroupName
+
+  Resume re-encryption of the cache group:
+    control.(sh|bat) --encryption resume_reencryption cacheGroupName
 
   View/change re-encryption rate limit:
     control.(sh|bat) --encryption reencryption_rate [--limit limit]

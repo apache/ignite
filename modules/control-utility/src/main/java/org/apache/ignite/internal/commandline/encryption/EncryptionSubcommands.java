@@ -35,11 +35,17 @@ public enum EncryptionSubcommands {
     /** Subcommand to change the current encryption key for specified cache group. */
     CHANGE_CACHE_GROUP_KEY("change_cache_key", new ChangeCacheGroupKeyCommand()),
 
-    /** Subcommand to view current encryption key IDs for specified cache group. */
-    CACHE_GROUP_KEY_IDS("cache_key_ids", new CacheGroupKeysCommand()),
+    /** Subcommand to view current encryption key IDs of the cache group. */
+    CACHE_GROUP_KEY_IDS("cache_key_ids", new CacheGroupEncryptionCommand.CacheKeyIds()),
 
-    /** Subcommand to control the process of re-encryption of the cache group. */
-    GROUP_REENCRYPTION("group_reencryption", new GroupReencryptionCommand()),
+    /** Subcommand to display re-encryption status of the cache group. */
+    REENCRYPTION_STATUS("reencryption_status", new CacheGroupEncryptionCommand.ReencryptionStatus()),
+
+    /** Subcommand to suspend re-encryption of the cache group. */
+    REENCRYPTION_SUSPEND("suspend_reencryption", new CacheGroupEncryptionCommand.SuspendReencryption()),
+
+    /** Subcommand to resume re-encryption of the cache group. */
+    REENCRYPTION_RESUME("resume_reencryption", new CacheGroupEncryptionCommand.ResumeReencryption()),
 
     /** Subcommand to view/change cache group re-encryption rate limit. */
     REENCRYPTION_RATE("reencryption_rate", new ReencryptionRateCommand());

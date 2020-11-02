@@ -22,59 +22,53 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Cache group reencryption task argument.
+ * Re-encryption rate task argument.
  */
-public class VisorGroupReencryptionTaskArg extends IgniteDataTransferObject {
+public class VisorReencryptionRateTaskArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Cache group name, */
-    private String grpName;
-
-    /** Task action type. */
-    private VisorGroupReencryptionActionType type;
+    /** Re-encryption rate limit in megabytes per second. */
+    private Double rate;
 
     /** Default constructor. */
-    public VisorGroupReencryptionTaskArg() {
+    public VisorReencryptionRateTaskArg() {
         // No-op.
     }
 
     /**
-     * @param grpName Cache group name.
-     * @param type Task action type
+     * @param rate Re-encryption rate limit in megabytes per second.
      */
-    public VisorGroupReencryptionTaskArg(String grpName, VisorGroupReencryptionActionType type) {
-        this.grpName = grpName;
-        this.type = type;
+    public VisorReencryptionRateTaskArg(Double rate) {
+        this.rate = rate;
     }
 
-    /** @return Cache group name, */
-    public String groupName() {
-        return grpName;
-    }
-
-    /** @return Task action type. */
-    public VisorGroupReencryptionActionType type() {
-        return type;
+    /**
+     * @return Re-encryption rate limit in megabytes per second.
+     */
+    public @Nullable Double rate() {
+        return rate;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, grpName);
-        U.writeEnum(out, type);
+        out.writeBoolean(rate != null);
+
+        if (rate != null)
+            out.writeDouble(rate);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        grpName = U.readString(in);
-        type = VisorGroupReencryptionActionType.fromOrdinal(in.readByte());
+    @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
+        if (in.readBoolean())
+            rate = in.readDouble();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorGroupReencryptionTaskArg.class, this);
+        return S.toString(VisorReencryptionRateTaskArg.class, this);
     }
 }
