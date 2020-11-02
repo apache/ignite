@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Objects;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
@@ -47,6 +46,9 @@ public class CorrelationTrait implements RelTrait {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
         if (!(o instanceof CorrelationTrait))
             return false;
 
@@ -55,7 +57,7 @@ public class CorrelationTrait implements RelTrait {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(correlations.toArray());
+        return correlations.hashCode();
     }
 
     /** {@inheritDoc} */
@@ -70,12 +72,6 @@ public class CorrelationTrait implements RelTrait {
 
     /** {@inheritDoc} */
     @Override public boolean satisfies(RelTrait trait) {
-        if (this == trait)
-            return true;
-
-        if (!(trait instanceof CorrelationTrait))
-            return false;
-
         return equals(trait);
     }
 

@@ -30,6 +30,8 @@ import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
@@ -55,6 +57,7 @@ public class IgniteFilter extends Filter implements IgniteRel {
         super(cluster, traits, input, condition);
     }
 
+    /** */
     public IgniteFilter(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
     }
@@ -72,6 +75,9 @@ public class IgniteFilter extends Filter implements IgniteRel {
     /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
         if (required.getConvention() != IgniteConvention.INSTANCE)
+            return null;
+
+        if (!TraitUtils.correlation(required).satisfies(TraitUtils.correlation(this)))
             return null;
 
         return Pair.of(required, ImmutableList.of(required));

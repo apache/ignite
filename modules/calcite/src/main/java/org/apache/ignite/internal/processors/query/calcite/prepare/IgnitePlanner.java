@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.io.PrintWriter;
 import java.io.Reader;
+import java.io.StringWriter;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
@@ -266,6 +268,15 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         }
 
         return planner;
+    }
+
+    /** */
+    public String dump() {
+        StringWriter w = new StringWriter();
+
+        ((VolcanoPlanner)planner).dump(new PrintWriter(w));
+
+        return w.toString();
     }
 
     /** */

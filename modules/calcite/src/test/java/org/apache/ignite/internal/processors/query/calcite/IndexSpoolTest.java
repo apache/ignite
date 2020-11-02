@@ -43,8 +43,8 @@ public class IndexSpoolTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, String> c = grid(0).cache("TEST0");
 
-        fillCache(grid(0).cache("TEST0"), 1000);
-        fillCache(grid(0).cache("TEST0"), 1000);
+        fillCache(grid(0).cache("TEST0"), 100);
+        fillCache(grid(0).cache("TEST0"), 100);
     }
 
     /** {@inheritDoc} */

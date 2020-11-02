@@ -106,8 +106,6 @@ public class CorrelatedNestedLoopJoinRule extends RelRule<CorrelatedNestedLoopJo
             conditionList.add(condition2);
         }
 
-        CorrelationTrait corrTrait = new CorrelationTrait(correlationIds);
-
         RelTraitSet filterTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replace(RewindabilityTrait.REWINDABLE);
 
@@ -121,6 +119,8 @@ public class CorrelatedNestedLoopJoinRule extends RelRule<CorrelatedNestedLoopJo
 
         RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+
+        CorrelationTrait corrTrait = new CorrelationTrait(correlationIds);
         RelTraitSet rightInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replace(RewindabilityTrait.REWINDABLE)
             .replace(corrTrait);

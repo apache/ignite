@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -34,6 +35,7 @@ import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
@@ -564,6 +566,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         sqlNode = validated.sqlNode();
 
         IgniteRel igniteRel = optimize(sqlNode, planner);
+
+        log.info("+++ Plan dump: " + planner.dump());
 
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);

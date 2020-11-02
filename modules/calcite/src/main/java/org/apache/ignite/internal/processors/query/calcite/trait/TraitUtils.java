@@ -46,6 +46,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -216,6 +217,18 @@ public class TraitUtils {
     /** */
     public static RewindabilityTrait rewindability(RelTraitSet traits) {
         return traits.getTrait(RewindabilityTraitDef.INSTANCE);
+    }
+
+    /** */
+    public static CorrelationTrait correlation(RelNode rel) {
+        return rel instanceof IgniteRel
+            ? ((IgniteRel)rel).correlation()
+            : correlation(rel.getTraitSet());
+    }
+
+    /** */
+    public static CorrelationTrait correlation(RelTraitSet traits) {
+        return traits.getTrait(CorrelationTraitDef.INSTANCE);
     }
 
     /** */

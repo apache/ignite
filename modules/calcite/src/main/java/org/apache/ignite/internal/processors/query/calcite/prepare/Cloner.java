@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedN
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
@@ -165,6 +166,13 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
         RelNode input = visit((IgniteRel) rel.getInput());
 
         return new IgniteSort(cluster, rel.getTraitSet(), input, rel.collation, rel.offset, rel.fetch);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteIndexSpool rel) {
+        RelNode input = visit((IgniteRel) rel.getInput());
+
+        return new IgniteIndexSpool(cluster, rel.getTraitSet(), input, rel.readType);
     }
 
     /** {@inheritDoc} */
