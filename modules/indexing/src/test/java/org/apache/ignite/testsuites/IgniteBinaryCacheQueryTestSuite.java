@@ -219,11 +219,14 @@ import org.apache.ignite.internal.processors.query.KillQueryOnClientDisconnectTe
 import org.apache.ignite.internal.processors.query.KillQueryTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
+import org.apache.ignite.internal.processors.query.SqlFieldTypeValidationOnKeyValueInsertTest;
+import org.apache.ignite.internal.processors.query.SqlFieldTypeValidationTypesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlIncompatibleDataTypeExceptionTest;
 import org.apache.ignite.internal.processors.query.SqlMergeOnClientNodeTest;
 import org.apache.ignite.internal.processors.query.SqlMergeTest;
 import org.apache.ignite.internal.processors.query.SqlNestedQuerySelfTest;
+import org.apache.ignite.internal.processors.query.SqlNotNullKeyValueFieldTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientSelfTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistorySelfTest;
@@ -521,6 +524,7 @@ import org.junit.runners.Suite;
     IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest.class,
     IgniteCacheDistributedPartitionQueryConfigurationSelfTest.class,
     IgniteSqlKeyValueFieldsTest.class,
+    SqlNotNullKeyValueFieldTest.class,
     IgniteSqlRoutingTest.class,
     IgniteSqlNotNullConstraintTest.class,
     LongIndexNameTest.class,
@@ -623,8 +627,10 @@ import org.junit.runners.Suite;
 
     IgniteCacheMergeSqlQuerySelfTest.class,
     SqlMergeTest.class,
-    SqlMergeOnClientNodeTest.class
+    SqlMergeOnClientNodeTest.class,
 
+    SqlFieldTypeValidationTypesTest.class,
+    SqlFieldTypeValidationOnKeyValueInsertTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }

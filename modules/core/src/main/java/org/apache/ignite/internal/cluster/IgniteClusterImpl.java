@@ -672,8 +672,11 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void tag(String tag) throws IgniteCheckedException {
-        if (tag == null || tag.isEmpty())
-            throw new IgniteCheckedException("Please provide not-null and not empty string for cluster tag");
+        if (tag == null)
+            throw new IgniteCheckedException("Tag cannot be null.");
+
+        if (tag.isEmpty())
+            throw new IgniteCheckedException("Tag should not be empty.");
 
         if (tag.length() > MAX_TAG_LENGTH) {
             throw new IgniteCheckedException("Maximum tag length is exceeded, max length is " +

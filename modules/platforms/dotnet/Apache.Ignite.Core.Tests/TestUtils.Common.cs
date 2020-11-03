@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -27,11 +28,13 @@ namespace Apache.Ignite.Core.Tests
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -472,7 +475,7 @@ namespace Apache.Ignite.Core.Tests
                 }
             }
         }
-        
+
         /// <summary>
         /// Gets the dot net source dir.
         /// </summary>
@@ -491,7 +494,7 @@ namespace Apache.Ignite.Core.Tests
 
             throw new InvalidOperationException("Could not resolve Ignite.NET source directory.");
         }
-        
+
         /// <summary>
         /// Gets a value indicating whether specified partition is reserved.
         /// </summary>
@@ -499,7 +502,7 @@ namespace Apache.Ignite.Core.Tests
         {
             Debug.Assert(ignite != null);
             Debug.Assert(cacheName != null);
-            
+
             const string taskName = "org.apache.ignite.platform.PlatformIsPartitionReservedTask";
 
             return ignite.GetCompute().ExecuteJavaTask<bool>(taskName, new object[] {cacheName, part});
@@ -516,6 +519,30 @@ namespace Apache.Ignite.Core.Tests
             }
 
             return ex;
+        }
+
+        /// <summary>
+        /// Gets the private field value.
+        /// </summary>
+        public static T GetPrivateField<T>(object obj, string name)
+        {
+            Assert.IsNotNull(obj);
+
+            var field = obj.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.IsNotNull(field);
+
+            return (T) field.GetValue(obj);
+        }
+
+        /// <summary>
+        /// Gets active notification listeners.
+        /// </summary>
+        public static ICollection GetActiveNotificationListeners(this IIgniteClient client)
+        {
+            var failoverSocket = GetPrivateField<ClientFailoverSocket>(client, "_socket");
+            var socket = GetPrivateField<ClientSocket>(failoverSocket, "_socket");
+            return GetPrivateField<ICollection>(socket, "_notificationListeners");
         }
     }
 }

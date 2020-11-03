@@ -152,7 +152,7 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     /**
      * @return Destroy queue.
      */
-    public PartitionDestroyQueue getDestroyQueue() {
+    @Override public PartitionDestroyQueue getDestroyQueue() {
         return destroyQueue;
     }
 
@@ -266,5 +266,14 @@ public class CheckpointProgressImpl implements CheckpointProgress {
         writtenPagesCntr = new AtomicInteger();
         syncedPagesCntr = new AtomicInteger();
         evictedPagesCntr = new AtomicInteger();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearCounters() {
+        currCheckpointPagesCnt = 0;
+
+        writtenPagesCntr = null;
+        syncedPagesCntr = null;
+        evictedPagesCntr = null;
     }
 }

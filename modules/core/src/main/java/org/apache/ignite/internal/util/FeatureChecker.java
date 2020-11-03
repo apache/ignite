@@ -21,12 +21,13 @@ package org.apache.ignite.internal.util;
  * initialization effects.
  */
 public class FeatureChecker {
-    /** Required Options to Run un Java 9, 10, 11. */
+    /** Required Options to Run on Java 9, 10, 11. */
     public static final String JAVA_9_10_11_OPTIONS = "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
         "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED\n" +
         "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED\n" +
         "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED\n" +
         "--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED\n" +
+        "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED\n" +
         "--illegal-access=permit";
 
     /** Java version specific warning to be added in case access failed */

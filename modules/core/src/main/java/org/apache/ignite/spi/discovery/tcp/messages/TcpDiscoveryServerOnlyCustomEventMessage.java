@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.UUID;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Wrapped for custom message that must not be delivered to the client nodes.
@@ -35,7 +34,7 @@ public class TcpDiscoveryServerOnlyCustomEventMessage extends TcpDiscoveryCustom
      * @param msg Message.
      * @param msgBytes Serialized message.
      */
-    public TcpDiscoveryServerOnlyCustomEventMessage(UUID creatorNodeId, @Nullable DiscoverySpiCustomMessage msg,
+    public TcpDiscoveryServerOnlyCustomEventMessage(UUID creatorNodeId, @NotNull DiscoverySpiCustomMessage msg,
         @NotNull byte[] msgBytes) {
         super(creatorNodeId, msg, msgBytes);
     }

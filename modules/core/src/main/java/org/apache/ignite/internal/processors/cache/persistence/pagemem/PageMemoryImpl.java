@@ -2318,7 +2318,14 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     boolean skip = ignored != null && ignored.contains(rndAddr);
 
-                    if (relRmvAddr == rndAddr || pinned || skip) {
+                    final boolean dirty = isDirty(absPageAddr);
+
+                    CheckpointPages checkpointPages = this.checkpointPages;
+
+                    if (relRmvAddr == rndAddr || pinned || skip ||
+                        fullId.pageId() == storeMgr.metaPageId(fullId.groupId()) ||
+                        (dirty && (checkpointPages == null || !checkpointPages.contains(fullId)))
+                    ) {
                         i--;
 
                         continue;
@@ -2326,7 +2333,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     final long pageTs = PageHeader.readTimestamp(absPageAddr);
 
-                    final boolean dirty = isDirty(absPageAddr);
                     final boolean storMeta = isStoreMetadataPage(absPageAddr);
 
                     if (pageTs < cleanTs && !dirty && !storMeta) {
