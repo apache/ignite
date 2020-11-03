@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -153,7 +154,7 @@ public class IgniteTxExceptionNodeFailTest extends GridCommonAbstractTest {
                                 @Override public void run() {
                                     log().info("Stopping node: [" + grid0.name() + "]");
 
-                                    IgnitionEx.stop(grid0.name(), true, false);
+                                    IgnitionEx.stop(grid0.name(), true, ShutdownPolicy.IMMEDIATE, false);
                                 }
                             },
                             "node-stopper"
