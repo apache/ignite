@@ -73,8 +73,8 @@ class ClientTest(IgniteTest):
         self.ignite_start_stop(ignite_version, False, num_nodes, static_clients,
                                temp_client, iteration_count, client_work_time)
 
-    # pylint: disable=R0913
     # pylint: disable=R0914
+    # pylint: disable=R0913
     def ignite_start_stop(self, ignite_version, correct_stop_temp_node, nodes_num, static_clients_num, temp_client,
                           iteration_count, client_work_time):
         """
