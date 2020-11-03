@@ -49,10 +49,17 @@ tab:C++[unsupported]
 The following table describes some most important properties of `TcpDiscoverySpi`.
 You can find the complete list of properties in the javadoc:org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi[] javadoc.
 
+[NOTE]
+====
+You should not allow node have multiple local addresses until they represent some real physical connections which can
+give you more reliability. Several node addresses can prolong detection of node failure. Connection to a node is
+established to one of the address. But if lost, other addresses are attempted to reconnect to sequentially.
+====
+
 [cols="1,2,1",opts="header"]
 |===
 |Property | Description| Default Value
-| `localAddress`| Local host IP address used for discovery. | By default, the node uses the first non-loopback address it finds. If there is no non-loopback address available, then `java.net.InetAddress.getLocalHost()` is used.
+| `localAddress`| Local host IP address used for discovery. | By default, all available non-loopback addresses are assigned to node. If there is no non-loopback address available, then `java.net.InetAddress.getLocalHost()` is used.
 | `localPort`  | The port that the node binds to. If set to a non-default value, other cluster nodes must know this port to be able to discover the node. | `47500`
 | `localPortRange`| If the `localPort` is busy, the node attempts to bind to the next port (incremented by 1) and continues this process until it finds a free port. The `localPortRange` property defines the number of ports the node will try (starting from `localPort`).
    | `100`
