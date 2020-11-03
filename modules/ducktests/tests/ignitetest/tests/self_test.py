@@ -59,6 +59,9 @@ class SelfTest(IgniteTest):
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
     def test_simple_services_start_stop(self, ignite_version):
+        """
+        Tests plain services start and stop (termitation vs self-terination).
+        """
         ignites = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(ignite_version)),
                                 num_nodes=1)
 
