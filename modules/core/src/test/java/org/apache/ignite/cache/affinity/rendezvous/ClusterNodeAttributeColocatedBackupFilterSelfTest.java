@@ -17,9 +17,9 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
-import com.sbt.sbergrid.extras.ClusterNodeAttributeColocatedBackupFilter;
 import java.util.Collection;
 import java.util.Map;
+import com.sbt.sbergrid.extras.ClusterNodeAttributeColocatedBackupFilter;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionBackupFilterAbstractSelfTest;
@@ -39,10 +39,10 @@ public class ClusterNodeAttributeColocatedBackupFilterSelfTest extends AffinityF
     }
 
     /** {@inheritDoc} */
-    @Override protected AffinityFunction affinityFunctionWithAffinityBackupFilter(String attributeName) {
+    @Override protected AffinityFunction affinityFunctionWithAffinityBackupFilter(String attrName) {
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false);
 
-        aff.setAffinityBackupFilter(new ClusterNodeAttributeColocatedBackupFilter(attributeName));
+        aff.setAffinityBackupFilter(new ClusterNodeAttributeColocatedBackupFilter(attrName));
 
         return aff;
     }
