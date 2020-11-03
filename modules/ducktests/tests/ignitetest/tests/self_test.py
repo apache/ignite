@@ -56,6 +56,7 @@ class SelfTest(IgniteTest):
             app.stop()
             assert False
 
+    @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
     def test_simple_services_start_stop(self, ignite_version):
         ignites = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(ignite_version)),
