@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
@@ -37,7 +36,7 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     protected final List<Fragment> fragments;
 
     /** */
-    protected final List<GridQueryFieldMetadata> fieldsMeta;
+    protected final FieldsMetadata fieldsMetadata;
 
     /** */
     protected final QueryMappings queryMappings;
@@ -46,9 +45,9 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     protected Map<Long, NodesMapping> mappings;
 
     /** */
-    protected AbstractMultiStepPlan(List<Fragment> fragments, List<GridQueryFieldMetadata> fieldsMeta, QueryMappings queryMappings) {
+    protected AbstractMultiStepPlan(List<Fragment> fragments, FieldsMetadata fieldsMetadata, QueryMappings queryMappings) {
         this.fragments = fragments;
-        this.fieldsMeta = fieldsMeta;
+        this.fieldsMetadata = fieldsMetadata;
         this.queryMappings = queryMappings;
     }
 
@@ -58,8 +57,8 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridQueryFieldMetadata> fieldsMetadata() {
-        return fieldsMeta;
+    @Override public FieldsMetadata fieldsMetadata() {
+        return fieldsMetadata;
     }
 
     /** {@inheritDoc} */

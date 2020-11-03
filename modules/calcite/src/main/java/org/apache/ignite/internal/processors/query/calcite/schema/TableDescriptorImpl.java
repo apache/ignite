@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -101,7 +102,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         List<ColumnDescriptor> descriptors = new ArrayList<>(fields.size() + 2);
 
-        // A _key/_val fields is virtual in case there is an alias or a property(es) mapped to _key/_val object fields.
+        // A _key/_val field is virtual in case there is an alias or a property(es) mapped to the _key/_val field.
         BitSet virtualFields = new BitSet();
 
         descriptors.add(
@@ -155,15 +156,8 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         this.descriptors = descriptors.toArray(DUMMY);
         this.descriptorsMap = descriptorsMap;
 
-        ImmutableBitSet.Builder b = ImmutableBitSet.builder();
-        for (int i = 0; i < this.descriptors.length; i++) {
-            if (virtualFields.get(i))
-                continue;
-
-            b.set(i);
-        }
-
-        insertFields = b.build();
+        virtualFields.flip(0, descriptors.size());
+        insertFields = ImmutableBitSet.fromBitSet(virtualFields);
     }
 
     /** {@inheritDoc} */
@@ -205,12 +199,20 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         assert handler.columnCount(res) == (requiredColunms == null ? descriptors.length : requiredColunms.cardinality());
 
         if (requiredColunms == null) {
-            for (int i = 0; i < descriptors.length; i++)
-                handler.set(i, res, descriptors[i].value(ectx, cctx, row));
+            for (int i = 0; i < descriptors.length; i++) {
+                ColumnDescriptor desc = descriptors[i];
+
+                handler.set(i, res, TypeUtils.toInternal(ectx,
+                    desc.value(ectx, cctx, row), desc.storageType()));
+            }
         }
         else {
-            for (int i = 0, j = requiredColunms.nextSetBit(0); j != -1; j = requiredColunms.nextSetBit(j + 1), i++)
-                handler.set(i, res, descriptors[j].value(ectx, cctx, row));
+            for (int i = 0, j = requiredColunms.nextSetBit(0); j != -1; j = requiredColunms.nextSetBit(j + 1), i++) {
+                ColumnDescriptor desc = descriptors[j];
+
+                handler.set(i, res, TypeUtils.toInternal(ectx,
+                    desc.value(ectx, cctx, row), desc.storageType()));
+            }
         }
 
         return res;
@@ -220,7 +222,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     @Override public boolean isUpdateAllowed(RelOptTable tbl, int colIdx) {
         final ColumnDescriptor desc = descriptors[colIdx];
 
-        return !desc.key() && (desc.field() || QueryUtils.isSqlType(desc.javaType()));
+        return !desc.key() && (desc.field() || QueryUtils.isSqlType(desc.storageType()));
     }
 
     /** {@inheritDoc} */
@@ -295,9 +297,11 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
                 Object fieldVal = handler.get(i, row);
 
                 if (desc.field() && desc.key() && fieldVal != null)
-                    desc.set(key, fieldVal);
+                    desc.set(key, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
         }
+        else
+            key = TypeUtils.fromInternal(ectx, key, descriptors[QueryUtils.KEY_COL].storageType());
 
         return key;
     }
@@ -318,9 +322,11 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
                 Object fieldVal = handler.get(i, row);
 
                 if (desc.field() && !desc.key() && fieldVal != null)
-                    desc.set(val, fieldVal);
+                    desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
         }
+        else
+            val = TypeUtils.fromInternal(ectx, val, descriptors[QueryUtils.VAL_COL].storageType());
 
         return val;
     }
@@ -380,9 +386,9 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             Object fieldVal = handler.get(i + 2, row);
 
             if (desc.field())
-                desc.set(val, fieldVal);
+                desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             else
-                val = fieldVal;
+                val = TypeUtils.fromInternal(ectx, fieldVal, desc.storageType());
         }
 
         if (cctx.binaryMarshaller() && val instanceof BinaryObjectBuilder)
@@ -411,7 +417,8 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** */
     private <Row> IgniteBiTuple deleteTuple(Row row, ExecutionContext<Row> ectx) {
-        Object key = ectx.rowHandler().get(QueryUtils.KEY_COL, row);
+        Object key = TypeUtils.fromInternal(ectx,
+            ectx.rowHandler().get(QueryUtils.KEY_COL, row), descriptors[QueryUtils.KEY_COL].storageType());
         return F.t(Objects.requireNonNull(key), null);
     }
 
@@ -428,22 +435,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
                 b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
         }
 
-        return b.build();
+        return TypeUtils.sqlType(factory, b.build());
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnDescriptor[] columnDescriptors() {
-        return descriptors;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, ColumnDescriptor> columnDescriptorsMap() {
-        return descriptorsMap;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int keyField() {
-        return keyField;
+    @Override public ColumnDescriptor columnDescriptor(String fieldName) {
+        return fieldName == null ? null : descriptorsMap.get(fieldName);
     }
 
     /** */
@@ -452,20 +449,21 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         private final String name;
 
         /** */
-        private final Class<?> type;
-
-        /** */
         private final boolean isKey;
 
         /** */
         private final int fieldIdx;
 
         /** */
+        private final Class<?> storageType;
+
+        /** */
         private KeyValDescriptor(String name, Class<?> type, boolean isKey, int fieldIdx) {
             this.name = name;
-            this.type = type;
             this.isKey = isKey;
             this.fieldIdx = fieldIdx;
+
+            storageType = type;
         }
 
         /** {@inheritDoc} */
@@ -500,12 +498,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            return f.createJavaType(javaType());
+            return f.createJavaType(storageType);
         }
 
         /** {@inheritDoc} */
-        @Override public Class<?> javaType() {
-            return type;
+        @Override public Class<?> storageType() {
+            return storageType;
         }
 
         /** {@inheritDoc} */
@@ -531,10 +529,15 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         private final int fieldIdx;
 
         /** */
+        private final Class<?> storageType;
+
+        /** */
         private FieldDescriptor(GridQueryProperty desc, int fieldIdx) {
             this.desc = desc;
-            dfltVal = desc.defaultValue();
             this.fieldIdx = fieldIdx;
+
+            dfltVal = desc.defaultValue();
+            storageType = desc.type();
         }
 
         /** */
@@ -569,12 +572,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            return f.createJavaType(javaType());
+            return f.createJavaType(storageType);
         }
 
         /** {@inheritDoc} */
-        @Override public Class<?> javaType() {
-            return desc.type();
+        @Override public Class<?> storageType() {
+            return storageType;
         }
 
         /** {@inheritDoc} */

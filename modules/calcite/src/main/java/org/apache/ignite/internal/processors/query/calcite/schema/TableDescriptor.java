@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.Map;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
@@ -127,23 +126,9 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
         throws IgniteCheckedException;
 
     /**
-     * Returns column descriptors.
+     * Returns column descriptor for given field name.
      *
-     * @return Column descriptors
+     * @return Column descriptor
      */
-    ColumnDescriptor[] columnDescriptors();
-
-    /**
-     * Returns map of column descriptors.
-     *
-     * @return Map of column descriptors.
-     */
-    Map<String, ColumnDescriptor> columnDescriptorsMap();
-
-    /**
-     * Returns key field index.
-     *
-     * @return Key field index.
-     */
-    int keyField();
+    ColumnDescriptor columnDescriptor(String fieldName);
 }

@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.List;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -28,14 +27,14 @@ public class ExplainPlan implements QueryPlan {
     public static final String PLAN_COL_NAME = "PLAN";
 
     /** */
-    private final List<GridQueryFieldMetadata> fieldsMeta;
+    private final FieldsMetadata fieldsMeta;
 
     /** */
     private final String plan;
 
     /** */
-    public ExplainPlan(String plan, List<GridQueryFieldMetadata> meta) {
-        this.fieldsMeta = meta;
+    public ExplainPlan(String plan, FieldsMetadata fieldsMeta) {
+        this.fieldsMeta = fieldsMeta;
         this.plan = plan;
     }
 
@@ -50,7 +49,7 @@ public class ExplainPlan implements QueryPlan {
     }
 
     /** */
-    public List<GridQueryFieldMetadata> fieldsMeta() {
+    public FieldsMetadata fieldsMeta() {
         return fieldsMeta;
     }
 

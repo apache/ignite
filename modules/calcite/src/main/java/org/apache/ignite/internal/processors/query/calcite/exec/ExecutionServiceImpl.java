@@ -39,7 +39,6 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
@@ -62,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.QueryContext;
@@ -81,8 +79,9 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
-import org.apache.ignite.internal.processors.query.calcite.prepare.CalciteQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadataImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
@@ -106,6 +105,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -615,15 +615,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         // Convert to Relational operators graph
         IgniteRel igniteRel = optimize(explain, planner);
 
-        List<GridQueryFieldMetadata> meta = buildExplainColumnMeta(ctx);
-
         String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
 
-        return new ExplainPlan(plan, meta);
+        return new ExplainPlan(plan, buildExplainColumnMeta(ctx));
     }
 
     /** */
-    private List<GridQueryFieldMetadata> buildExplainColumnMeta(PlanningContext ctx) {
+    private FieldsMetadata buildExplainColumnMeta(PlanningContext ctx) {
         IgniteTypeFactory factory = ctx.typeFactory();
         RelDataType planStrDataType =
             factory.createSqlType(SqlTypeName.VARCHAR, RelDataType.PRECISION_NOT_SPECIFIED);
@@ -640,9 +638,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 // TODO a barrier between previous operation and this one
             case QUERY:
                 return executeQuery(qryId, (MultiStepPlan) plan, pctx);
-
             case EXPLAIN:
-                return executeExplain(plan);
+                return executeExplain((ExplainPlan)plan, pctx);
 
             default:
                 throw new AssertionError("Unexpected plan type: " + plan);
@@ -733,12 +730,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeExplain(QueryPlan plan) {
-        ExplainPlan explainPlan = (ExplainPlan)plan;
-        List<List<?>> resSet = singletonList(singletonList(explainPlan.plan()));
+    private FieldsQueryCursor<List<?>> executeExplain(ExplainPlan plan, PlanningContext pctx) {
+        List<List<?>> resSet = singletonList(singletonList(plan.plan()));
 
         QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(resSet);
-        cur.fieldsMeta(explainPlan.fieldsMeta());
+        cur.fieldsMeta(plan.fieldsMeta().queryFieldsMetadata(pctx.typeFactory()));
 
         return cur;
     }
@@ -816,34 +812,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private List<GridQueryFieldMetadata> fieldsMetadata(
-        PlanningContext ctx,
-        RelDataType type,
-        @Nullable List<List<String>> origins
-    ) {
-        List<RelDataTypeField> fields = type.getFieldList();
-
-        assert origins == null || fields.size() == origins.size();
-
-        ImmutableList.Builder<GridQueryFieldMetadata> b = ImmutableList.builder();
-
-        IgniteTypeFactory typeFactory = ctx.typeFactory();
-
-        for (int i = 0; i < fields.size(); i++) {
-            RelDataTypeField field = fields.get(i);
-            List<String> origin = origins != null ? origins.get(i) : null;
-
-            b.add(new CalciteQueryFieldMetadata(
-                F.isEmpty(origin) ? null : origin.get(0),
-                F.isEmpty(origin) ? null : origin.get(1),
-                field.getName(),
-                String.valueOf(typeFactory.getJavaClass(field.getType())),
-                field.getType().getPrecision(),
-                field.getType().getScale()
-            ));
-        }
-
-        return b.build();
+    private FieldsMetadata fieldsMetadata(PlanningContext ctx, RelDataType sqlType,
+        @Nullable List<List<String>> origins) {
+        RelDataType resultType = TypeUtils.getResultType(
+            ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
+        return new FieldsMetadataImpl(resultType, origins);
     }
 
     /** */
@@ -961,7 +934,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         private QueryInfo(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root) {
             this.ctx = ctx;
 
-            RootNode<Row> rootNode = new RootNode<>(ctx, root.rowType(), this::tryClose);
+            RootNode<Row> rootNode = new RootNode<>(ctx, plan.fieldsMetadata().rowType(), this::tryClose);
             rootNode.register(root);
 
             this.root = rootNode;

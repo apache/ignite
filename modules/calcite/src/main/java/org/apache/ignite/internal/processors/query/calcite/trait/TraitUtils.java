@@ -115,6 +115,8 @@ public class TraitUtils {
 
         RelTraitSet traits = rel.getTraitSet().replace(toTrait);
 
+        rel = planner.ensureRegistered(rel, null);
+
         return new IgniteSort(rel.getCluster(), traits, rel, toTrait, null, null);
     }
 
@@ -125,6 +127,8 @@ public class TraitUtils {
 
         if (fromTrait.satisfies(toTrait))
             return rel;
+
+        rel = planner.ensureRegistered(rel, null);
 
         RelTraitSet traits = rel.getTraitSet().replace(toTrait);
         if (fromTrait.getType() == BROADCAST_DISTRIBUTED && toTrait.getType() == HASH_DISTRIBUTED)
@@ -142,7 +146,7 @@ public class TraitUtils {
         if (fromTrait.satisfies(toTrait))
             return rel;
 
-        return null; // TODO IndexSpoon
+        return null; // TODO IndexSpool
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -155,6 +159,8 @@ public class TraitUtils {
 
         if (!converter.canConvert(planner, fromTrait, toTrait))
             return null;
+
+        rel = planner.ensureRegistered(rel, null);
 
         return converter.convert(planner, rel, toTrait, true);
     }
@@ -344,6 +350,9 @@ public class TraitUtils {
 
         if (nodes.isEmpty())
             return null;
+
+        if (nodes.size() == 1)
+            return F.first(nodes);
 
         return new RelRegistrar(rel.getCluster(), outTraits, rel, nodes);
     }

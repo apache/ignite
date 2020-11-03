@@ -32,6 +32,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.Litmus;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class RelRegistrar extends AbstractRelNode implements IgniteRel {
@@ -44,6 +45,8 @@ public class RelRegistrar extends AbstractRelNode implements IgniteRel {
     /** */
     public RelRegistrar(RelOptCluster cluster, RelTraitSet traitSet, RelNode orig, List<RelNode> rels) {
         super(cluster, traitSet);
+
+        assert !F.isEmpty(rels);
 
         this.rels = rels;
         this.orig = orig;
@@ -63,16 +66,28 @@ public class RelRegistrar extends AbstractRelNode implements IgniteRel {
     @Override public RelNode onRegister(RelOptPlanner planner) {
         RelNode r = null;
         for (RelNode rel : rels) {
+            assert RelOptUtil.equal("original row type",
+                orig.getRowType(),
+                "rowtype of registring rel",
+                rel.getRowType(),
+                Litmus.THROW);
+
             r = planner.ensureRegistered(rel, orig);
+
             assert r == rel || RelOptUtil.equal("rowtype of rel before registration",
                 rel.getRowType(),
                 "rowtype of rel after registration",
                 r.getRowType(),
                 Litmus.THROW);
+
+            assert r.isValid(Litmus.THROW, null);
+
             if (!r.getTraitSet().satisfies(getTraitSet()))
-                r = RelOptRule.convert(r, getTraitSet());
+                RelOptRule.convert(r, getTraitSet()); // require traits enforcing
         }
-        assert r != null && r.isValid(Litmus.THROW, null);
+
+        assert r != null;
+
         return r;
     }
 

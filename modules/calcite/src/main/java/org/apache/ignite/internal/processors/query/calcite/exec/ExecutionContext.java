@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.DataContext;
@@ -40,6 +41,9 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.c
  * Runtime context allowing access to the tables in a database.
  */
 public class ExecutionContext<Row> implements DataContext {
+    /** */
+    private static final TimeZone TIME_ZONE = TimeZone.getDefault(); // TODO DistributedSqlConfiguration#timeZone
+
     /** */
     private final UUID qryId;
 
@@ -196,6 +200,8 @@ public class ExecutionContext<Row> implements DataContext {
     @Override public Object get(String name) {
         if (Variable.CANCEL_FLAG.camelName.equals(name))
             return cancelFlag;
+        if (Variable.TIME_ZONE.camelName.equals(name))
+            return TIME_ZONE; // TODO DistributedSqlConfiguration#timeZone
 
         return params.get(name);
     }

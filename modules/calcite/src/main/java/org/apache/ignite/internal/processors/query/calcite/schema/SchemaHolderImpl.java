@@ -48,7 +48,6 @@ import org.jetbrains.annotations.Nullable;
  * Holds actual schema and mutates it on schema change, requested by Ignite.
  */
 public class SchemaHolderImpl extends AbstractService implements SchemaHolder, SchemaChangeListener {
-
     /** */
     private final Map<String, IgniteSchema> igniteSchemas = new HashMap<>();
 
@@ -225,12 +224,13 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         GridQueryIndexDescriptor idxDesc,
         IgniteTable tbl
     ) {
-        Map<String, ColumnDescriptor> tblFields = tbl.descriptor().columnDescriptorsMap();
-
+        TableDescriptor tblDesc = tbl.descriptor();
         List<RelFieldCollation> collations = new ArrayList<>(idxDesc.fields().size());
 
         for (String idxField : idxDesc.fields()) {
-            ColumnDescriptor fieldDesc = tblFields.get(idxField);
+            ColumnDescriptor fieldDesc = tblDesc.columnDescriptor(idxField);
+
+            assert fieldDesc != null;
 
             boolean descending = idxDesc.descending(idxField);
             int fieldIdx = fieldDesc.fieldIndex();

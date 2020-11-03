@@ -18,42 +18,29 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.calcite.rel.type.RelDataType;
 
-/**
- * Regular query or DML
- */
-public interface MultiStepPlan extends QueryPlan {
-    /**
-     * @return Query fragments.
-     */
-    List<Fragment> fragments();
-
-    /**
-     * @return Fields metadata.
-     */
-    FieldsMetadata fieldsMetadata();
-
-    /**
-     * @param fragment Fragment.
-     * @return Mapping for a given fragment.
-     */
-    NodesMapping fragmentMapping(Fragment fragment);
+/** */
+public class FieldsMetadataImpl implements FieldsMetadata {
+    /** */
+    private final RelDataType rowType;
 
     /** */
-    NodesMapping targetMapping(Fragment fragment);
+    private final List<List<String>> origins;
 
     /** */
-    Map<Long, List<UUID>> remoteSources(Fragment fragment);
+    public FieldsMetadataImpl(RelDataType rowType, List<List<String>> origins) {
+        this.rowType = rowType;
+        this.origins = origins;
+    }
 
-    /**
-     * Inits query fragments.
-     *
-     * @param mappingService Mapping service.
-     * @param ctx Planner context.
-     */
-    void init(MappingService mappingService, PlanningContext ctx);
+    /** {@inheritDoc} */
+    @Override public RelDataType rowType() {
+        return rowType;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<List<String>> origins() {
+        return origins;
+    }
 }
