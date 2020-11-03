@@ -53,7 +53,7 @@ You can find the complete list of properties in the javadoc:org.apache.ignite.sp
 ====
 You should not allow node have multiple local addresses until they represent some real physical connections which can
 give you more reliability. Several node addresses can prolong detection of node failure. Connection to a node is
-established to one of the address. But if lost, other addresses are attempted to reconnect to sequentially.
+established to one of its address. But if lost, other addresses are attempted to reconnect to sequentially.
 ====
 
 [cols="1,2,1",opts="header"]
