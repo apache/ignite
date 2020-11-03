@@ -24,12 +24,14 @@ import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryCommunicati
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryConcurrentStartAndStartStopTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryCustomEventsTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryMiscTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryRandomStopOrFailConcurrentTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySegmentationAndConnectionRestoreTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslFailedAuthTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslSuccessfulAuthTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSslTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySplitBrainTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryTopologyChangeAndReconnectTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperValidatePathsTest;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -39,8 +41,10 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    ZookeeperValidatePathsTest.class,
     ZookeeperDiscoverySegmentationAndConnectionRestoreTest.class,
     ZookeeperDiscoveryConcurrentStartAndStartStopTest.class,
+    ZookeeperDiscoveryRandomStopOrFailConcurrentTest.class,
     ZookeeperDiscoveryTopologyChangeAndReconnectTest.class,
     ZookeeperDiscoveryCommunicationFailureTest.class,
     ZookeeperDiscoveryClientDisconnectTest.class,

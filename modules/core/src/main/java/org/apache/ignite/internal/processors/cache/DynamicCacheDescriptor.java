@@ -115,6 +115,7 @@ public class DynamicCacheDescriptor {
      * @param sql SQL flag - whether the cache is created by an SQL command such as {@code CREATE TABLE}.
      * @param deploymentId Deployment ID.
      * @param schema Query schema.
+     * @param cacheCfgEnrichment Cache configuration enrichment.
      */
     @SuppressWarnings("unchecked")
     public DynamicCacheDescriptor(GridKernalContext ctx,

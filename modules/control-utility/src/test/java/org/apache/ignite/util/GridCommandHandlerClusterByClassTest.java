@@ -24,6 +24,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
@@ -99,6 +100,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UN
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
 import static org.apache.ignite.internal.commandline.CommandList.METADATA;
+import static org.apache.ignite.internal.commandline.CommandList.TRACING_CONFIGURATION;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
@@ -126,7 +128,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     protected static final String ERROR_STACK_TRACE_PREFIX = "Error stack trace:";
 
     /**
-     * Very basic tests for running the command in different enviroment which other command are running in.
+     * Very basic tests for running the command in different environment which other command are running in.
      */
     @Test
     public void testFindAndDeleteGarbage() {
@@ -1594,17 +1596,17 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         cmdArgs.put(WAL, asList("print", "delete"));
         cmdArgs.put(METADATA, asList("help", "list"));
+        cmdArgs.put(TRACING_CONFIGURATION, Collections.singletonList("get_all"));
 
         String warning = String.format(
-            "For use experimental command add %s=true to JVM_OPTS in %s",
-            IGNITE_ENABLE_EXPERIMENTAL_COMMAND,
+            "To use experimental command add --enable-experimental parameter for %s",
             UTILITY_NAME
         );
 
         stream(CommandList.values()).filter(cmd -> cmd.command().experimental())
             .peek(cmd -> assertTrue("Not contains " + cmd, cmdArgs.containsKey(cmd)))
             .forEach(cmd -> cmdArgs.get(cmd).forEach(cmdArg -> {
-                assertEquals(EXIT_CODE_OK, execute(cmd.text(), cmdArg));
+                assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(cmd.text(), cmdArg));
 
                 assertContains(log, testOut.toString(), warning);
             }));

@@ -138,7 +138,6 @@
                 <exclude>org.apache.ignite:ignite-cassandra</exclude>
                 <exclude>org.apache.ignite:ignite-yardstick</exclude>
                 <exclude>org.apache.ignite:ignite-benchmarks</exclude>
-                <exclude>org.apache.ignite:ignite-web-agent</exclude>
                 <exclude>org.apache.ignite:ignite-dev-utils</exclude>
                 <exclude>org.apache.ignite:ignite-extdata-platform</exclude>
                 <exclude>org.apache.ignite:ignite-compatibility</exclude>
@@ -154,7 +153,6 @@
                 <exclude>org.apache.ignite:ignite-gce</exclude>
                 <exclude>org.apache.ignite:ignite-jcl</exclude>
                 <exclude>org.apache.ignite:ignite-jms11</exclude>
-                <exclude>org.apache.ignite:ignite-kafka</exclude>
                 <exclude>org.apache.ignite:ignite-mesos</exclude>
                 <exclude>org.apache.ignite:ignite-ml</exclude>
                 <exclude>org.apache.ignite:ignite-ml-h2o-model-parser</exclude>
@@ -168,8 +166,6 @@
                 <exclude>org.apache.ignite:ignite-scalar_2.10</exclude>
                 <exclude>org.apache.ignite:ignite-spark</exclude>
                 <exclude>org.apache.ignite:ignite-spark-2.4</exclude>
-                <exclude>org.apache.ignite:ignite-spring-data</exclude>
-                <exclude>org.apache.ignite:ignite-spring-data_2.0</exclude>
                 <exclude>org.apache.ignite:ignite-ssh</exclude>
                 <exclude>org.apache.ignite:ignite-storm</exclude>
                 <exclude>org.apache.ignite:ignite-web</exclude>

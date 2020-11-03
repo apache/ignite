@@ -1805,7 +1805,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                             if (created) {
                                 if (obsoleteVer == null)
-                                    obsoleteVer = ctx.versions().next();
+                                    obsoleteVer = nextVersion();
 
                                 if (entry.markObsolete(obsoleteVer))
                                     removeEntry(entry);
@@ -1944,7 +1944,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridCacheEntryEx nearEntry = near().peekEx(key);
 
         if (nearEntry != null)
-            nearEntry.markObsolete(ctx.versions().next());
+            nearEntry.markObsolete(nextVersion());
     }
 
     /**
@@ -2105,7 +2105,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long timeout,
         UUID txSubjectId,
         int txTaskNameHash,
-        MvccSnapshot snapshot) throws IgniteException, IgniteCheckedException {
+        MvccSnapshot snapshot
+    ) throws IgniteException, IgniteCheckedException {
 
         assert ctx.affinityNode();
 

@@ -45,16 +45,15 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
 /**
  * DHT cache preloader.
@@ -223,29 +222,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (part.state() == OWNING || part.state() == LOST)
                     continue;
 
-                // If partition is currently rented prevent destroy and start clearing process.
-                if (part.state() == RENTING) {
-                    if (part.reserve()) {
-                        part.moving();
-
-                        part.clearAsync();
-
-                        part.release();
-                    }
-                }
-
-                // If partition was destroyed recreate it.
-                if (part.state() == EVICTED) {
-                    part.awaitDestroy();
-
-                    part = top.localPartition(p, topVer, true);
-
-                    assert part != null : "Partition was not created [grp=" + grp.name() + ", topVer=" + topVer + ", p=" + p + ']';
-
-                    part.resetUpdateCounter();
-                }
-
-                if (part.state() != MOVING && part.state() != OWNING) {
+                // State should be switched to MOVING during PME.
+                if (part.state() != MOVING) {
                     throw new AssertionError("Partition has invalid state for rebalance "
                         + aff.topologyVersion() + " " + part);
                 }
@@ -305,11 +283,26 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         }
 
         if (!assignments.isEmpty()) {
-            ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
+            if (exchFut != null && exchFut.rebalanced()) {
+                GridDhtPartitionDemandMessage first = assignments.values().iterator().next();
 
-            assert exchFut == null || !exchFut.rebalanced() :
-                "Unexpected rebalance on rebalanced cluster " +
-                    "[top=" + topVer + ", grp=" + grp.groupId() + ", assignments=" + assignments + "]";
+                GridDhtLocalPartition locPart = grp.topology().localPartition(first.partitions().all().iterator().next());
+
+                SB buf = new SB(1024);
+
+                buf.a("Unexpected rebalance on rebalanced cluster: assignments=");
+                buf.a(assignments);
+                buf.a(", locPart=");
+
+                if (locPart != null)
+                    locPart.dumpDebugInfo(buf);
+                else
+                    buf.a("NA");
+
+                throw new AssertionError(buf.toString());
+            }
+
+            ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
         }
 
         return assignments;
@@ -435,27 +428,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /**
-     * Resends partitions on partition evict within configured timeout.
-     *
      * @param part Evicted partition.
-     * @param updateSeq Update sequence.
      */
-    public void onPartitionEvicted(GridDhtLocalPartition part, boolean updateSeq) {
+    public void tryFinishEviction(GridDhtLocalPartition part) {
         if (!enterBusy())
             return;
 
         try {
-            top.onEvicted(part, updateSeq);
-
-            if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
-                grp.addUnloadEvent(part.id());
-
-            if (updateSeq) {
-                if (log.isDebugEnabled())
-                    log.debug("Partitions have been scheduled to resend [reason=" +
-                        "Eviction [grp" + grp.cacheOrGroupName() + " " + part.id() + "]");
-
-                ctx.exchange().scheduleResendPartitions();
+            if (top.tryFinishEviction(part)) {
+                if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
+                    grp.addUnloadEvent(part.id());
             }
         }
         finally {
@@ -553,7 +535,15 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> forceRebalance() {
-        return demander.forceRebalance();
+        if (!enterBusy())
+            return new GridFinishedFuture<>();
+
+        try {
+            return demander.forceRebalance();
+        }
+        finally {
+            leaveBusy();
+        }
     }
 
     /** {@inheritDoc} */
@@ -565,5 +555,50 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public void resume() {
         busyLock.writeLock().unlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishPreloading(AffinityTopologyVersion topVer) {
+        if (!enterBusy())
+            return;
+
+        try {
+            demander.finishPreloading(topVer);
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * Return supplier.
+     *
+     * @return Supplier.
+     * */
+    public GridDhtPartitionSupplier supplier() {
+        return supplier;
+    }
+
+    /**
+     * @param supplier Supplier.
+     */
+    public void supplier(GridDhtPartitionSupplier supplier) {
+        this.supplier = supplier;
+    }
+
+    /**
+     * Return demander.
+     *
+     * @return Demander.
+     * */
+    public GridDhtPartitionDemander demander() {
+        return demander;
+    }
+
+    /**
+     * @param demander Demander.
+     */
+    public void demander(GridDhtPartitionDemander demander) {
+        this.demander = demander;
     }
 }

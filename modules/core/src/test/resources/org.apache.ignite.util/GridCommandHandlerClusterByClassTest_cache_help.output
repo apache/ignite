@@ -7,7 +7,7 @@ Arguments: --cache help --yes
 --------------------------------------------------------------------------------
   The '--cache subcommand' is used to get information about and perform actions with caches. The command has the following syntax:
 
-  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] [--verbose] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] --cache [subcommand] <subcommand_parameters>
+  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] [--verbose] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] [--enable-experimental] --cache [subcommand] <subcommand_parameters>
 
   The subcommands that take [nodeId] as an argument ('list', 'find_garbage', 'contention' and 'validate_indexes') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node.
 
@@ -52,6 +52,29 @@ Arguments: --cache help --yes
 
   --cache find_garbage [groupName1,...,groupNameN] [nodeId] [--delete]
     Find and optionally delete garbage from shared cache groups which could be left after cache destroy.
+
+  --cache indexes_list [--node-id nodeId] [--group-name grpRegExp] [--cache-name cacheRegExp] [--index-name idxNameRegExp]
+    List all indexes that match specified filters.
+
+    Parameters:
+      --node-id nodeId     - Specify node for job execution. If not specified explicitly, node will be chosen by grid
+      --group-name regExp  - Regular expression allowing filtering by cache group name
+      --cache-name regExp  - Regular expression allowing filtering by cache name
+      --index-name regExp  - Regular expression allowing filtering by index name
+
+  --cache indexes_rebuild_status [--node-id nodeId]
+    List all indexes that have index rebuild in progress.
+
+    Parameters:
+      --node-id nodeId  - Specify node for job execution. If not specified explicitly, info will be gathered from all nodes
+
+  --cache indexes_force_rebuild --node-id nodeId --cache-name cacheName1,...cacheNameN|--group-name groupName1,...groupNameN
+    Triggers rebuild of all indexes for specified caches or cache groups.
+
+    Parameters:
+      --node-id      - Specify node for indexes rebuild.
+      --cache-names  - Comma-separated list of cache names for which indexes should be rebuilt.
+      --group-names  - Comma-separated list of cache group names for which indexes should be rebuilt.
 
 Command [CACHE] finished with code: 0
 Control utility has completed execution at: <!any!>

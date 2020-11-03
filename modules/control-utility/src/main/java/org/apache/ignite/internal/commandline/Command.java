@@ -20,15 +20,15 @@ package org.apache.ignite.internal.commandline;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
@@ -51,8 +51,48 @@ public interface Command<T> {
         GridClient client = GridClientFactory.start(clientCfg);
 
         // If connection is unsuccessful, fail before doing any operations:
-        if (!client.connected())
-            client.throwLastError();
+        if (!client.connected()) {
+            GridClientException lastErr = client.checkLastError();
+
+            try {
+                client.close();
+            }
+            catch (Throwable e) {
+                lastErr.addSuppressed(e);
+            }
+
+            throw lastErr;
+        }
+
+        return client;
+    }
+
+    /**
+     * Method to create thin client for communication with node before it starts.
+     * If node has already started, there will be an error.
+     *
+     * @param clientCfg Thin client configuration.
+     * @return Grid thin client instance which is already connected to node before it starts.
+     * @throws Exception If error occur.
+     */
+    public static GridClientBeforeNodeStart startClientBeforeNodeStart(
+        GridClientConfiguration clientCfg
+    ) throws Exception {
+        GridClientBeforeNodeStart client = GridClientFactory.startBeforeNodeStart(clientCfg);
+
+        // If connection is unsuccessful, fail before doing any operations:
+        if (!client.connected()) {
+            GridClientException lastErr = client.checkLastError();
+
+            try {
+                client.close();
+            }
+            catch (Throwable e) {
+                lastErr.addSuppressed(e);
+            }
+
+            throw lastErr;
+        }
 
         return client;
     }
@@ -188,13 +228,6 @@ public interface Command<T> {
      * @return command name.
      */
     String name();
-
-    /**
-     * @return Value of {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND}
-     */
-    default boolean experimentalEnabled() {
-        return IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false);
-    }
 
     /**
      * Return {@code true} if the command is experimental or {@code false}

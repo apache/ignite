@@ -150,28 +150,32 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
         IgniteServices services = grp.services();
 
-        if (!keepBinary() && args.length > 0) {
-            for (int i = 0; i < args.length; i++) {
-                if (paramTypeIds != null)
-                    reader.readInt(); // Skip parameter typeId, we already read it in constructor.
-
-                args[i] = reader.readObject();
-            }
-        }
-
         try {
             Object res;
 
             if (PlatformService.class.isAssignableFrom(svcCls)) {
+                // Never deserialize platform service arguments and result: may contain platform-only types.
                 PlatformService proxy = services.serviceProxy(name, PlatformService.class, false, timeout);
 
-                res = proxy.invokeMethod(methodName, keepBinary(), !keepBinary(), args);
+                res = proxy.invokeMethod(methodName, keepBinary(), false, args);
             }
             else {
+                // Deserialize Java service arguments when not in keepBinary mode.
+                if (!keepBinary() && args.length > 0) {
+                    for (int i = 0; i < args.length; i++) {
+                        if (paramTypeIds != null)
+                            reader.readInt(); // Skip parameter typeId, we already read it in constructor.
+
+                        args[i] = reader.readObject();
+                    }
+                }
+
                 GridServiceProxy<?> proxy = new GridServiceProxy<>(grp, name, Service.class, false, timeout,
                     ctx.kernalContext());
 
                 Method method = resolveMethod(ctx, svcCls);
+
+                PlatformServices.convertArrayArgs(args, method);
 
                 res = proxy.invokeMethod(method, args);
             }

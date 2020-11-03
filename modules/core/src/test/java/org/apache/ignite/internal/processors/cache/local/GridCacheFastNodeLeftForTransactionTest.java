@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
@@ -98,6 +97,7 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setMvccVacuumFrequency(1000)
             .setCacheConfiguration(createCacheConfigs())
             .setGridLogger(listeningLog)
             .setConnectorConfiguration(new ConnectorConfiguration());
@@ -183,14 +183,10 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
             int stoppedNodeId = 2;
 
-            stopGrid(stoppedNodeId);
-
-            CountDownLatch latch = new CountDownLatch(1);
+            stopGrid(grid(stoppedNodeId).name(), false, false);
 
             GridTestUtils.runAsync(() -> {
-                latch.countDown();
-
-                IgniteCache<Object, Object> clientCache = clientNode.cache(DEFAULT_CACHE_NAME);
+                IgniteCache<Object, Object> clientCache = clientNode.cache(cacheName);
 
                 txKeys.forEach(clientCache::get);
             });
@@ -198,8 +194,6 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
             LogListener logLsnr = newLogListener();
 
             listeningLog.registerListener(logLsnr);
-
-            latch.await();
 
             for (Transaction tx : txs)
                 tx.rollback();
@@ -237,6 +231,9 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
         IgniteEx stoppedNode = startGrid(stoppedNodeId);
 
         awaitPartitionMapExchange();
+
+        // Wait for vacuum.
+        doSleep(2000);
 
         checkCacheData(cacheValues, cacheName);
 
@@ -287,15 +284,14 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         Collection<Transaction> txs = new ArrayList<>();
 
+        Transaction tx = node.transactions().txStart();
+
         for (Integer key : keys) {
-            Transaction tx = node.transactions().txStart();
-
             cache.put(key, key + 10);
-
-            ((TransactionProxyImpl)tx).tx().prepare(true);
-
             txs.add(tx);
         }
+
+        ((TransactionProxyImpl)tx).tx().prepare(true);
 
         return txs;
     }

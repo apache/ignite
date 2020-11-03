@@ -97,7 +97,6 @@ public class VisorExecutorServiceConfiguration extends VisorDataTransferObject {
         sysPoolSz = c.getSystemThreadPoolSize();
         mgmtPoolSize = c.getManagementThreadPoolSize();
         p2pPoolSz = c.getPeerClassLoadingThreadPoolSize();
-        igfsPoolSize = c.getIgfsThreadPoolSize();
         rebalanceThreadPoolSize = c.getRebalanceThreadPoolSize();
 
         ConnectorConfiguration cc = c.getConnectorConfiguration();

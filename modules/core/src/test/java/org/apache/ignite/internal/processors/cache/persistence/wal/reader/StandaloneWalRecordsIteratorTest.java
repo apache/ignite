@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -40,8 +39,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -144,13 +143,13 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
     public void testStrictBounds() throws Exception {
         String dir = createWalFiles();
 
-        FileWALPointer lowBound = null, highBound = null;
+        WALPointer lowBound = null, highBound = null;
 
         for (IgniteBiTuple<WALPointer, WALRecord> p : createWalIterator(dir, null, null, false)) {
             if (lowBound == null)
-                lowBound = (FileWALPointer) p.get1();
+                lowBound = p.get1();
 
-            highBound = (FileWALPointer) p.get1();
+            highBound = p.get1();
         }
 
         assertNotNull(lowBound);
@@ -159,19 +158,19 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         createWalIterator(dir, lowBound, highBound, true);
 
-        final FileWALPointer lBound = lowBound;
-        final FileWALPointer hBound = highBound;
+        final WALPointer lBound = lowBound;
+        final WALPointer hBound = highBound;
 
         //noinspection ThrowableNotThrown
         GridTestUtils.assertThrows(log, () -> {
-            createWalIterator(dir, new FileWALPointer(lBound.index() - 1, 0, 0), hBound, true);
+            createWalIterator(dir, new WALPointer(lBound.index() - 1, 0, 0), hBound, true);
 
             return 0;
         }, IgniteCheckedException.class, null);
 
         //noinspection ThrowableNotThrown
         GridTestUtils.assertThrows(log, () -> {
-            createWalIterator(dir, lBound, new FileWALPointer(hBound.index() + 1, 0, 0), true);
+            createWalIterator(dir, lBound, new WALPointer(hBound.index() + 1, 0, 0), true);
 
             return 0;
         }, IgniteCheckedException.class, null);
@@ -224,7 +223,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
      * @param highBound High bound.
      * @param strictCheck Strict check.
      */
-    private WALIterator createWalIterator(String walDir, FileWALPointer lowBound, FileWALPointer highBound, boolean strictCheck)
+    private WALIterator createWalIterator(String walDir, WALPointer lowBound, WALPointer highBound, boolean strictCheck)
                     throws IgniteCheckedException {
         IteratorParametersBuilder params = new IteratorParametersBuilder();
 

@@ -146,6 +146,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Empty cache version array. */
     private static final GridCacheVersion[] EMPTY_VERSION = new GridCacheVersion[0];
 
+    /** @see IgniteSystemProperties#IGNITE_READ_LOAD_BALANCING */
+    public static final boolean DFLT_READ_LOAD_BALANCING = true;
+
     /** Kernal context. */
     private GridKernalContext ctx;
 
@@ -273,7 +276,8 @@ public class GridCacheContext<K, V> implements Externalizable {
     private volatile boolean statisticsEnabled;
 
     /** Whether to enable read load balancing. */
-    private final boolean readLoadBalancingEnabled = IgniteSystemProperties.getBoolean(IGNITE_READ_LOAD_BALANCING, true);
+    private final boolean readLoadBalancingEnabled =
+        IgniteSystemProperties.getBoolean(IGNITE_READ_LOAD_BALANCING, DFLT_READ_LOAD_BALANCING);
 
     /** Flag indicating whether data can be read from backup. */
     private boolean readFromBackup = CacheConfiguration.DFLT_READ_FROM_BACKUP;

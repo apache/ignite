@@ -90,7 +90,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(EXE, RESULT, NOOP);
 
     /** Default maximum number of task results. */
-    private static final int DFLT_MAX_TASK_RESULTS = 10240;
+    public static final int DFLT_MAX_TASK_RESULTS = 10240;
 
     /** Maximum number of task results. */
     private final int maxTaskResults = getInteger(IGNITE_REST_MAX_TASK_RESULTS, DFLT_MAX_TASK_RESULTS);
