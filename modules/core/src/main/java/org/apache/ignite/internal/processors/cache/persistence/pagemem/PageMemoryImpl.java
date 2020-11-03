@@ -535,12 +535,15 @@ public class PageMemoryImpl implements PageMemoryEx {
         DelayedDirtyPageStoreWrite delayedWriter = delayedPageReplacementTracker != null
             ? delayedPageReplacementTracker.delayedPageWrite() : null;
 
-        FullPageId fullId = new FullPageId(pageId, grpId);
-
         seg.writeLock().lock();
 
-        boolean isTrackingPage =
-            changeTracker != null && trackingIO.trackingPageFor(pageId, realPageSize(grpId)) == pageId;
+        boolean isTrackingPage = changeTracker != null &&
+            PageIdUtils.pageIndex(trackingIO.trackingPageFor(pageId, realPageSize(grpId))) == PageIdUtils.pageIndex(pageId);
+
+        if (isTrackingPage && PageIdUtils.flag(pageId) == PageIdAllocator.FLAG_AUX)
+            pageId = PageIdUtils.pageId(PageIdUtils.partId(pageId), PageIdAllocator.FLAG_DATA, PageIdUtils.pageIndex(pageId));
+
+        FullPageId fullId = new FullPageId(pageId, grpId);
 
         try {
             long relPtr = seg.loadedPages.get(

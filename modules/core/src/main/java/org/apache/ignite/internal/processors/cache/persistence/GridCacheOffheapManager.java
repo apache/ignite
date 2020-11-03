@@ -2222,19 +2222,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             }
                         }
 
-                        if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_AUX)
+                        if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_AUX
+                            && PageIdUtils.flag(treeRoot) != PageMemory.FLAG_DATA)
                             throw new StorageException("Wrong tree root page id flag: treeRoot="
                                 + U.hexLong(treeRoot) + ", part=" + partId + ", grpId=" + grpId);
 
-                        if (PageIdUtils.flag(reuseListRoot) != PageMemory.FLAG_AUX)
+                        if (PageIdUtils.flag(reuseListRoot) != PageMemory.FLAG_AUX
+                            && PageIdUtils.flag(reuseListRoot) != PageMemory.FLAG_DATA)
                             throw new StorageException("Wrong reuse list root page id flag: reuseListRoot="
                                 + U.hexLong(reuseListRoot) + ", part=" + partId + ", grpId=" + grpId);
 
-                        if (PageIdUtils.flag(pendingTreeRoot) != PageMemory.FLAG_AUX)
+                        if (PageIdUtils.flag(pendingTreeRoot) != PageMemory.FLAG_AUX
+                            && PageIdUtils.flag(pendingTreeRoot) != PageMemory.FLAG_DATA)
                             throw new StorageException("Wrong pending tree root page id flag: reuseListRoot="
-                                + U.hexLong(reuseListRoot) + ", part=" + partId + ", grpId=" + grpId);
+                                + U.hexLong(pendingTreeRoot) + ", part=" + partId + ", grpId=" + grpId);
 
-                        if (PageIdUtils.flag(partMetaStoreReuseListRoot) != PageMemory.FLAG_AUX)
+                        if (PageIdUtils.flag(partMetaStoreReuseListRoot) != PageMemory.FLAG_AUX
+                            && PageIdUtils.flag(partMetaStoreReuseListRoot) != PageMemory.FLAG_DATA)
                             throw new StorageException("Wrong partition meta store list root page id flag: partMetaStoreReuseListRoot="
                                 + U.hexLong(partMetaStoreReuseListRoot) + ", part=" + partId + ", grpId=" + grpId);
                     }

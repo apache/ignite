@@ -488,11 +488,13 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
 
     /** */
     private void checkRootsPageIdFlag(long treeRoot, long reuseListRoot) throws StorageException {
-        if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_AUX)
+        if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_AUX &&
+            PageIdUtils.flag(treeRoot) != PageMemory.FLAG_DATA)
             throw new StorageException("Wrong tree root page id flag: treeRoot="
                 + U.hexLong(treeRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
 
-        if (PageIdUtils.flag(reuseListRoot) != PageMemory.FLAG_AUX)
+        if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_AUX &&
+            PageIdUtils.flag(treeRoot) != PageMemory.FLAG_DATA)
             throw new StorageException("Wrong reuse list root page id flag: reuseListRoot="
                 + U.hexLong(reuseListRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
     }
