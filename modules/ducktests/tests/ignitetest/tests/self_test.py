@@ -30,14 +30,14 @@ from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 
 # pylint: disable=W0223
-class SmokeSelfTest(IgniteTest):
+class SelfTest(IgniteTest):
     """
     Self test
     """
 
     @cluster(num_nodes=1)
     @ignite_versions(str(DEV_BRANCH))
-    def est_assertion_convertion(self, ignite_version):
+    def test_assertion_convertion(self, ignite_version):
         """
         Test to make sure Java assertions are converted to python exceptions
         """
@@ -57,7 +57,7 @@ class SmokeSelfTest(IgniteTest):
             assert False
 
     @ignite_versions(str(DEV_BRANCH))
-    def test_services_start_stop(self, ignite_version):
+    def test_simple_services_start_stop(self, ignite_version):
         ignites = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(ignite_version)),
                                 num_nodes=1)
 
@@ -86,7 +86,7 @@ class SmokeSelfTest(IgniteTest):
 
         node2.run()
 
-        node1.stop()  # logs are broken
+        node1.stop()
 
         client.stop()
 

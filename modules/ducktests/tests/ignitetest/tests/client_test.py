@@ -18,14 +18,14 @@ This module contains client tests
 """
 import time
 
+from ducktape.mark import parametrize
 from ducktape.mark.resource import cluster
 
-from ducktape.mark import parametrize
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
-from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, V_2_8_1, IgniteVersion
@@ -46,7 +46,7 @@ class ClientTest(IgniteTest):
 
     CACHE_NAME = "simple-tx-cache"
     PACING = 10
-    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.start_stop_client.IgniteCachePutClient"
+    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.client_test.IgniteCachePutClient"
 
     @ignite_versions(str(V_2_8_1), str(DEV_BRANCH))
     @cluster(num_nodes=7)
@@ -55,7 +55,6 @@ class ClientTest(IgniteTest):
                  temp_client=3,
                  iteration_count=3,
                  client_work_time=30)
-    # pylint: disable=R0913
     def test_ignite_start_stop_nodes(self, ignite_version,
                                      num_nodes, static_clients, temp_client, iteration_count, client_work_time):
         """
@@ -72,7 +71,6 @@ class ClientTest(IgniteTest):
                  temp_client=3,
                  iteration_count=3,
                  client_work_time=30)
-    # pylint: disable=R0913
     def test_ignite_kill_start_nodes(self, ignite_version,
                                      num_nodes, static_clients, temp_client, iteration_count, client_work_time):
         """
@@ -81,8 +79,6 @@ class ClientTest(IgniteTest):
         self.ignite_start_stop(ignite_version, False, num_nodes, static_clients,
                                temp_client, iteration_count, client_work_time)
 
-    # pylint: disable=R0914
-    # pylint: disable=R0913
     def ignite_start_stop(self, ignite_version, correct_stop_temp_node,
                           nodes_num, static_clients_num, temp_client, iteration_count, client_work_time):
         """
@@ -92,6 +88,7 @@ class ClientTest(IgniteTest):
         servers_count = nodes_num - static_clients_num - temp_client
 
         current_top_v = servers_count
+
         # Topology version after test.
         fin_top_ver = servers_count + (2 * static_clients_num) + (2 * iteration_count * temp_client)
 
