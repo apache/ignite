@@ -46,7 +46,7 @@ include::thin-client-comparison.csv[]
 
 === Client Connection Failover
 
-All thin clients (except for the .NET thin client) support a connection failover mechanism, whereby the client automatically switches to an available node in case of the current node or connection failure.
+All thin clients support a connection failover mechanism, whereby the client automatically switches to an available node in case of the current node or connection failure.
 For this mechanism to work, you need to provide a list of node addresses you want to use for failover purposes in the client configuration.
 Refer to the specific client documentation for more details.
 
