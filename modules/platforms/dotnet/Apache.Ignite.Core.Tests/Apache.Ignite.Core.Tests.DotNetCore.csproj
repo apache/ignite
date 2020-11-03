@@ -89,6 +89,7 @@
     <None Update="Config\Cache\Store\cache-store-session-shared-factory.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Cache\Affinity\affinity-function.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Config\Cache\Affinity\affinity-function2.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\cache-attribute-node-filter.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Update="custom_app.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
