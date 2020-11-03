@@ -64,11 +64,11 @@ import static java.util.stream.Stream.concat;
 import static java.util.stream.Stream.of;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.transactions.TransactionState.COMMITTED;
-import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.MTC.support;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_FINISH;
+import static org.apache.ignite.transactions.TransactionState.COMMITTED;
+import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
