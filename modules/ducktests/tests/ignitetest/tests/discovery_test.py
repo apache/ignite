@@ -148,7 +148,7 @@ class DiscoveryTest(IgniteTest):
         ignite_config = IgniteConfiguration(
             version=test_config.version,
             discovery_spi=discovery_spi,
-            failure_detection_timeout=self.FAILURE_DETECTION_TOMEOT,
+            failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT,
             caches=[CacheConfiguration(
                 name='test-cache',
                 backups=1,
@@ -296,8 +296,8 @@ def start_zookeeper(test_context, num_nodes):
     """
     Start zookeeper cluster.
     """
-    zk_settings = ZookeeperSettings(min_session_timeout=DiscoveryTest.FAILURE_DETECTION_TOMEOT,
-                                    tick_time=DiscoveryTest.FAILURE_DETECTION_TOMEOT // 3)
+    zk_settings = ZookeeperSettings(min_session_timeout=DiscoveryTest.FAILURE_DETECTION_TIMEOUT,
+                                    tick_time=DiscoveryTest.FAILURE_DETECTION_TIMEOUT // 3)
 
     zk_quorum = ZookeeperService(test_context, num_nodes, settings=zk_settings)
     zk_quorum.start()
