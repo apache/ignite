@@ -21,6 +21,7 @@ import java.util.UUID;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
@@ -39,7 +40,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CONT
 /**
  * Cache contention detection subcommand.
  */
-public class CacheContention implements Command<CacheContention.Arguments> {
+public class CacheContention extends AbstractCommand<CacheContention.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
         String description = "Show the keys that are point of contention for multiple transactions.";

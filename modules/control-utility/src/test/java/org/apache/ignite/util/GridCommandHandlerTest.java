@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -606,13 +607,49 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testBaselineCollect() throws Exception {
-        Ignite ignite = startGrids(1);
+        Ignite ignite = startGrid(
+            optimize(getConfiguration(getTestIgniteInstanceName(0))).setLocalHost("0.0.0.0"));
+
+        Field addresses = ignite.cluster().node().getClass().getDeclaredField("addrs");
+        addresses.setAccessible(true);
+        addresses.set(ignite.cluster().node(), Arrays.asList("127.0.0.1", "0:0:0:0:0:0:0:1", "10.19.112.175", "188.166.164.247"));
+        Field hostNames = ignite.cluster().node().getClass().getDeclaredField("hostNames");
+        hostNames.setAccessible(true);
+        hostNames.set(ignite.cluster().node(), Arrays.asList("10.19.112.175.hostname"));
 
         assertFalse(ignite.cluster().active());
 
         ignite.cluster().active(true);
 
-        assertEquals(EXIT_CODE_OK, execute("--baseline"));
+        injectTestSystemOut();
+
+        { // non verbose mode
+            assertEquals(EXIT_CODE_OK, execute("--baseline"));
+
+            List<String> nodesInfo = findBaselineNodesInfo();
+            assertEquals(1, nodesInfo.size());
+            assertContains(log, nodesInfo.get(0), "Address=188.166.164.247.hostname/188.166.164.247, ");
+        }
+
+        { // verbose mode
+            assertEquals(EXIT_CODE_OK, execute("--verbose", "--baseline"));
+
+            List<String> nodesInfo = findBaselineNodesInfo();
+            assertEquals(1, nodesInfo.size());
+            assertContains(log, nodesInfo.get(0), "Addresses=188.166.164.247.hostname/188.166.164.247,10.19.112.175.hostname/10.19.112.175");
+        }
+
+        { // empty resolved addresses
+            addresses.set(ignite.cluster().node(), Collections.emptyList());
+            hostNames.set(ignite.cluster().node(), Collections.emptyList());
+
+            assertEquals(EXIT_CODE_OK, execute("--verbose", "--baseline"));
+
+            List<String> nodesInfo = findBaselineNodesInfo();
+            assertEquals(1, nodesInfo.size());
+            assertContains(log, nodesInfo.get(0), "ConsistentId=" +
+                grid(0).cluster().localNode().consistentId() + ", State=");
+        }
 
         assertEquals(1, ignite.cluster().currentBaselineTopology().size());
     }
@@ -637,7 +674,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String crdStr = findCrdInfo();
 
         assertEquals("(Coordinator: ConsistentId=" +
-            grid(0).cluster().localNode().consistentId() + ", Order=1)", crdStr);
+            grid(0).cluster().localNode().consistentId() + ", Address=127.0.0.1.hostname/127.0.0.1" + ", Order=1)", crdStr);
 
         stopGrid(0);
 
@@ -646,7 +683,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         crdStr = findCrdInfo();
 
         assertEquals("(Coordinator: ConsistentId=" +
-            grid(1).cluster().localNode().consistentId() + ", Order=2)", crdStr);
+            grid(1).cluster().localNode().consistentId() + ", Address=127.0.0.1.hostname/127.0.0.1" + ", Order=2)", crdStr);
 
         startGrid(0);
 
@@ -655,7 +692,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         crdStr = findCrdInfo();
 
         assertEquals("(Coordinator: ConsistentId=" +
-            grid(1).cluster().localNode().consistentId() + ", Order=2)", crdStr);
+            grid(1).cluster().localNode().consistentId() + ", Address=127.0.0.1.hostname/127.0.0.1" + ", Order=2)", crdStr);
 
         stopGrid(1);
 
@@ -664,7 +701,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         crdStr = findCrdInfo();
 
         assertEquals("(Coordinator: ConsistentId=" +
-            grid(0).cluster().localNode().consistentId() + ", Order=4)", crdStr);
+            grid(0).cluster().localNode().consistentId() + ", Address=127.0.0.1.hostname/127.0.0.1" + ", Order=4)", crdStr);
     }
 
     /**
@@ -680,6 +717,30 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String crdStr = outStr.substring(i).trim();
 
         return crdStr.substring(0, crdStr.indexOf('\n')).trim();
+    }
+
+    /**
+     * @return utility information about baseline nodes
+     */
+    private List<String> findBaselineNodesInfo() {
+        String outStr = testOut.toString();
+
+        int i = outStr.indexOf("Baseline nodes:");
+
+        assertTrue("Baseline nodes information is not found", i != -1);
+
+        int j = outStr.indexOf("\n", i) + 1;
+
+        int beginOfNodeDesc = -1;
+
+        List<String> nodesInfo = new ArrayList<>();
+
+        while ((beginOfNodeDesc = outStr.indexOf("ConsistentId=", j) ) != -1) {
+            j = outStr.indexOf("\n", beginOfNodeDesc);
+            nodesInfo.add(outStr.substring(beginOfNodeDesc, j).trim());
+        }
+
+        return nodesInfo;
     }
 
     /**
