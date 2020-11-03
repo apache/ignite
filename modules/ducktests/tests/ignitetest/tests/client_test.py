@@ -115,7 +115,7 @@ class ClientTest(IgniteTest):
 
         # Start / stop temp_clients node. Check cluster.
         for i in range(iteration_count):
-            self.logger.debug(f'Starting iteration: {i}.')
+            self.logger.info(f'Starting iteration: {i}.')
 
             temp_clients.start()
 
