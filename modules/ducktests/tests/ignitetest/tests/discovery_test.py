@@ -85,8 +85,8 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(nodes_to_kill=[1, 2],
-            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL], socket_linger=[0, 3],
-            failure_detection_timeout=[500, 3000])
+            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL], socket_linger=[0, 2],
+            failure_detection_timeout=[1000])
     def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, socket_linger,
                                            failure_detection_timeout):
         """
@@ -100,8 +100,8 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
-    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL], socket_linger=[0, 3],
-            failure_detection_timeout=[500, 3000])
+    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL], socket_linger=[0, 2],
+            failure_detection_timeout=[1000])
     def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, socket_linger, failure_detection_timeout):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
@@ -115,7 +115,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES + 3)
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
-    @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[1000, 5000],
+    @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[1000],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
         """
@@ -131,7 +131,7 @@ class DiscoveryTest(IgniteTest):
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
-            failure_detection_timeout=[1000, 5000])
+            failure_detection_timeout=[1000])
     def test_2_nodes_fail_sequential_zk(self, ignite_version, load_type, failure_detection_timeout):
         """
         Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
