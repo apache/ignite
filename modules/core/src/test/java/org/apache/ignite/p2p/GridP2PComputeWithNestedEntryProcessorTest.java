@@ -136,7 +136,7 @@ public class GridP2PComputeWithNestedEntryProcessorTest extends GridCommonAbstra
                         assertTrue(key >= ENTRIES || res);
                     }
 
-                    scnaCacheData(cache);
+                    scanCacheData(cache);
                 }
             }
         }
@@ -183,7 +183,7 @@ public class GridP2PComputeWithNestedEntryProcessorTest extends GridCommonAbstra
      * @param cache Ignite cache.
      * @throws Exception If failed.
      */
-    private void scnaCacheData(IgniteCache cache) throws Exception {
+    private void scanCacheData(IgniteCache cache) throws Exception {
         scanByCopositeFirstPredicate(cache);
         scanByCopositeSecondPredicate(cache);
         scanByCopositeFirstSecondPredicate(cache);

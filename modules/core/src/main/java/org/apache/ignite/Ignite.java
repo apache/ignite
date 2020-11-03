@@ -32,9 +32,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -63,7 +66,6 @@ import org.jetbrains.annotations.Nullable;
  * <li>{@link IgniteQueue} - distributed blocking queue.</li>
  * <li>{@link IgniteSet} - distributed concurrent set.</li>
  * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
- * <li>{@link IgniteFileSystem} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * </ul>
  */
 public interface Ignite extends AutoCloseable {
@@ -409,27 +411,6 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteDataStreamer<K, V> dataStreamer(String cacheName) throws IllegalStateException;
 
     /**
-     * Gets an instance of IGFS (Ignite In-Memory File System). If one is not
-     * configured then {@link IllegalArgumentException} will be thrown.
-     * <p>
-     * IGFS is fully compliant with Hadoop {@code FileSystem} APIs and can
-     * be plugged into Hadoop installations. For more information refer to
-     * documentation on Hadoop integration shipped with Ignite.
-     *
-     * @param name IGFS name.
-     * @return IGFS instance.
-     * @throws IllegalArgumentException If IGFS with such name is not configured.
-     */
-    public IgniteFileSystem fileSystem(String name) throws IllegalArgumentException;
-
-    /**
-     * Gets all instances of IGFS (Ignite In-Memory File System).
-     *
-     * @return Collection of IGFS instances.
-     */
-    public Collection<IgniteFileSystem> fileSystems();
-
-    /**
      * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag
      * is {@code true}. It will use configuration from {@link IgniteConfiguration#getAtomicConfiguration()}.
      *
@@ -741,4 +722,18 @@ public interface Ignite extends AutoCloseable {
      * @return Snapshot manager.
      */
     public IgniteSnapshot snapshot();
+
+    /**
+     * Returns the {@link TracingConfigurationManager} instance that allows to
+     * <ul>
+     *     <li>Configure tracing parameters such as sampling rate for the specific tracing coordinates
+     *          such as scope and label.</li>
+     *     <li>Retrieve the most specific tracing parameters for the specified tracing coordinates (scope and label)</li>
+     *     <li>Restore the tracing parameters for the specified tracing coordinates to the default.</li>
+     *     <li>List all pairs of tracing configuration coordinates and tracing configuration parameters.</li>
+     * </ul>
+     * @return {@link TracingConfigurationManager} instance.
+     */
+    @IgniteExperimental
+    public @NotNull TracingConfigurationManager tracingConfiguration();
 }
