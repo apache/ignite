@@ -50,13 +50,9 @@ class ClientTest(IgniteTest):
 
     @ignite_versions(str(V_2_8_1), str(DEV_BRANCH))
     @cluster(num_nodes=7)
-    @parametrize(num_nodes=7,
-                 static_clients=2,
-                 temp_client=3,
-                 iteration_count=3,
-                 client_work_time=30)
-    def test_ignite_start_stop_nodes(self, ignite_version,
-                                     num_nodes, static_clients, temp_client, iteration_count, client_work_time):
+    @parametrize(num_nodes=7, static_clients=2, temp_client=3, iteration_count=3, client_work_time=30)
+    def test_ignite_start_stop_nodes(self, ignite_version, num_nodes, static_clients, temp_client, iteration_count,
+                                     client_work_time):
         """
         Start and stop clients node test without kill java process.
         Check topology.
@@ -66,63 +62,51 @@ class ClientTest(IgniteTest):
 
     @ignite_versions(str(V_2_8_1), str(DEV_BRANCH))
     @cluster(num_nodes=7)
-    @parametrize(num_nodes=7,
-                 static_clients=2,
-                 temp_client=3,
-                 iteration_count=3,
-                 client_work_time=30)
-    def test_ignite_kill_start_nodes(self, ignite_version,
-                                     num_nodes, static_clients, temp_client, iteration_count, client_work_time):
+    @parametrize(num_nodes=7, static_clients=2, temp_client=3, iteration_count=3, client_work_time=30)
+    def test_ignite_kill_start_nodes(self, ignite_version, num_nodes, static_clients, temp_client, iteration_count,
+                                     client_work_time):
         """
         Start and kill client nodes, Check topology
         """
         self.ignite_start_stop(ignite_version, False, num_nodes, static_clients,
                                temp_client, iteration_count, client_work_time)
 
-    def ignite_start_stop(self, ignite_version, correct_stop_temp_node,
-                          nodes_num, static_clients_num, temp_client, iteration_count, client_work_time):
+    def ignite_start_stop(self, ignite_version, correct_stop_temp_node, nodes_num, static_clients_num, temp_client,
+                          iteration_count, client_work_time):
         """
         Test for starting and stopping fat clients.
         """
 
         servers_count = nodes_num - static_clients_num - temp_client
-
         current_top_v = servers_count
 
         # Topology version after test.
         fin_top_ver = servers_count + (2 * static_clients_num) + (2 * iteration_count * temp_client)
 
-        server_cfg = IgniteConfiguration(
-            version=IgniteVersion(ignite_version),
-            caches=[CacheConfiguration(name=self.CACHE_NAME, backups=1, atomicity_mode='TRANSACTIONAL')]
-        )
+        server_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version), caches=[
+            CacheConfiguration(name=self.CACHE_NAME, backups=1, atomicity_mode='TRANSACTIONAL')])
 
         ignite = IgniteService(self.test_context, server_cfg, num_nodes=servers_count)
+
         control_utility = ControlUtility(ignite, self.test_context)
 
         client_cfg = server_cfg._replace(client_mode=True)
 
-        static_clients = IgniteApplicationService(
-            self.test_context,
-            client_cfg,
-            java_class_name=self.JAVA_CLIENT_CLASS_NAME,
-            num_nodes=static_clients_num,
-            params={"cacheName": self.CACHE_NAME,
-                    "pacing": self.PACING})
+        static_clients = IgniteApplicationService(self.test_context, client_cfg,
+                                                  java_class_name=self.JAVA_CLIENT_CLASS_NAME,
+                                                  num_nodes=static_clients_num,
+                                                  params={"cacheName": self.CACHE_NAME, "pacing": self.PACING})
 
-        temp_clients = IgniteApplicationService(
-            self.test_context,
-            client_cfg,
-            java_class_name=self.JAVA_CLIENT_CLASS_NAME,
-            num_nodes=temp_client,
-            params={"cacheName": self.CACHE_NAME,
-                    "pacing": self.PACING})
+        temp_clients = IgniteApplicationService(self.test_context, client_cfg,
+                                                java_class_name=self.JAVA_CLIENT_CLASS_NAME, num_nodes=temp_client,
+                                                params={"cacheName": self.CACHE_NAME, "pacing": self.PACING})
 
         ignite.start()
 
         static_clients.start()
 
         current_top_v += static_clients_num
+
         check_topology(control_utility, current_top_v)
 
         # Start / stop temp_clients node. Check cluster.
@@ -130,19 +114,23 @@ class ClientTest(IgniteTest):
             self.logger.debug(f'Starting iteration: {i}.')
 
             temp_clients.start()
+
             current_top_v += temp_client
 
             await_event(static_clients, f'ver={current_top_v}, locNode=')
+
             check_topology(control_utility, current_top_v)
 
             await_event(temp_clients, f'clients={static_clients_num + temp_client}')
 
             time.sleep(client_work_time)
+
             temp_clients.stop(correct_stop_temp_node)
 
             current_top_v += temp_client
 
         await_event(static_clients, f'ver={current_top_v}, locNode=')
+
         static_clients.stop()
 
         check_topology(control_utility, fin_top_ver)
