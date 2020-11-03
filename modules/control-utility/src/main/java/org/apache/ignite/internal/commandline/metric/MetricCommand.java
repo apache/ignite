@@ -26,6 +26,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
@@ -42,7 +43,7 @@ import static org.apache.ignite.internal.commandline.systemview.SystemViewComman
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /** Represents command for metric values printing. */
-public class MetricCommand implements Command<VisorMetricTaskArg> {
+public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
     /**
      * Argument for the metric values obtainig task.
      * @see VisorMetricTask
