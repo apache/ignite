@@ -545,10 +545,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-<<<<<<< HEAD
-     * Validation of memory configuration.
-     *
-=======
      * @param volatileCacheInitSize Initial size of PageMemory to be created for volatile cache.
      * @param volatileCacheMaxSize Maximum size of PageMemory to be created for volatile cache.
      *
@@ -567,7 +563,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
->>>>>>> 3b09e642c22... GG-27066 [GG-25478] Introduce volatileMemPlc for volatile data structures caches.
      * @param memCfg configuration to validate.
      * @throws IgniteCheckedException In case of validation violation.
      */
