@@ -50,7 +50,6 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -90,7 +89,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.IgniteFeatures.VOLATILE_DATA_STRUCTURES_REGION;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_LONG;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_REF;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_SEQ;
@@ -523,11 +521,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         if (type.isVolatile()) {
             String volatileGrpName = DEFAULT_VOLATILE_DS_GROUP_NAME;
 
-            if (IgniteFeatures.allNodesSupport(ctx, VOLATILE_DATA_STRUCTURES_REGION)) {
-                dataRegionName = VOLATILE_DATA_REGION_NAME;
+            dataRegionName = VOLATILE_DATA_REGION_NAME;
 
-                volatileGrpName += "@" + dataRegionName;
-            }
+            volatileGrpName += "@" + dataRegionName;
 
             grpName = volatileGrpName;
         } else if (cfg.getGroupName() != null)
