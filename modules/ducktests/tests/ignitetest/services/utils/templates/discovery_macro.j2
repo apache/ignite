@@ -49,7 +49,7 @@
         {% endif %}
         <property name="localPort" value="{{ spi.port }}"/>
         <property name="localPortRange" value="{{ spi.port_range }}"/>
-        <property name="soLinger" value="{{ spi.socket_linger }}"/>
+        <property name="soLinger" value="false"/>
         {{ ip_finder(spi) }}
     </bean>
 {% endmacro %}
