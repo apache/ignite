@@ -32,7 +32,14 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 /**
  * Utility class for various matrix operations.
  */
-public class MatrixUtil {
+public final class MatrixUtil {
+    /**
+     *
+     */
+    private MatrixUtil() {
+        // No-op.
+    }
+
     /**
      * Create the like matrix with read-only matrices support.
      *
