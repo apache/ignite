@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline.encryption;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.visor.encryption.VisorGetMasterKeyNameTask;
@@ -31,7 +32,7 @@ import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcom
 /**
  * Get master key name encryption subcommand.
  */
-public class GetMasterKeyNameCommand implements Command<Void> {
+public class GetMasterKeyNameCommand extends AbstractCommand<Void> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {

@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
@@ -44,7 +45,7 @@ import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcom
 /**
  * View/change cache group re-encryption rate limit subcommand.
  */
-public class ReencryptionRateCommand implements Command<VisorReencryptionRateTaskArg> {
+public class ReencryptionRateCommand extends AbstractCommand<VisorReencryptionRateTaskArg> {
     /** Re-encryption rate task argument. */
     private VisorReencryptionRateTaskArg taskArg;
 

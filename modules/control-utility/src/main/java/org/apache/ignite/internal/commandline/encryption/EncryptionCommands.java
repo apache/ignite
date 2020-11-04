@@ -20,7 +20,6 @@ package org.apache.ignite.internal.commandline.encryption;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
-import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandList;
 
@@ -29,7 +28,7 @@ import org.apache.ignite.internal.commandline.CommandList;
  *
  * @see EncryptionSubcommands
  */
-public class EncryptionCommands extends AbstractCommand<Object> {
+public class EncryptionCommands extends AbstractCommand<EncryptionSubcommands> {
     /** Subcommand. */
     private EncryptionSubcommands cmd;
 
@@ -54,8 +53,8 @@ public class EncryptionCommands extends AbstractCommand<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object arg() {
-        return null;
+    @Override public EncryptionSubcommands arg() {
+        return cmd;
     }
 
     /** {@inheritDoc} */

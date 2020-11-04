@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandList;
@@ -50,7 +51,7 @@ import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcom
  * @param <S> Multinode task result.
  */
 public abstract class CacheGroupEncryptionCommand<T, S extends VisorCacheGroupEncryptionTaskResult<T>>
-    implements Command<VisorCacheGroupEncryptionTaskArg> {
+    extends AbstractCommand<VisorCacheGroupEncryptionTaskArg> {
     /** Cache group reencryption task argument. */
     private VisorCacheGroupEncryptionTaskArg taskArg;
 
