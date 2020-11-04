@@ -68,7 +68,7 @@ import org.apache.ignite.ml.tree.randomforest.data.statistics.NormalDistribution
  * @param <T> Type of child of RandomForestTrainer using in with-methods.
  */
 public abstract class RandomForestTrainer<L, S extends ImpurityComputer<BootstrappedVector, S>,
-    T extends RandomForestTrainer<L, S, T>> extends SingleLabelDatasetTrainer<ModelsComposition> {
+    T extends RandomForestTrainer<L, S, T>> extends SingleLabelDatasetTrainer<RandomForestModel> {
     /** Bucket size factor. */
     private static final double BUCKET_SIZE_FACTOR = (1 / 10.0);
 
@@ -110,9 +110,9 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> ModelsComposition fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
-                                                  Preprocessor<K, V> preprocessor) {
-        List<TreeRoot> models = null;
+    @Override public <K, V> RandomForestModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
+                                                                                 Preprocessor<K, V> preprocessor) {
+        List<RandomForestTreeModel> models = null;
         try (Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
@@ -215,9 +215,9 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
      * @param dataset Dataset.
      * @return list of decision trees.
      */
-    private List<TreeRoot> fit(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
+    private List<RandomForestTreeModel> fit(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
         Queue<TreeNode> treesQueue = createRootsQueue();
-        ArrayList<TreeRoot> roots = initTrees(treesQueue);
+        ArrayList<RandomForestTreeModel> roots = initTrees(treesQueue);
         Map<Integer, BucketMeta> histMeta = computeHistogramMeta(meta, dataset);
         if (histMeta.isEmpty())
             return Collections.emptyList();
@@ -239,20 +239,20 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isUpdateable(ModelsComposition mdl) {
-        ModelsComposition fakeComposition = buildComposition(Collections.emptyList());
+    @Override public boolean isUpdateable(RandomForestModel mdl) {
+        RandomForestModel fakeComposition = buildComposition(Collections.emptyList());
         return mdl.getPredictionsAggregator().getClass() == fakeComposition.getPredictionsAggregator().getClass();
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override protected <K, V> RandomForestModel updateModel(RandomForestModel mdl, DatasetBuilder<K, V> datasetBuilder,
                                                              Preprocessor<K, V> preprocessor) {
 
-        ArrayList<IgniteModel<Vector, Double>> oldModels = new ArrayList<>(mdl.getModels());
-        ModelsComposition newModels = fit(datasetBuilder, preprocessor);
-        oldModels.addAll(newModels.getModels());
+        List<RandomForestTreeModel> oldModels = new ArrayList<>((Collection<? extends RandomForestTreeModel>) mdl.getModels());
+        RandomForestModel newModels = fit(datasetBuilder, preprocessor);
+        oldModels.addAll((Collection<? extends RandomForestTreeModel>) newModels.getModels());
 
-        return new ModelsComposition(oldModels, mdl.getPredictionsAggregator());
+        return new RandomForestModel(oldModels, mdl.getPredictionsAggregator());
     }
 
     /**
@@ -297,16 +297,16 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
      * @param treesQueue Trees queue.
      * @return List of trees.
      */
-    protected ArrayList<TreeRoot> initTrees(Queue<TreeNode> treesQueue) {
+    protected ArrayList<RandomForestTreeModel> initTrees(Queue<TreeNode> treesQueue) {
         assert featuresPerTree > 0;
-        ArrayList<TreeRoot> roots = new ArrayList<>();
+        ArrayList<RandomForestTreeModel> roots = new ArrayList<>();
 
         List<Integer> allFeatureIds = IntStream.range(0, meta.size()).boxed().collect(Collectors.toList());
         for (TreeNode node : treesQueue) {
             Collections.shuffle(allFeatureIds, random);
             Set<Integer> featuresSubspace = allFeatureIds.stream()
                 .limit(featuresPerTree).collect(Collectors.toSet());
-            roots.add(new TreeRoot(node, featuresSubspace));
+            roots.add(new RandomForestTreeModel(node, featuresSubspace));
         }
 
         return roots;
@@ -394,6 +394,6 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
      * @param models Models.
      * @return composition of built trees.
      */
-    protected abstract ModelsComposition buildComposition(List<TreeRoot> models);
+    protected abstract RandomForestModel buildComposition(List<RandomForestTreeModel> models);
 
 }

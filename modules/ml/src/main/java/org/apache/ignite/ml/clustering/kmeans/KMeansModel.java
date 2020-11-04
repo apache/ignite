@@ -33,12 +33,12 @@ import org.apache.ignite.ml.util.ModelTrace;
  * This class encapsulates result of clusterization by KMeans algorithm.
  */
 public final class KMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<KMeansModelFormat>,
-    DeployableObject {
+        JSONWritable, JSONReadable, PMMLReadable, PMMLWritable, DeployableObject {
     /** Centers of clusters. */
-    private final Vector[] centers;
+    private Vector[] centers;
 
     /** Distance measure. */
-    private final DistanceMeasure distanceMeasure;
+    private DistanceMeasure distanceMeasure = new EuclideanDistance();
 
     /**
      * Construct KMeans model with given centers and distanceMeasure measure.
@@ -51,18 +51,45 @@ public final class KMeansModel implements ClusterizationModel<Vector, Integer>, 
         this.distanceMeasure = distanceMeasure;
     }
 
+    /** {@inheritDoc} */
+    public KMeansModel() {
+
+    }
+
     /** Distance measure. */
     public DistanceMeasure distanceMeasure() {
         return distanceMeasure;
     }
 
     /** {@inheritDoc} */
-    @Override public int getAmountOfClusters() {
+    @Override public int amountOfClusters() {
         return centers.length;
     }
 
+    /**
+     * Set up the centroids.
+     *
+     * @param centers The parameter value.
+     * @return Model with new centers parameter value.
+     */
+    public KMeansModel withCentroids(Vector[] centers) {
+        this.centers = centers;
+        return this;
+    }
+
+    /**
+     * Set up the distance measure.
+     *
+     * @param distanceMeasure The parameter value.
+     * @return Model with new distance measure parameter value.
+     */
+    public KMeansModel withDistanceMeasure(DistanceMeasure distanceMeasure) {
+        this.distanceMeasure = distanceMeasure;
+        return this;
+    }
+
     /** {@inheritDoc} */
-    @Override public Vector[] getCenters() {
+    @Override public Vector[] centers() {
         return Arrays.copyOf(centers, centers.length);
     }
 
@@ -132,5 +159,93 @@ public final class KMeansModel implements ClusterizationModel<Vector, Integer>, 
     /** {@inheritDoc} */
     @Override public List<Object> getDependencies() {
         return Collections.singletonList(distanceMeasure);
+    }
+
+    /** {@inheritDoc} */
+    @Override public KMeansModel fromJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+
+            KMeansJSONExportModel exportModel;
+            try {
+                exportModel = mapper
+                        .readValue(new File(path.toAbsolutePath().toString()), KMeansJSONExportModel.class);
+
+                return exportModel.convert();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        return null;
+    }
+
+    // TODO: https://github.com/apache/spark/blob/master/mllib/src/main/scala/org/apache/spark/mllib/pmml/export/KMeansPMMLModelExport.scala
+    /** {@inheritDoc} */
+    @Override public void toJSON(Path path) {
+            ObjectMapper mapper = new ObjectMapper();
+
+            try {
+                KMeansJSONExportModel exportModel = new KMeansJSONExportModel();
+                List<double[]> listOfCenters = new ArrayList<>();
+                for (int i = 0; i < centers.length; i++) {
+                    listOfCenters.add(centers[i].asArray());
+                }
+
+                exportModel.mdlCenters = listOfCenters;
+                exportModel.versionName = "2.9.0-SNAPSHOT";
+                exportModel.distanceMeasureName = distanceMeasure.getClass().getSimpleName();
+
+                if(distanceMeasure instanceof MinkowskiDistance) {
+                    exportModel.pNorm = ((MinkowskiDistance) distanceMeasure).p();
+                }
+
+                File file = new File(path.toAbsolutePath().toString());
+                mapper.writeValue(file, exportModel);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+    }
+
+
+    private static class KMeansJSONExportModel extends JSONModel {
+        /** Centers of clusters. */
+        public List<double[]> mdlCenters;
+
+        /** Distance measure. */
+        public String distanceMeasureName;
+
+        /** p - norm for Minkowski distance only. */
+        public double pNorm = 0;
+
+        public KMeansModel convert() {
+            KMeansModel mdl = new KMeansModel();
+            Vector[] centers = new DenseVector[mdlCenters.size()];
+            for (int i = 0; i < mdlCenters.size(); i++) {
+                centers[i] = VectorUtils.of(mdlCenters.get(i));
+            }
+
+            DistanceMeasure distanceMeasure;
+
+            if(distanceMeasureName.equals(EuclideanDistance.class.getSimpleName())) {
+                distanceMeasure = new EuclideanDistance();
+            } else if (distanceMeasureName.equals(MinkowskiDistance.class.getSimpleName())) {
+                distanceMeasure = new MinkowskiDistance(pNorm); // TODO: add test for this
+            } else if (distanceMeasureName.equals(ChebyshevDistance.class.getSimpleName())) {
+                distanceMeasure = new ChebyshevDistance();
+            } else if (distanceMeasureName.equals(ManhattanDistance.class.getSimpleName())) {
+                distanceMeasure = new ManhattanDistance();
+            } else if (distanceMeasureName.equals(HammingDistance.class.getSimpleName())) {
+                distanceMeasure = new HammingDistance();
+            } else if(distanceMeasureName.equals(JaccardIndex.class.getSimpleName())) {
+                distanceMeasure = new JaccardIndex();
+            } else if(distanceMeasureName.equals(CosineSimilarity.class.getSimpleName())) {
+                distanceMeasure = new CosineSimilarity();
+            } else {
+                distanceMeasure = new EuclideanDistance();
+            }
+
+            mdl.withCentroids(centers);
+            mdl.withDistanceMeasure(distanceMeasure);
+            return mdl;
+        }
     }
 }

@@ -98,8 +98,8 @@ public class RandomForestClassifierTrainer
     }
 
     /** {@inheritDoc} */
-    @Override protected ModelsComposition buildComposition(List<TreeRoot> models) {
-        return new ModelsComposition(models, new OnMajorityPredictionsAggregator());
+    @Override protected RandomForestModel buildComposition(List<RandomForestTreeModel> models) {
+        return new RandomForestModel(models, new OnMajorityPredictionsAggregator());
     }
 
     /** {@inheritDoc} */

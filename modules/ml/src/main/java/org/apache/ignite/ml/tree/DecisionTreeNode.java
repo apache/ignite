@@ -23,5 +23,16 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Base interface for decision tree nodes.
  */
-public interface DecisionTreeNode extends IgniteModel<Vector, Double> {
+@JsonTypeInfo( use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes(
+        {
+                @JsonSubTypes.Type(value = DecisionTreeLeafNode.class, name = "leaf"),
+                @JsonSubTypes.Type(value = DecisionTreeConditionalNode.class, name = "conditional"),
+        })
+public abstract class DecisionTreeNode implements IgniteModel<Vector, Double> {
+        /**
+         * Empty constructor for serialization needs.
+         */
+        public DecisionTreeNode() {
+        }
 }

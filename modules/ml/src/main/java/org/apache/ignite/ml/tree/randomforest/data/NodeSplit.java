@@ -36,6 +36,9 @@ public class NodeSplit implements Serializable {
     /** Impurity at this split point. */
     private final double impurity;
 
+    public NodeSplit() {
+    }
+
     /**
      * Creates an instance of NodeSplit.
      *

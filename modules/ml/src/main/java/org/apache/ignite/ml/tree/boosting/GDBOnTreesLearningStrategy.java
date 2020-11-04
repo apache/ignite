@@ -57,15 +57,15 @@ public class GDBOnTreesLearningStrategy extends GDBLearningStrategy {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
+    @Override public <K, V> List<IgniteModel<Vector, Double>> update(GDBModel mdlToUpdate,
                                                                      DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> vectorizer) {
 
         LearningEnvironment environment = envBuilder.buildForTrainer();
         environment.initDeployingContext(vectorizer);
 
         DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
-        assert trainer instanceof DecisionTree;
-        DecisionTree decisionTreeTrainer = (DecisionTree)trainer;
+        assert trainer instanceof DecisionTreeTrainer;
+        DecisionTreeTrainer decisionTreeTrainer = (DecisionTreeTrainer)trainer;
 
         List<IgniteModel<Vector, Double>> models = initLearningState(mdlToUpdate);
 

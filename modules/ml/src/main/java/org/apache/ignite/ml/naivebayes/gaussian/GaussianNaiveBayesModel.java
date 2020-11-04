@@ -28,7 +28,8 @@ import org.apache.ignite.ml.naivebayes.BayesModel;
  * Simple naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as {@code
  * p(C_k,y) = p(C_k)*p(y_1,C_k) *...*p(y_n,C_k) / p(y)}. Return the number of the most possible class.
  */
-public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesModel, Vector, Double>, DeployableObject {
+public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesModel, Vector, Double>,
+        JSONWritable, JSONReadable, DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -127386523291350345L;
 
@@ -62,6 +63,11 @@ public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesMod
         this.labels = labels;
         this.sumsHolder = sumsHolder;
     }
+
+    public GaussianNaiveBayesModel() {
+    }
+
+
 
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<GaussianNaiveBayesModel, P> exporter, P path) {
@@ -127,7 +133,22 @@ public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesMod
     }
 
     /** {@inheritDoc} */
+    @JsonIgnore
     @Override public List<Object> getDependencies() {
         return Collections.emptyList();
+    }
+
+    @Override
+    public GaussianNaiveBayesModel fromJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper();
+        GaussianNaiveBayesModel mdl;
+        try {
+            mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), GaussianNaiveBayesModel.class);
+
+            return mdl;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

@@ -26,7 +26,8 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Logistic regression (logit model) is a generalized linear model used for binomial regression.
  */
-public final class LogisticRegressionModel implements IgniteModel<Vector, Double>, Exportable<LogisticRegressionModel> {
+public final class LogisticRegressionModel implements IgniteModel<Vector, Double>, Exportable<LogisticRegressionModel>,
+        JSONWritable, JSONReadable, PMMLWritable, PMMLReadable {
     /** */
     private static final long serialVersionUID = -133984600091550776L;
 
@@ -201,4 +202,84 @@ public final class LogisticRegressionModel implements IgniteModel<Vector, Double
     @Override public String toString(boolean pretty) {
         return toString();
     }
+
+    @Override
+    public LogisticRegressionModel fromJSON(Path path) {
+            ObjectMapper mapper = new ObjectMapper();
+
+            LogisticRegressionJSONExportModel logisticRegressionJSONExportModel;
+            try {
+                logisticRegressionJSONExportModel = mapper
+                        .readValue(new File(path.toAbsolutePath().toString()), LogisticRegressionJSONExportModel.class);
+
+                return logisticRegressionJSONExportModel.convert();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        return null;
+    }
+
+    @Override public void toJSON(Path path) {
+            ObjectMapper mapper = new ObjectMapper();
+
+            try {
+                LogisticRegressionJSONExportModel exportModel = new LogisticRegressionJSONExportModel();
+                exportModel.intercept = intercept;
+                exportModel.isKeepingRawLabels = isKeepingRawLabels;
+                exportModel.threshold = threshold;
+                exportModel.weights = weights.asArray();
+                exportModel.versionName = "2.9.0-SNAPSHOT";
+
+                File file = new File(path.toAbsolutePath().toString());
+                mapper.writeValue(file, exportModel);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+    }
+
+    private static class LogisticRegressionJSONExportModel extends JSONModel {
+        /**
+         * Multiplier of the objects's vector required to make prediction.
+         */
+        public double[] weights;
+
+        /**
+         * Intercept of the linear regression model.
+         */
+        public double intercept;
+
+        /**
+         * Output label format. 0 and 1 for false value and raw sigmoid regression value otherwise.
+         */
+        public boolean isKeepingRawLabels;
+
+        /**
+         * Threshold to assign '1' label to the observation if raw value more than this threshold.
+         */
+        public double threshold = 0.5;
+
+        @Override
+        public String toString() {
+            return "LogisticRegressionJSONExportModel{" +
+                    "weights=" + Arrays.toString(weights) +
+                    ", intercept=" + intercept +
+                    ", isKeepingRawLabels=" + isKeepingRawLabels +
+                    ", threshold=" + threshold +
+                    '}';
+        }
+
+        public LogisticRegressionModel convert() {
+            LogisticRegressionModel logRegMdl = new LogisticRegressionModel();
+            logRegMdl.withWeights(VectorUtils.of(weights));
+            logRegMdl.withIntercept(intercept);
+            logRegMdl.withRawLabels(isKeepingRawLabels);
+            logRegMdl.withThreshold(threshold);
+
+            return logRegMdl;
+        }
+    }
 }
+
+
+

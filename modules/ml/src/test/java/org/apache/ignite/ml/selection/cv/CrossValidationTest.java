@@ -53,7 +53,7 @@ public class CrossValidationTest {
 
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
 
-        DebugCrossValidation<DecisionTreeNode, Integer, double[]> scoreCalculator =
+        DebugCrossValidation<DecisionTreeModel, Integer, double[]> scoreCalculator =
             new DebugCrossValidation<>();
 
         Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
@@ -84,7 +84,7 @@ public class CrossValidationTest {
 
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
 
-        DebugCrossValidation<DecisionTreeNode, Integer, double[]> scoreCalculator =
+        DebugCrossValidation<DecisionTreeModel, Integer, double[]> scoreCalculator =
             new DebugCrossValidation<>();
 
         int folds = 4;
@@ -298,7 +298,7 @@ public class CrossValidationTest {
 
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
 
-        DebugCrossValidation<DecisionTreeNode, Integer, double[]> scoreCalculator =
+        DebugCrossValidation<DecisionTreeModel, Integer, double[]> scoreCalculator =
             new DebugCrossValidation<>();
 
         int folds = 4;

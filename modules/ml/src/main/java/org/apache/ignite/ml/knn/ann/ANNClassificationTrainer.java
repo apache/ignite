@@ -139,7 +139,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
             .withEpsilon(epsilon);
 
         KMeansModel mdl = trainer.fit(datasetBuilder, vectorizer);
-        return Arrays.asList(mdl.getCenters());
+        return Arrays.asList(mdl.centers());
     }
 
     /** */

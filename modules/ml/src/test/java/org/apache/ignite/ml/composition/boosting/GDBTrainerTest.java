@@ -83,7 +83,7 @@ public class GDBTrainerTest extends TrainerTest {
         assertTrue(!composition.toString(true).isEmpty());
         assertTrue(!composition.toString(false).isEmpty());
 
-        composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeConditionalNode));
+        composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeModel));
 
         assertEquals(2000, composition.getModels().size());
         assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);
@@ -145,7 +145,7 @@ public class GDBTrainerTest extends TrainerTest {
 
         assertTrue(mdl instanceof ModelsComposition);
         ModelsComposition composition = (ModelsComposition)mdl;
-        composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeConditionalNode));
+        composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeModel));
 
         assertTrue(composition.getModels().size() < 500);
         assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);

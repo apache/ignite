@@ -33,7 +33,7 @@ import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
  * #likelihood(Vector)}).
  */
 public class GmmModel extends DistributionMixture<MultivariateGaussianDistribution> implements IgniteModel<Vector, Double>,
-    DeployableObject {
+        JSONReadable, JSONWritable, DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -4484174539118240037L;
 
@@ -47,13 +47,31 @@ public class GmmModel extends DistributionMixture<MultivariateGaussianDistributi
         super(componentProbs, distributions);
     }
 
+    public GmmModel() {
+    }
+
     /** {@inheritDoc} */
     @Override public Double predict(Vector input) {
         return (double)likelihood(input).maxElement().index();
     }
 
     /** {@inheritDoc} */
+    @JsonIgnore
     @Override public List<Object> getDependencies() {
         return Collections.emptyList();
+    }
+
+    @Override
+    public GmmModel fromJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper();
+        GmmModel mdl;
+        try {
+            mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), GmmModel.class);
+
+            return mdl;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

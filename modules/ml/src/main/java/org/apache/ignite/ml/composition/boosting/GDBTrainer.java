@@ -34,7 +34,6 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
@@ -57,7 +56,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * But in practice Decision Trees is most used regressors (see: {@link DecisionTreeRegressionTrainer}).
  */
-public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Double> {
+public abstract class GDBTrainer extends DatasetTrainer<GDBModel, Double> {
     /** Gradient step. */
     private final double gradientStep;
 
@@ -87,13 +86,13 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> ModelsComposition fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> GDBModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                   Preprocessor<K, V> preprocessor) {
         return updateModel(null, datasetBuilder, preprocessor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl,
+    @Override protected <K, V> GDBModel updateModel(GDBModel mdl,
                                                              DatasetBuilder<K, V> datasetBuilder,
                                                              Preprocessor<K, V> preprocessor) {
         if (!learnLabels(datasetBuilder, preprocessor))
@@ -121,7 +120,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
 
         List<IgniteModel<Vector, Double>> models;
         if (mdl != null)
-            models = stgy.update((GDBModel) mdl, datasetBuilder, preprocessor);
+            models = stgy.update(mdl, datasetBuilder, preprocessor);
         else
             models = stgy.learnModels(datasetBuilder, preprocessor);
 
@@ -136,7 +135,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isUpdateable(ModelsComposition mdl) {
+    @Override public boolean isUpdateable(GDBModel mdl) {
         return mdl instanceof GDBModel;
     }
 

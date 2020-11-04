@@ -35,7 +35,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * ANN model to predict labels in multi-class classification task.
  */
-public final class ANNClassificationModel extends NNClassificationModel {
+public final class ANNClassificationModel extends NNClassificationModel implements JSONWritable, JSONReadable, DeployableObject {
     /** */
     private static final long serialVersionUID = -127312378991350345L;
 
@@ -54,6 +54,10 @@ public final class ANNClassificationModel extends NNClassificationModel {
         ANNClassificationTrainer.CentroidStat centroindsStat) {
        this.candidates = centers;
        this.centroindsStat = centroindsStat;
+    }
+
+    public ANNClassificationModel() {
+
     }
 
     /** */
@@ -202,5 +206,25 @@ public final class ANNClassificationModel extends NNClassificationModel {
             .addField("weighted", String.valueOf(weighted))
             .addField("amount of candidates", String.valueOf(candidates.rowSize()))
             .toString();
+    }
+
+    /** {@inheritDoc} */
+    @JsonIgnore
+    @Override public List<Object> getDependencies() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public ANNClassificationModel fromJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper();
+        ANNClassificationModel mdl;
+        try {
+            mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), ANNClassificationModel.class);
+
+            return mdl;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

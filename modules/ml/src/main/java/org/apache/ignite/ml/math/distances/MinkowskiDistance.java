@@ -39,6 +39,11 @@ public class MinkowskiDistance implements DistanceMeasure {
         this.p = p;
     }
 
+    /** Returns p-norm. */
+    public double p() {
+        return p;
+    }
+
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b) throws CardinalityException {
         assert a.size() == b.size();

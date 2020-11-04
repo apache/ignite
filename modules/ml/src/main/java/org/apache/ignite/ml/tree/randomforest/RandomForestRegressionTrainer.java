@@ -49,8 +49,8 @@ public class RandomForestRegressionTrainer
     }
 
     /** {@inheritDoc} */
-    @Override protected ModelsComposition buildComposition(List<TreeRoot> models) {
-        return new ModelsComposition(models, new MeanValuePredictionsAggregator());
+    @Override protected RandomForestModel buildComposition(List<RandomForestTreeModel> models) {
+        return new RandomForestModel(models, new MeanValuePredictionsAggregator());
     }
 
     /** {@inheritDoc} */

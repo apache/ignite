@@ -29,7 +29,8 @@ import org.apache.ignite.ml.naivebayes.BayesModel;
  * {@code p(C_k,y) =x_1*p_k1^x *...*x_i*p_ki^x_i}. Where {@code x_i} is a discrete feature, {@code p_ki} is a prior
  * probability probability of class {@code p(x|C_k)}. Returns the number of the most possible class.
  */
-public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesModel, Vector, Double>, DeployableObject {
+public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesModel, Vector, Double>,
+        JSONWritable, JSONReadable, DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -127386523291350345L;
 
@@ -69,6 +70,10 @@ public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesMod
         this.labels = labels;
         this.bucketThresholds = bucketThresholds;
         this.sumsHolder = sumsHolder;
+    }
+
+    public DiscreteNaiveBayesModel() {
+
     }
 
     /** {@inheritDoc} */
@@ -145,7 +150,22 @@ public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesMod
     }
 
     /** {@inheritDoc} */
+    @JsonIgnore
     @Override public List<Object> getDependencies() {
         return Collections.emptyList();
+    }
+
+    @Override
+    public DiscreteNaiveBayesModel fromJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper();
+        DiscreteNaiveBayesModel mdl;
+        try {
+            mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), DiscreteNaiveBayesModel.class);
+
+            return mdl;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

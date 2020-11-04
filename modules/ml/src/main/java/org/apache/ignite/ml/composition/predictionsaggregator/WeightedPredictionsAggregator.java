@@ -30,6 +30,9 @@ public final class WeightedPredictionsAggregator implements PredictionsAggregato
     /** Bias. */
     private final double bias;
 
+    public WeightedPredictionsAggregator() {
+    }
+
     /**
      * Constructs WeightedPredictionsAggregator instance.
      *

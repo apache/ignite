@@ -75,11 +75,11 @@ public class DecisionTreeClassificationTrainerTest {
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0)
             .withUseIndex(useIdx == 1);
 
-        DecisionTreeNode tree = trainer.fit(data, parts, new DoubleArrayVectorizer<Integer>().labeled(1));
+        DecisionTreeNode treeNode = trainer.fit(data, parts, new DoubleArrayVectorizer<Integer>().labeled(1)).getRootNode();
 
-        assertTrue(tree instanceof DecisionTreeConditionalNode);
+        assertTrue(treeNode instanceof DecisionTreeConditionalNode);
 
-        DecisionTreeConditionalNode node = (DecisionTreeConditionalNode)tree;
+        DecisionTreeConditionalNode node = (DecisionTreeConditionalNode)treeNode;
 
         assertEquals(0, node.getThreshold(), 1e-3);
         assertEquals(0, node.getCol());

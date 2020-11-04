@@ -27,7 +27,8 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * Simple linear regression model which predicts result value Y as a linear combination of input variables:
  * Y = weights * X + intercept.
  */
-public final class LinearRegressionModel implements IgniteModel<Vector, Double>, Exportable<LinearRegressionModel> {
+public final class LinearRegressionModel implements IgniteModel<Vector, Double>, Exportable<LinearRegressionModel>,
+        JSONWritable, JSONReadable, PMMLReadable, PMMLWritable {
     /** */
     private static final long serialVersionUID = -105984600091550226L;
 
@@ -43,14 +44,40 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
         this.intercept = intercept;
     }
 
+    public LinearRegressionModel() {
+
+    }
+
     /** */
-    public Vector getWeights() {
+    public Vector weights() {
         return weights;
     }
 
     /** */
-    public double getIntercept() {
+    public double intercept() {
         return intercept;
+    }
+
+    /**
+     * Set up the weights.
+     *
+     * @param weights The parameter value.
+     * @return Model with new weights parameter value.
+     */
+    public LinearRegressionModel withWeights(Vector weights) {
+        this.weights = weights;
+        return this;
+    }
+
+    /**
+     * Set up the intercept.
+     *
+     * @param intercept The parameter value.
+     * @return Model with new intercept parameter value.
+     */
+    public LinearRegressionModel withIntercept(double intercept) {
+        this.intercept = intercept;
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -107,5 +134,58 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         return toString();
+    }
+
+    @Override
+    public LinearRegressionModel fromJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper();
+
+        LinearRegressionModelJSONExportModel linearRegressionJSONExportModel;
+        try {
+            linearRegressionJSONExportModel = mapper
+                    .readValue(new File(path.toAbsolutePath().toString()), LinearRegressionModelJSONExportModel.class);
+
+            return linearRegressionJSONExportModel.convert();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    @Override public void toJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper();
+
+            try {
+                LinearRegressionModelJSONExportModel exportModel = new LinearRegressionModelJSONExportModel();
+                exportModel.intercept = intercept;
+                exportModel.weights = weights.asArray();
+                exportModel.versionName = "2.9.0-SNAPSHOT";
+
+                File file = new File(path.toAbsolutePath().toString());
+                mapper.writeValue(file, exportModel);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+    }
+
+    private static class LinearRegressionModelJSONExportModel extends JSONModel {
+        /**
+         * Multiplier of the objects's vector required to make prediction.
+         */
+        public double[] weights;
+
+        /**
+         * Intercept of the linear regression model.
+         */
+        public double intercept;
+
+        public LinearRegressionModel convert() {
+            LinearRegressionModel linRegMdl = new LinearRegressionModel();
+            linRegMdl.withWeights(VectorUtils.of(weights));
+            linRegMdl.withIntercept(intercept);
+
+            return linRegMdl;
+        }
     }
 }

@@ -85,7 +85,7 @@ public class RandomForestIntegrationTest extends GridCommonAbstractTest {
             .withAmountOfTrees(5)
             .withFeaturesCountSelectionStrgy(x -> 2);
 
-        ModelsComposition mdl = trainer.fit(ignite, data, new DoubleArrayVectorizer<Integer>().labeled(1));
+        RandomForestModel mdl = trainer.fit(ignite, data, new DoubleArrayVectorizer<Integer>().labeled(1));
 
         assertTrue(mdl.getPredictionsAggregator() instanceof MeanValuePredictionsAggregator);
         assertEquals(5, mdl.getModels().size());

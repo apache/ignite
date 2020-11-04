@@ -52,7 +52,7 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
      * @param nodesToLearn Nodes to learn.
      * @param dataset Dataset.
      */
-    public Map<NodeId, NodeImpurityHistograms<S>> aggregateImpurityStatistics(ArrayList<TreeRoot> roots,
+    public Map<NodeId, NodeImpurityHistograms<S>> aggregateImpurityStatistics(ArrayList<RandomForestTreeModel> roots,
         Map<Integer, BucketMeta> histMeta, Map<NodeId, TreeNode> nodesToLearn,
         Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
 
