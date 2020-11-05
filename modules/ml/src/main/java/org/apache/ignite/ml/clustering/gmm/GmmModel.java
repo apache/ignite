@@ -17,10 +17,17 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
+import org.apache.ignite.ml.inference.JSONReadable;
+import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.stat.DistributionMixture;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
@@ -33,7 +40,7 @@ import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
  * #likelihood(Vector)}).
  */
 public class GmmModel extends DistributionMixture<MultivariateGaussianDistribution> implements IgniteModel<Vector, Double>,
-        JSONReadable, JSONWritable, DeployableObject {
+    JSONReadable, JSONWritable, DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -4484174539118240037L;
 
@@ -47,6 +54,7 @@ public class GmmModel extends DistributionMixture<MultivariateGaussianDistributi
         super(componentProbs, distributions);
     }
 
+    /** */
     public GmmModel() {
     }
 

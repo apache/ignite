@@ -30,8 +30,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
@@ -41,14 +39,13 @@ import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartit
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
+import org.apache.ignite.ml.tree.randomforest.data.RandomForestTreeModel;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
-import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.ImpurityComputer;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.ImpurityHistogramsComputer;
 import org.apache.ignite.ml.tree.randomforest.data.statistics.LeafValuesComputer;
@@ -248,9 +245,9 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     @Override protected <K, V> RandomForestModel updateModel(RandomForestModel mdl, DatasetBuilder<K, V> datasetBuilder,
                                                              Preprocessor<K, V> preprocessor) {
 
-        List<RandomForestTreeModel> oldModels = new ArrayList<>((Collection<? extends RandomForestTreeModel>) mdl.getModels());
+        List<RandomForestTreeModel> oldModels = new ArrayList<>(mdl.getModels());
         RandomForestModel newModels = fit(datasetBuilder, preprocessor);
-        oldModels.addAll((Collection<? extends RandomForestTreeModel>) newModels.getModels());
+        oldModels.addAll(newModels.getModels());
 
         return new RandomForestModel(oldModels, mdl.getPredictionsAggregator());
     }

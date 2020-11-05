@@ -30,8 +30,8 @@ import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartit
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.randomforest.data.NodeId;
+import org.apache.ignite.ml.tree.randomforest.data.RandomForestTreeModel;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
-import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
 
 /**
  * Class containing logic of leaf values computing after building of all trees in random forest.

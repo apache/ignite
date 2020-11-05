@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
@@ -237,36 +236,5 @@ public abstract class GDBTrainer extends DatasetTrainer<GDBModel, Double> {
      */
     protected GDBLearningStrategy getLearningStrategy() {
         return new GDBLearningStrategy();
-    }
-
-    /**
-     * GDB model.
-     */
-    public static final class GDBModel extends ModelsComposition {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 3476661240155508004L;
-
-        /** Internal to external lbl mapping. */
-        private final IgniteFunction<Double, Double> internalToExternalLblMapping;
-
-        /**
-         * Creates an instance of GDBModel.
-         *
-         * @param models Models.
-         * @param predictionsAggregator Predictions aggregator.
-         * @param internalToExternalLblMapping Internal to external lbl mapping.
-         */
-        public GDBModel(List<? extends IgniteModel<Vector, Double>> models,
-            WeightedPredictionsAggregator predictionsAggregator,
-            IgniteFunction<Double, Double> internalToExternalLblMapping) {
-
-            super(models, predictionsAggregator);
-            this.internalToExternalLblMapping = internalToExternalLblMapping;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Double predict(Vector features) {
-            return internalToExternalLblMapping.apply(super.predict(features));
-        }
     }
 }

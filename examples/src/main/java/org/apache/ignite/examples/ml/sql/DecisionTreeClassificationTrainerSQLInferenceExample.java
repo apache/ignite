@@ -30,7 +30,8 @@ import org.apache.ignite.ml.inference.IgniteModelStorageUtil;
 import org.apache.ignite.ml.sql.SQLFunctions;
 import org.apache.ignite.ml.sql.SqlDatasetBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.tree.DecisionTreeModel;
+import org.apache.ignite.ml.tree.DecisionTreeModel;
 
 import static org.apache.ignite.examples.ml.sql.DecisionTreeClassificationTrainerSQLTableExample.loadTitanicDatasets;
 
@@ -101,7 +102,7 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
                 System.out.println(">>> Perform training...");
-                DecisionTreeNode mdl = trainer.fit(
+                DecisionTreeModel mdl = trainer.fit(
                     new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIC_TRAIN"),
                     new BinaryObjectVectorizer<>("pclass", "age", "sibsp", "parch", "fare")
                         .withFeature("sex", BinaryObjectVectorizer.Mapping.create().map("male", 1.0).defaultValue(0.0))

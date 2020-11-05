@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.tree;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -33,6 +35,6 @@ public abstract class DecisionTreeNode implements IgniteModel<Vector, Double> {
         /**
          * Empty constructor for serialization needs.
          */
-        public DecisionTreeNode() {
+        protected DecisionTreeNode() {
         }
 }

@@ -17,26 +17,34 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Objects;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.inference.JSONModel;
+import org.apache.ignite.ml.inference.JSONReadable;
+import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
 /**
  * Simple linear regression model which predicts result value Y as a linear combination of input variables:
  * Y = weights * X + intercept.
  */
 public final class LinearRegressionModel implements IgniteModel<Vector, Double>, Exportable<LinearRegressionModel>,
-        JSONWritable, JSONReadable, PMMLReadable, PMMLWritable {
+    JSONWritable, JSONReadable {
     /** */
     private static final long serialVersionUID = -105984600091550226L;
 
     /** Multiplier of the objects's vector required to make prediction.  */
-    private final Vector weights;
+    private Vector weights;
 
     /** Intercept of the linear regression model */
-    private final double intercept;
+    private double intercept;
 
     /** */
     public LinearRegressionModel(Vector weights, double intercept) {
@@ -44,8 +52,8 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
         this.intercept = intercept;
     }
 
+    /** */
     public LinearRegressionModel() {
-
     }
 
     /** */

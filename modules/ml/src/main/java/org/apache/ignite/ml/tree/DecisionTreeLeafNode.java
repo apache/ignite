@@ -27,7 +27,7 @@ public final class DecisionTreeLeafNode extends DecisionTreeNode {
     private static final long serialVersionUID = -472145568088482206L;
 
     /** Value of the node. */
-    private final double val;
+    private double val;
 
     /**
      * Constructs a new decision tree leaf node.

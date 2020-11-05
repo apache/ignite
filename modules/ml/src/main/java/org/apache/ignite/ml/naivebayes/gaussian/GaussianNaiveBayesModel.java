@@ -17,10 +17,17 @@
 
 package org.apache.ignite.ml.naivebayes.gaussian;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
+import org.apache.ignite.ml.inference.JSONReadable;
+import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.BayesModel;
 
@@ -29,24 +36,24 @@ import org.apache.ignite.ml.naivebayes.BayesModel;
  * p(C_k,y) = p(C_k)*p(y_1,C_k) *...*p(y_n,C_k) / p(y)}. Return the number of the most possible class.
  */
 public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesModel, Vector, Double>,
-        JSONWritable, JSONReadable, DeployableObject {
+    JSONWritable, JSONReadable, DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -127386523291350345L;
 
     /** Means of features for all classes. kth row contains means for labels[k] class. */
-    private final double[][] means;
+    private double[][] means;
 
     /** Variances of features for all classes. kth row contains variances for labels[k] class */
-    private final double[][] variances;
+    private double[][] variances;
 
     /** Prior probabilities of each class */
-    private final double[] classProbabilities;
+    private double[] classProbabilities;
 
     /** Labels. */
-    private final double[] labels;
+    private double[] labels;
 
     /** Feature sum, squared sum and count per label. */
-    private final GaussianNaiveBayesSumsHolder sumsHolder;
+    private GaussianNaiveBayesSumsHolder sumsHolder;
 
     /**
      * @param means Means of features for all classes.
@@ -57,17 +64,16 @@ public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesMod
      */
     public GaussianNaiveBayesModel(double[][] means, double[][] variances,
         double[] classProbabilities, double[] labels, GaussianNaiveBayesSumsHolder sumsHolder) {
-        this.means = means;
-        this.variances = variances;
-        this.classProbabilities = classProbabilities;
-        this.labels = labels;
+        this.means = means.clone();
+        this.variances = variances.clone();
+        this.classProbabilities = classProbabilities.clone();
+        this.labels = labels.clone();
         this.sumsHolder = sumsHolder;
     }
 
+    /** */
     public GaussianNaiveBayesModel() {
     }
-
-
 
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<GaussianNaiveBayesModel, P> exporter, P path) {

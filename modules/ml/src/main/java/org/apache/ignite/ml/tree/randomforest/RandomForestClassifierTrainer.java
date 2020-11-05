@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
@@ -31,7 +30,7 @@ import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartit
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
+import org.apache.ignite.ml.tree.randomforest.data.RandomForestTreeModel;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniHistogram;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniHistogramsComputer;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.ImpurityHistogramsComputer;

@@ -28,12 +28,14 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Scanner;
 import java.util.TreeMap;
+import static org.apache.ignite.ml.tree.NodeData.buildDecisionTreeModel;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.boosting.GDBModel;
 import org.apache.ignite.ml.composition.boosting.GDBTrainer;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
@@ -51,7 +53,8 @@ import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.apache.ignite.ml.tree.DecisionTreeLeafNode;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.tree.DecisionTreeModel;
+import org.apache.ignite.ml.tree.NodeData;
 import org.apache.parquet.column.page.PageReadStore;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.example.data.simple.SimpleGroup;
@@ -497,7 +500,7 @@ public class SparkModelParser {
             final List<IgniteModel<Vector, Double>> models = new ArrayList<>();
             nodesByTreeId.forEach((key, nodes) -> models.add(buildDecisionTreeModel(nodes)));
 
-            return new GDBTrainer.GDBModel(models, new WeightedPredictionsAggregator(treeWeights), lbMapper);
+            return new GDBModel(models, new WeightedPredictionsAggregator(treeWeights), lbMapper);
         }
         catch (IOException e) {
             String msg = "Error reading parquet file: " + e.getMessage();
@@ -559,7 +562,7 @@ public class SparkModelParser {
                 }
             }
             List<IgniteModel<Vector, Double>> models = new ArrayList<>();
-            nodesByTreeId.forEach((key, nodes) -> models.add(NodeData.buildDecisionTreeModel(nodes)));
+            nodesByTreeId.forEach((key, nodes) -> models.add(buildDecisionTreeModel(nodes)));
             return models;
         }
         catch (IOException e) {
@@ -594,7 +597,7 @@ public class SparkModelParser {
                     nodes.put(nodeData.id, nodeData);
                 }
             }
-            return NodeData.buildDecisionTreeModel(nodes);
+            return buildDecisionTreeModel(nodes);
         }
         catch (IOException e) {
             String msg = "Error reading parquet file: " + e.getMessage();

@@ -23,6 +23,8 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.boosting.GDBModel;
+import org.apache.ignite.ml.composition.boosting.GDBTrainer;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
@@ -60,11 +62,11 @@ public class GDBOnTreesRegressionTrainerExample {
                 trainingSet = fillTrainingData(ignite, trainingSetCfg);
 
                 // Create regression trainer.
-                DatasetTrainer<ModelsComposition, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 1, 0.)
+                GDBTrainer trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 1, 0.)
                     .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.001));
 
                 // Train decision tree model.
-                Model<Vector, Double> mdl = trainer.fit(
+                GDBModel mdl = trainer.fit(
                     ignite,
                     trainingSet,
                     new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)

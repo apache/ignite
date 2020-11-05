@@ -29,10 +29,10 @@ public class NodeId implements Serializable {
     private static final long serialVersionUID = 4400852013136423333L;
 
     /** Tree id. */
-    private final int treeId;
+    private int treeId;
 
     /** Node id. */
-    private final long nodeId;
+    private long nodeId;
 
     /**
      * Create an instance of NodeId.

@@ -38,12 +38,12 @@ public class ModelsComposition<M extends IgniteModel<Vector, Double>> implements
     /**
      * Predictions aggregator.
      */
-    private final PredictionsAggregator predictionsAggregator;
+    protected PredictionsAggregator predictionsAggregator;
 
     /**
      * Models.
      */
-    private final List<M> models;
+    protected List<M> models;
 
     /**
      * Constructs a new instance of composition of models.

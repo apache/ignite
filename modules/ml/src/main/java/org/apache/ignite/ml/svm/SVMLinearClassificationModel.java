@@ -17,17 +17,26 @@
 
 package org.apache.ignite.ml.svm;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Objects;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.inference.JSONModel;
+import org.apache.ignite.ml.inference.JSONReadable;
+import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
 /**
  * Base class for SVM linear classification model.
  */
 public final class SVMLinearClassificationModel implements IgniteModel<Vector, Double>, Exportable<SVMLinearClassificationModel>,
-        JSONWritable, JSONReadable, PMMLWritable, PMMLReadable {
+    JSONWritable, JSONReadable {
     /** */
     private static final long serialVersionUID = -996984622291440226L;
 
@@ -195,8 +204,8 @@ public final class SVMLinearClassificationModel implements IgniteModel<Vector, D
         return toString();
     }
 
-    @Override
-    public SVMLinearClassificationModel fromJSON(Path path) {
+    /** {@inheritDoc} */
+    @Override public SVMLinearClassificationModel fromJSON(Path path) {
             ObjectMapper mapper = new ObjectMapper();
 
             SVMLinearClassificationJSONExportModel exportModel;
@@ -212,8 +221,8 @@ public final class SVMLinearClassificationModel implements IgniteModel<Vector, D
         return null;
     }
 
-    @Override
-    public void toJSON(Path path) {
+    /** {@inheritDoc} */
+    @Override public void toJSON(Path path) {
             ObjectMapper mapper = new ObjectMapper();
 
             try {

@@ -22,6 +22,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.boosting.GDBModel;
+import org.apache.ignite.ml.composition.boosting.GDBTrainer;
 import org.apache.ignite.ml.composition.boosting.convergence.median.MedianOfMedianConvergenceCheckerFactory;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
@@ -102,11 +104,11 @@ public class Step_11_Boosting {
                     );
 
                 // Create classification trainer.
-                DatasetTrainer<ModelsComposition, Double> trainer = new GDBBinaryClassifierOnTreesTrainer(0.5, 500, 4, 0.)
+                GDBTrainer trainer = new GDBBinaryClassifierOnTreesTrainer(0.5, 500, 4, 0.)
                     .withCheckConvergenceStgyFactory(new MedianOfMedianConvergenceCheckerFactory(0.1));
 
                 // Train decision tree model.
-                ModelsComposition mdl = trainer.fit(
+                GDBModel mdl = trainer.fit(
                     ignite,
                     dataCache,
                     split.getTrainFilter(),

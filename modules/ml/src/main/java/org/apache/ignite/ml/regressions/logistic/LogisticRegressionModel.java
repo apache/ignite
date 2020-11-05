@@ -17,17 +17,26 @@
 
 package org.apache.ignite.ml.regressions.logistic;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Objects;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.inference.JSONModel;
+import org.apache.ignite.ml.inference.JSONReadable;
+import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
 /**
  * Logistic regression (logit model) is a generalized linear model used for binomial regression.
  */
 public final class LogisticRegressionModel implements IgniteModel<Vector, Double>, Exportable<LogisticRegressionModel>,
-        JSONWritable, JSONReadable, PMMLWritable, PMMLReadable {
+    JSONWritable, JSONReadable {
     /** */
     private static final long serialVersionUID = -133984600091550776L;
 
@@ -42,6 +51,10 @@ public final class LogisticRegressionModel implements IgniteModel<Vector, Double
 
     /** Threshold to assign '1' label to the observation if raw value more than this threshold. */
     private double threshold = 0.5;
+
+    /** */
+    public LogisticRegressionModel() {
+    }
 
     /** */
     public LogisticRegressionModel(Vector weights, double intercept) {

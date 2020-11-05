@@ -27,10 +27,10 @@ public final class DecisionTreeConditionalNode extends DecisionTreeNode {
     private static final long serialVersionUID = 981630737007982172L;
 
     /** Column of the value to be tested. */
-    private final int col;
+    private int col;
 
     /** Threshold. */
-    private final double threshold;
+    private double threshold;
 
     /** Right node that will be used in case tested value is greater then threshold. */
     private DecisionTreeNode thenNode;

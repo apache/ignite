@@ -1,12 +1,36 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.ml.tree;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.inference.JSONReadable;
+import org.apache.ignite.ml.inference.JSONWritable;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Base class for decision tree models.
  */
-public class DecisionTreeModel implements IgniteModel<Vector, Double>, JSONWritable, JSONReadable, PMMLWritable, PMMLReadable {
-    /**
-     * Root node.
-     */
+public class DecisionTreeModel implements IgniteModel<Vector, Double>, JSONWritable, JSONReadable {
+    /** Root node. */
     private DecisionTreeNode rootNode;
 
     /**
@@ -18,22 +42,18 @@ public class DecisionTreeModel implements IgniteModel<Vector, Double>, JSONWrita
         this.rootNode = rootNode;
     }
 
+    /** */
     public DecisionTreeModel() {
 
     }
 
-    /**
-     * Returns the root node.
-     */
+    /** Returns the root node. */
     public DecisionTreeNode getRootNode() {
         return rootNode;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Double predict(Vector features) {
+    /** {@inheritDoc} */
+    @Override public Double predict(Vector features) {
         return rootNode.predict(features);
     }
 
@@ -47,8 +67,8 @@ public class DecisionTreeModel implements IgniteModel<Vector, Double>, JSONWrita
         return DecisionTreeTrainer.printTree(rootNode, pretty);
     }
 
-    @Override
-    public DecisionTreeModel fromJSON(Path path) {
+    /** {@inheritDoc} */
+    @Override public DecisionTreeModel fromJSON(Path path) {
             ObjectMapper mapper = new ObjectMapper();
             DecisionTreeModel mdl;
             try {
@@ -60,97 +80,4 @@ public class DecisionTreeModel implements IgniteModel<Vector, Double>, JSONWrita
             }
         return null;
     }
-
-
-
-    private DecisionTreeNode buildTree(Node node) {
-        Predicate predicate = node.getPredicate();
-
-        if (node.hasNodes()) {
-            Node leftNode = null;
-            Node rightNode = null;
-            for (int i = 0; i < node.getNodes().size(); i++) {
-                if(node.getNodes().get(i).getId().equals("left")) {
-                    leftNode = node.getNodes().get(i);
-                } else if(node.getNodes().get(i).getId().equals("right")) {
-                    rightNode = node.getNodes().get(i);
-                } else {
-                    // TODO: we couldn't handle this case left or right
-                }
-            }
-
-            int featureIdx = Integer.parseInt(((SimplePredicate)predicate).getField().getValue());
-            double threshold = Double.parseDouble(((SimplePredicate)predicate).getValue());
-
-            // TODO: correctly handle missing nodes, add test for that
-            String defaultChild = node.getDefaultChild();
-            if(defaultChild!= null && !defaultChild.isEmpty()) {
-                double missingNodevalue = Double.parseDouble(defaultChild);
-                DecisionTreeLeafNode missingNode = new DecisionTreeLeafNode(missingNodevalue);
-                return new DecisionTreeConditionalNode(featureIdx, threshold, buildTree(rightNode), buildTree(leftNode), missingNode);
-            }
-            return new DecisionTreeConditionalNode(featureIdx, threshold, buildTree(rightNode), buildTree(leftNode), null);
-        } else {
-            return new DecisionTreeLeafNode(Double.parseDouble(node.getScore()));
-        }
-
-    }
-
-    private Node buildPmmlTree(DecisionTreeNode node, Predicate predicate) {
-        Node pmmlNode = new Node();
-        pmmlNode.setPredicate(predicate);
-
-        if (node instanceof DecisionTreeConditionalNode) {
-            DecisionTreeConditionalNode splitNode = ((DecisionTreeConditionalNode) node);
-
-            if (splitNode.getMissingNode() != null) {
-
-                DecisionTreeLeafNode missingNode = ((DecisionTreeLeafNode)splitNode.getMissingNode());
-                pmmlNode.setDefaultChild(String.valueOf(missingNode.getVal()));
-            }
-
-            DecisionTreeNode leftNode = splitNode.getElseNode();
-            if(leftNode != null) {
-                Predicate leftPredicate = getPredicate(leftNode, true);
-                Node leftPmmlNode = buildPmmlTree(leftNode, leftPredicate);
-                leftPmmlNode.setId("left");
-                pmmlNode.addNodes(leftPmmlNode);
-            }
-
-            DecisionTreeNode rightNode = splitNode.getThenNode();
-            if(rightNode != null) {
-                Predicate rightPredicate = getPredicate(rightNode, false);
-                Node rightPmmlNode = buildPmmlTree(rightNode, rightPredicate);
-                rightPmmlNode.setId("right");
-                pmmlNode.addNodes(rightPmmlNode);
-            }
-        } else if (node instanceof DecisionTreeLeafNode) {
-            DecisionTreeLeafNode leafNode = ((DecisionTreeLeafNode) node);
-            pmmlNode.setScore(String.valueOf(leafNode.getVal()));
-        }
-
-        return pmmlNode;
-    }
-
-    private Predicate getPredicate(DecisionTreeNode node, boolean isLeft) {
-        if (node instanceof DecisionTreeConditionalNode) {
-            DecisionTreeConditionalNode splitNode = ((DecisionTreeConditionalNode) node);
-
-            FieldName fieldName = FieldName.create(String.valueOf(splitNode.getCol()));
-
-            String threshold = String.valueOf(splitNode.getThreshold());
-
-            if (isLeft) {
-                return new SimplePredicate(fieldName, SimplePredicate.Operator.LESS_OR_EQUAL)
-                        .setValue(threshold);
-            } else {
-                return new SimplePredicate(fieldName, SimplePredicate.Operator.GREATER_THAN)
-                        .setValue(threshold);
-            }
-        } else {
-            return new True();
-        }
-    }
-
-
 }

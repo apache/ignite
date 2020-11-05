@@ -1,5 +1,9 @@
 package org.apache.ignite.ml.tree;
 
+import java.util.Map;
+import java.util.NavigableMap;
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Presenting decision tree data in plain manner (For example: from one parquet row filled with NodeData in Spark DT model).
  */
@@ -45,9 +49,8 @@ public class NodeData {
      * @param nodes The sorted map of nodes.
      * @param rootNodeData Root node data.
      */
-    @NotNull
     public static DecisionTreeNode buildTree(Map<Integer, NodeData> nodes,
-                                              NodeData rootNodeData) {
+                                             NodeData rootNodeData) {
         return rootNodeData.isLeafNode ? new DecisionTreeLeafNode(rootNodeData.prediction) : new DecisionTreeConditionalNode(rootNodeData.featureIdx,
                 rootNodeData.threshold,
                 buildTree(nodes, nodes.get(rootNodeData.rightChildId)),

@@ -17,14 +17,23 @@
 
 package org.apache.ignite.ml.knn.ann;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.Exporter;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
+import org.apache.ignite.ml.inference.JSONReadable;
+import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -40,10 +49,10 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
     private static final long serialVersionUID = -127312378991350345L;
 
     /** The labeled set of candidates. */
-    private final LabeledVectorSet<LabeledVector> candidates;
+    private LabeledVectorSet<LabeledVector> candidates;
 
     /** Centroid statistics. */
-    private final ANNClassificationTrainer.CentroidStat centroindsStat;
+    private ANNClassificationTrainer.CentroidStat centroindsStat;
 
     /**
      * Build the model based on a candidates set.
@@ -56,8 +65,8 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
        this.centroindsStat = centroindsStat;
     }
 
+    /** */
     public ANNClassificationModel() {
-
     }
 
     /** */

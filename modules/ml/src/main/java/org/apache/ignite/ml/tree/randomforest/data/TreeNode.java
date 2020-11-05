@@ -44,7 +44,7 @@ public class TreeNode implements IgniteModel<Vector, Double> {
     }
 
     /** Id. */
-    private final NodeId id;
+    private NodeId id;
 
     /** Feature id. */
     private int featureId;

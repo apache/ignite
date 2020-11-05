@@ -17,23 +17,41 @@
 
 package org.apache.ignite.ml.clustering.kmeans;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
+import org.apache.ignite.ml.inference.JSONModel;
+import org.apache.ignite.ml.inference.JSONReadable;
+import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.Tracer;
+import org.apache.ignite.ml.math.distances.ChebyshevDistance;
+import org.apache.ignite.ml.math.distances.CosineSimilarity;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
+import org.apache.ignite.ml.math.distances.HammingDistance;
+import org.apache.ignite.ml.math.distances.JaccardIndex;
+import org.apache.ignite.ml.math.distances.ManhattanDistance;
+import org.apache.ignite.ml.math.distances.MinkowskiDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.util.ModelTrace;
 
 /**
  * This class encapsulates result of clusterization by KMeans algorithm.
  */
 public final class KMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<KMeansModelFormat>,
-        JSONWritable, JSONReadable, PMMLReadable, PMMLWritable, DeployableObject {
+    JSONWritable, JSONReadable, DeployableObject {
     /** Centers of clusters. */
     private Vector[] centers;
 
@@ -225,6 +243,7 @@ public final class KMeansModel implements ClusterizationModel<Vector, Integer>, 
 
             DistanceMeasure distanceMeasure;
 
+            // TODO: add new distances
             if(distanceMeasureName.equals(EuclideanDistance.class.getSimpleName())) {
                 distanceMeasure = new EuclideanDistance();
             } else if (distanceMeasureName.equals(MinkowskiDistance.class.getSimpleName())) {
