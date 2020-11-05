@@ -238,14 +238,14 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
         List<MaintenanceAction<?>> actions = cb.allActions();
 
         if (actions == null || actions.isEmpty())
-            throw new IgniteException("Maintenance workflow callback should provide at least one mainetance action");
+            throw new IgniteException("Maintenance workflow callback should provide at least one maintenance action");
 
         int size = actions.size();
-        long distinctSize = actions.stream().map(a -> a.name()).distinct().count();
+        long distinctSize = actions.stream().map(MaintenanceAction::name).distinct().count();
 
         if (distinctSize < size)
             throw new IgniteException("All actions of a single workflow should have unique names: " +
-                actions.stream().map(a -> a.name()).collect(Collectors.joining(", ")));
+                actions.stream().map(MaintenanceAction::name).collect(Collectors.joining(", ")));
 
         Optional<String> wrongActionName = actions
             .stream()

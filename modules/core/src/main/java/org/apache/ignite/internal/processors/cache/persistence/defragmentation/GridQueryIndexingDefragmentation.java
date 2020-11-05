@@ -36,6 +36,7 @@ public interface GridQueryIndexingDefragmentation {
      * @param partPageMem
      * @param mappingByPartition
      * @param cpLock
+     * @param cancellationChecker
      * @param log
      *
      * @throws IgniteCheckedException If failed.
@@ -46,6 +47,6 @@ public interface GridQueryIndexingDefragmentation {
         PageMemoryEx partPageMem,
         IntMap<LinkMap> mappingByPartition,
         CheckpointTimeoutLock cpLock,
-        IgniteLogger log
+        Runnable cancellationChecker, IgniteLogger log
     ) throws IgniteCheckedException;
 }

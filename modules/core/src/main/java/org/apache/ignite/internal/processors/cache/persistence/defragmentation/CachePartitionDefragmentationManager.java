@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongConsumer;
@@ -147,6 +148,12 @@ public class CachePartitionDefragmentationManager {
 
     /** */
     private final DataRegion mappingDataRegion;
+
+    /** */
+    private final AtomicBoolean cancel = new AtomicBoolean();
+
+    /** */
+    private final GridFutureAdapter<?> completionFut = new GridFutureAdapter<>();
 
     /**
      * @param cacheGrpIds
@@ -304,6 +311,8 @@ public class CachePartitionDefragmentationManager {
                     IntMap<LinkMap> linkMapByPart = new IntHashMap<>();
 
                     for (CacheDataStore oldCacheDataStore : oldCacheDataStores) {
+                        checkCancellation();
+
                         int partId = oldCacheDataStore.partId();
 
                         PartitionContext partCtx = new PartitionContext(
@@ -436,6 +445,18 @@ public class CachePartitionDefragmentationManager {
             mntcReg.unregisterMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
 
             log.info("Defragmentation completed. All partitions are defragmented.");
+
+            completionFut.onDone();
+        }
+        catch (DefragmentationCancelledException e) {
+            log.info("Defragmentation has been cancelled.");
+
+            completionFut.onDone(e);
+        }
+        catch (Throwable t) {
+            completionFut.onDone(t);
+
+            throw t;
         }
         finally {
             defragmentationCheckpoint.stop(true);
@@ -482,8 +503,20 @@ public class CachePartitionDefragmentationManager {
     /**
      * Cancel the process of defragmentation.
      */
-    public void cancel(){
+    public void cancel() {
+        cancel.set(true);
 
+        try {
+            completionFut.get();
+        }
+        catch (IgniteCheckedException ignore) {
+        }
+    }
+
+    /** */
+    private void checkCancellation() throws DefragmentationCancelledException {
+        if (cancel.get())
+            throw new DefragmentationCancelledException();
     }
 
     /** */
@@ -530,61 +563,68 @@ public class CachePartitionDefragmentationManager {
             AtomicLong lastCpLockTs = new AtomicLong(System.currentTimeMillis());
             AtomicInteger entriesProcessed = new AtomicInteger();
 
-            treeIter.iterate(tree, partCtx.cachePageMemory, (tree0, io, pageAddr, idx) -> {
-                tracker.complete(ITERATE);
+            try {
+                treeIter.iterate(tree, partCtx.cachePageMemory, (tree0, io, pageAddr, idx) -> {
+                    checkCancellation();
 
-                if (System.currentTimeMillis() - lastCpLockTs.get() >= cpLockThreshold) {
-                    defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
+                    tracker.complete(ITERATE);
 
-                    defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadLock();
-                    tracker.complete(CP_LOCK);
+                    if (System.currentTimeMillis() - lastCpLockTs.get() >= cpLockThreshold) {
+                        defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
 
-                    lastCpLockTs.set(System.currentTimeMillis());
-                }
+                        defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadLock();
+                        tracker.complete(CP_LOCK);
 
-                AbstractDataLeafIO leafIo = (AbstractDataLeafIO)io;
-                CacheDataRow row = tree.getRow(io, pageAddr, idx);
+                        lastCpLockTs.set(System.currentTimeMillis());
+                    }
 
-                tracker.complete(READ_ROW);
+                    AbstractDataLeafIO leafIo = (AbstractDataLeafIO)io;
+                    CacheDataRow row = tree.getRow(io, pageAddr, idx);
 
-                int cacheId = row.cacheId();
+                    tracker.complete(READ_ROW);
 
-                // Reuse row that we just read.
-                row.link(0);
+                    int cacheId = row.cacheId();
 
-                // "insertDataRow" will corrupt page memory if we don't do this.
-                if (row instanceof DataRow && !partCtx.oldGrpCtx.storeCacheIdInDataPage())
-                    ((DataRow)row).cacheId(CU.UNDEFINED_CACHE_ID);
+                    // Reuse row that we just read.
+                    row.link(0);
 
-                freeList.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
+                    // "insertDataRow" will corrupt page memory if we don't do this.
+                    if (row instanceof DataRow && !partCtx.oldGrpCtx.storeCacheIdInDataPage())
+                        ((DataRow)row).cacheId(CU.UNDEFINED_CACHE_ID);
 
-                // Put it back.
-                if (row instanceof DataRow)
-                    ((DataRow)row).cacheId(cacheId);
+                    freeList.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
-                tracker.complete(INSERT_ROW);
+                    // Put it back.
+                    if (row instanceof DataRow)
+                        ((DataRow)row).cacheId(cacheId);
 
-                newTree.putx(row);
+                    tracker.complete(INSERT_ROW);
 
-                long newLink = row.link();
+                    newTree.putx(row);
 
-                tracker.complete(STORE_MAP);
+                    long newLink = row.link();
 
-                partCtx.linkMap.put(leafIo.getLink(pageAddr, idx), newLink);
+                    tracker.complete(STORE_MAP);
 
-                tracker.complete(STORE_PK);
+                    partCtx.linkMap.put(leafIo.getLink(pageAddr, idx), newLink);
 
-                if (row.expireTime() != 0)
-                    newPendingTree.putx(new PendingRow(cacheId, row.expireTime(), newLink));
+                    tracker.complete(STORE_PK);
 
-                tracker.complete(STORE_PENDING);
+                    if (row.expireTime() != 0)
+                        newPendingTree.putx(new PendingRow(cacheId, row.expireTime(), newLink));
 
-                entriesProcessed.incrementAndGet();
+                    tracker.complete(STORE_PENDING);
 
-                return true;
-            });
+                    entriesProcessed.incrementAndGet();
 
-            defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
+                    return true;
+                });
+            }
+            finally {
+                defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
+            }
+
+            checkCancellation();
 
             defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadLock();
             tracker.complete(CP_LOCK);
@@ -699,12 +739,15 @@ public class CachePartitionDefragmentationManager {
 
         CheckpointTimeoutLock cpLock = defragmentationCheckpoint.checkpointTimeoutLock();
 
+        Runnable cancellationChecker = this::checkCancellation;
+
         idx.defragmentator().defragmentate(
             grpCtx,
             newCtx,
             (PageMemoryEx)partDataRegion.pageMemory(),
             mappingByPartition,
             cpLock,
+            cancellationChecker,
             log
         );
     }
@@ -912,7 +955,7 @@ public class CachePartitionDefragmentationManager {
     }
 
     /** */
-    private static class DefragmentationCancelledException extends Exception {
+    private static class DefragmentationCancelledException extends RuntimeException {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
     }

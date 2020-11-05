@@ -89,7 +89,10 @@ public enum CommandList {
     SYSTEM_VIEW("--system-view", new SystemViewCommand()),
 
     /** Command for printing metric values. */
-    METRIC("--metric", new MetricCommand());
+    METRIC("--metric", new MetricCommand()),
+
+    /** Command to manage PDS defragmentation. */
+    DEFRAGMENTATION("--defragmentation", new DefragmentationCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();
