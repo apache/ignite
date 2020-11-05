@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.List;
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -100,6 +100,9 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
+        if (!TraitUtils.rewindability(inTraits.get(0)).rewindable() && RexUtils.hasCorrelation(getCondition()))
+            return ImmutableList.of();
+
         return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.rewindability(inTraits.get(0))),
             inTraits));
     }

@@ -155,9 +155,18 @@ public class TraitUtils {
         if (fromTrait.satisfies(toTrait))
             return rel;
 
-        RelTraitSet traits = rel.getTraitSet().replace(toTrait);
+        if (correlation(rel.getTraitSet()).correlated())
+            System.out.println();
 
-        return new IgniteIndexSpool(rel.getCluster(), traits, rel, Spool.Type.LAZY);
+        return new IgniteIndexSpool(
+            rel.getCluster(),
+            rel.getTraitSet().replace(toTrait).replace(CorrelationTrait.UNCORRELATED),
+            RelOptRule.convert(
+                rel,
+                rel.getTraitSet()
+                    .replace(CorrelationTrait.UNCORRELATED)
+            ),
+            Spool.Type.LAZY);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
