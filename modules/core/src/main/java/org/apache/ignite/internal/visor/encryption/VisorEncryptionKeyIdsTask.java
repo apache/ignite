@@ -56,17 +56,17 @@ public class VisorEncryptionKeyIdsTask extends VisorCacheGroupEncryptionTask<Lis
 
         /** {@inheritDoc} */
         @Override protected VisorSingleFieldDto<List<Integer>> run0(CacheGroupContext grp) {
-            return new IntArrayResult().value(ignite.context().encryption().groupKeyIds(grp.groupId()));
+            return new VisorEncryptionKeyIdsResult().value(ignite.context().encryption().groupKeyIds(grp.groupId()));
         }
     }
 
     /** */
-    protected static class IntArrayResult extends VisorSingleFieldDto<List<Integer>> {
+    protected static class VisorEncryptionKeyIdsResult extends VisorSingleFieldDto<List<Integer>> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /** */
-        public IntArrayResult() {
+        public VisorEncryptionKeyIdsResult() {
             // No-op.
         }
 
