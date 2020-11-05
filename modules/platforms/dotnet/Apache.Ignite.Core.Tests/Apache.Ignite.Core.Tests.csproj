@@ -112,6 +112,7 @@
     <Compile Include="Binary\Serializable\DynamicFieldSetTest.cs" />
     <Compile Include="Cache\Affinity\AffinityAttributeTest.cs" />
     <Compile Include="Cache\CacheCreateTest.cs" />
+    <Compile Include="Cache\CacheNodeFilterTest.cs" />
     <Compile Include="Cache\CacheQueryMetricsTest.cs" />
     <Compile Include="Cache\CacheTimeoutOnPmeTransactionalTest.cs" />
     <Compile Include="Cache\CacheTransactionGridStopTest.cs" />
@@ -144,8 +145,11 @@
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Misc.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Custom.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Contains.cs" />
+    <Compile Include="Cache\Query\QueryEntityMetadataRegistrationTest.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestCodeConfig.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestSharedFactory.cs" />
+    <Compile Include="Client\Cache\ClientQueryEntityMetadataRegistrationTest.cs" />
+    <Compile Include="Client\Cache\ClientQueryEntityMetadataRegistrationTestJavaOnlyServer.cs" />
     <Compile Include="Client\Cache\ContinuousQueryTest.cs" />
     <Compile Include="Client\Cache\CacheClientAbstractTxTest.cs" />
     <Compile Include="Client\Cache\CacheClientLocalTxTest.cs" />
@@ -206,6 +210,7 @@
     <Compile Include="Client\Services\TestServiceGenericMethods.cs" />
     <Compile Include="Client\Services\TestServiceOverloads.cs" />
     <Compile Include="Common\IgniteProductVersionTests.cs" />
+    <Compile Include="Common\MemoryInfoTest.cs" />
     <Compile Include="Compute\ComputeApiTest.JavaTask.cs" />
     <Compile Include="Compute\ComputeWithExecutorTest.cs" />
     <Compile Include="Deployment\CacheGetFunc.cs" />
@@ -435,6 +440,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Config\cache-attribute-node-filter.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Config\cache-binarizables.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -519,6 +527,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\Log\custom-log.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\query-entity-metadata-registration.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\spring-test.xml">

@@ -305,7 +305,7 @@ namespace ignite
                 BigInteger res;
                 BigInteger left;
 
-                maxUintTenPower.AssignUint64(10000000000000000000ULL);
+                maxUintTenPower.AssignUint64(10000000000000000000U);
 
                 std::vector<uint64_t> vals;
 
@@ -355,7 +355,7 @@ namespace ignite
 
                 if (!is)
                     return is;
-            
+
                 // Current value parts.
                 uint64_t part = 0;
                 int32_t partDigits = 0;
@@ -386,7 +386,7 @@ namespace ignite
                     part = part * 10 + (c - '0');
                     ++partDigits;
 
-                    if (part >= 1000000000000000000ULL)
+                    if (part >= 1000000000000000000U)
                     {
                         BigInteger::GetPowerOfTen(partDigits, pow);
                         val.Multiply(pow, val);

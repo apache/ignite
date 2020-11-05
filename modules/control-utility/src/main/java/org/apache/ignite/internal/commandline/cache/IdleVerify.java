@@ -32,6 +32,7 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
@@ -65,7 +66,7 @@ import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPar
 /**
  *
  */
-public class IdleVerify implements Command<IdleVerify.Arguments> {
+public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
