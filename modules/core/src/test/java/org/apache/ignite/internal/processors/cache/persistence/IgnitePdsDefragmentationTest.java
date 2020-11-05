@@ -252,7 +252,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         IgniteEx grid = grid(0);
         MaintenanceRegistry mntcReg = grid.context().maintenanceRegistry();
 
-        mntcReg.registerMaintenanceTask(toStore(Collections.singletonList(groupIdForCache(grid, DEFAULT_CACHE_NAME))));
+        mntcReg.registerMaintenanceTask(toStore(Collections.singletonList(DEFAULT_CACHE_NAME)));
     }
 
     /**

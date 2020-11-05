@@ -17,17 +17,28 @@
 
 package org.apache.ignite.internal.visor.defragmentation;
 
+import java.util.List;
+import java.util.Optional;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.maintenance.MaintenanceAction;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_TASK_NAME;
 
 /** */
 @GridInternal
 @GridVisorManagementTask
-public class VisorDefragmentationTask extends VisorOneNodeTask<VisorDefragmentationTaskArg, VisorDefragmentationTaskResult> {
+public class VisorDefragmentationTask extends VisorMultiNodeTask<
+    VisorDefragmentationTaskArg,
+    VisorDefragmentationTaskResult,
+    VisorDefragmentationTaskResult
+> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -36,6 +47,22 @@ public class VisorDefragmentationTask extends VisorOneNodeTask<VisorDefragmentat
         VisorDefragmentationTaskArg arg
     ) {
         return new VisorDefragmentationJob(arg, debug);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override protected VisorDefragmentationTaskResult reduce0(List<ComputeJobResult> results) {
+        if (results.size() > 1) {
+            // Implement later, this is a valid case for massive schedule operation only.
+        }
+
+        assert results.size() == 1;
+
+        ComputeJobResult res = results.get(0);
+
+        if (res.getException() == null)
+            return res.getData();
+
+        throw res.getException();
     }
 
     /** */
@@ -57,7 +84,46 @@ public class VisorDefragmentationTask extends VisorOneNodeTask<VisorDefragmentat
         @Override protected VisorDefragmentationTaskResult run(
             @Nullable VisorDefragmentationTaskArg arg
         ) throws IgniteException {
-            return null;
+            switch (arg.operation()) {
+//                case SCHEDULE:
+//                    return runSchedule(arg);
+//
+//                case STATUS:
+//                    return runStatus(arg);
+
+                case CANCEL:
+                    return runCancel(arg);
+            }
+
+            throw new IllegalArgumentException("Operation: " + arg.operation());
+        }
+
+        /** */
+        private VisorDefragmentationTaskResult runCancel(VisorDefragmentationTaskArg arg) {
+            assert arg.cacheNames() == null : "Cancelling specific caches is not yet implemented";
+
+            MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
+
+            if (!mntcReg.isMaintenanceMode())
+                mntcReg.unregisterMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
+            else {
+                List<MaintenanceAction<?>> actions = mntcReg.actionsForMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
+
+                Optional<MaintenanceAction<?>> stopAct = actions.stream().filter(a -> "stop".equals(a.name())).findAny();
+
+                assert stopAct.isPresent();
+
+                try {
+                    Object res = stopAct.get().execute();
+
+                    assert Boolean.TRUE == res;
+                }
+                catch (Exception e) {
+                    return new VisorDefragmentationTaskResult("Exception occurred: " + e.getMessage());
+                }
+            }
+
+            return new VisorDefragmentationTaskResult("Defragmentation cancelled successfully.");
         }
     }
 }

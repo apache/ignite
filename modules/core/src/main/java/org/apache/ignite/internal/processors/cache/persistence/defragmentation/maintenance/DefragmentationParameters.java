@@ -29,31 +29,31 @@ import static org.apache.ignite.internal.processors.cache.persistence.defragment
  */
 public class DefragmentationParameters {
     /** */
-    public static final String CACHE_GROUP_ID_SEPARATOR = ",";
+    public static final String SEPARATOR = "/";
 
     /** */
-    private final List<Integer> cacheGrpIds;
+    private final List<String> cacheNames;
 
     /**
-     * @param cacheGrpIds Id of cache group for defragmentations.
+     * @param cacheNames Names of caches for defragmentations.
      */
-    private DefragmentationParameters(List<Integer> cacheGrpIds) {
-        this.cacheGrpIds = cacheGrpIds;
+    private DefragmentationParameters(List<String> cacheNames) {
+        this.cacheNames = cacheNames;
     }
 
     /**
      * Convert parameter to maintenance storage.
      *
-     * @param cacheGroupIds Cache group ids for defragmentation.
+     * @param cacheNames Names of caches for defragmentations.
      * @return Maintenance task.
      */
-    public static MaintenanceTask toStore(List<Integer> cacheGroupIds) {
+    public static MaintenanceTask toStore(List<String> cacheNames) {
         return new MaintenanceTask(
             DEFRAGMENTATION_MNTC_TASK_NAME,
-            "Cache group defragmentation",
-            cacheGroupIds.stream()
+            "Caches defragmentation",
+            cacheNames.stream()
                 .map(String::valueOf)
-                .collect(Collectors.joining(CACHE_GROUP_ID_SEPARATOR))
+                .collect(Collectors.joining(SEPARATOR))
         );
     }
 
@@ -63,16 +63,16 @@ public class DefragmentationParameters {
      */
     public static DefragmentationParameters fromStore(MaintenanceTask rawTask) {
         return new DefragmentationParameters(Arrays.stream(rawTask.parameters()
-            .split(CACHE_GROUP_ID_SEPARATOR))
-            .map(Integer::valueOf)
+            .split(SEPARATOR))
             .collect(Collectors.toList())
         );
     }
 
     /**
-     * @return Cache groups ids.
+     * @return Cache names.
      */
-    public List<Integer> cacheGroupIds() {
-        return cacheGrpIds;
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public List<String> cacheNames() {
+        return cacheNames;
     }
 }

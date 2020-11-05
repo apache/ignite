@@ -27,18 +27,18 @@ import org.jetbrains.annotations.Nullable;
  */
 class StopDefragmentationAction implements MaintenanceAction<Boolean> {
     /** Defragmentation manager. */
-    private final CachePartitionDefragmentationManager defragmentationManager;
+    private final CachePartitionDefragmentationManager defragmentationMgr;
 
     /**
-     * @param defragmentationManager Defragmentation manager.
+     * @param defragmentationMgr Defragmentation manager.
      */
-    public StopDefragmentationAction(CachePartitionDefragmentationManager defragmentationManager) {
-        this.defragmentationManager = defragmentationManager;
+    public StopDefragmentationAction(CachePartitionDefragmentationManager defragmentationMgr) {
+        this.defragmentationMgr = defragmentationMgr;
     }
 
     /** {@inheritDoc} */
     @Override public Boolean execute() {
-        defragmentationManager.cancel();
+        defragmentationMgr.cancel();
 
         return true;
     }

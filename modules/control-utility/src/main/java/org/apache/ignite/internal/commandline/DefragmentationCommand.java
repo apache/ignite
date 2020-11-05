@@ -24,11 +24,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.defragmentation.DefragmentationArguments;
 import org.apache.ignite.internal.commandline.defragmentation.DefragmentationSubcommands;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationOperation;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTask;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskArg;
@@ -45,14 +47,28 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
             Optional<GridClientNode> firstNodeOpt = client.compute().nodes().stream().findFirst();
 
             if (firstNodeOpt.isPresent()) {
-                UUID uuid = firstNodeOpt.get().nodeId();
+                UUID connectableNodeId = firstNodeOpt.get().nodeId();
 
-                VisorDefragmentationTaskResult res = TaskExecutor.executeTaskByNameOnNode(client,
-                    VisorDefragmentationTask.class.getName(),
-                    convertArguments(),
-                    uuid,
-                    clientCfg
-                );
+                VisorTaskArgument<?> visorArg;
+
+                if (args.nodeIds() == null)
+                    visorArg = new VisorTaskArgument<>(connectableNodeId, args, false);
+                else {
+                    visorArg = new VisorTaskArgument<>(
+                        client.compute().nodes().stream().filter(
+                            node -> args.nodeIds().contains(node.consistentId().toString())
+                        ).map(GridClientNode::nodeId).collect(Collectors.toList()),
+                        args,
+                        false
+                    );
+                }
+
+                VisorDefragmentationTaskResult res = client.compute()
+                    .projection(firstNodeOpt.get())
+                    .execute(
+                        VisorDefragmentationTask.class.getName(),
+                        visorArg
+                    );
 
 //                printResult(res, log);
             }

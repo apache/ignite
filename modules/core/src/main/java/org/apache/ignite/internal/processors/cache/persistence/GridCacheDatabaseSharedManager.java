@@ -650,7 +650,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** */
-    private void prepareCacheDefragmentation(List<Integer> cacheGroupIds) throws IgniteCheckedException {
+    private void prepareCacheDefragmentation(List<String> cacheNames) throws IgniteCheckedException {
         GridKernalContext kernalCtx = cctx.kernalContext();
         DataStorageConfiguration dsCfg = kernalCtx.config().getDataStorageConfiguration();
 
@@ -697,7 +697,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         lightCheckpointMgr.start();
 
         defrgMgr = new CachePartitionDefragmentationManager(
-            cacheGroupIds,
+            cacheNames,
             cctx,
             this,
             (FilePageStoreManager)cctx.pageStore(),
@@ -747,7 +747,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     MaintenanceTask task = mntcReg.activeMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
 
                     if (task != null) {
-                        prepareCacheDefragmentation(fromStore(task).cacheGroupIds());
+                        prepareCacheDefragmentation(fromStore(task).cacheNames());
 
                         mntcReg.registerWorkflowCallback(
                             DEFRAGMENTATION_MNTC_TASK_NAME,

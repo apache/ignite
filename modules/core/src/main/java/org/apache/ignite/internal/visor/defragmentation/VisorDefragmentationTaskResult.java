@@ -17,5 +17,37 @@
 
 package org.apache.ignite.internal.visor.defragmentation;
 
-public class VisorDefragmentationTaskResult {
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
+/** */
+public class VisorDefragmentationTaskResult extends IgniteDataTransferObject {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    private String msg;
+
+    /** Empty constructor for serialization. */
+    public VisorDefragmentationTaskResult() {
+        // No-op.
+    }
+
+    /** */
+    public VisorDefragmentationTaskResult(String msg) {
+        this.msg = msg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeString(out, msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException {
+        msg = U.readString(in);
+    }
 }

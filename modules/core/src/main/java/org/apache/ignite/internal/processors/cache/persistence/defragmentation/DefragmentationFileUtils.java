@@ -79,6 +79,15 @@ public class DefragmentationFileUtils {
 
         U.delete(defragmentationCompletionMarkerFile(workDir));
 
+        deleteLeftovers(workDir);
+    }
+
+    /**
+     * Deletes all defragmentation related file from work directory, except for completion marker.
+     *
+     * @param workDir Cache group working directory.
+     */
+    public static void deleteLeftovers(File workDir) {
         for (File file : workDir.listFiles()) {
             String fileName = file.getName();
 
