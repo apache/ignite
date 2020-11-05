@@ -109,7 +109,7 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteIndexSpool rel);
+    T visit(IgniteTableSpool rel);
 
     /**
      * Visits a relational node and calculates a result on the basis of node meta information.

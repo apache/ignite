@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
@@ -37,7 +38,6 @@ import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
@@ -47,9 +47,9 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -155,18 +155,15 @@ public class TraitUtils {
         if (fromTrait.satisfies(toTrait))
             return rel;
 
-        if (correlation(rel.getTraitSet()).correlated())
-            System.out.println();
-
-        return new IgniteIndexSpool(
+        return new IgniteTableSpool(
             rel.getCluster(),
             rel.getTraitSet().replace(toTrait).replace(CorrelationTrait.UNCORRELATED),
             RelOptRule.convert(
                 rel,
                 rel.getTraitSet()
                     .replace(CorrelationTrait.UNCORRELATED)
-            ),
-            Spool.Type.LAZY);
+            )
+        );
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

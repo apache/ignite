@@ -17,59 +17,50 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.List;
-import java.util.Set;
-
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.CorrelationId;
-import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.metadata.RelMdUtil;
+import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
 /**
- * Relational expression that iterates over its input
- * and returns elements for which <code>condition</code> evaluates to
- * <code>true</code>.
- *
- * <p>If the condition allows nulls, then a null value is treated the same as
- * false.</p>
+ * Relational operator that returns the contents of a table.
  */
-public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
+public class IgniteTableSpool extends Spool implements TraitsAwareIgniteRel {
     /**
-     * Creates a filter.
+     * Constructor used for deserialization.
      *
-     * @param cluster   Cluster that this relational expression belongs to
-     * @param traits    the traits of this rel
-     * @param input     input relational expression
-     * @param condition boolean expression which determines whether a row is
-     *                  allowed to pass
+     * @param input Serialized representation.
      */
-    public IgniteFilter(RelOptCluster cluster, RelTraitSet traits, RelNode input, RexNode condition) {
-        super(cluster, traits, input, condition);
+    public IgniteTableSpool(RelInput input) {
+        super(
+            changeTraits(input, IgniteConvention.INSTANCE).getCluster(),
+            changeTraits(input, IgniteConvention.INSTANCE).getTraitSet(),
+            changeTraits(input, IgniteConvention.INSTANCE).getInput(),
+            changeTraits(input, IgniteConvention.INSTANCE).getEnum("readType", Type.class),
+            changeTraits(input, IgniteConvention.INSTANCE).getEnum("writeType", Type.class)
+        );
     }
 
-    /** */
-    public IgniteFilter(RelInput input) {
-        super(changeTraits(input, IgniteConvention.INSTANCE));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Filter copy(RelTraitSet traitSet, RelNode input, RexNode condition) {
-        return new IgniteFilter(getCluster(), traitSet, input, condition);
+    /**
+     */
+    public IgniteTableSpool(
+        RelOptCluster cluster,
+        RelTraitSet traits,
+        RelNode input
+    ) {
+        super(cluster, traits, input, Type.LAZY, Type.EAGER);
     }
 
     /** {@inheritDoc} */
@@ -78,10 +69,15 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
     }
 
     /** {@inheritDoc} */
+    @Override protected Spool copy(RelTraitSet traitSet, RelNode input, Type readType, Type writeType) {
+        return new IgniteTableSpool(getCluster(), traitSet, input);
+    }
+
+    /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
         return ImmutableList.of(Pair.of(nodeTraits,
-            ImmutableList.of(inTraits.get(0).replace(TraitUtils.rewindability(nodeTraits)))));
+            ImmutableList.of(inTraits.get(0).replace(RewindabilityTrait.ONE_WAY))));
     }
 
     /** {@inheritDoc} */
@@ -101,10 +97,7 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
-        if (!TraitUtils.rewindability(inTraits.get(0)).rewindable() && RexUtils.hasCorrelation(getCondition()))
-            return ImmutableList.of();
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.rewindability(inTraits.get(0))),
+        return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE),
             inTraits));
     }
 
@@ -122,31 +115,24 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
             inTraits));
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
-        if (RexUtils.hasCorrelation(getCondition()))
-            return ImmutableList.of();
-
         return ImmutableList.of(Pair.of(nodeTraits,
             ImmutableList.of(inTraits.get(0).replace(TraitUtils.correlation(nodeTraits)))));
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
-        Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(getCondition());
-
-        corrIds.addAll(TraitUtils.correlation(inTraits.get(0)).correlationIds());
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)),
+        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.collation(inTraits.get(0))),
             inTraits));
     }
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        // TODO: add memory usage to cost
         double rowCount = mq.getRowCount(getInput());
-        rowCount = RelMdUtil.addEpsilon(rowCount); // to differ from rel nodes with integrated filter
         return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }
 }

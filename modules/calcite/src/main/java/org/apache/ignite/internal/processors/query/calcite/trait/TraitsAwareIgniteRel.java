@@ -94,6 +94,15 @@ public interface TraitsAwareIgniteRel extends IgniteRel {
     List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inTraits);
 
     /**
+     * Propagates correlation trait in up-to-bottom manner.
+     *
+     * @param nodeTraits Relational node output traits.
+     * @param inTraits Relational node input traits.
+     * @return List of possible input-output traits combinations.
+     */
+    List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits, List<RelTraitSet> inTraits);
+
+    /**
      * Propagates rewindability trait in bottom-up manner.
      *
      * @param nodeTraits Relational node output traits.
@@ -120,10 +129,12 @@ public interface TraitsAwareIgniteRel extends IgniteRel {
      */
     List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inTraits);
 
-
-    /** */
-    List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits, List<RelTraitSet> inTraits);
-
-    /** */
+    /**
+     * Propagates correlation trait in bottom-up manner.
+     *
+     * @param nodeTraits Relational node output traits.
+     * @param inTraits Relational node input traits.
+     * @return List of possible input-output traits combinations.
+     */
     List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits, List<RelTraitSet> inTraits);
 }

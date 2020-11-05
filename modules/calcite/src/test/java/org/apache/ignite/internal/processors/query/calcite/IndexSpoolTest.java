@@ -32,19 +32,25 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 
 /**
  * IndexSpool test.
  */
 public class IndexSpoolTest extends GridCommonAbstractTest {
+    /** Rows. */
+    private static final int ROWS = 100;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrids(2);
 
-        IgniteCache<Integer, String> c = grid(0).cache("TEST0");
+        fillCache(grid(0).cache("TEST0"), ROWS);
+        fillCache(grid(0).cache("TEST1"), ROWS);
 
-        fillCache(grid(0).cache("TEST0"), 100);
-        fillCache(grid(0).cache("TEST0"), 100);
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -60,19 +66,19 @@ public class IndexSpoolTest extends GridCommonAbstractTest {
             .setTableName("TEST0")
             .setKeyType(Integer.class.getName())
             .setValueType(TestVal.class.getName())
-            .setKeyFieldName("id")
-            .addQueryField("id", Integer.class.getName(), null)
-            .addQueryField("jid", Integer.class.getName(), null)
-            .addQueryField("val", String.class.getName(), null);
+            .setKeyFieldName("ID")
+            .addQueryField("ID", Integer.class.getName(), null)
+            .addQueryField("JID", Integer.class.getName(), null)
+            .addQueryField("VAL", String.class.getName(), null);
 
         QueryEntity part1 = new QueryEntity()
             .setTableName("TEST1")
             .setKeyType(Integer.class.getName())
             .setValueType(TestVal.class.getName())
-            .setKeyFieldName("id")
-            .addQueryField("id", Integer.class.getName(), null)
-            .addQueryField("jid", Integer.class.getName(), null)
-            .addQueryField("val", String.class.getName(), null);
+            .setKeyFieldName("ID")
+            .addQueryField("ID", Integer.class.getName(), null)
+            .addQueryField("JID", Integer.class.getName(), null)
+            .addQueryField("VAL", String.class.getName(), null);
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
@@ -96,19 +102,19 @@ public class IndexSpoolTest extends GridCommonAbstractTest {
     public void test() throws Exception {
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> cursors =
-            engine.query(null, "PUBLIC",
-                "SELECT T0.val, T1.val FROM TEST0 as T0 " +
-                    "JOIN TEST1 as T1 on T0.jid = T1.jid " +
-                    "WHERE T0.val > 'val_10'",
-//                "EXPLAIN PLAN FOR SELECT T0.val, T1.val FROM TEST0 as T0 " +
-//                    "JOIN TEST1 as T1 on T0.jid = T1.jid " +
-//                    "WHERE T0.val > 'val_10'",
-                X.EMPTY_OBJECT_ARRAY);
+        List<FieldsQueryCursor<List<?>>> cursors = engine.query(
+            null,
+            "PUBLIC",
+            "SELECT T0.val, T1.val FROM TEST0 as T0 " +
+                "JOIN TEST1 as T1 on T0.jid = T1.jid",
+            X.EMPTY_OBJECT_ARRAY
+        );
 
         List<List<?>> res = cursors.get(0).getAll();
 
-        System.out.println("+++ " + res);
+        assertThat(res.size(), is(ROWS));
+
+        res.forEach(r -> assertThat(r.get(0), is(r.get(1))));
 
     }
 

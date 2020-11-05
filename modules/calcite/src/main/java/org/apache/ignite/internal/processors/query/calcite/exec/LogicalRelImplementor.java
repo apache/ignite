@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.SpoolNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
@@ -53,7 +54,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedN
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
@@ -296,10 +297,15 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         return node;
     }
 
-    @Override public Node<Row> visit(IgniteIndexSpool rel) {
-        assert false : "TODO";
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteTableSpool rel) {
+        SpoolNode<Row> node = new SpoolNode<>(ctx, rel.getRowType());
 
-        return null;
+        Node<Row> input = visit(rel.getInput());
+
+        node.register(input);
+
+        return node;
     }
 
     /** {@inheritDoc} */

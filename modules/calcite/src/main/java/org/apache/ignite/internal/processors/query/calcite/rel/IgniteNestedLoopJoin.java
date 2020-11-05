@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import com.google.common.collect.ImmutableList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -87,11 +86,6 @@ public class IgniteNestedLoopJoin extends AbstractIgniteNestedLoopJoin {
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return super.computeSelfCost(planner, mq).multiplyBy(10);
-    }
-
-    /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
         return ImmutableList.of(Pair.of(nodeTraits,
@@ -112,5 +106,13 @@ public class IgniteNestedLoopJoin extends AbstractIgniteNestedLoopJoin {
 
         return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)),
             inTraits));
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        if (mq.getRowCount(getRight()) > 500)
+            return super.computeSelfCost(planner, mq).multiplyBy(20);
+
+        return super.computeSelfCost(planner, mq).multiplyBy(10);
     }
 }
