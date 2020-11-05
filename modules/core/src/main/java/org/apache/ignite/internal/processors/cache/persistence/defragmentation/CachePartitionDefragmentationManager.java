@@ -309,8 +309,15 @@ public class CachePartitionDefragmentationManager {
                             true
                         );
 
-                        // This will initialize partition meta in index partition - meta tree and reuse list.
-                        newGrpCtx.start();
+                        defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadLock();
+
+                        try {
+                            // This will initialize partition meta in index partition - meta tree and reuse list.
+                            newGrpCtx.start();
+                        }
+                        finally {
+                            defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
+                        }
 
                         IntMap<LinkMap> linkMapByPart = new IntHashMap<>();
 
