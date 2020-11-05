@@ -108,6 +108,9 @@ public enum IgniteFeatures {
     /** Distributed change timeout for dump long operations. */
     DISTRIBUTED_CHANGE_LONG_OPERATIONS_DUMP_TIMEOUT(30),
 
+    /** New region for volatile data. */
+    VOLATILE_DATA_STRUCTURES_REGION(33),
+
     /** Check secondary indexes inline size on join/by control utility request. */
     CHECK_INDEX_INLINE_SIZES(36),
 
