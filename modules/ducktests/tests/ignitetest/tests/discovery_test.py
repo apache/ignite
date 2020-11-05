@@ -49,6 +49,7 @@ class ClusterLoad(IntEnum):
     TRANSACTIONAL = 2
 
 
+# pylint: disable=R0913
 class DiscoveryTestConfig(NamedTuple):
     """
     Configuration for DiscoveryTest.
@@ -58,6 +59,7 @@ class DiscoveryTestConfig(NamedTuple):
     load_type: ClusterLoad = ClusterLoad.NONE
     sequential_failure: bool = False
     with_zk: bool = False
+    socket_linger: int = None
 
 
 # pylint: disable=W0223
@@ -90,7 +92,8 @@ class DiscoveryTest(IgniteTest):
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
-                                          load_type=load_type, sequential_failure=False)
+                                          load_type=load_type, sequential_failure=False,
+                                          socket_linger=None if ignite_version < V_2_8_0 else 0)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -102,7 +105,8 @@ class DiscoveryTest(IgniteTest):
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2, load_type=load_type,
-                                          sequential_failure=True)
+                                          sequential_failure=True,
+                                          socket_linger=None if ignite_version < V_2_8_0 else 0)
 
         return self._perform_node_fail_scenario(test_config)
 
