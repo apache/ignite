@@ -59,8 +59,8 @@ class DiscoveryTestConfig(NamedTuple):
     load_type: ClusterLoad = ClusterLoad.NONE
     sequential_failure: bool = False
     with_zk: bool = False
-    socket_linger: int = 0
     failure_detection_timeout: int = 1000
+    socket_linger: int = None
 
 
 # pylint: disable=W0223
