@@ -48,10 +48,8 @@ import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcom
  * Base cache group encryption multinode subcommand.
  *
  * @param <T> Command result type.
- * @param <S> Multinode task result.
  */
-public abstract class CacheGroupEncryptionCommand<T, S extends VisorCacheGroupEncryptionTaskResult<T>>
-    extends AbstractCommand<VisorCacheGroupEncryptionTaskArg> {
+public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<VisorCacheGroupEncryptionTaskArg> {
     /** Cache group reencryption task argument. */
     private VisorCacheGroupEncryptionTaskArg taskArg;
 
@@ -73,7 +71,7 @@ public abstract class CacheGroupEncryptionCommand<T, S extends VisorCacheGroupEn
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            S res = executeTaskByNameOnNode(
+            VisorCacheGroupEncryptionTaskResult<T> res = executeTaskByNameOnNode(
                 client,
                 visorTaskName(),
                 taskArg,
@@ -98,7 +96,7 @@ public abstract class CacheGroupEncryptionCommand<T, S extends VisorCacheGroupEn
      * @param grpName Cache group name.
      * @param log Logger.
      */
-    protected void printResults(S res, String grpName, Logger log) {
+    protected void printResults(VisorCacheGroupEncryptionTaskResult<T> res, String grpName, Logger log) {
         Map<UUID, IgniteException> exceptions = res.exceptions();
 
         for (Map.Entry<UUID, IgniteException> entry : exceptions.entrySet()) {
@@ -130,8 +128,7 @@ public abstract class CacheGroupEncryptionCommand<T, S extends VisorCacheGroupEn
     protected abstract String visorTaskName();
 
     /** Subcommand to Display re-encryption status of the cache group. */
-    protected static class ReencryptionStatus extends
-        CacheGroupEncryptionCommand<Long, VisorCacheGroupEncryptionTaskResult<Long>> {
+    protected static class ReencryptionStatus extends CacheGroupEncryptionCommand<Long> {
         /** {@inheritDoc} */
         @Override protected void printNodeResult(Long bytesLeft, String grpName, Logger log) {
             if (bytesLeft == -1)
@@ -160,9 +157,7 @@ public abstract class CacheGroupEncryptionCommand<T, S extends VisorCacheGroupEn
     }
 
     /** Subcommand to view current encryption key IDs of the cache group. */
-    protected static class CacheKeyIds extends
-        CacheGroupEncryptionCommand<List<Integer>, VisorCacheGroupEncryptionTaskResult<List<Integer>>> {
-
+    protected static class CacheKeyIds extends CacheGroupEncryptionCommand<List<Integer>> {
         /** {@inheritDoc} */
         @Override protected void printResults(
             VisorCacheGroupEncryptionTaskResult<List<Integer>> res,
@@ -204,8 +199,7 @@ public abstract class CacheGroupEncryptionCommand<T, S extends VisorCacheGroupEn
     }
 
     /** Subcommand to suspend re-encryption of the cache group. */
-    protected static class SuspendReencryption extends
-        CacheGroupEncryptionCommand<Boolean, VisorCacheGroupEncryptionTaskResult<Boolean>> {
+    protected static class SuspendReencryption extends CacheGroupEncryptionCommand<Boolean> {
         /** {@inheritDoc} */
         @Override protected String visorTaskName() {
             return VisorReencryptionSuspendTask.class.getName();
@@ -230,8 +224,7 @@ public abstract class CacheGroupEncryptionCommand<T, S extends VisorCacheGroupEn
     }
 
     /** Subcommand to resume re-encryption of the cache group. */
-    protected static class ResumeReencryption extends
-        CacheGroupEncryptionCommand<Boolean, VisorCacheGroupEncryptionTaskResult<Boolean>> {
+    protected static class ResumeReencryption extends CacheGroupEncryptionCommand<Boolean> {
         /** {@inheritDoc} */
         @Override protected String visorTaskName() {
             return VisorReencryptionResumeTask.class.getName();
