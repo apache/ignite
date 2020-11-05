@@ -216,7 +216,7 @@ public class CachePartitionDefragmentationManager {
 
                 int grpId = oldGrpCtx.groupId();
 
-                if (cachesForDefragmentation.isEmpty()) {
+                if (!cachesForDefragmentation.isEmpty()) {
                     if (oldGrpCtx.caches().stream().noneMatch(cctx -> cachesForDefragmentation.contains(cctx.name())))
                         continue;
                 }
