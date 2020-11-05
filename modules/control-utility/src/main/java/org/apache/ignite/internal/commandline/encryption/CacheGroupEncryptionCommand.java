@@ -136,8 +136,7 @@ public abstract class CacheGroupEncryptionCommand<T, S extends VisorCacheGroupEn
         @Override protected void printNodeResult(Long bytesLeft, String grpName, Logger log) {
             if (bytesLeft == -1)
                 log.info(DOUBLE_INDENT + "re-encryption completed or not required");
-            else
-            if (bytesLeft == 0)
+            else if (bytesLeft == 0)
                 log.info(DOUBLE_INDENT + "re-encryption will be completed after the next checkpoint");
             else
                 log.info(String.format("%s%d KB of data left for re-encryption", DOUBLE_INDENT, bytesLeft / 1024));
