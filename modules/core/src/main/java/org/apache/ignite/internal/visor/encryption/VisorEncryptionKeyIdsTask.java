@@ -25,14 +25,13 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTask.VisorSingleFieldDto;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Get current encryption key IDs of the cache group.
  */
 @GridInternal
-public class VisorEncryptionKeyIdsTask extends VisorCacheGroupEncryptionTask<Boolean, VisorSingleFieldDto<List<Integer>>> {
+public class VisorEncryptionKeyIdsTask extends VisorCacheGroupEncryptionTask<List<Integer>> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

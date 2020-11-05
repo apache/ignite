@@ -23,14 +23,13 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTask.VisorSingleFieldDto;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Get re-encryption status of the cache group.
  */
 @GridInternal
-public class VisorReencryptionStatusTask extends VisorCacheGroupEncryptionTask<Boolean, VisorSingleFieldDto<Long>> {
+public class VisorReencryptionStatusTask extends VisorCacheGroupEncryptionTask<Long> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

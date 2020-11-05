@@ -34,9 +34,11 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Visor encrypted cache group multinode task.
+ *
+ * @param <T> The type of the task result.
  */
-public abstract class VisorCacheGroupEncryptionTask<T, R>
-    extends VisorMultiNodeTask<VisorCacheGroupEncryptionTaskArg, VisorCacheGroupEncryptionTaskResult<T>, R>
+public abstract class VisorCacheGroupEncryptionTask<T> extends VisorMultiNodeTask<VisorCacheGroupEncryptionTaskArg,
+    VisorCacheGroupEncryptionTaskResult<T>, VisorCacheGroupEncryptionTask.VisorSingleFieldDto<T>>
 {
     /** {@inheritDoc} */
     @Nullable @Override protected VisorCacheGroupEncryptionTaskResult<T> reduce0(List<ComputeJobResult> results) {

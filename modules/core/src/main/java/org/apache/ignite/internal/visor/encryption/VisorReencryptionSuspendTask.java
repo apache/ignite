@@ -24,14 +24,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTask.VisorSingleFieldDto;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Suspend re-encryption of the cache group.
  */
 @GridInternal
-public class VisorReencryptionSuspendTask extends VisorCacheGroupEncryptionTask<Boolean, VisorSingleFieldDto<Boolean>> {
+public class VisorReencryptionSuspendTask extends VisorCacheGroupEncryptionTask<Boolean> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
