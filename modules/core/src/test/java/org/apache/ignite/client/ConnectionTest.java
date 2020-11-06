@@ -129,7 +129,7 @@ public class ConnectionTest {
 //
 //            System.out.println(">>> " + sw.elapsed().toMillis());
 
-            handshakeGridNioServer();
+            handshakeGridNioServer().get();
         }
     }
 
@@ -261,7 +261,7 @@ public class ConnectionTest {
         GridNioFilter codecFilter = new GridNioCodecFilter(new GridNioParser() {
             @Override
             public @Nullable Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
-                return null;
+                return buf.array();
             }
 
             @Override
