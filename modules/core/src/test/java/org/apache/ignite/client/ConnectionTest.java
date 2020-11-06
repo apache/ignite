@@ -43,8 +43,6 @@ import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.client.GridClientFuture;
-import org.apache.ignite.internal.client.impl.GridClientFutureAdapter;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.util.IgniteStopwatch;
@@ -261,7 +259,8 @@ public class ConnectionTest {
         GridNioFilter codecFilter = new GridNioCodecFilter(new GridNioParser() {
             @Override
             public @Nullable Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
-                return buf.array();
+                // TODO: See ClientMessage.readFrom
+                return buf.remaining();
             }
 
             @Override
