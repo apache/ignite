@@ -52,31 +52,6 @@ class IgniteService(IgniteAwareService):
         for node in self.nodes:
             self.await_node_started(node, timeout_sec)
 
-    def restart(self, timeout_sec=180):
-        """
-        Restart ignite cluster without cleaning.
-        """
-        self.stop()
-
-        for node in self.nodes:
-            super().start_node(node)
-
-        self.logger.info("Waiting for Ignite(s) to start...")
-
-        for node in self.nodes:
-            self.await_node_started(node, timeout_sec)
-
-    def await_node_started(self, node, timeout_sec):
-        """
-        Await topology ready event on node start.
-        :param node: Node to wait
-        :param timeout_sec: Number of seconds to wait event.
-        """
-        self.await_event_on_node("Topology snapshot", node, timeout_sec, from_the_beginning=True)
-
-        if len(self.pids(node)) == 0:
-            raise Exception("No process ids recorded on node %s" % node.account.hostname)
-
     # pylint: disable=W0221
     def stop_node(self, node, clean_shutdown=True, timeout_sec=60):
         pids = self.pids(node)
@@ -141,35 +116,23 @@ class IgniteService(IgniteAwareService):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
         node.account.ssh("sudo rm -rf -- %s" % self.PERSISTENT_ROOT, allow_fail=False)
 
-    def rename_db(self, new_db_name: str):
+    def rename_database(self, new_db_name: str):
         """
-        Rename db.
+        Rename ignite database.
         """
         for node in self.nodes:
-            self._rename_db(node, new_db_name)
+            assert len(self.pids(node)) == 0
 
-    def _rename_db(self, node, new_db_name: str):
-        """
-        Rename db.
-        """
-        assert len(self.pids(node)) == 0
-
-        node.account.ssh(f"mv {self.WORK_DIR}/db {self.WORK_DIR}/{new_db_name}")
+            node.account.ssh(f'mv {self.WORK_DIR}/db {self.WORK_DIR}/{new_db_name}')
 
     def restore_from_snapshot(self, snapshot_name: str):
         """
-        Copy from snapshot to db.
+        Restore from snapshot.
         """
         for node in self.nodes:
-            self._copy_snap_to_db(node, snapshot_name)
+            assert len(self.pids(node)) == 0
 
-    def _copy_snap_to_db(self, node, snapshot_name: str):
-        """
-        Copy from snapshot to db.
-        """
-        assert len(self.pids(node)) == 0
-
-        node.account.ssh(f"cp -r {self.SNAPSHOT}/{snapshot_name}/db {self.WORK_DIR}", allow_fail=False)
+            node.account.ssh(f'cp -r {self.SNAPSHOT}/{snapshot_name}/db {self.WORK_DIR}', allow_fail=False)
 
     def thread_dump(self, node):
         """

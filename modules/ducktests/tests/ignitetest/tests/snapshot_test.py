@@ -42,19 +42,7 @@ class SnapshotTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH))
     def snapshot_test(self, ignite_version):
         """
-        Test Snapshot.
-        1. Start of ignite cluster.
-        2. Activate cluster.
-        3. Load.
-        4. Idle verify dump_1.
-        5. Snapshot.
-        6. Load.
-        7. Idle verify dump_2.
-        8. Сhecking that dump_1 and dump_2 are different.
-        9. Stop ignite and replace db from snapshot.
-        10. Run ignite cluster.
-        11. Idle verify dump_3.
-        12. Checking the equality of dump_1 and dump_3.
+        Basic snapshot test.
         """
         data_storage = DataStorageConfiguration(default=DataRegionConfiguration(persistent=True))
 
@@ -78,11 +66,12 @@ class SnapshotTest(IgniteTest):
         streamer = IgniteApplicationService(
             self.test_context,
             client_config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.UuidDataStreamerApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.loader.UuidDataLoaderApplication",
             params={
                 "cacheName": "test-cache",
                 "iterSize": 512 * 1024
-            }
+            },
+            timeout_sec=180
         )
 
         load(streamer)
@@ -93,22 +82,18 @@ class SnapshotTest(IgniteTest):
         control_utility.idle_verify(check_assert=True)
         dump_1 = control_utility.idle_verify_dump(node, return_path=True)
 
-        self.logger.info(f'Path to dump_1 on {node.account.externally_routable_ip}={dump_1}')
-
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
         load(streamer)
 
         dump_2 = control_utility.idle_verify_dump(node, return_path=True)
 
-        self.logger.info(f'Path to dump_2 on {node.account.externally_routable_ip}={dump_2}')
-
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
         assert len(diff) != 0
 
         service.stop()
 
-        service.rename_db(new_db_name='old_db')
+        service.rename_database(new_db_name='old_db')
         service.restore_from_snapshot(self.SNAPSHOT_NAME)
 
         service.restart()
@@ -118,8 +103,6 @@ class SnapshotTest(IgniteTest):
         control_utility.validate_indexes(check_assert=True)
         control_utility.idle_verify(check_assert=True)
         dump_3 = control_utility.idle_verify_dump(node, return_path=True)
-
-        self.logger.info(f'Path to dump_3 on {node.account.externally_routable_ip}={dump_3}')
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
         assert len(diff) == 0, diff

@@ -141,3 +141,28 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         for node in self.nodes:
             self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
                                      backoff_sec=backoff_sec)
+
+    def restart(self, timeout_sec=180):
+        """
+        Restart ignite cluster without cleaning.
+        """
+        self.stop()
+
+        for node in self.nodes:
+            super().start_node(node)
+
+        self.logger.info("Waiting for Ignite(s) to start...")
+
+        for node in self.nodes:
+            self.await_node_started(node, timeout_sec)
+
+    def await_node_started(self, node, timeout_sec):
+        """
+        Await topology ready event on node start.
+        :param node: Node to wait
+        :param timeout_sec: Number of seconds to wait event.
+        """
+        self.await_event_on_node("Topology snapshot", node, timeout_sec, from_the_beginning=True)
+
+        if len(self.pids(node)) == 0:
+            raise Exception("No process ids recorded on node %s" % node.account.hostname)
