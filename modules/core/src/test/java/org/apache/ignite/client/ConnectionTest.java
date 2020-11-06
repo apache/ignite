@@ -43,6 +43,8 @@ import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.client.GridClientFuture;
+import org.apache.ignite.internal.client.impl.GridClientFutureAdapter;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.util.IgniteStopwatch;
@@ -69,6 +71,7 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -282,12 +285,12 @@ public class ConnectionTest {
                 .listener(new GridNioServerListener<Object>() {
                     @Override
                     public void onConnected(GridNioSession ses) {
-
+                        System.out.println("Connect");
                     }
 
                     @Override
                     public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-
+                        System.out.println("Disconnect");
                     }
 
                     @Override
@@ -297,7 +300,8 @@ public class ConnectionTest {
 
                     @Override
                     public void onMessage(GridNioSession ses, Object msg) {
-
+                        // TODO: Handle response
+                        fut.complete(msg.hashCode());
                     }
 
                     @Override
@@ -312,7 +316,7 @@ public class ConnectionTest {
 
                     @Override
                     public void onFailure(FailureType failureType, Throwable failure) {
-
+                        System.out.println("Fail");
                     }
                 })
                 .filters(filters)
@@ -336,8 +340,10 @@ public class ConnectionTest {
 
         sock.connect(new InetSocketAddress("127.0.0.1", 10800), 5000);
 
+        Map<Integer, Object> meta = new HashMap<>();
+
         // TODO: What does async param mean?
-        GridNioFuture sesFut = srv.createSession(ch, new HashMap<>(), false, new CI1<IgniteInternalFuture<GridNioSession>>() {
+        GridNioFuture sesFut = srv.createSession(ch, meta, false, new CI1<IgniteInternalFuture<GridNioSession>>() {
             @Override
             public void apply(IgniteInternalFuture<GridNioSession> sesFut) {
                 // TODO: use listener for handshake
@@ -351,9 +357,8 @@ public class ConnectionTest {
 
         GridNioSession ses = (GridNioSession)sesFut.get();
 
-        GridNioFuture<?> handshakeFut = ses.send(getHandshakeBytes());
-
-        handshakeFut.get();
+        GridNioFuture<?> sendFut = ses.send(getHandshakeBytes());
+        sendFut.get();
 
         return fut;
     }
