@@ -39,11 +39,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.defragment
 /** */
 @GridInternal
 @GridVisorManagementTask
-public class VisorDefragmentationTask extends VisorMultiNodeTask<
-    VisorDefragmentationTaskArg,
-    VisorDefragmentationTaskResult,
-    VisorDefragmentationTaskResult
-> {
+public class VisorDefragmentationTask extends VisorMultiNodeTask
+    <VisorDefragmentationTaskArg, VisorDefragmentationTaskResult, VisorDefragmentationTaskResult>
+{
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
