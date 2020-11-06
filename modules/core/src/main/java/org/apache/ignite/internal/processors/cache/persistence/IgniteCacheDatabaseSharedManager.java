@@ -401,7 +401,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dataRegionCfg Data region config.
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
-    public void addDataRegion(
+    public DataRegion addDataRegion(
         DataStorageConfiguration dataStorageCfg,
         DataRegionConfiguration dataRegionCfg,
         boolean trackable
@@ -429,6 +429,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         else if (dataRegionName.equals(DFLT_DATA_REG_DEFAULT_NAME))
             U.warn(log, "Data Region with name 'default' isn't used as a default. " +
                     "Please, check Data Region configuration.");
+
+        return region;
     }
 
     /**
