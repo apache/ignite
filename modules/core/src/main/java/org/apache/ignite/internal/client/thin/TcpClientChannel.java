@@ -461,9 +461,11 @@ class TcpClientChannel implements ClientChannel {
             if (msgSize > hdrSize)
                 res = dataInput.spinRead(msgSize - hdrSize);
         }
-        else if (status == ClientStatus.SECURITY_VIOLATION)
+        else if (status == ClientStatus.SECURITY_VIOLATION) {
+            dataInput.spinRead(msgSize - hdrSize); // Read message to the end.
+
             err = new ClientAuthorizationException();
-        else {
+        } else {
             resIn = new BinaryHeapInputStream(dataInput.spinRead(msgSize - hdrSize));
 
             String errMsg = ClientUtils.createBinaryReader(null, resIn).readString();
