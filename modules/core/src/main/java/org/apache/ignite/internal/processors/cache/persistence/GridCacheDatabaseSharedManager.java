@@ -707,6 +707,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         );
     }
 
+    /** */
+    public CachePartitionDefragmentationManager defragmentationManager() {
+        return defrgMgr;
+    }
+
     /** {@inheritDoc} */
     @Override protected DataRegion addDataRegion(DataStorageConfiguration dataStorageCfg, DataRegionConfiguration dataRegionCfg,
         boolean trackable, PageReadWriteManager pmPageMgr) throws IgniteCheckedException {

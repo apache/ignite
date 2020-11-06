@@ -224,7 +224,6 @@ public class CachePartitionDefragmentationManager {
                 File workDir = filePageStoreMgr.cacheWorkDir(oldGrpCtx.sharedGroup(), oldGrpCtx.cacheOrGroupName());
 
                 try {
-
                     if (skipAlreadyDefragmentedCacheGroup(workDir, grpId, log))
                         continue;
 
@@ -536,6 +535,11 @@ public class CachePartitionDefragmentationManager {
     private void checkCancellation() throws DefragmentationCancelledException {
         if (cancel.get())
             throw new DefragmentationCancelledException();
+    }
+
+    /** */
+    public String status() {
+        return "TODO: show status";
     }
 
     /** */

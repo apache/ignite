@@ -29,6 +29,9 @@ public class VisorDefragmentationTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    private boolean success;
+
+    /** */
     private String msg;
 
     /** Empty constructor for serialization. */
@@ -37,17 +40,33 @@ public class VisorDefragmentationTaskResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public VisorDefragmentationTaskResult(String msg) {
+    public VisorDefragmentationTaskResult(boolean success, String msg) {
+        this.success = success;
+
         this.msg = msg;
+    }
+
+    /** */
+    public boolean isSuccess() {
+        return success;
+    }
+
+    /** */
+    public String getMessage() {
+        return msg;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeBoolean(success);
+
         U.writeString(out, msg);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException {
+        success = in.readBoolean();
+
         msg = U.readString(in);
     }
 }

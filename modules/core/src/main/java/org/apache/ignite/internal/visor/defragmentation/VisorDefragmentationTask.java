@@ -19,8 +19,12 @@ package org.apache.ignite.internal.visor.defragmentation;
 
 import java.util.List;
 import java.util.Optional;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -30,6 +34,7 @@ import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_TASK_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.toStore;
 
 /** */
 @GridInternal
@@ -85,17 +90,51 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask<
             @Nullable VisorDefragmentationTaskArg arg
         ) throws IgniteException {
             switch (arg.operation()) {
-//                case SCHEDULE:
-//                    return runSchedule(arg);
-//
-//                case STATUS:
-//                    return runStatus(arg);
+                case SCHEDULE:
+                    return runSchedule(arg);
+
+                case STATUS:
+                    return runStatus(arg);
 
                 case CANCEL:
                     return runCancel(arg);
             }
 
             throw new IllegalArgumentException("Operation: " + arg.operation());
+        }
+
+        /** */
+        private VisorDefragmentationTaskResult runSchedule(VisorDefragmentationTaskArg arg) {
+            MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
+
+            try {
+                mntcReg.registerMaintenanceTask(toStore(arg.cacheNames()));
+            }
+            catch (IgniteCheckedException e) {
+                return new VisorDefragmentationTaskResult(false, "Scheduling failed: " + e.getMessage());
+            }
+
+            return null;
+        }
+
+        /** */
+        private VisorDefragmentationTaskResult runStatus(VisorDefragmentationTaskArg arg) {
+            MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
+
+            if (!mntcReg.isMaintenanceMode())
+                return new VisorDefragmentationTaskResult(false, "Node is not in maintenance node.");
+
+            IgniteCacheDatabaseSharedManager dbMgr = ignite.context().cache().context().database();
+
+            assert dbMgr instanceof GridCacheDatabaseSharedManager;
+
+            CachePartitionDefragmentationManager defrgMgr = ((GridCacheDatabaseSharedManager)dbMgr)
+                .defragmentationManager();
+
+            if (defrgMgr == null)
+                return new VisorDefragmentationTaskResult(true, "There's no active defragmentation process on the node.");
+
+            return new VisorDefragmentationTaskResult(true, defrgMgr.status());
         }
 
         /** */
@@ -119,11 +158,11 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask<
                     assert Boolean.TRUE == res;
                 }
                 catch (Exception e) {
-                    return new VisorDefragmentationTaskResult("Exception occurred: " + e.getMessage());
+                    return new VisorDefragmentationTaskResult(false, "Exception occurred: " + e.getMessage());
                 }
             }
 
-            return new VisorDefragmentationTaskResult("Defragmentation cancelled successfully.");
+            return new VisorDefragmentationTaskResult(true, "Defragmentation cancelled successfully.");
         }
     }
 }
