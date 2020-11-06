@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -359,7 +359,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
         private List<String> corruptedCacheDirectories(MaintenanceTask task) {
             String params = task.parameters();
 
-            String[] namesArr = params.split(File.separator);
+            String[] namesArr = params.split(Pattern.quote(File.separator));
 
             return Arrays.asList(namesArr);
         }
