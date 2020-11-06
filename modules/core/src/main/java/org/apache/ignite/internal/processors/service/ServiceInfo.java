@@ -21,6 +21,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -36,6 +38,9 @@ import org.jetbrains.annotations.Nullable;
 public class ServiceInfo implements ServiceDescriptor {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Context. */
+    private final GridKernalContext ctx;
 
     /** Origin node ID. */
     private final UUID originNodeId;
@@ -53,13 +58,16 @@ public class ServiceInfo implements ServiceDescriptor {
     @GridToStringInclude
     private volatile Map<UUID, Integer> top;
 
+    /** Service class. */
+    private volatile Class<? extends Service> srvcCls;
+
     /**
      * @param originNodeId Initiating node id.
      * @param srvcId Service id.
      * @param cfg Service configuration.
      */
-    public ServiceInfo(@NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg) {
-        this(originNodeId, srvcId, cfg, false);
+    public ServiceInfo(GridKernalContext ctx, @NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg) {
+        this(ctx, originNodeId, srvcId, cfg, false);
     }
 
     /**
@@ -68,8 +76,9 @@ public class ServiceInfo implements ServiceDescriptor {
      * @param cfg Service configuration.
      * @param staticCfg Statically configured flag.
      */
-    public ServiceInfo(@NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg,
+    public ServiceInfo(@NotNull GridKernalContext ctx, @NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg,
         boolean staticCfg) {
+        this.ctx = ctx;
         this.originNodeId = originNodeId;
         this.srvcId = srvcId;
         this.cfg = cfg;
@@ -116,15 +125,28 @@ public class ServiceInfo implements ServiceDescriptor {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public Class<? extends Service> serviceClass() {
         if (cfg instanceof LazyServiceConfiguration) {
+            if (srvcCls != null)
+                return srvcCls;
+
             String clsName = ((LazyServiceConfiguration)cfg).serviceClassName();
 
             try {
-                return (Class<? extends Service>)Class.forName(clsName);
+                srvcCls = (Class<? extends Service>)Class.forName(clsName);
+
+                return srvcCls;
             }
             catch (ClassNotFoundException e) {
+                GridDeployment srvcDep = ctx.deploy().getDeployment(clsName);
+
+                if (srvcDep != null) {
+                    srvcCls = (Class<? extends Service>)srvcDep.deployedClass(clsName);
+
+                    if (srvcCls != null)
+                        return srvcCls;
+                }
+
                 throw new IgniteException("Failed to find service class: " + clsName, e);
             }
         }

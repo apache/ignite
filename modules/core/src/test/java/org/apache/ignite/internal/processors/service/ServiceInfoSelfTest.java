@@ -24,6 +24,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -44,7 +46,7 @@ public class ServiceInfoSelfTest {
     private ServiceConfiguration cfg = configuration();
 
     /** Subject under test. */
-    private ServiceInfo sut = new ServiceInfo(nodeId, srvcId, cfg);
+    private ServiceInfo sut = new ServiceInfo(new GridTestKernalContext(new GridTestLog4jLogger()), nodeId, srvcId, cfg);
 
     /**
      * Tests {@link ServiceInfo#configuration()}.

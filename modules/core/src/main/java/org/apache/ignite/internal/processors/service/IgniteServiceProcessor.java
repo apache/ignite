@@ -1557,7 +1557,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
 
             for (ServiceConfiguration srvcCfg : prepCfgs.cfgs)
-                staticServicesInfo.add(new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true));
+                staticServicesInfo.add(new ServiceInfo(ctx, ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true));
         }
 
         return staticServicesInfo;
@@ -1613,7 +1613,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                                 "affinity cache is not found, cfg=" + cfg);
                         }
                         else {
-                            ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
+                            ServiceInfo desc = new ServiceInfo(ctx, snd.id(), reqSrvcId, cfg);
 
                             registeredServices.put(reqSrvcId, desc);
 

@@ -945,7 +945,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
 
             GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
-            ServiceDescriptorImpl desc = new ServiceDescriptorImpl(dep);
+            ServiceDescriptorImpl desc = new ServiceDescriptorImpl(ctx, dep);
 
             try {
                 GridServiceAssignments assigns = (GridServiceAssignments)serviceCache().getForcePrimary(
