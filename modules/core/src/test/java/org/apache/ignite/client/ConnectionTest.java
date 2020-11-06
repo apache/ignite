@@ -340,11 +340,12 @@ public class ConnectionTest {
         GridNioFuture sesFut = srv.createSession(ch, new HashMap<>(), false, new CI1<IgniteInternalFuture<GridNioSession>>() {
             @Override
             public void apply(IgniteInternalFuture<GridNioSession> sesFut) {
-                try {
-                    sesFut.get().send(null);
-                } catch (IgniteCheckedException e) {
-                    e.printStackTrace();
-                }
+                // TODO: use listener for handshake
+//                try {
+//                    sesFut.get().send(null);
+//                } catch (IgniteCheckedException e) {
+//                    e.printStackTrace();
+//                }
             }
         });
 
