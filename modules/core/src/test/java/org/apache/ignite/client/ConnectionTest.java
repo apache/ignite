@@ -263,7 +263,7 @@ public class ConnectionTest {
 
             @Override
             public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
-                return null;
+                return ByteBuffer.wrap((byte[])msg);
             }
         }, gridLog, false);
 
