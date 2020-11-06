@@ -41,7 +41,7 @@ import static org.junit.Assert.assertThat;
  */
 public class IndexSpoolTest extends GridCommonAbstractTest {
     /** Rows. */
-    private static final int ROWS = 100;
+    private static final int ROWS = 513;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

@@ -69,13 +69,13 @@ public class SpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
         assert !F.isEmpty(sources()) && sources().size() == 1;
-        assert rowsCnt > 0 && requested == 0;
-        assert waiting <= 0;
+        assert rowsCnt > 0;
 
         try {
             checkState();
 
-            requested = rowsCnt;
+            requested += rowsCnt;
+
             if (waiting == -1)
                 context().execute(this::doPush);
             else if (waiting == 0)
