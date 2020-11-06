@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.maintenance.MaintenanceTask;
@@ -62,6 +63,9 @@ public class DefragmentationParameters {
      * @return Defragmentation parameters.
      */
     public static DefragmentationParameters fromStore(MaintenanceTask rawTask) {
+        if (rawTask.parameters() == null)
+            return new DefragmentationParameters(Collections.emptyList());
+
         return new DefragmentationParameters(Arrays.stream(rawTask.parameters()
             .split(SEPARATOR))
             .collect(Collectors.toList())

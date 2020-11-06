@@ -99,7 +99,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             log.info(
                 "Maintenance Task with name " + task.name() +
                     " is already registered" +
-                    oldTask.parameters() != null ? " with parameters " + oldTask.parameters() : "" + "." +
+                    (oldTask.parameters() != null ? " with parameters " + oldTask.parameters() : ".") +
                     " It will be replaced with new task" +
                     task.parameters() != null ? " with parameters " + task.parameters() : "" + "."
             );

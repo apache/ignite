@@ -44,26 +44,32 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            Optional<GridClientNode> firstNodeOpt = client.compute().nodes().stream().findFirst();
+            Optional<GridClientNode> firstNodeOpt = client.compute().nodes().stream().filter(GridClientNode::connectable).findFirst();
 
             if (firstNodeOpt.isPresent()) {
                 UUID connectableNodeId = firstNodeOpt.get().nodeId();
 
                 VisorTaskArgument<?> visorArg;
 
-                if (args.nodeIds() == null)
-                    visorArg = new VisorTaskArgument<>(connectableNodeId, args, false);
+                if (args.nodeIds() == null) {
+                    visorArg = new VisorTaskArgument<>(
+                        connectableNodeId,
+                        convertArguments(),
+                        false
+                    );
+                }
                 else {
                     visorArg = new VisorTaskArgument<>(
                         client.compute().nodes().stream().filter(
                             node -> args.nodeIds().contains(node.consistentId().toString())
                         ).map(GridClientNode::nodeId).collect(Collectors.toList()),
-                        args,
+                        convertArguments(),
                         false
                     );
                 }
 
-                VisorDefragmentationTaskResult res = client.compute()
+                VisorDefragmentationTaskResult res = client
+                    .compute()
                     .projection(firstNodeOpt.get())
                     .execute(
                         VisorDefragmentationTask.class.getName(),
@@ -176,7 +182,7 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
         return new VisorDefragmentationTaskArg(
             convertSubcommand(args.subcommand()),
             args.nodeIds(),
-            arg().cacheNames()
+            args.cacheNames()
         );
     }
 

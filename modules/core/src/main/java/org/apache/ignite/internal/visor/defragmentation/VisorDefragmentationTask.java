@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.defragmentation;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.ignite.IgniteCheckedException;
@@ -106,7 +107,9 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
             MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
 
             try {
-                mntcReg.registerMaintenanceTask(toStore(arg.cacheNames()));
+                List<String> cacheNames = arg.cacheNames();
+
+                mntcReg.registerMaintenanceTask(toStore(cacheNames == null ? Collections.emptyList() : cacheNames));
             }
             catch (IgniteCheckedException e) {
                 return new VisorDefragmentationTaskResult(false, "Scheduling failed: " + e.getMessage());
