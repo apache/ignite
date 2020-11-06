@@ -45,10 +45,10 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestParser;
 import org.apache.ignite.internal.util.IgniteStopwatch;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
@@ -336,7 +336,7 @@ public class ConnectionTest {
 
         sock.connect(new InetSocketAddress("127.0.0.1", 10800), 5000);
 
-        srv.createSession(ch, new HashMap<>(), true, new CI1<IgniteInternalFuture<GridNioSession>>() {
+        GridNioFuture sesFut = srv.createSession(ch, new HashMap<>(), true, new CI1<IgniteInternalFuture<GridNioSession>>() {
             @Override
             public void apply(IgniteInternalFuture<GridNioSession> sesFut) {
                 try {
@@ -346,6 +346,12 @@ public class ConnectionTest {
                 }
             }
         });
+
+        GridNioSession ses = (GridNioSession)sesFut.get();
+
+        GridNioFuture<?> handshakeFut = ses.send(getHandshakeBytes());
+
+        handshakeFut.get();
 
         return fut;
     }
