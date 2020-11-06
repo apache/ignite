@@ -20,36 +20,59 @@ package org.apache.ignite.spi.discovery.zk.internal;
 /**
  *
  */
-class ZkDiscoveryNodeFailEventData extends ZkDiscoveryEventData {
+class ZkDiscoveryNodeLeaveEventData extends ZkDiscoveryEventData {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private long failedNodeInternalId;
+    private final long leftNodeInternalId;
+
+    /** */
+    private final boolean failed;
 
     /**
      * @param evtId Event ID.
      * @param topVer Topology version.
-     * @param failedNodeInternalId Failed node ID.
+     * @param leftNodeInternalId Failed node ID.
      */
-    ZkDiscoveryNodeFailEventData(long evtId, long topVer, long failedNodeInternalId) {
-        super(evtId, ZK_EVT_NODE_FAILED, topVer);
-
-        this.failedNodeInternalId = failedNodeInternalId;
+    ZkDiscoveryNodeLeaveEventData(long evtId, long topVer, long leftNodeInternalId) {
+       this(evtId, topVer, leftNodeInternalId, false);
     }
 
     /**
-     * @return Failed node ID.
+     * @param evtId Event ID.
+     * @param topVer Topology version.
+     * @param leftNodeInternalId Left node ID.
      */
-    long failedNodeInternalId() {
-        return failedNodeInternalId;
+    ZkDiscoveryNodeLeaveEventData(long evtId, long topVer, long leftNodeInternalId, boolean failed) {
+        super(evtId, ZK_EVT_NODE_LEFT, topVer);
+
+        this.leftNodeInternalId = leftNodeInternalId;
+
+        this.failed = failed;
+    }
+
+    /**
+     * @return Left node ID.
+     */
+    long leftNodeInternalId() {
+        return leftNodeInternalId;
+    }
+
+    /**
+     *
+     * @return {@code true} if failed.
+     */
+    boolean failed() {
+        return failed;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "ZkDiscoveryNodeFailEventData [" +
+        return "ZkDiscoveryNodeLeaveEventData [" +
             "evtId=" + eventId() +
             ", topVer=" + topologyVersion() +
-            ", nodeId=" + failedNodeInternalId + ']';
+            ", nodeId=" + leftNodeInternalId +
+            ", failed=" + failed + ']';
     }
 }

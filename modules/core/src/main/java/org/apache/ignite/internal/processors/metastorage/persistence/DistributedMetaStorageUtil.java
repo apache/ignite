@@ -24,7 +24,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /** */
-class DistributedMetaStorageUtil {
+final class DistributedMetaStorageUtil {
+    /**
+     *
+     */
+    private DistributedMetaStorageUtil() {
+        // No-op.
+    }
+
     /**
      * Common prefix for everything that is going to be written into {@link MetaStorage}. Something that has minimal
      * chance of collision with the existing keys.

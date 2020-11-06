@@ -34,7 +34,14 @@ import org.apache.ignite.IgniteException;
 /**
  * Class with various utility methods.
  */
-public class Utils {
+public final class Utils {
+    /**
+     *
+     */
+    private Utils(){
+        // No-op.
+    }
+
     /**
      * Perform deep copy of an object.
      *
