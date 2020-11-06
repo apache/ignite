@@ -336,7 +336,8 @@ public class ConnectionTest {
 
         sock.connect(new InetSocketAddress("127.0.0.1", 10800), 5000);
 
-        GridNioFuture sesFut = srv.createSession(ch, new HashMap<>(), true, new CI1<IgniteInternalFuture<GridNioSession>>() {
+        // TODO: What does async param mean?
+        GridNioFuture sesFut = srv.createSession(ch, new HashMap<>(), false, new CI1<IgniteInternalFuture<GridNioSession>>() {
             @Override
             public void apply(IgniteInternalFuture<GridNioSession> sesFut) {
                 try {
