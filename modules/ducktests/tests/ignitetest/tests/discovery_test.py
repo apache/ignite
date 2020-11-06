@@ -164,8 +164,7 @@ class DiscoveryTest(IgniteTest):
 
         results['Ignite cluster start time (s)'] = start_servers_sec
 
-        failed_nodes, survived_node = choose_node_to_kill(servers, test_config.nodes_to_kill,
-                                                          test_config.sequential_failure)
+        failed_nodes = choose_node_to_kill(servers, test_config.nodes_to_kill, test_config.sequential_failure)
 
         if test_config.load_type is not ClusterLoad.NONE:
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
@@ -182,12 +181,11 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
 
-        results.update(self._simulate_nodes_failure(servers, node_fail_task(ignite_config, test_config), failed_nodes,
-                                                    survived_node))
+        results.update(self._simulate_nodes_failure(servers, node_fail_task(ignite_config, test_config), failed_nodes))
 
         return results
 
-    def _simulate_nodes_failure(self, servers, kill_node_task, failed_nodes, survived_node):
+    def _simulate_nodes_failure(self, servers, kill_node_task, failed_nodes):
         """
         Perform node failure scenario
         """
@@ -207,20 +205,19 @@ class DiscoveryTest(IgniteTest):
         logged_timestamps = []
         data = {}
 
-        for failed_id in ids_to_wait:
-            logged_timestamps.append(
-                get_event_time(servers, survived_node, node_failed_event_pattern(failed_id)))
+        for survivor in [n for n in servers.nodes if n not in failed_nodes]:
+            for failed_id in ids_to_wait:
+                logged_timestamps.append(get_event_time(servers, survivor, node_failed_event_pattern(failed_id)))
 
-        self._check_failed_number(failed_nodes, survived_node)
+                self._check_failed_number(failed_nodes, survivor)
+
         self._check_not_segmented(failed_nodes)
 
         logged_timestamps.sort(reverse=True)
 
-        first_kill_time = epoch_mills(first_terminated)
-        detection_delay = epoch_mills(logged_timestamps[0]) - first_kill_time
-
-        data['Detection of node(s) failure (ms)'] = detection_delay
-        data['All detection delays (ms):'] = str([epoch_mills(ts) - first_kill_time for ts in logged_timestamps])
+        data['Detection of node(s) failure (ms)'] = epoch_mills(logged_timestamps[0]) - epoch_mills(first_terminated)
+        data['All detection delays (ms):'] = str(
+            [epoch_mills(ts) - epoch_mills(first_terminated) for ts in logged_timestamps])
         data['Nodes failed'] = len(failed_nodes)
 
         return data
@@ -349,13 +346,9 @@ def choose_node_to_kill(servers, nodes_to_kill, sequential):
     idx = random.randint(0, len(to_kill) - nodes_to_kill)
     to_kill = to_kill[idx:idx + nodes_to_kill]
 
-    survive = random.choice([node for node in servers.nodes if node not in to_kill])
-
     assert len(to_kill) == nodes_to_kill, "Unable to pick up required number of nodes to kill."
 
-    assert survive, "Unable to select survived node to monitor the cluster on it."
-
-    return to_kill, survive
+    return to_kill
 
 
 def order(node):
