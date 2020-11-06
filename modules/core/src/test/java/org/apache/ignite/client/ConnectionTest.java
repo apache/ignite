@@ -320,7 +320,7 @@ public class ConnectionTest {
                 })
                 .filters(filters)
                 .logger(gridLog)
-                .selectorCount(Runtime.getRuntime().availableProcessors())
+                .selectorCount(1)
                 .sendQueueLimit(1024)
                 .byteOrder(ByteOrder.nativeOrder())
                 .directBuffer(true)
@@ -337,7 +337,7 @@ public class ConnectionTest {
         java.nio.channels.SocketChannel ch = java.nio.channels.SocketChannel.open();
         Socket sock = ch.socket();
 
-        sock.connect(new InetSocketAddress("127.0.0.1", 10800), 5000);
+        sock.connect(new InetSocketAddress("127.0.0.1", 10800), Integer.MAX_VALUE);
 
         Map<Integer, Object> meta = new HashMap<>();
 
@@ -356,7 +356,7 @@ public class ConnectionTest {
 
         GridNioSession ses = (GridNioSession)sesFut.get();
 
-        // TODO: Make sure send is not blocking
+        // Socket send is handled by worker threads.
         GridNioFuture<?> sendFut = ses.send(getHandshakeBytes());
         sendFut.listen(f -> {
             System.out.println(f.isDone());
