@@ -356,8 +356,12 @@ public class ConnectionTest {
 
         GridNioSession ses = (GridNioSession)sesFut.get();
 
+        // TODO: Make sure send is not blocking
         GridNioFuture<?> sendFut = ses.send(getHandshakeBytes());
-        sendFut.get();
+        sendFut.listen(f -> {
+            System.out.println(f.isDone());
+        });
+        // sendFut.get();
 
         return fut;
     }
