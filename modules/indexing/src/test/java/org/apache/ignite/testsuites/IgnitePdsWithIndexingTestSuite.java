@@ -17,12 +17,14 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.encryption.CacheGroupReencryptionTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.index.ClientReconnectWithSqlTableConfiguredTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteTcBotInitNewPageTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IndexingMultithreadedLoadContinuousRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.LongDestroyDurableBackgroundTaskTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.MultipleParallelCacheDeleteDeadlockTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotWithIndexesTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingPutGetTest;
@@ -52,7 +54,9 @@ import org.junit.runners.Suite;
     LongDestroyDurableBackgroundTaskTest.class,
     RebuildIndexTest.class,
     IgniteClusterSnapshotWithIndexesTest.class,
-    ClientReconnectWithSqlTableConfiguredTest.class
+    ClientReconnectWithSqlTableConfiguredTest.class,
+    MultipleParallelCacheDeleteDeadlockTest.class,
+    CacheGroupReencryptionTest.class
 })
 public class IgnitePdsWithIndexingTestSuite {
 }

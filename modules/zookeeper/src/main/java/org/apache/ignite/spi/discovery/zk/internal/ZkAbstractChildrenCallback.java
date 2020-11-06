@@ -24,7 +24,7 @@ import org.apache.zookeeper.data.Stat;
 /**
  *
  */
-abstract class ZkAbstractChildrenCallback extends ZkAbstractCallabck implements AsyncCallback.Children2Callback {
+abstract class ZkAbstractChildrenCallback extends ZkAbstractCallback implements AsyncCallback.Children2Callback {
     /**
      * @param rtState Runtime state.
      * @param impl Discovery impl.
