@@ -68,6 +68,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -120,10 +121,12 @@ public class ConnectionTest {
 //                handshakeAsyncChannel().get();
 //            }
 
-            System.out.println(">>>> Thread count: " + Thread.getAllStackTraces().size());
-            handshakeNetty().get();
+//            System.out.println(">>>> Thread count: " + Thread.getAllStackTraces().size());
+//            handshakeNetty().get();
+//
+//            System.out.println(">>> " + sw.elapsed().toMillis());
 
-            System.out.println(">>> " + sw.elapsed().toMillis());
+            handshakeGridNioServer();
         }
     }
 
@@ -328,7 +331,12 @@ public class ConnectionTest {
 
         srv.start();
 
-        srv.createSession(null, null, true, new CI1<IgniteInternalFuture<GridNioSession>>() {
+        java.nio.channels.SocketChannel ch = java.nio.channels.SocketChannel.open();
+        Socket sock = ch.socket();
+
+        sock.connect(new InetSocketAddress("127.0.0.1", 10800), 5000);
+
+        srv.createSession(ch, new HashMap<>(), true, new CI1<IgniteInternalFuture<GridNioSession>>() {
             @Override
             public void apply(IgniteInternalFuture<GridNioSession> sesFut) {
                 try {
