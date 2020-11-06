@@ -170,7 +170,7 @@ public class CheckpointManager {
 
         checkpointPagesWriterFactory = new CheckpointPagesWriterFactory(
             logger, snapshotMgr,
-            (fullPage, buf, tag) -> pageStoreManager.writeInternal(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
+            (fullPage, buf, tag) -> pageStoreManager.write(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
             persStoreMetrics,
             throttlingPolicy, threadBuf,
             pageMemoryGroupResolver

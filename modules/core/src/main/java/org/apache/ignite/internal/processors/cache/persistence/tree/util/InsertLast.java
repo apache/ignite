@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.database.io;
+package org.apache.ignite.internal.processors.cache.persistence.tree.util;
 
-/**
- * Leaf page for H2 row references.
- */
-public class H2ExtrasLeafIO extends AbstractH2ExtrasLeafIO {
-    /**
-     * @param type Page type.
-     * @param ver Page format version.
-     * @param payloadSize Payload size.
-     */
-    public H2ExtrasLeafIO(short type, int ver, int payloadSize) {
-        super(type, ver, 8, payloadSize);
-    }
+/** */
+public interface InsertLast {
 }

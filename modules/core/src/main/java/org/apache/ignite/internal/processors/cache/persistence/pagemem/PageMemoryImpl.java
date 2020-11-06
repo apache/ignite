@@ -57,7 +57,6 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -196,8 +195,8 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** */
     private final ExecutorService asyncRunner;
 
-    /** Page store manager. */
-    private IgnitePageStoreManager storeMgr;
+    /** Page manager. */
+    private final PageReadWriteManager pmPageMgr;
 
     /** */
     private IgniteWriteAheadLogManager walMgr;
@@ -276,6 +275,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param directMemoryProvider Memory allocator to use.
      * @param sizes segments sizes, last is checkpoint pool size.
      * @param ctx Cache shared context.
+     * @param pmPageMgr Page store manager.
      * @param pageSize Page size.
      * @param flushDirtyPage write callback invoked when a dirty page is removed for replacement.
      * @param changeTracker Callback invoked to track changes in pages.
@@ -288,6 +288,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         DirectMemoryProvider directMemoryProvider,
         long[] sizes,
         GridCacheSharedContext<?, ?> ctx,
+        PageReadWriteManager pmPageMgr,
         int pageSize,
         PageStoreWriter flushDirtyPage,
         @Nullable GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker,
@@ -315,12 +316,12 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
         this.cpProgressProvider = cpProgressProvider;
 
-        storeMgr = ctx.pageStore();
+        this.pmPageMgr = pmPageMgr;
         walMgr = ctx.wal();
         encMgr = ctx.kernalContext().encryption();
         encryptionDisabled = ctx.gridConfig().getEncryptionSpi() instanceof NoopEncryptionSpi;
 
-        assert storeMgr != null;
+        assert pmPageMgr != null;
         assert walMgr != null;
         assert encMgr != null;
 
@@ -523,7 +524,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (isThrottlingEnabled())
             writeThrottle.onMarkDirty(false);
 
-        long pageId = storeMgr.allocatePage(grpId, partId, flags);
+        long pageId = pmPageMgr.allocatePage(grpId, partId, flags);
 
         assert PageIdUtils.pageIndex(pageId) > 0; //it's crucial for tracking pages (zero page is super one)
 
@@ -639,6 +640,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return Data region configuration.
      */
     private DataRegionConfiguration getDataRegionConfiguration() {
+        //TODO
         DataStorageConfiguration memCfg = ctx.kernalContext().config().getDataStorageConfiguration();
 
         assert memCfg != null;
@@ -670,13 +672,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         assert false : "Free page should be never called directly when persistence is enabled.";
 
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long metaPageId(int grpId) {
-        assert started;
-
-        return storeMgr.metaPageId(grpId);
     }
 
     /** {@inheritDoc} */
@@ -881,7 +876,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 long actualPageId = 0;
 
                 try {
-                    storeMgr.read(grpId, pageId, buf);
+                    pmPageMgr.read(grpId, pageId, buf, false);
 
                     statHolder.trackPhysicalAndLogicalRead(pageAddr);
 
@@ -1185,6 +1180,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         if (throttlingPlc != ThrottlingPolicy.DISABLED)
             writeThrottle.onFinishCheckpoint();
+    }
+
+    /** {@inheritDoc} */
+    @Override public PageReadWriteManager pageManager() {
+        return pmPageMgr;
     }
 
     /** {@inheritDoc} */
@@ -2148,7 +2148,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             assert writeLock().isHeldByCurrentThread();
 
             // Do not evict cache meta pages.
-            if (fullPageId.pageId() == storeMgr.metaPageId(fullPageId.groupId()))
+            if (fullPageId.pageId() == META_PAGE_ID)
                 return false;
 
             if (PageHeader.isAcquired(absPtr))
@@ -2161,7 +2161,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 // Can evict a dirty page only if should be written by a checkpoint.
                 // These pages does not have tmp buffer.
                 if (checkpointPages != null && checkpointPages.allowToSave(fullPageId)) {
-                    assert storeMgr != null;
+                    assert pmPageMgr != null;
 
                     memMetrics.updatePageReplaceRate(U.currentTimeMillis() - PageHeader.readTimestamp(absPtr));
 
@@ -2334,7 +2334,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                     CheckpointPages checkpointPages = this.checkpointPages;
 
                     if (relRmvAddr == rndAddr || pinned || skip ||
-                        fullId.pageId() == storeMgr.metaPageId(fullId.groupId()) ||
+                        fullId.pageId() == META_PAGE_ID ||
                         (dirty && (checkpointPages == null || !checkpointPages.contains(fullId)))
                     ) {
                         i--;
@@ -2479,6 +2479,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
 
+            //TODO dataRegionCfg is null
             throw new IgniteOutOfMemoryException("Failed to find a page for eviction [segmentCapacity=" + cap +
                 ", loaded=" + loadedPages.size() +
                 ", maxDirtyPages=" + maxDirtyPages +
