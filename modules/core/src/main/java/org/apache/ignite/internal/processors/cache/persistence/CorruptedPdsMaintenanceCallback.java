@@ -68,7 +68,9 @@ public class CorruptedPdsMaintenanceCallback implements MaintenanceWorkflowCallb
 
     /** {@inheritDoc} */
     @Override public List<MaintenanceAction<?>> allActions() {
-        return Arrays.asList(new CleanCacheStoresMaintenanceAction(workDir, cacheStoreDirs.toArray(new String[0])));
+        return Arrays.asList(
+            new CleanCacheStoresMaintenanceAction(workDir, cacheStoreDirs.toArray(new String[0])),
+            new CheckCorruptedCacheStoresCleanAction(workDir, cacheStoreDirs.toArray(new String[0])));
     }
 
     /** {@inheritDoc} */

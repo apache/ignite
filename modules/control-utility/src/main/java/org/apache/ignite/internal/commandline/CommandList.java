@@ -91,8 +91,12 @@ public enum CommandList {
     /** Command for printing metric values. */
     METRIC("--metric", new MetricCommand()),
 
+    /** */
+    PERSISTENCE("--persistence", new PersistenceCommand()),
+
     /** Command to manage PDS defragmentation. */
     DEFRAGMENTATION("--defragmentation", new DefragmentationCommand());
+
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

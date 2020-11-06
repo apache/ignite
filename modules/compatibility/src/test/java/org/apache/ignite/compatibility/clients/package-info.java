@@ -16,7 +16,7 @@
  */
 
 /**
- * Contains compatibility tests related to JDBC.
+ * Contains compatibility tests related to different clients.
  */
 
-package org.apache.ignite.compatibility.jdbc;
+package org.apache.ignite.compatibility.clients;

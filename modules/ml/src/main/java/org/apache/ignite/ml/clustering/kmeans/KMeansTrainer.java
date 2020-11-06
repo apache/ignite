@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -114,13 +115,13 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
                 converged = true;
 
-                for (Integer ind : totalRes.sums.keySet()) {
-                    Vector massCenter = totalRes.sums.get(ind).times(1.0 / totalRes.counts.get(ind));
+                for (Map.Entry<Integer, Vector> entry : totalRes.sums.entrySet()) {
+                    Vector massCenter = entry.getValue().times(1.0 / totalRes.counts.get(entry.getKey()));
 
-                    if (converged && distance.compute(massCenter, centers[ind]) > epsilon * epsilon)
+                    if (converged && distance.compute(massCenter, centers[entry.getKey()]) > epsilon * epsilon)
                         converged = false;
 
-                    newCentroids[ind] = massCenter;
+                    newCentroids[entry.getKey()] = massCenter;
                 }
 
                 iteration++;
