@@ -360,11 +360,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         public void Test()
         {
             var query = GetPersonCache().AsCacheQueryable();
-            Func<ICacheEntry<int, Person>, bool> filter  = entry => entry.Value.OrganizationId == 1;
-            var persons = query;
-                
-                var persons1 = persons.Where(x => filter(x));
-            persons1               .ToList();
+            // Func<ICacheEntry<int, Person>, bool> filter  = entry => entry.Value.OrganizationId == 1;
+            // var persons = query;
+            //     
+            //     var persons1 = persons.Where(x => filter(x));
+            // persons1               .ToList();
+            Func<ICacheEntry<int, Person>, int> sel = x => x.Key + 1 ;
+            var list = query.Select(x =>sel(x)).ToList();
         }
         
     }
