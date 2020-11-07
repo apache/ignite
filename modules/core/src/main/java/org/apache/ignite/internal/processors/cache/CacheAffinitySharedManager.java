@@ -1956,6 +1956,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         grpHolder.topology(fut.context().events().discoveryCache()).beforeExchange(fut, true, false);
                     }
                     else {
+                        assert false;
+
                         List<GridDhtPartitionsExchangeFuture> exchFuts = cctx.exchange().exchangeFutures();
 
                         int idx = exchFuts.indexOf(fut);
