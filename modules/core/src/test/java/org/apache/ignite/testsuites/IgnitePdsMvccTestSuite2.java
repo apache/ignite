@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorageMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPageSizesTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAbsentEvictionNodeOutOfBaselineTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsTest;
@@ -67,9 +66,6 @@ public class IgnitePdsMvccTestSuite2 {
 
         // Classes that are contained mvcc test already.
         ignoredTests.add(LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest.class);
-
-        // Atomic caches
-        ignoredTests.add(IgnitePersistentStoreDataStructuresTest.class);
 
         // Skip irrelevant test
         ignoredTests.add(IgniteDataIntegrityTests.class);
