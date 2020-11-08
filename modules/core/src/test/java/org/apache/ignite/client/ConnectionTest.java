@@ -299,7 +299,7 @@ public class ConnectionTest {
 
                     @Override
                     public void onMessage(GridNioSession ses, Object msg) {
-                        // TODO: Handle response
+                        // TODO: Handle response for a connection denoted by ses
                         fut.complete(msg.hashCode());
                     }
 
@@ -345,7 +345,7 @@ public class ConnectionTest {
         GridNioFuture sesFut = srv.createSession(ch, meta, false, new CI1<IgniteInternalFuture<GridNioSession>>() {
             @Override
             public void apply(IgniteInternalFuture<GridNioSession> sesFut) {
-                // TODO: use listener for handshake
+                System.out.println("Session created: " + sesFut.result().toString());
 //                try {
 //                    sesFut.get().send(null);
 //                } catch (IgniteCheckedException e) {
