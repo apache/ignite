@@ -126,8 +126,8 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
      */
     protected PerformanceStatisticsMBean statisticsMBean(String igniteInstanceName) {
         try {
-            return getMxBean(igniteInstanceName, "PerformanceStatistics", PerformanceStatisticsMBean.class,
-                PerformanceStatisticsMBeanImpl.class);
+            return getMxBean(igniteInstanceName, "PerformanceStatistics", PerformanceStatisticsMBeanImpl.class,
+                PerformanceStatisticsMBean.class);
         }
         catch (Exception e) {
             throw new RuntimeException("Failed to get MBean.", e);
