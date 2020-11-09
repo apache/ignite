@@ -97,7 +97,6 @@ namespace Apache.Ignite.Core.Client.Cache.Query.Continuous
         /// sent only when buffer is full.
         /// </summary>
         public TimeSpan TimeInterval { get; set; }
-        
                 
         /// <summary>
         /// Gets or sets a value indicating whether to notify about <see cref="CacheEntryEventType.Expired"/> events.
