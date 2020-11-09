@@ -1477,6 +1477,16 @@ public class IgnitionEx {
     }
 
     /**
+     * @param name Grid name (possibly {@code null} for default grid).
+     * @return true when all managers, processors, and plugins have started and ignite kernal start method has fully
+     * completed.
+     */
+    public static boolean hasKernalStarted(String name) {
+        IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
+        return grid != null && grid.hasStartLatchCompleted();
+    }
+
+    /**
      * Start context encapsulates all starting parameters.
      */
     private static final class GridStartContext {
@@ -3215,6 +3225,14 @@ public class IgnitionEx {
                 this.cnt = cnt;
             }
         }
+
+        /**
+         * @return whether the startLatch has been counted down, thereby indicating that the kernal has full started.
+         */
+        public boolean hasStartLatchCompleted() {
+            return startLatch.getCount() == 0;
+        }
+
     }
 
     /**
