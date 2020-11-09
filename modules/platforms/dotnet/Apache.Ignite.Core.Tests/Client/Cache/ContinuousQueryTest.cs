@@ -695,7 +695,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 cache[1] = 2;
 
-                TestUtils.WaitForTrueCondition(() => !cache.ContainsKey(1));
+                TestUtils.WaitForTrueCondition(() => events.Count == 2);
             }
             
             Assert.AreEqual(2, events.Count);
