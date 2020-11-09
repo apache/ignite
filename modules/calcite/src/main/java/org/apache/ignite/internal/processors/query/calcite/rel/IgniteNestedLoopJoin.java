@@ -110,9 +110,6 @@ public class IgniteNestedLoopJoin extends AbstractIgniteNestedLoopJoin {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        if (mq.getRowCount(getRight()) > 500)
-            return super.computeSelfCost(planner, mq).multiplyBy(20);
-
         return super.computeSelfCost(planner, mq).multiplyBy(10);
     }
 }

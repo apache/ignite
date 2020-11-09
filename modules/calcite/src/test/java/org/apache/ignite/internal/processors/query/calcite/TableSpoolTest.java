@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -30,6 +32,8 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.is;
@@ -39,23 +43,45 @@ import static org.junit.Assert.assertThat;
 /**
  * IndexSpool test.
  */
-public class IndexSpoolTest extends GridCommonAbstractTest {
+@RunWith(Parameterized.class)
+public class TableSpoolTest extends GridCommonAbstractTest {
     /** Rows. */
-    private static final int ROWS = 513;
+    private static final int[] ROWS = {1, 10, 512, 513, 2000};
+
+    /** */
+    @Parameterized.Parameter(0)
+    public int rows;
+
+    /**
+     * @return List of versions pairs to test.
+     */
+    @Parameterized.Parameters(name = "Rows: {0}")
+    public static Collection<Object[]> testData() {
+        List<Object[]> params = new ArrayList<>();
+
+        for (int rs : ROWS)
+            params.add(new Object[]{rs});
+
+        return params;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrids(2);
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGrids(2);
-
-        fillCache(grid(0).cache("TEST0"), ROWS);
-        fillCache(grid(0).cache("TEST1"), ROWS);
+        fillCache(grid(0).cache("TEST0"), rows);
+        fillCache(grid(0).cache("TEST1"), rows);
 
         awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopAllGrids();
+        grid(0).cache("TEST0").clear();
+        grid(0).cache("TEST1").clear();
 
         super.afterTest();
     }
@@ -105,14 +131,15 @@ public class IndexSpoolTest extends GridCommonAbstractTest {
         List<FieldsQueryCursor<List<?>>> cursors = engine.query(
             null,
             "PUBLIC",
-            "SELECT T0.val, T1.val FROM TEST0 as T0 " +
-                "JOIN TEST1 as T1 on T0.jid = T1.jid",
+            "SELECT /*+ DISABLE_RULE(NestedLoopJoinConverter='') */" +
+                "T0.val, T1.val FROM TEST0 as T0 " +
+                "JOIN TEST1 as T1 on T0.jid = T1.jid ",
             X.EMPTY_OBJECT_ARRAY
         );
 
         List<List<?>> res = cursors.get(0).getAll();
 
-        assertThat(res.size(), is(ROWS));
+        assertThat(res.size(), is(rows));
 
         res.forEach(r -> assertThat(r.get(0), is(r.get(1))));
 

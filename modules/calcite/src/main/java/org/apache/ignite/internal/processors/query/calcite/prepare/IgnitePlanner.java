@@ -38,6 +38,10 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.hint.HintPredicate;
+import org.apache.calcite.rel.hint.HintPredicates;
+import org.apache.calcite.rel.hint.HintStrategyTable;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
@@ -129,7 +133,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
         programs = frameworkCfg.getPrograms();
         parserCfg = frameworkCfg.getParserConfig();
-        sqlToRelConverterCfg = frameworkCfg.getSqlToRelConverterConfig();
+        sqlToRelConverterCfg = frameworkCfg.getSqlToRelConverterConfig()
+            .withHintStrategyTable(HintStrategyTable.builder()
+                .hintStrategy("DISABLE_RULE", (hint, rel) -> true)
+                .build());
         validatorCfg = frameworkCfg.getSqlValidatorConfig();
         convertletTbl = frameworkCfg.getConvertletTable();
         rexExecutor = frameworkCfg.getExecutor();

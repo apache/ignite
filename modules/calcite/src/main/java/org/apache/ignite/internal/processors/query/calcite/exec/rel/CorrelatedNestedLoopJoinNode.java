@@ -255,6 +255,8 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
     private void onRequest() {
         switch (state) {
             case IN_LOOP:
+            case FILLING_LEFT:
+            case FILLING_RIGHT:
                 break;
             case INITIAL:
                 assert waitingLeft == 0;
@@ -293,6 +295,7 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
                 });
 
                 break;
+
             default:
                 throw new AssertionError("Unexpected state:" + state);
         }
