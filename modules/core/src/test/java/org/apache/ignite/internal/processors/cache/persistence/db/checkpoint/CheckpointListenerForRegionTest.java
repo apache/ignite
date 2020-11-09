@@ -22,7 +22,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA
  */
 public class CheckpointListenerForRegionTest extends GridCommonAbstractTest {
     /** This number show how many mandatory methods will be called on checkpoint listener during checkpoint. */
-    private final static int CALLS_COUNT_PER_CHECKPOINT = 3;
+    private static final int CALLS_COUNT_PER_CHECKPOINT = 3;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
