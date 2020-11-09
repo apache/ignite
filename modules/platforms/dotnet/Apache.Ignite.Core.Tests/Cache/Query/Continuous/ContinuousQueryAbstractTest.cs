@@ -334,8 +334,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             
             Assert.IsTrue(events[1].HasValue);
             Assert.IsTrue(events[1].HasOldValue);
-            Assert.AreEqual(2, events[1].Value);
-            Assert.AreEqual(2, events[1].OldValue);
+            Assert.AreEqual(2, ((BinarizableEntry)events[1].Value).val);
+            Assert.AreEqual(2, ((BinarizableEntry)events[1].Value).val);
             Assert.AreEqual(1, events[1].Key);
         }
 
@@ -1124,6 +1124,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     return new CacheEntryCreateEvent<object, object>(e.Key, e.Value);
                 case CacheEntryEventType.Updated:
                     return new CacheEntryUpdateEvent<object, object>(e.Key, e.OldValue, e.Value);
+                case CacheEntryEventType.Expired:
+                    return new CacheEntryExpireEvent<object, object>(e.Key, e.OldValue);
                 default:
                     return new CacheEntryRemoveEvent<object, object>(e.Key, e.OldValue);
             }
