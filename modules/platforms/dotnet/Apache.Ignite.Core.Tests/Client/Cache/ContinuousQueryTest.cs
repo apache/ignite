@@ -672,6 +672,38 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests that enabling <see cref="ContinuousQueryClient{TK,TV}.IncludeExpired"/> causes
+        /// <see cref="CacheEntryEventType.Expired"/> events to be delivered.
+        ///
+        /// - Create a cache with expiry policy
+        /// - Start a continuous query with <see cref="ContinuousQueryClient{TK,TV}.IncludeExpired"/> set to <c>true</c>
+        /// - Check that Expired events are delivered
+        /// </summary>
+        [Test]
+        public void TestExpiredEventsAreDeliveredWhenIncludeExpiredIsTrue()
+        {
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName)
+                .WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100), null, null));
+            
+            var events = new List<ICacheEntryEvent<int, int>>();
+            var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>(events.Add))
+            {
+                IncludeExpired = true
+            };
+
+            using (cache.QueryContinuous(qry))
+            {
+                cache[1] = 2;
+
+                TestUtils.WaitForTrueCondition(() => !cache.ContainsKey(1));
+            }
+            
+            Assert.AreEqual(2, events.Count);
+            Assert.AreEqual(CacheEntryEventType.Created, events[0].EventType);
+            Assert.AreEqual(CacheEntryEventType.Expired, events[1].EventType);
+        }
+
+        /// <summary>
         /// Tests batching behavior.
         /// </summary>
         private void TestBatches(int keyCount, int bufferSize, TimeSpan interval,
