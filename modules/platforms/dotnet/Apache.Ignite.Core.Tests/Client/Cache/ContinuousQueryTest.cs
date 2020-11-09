@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
@@ -636,6 +637,38 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 CollectionAssert.AreEquivalent(keys.Take(2), res.Single());
             });
+        }
+
+        /// <summary>
+        /// Tests that <see cref="ContinuousQueryClient{TK,TV}.IncludeExpired"/> is false by default
+        /// and expiration events are not delivered.
+        ///
+        /// - Create a cache with expiry policy
+        /// - Start a continuous query with default settings
+        /// - Check that Created events are delivered, but Expired events are not
+        /// </summary>
+        [Test]
+        public void TestIncludeExpiredIsFalseByDefaultAndExpiredEventsAreSkipped()
+        {
+            var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName)
+                .WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100), null, null));
+            
+            var events = new List<ICacheEntryEvent<int, int>>();
+            var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>(events.Add));
+            Assert.IsFalse(qry.IncludeExpired);
+
+            using (cache.QueryContinuous(qry))
+            {
+                cache[1] = 2;
+
+                TestUtils.WaitForTrueCondition(() => !cache.ContainsKey(1));
+
+                cache[2] = 3;
+            }
+            
+            Assert.AreEqual(2, events.Count);
+            Assert.AreEqual(CacheEntryEventType.Created, events[0].EventType);
+            Assert.AreEqual(CacheEntryEventType.Created, events[1].EventType);
         }
 
         /// <summary>
