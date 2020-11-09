@@ -58,6 +58,11 @@ public class TDE {
         IgniteFuture<Void> future = ignite.encryption().changeMasterKey("newMasterKeyName");
         //end::master-key-rotation[]
 
+        //tag::cache-group-key-rotation[]
+        // Starts cache group encryption key change process.
+        IgniteFuture<Void> fut = ignite.encryption().changeCacheGroupKey(Collections.singleton("encrypted-cache"));
+        //end::cache-group-key-rotation[]
+
         ignite.close();
     }
 }
