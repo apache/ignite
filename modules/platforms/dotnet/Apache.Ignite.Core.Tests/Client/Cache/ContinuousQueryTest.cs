@@ -701,6 +701,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(2, events.Count);
             Assert.AreEqual(CacheEntryEventType.Created, events[0].EventType);
             Assert.AreEqual(CacheEntryEventType.Expired, events[1].EventType);
+            
+            Assert.IsTrue(events[1].HasValue);
+            Assert.IsTrue(events[1].HasOldValue);
+            Assert.AreEqual(2, events[1].Value);
+            Assert.AreEqual(2, events[1].OldValue);
+            Assert.AreEqual(1, events[1].Key);
         }
 
         /// <summary>
