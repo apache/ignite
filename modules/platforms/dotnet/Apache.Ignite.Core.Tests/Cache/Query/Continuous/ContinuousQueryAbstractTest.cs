@@ -32,7 +32,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
-    using Apache.Ignite.Core.Client.Cache.Query.Continuous;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cache.Event;
     using Apache.Ignite.Core.Resource;
@@ -302,11 +301,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Tests that enabling <see cref="ContinuousQueryClient{TK,TV}.IncludeExpired"/> causes
+        /// Tests that enabling <see cref="ContinuousQuery{TK,TV}.IncludeExpired"/> causes
         /// <see cref="CacheEntryEventType.Expired"/> events to be delivered.
         ///
         /// - Create a cache with expiry policy
-        /// - Start a continuous query with <see cref="ContinuousQueryClient{TK,TV}.IncludeExpired"/> set to <c>true</c>
+        /// - Start a continuous query with <see cref="ContinuousQuery{TK,TV}.IncludeExpired"/> set to <c>true</c>
         /// - Check that Expired events are delivered
         /// </summary>
         [Test]
