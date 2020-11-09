@@ -132,6 +132,8 @@ class IgniteService(IgniteAwareService):
         for node in self.nodes:
             assert len(self.pids(node)) == 0
 
+            node.account.ssh(f'rm -rf {self.WORK_DIR}/db', allow_fail=False)
+
             node.account.ssh(f'cp -r {self.SNAPSHOT}/{snapshot_name}/db {self.WORK_DIR}', allow_fail=False)
 
     def thread_dump(self, node):

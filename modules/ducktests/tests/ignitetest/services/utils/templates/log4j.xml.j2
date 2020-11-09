@@ -44,16 +44,9 @@
     <Loggers>
         <Logger name="org.apache.ignite" level="INFO"/>
 
-        <!--
-        <Logger name="org.apache.ignite.CourtesyConfigNotice" level=OFF/>
-        -->
-
         <Logger name="org.springframework" level="WARN"/>
         <Logger name="org.eclipse.jetty" level="WARN"/>
 
-        <!--
-        Avoid warnings about failed bind attempt when multiple nodes running on the same host.
-        -->
         <Logger name="org.eclipse.jetty.util.log" level="ERROR"/>
         <Logger name="org.eclipse.jetty.util.component" level="ERROR"/>
 
@@ -64,7 +57,7 @@
 
             <AppenderRef ref="CONSOLE_ERR" level="ERROR"/>
 
-            <AppenderRef ref="FILE" level="DEBUG"/>
+            <AppenderRef ref="FILE" level="INFO"/>
         </Root>
     </Loggers>
 </Configuration>

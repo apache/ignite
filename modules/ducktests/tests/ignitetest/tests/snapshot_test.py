@@ -70,11 +70,11 @@ class SnapshotTest(IgniteTest):
             params={
                 "cacheName": "test-cache",
                 "iterSize": 512 * 1024
-            },
-            timeout_sec=180
+            }
         )
 
-        load(streamer)
+        streamer.start()
+        streamer.await_stopped(300)
 
         node = service.nodes[0]
 
@@ -84,7 +84,8 @@ class SnapshotTest(IgniteTest):
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
-        load(streamer)
+        streamer.start()
+        streamer.await_stopped(300)
 
         dump_2 = control_utility.idle_verify_dump(node, return_path=True)
 
@@ -106,12 +107,3 @@ class SnapshotTest(IgniteTest):
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
         assert len(diff) == 0, diff
-
-
-def load(service_load: IgniteApplicationService, duration: int = 300):
-    """
-    Load.
-    """
-    service_load.start()
-
-    service_load.await_stopped(duration)
