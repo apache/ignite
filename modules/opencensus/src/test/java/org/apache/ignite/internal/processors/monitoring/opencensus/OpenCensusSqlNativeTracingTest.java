@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableMap;
 import io.opencensus.trace.SpanId;
@@ -146,9 +147,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
         SpanId rootSpan = executeAndCheckRootSpan(
             "UPDATE " + prsnTable + " SET prsnVal = (prsnVal + 1)", TEST_SCHEMA, true, false, false);
 
-        SpanId qryParseSpan = checkChildSpan(SQL_QRY_PARSE, rootSpan);
-
-        assertFalse(parseBoolean(getAttribute(qryParseSpan, SQL_PARSER_CACHE_HIT)));
+        checkChildSpan(SQL_QRY_PARSE, rootSpan);
 
         SpanId dmlExecSpan = checkChildSpan(SQL_DML_QRY_EXECUTE, rootSpan);
 
@@ -164,10 +163,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
             SpanId execReqSpan = execReqSpans.get(i);
 
             checkChildSpan(SQL_PARTITIONS_RESERVE, execReqSpan);
-
-            List<SpanId> qryParseSpans = checkSpan(SQL_QRY_PARSE, execReqSpan, 2, null);
-
-            qryParseSpans.forEach(span -> assertFalse(parseBoolean(getAttribute(span, SQL_PARSER_CACHE_HIT))));
+            checkSpan(SQL_QRY_PARSE, execReqSpan, 2, null);
 
             SpanId iterSpan = checkChildSpan(SQL_ITER_OPEN, execReqSpan);
 
@@ -285,10 +281,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
             "SELECT * FROM " + prsnTable + " AS p JOIN " + orgTable + " AS o ON o.orgId = p.prsnId",
             TEST_SCHEMA, false, true, true);
 
-        SpanId qryParseSpan = checkChildSpan(SQL_QRY_PARSE, rootSpan);
-
-        assertFalse(parseBoolean(getAttribute(qryParseSpan, SQL_PARSER_CACHE_HIT)));
-
+        checkChildSpan(SQL_QRY_PARSE, rootSpan);
         checkChildSpan(SQL_CURSOR_OPEN, rootSpan);
 
         SpanId iterSpan = checkChildSpan(SQL_ITER_OPEN, rootSpan);
@@ -314,9 +307,10 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
 
             assertEquals(2, partsReserveLogs.size());
 
+            Pattern ptrn = compile("Cache partitions were reserved \\[cache=(.+), partitions=\\[(.+)], topology=(.+)]");
+
             partsReserveLogs.forEach(l -> {
-                Matcher matcher = compile(
-                    "Cache partitions were reserved \\[cache=(.+), partitions=\\[(.+)], topology=(.+)]").matcher(l);
+                Matcher matcher = ptrn.matcher(l);
 
                 assertTrue(matcher.matches());
 
@@ -468,10 +462,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
         SpanId rootSpan = executeAndCheckRootSpan("CREATE TABLE test_table(id INT PRIMARY KEY, val VARCHAR)",
             DFLT_SCHEMA, false, false, null);
 
-        SpanId qryParseSpan = checkChildSpan(SQL_QRY_PARSE, rootSpan);
-
-        assertFalse(parseBoolean(getAttribute(qryParseSpan, SQL_PARSER_CACHE_HIT)));
-
+        checkChildSpan(SQL_QRY_PARSE, rootSpan);
         checkChildSpan(SQL_CMD_QRY_EXECUTE, rootSpan);
     }
 
@@ -506,9 +497,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
     private void checkDmlQuerySpans(String qry, boolean fetchRequired, int expCacheUpdates) throws Exception {
         SpanId rootSpan = executeAndCheckRootSpan(qry, TEST_SCHEMA, false,false,false);
 
-        SpanId qryParseSpan = checkChildSpan(SQL_QRY_PARSE, rootSpan);
-
-        assertFalse(parseBoolean(getAttribute(qryParseSpan, SQL_PARSER_CACHE_HIT)));
+        checkChildSpan(SQL_QRY_PARSE, rootSpan);
 
         SpanId dmlExecSpan = checkChildSpan(SQL_DML_QRY_EXECUTE, rootSpan);
 
