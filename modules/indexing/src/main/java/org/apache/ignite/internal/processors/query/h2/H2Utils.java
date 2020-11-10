@@ -114,7 +114,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
  */
 public class H2Utils {
     /** Query context H2 variable name. */
-    static final String QCTX_VARIABLE_NAME = "_IGNITE_QUERY_CONTEXT";
+    public static final String QCTX_VARIABLE_NAME = "_IGNITE_QUERY_CONTEXT";
 
     /**
      * The default precision for a char/varchar value.
