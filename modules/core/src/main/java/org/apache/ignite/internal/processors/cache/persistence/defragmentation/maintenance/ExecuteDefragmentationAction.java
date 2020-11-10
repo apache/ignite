@@ -50,13 +50,28 @@ class ExecuteDefragmentationAction implements MaintenanceAction<Boolean> {
     /** {@inheritDoc} */
     @Override public Boolean execute() {
         try {
-            defrgMgr.executeDefragmentation();
+            defrgMgr.beforeDefragmentation();
         }
         catch (IgniteCheckedException e) {
-            log.error("Defragmentation is failed", e);
+            log.error("Checkpoint before defragmentation failed", e);
 
             return false;
         }
+
+        Thread defrgThread = new Thread(() -> {
+            try {
+                defrgMgr.executeDefragmentation();
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Defragmentation failed", e);
+            }
+        });
+
+        defrgThread.setName("defragmentation-thread");
+
+        defrgThread.setDaemon(true);
+
+        defrgThread.start();
 
         return true;
     }

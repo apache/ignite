@@ -103,8 +103,9 @@ public interface MaintenanceRegistry {
      * Deletes {@link MaintenanceTask} of given ID from maintenance registry.
      *
      * @param maintenanceTaskName name of {@link MaintenanceTask} to be deleted.
+     * @return {@code true} if existing task has been deleted.
      */
-    public void unregisterMaintenanceTask(String maintenanceTaskName);
+    public boolean unregisterMaintenanceTask(String maintenanceTaskName);
 
     /**
      * Returns active {@link MaintenanceTask} by its name.

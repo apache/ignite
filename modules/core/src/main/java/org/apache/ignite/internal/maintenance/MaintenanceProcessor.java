@@ -61,6 +61,9 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     /** */
     private final boolean inMemoryMode;
 
+    /** */
+    private volatile boolean maintenanceMode;
+
     /**
      * @param ctx Kernal context.
      */
@@ -134,6 +137,8 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             fileStorage.init();
 
             activeTasks.putAll(fileStorage.getAllTasks());
+
+            maintenanceMode = !activeTasks.isEmpty();
         }
         catch (Throwable t) {
             log.warning("Caught exception when starting MaintenanceProcessor," +
@@ -213,18 +218,21 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public boolean isMaintenanceMode() {
-        return !activeTasks.isEmpty();
+        return maintenanceMode;
     }
 
-    /** {@inheritDoc} */
-    @Override public void unregisterMaintenanceTask(String maintenanceTaskName) {
+    /** {@inheritDoc}
+     * @return*/
+    @Override public boolean unregisterMaintenanceTask(String maintenanceTaskName) {
         if (inMemoryMode)
-            return;
+            return false;
+
+        boolean deleted;
 
         if (isMaintenanceMode())
-            activeTasks.remove(maintenanceTaskName);
+            deleted = activeTasks.remove(maintenanceTaskName) != null;
         else
-            requestedTasks.remove(maintenanceTaskName);
+            deleted = requestedTasks.remove(maintenanceTaskName) != null;
 
         try {
             fileStorage.deleteMaintenanceTask(maintenanceTaskName);
@@ -237,6 +245,8 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
             fileStorage.clear();
         }
+
+        return deleted;
     }
 
     /** {@inheritDoc} */

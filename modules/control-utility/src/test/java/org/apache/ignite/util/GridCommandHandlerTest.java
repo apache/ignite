@@ -91,7 +91,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGroupsWithRestartsTest;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -112,7 +111,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -614,43 +612,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             assertEquals(origCacheDir.listFiles().length, bDir.listFiles().length);
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDefragmentationSchedule() throws Exception {
-        Ignite ignite = startGrids(2);
-
-        ignite.cluster().state(ACTIVE);
-
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--defragmentation", "schedule"));
-
-        String grid0ConsId = grid(0).configuration().getConsistentId().toString();
-
-        assertEquals(EXIT_CODE_OK, execute(
-            "--defragmentation",
-            "schedule",
-            "--nodes",
-            grid0ConsId
-        ));
-
-        MaintenanceTask mntcTask = DefragmentationParameters.toStore(Collections.emptyList());
-
-        assertNotNull(grid(0).context().maintenanceRegistry().registerMaintenanceTask(mntcTask));
-        assertNull(grid(1).context().maintenanceRegistry().registerMaintenanceTask(mntcTask));
-
-        stopGrid(0);
-
-        startGrid(0);
-
-        assertEquals(EXIT_CODE_OK, execute(
-            "--defragmentation",
-            "schedule",
-            "--nodes",
-            grid0ConsId
-        ));
     }
 
     /**

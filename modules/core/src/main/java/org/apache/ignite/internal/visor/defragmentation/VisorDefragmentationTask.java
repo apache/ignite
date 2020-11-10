@@ -32,6 +32,7 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
+import org.apache.ignite.maintenance.MaintenanceTask;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_TASK_NAME;
@@ -55,8 +56,23 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
 
     /** {@inheritDoc} */
     @Nullable @Override protected VisorDefragmentationTaskResult reduce0(List<ComputeJobResult> results) {
-        if (results.size() > 1) {
-            // Implement later, this is a valid case for massive schedule operation only.
+        if (taskArg.operation() == VisorDefragmentationOperation.SCHEDULE) {
+            StringBuilder msg = new StringBuilder();
+
+            for (ComputeJobResult res : results) {
+                msg.append(res.getNode().consistentId()).append(":\n");
+
+                if (res.getData() == null)
+                    msg.append("    err=").append(res.getException()).append('\n');
+                else {
+                    VisorDefragmentationTaskResult data = res.getData();
+
+                    msg.append("    success=").append(data.isSuccess()).append('\n');
+                    msg.append("    msg=").append(data.getMessage()).append('\n');
+                }
+            }
+
+            return new VisorDefragmentationTaskResult(true, msg.toString());
         }
 
         assert results.size() == 1;
@@ -106,16 +122,22 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
         private VisorDefragmentationTaskResult runSchedule(VisorDefragmentationTaskArg arg) {
             MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
 
+            MaintenanceTask oldTask;
+
             try {
                 List<String> cacheNames = arg.cacheNames();
 
-                mntcReg.registerMaintenanceTask(toStore(cacheNames == null ? Collections.emptyList() : cacheNames));
+                oldTask = mntcReg.registerMaintenanceTask(toStore(cacheNames == null ? Collections.emptyList() : cacheNames));
             }
             catch (IgniteCheckedException e) {
                 return new VisorDefragmentationTaskResult(false, "Scheduling failed: " + e.getMessage());
             }
 
-            return null;
+            return new VisorDefragmentationTaskResult(
+                true,
+                "Scheduling completed successfully." +
+                (oldTask == null ? "" : " Previously scheduled task has been removed.")
+            );
         }
 
         /** */
@@ -144,10 +166,24 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
 
             MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
 
-            if (!mntcReg.isMaintenanceMode())
-                mntcReg.unregisterMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
+            if (!mntcReg.isMaintenanceMode()) {
+                boolean deleted = mntcReg.unregisterMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
+
+                String msg = deleted
+                    ? "Scheduled defragmentation task cancelled successfully."
+                    : "Scheduled defragmentation task is not found.";
+
+                return new VisorDefragmentationTaskResult(true, msg);
+            }
             else {
-                List<MaintenanceAction<?>> actions = mntcReg.actionsForMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
+                List<MaintenanceAction<?>> actions;
+
+                try {
+                    actions = mntcReg.actionsForMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
+                }
+                catch (IgniteException e) {
+                    return new VisorDefragmentationTaskResult(true, "Defragmentation is already completed or has been cancelled previously.");
+                }
 
                 Optional<MaintenanceAction<?>> stopAct = actions.stream().filter(a -> "stop".equals(a.name())).findAny();
 
@@ -156,14 +192,20 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
                 try {
                     Object res = stopAct.get().execute();
 
-                    assert Boolean.TRUE == res;
+                    assert res instanceof Boolean;
+
+                    boolean cancelled = (Boolean)res;
+
+                    String msg = cancelled
+                        ? "Defragmentation cancelled successfully."
+                        : "Defragmnentation is already completed or has been cancelled previously.";
+
+                    return new VisorDefragmentationTaskResult(true, msg);
                 }
                 catch (Exception e) {
                     return new VisorDefragmentationTaskResult(false, "Exception occurred: " + e.getMessage());
                 }
             }
-
-            return new VisorDefragmentationTaskResult(true, "Defragmentation cancelled successfully.");
         }
     }
 }

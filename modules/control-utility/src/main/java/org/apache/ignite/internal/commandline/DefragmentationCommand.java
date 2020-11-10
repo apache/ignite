@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClient;
@@ -47,36 +46,35 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
             Optional<GridClientNode> firstNodeOpt = client.compute().nodes().stream().filter(GridClientNode::connectable).findFirst();
 
             if (firstNodeOpt.isPresent()) {
-                UUID connectableNodeId = firstNodeOpt.get().nodeId();
-
-                VisorTaskArgument<?> visorArg;
+                VisorDefragmentationTaskResult res;
 
                 if (args.nodeIds() == null) {
-                    visorArg = new VisorTaskArgument<>(
-                        connectableNodeId,
+                    res = TaskExecutor.executeTaskByNameOnNode(
+                        client,
+                        VisorDefragmentationTask.class.getName(),
                         convertArguments(),
-                        false
+                        null, // Use node from clientCfg.
+                        clientCfg
                     );
                 }
                 else {
-                    visorArg = new VisorTaskArgument<>(
+                    VisorTaskArgument<?> visorArg = new VisorTaskArgument<>(
                         client.compute().nodes().stream().filter(
                             node -> args.nodeIds().contains(node.consistentId().toString())
                         ).map(GridClientNode::nodeId).collect(Collectors.toList()),
                         convertArguments(),
                         false
                     );
+
+                    res = client.compute()
+                        .projection(firstNodeOpt.get())
+                        .execute(
+                            VisorDefragmentationTask.class.getName(),
+                            visorArg
+                        );
                 }
 
-                VisorDefragmentationTaskResult res = client
-                    .compute()
-                    .projection(firstNodeOpt.get())
-                    .execute(
-                        VisorDefragmentationTask.class.getName(),
-                        visorArg
-                    );
-
-//                printResult(res, log);
+                printResult(res, log);
             }
             else
                 log.warning("No nodes found in topology, command won't be executed.");
@@ -89,6 +87,13 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
         }
 
         return null;
+    }
+
+    /** */
+    private void printResult(VisorDefragmentationTaskResult res, Logger log) {
+        assert res != null;
+
+        log.info(res.getMessage());
     }
 
     /** {@inheritDoc} */
