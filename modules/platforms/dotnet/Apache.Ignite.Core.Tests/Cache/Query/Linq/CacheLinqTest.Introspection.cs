@@ -56,7 +56,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 ReplicatedOnly = true,
 #pragma warning restore 618
                 Colocated = true,
-                Lazy = true
+                Lazy = true,
+                Partitions = new[]{1,2},
+                UpdateBatchSize = 12,
+                EnableDistributedJoins = true
             }).Where(x => x.Key > 10).ToCacheQueryable();
 
             Assert.AreEqual(cache.Name, query.CacheName);
@@ -84,6 +87,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             Assert.IsTrue(fq.Colocated);
             Assert.AreEqual(TimeSpan.FromSeconds(2.5), fq.Timeout);
             Assert.IsTrue(fq.Lazy);
+            Assert.IsTrue(fq.EnableDistributedJoins);
+            Assert.AreEqual(12, fq.UpdateBatchSize);
+            Assert.AreEqual(new[]{1,2}, fq.Partitions);
 
             var str = query.ToString();
             Assert.AreEqual(GetSqlEscapeAll()
