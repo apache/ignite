@@ -48,7 +48,6 @@ public enum ProtocolBitmaskFeature {
     /** Additional SqlFieldsQuery properties: partitions, updateBatchSize */
     QRY_PARTITIONS_BATCH_SIZE(7);
 
-
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =
         EnumSet.allOf(ProtocolBitmaskFeature.class);
