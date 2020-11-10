@@ -177,15 +177,19 @@ namespace Apache.Ignite.Core.Cache.Query
         /// </returns>
         public override string ToString()
         {
-            var args = string.Join(", ", Arguments.Select(x => x == null ? "null" : x.ToString()));
+            var args = Arguments == null
+                ? ""
+                : string.Join(", ", Arguments.Select(x => x == null ? "null" : x.ToString()));
+
+            var parts = Partitions == null
+                ? ""
+                : string.Join(", ", Partitions.Select(x => x.ToString()));
 
             return string.Format("SqlFieldsQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
-                                 "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, ReplicatedOnly={7}" +
-                                 ", Colocated={8}, Schema={9}, Lazy={10}]", Sql, args, Local,
-#pragma warning disable 618
-                                 PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, ReplicatedOnly,
-#pragma warning restore 618
-                                 Colocated, Schema, Lazy);
+                                 "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, Partitions={7}, " +
+                                 "UpdateBatchSize={8}, Colocated={9}, Schema={10}, Lazy={11}]", Sql, args, Local,
+                                 PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, parts,
+                                 UpdateBatchSize, Colocated, Schema, Lazy);
         }
 
         /** <inheritdoc /> */
