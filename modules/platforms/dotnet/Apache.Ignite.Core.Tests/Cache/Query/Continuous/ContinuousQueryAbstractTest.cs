@@ -280,7 +280,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         {
             var cache = cache1.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100), null, null));
             var cb = new Listener<BinarizableEntry>();
-            
+
             var qry = new ContinuousQuery<int, BinarizableEntry>(cb);
             Assert.IsFalse(qry.IncludeExpired);
 
@@ -292,7 +292,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
                 cache[2] = Entry(2);
             }
-            
+
             var events = CB_EVTS.SelectMany(e => e.entries).ToList();
             Assert.AreEqual(2, events.Count);
 
@@ -313,7 +313,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         {
             var cache = cache1.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100), null, null));
             var cb = new Listener<BinarizableEntry>();
-            
+
             var qry = new ContinuousQuery<int, BinarizableEntry>(cb)
             {
                 IncludeExpired = true
@@ -323,15 +323,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             {
                 cache[1] = Entry(2);
 
-                TestUtils.WaitForTrueCondition(() => CB_EVTS.Count == 2);
+                TestUtils.WaitForTrueCondition(() => CB_EVTS.Count == 2, 5000);
             }
 
             var events = CB_EVTS.SelectMany(e => e.entries).ToList();
-            
+
             Assert.AreEqual(2, events.Count);
             Assert.AreEqual(CacheEntryEventType.Created, events[0].EventType);
             Assert.AreEqual(CacheEntryEventType.Expired, events[1].EventType);
-            
+
             Assert.IsTrue(events[1].HasValue);
             Assert.IsTrue(events[1].HasOldValue);
             Assert.AreEqual(2, ((BinarizableEntry)events[1].Value).val);
