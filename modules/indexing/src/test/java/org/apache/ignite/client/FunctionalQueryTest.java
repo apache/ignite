@@ -270,6 +270,12 @@ public class FunctionalQueryTest {
         }
     }
 
+    /** Tests {@link SqlFieldsQuery} parameter validation. */
+    @Test
+    public void testSqlParameterValidation() {
+        // TODO
+    }
+
     /** */
     private static ClientConfiguration getClientConfiguration() {
         return new ClientConfiguration().setAddresses(Config.SERVER)
