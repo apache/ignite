@@ -32,6 +32,9 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary> Default page size. </summary>
         public const int DefaultPageSize = 1024;
 
+        /// <summary> Default value for <see cref="UpdateBatchSize"/>. </summary>
+        public const int DefaultUpdateBatchSize = 1;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -151,6 +154,20 @@ namespace Apache.Ignite.Core.Cache.Query
         /// consumption at the cost of moderate performance hit.
         /// </summary>
         public bool Lazy { get; set; }
+
+        /// <summary>
+        /// Gets or sets partitions for the query.
+        /// <para />
+        /// The query will be executed only on nodes which are primary for specified partitions.
+        /// </summary>
+        public int[] Partitions { get; set; }
+
+        /// <summary>
+        /// Gets or sets batch size for update queries.
+        /// <para />
+        /// Default is 1 (<see cref="DefaultUpdateBatchSize"/>.
+        /// </summary>
+        public int UpdateBatchSize { get; set; }
 
         /// <summary>
         /// Returns a <see cref="string" /> that represents this instance.
