@@ -17,15 +17,26 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
+import java.util.Collection;
+
 /**
- * ODBC query get params meta request.
+ * SQL listener query resultset metadata result.
  */
-public class OdbcQueryGetParamsMetaRequest extends OdbcQueryGetQueryMetaRequest {
+public class OdbcQueryGetResultsetMetaResult {
+    /** Resultset columns metadata. */
+    private final Collection<OdbcColumnMeta> columnsMetadata;
+
     /**
-     * @param schema Schema.
-     * @param query SQL Query.
+     * @param columnsMetadata Columns metadata.
      */
-    public OdbcQueryGetParamsMetaRequest(String schema, String query) {
-        super(META_PARAMS, schema, query);
+    public OdbcQueryGetResultsetMetaResult(Collection<OdbcColumnMeta> columnsMetadata) {
+        this.columnsMetadata = columnsMetadata;
+    }
+
+    /**
+     * @return Columns metadata.
+     */
+    public Collection<OdbcColumnMeta> columnsMetadata() {
+        return columnsMetadata;
     }
 }
