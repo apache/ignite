@@ -30,6 +30,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
@@ -54,7 +55,7 @@ public class LightCheckpointTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        cleanPersistenceDir();
+//        cleanPersistenceDir();
 
         super.afterTest();
     }
@@ -116,6 +117,8 @@ public class LightCheckpointTest extends GridCommonAbstractTest {
         GridKernalContext context = ignite0.context();
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)(context.cache().context().database());
 
+        waitForCondition(() -> !db.getCheckpointer().currentProgress().inProgress(), 10_000);
+
         //and: disable the default checkpoint.
         db.enableCheckpoints(false);
 
@@ -141,7 +144,7 @@ public class LightCheckpointTest extends GridCommonAbstractTest {
 
         //and: Add checkpoint listener for DEFAULT_CACHE in order of storing the meta pages.
         lightCheckpointManager.addCheckpointListener(
-            (CheckpointListener)ignite0.context().cache().cacheGroup(groupIdForCache(ignite0, DEFAULT_CACHE_NAME)).offheap(),
+            (CheckpointListener)context.cache().cacheGroup(groupIdForCache(ignite0, DEFAULT_CACHE_NAME)).offheap(),
             regionForCheckpoint
         );
 
@@ -172,6 +175,11 @@ public class LightCheckpointTest extends GridCommonAbstractTest {
             assertEquals(j, checkpointedCache.get(j));
             assertNull(notCheckpointedCache.get(j));
         }
+
+        GridCacheDatabaseSharedManager db2 = (GridCacheDatabaseSharedManager)
+            (ignite0.context().cache().context().database());
+
+        waitForCondition(() -> !db2.getCheckpointer().currentProgress().inProgress(), 10_000);
 
         String nodeFolderName = ignite0.context().pdsFolderResolver().resolveFolders().folderName();
         File cpMarkersDir = Paths.get(U.defaultWorkDirectory(), "db", nodeFolderName, "cp").toFile();
