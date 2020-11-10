@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Cache.Query
                 : string.Join(", ", Partitions.Select(x => x.ToString()));
 
             return string.Format("SqlFieldsQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
-                                 "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, Partitions={7}, " +
+                                 "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, Partitions=[{7}], " +
                                  "UpdateBatchSize={8}, Colocated={9}, Schema={10}, Lazy={11}]", Sql, args, Local,
                                  PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, parts,
                                  UpdateBatchSize, Colocated, Schema, Lazy);
