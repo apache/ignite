@@ -1455,6 +1455,8 @@ public class PlatformCache extends PlatformAbstractTarget {
         boolean replicated = reader.readBoolean();
         boolean collocated = reader.readBoolean();
         String schema = reader.readString();
+        int[] partitions = reader.readIntArray();
+        int updateBatchSize = reader.readInt();
 
         SqlFieldsQuery qry = QueryUtils.withQueryTimeout(new SqlFieldsQuery(sql), timeout, TimeUnit.MILLISECONDS)
                 .setPageSize(pageSize)
@@ -1465,7 +1467,9 @@ public class PlatformCache extends PlatformAbstractTarget {
                 .setLazy(lazy)
                 .setReplicatedOnly(replicated)
                 .setCollocated(collocated)
-                .setSchema(schema);
+                .setSchema(schema)
+                .setPartitions(partitions)
+                .setUpdateBatchSize(updateBatchSize);
 
         return qry;
     }
