@@ -43,6 +43,7 @@ import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 /**
  * Thin client functional tests.
@@ -274,6 +275,7 @@ public class FunctionalQueryTest {
     @Test
     public void testSqlParameterValidation() {
         // TODO
+        fail();
     }
 
     /** */
