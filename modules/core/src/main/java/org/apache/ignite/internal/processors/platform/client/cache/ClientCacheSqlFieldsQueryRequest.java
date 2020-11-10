@@ -48,6 +48,12 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
     /** Include field names flag. */
     private final boolean includeFieldNames;
 
+    /** Partitions. */
+    private final int[] partitions;
+
+    /** Update batch size. */
+    private final Integer updateBatchSize;
+
     /**
      * Ctor.
      *
@@ -94,16 +100,25 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
         if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.DEFAULT_QRY_TIMEOUT) || timeout > 0)
             QueryUtils.withQueryTimeout(qry, timeout, TimeUnit.MILLISECONDS);
 
-        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.QRY_PARTITIONS_BATCH_SIZE)) {
-            qry.setPartitions(reader.readIntArray());
-            qry.setUpdateBatchSize(reader.readInt());
-        }
-
         this.qry = qry;
+
+        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.QRY_PARTITIONS_BATCH_SIZE)) {
+            // Set qry values in process method so that validation errors are reported to the client.
+            partitions = reader.readIntArray();
+            updateBatchSize = reader.readInt();
+        } else {
+            partitions = null;
+            updateBatchSize = null;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        qry.setPartitions(partitions);
+
+        if (updateBatchSize != null)
+            qry.setUpdateBatchSize(updateBatchSize);
+
         ctx.incrementCursors();
 
         try {
