@@ -653,22 +653,22 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName)
                 .WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100), null, null));
             
-            var events = new List<ICacheEntryEvent<int, int>>();
-            var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>(events.Add));
+            var events = new ConcurrentQueue<ICacheEntryEvent<int, int>>();
+            var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>(events.Enqueue));
             Assert.IsFalse(qry.IncludeExpired);
 
             using (cache.QueryContinuous(qry))
             {
                 cache[1] = 2;
 
-                TestUtils.WaitForTrueCondition(() => !cache.ContainsKey(1));
+                TestUtils.WaitForTrueCondition(() => !cache.ContainsKey(1), 5000);
 
                 cache[2] = 3;
             }
             
             Assert.AreEqual(2, events.Count);
-            Assert.AreEqual(CacheEntryEventType.Created, events[0].EventType);
-            Assert.AreEqual(CacheEntryEventType.Created, events[1].EventType);
+            Assert.AreEqual(CacheEntryEventType.Created, events.First().EventType);
+            Assert.AreEqual(CacheEntryEventType.Created, events.Last().EventType);
         }
 
         /// <summary>
@@ -685,8 +685,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName)
                 .WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100), null, null));
             
-            var events = new List<ICacheEntryEvent<int, int>>();
-            var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>(events.Add))
+            var events = new ConcurrentQueue<ICacheEntryEvent<int, int>>();
+            var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>(events.Enqueue))
             {
                 IncludeExpired = true
             };
@@ -695,18 +695,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 cache[1] = 2;
 
-                TestUtils.WaitForTrueCondition(() => events.Count == 2);
+                TestUtils.WaitForTrueCondition(() => events.Count == 2, 5000);
             }
             
             Assert.AreEqual(2, events.Count);
-            Assert.AreEqual(CacheEntryEventType.Created, events[0].EventType);
-            Assert.AreEqual(CacheEntryEventType.Expired, events[1].EventType);
+            Assert.AreEqual(CacheEntryEventType.Created, events.First().EventType);
+            Assert.AreEqual(CacheEntryEventType.Expired, events.Last().EventType);
             
-            Assert.IsTrue(events[1].HasValue);
-            Assert.IsTrue(events[1].HasOldValue);
-            Assert.AreEqual(2, events[1].Value);
-            Assert.AreEqual(2, events[1].OldValue);
-            Assert.AreEqual(1, events[1].Key);
+            Assert.IsTrue(events.Last().HasValue);
+            Assert.IsTrue(events.Last().HasOldValue);
+            Assert.AreEqual(2, events.Last().Value);
+            Assert.AreEqual(2, events.Last().OldValue);
+            Assert.AreEqual(1, events.Last().Key);
         }
 
         /// <summary>
