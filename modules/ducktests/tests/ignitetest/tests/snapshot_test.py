@@ -69,12 +69,12 @@ class SnapshotTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.loader.UuidDataLoaderApplication",
             params={
                 "cacheName": "test-cache",
-                "iterSize": 512 * 1024
+                "iterSize": 1024 * 1024,
+                "dataSize": 1024
             }
         )
 
-        streamer.start()
-        streamer.await_stopped(300)
+        streamer.run()
 
         node = service.nodes[0]
 
@@ -84,8 +84,7 @@ class SnapshotTest(IgniteTest):
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
-        streamer.start()
-        streamer.await_stopped(300)
+        streamer.run()
 
         dump_2 = control_utility.idle_verify_dump(node, return_path=True)
 

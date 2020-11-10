@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.ducktest.tests.loader;
 
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -25,7 +24,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
@@ -37,17 +35,12 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
     @Override public void run(JsonNode jNode) throws InterruptedException {
         String cacheName = jNode.get("cacheName").asText();
 
-        int dataSize = Optional.ofNullable(jNode.get("dataSize"))
-                .map(JsonNode::asInt)
-                .orElse(1024);
+        int dataSize = jNode.get("dataSize").asInt();
 
-        long iterSize = Optional.ofNullable(jNode.get("iterSize"))
-                .map(JsonNode::asLong)
-                .orElse(1024L);
+        long iterSize = jNode.get("iterSize").asLong();
 
         CacheConfiguration<UUID, byte[]> cacheCfg = new CacheConfiguration<>(cacheName);
-        cacheCfg.setBackups(2);
-        cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cacheCfg.setBackups(1);
         cacheCfg.setIndexedTypes(UUID.class, byte[].class);
 
         ignite.getOrCreateCache(cacheCfg);

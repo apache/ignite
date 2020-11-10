@@ -53,6 +53,9 @@ class IgniteApplicationService(IgniteAwareService):
 
         self.__check_status("IGNITE_APPLICATION_INITIALIZED", timeout=self.timeout_sec)
 
+    def wait(self, timeout_sec=600):
+        self.await_stopped(timeout_sec)
+
     def stop_async(self, clean_shutdown=True):
         """
         Stop in async way.
