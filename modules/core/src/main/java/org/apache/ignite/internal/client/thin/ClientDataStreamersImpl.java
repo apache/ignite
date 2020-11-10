@@ -40,7 +40,6 @@ import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -86,13 +85,11 @@ class ClientDataStreamersImpl {
     public <K, V> ClientDataStreamer<K, V> create(String cacheName) {
         A.notNull("cacheName", cacheName);
 
-        T2<ClientChannel, Long> streamerParams = ch.service(
-            ClientOperation.DATA_STREAMER_CREATE,
-            req -> utils.writeObject(req.out(), cacheName),
-            res -> new T2<>(res.clientChannel(), res.in().readLong())
-        );
+        ClientDataStreamerImpl<K, V> dataStreamer = new ClientDataStreamerImpl<>(cacheName);
 
-        return new ClientDataStreamerImpl<>(cacheName, streamerParams.get1(), streamerParams.get2());
+        dataStreamer.init();
+
+        return dataStreamer;
     }
 
     /**
@@ -131,10 +128,7 @@ class ClientDataStreamersImpl {
         private final String cacheName;
 
         /** Channel. */
-        private final ClientChannel ch;
-
-        /** Resource id. */
-        private final long rsrcId;
+        private volatile StreamerChannel streamerCh;
 
         /** Pending buffers. There are two switching buffers in this array. */
         private final PendingBuffer[] pendingBuf;
@@ -187,15 +181,20 @@ class ClientDataStreamersImpl {
 
         /**
          * @param cacheName Cache name.
-         * @param ch Channel.
-         * @param rsrcId Resource ID.
          */
-        ClientDataStreamerImpl(String cacheName, ClientChannel ch, long rsrcId) {
+        ClientDataStreamerImpl(String cacheName) {
             this.cacheName = cacheName;
-            this.ch = ch;
-            this.rsrcId = rsrcId;
 
             pendingBuf = new PendingBuffer[] { new PendingBuffer(utils), new PendingBuffer(utils) };
+        }
+
+        /** */
+        private void init() {
+            streamerCh = ch.service(
+                    ClientOperation.DATA_STREAMER_CREATE,
+                    req -> utils.writeObject(req.out(), cacheName),
+                    res -> new StreamerChannel(res.clientChannel(), res.in().readLong())
+            );
         }
 
         /** {@inheritDoc} */
@@ -244,16 +243,9 @@ class ClientDataStreamersImpl {
          */
         private void changeFlags() {
             try {
-                ch.service(
-                    ClientOperation.DATA_STREAMER_FLAGS,
-                    req -> {
-                        req.out().writeLong(rsrcId);
-                        req.out().writeByte((byte)((allowOverwrite ? ALLOW_OVERWRITE_FLAG_MASK : 0) |
-                                (skipStore ? SKIP_STORE_FLAG_MASK : 0) |
-                                (keepBinary ? KEEP_BINARY_FLAG_MASK : 0))
-                        );
-                    },
-                    null
+                streamerCh.changeFlags((byte)((allowOverwrite ? ALLOW_OVERWRITE_FLAG_MASK : 0) |
+                        (skipStore ? SKIP_STORE_FLAG_MASK : 0) |
+                        (keepBinary ? KEEP_BINARY_FLAG_MASK : 0))
                 );
             }
             catch (ClientError e) {
@@ -466,14 +458,7 @@ class ClientDataStreamersImpl {
 
                 CompletableFuture<Void> fut = buf.intFut;
 
-                ch.serviceAsync(ClientOperation.DATA_STREAMER_ADD,
-                    req -> {
-                        req.out().writeLong(rsrcId);
-                        req.out().writeInt(buf.entriesCnt.get());
-                        req.out().write(buf.out.array(), 0, buf.out.position());
-                    },
-                    null
-                ).handle((res, err) -> {
+                streamerCh.addDataAsync(buf.entriesCnt.get(), buf.out.array(), buf.out.position()).handle((res, err) -> {
                     if (err != null) {
                         failCntr.incrementAndGet();
 
@@ -581,11 +566,7 @@ class ClientDataStreamersImpl {
                             "while waiting for all pending requests delivery."));
                 }
 
-                CompletableFuture<?> fut = ch.serviceAsync(
-                        ClientOperation.DATA_STREAMER_FLUSH,
-                        req -> req.out().writeLong(rsrcId),
-                        null
-                );
+                CompletableFuture<?> fut = streamerCh.flushAsync();
 
                 fut.handle((res, err) -> {
                     if (err != null)
@@ -645,7 +626,7 @@ class ClientDataStreamersImpl {
                     throw e;
                 } finally {
                     try {
-                        ch.service(ClientOperation.RESOURCE_CLOSE, req -> req.out().writeLong(rsrcId), null);
+                        streamerCh.close();
                     }
                     catch (ClientConnectionException ignore) {
                         // No-op.
@@ -759,6 +740,72 @@ class ClientDataStreamersImpl {
             flushScheduled.set(false);
 
             flushed = false;
+        }
+    }
+
+    /** Helper class to send streamer requests to the channel. */
+    private static class StreamerChannel {
+        /** Channel. */
+        private final ClientChannel clientCh;
+
+        /** Resource id. */
+        private final long rsrcId;
+
+        /**
+         * @param clientCh Client ch.
+         * @param rsrcId Resource id.
+         */
+        private StreamerChannel(ClientChannel clientCh, long rsrcId) {
+            this.clientCh = clientCh;
+            this.rsrcId = rsrcId;
+        }
+
+        /**
+         * @param flags Flags.
+         */
+        public void changeFlags(byte flags) {
+            clientCh.service(
+                    ClientOperation.DATA_STREAMER_FLAGS,
+                    req -> {
+                        req.out().writeLong(rsrcId);
+                        req.out().writeByte(flags);
+                    },
+                    null
+            );
+        }
+
+        /**
+         * @param entriesCnt Entries count.
+         * @param buf Buffer.
+         * @param bufSize Buffer size.
+         */
+        public CompletableFuture<Void> addDataAsync(int entriesCnt, byte[] buf, int bufSize) {
+            return clientCh.serviceAsync(ClientOperation.DATA_STREAMER_ADD,
+                    req -> {
+                        req.out().writeLong(rsrcId);
+                        req.out().writeInt(entriesCnt);
+                        req.out().write(buf, 0, bufSize);
+                    },
+                    null
+            );
+        }
+
+        /**
+         * Flush.
+         */
+        public CompletableFuture<Void> flushAsync() {
+            return clientCh.serviceAsync(
+                    ClientOperation.DATA_STREAMER_FLUSH,
+                    req -> req.out().writeLong(rsrcId),
+                    null
+            );
+        }
+
+        /**
+         * Close.
+         */
+        public void close() {
+            clientCh.service(ClientOperation.RESOURCE_CLOSE, req -> req.out().writeLong(rsrcId), null);
         }
     }
 }
