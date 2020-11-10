@@ -41,9 +41,6 @@ import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersist
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotMXBeanTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManagerSelfTest;
-import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSelfTest;
-import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsThinClientTest;
-import org.apache.ignite.internal.processors.performancestatistics.TopologyChangesTest;
 import org.apache.ignite.internal.processors.performancestatistics.ForwardReadTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsMultipleStartTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsPropertiesTest;
