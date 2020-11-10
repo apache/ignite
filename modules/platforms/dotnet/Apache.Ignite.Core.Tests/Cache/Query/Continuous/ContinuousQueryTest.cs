@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
