@@ -37,7 +37,7 @@ from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
 from ignitetest.utils import ignite_versions, version_if
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, V_2_8_0, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, LATEST_2_7, LATEST_2_8, V_2_8_0, IgniteVersion
 
 
 class ClusterLoad(IntEnum):
@@ -60,7 +60,7 @@ class DiscoveryTestConfig(NamedTuple):
     sequential_failure: bool = False
     with_zk: bool = False
     failure_detection_timeout: int = 1000
-    socket_linger: int = None
+    socket_linger: int = -1
 
 
 # pylint: disable=W0223
@@ -83,11 +83,12 @@ class DiscoveryTest(IgniteTest):
         self.netfilter_store_path = None
 
     @cluster(num_nodes=NUM_NODES)
+    @version_if(lambda version: version > LATEST_2_7)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(nodes_to_kill=[1, 2],
-            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL], socket_linger=[0],
+            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL], socket_linger=[0, 1],
             failure_detection_timeout=[1000])
-    def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, socket_linger,
+    def _test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, socket_linger,
                                            failure_detection_timeout):
         """
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
@@ -100,9 +101,29 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
+    @version_if(lambda version: version < V_2_8_0)
+    @matrix(nodes_to_kill=[1, 2],
+            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
+            failure_detection_timeout=[1000])
+    def test_nodes_fail_not_sequential_tcp_old(self, ignite_version, nodes_to_kill, load_type,
+                                               failure_detection_timeout):
+        """
+        Ignored with default Ignite versions. To run pass version < 2.8.0.
+        Checks old versions of Ignite not supporting socket linger in DiscoverySpi.
+        Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
+        """
+        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
+                                          load_type=load_type, sequential_failure=False,
+                                          failure_detection_timeout=failure_detection_timeout)
+
+        return self._perform_node_fail_scenario(test_config)
+
+    @cluster(num_nodes=NUM_NODES)
+    @version_if(lambda version: version > LATEST_2_7)
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL], socket_linger=[0, 1],
             failure_detection_timeout=[1000])
-    def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, socket_linger, failure_detection_timeout):
+    def _test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, socket_linger, failure_detection_timeout):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
         """
@@ -112,12 +133,28 @@ class DiscoveryTest(IgniteTest):
 
         return self._perform_node_fail_scenario(test_config)
 
+    @cluster(num_nodes=NUM_NODES)
+    @version_if(lambda version: version < V_2_8_0)
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
+    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
+            failure_detection_timeout=[1000])
+    def test_2_nodes_fail_sequential_tcp_old(self, ignite_version, load_type, failure_detection_timeout):
+        """
+        Ignored with default Ignite versions. To run pass version < 2.8.0.
+        Checks old versions of Ignite not supporting socket linger in DiscoverySpi.
+        Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
+        """
+        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2, load_type=load_type,
+                                          sequential_failure=True, failure_detection_timeout=failure_detection_timeout)
+
+        return self._perform_node_fail_scenario(test_config)
+
     @cluster(num_nodes=NUM_NODES + 3)
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[1000],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
+    def _test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
         """
         Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
         """
@@ -132,7 +169,7 @@ class DiscoveryTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
             failure_detection_timeout=[1000])
-    def test_2_nodes_fail_sequential_zk(self, ignite_version, load_type, failure_detection_timeout):
+    def _test_2_nodes_fail_sequential_zk(self, ignite_version, load_type, failure_detection_timeout):
         """
         Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
         """
@@ -154,7 +191,8 @@ class DiscoveryTest(IgniteTest):
         else:
             discovery_spi = TcpDiscoverySpi()
 
-            discovery_spi.socket_linger = test_config.socket_linger
+            if test_config.socket_linger >= 0:
+                discovery_spi.socket_linger = test_config.socket_linger
 
         ignite_config = IgniteConfiguration(
             version=test_config.version,
