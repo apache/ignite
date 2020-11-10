@@ -26,6 +26,9 @@ namespace Apache.Ignite.Core.Impl.Client
         ExecuteTaskByName = 1,
         // ClusterStates = 2,
         ClusterGroupGetNodesEndpoints = 3,
-        ClusterGroups = 4
+        ClusterGroups = 4,
+        ServiceInvoke = 5,
+        DefaultQueryTimeout = 6,
+        QueryPartitionsBatchSize = 7
     }
 }
