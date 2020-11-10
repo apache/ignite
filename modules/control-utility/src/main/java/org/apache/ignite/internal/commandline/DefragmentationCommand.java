@@ -104,10 +104,10 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
             return;
         }
 
-        DefragmentationSubcommands cmd = DefragmentationSubcommands.of(argIter.nextArg("Expected defragmentation maintenance action"));
+        DefragmentationSubcommands cmd = DefragmentationSubcommands.of(argIter.nextArg("Expected defragmentation subcommand."));
 
-        if (cmd == null)
-            throw new IllegalArgumentException("Expected correct defragmentation maintenance action");
+        if (cmd == null || cmd == DefragmentationSubcommands.STATUS) // Status subcommand is not yet completed.
+            throw new IllegalArgumentException("Expected correct defragmentation subcommand.");
 
         args = new DefragmentationArguments(cmd);
 
