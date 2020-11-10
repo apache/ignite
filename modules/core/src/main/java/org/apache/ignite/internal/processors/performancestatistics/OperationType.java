@@ -145,10 +145,11 @@ public enum OperationType {
 
     /**
      * @param textLen Query text length.
+     * @param cached {@code True} if query text cached.
      * @return Query record size.
      */
-    public static int queryRecordSize(int textLen) {
-        return 4 + textLen + 1 + 8 + 8 + 8 + 1;
+    public static int queryRecordSize(int textLen, boolean cached) {
+        return 1 + (cached ? 4 : 4 + textLen) + 1 + 8 + 8 + 8 + 1;
     }
 
     /** @return Query reads record size. */
@@ -158,10 +159,11 @@ public enum OperationType {
 
     /**
      * @param nameLen Task name length.
+     * @param cached {@code True} if task name cached.
      * @return Task record size.
      */
-    public static int taskRecordSize(int nameLen) {
-        return 4 + nameLen + 24 + 8 + 8 + 4;
+    public static int taskRecordSize(int nameLen, boolean cached) {
+        return 1 + (cached ? 4 : 4 + nameLen) + 24 + 8 + 8 + 4;
     }
 
     /** @return Job record size. */

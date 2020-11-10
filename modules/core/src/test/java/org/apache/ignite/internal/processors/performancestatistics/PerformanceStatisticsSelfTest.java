@@ -247,6 +247,8 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
     private void checkCacheOperation(OperationType op, Consumer<IgniteCache<Object, Object>> clo) throws Exception {
         long startTime = U.currentTimeMillis();
 
+        cleanPerformanceStatisticsDir();
+
         startCollectStatistics();
 
         clo.accept(cache);
@@ -280,6 +282,8 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
     /** @param commited {@code True} if check transaction commited. */
     private void checkTx(boolean commited) throws Exception {
         long startTime = U.currentTimeMillis();
+
+        cleanPerformanceStatisticsDir();
 
         startCollectStatistics();
 

@@ -44,6 +44,13 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSelfTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsThinClientTest;
 import org.apache.ignite.internal.processors.performancestatistics.TopologyChangesTest;
+import org.apache.ignite.internal.processors.performancestatistics.ForwardReadTest;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsMultipleStartTest;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsPropertiesTest;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSelfTest;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsThinClientTest;
+import org.apache.ignite.internal.processors.performancestatistics.StringCacheTest;
+import org.apache.ignite.internal.processors.performancestatistics.TopologyChangesTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
 import org.junit.runner.RunWith;
@@ -92,7 +99,12 @@ import org.junit.runners.Suite;
 
     PerformanceStatisticsSelfTest.class,
     PerformanceStatisticsThinClientTest.class,
-    TopologyChangesTest.class
+    TopologyChangesTest.class,
+    IgniteClusterIdTagTest.class,
+    StringCacheTest.class,
+    PerformanceStatisticsPropertiesTest.class,
+    PerformanceStatisticsMultipleStartTest.class,
+    ForwardReadTest.class
 })
 public class IgniteBasicWithPersistenceTestSuite {
 }

@@ -173,6 +173,8 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
     private void checkCacheOperation(OperationType op, Consumer<ClientCache<Object, Object>> clo) throws Exception {
         long startTime = U.currentTimeMillis();
 
+        cleanPerformanceStatisticsDir();
+
         startCollectStatistics();
 
         clo.accept(thinClient.cache(DEFAULT_CACHE_NAME));
@@ -206,6 +208,8 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
     /** @param commited {@code True} if check transaction commited. */
     private void checkTx(boolean commited) throws Exception {
         long startTime = U.currentTimeMillis();
+
+        cleanPerformanceStatisticsDir();
 
         startCollectStatistics();
 

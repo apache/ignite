@@ -227,6 +227,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         throws Exception {
         long startTime = U.currentTimeMillis();
 
+        cleanPerformanceStatisticsDir();
+
         startCollectStatistics();
 
         Collection<UUID> expNodeIds = new ArrayList<>();

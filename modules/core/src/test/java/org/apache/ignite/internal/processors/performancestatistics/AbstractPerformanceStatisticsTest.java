@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
 import java.lang.management.ThreadInfo;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
@@ -31,6 +30,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.PerformanceStatisticsMBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.WRITER_THREAD_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -46,7 +46,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, true);
+        cleanPerformanceStatisticsDir();
     }
 
     /** {@inheritDoc} */
@@ -55,6 +55,18 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         stopAllGrids();
 
+        cleanPerformanceStatisticsDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        cleanPerformanceStatisticsDir();
+    }
+
+    /** Cleans performance statistics directory. */
+    protected static void cleanPerformanceStatisticsDir() throws Exception {
         U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, true);
     }
 
@@ -81,7 +93,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false);
 
-        new FilePerformanceStatisticsReader(handlers).read(Collections.singletonList(dir));
+        new FilePerformanceStatisticsReader(handlers).read(singletonList(dir));
     }
 
     /** Wait for statistics started/stopped in the cluster. */
@@ -115,6 +127,13 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     protected static PerformanceStatisticsMBean statisticsMBean(String igniteInstanceName) {
         return getMxBean(igniteInstanceName, "PerformanceStatistics", PerformanceStatisticsMBeanImpl.class,
             PerformanceStatisticsMBean.class);
+    }
+
+    /** @return Performance statistics files. */
+    protected static List<File> statisticsFiles() throws Exception {
+        File perfStatDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false);
+
+        return FilePerformanceStatisticsReader.resolveFiles(singletonList(perfStatDir));
     }
 
     /** Test performance statistics handler. */
