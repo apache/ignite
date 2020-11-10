@@ -183,6 +183,8 @@ import org.apache.ignite.internal.processors.cache.query.IgniteCacheQueryCacheDe
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryWithH2IndexingSelfTest;
+import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentSqlUpdatesTest;
+import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentUpdatesTest;
 import org.apache.ignite.internal.processors.cache.transaction.DmlInsideTransactionTest;
 import org.apache.ignite.internal.processors.client.ClientConnectorConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineBinObjFieldsQuerySelfTest;
@@ -234,6 +236,7 @@ import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildTest;
+import org.apache.ignite.internal.processors.query.h2.GridSubqueryJoinOptimizerSelfTest;
 import org.apache.ignite.internal.processors.query.h2.H2ResultSetIteratorNullifyOnEndSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryMinMaxTest;
@@ -400,6 +403,8 @@ import org.junit.runners.Suite;
     CacheDataPageScanQueryTest.class,
     QueryDataPageScanTest.class,
 
+    GridSubqueryJoinOptimizerSelfTest.class,
+
     // DML.
     IgniteCacheMergeSqlQuerySelfTest.class,
     IgniteCacheInsertSqlQuerySelfTest.class,
@@ -533,6 +538,8 @@ import org.junit.runners.Suite;
     IgniteCheckClusterStateBeforeExecuteQueryTest.class,
     OptimizedMarshallerIndexNameTest.class,
     SqlSystemViewsSelfTest.class,
+    ScanQueryConcurrentUpdatesTest.class,
+    ScanQueryConcurrentSqlUpdatesTest.class,
 
     GridIndexRebuildSelfTest.class,
     GridIndexRebuildTest.class,

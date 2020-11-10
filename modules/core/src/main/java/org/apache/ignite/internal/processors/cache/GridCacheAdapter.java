@@ -953,7 +953,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         }
 
-        Object val = ctx.unwrapBinaryIfNeeded(cacheVal, ctx.keepBinary(), false);
+        Object val = ctx.unwrapBinaryIfNeeded(cacheVal, ctx.keepBinary(), false, null);
 
         return (V)val;
     }
@@ -1481,7 +1481,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         V val = repairableGet(key, !keepBinary, false);
 
         if (ctx.config().getInterceptor() != null) {
-            key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false) : key;
+            key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false, null) : key;
 
             val = (V)ctx.config().getInterceptor().onGet(key, val);
         }
@@ -1513,13 +1513,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             = (EntryGetResult)repairableGet(key, !keepBinary, true);
 
         CacheEntry<K, V> val = t != null ? new CacheEntryImplEx<>(
-            keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false) : key,
+            keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false, null) : key,
             (V)t.value(),
             t.version())
             : null;
 
         if (ctx.config().getInterceptor() != null) {
-            key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false) : key;
+            key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false, null) : key;
 
             V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
 
@@ -1559,7 +1559,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (ctx.config().getInterceptor() != null)
             fut = fut.chain(new CX1<IgniteInternalFuture<V>, V>() {
                 @Override public V applyx(IgniteInternalFuture<V> f) throws IgniteCheckedException {
-                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
+                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false, null) : key0;
 
                     return (V)ctx.config().getInterceptor().onGet(key, f.get());
                 }
@@ -1604,7 +1604,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     throws IgniteCheckedException {
                     EntryGetResult t = f.get();
 
-                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
+                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false, null) : key0;
 
                     CacheEntry val = t != null ? new CacheEntryImplEx<>(
                         key,
@@ -3258,7 +3258,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 V ret = fut.get().value();
 
                 if (ctx.config().getInterceptor() != null) {
-                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
+                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false, null) : key0;
 
                     return (V)ctx.config().getInterceptor().onBeforeRemove(new CacheEntryImpl(key, ret)).get2();
                 }
@@ -5319,6 +5319,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param m Map to examine.
      */
     protected void warnIfUnordered(Map<?, ?> m, BulkOperation op) {
+        if (ctx.atomic())
+            return;
+
         if (m == null || m.size() <= 1)
             return;
 
@@ -5343,6 +5346,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param coll Collection to examine.
      */
     protected void warnIfUnordered(Collection<?> coll, BulkOperation op) {
+        if (ctx.atomic())
+            return;
+
         if (coll == null || coll.size() <= 1)
             return;
 
@@ -5479,8 +5485,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         KeyCacheObject key = entry.key();
 
-        Object key0 = ctx.unwrapBinaryIfNeeded(key, !deserializeBinary, true);
-        Object val0 = ctx.unwrapBinaryIfNeeded(val, !deserializeBinary, true);
+        Object key0 = ctx.unwrapBinaryIfNeeded(key, !deserializeBinary, true, null);
+        Object val0 = ctx.unwrapBinaryIfNeeded(val, !deserializeBinary, true, null);
 
         return new CacheEntryImpl<>((K)key0, (V)val0, entry.version());
     }
@@ -7356,7 +7362,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @Override public K next() {
             current = internalIterator.next();
 
-            return (K)ctx.unwrapBinaryIfNeeded(current.key(), keepBinary, true);
+            return (K)ctx.unwrapBinaryIfNeeded(current.key(), keepBinary, true, null);
         }
 
         /** {@inheritDoc} */

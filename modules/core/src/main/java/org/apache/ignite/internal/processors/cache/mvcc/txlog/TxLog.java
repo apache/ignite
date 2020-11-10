@@ -33,14 +33,15 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIOV2;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
@@ -56,7 +57,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 /**
  *
  */
-public class TxLog implements DbCheckpointListener {
+public class TxLog implements CheckpointListener {
     /** */
     public static final String TX_LOG_CACHE_NAME = "TxLog";
 
@@ -124,7 +125,7 @@ public class TxLog implements DbCheckpointListener {
                     try {
                         if (PageIO.getType(pageAddr) != PageIO.T_META) {
                             // Initialize new page.
-                            PageMetaIO io = PageMetaIO.VERSIONS.latest();
+                            PageMetaIO io = PageMetaIOV2.VERSIONS.latest();
 
                             io.initNewPage(pageAddr, metaId, pageMemory.pageSize());
 

@@ -2002,7 +2002,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.exchange().exchangerBlockingSectionBegin();
 
                 try {
-                    locksFut.get(waitTimeout, TimeUnit.MILLISECONDS);
+                    locksFut.get(50, TimeUnit.MILLISECONDS);
 
                     break;
                 }
@@ -2030,6 +2030,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         if (getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
                             U.dumpThreads(log);
                     }
+
+                    // Sometimes FinishLockFuture is not rechecked causing frozen PME.
+                    // Will recheck every 50 milliseconds.
+                    cctx.mvcc().recheckPendingLocks();
                 }
                 finally {
                     cctx.exchange().exchangerBlockingSectionEnd();
@@ -2666,6 +2670,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         return false;
+    }
+
+    /**
+     * @param grp Cache group.
+     */
+    public void validate(CacheGroupContext grp) {
+        if (grpValidRes == null)
+            grpValidRes = new ConcurrentHashMap<>();
+
+        CacheGroupValidation valRes = validateCacheGroup(grp, events().lastEvent().topologyNodes());
+
+        if (!valRes.isValid() || valRes.hasLostPartitions())
+            grpValidRes.put(grp.groupId(), valRes);
     }
 
     /**

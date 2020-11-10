@@ -73,6 +73,8 @@ namespace ignite
 
             assert(hdr == ignite::impl::binary::IGNITE_TYPE_DECIMAL);
 
+            IGNITE_UNUSED(hdr);
+
             int32_t scale = reader.ReadInt32();
 
             int32_t len = reader.ReadInt32();

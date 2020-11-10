@@ -37,7 +37,7 @@ namespace ignite
     {
         namespace utils
         {
-            void GetLocalAddresses(std::set<std::string>& addrs)
+            IGNITE_IMPORT_EXPORT void GetLocalAddresses(std::set<std::string>& addrs)
             {
                 IP_ADAPTER_ADDRESSES outAddrs[64];
 

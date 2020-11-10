@@ -111,6 +111,7 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.util.AttributeNodeFilter;
 
 /**
  * Configuration utils.
@@ -246,6 +247,8 @@ public class PlatformConfigurationUtils {
         ccfg.setAffinity(readAffinityFunction(in));
         ccfg.setExpiryPolicyFactory(readExpiryPolicyFactory(in));
 
+        ccfg.setNodeFilter(readAttributeNodeFilter(in));
+
         int keyCnt = in.readInt();
 
         if (keyCnt > 0) {
@@ -347,6 +350,48 @@ public class PlatformConfigurationUtils {
     }
 
     /**
+     * Reads the node filter config.
+     *
+     * @param in Stream.
+     * @return AttributeNodeFilter.
+     */
+    public static AttributeNodeFilter readAttributeNodeFilter(BinaryRawReader in) {
+        if (!in.readBoolean())
+            return null;
+
+        int cnt = in.readInt();
+
+        Map<String, Object> attrs = new HashMap<>(cnt);
+        for (int i = 0; i < cnt; i++)
+            attrs.put(in.readString(), in.readObject());
+
+        return new AttributeNodeFilter(attrs);
+    }
+
+    /**
+     * Writes the node filter.
+     * @param out Stream.
+     * @param nodeFilter IgnitePredicate.
+     */
+    private static void writeAttributeNodeFilter(BinaryRawWriter out, IgnitePredicate nodeFilter) {
+        if (!(nodeFilter instanceof AttributeNodeFilter)) {
+            out.writeBoolean(false);
+            return;
+        }
+
+        out.writeBoolean(true);
+
+        Map<String, Object> attrs = ((AttributeNodeFilter) nodeFilter).getAttrs();
+
+        out.writeInt(attrs.size());
+
+        for (Map.Entry<String, Object> entry : attrs.entrySet()) {
+            out.writeString(entry.getKey());
+            out.writeObject(entry.getValue());
+        }
+    }
+
+    /**
      * Reads the eviction policy.
      *
      * @param in Stream.
@@ -417,7 +462,7 @@ public class PlatformConfigurationUtils {
     }
 
     /**
-     * Reads the near config.
+     * Writes the near config.
      *
      * @param out Stream.
      * @param cfg NearCacheConfiguration.
@@ -1083,6 +1128,8 @@ public class PlatformConfigurationUtils {
         writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
         writeAffinityFunction(writer, ccfg.getAffinity());
         writeExpiryPolicyFactory(writer, ccfg.getExpiryPolicyFactory());
+
+        writeAttributeNodeFilter(writer, ccfg.getNodeFilter());
 
         CacheKeyConfiguration[] keys = ccfg.getKeyConfiguration();
 

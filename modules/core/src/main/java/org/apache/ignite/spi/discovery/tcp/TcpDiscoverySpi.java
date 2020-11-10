@@ -287,7 +287,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
     /** Default SO_LINGER to set for socket, 0 means enabled with 0 timeout. */
-    public static final int DFLT_SO_LINGER = 5;
+    public static final int DFLT_SO_LINGER = 0;
 
     /** Default connection recovery timeout in ms. */
     public static final long DFLT_CONNECTION_RECOVERY_TIMEOUT = IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT;
@@ -2530,12 +2530,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
                 LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?
-                        "'IgniteConfiguration.failureDetectionTimeout' and 'connRecoveryTimeout' configuration " +
-                            "properties) [failureDetectionTimeout=" + failureDetectionTimeout() :
-                        "'sockTimeout' and 'connRecoveryTimeout' configuration properties) [sockTimeout="
-                            + sockTimeout) + ", connRecoveryTimeout=" + getConnectionRecoveryTimeout() + ", rmtAddr="
-                    + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ", sockTimeout=" + sockTimeout
-                    + ']');
+                            "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
+                                    "failureDetectionTimeout=" + failureDetectionTimeout() :
+                            "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout) +
+                        ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() +
+                        ", sockTimeout=" + sockTimeout + ']');
             }
         }
 

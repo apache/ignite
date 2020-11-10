@@ -1,0 +1,75 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+aside {
+    border-left: 6px solid var(--callout-border);
+    background: var(--callout-background);
+    color: var(--callout-text);
+    margin-left: 0;
+    padding-right: 10px;
+	padding-left:20px;
+    position: relative;
+    display: flex;
+    margin-bottom: 16px;
+	
+	h3 {
+		font-weight: bold;
+		color:var(--callout-text);
+	}
+
+    &+aside {
+        margin-top: 1em;
+    }
+
+    &:before {
+       	font-size: 18px;
+        width: 78px;
+        flex: 0 0 auto;
+        align-self: center;
+        text-align: center;
+    }
+
+    .callout__margin-collapse-root {
+        margin-top: 16px;
+        margin-bottom: 16px;
+    }
+
+    &.note {
+        --callout-text: #723c81;
+        --callout-border: #723c81;
+        --callout-background: #f7f7f7;
+        --callout-icon: "\2B50";
+    }
+	
+    &.tip {
+        --callout-text: #af4e17;
+        --callout-border: #f18329;
+        --callout-background: #f7f7f7;
+        --callout-icon: "\2B50";
+    }
+
+    &.caution, &.important {
+        --callout-text: #65666a;
+        --callout-border: #e9502c;
+        --callout-background: #f7f7f7;
+        --callout-icon: "\01F449";
+    }
+
+    &.warning {
+        --callout-text: #df2226;
+        --callout-border: #df2226;
+        --callout-background: #f7f7f7;
+        --callout-icon: "\01F4CD";
+    }
+}

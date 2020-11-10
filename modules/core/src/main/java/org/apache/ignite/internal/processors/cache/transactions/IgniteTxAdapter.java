@@ -43,7 +43,6 @@ import org.apache.ignite.events.TransactionStateChangedEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
@@ -65,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -188,6 +188,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Transaction timeout. */
     @GridToStringInclude
     protected long timeout;
+
+    /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
+    @GridToStringExclude
+    protected IgniteUuid deploymentLdrId;
 
     /** Invalidate flag. */
     protected volatile boolean invalidate;
@@ -326,6 +330,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         this.txSize = txSize;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         nodeId = cctx.discovery().localNode().id();
 
@@ -1500,7 +1505,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                         key,
                                         e.cached().rawGet(),
                                         e.keepBinary()),
-                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(val, e.keepBinary(), false));
+                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(val, e.keepBinary(), false, null));
 
                                 if (interceptorVal == null)
                                     continue;
@@ -1638,8 +1643,14 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             return F.t(cacheCtx.writeThrough() ? RELOAD : DELETE, null);
 
         if (F.isEmpty(txEntry.entryProcessors())) {
-            if (ret != null)
-                ret.value(cacheCtx, txEntry.value(), txEntry.keepBinary());
+            if (ret != null) {
+                ret.value(
+                    cacheCtx,
+                    txEntry.value(),
+                    txEntry.keepBinary(),
+                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
+                );
+            }
 
             return F.t(txEntry.op(), txEntry.value());
         }

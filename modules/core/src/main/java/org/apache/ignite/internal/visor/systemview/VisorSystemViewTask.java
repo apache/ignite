@@ -36,9 +36,9 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.Attrib
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType.DATE;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType.NUMBER;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleAttributeType.STRING;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.DATE;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.NUMBER;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /** Reperesents visor task for obtaining system view content. */
 @GridInternal
@@ -75,7 +75,7 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
                 return null;
 
             List<String> attrNames = new ArrayList<>();
-            List<SimpleAttributeType> attrTypes = new ArrayList<>();
+            List<SimpleType> attrTypes = new ArrayList<>();
 
             sysView.walker().visitAll(new SystemViewRowAttributeWalker.AttributeVisitor() {
                 @Override public <T> void accept(int idx, String name, Class<T> clazz) {
@@ -178,10 +178,9 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
     }
 
     /**
-     * Represents simple types of system view attributes. It helps task initiator to determine type of each
-     * column for received system view rows.
+     * Represents lightweight type descriptors.
      */
-    public enum SimpleAttributeType {
+    public enum SimpleType {
         /** Date. */
         DATE,
 

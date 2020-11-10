@@ -82,7 +82,10 @@ public enum SecurityPermission {
     ADMIN_READ_DISTRIBUTED_PROPERTY,
 
     /** Administration operation: write distributed properties values. */
-    ADMIN_WRITE_DISTRIBUTED_PROPERTY;
+    ADMIN_WRITE_DISTRIBUTED_PROPERTY,
+
+    /** Administration operation with cluster snapshots (CREATE, CANCEL). */
+    ADMIN_SNAPSHOT;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();

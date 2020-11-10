@@ -57,12 +57,12 @@ import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.TimeBag;
@@ -102,6 +103,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
 
 /**
  *
@@ -362,6 +364,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected void initDataRegions0(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         DataRegionConfiguration[] dataRegionCfgs = memCfg.getDataRegionConfigurations();
 
+        boolean persistenceEnabled = CU.isPersistenceEnabled(memCfg);
+
         if (dataRegionCfgs != null) {
             for (DataRegionConfiguration dataRegionCfg : dataRegionCfgs)
                 addDataRegion(memCfg, dataRegionCfg, dataRegionCfg.isPersistenceEnabled());
@@ -378,9 +382,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             createSystemDataRegion(
                 memCfg.getSystemRegionInitialSize(),
                 memCfg.getSystemRegionMaxSize(),
-                CU.isPersistenceEnabled(memCfg)
+                persistenceEnabled
             ),
-            CU.isPersistenceEnabled(memCfg)
+            persistenceEnabled
+        );
+
+        addDataRegion(
+            memCfg,
+            createVolatileDataRegion(
+                memCfg.getSystemRegionInitialSize(),
+                memCfg.getSystemRegionMaxSize()
+            ),
+            false
         );
 
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
@@ -532,8 +545,24 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Validation of memory configuration.
+     * @param volatileCacheInitSize Initial size of PageMemory to be created for volatile cache.
+     * @param volatileCacheMaxSize Maximum size of PageMemory to be created for volatile cache.
      *
+     * @return {@link DataRegionConfiguration configuration} of DataRegion for volatile cache.
+     */
+    private DataRegionConfiguration createVolatileDataRegion(long volatileCacheInitSize, long volatileCacheMaxSize) {
+        DataRegionConfiguration res = new DataRegionConfiguration();
+
+        res.setName(VOLATILE_DATA_REGION_NAME);
+        res.setInitialSize(volatileCacheInitSize);
+        res.setMaxSize(volatileCacheMaxSize);
+        res.setPersistenceEnabled(false);
+        res.setLazyMemoryAllocation(true);
+
+        return res;
+    }
+
+    /**
      * @param memCfg configuration to validate.
      * @throws IgniteCheckedException In case of validation violation.
      */
@@ -929,7 +958,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Clean checkpoint directory {@code GridCacheDatabaseSharedManager#cpDir}. The operation
+     * Clean checkpoint directory
+     * {@link CheckpointMarkersStorage#cpDir}. The operation
      * is necessary when local node joined to baseline topology with different consistentId.
      */
     public void cleanupCheckpointDirectory() throws IgniteCheckedException {

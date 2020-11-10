@@ -138,7 +138,7 @@ public class CheckCpHistTask extends ComputeTaskAdapter<Map<UUID, Map<Integer, S
                 CheckpointEntry lastCp = cpHist.lastCheckpoint();
 
                 try {
-                    Map<Integer, CheckpointEntry.GroupState> states = lastCp.groupState(cctx);
+                    Map<Integer, CheckpointEntry.GroupState> states = lastCp.groupState(cctx.wal());
 
                     for (Integer grpId : grpIds.keySet()) {
                         if (cancelled)

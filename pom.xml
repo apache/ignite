@@ -53,9 +53,6 @@
         <module>modules/extdata/platform</module>
         <module>modules/clients</module>
         <module>modules/spring</module>
-        <module>modules/spring-data</module>
-        <module>modules/spring-data-2.0</module>
-        <module>modules/spring-data-2.2</module>
         <module>modules/web</module>
         <module>modules/aop</module>
         <module>modules/urideploy</module>
@@ -72,7 +69,6 @@
         <module>modules/gce</module>
         <module>modules/cloud</module>
         <module>modules/mesos</module>
-        <module>modules/kafka</module>
         <module>modules/yarn</module>
         <module>modules/zookeeper</module>
         <module>modules/hibernate-core</module>
@@ -199,18 +195,6 @@
                                 </goals>
                                 <phase>validate</phase>
                                 <configuration>
-                                    <additionalDependencies>
-                                        <!--
-                                        Only the last version of spring data is included to class path, some classes
-                                        required by old spring data modules are absent in this version.
-                                        Add spring-data-2.0 explicitly to be able to find all required classes.
-                                        -->
-                                        <dependency>
-                                            <groupId>org.springframework.data</groupId>
-                                            <artifactId>spring-data-commons</artifactId>
-                                            <version>${spring.data-2.0.version}</version>
-                                        </dependency>
-                                    </additionalDependencies>
                                     <!--
                                     For some reason maven-javadoc-plugin 3.0+ doesn't include taglet artifact from
                                     parent configuration to -tagletpath javadoc parameter.

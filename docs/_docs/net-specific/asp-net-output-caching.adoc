@@ -1,0 +1,93 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= ASP.NET Output Caching
+
+== Overview
+
+Ignite cache can be used as an ASP.NET output cache. This can work especially well for web farms where cached output will
+be shared between web servers.
+
+== Installation
+
+* *Binary distribution*: add a reference to `Apache.Ignite.AspNet.dll`
+* *NuGet*: `Install-Package Apache.Ignite.AspNet`
+
+== Launching Ignite Automatically
+
+To start Ignite automatically for output caching, configure it
+link:net-specific/configuration-options#configure-with-application-or-web-config-files[in the web.config file via IgniteConfigurationSection]
+
+[tabs]
+--
+tab:web.config[]
+[source,xml]
+----
+<configuration>
+    <configSections>
+        <section name="igniteConfiguration" type="Apache.Ignite.Core.IgniteConfigurationSection, Apache.Ignite.Core" />
+    </configSections>
+
+    <igniteConfiguration autoGenerateIgniteInstanceName="true">
+        <cacheConfiguration>
+            <cacheConfiguration name='myWebCache' />
+        </cacheConfiguration>
+    </igniteConfiguration>
+</configuration>
+----
+--
+
+Enable the caching in the `web.config` settings:
+
+[tabs]
+--
+tab:web.config[]
+[source,xml]
+----
+<system.web>
+  <caching>
+    <outputCache defaultProvider="apacheIgnite">
+      <providers>
+          <add name="apacheIgnite" type="Apache.Ignite.AspNet.IgniteOutputCacheProvider, Apache.Ignite.AspNet" igniteConfigurationSectionName="igniteConfiguration" cacheName="myWebCache" />
+      </providers>
+    </outputCache>
+  </caching>
+</system.web>
+----
+--
+
+== Launching Ignite Manually
+
+You can start an Ignite instance manually and specify it's name in the provider configuration:
+
+[tabs]
+--
+tab:web.config[]
+[source,xml]
+----
+<system.web>
+  <caching>
+    <outputCache defaultProvider="apacheIgnite">
+      <providers>
+          <add name="apacheIgnite" type="Apache.Ignite.AspNet.IgniteOutputCacheProvider, Apache.Ignite.AspNet" cacheName="myWebCache" />
+      </providers>
+    </outputCache>
+  </caching>
+</system.web>
+----
+--
+
+The Ignite instance needs to be started before any request is served. Typically this is done in the `Application_Start` method of the `global.asax`.
+
+See link:net-specific/deployment-options#asp-net-deployment[ASP.NET Deployment] for web deployment specifics related to the `IGNITE_HOME` variable.

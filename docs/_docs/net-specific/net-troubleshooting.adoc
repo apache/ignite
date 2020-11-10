@@ -1,0 +1,161 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Ignite.NET Troubleshooting
+
+== Overview
+
+This page covers several troubleshooting techniques and commonly-known issues you can come across while building and
+using your Ignite.NET applications in production.
+
+== Troubleshooting With Console
+
+Ignite produces console output (stdout): information, metrics, warnings, error details. If your app does not open console, you may redirect the console output to a string or a file:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+var sw = new StringWriter();
+Console.SetOut(sw);
+
+// Examine output:
+sw.ToString();
+----
+--
+
+== Getting More Insights On Exceptions
+
+When you are getting an `IgniteException`, always make sure to examine the `InnerException` property that often contains
+more details on the root cause of the issue. You can do that in Visual Studio debugger or by calling `ToString()` on the exception object:
+
+image::images/net-view-details.png[Visual Studio Debugger]
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+try {
+    IQueryCursor<List> cursor = cache.QueryFields(query);
+}
+catch (IgniteException e) {
+    // Printing out the whole exception meesage.
+    Console.WriteLine(e.ToString());
+}
+----
+--
+
+== Commonly-Known Issues
+
+The following section covers several issues you can come across while designing your Ignite.NET applications.
+
+=== Failed to load jvm.dll
+
+Make sure that Java Development Kit is installed, and the `JAVA_HOME` variable is set and points to a JDK installation directory.
+
+The `errorCode=193` code is `ERROR_BAD_EXE_FORMAT`, which is often caused by x64/x86 mismatch. Make sure that the installed
+JDK and your application have the same x64/x86 platform target. Ignite detects proper JDK automatically when `JAVA_HOME` is not set,
+so if you have x86 AND x64 JDK installed, it will work in any mode.
+
+The `126 ERROR_MOD_NOT_FOUND` code can occur due to missing dependencies:
+
+* JDK 8 requires https://www.microsoft.com/en-us/download/details.aspx?id=14632[Microsoft Visual C{pp} 2010 Redistributable Package, window=_blank]
+* Later JDK versions require https://www.microsoft.com/en-us/download/details.aspx?id=48145[Microsoft Visual C{pp} 2015 Redistributable Package, window=_blank] or later
+
+=== Java class is not found
+
+Check your the `IGNITE_HOME` environment variable, `IgniteConfiguration.IgniteHome` and `IgniteConfiguration.JvmClasspath` properties.
+Refer to link:net-specific/deployment-options[Deployment] section for more details. ASP.NET/IIS scenarios require additional steps.
+
+=== Freeze on Ignition.Start
+
+Examine console output. Most often this is caused by a topology join failure:
+
+* Ignite `DiscoverySpi` settings are incorrect
+* `ClientMode` is true, but there are no servers nodes that form the cluster.
+
+=== Failed to start manager : GridManagerAdapter
+
+Examine console output. Most often this is caused by an invalid or incompatible configuration:
+
+* Some configuration property has an invalid value (out of range and the like).
+* Some configuration property is incompatible with a value in other cluster nodes. In particular, `BinaryConfiguration` properties,
+such as `CompactFooter`, `IdMapper`, and `NameMapper` should be the same on all nodes.
+
+The latter problem often arises when building a mixed cluster (Java + .NET nodes), because default configuration on these
+platforms is different. .NET only supports `BinaryBasicIdMapper` and `BinaryBasicNameMapper`. Java configuration has to
+be fixed the following way to enable .NET nodes connectivity:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<property name="binaryConfiguration">
+    <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+        <property name="compactFooter" value="true"/>
+        <property name="idMapper">
+            <bean class="org.apache.ignite.binary.BinaryBasicIdMapper">
+                <constructor-arg value="true"/>
+            </bean>
+        </property>
+        <property name="nameMapper">
+            <bean class="org.apache.ignite.binary.BinaryBasicNameMapper">
+                <constructor-arg value="true"/>
+            </bean>
+        </property>
+    </bean>
+</property>
+----
+--
+
+=== Could not load file or assembly 'MyAssembly' or one of its dependencies. The system cannot find the file specified.
+
+This exception can occur due to missing assemblies on remote nodes.
+See link:net-specific/standalone-nodes#load-user-assemblies[Standalone Nodes: Loading User Assemblies] for details.
+
+=== Stack smashing detected: dotnet terminated
+
+This happens on Linux with .NET Core when `NullReferenceException` occurs in user code. The reason is that both .NET and
+Java use `SIGSEGV` to handle certain exceptions, including `NullPointerException` and `NullReferenceException`, and when
+JVM runs in the same process as .NET, it overrides that handler, breaking .NET exception handling
+(see https://github.com/dotnet/coreclr/issues/25945[1, window=_blank], https://github.com/dotnet/coreclr/issues/25166[2, window=_blank]).
+
+The fix for this issue exists in .NET Core 3.0 (https://github.com/dotnet/coreclr/pull/25972[#25972, window=_blank].
+by setting the `COMPlus_EnableAlternateStackCheck` environment variable to `1`.
+
+=== Zombie processes on Linux
+
+On Linux, both .NET and Java install `SIGCHLD` handler to deal with child process termination.
+
+* Handlers are installed lazily (when a `Process` is first started)
+* Only one handler can exist at a time
+
+Therefore, it is possible that Java overwrites .NET handler, or vice versa,
+making it impossible to clean up child processes on one of the platforms,
+resulting in link:https://en.wikipedia.org/wiki/Parent_process[zombie processes].
+
+*Ignite uses child processes on Java side in one particular case: when Persistence is enabled and `direct-io` module is used.*
+In this case .NET `System.Diagnostics.Process` API should not be used.
+
+==== Workaround
+
+To work around the issue, make sure that child processes are created either only on Java side, or only on .NET side.
+
+For example, when `direct-io` is used, and .NET code requires starting a child process,
+move the process handling logic to Java side and invoke it with
+link:developers-guide/distributed-computing/distributed-computing[Compute] `ExecuteJavaTask` API.
+Alternatively, use Services API to call Java service from .NET.

@@ -212,6 +212,7 @@ import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
@@ -219,6 +220,7 @@ import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
@@ -7612,6 +7614,72 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Returns Deployment class loader id if method was invoked in the job context
+     * (it may be the context of a cache's operation which was triggered by the distributed job)
+     * or {@code null} if no context was found or Deployment is switched off.
+     *
+     * @param ctx Kernal context.
+     * @return Deployment class loader id or {@code null}.
+     */
+    public static IgniteUuid contextDeploymentClassLoaderId(GridKernalContext ctx) {
+        if (ctx == null || !ctx.deploy().enabled())
+            return null;
+
+        if (ctx.job() != null && ctx.job().currentDeployment() != null)
+            return ctx.job().currentDeployment().classLoaderId();
+
+        if (ctx.cache() != null && ctx.cache().context() != null)
+            return ctx.cache().context().deploy().locLoaderId();
+
+        return null;
+    }
+
+    /**
+     * Gets that deployment class loader matching by the specific id, or {@code null}
+     * if the class loader was not found.
+     *
+     * @param ctx Kernal context.
+     * @param ldrId Class loader id.
+     * @return Deployment class loader or {@code null}.
+     */
+    public static ClassLoader deploymentClassLoader(GridKernalContext ctx, IgniteUuid ldrId) {
+        if (ldrId == null || !ctx.deploy().enabled())
+            return null;
+
+        GridDeployment dep = ctx.deploy().getDeployment(ldrId);
+
+        return dep == null ? null : dep.classLoader();
+    }
+
+    /**
+     * Restores a deployment context for cache deployment.
+     *
+     * @param ctx Kernal context.
+     * @param ldrId Class loader id.
+     */
+    public static void restoreDeploymentContext(GridKernalContext ctx, IgniteUuid ldrId) {
+        if (ctx.deploy().enabled() && ldrId != null) {
+            GridDeployment dep = ctx.deploy().getDeployment(ldrId);
+
+            if (dep != null) {
+                try {
+                    ctx.cache().context().deploy().p2pContext(
+                        dep.classLoaderId().globalId(),
+                        dep.classLoaderId(),
+                        dep.userVersion(),
+                        dep.deployMode(),
+                        dep.participants()
+                    );
+                }
+                catch (IgnitePeerToPeerClassLoadingException e) {
+                    ctx.log(ctx.cache().context().deploy().getClass())
+                        .error("Could not restore P2P context [ldrId=" + ldrId + ']', e);
+                }
+            }
+        }
+    }
+
+    /**
      * Formats passed date with specified pattern.
      *
      * @param date Date to format.
@@ -9544,8 +9612,8 @@ public abstract class IgniteUtils {
                         "    Ignite nodes need in order to function normally.\n" +
                         "Don't delete it unless you're sure you know what you're doing.\n\n" +
                         "You can change the location of working directory with \n" +
-                        "    igniteConfiguration.setWorkingDirectory(location) or \n" +
-                        "    <property name=\"workingDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
+                        "    igniteConfiguration.setWorkDirectory(location) or \n" +
+                        "    <property name=\"workDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
                 }
             }
             catch (Exception e) {
@@ -11495,12 +11563,12 @@ public abstract class IgniteUtils {
 
         /**
          * @param delegate RWLock delegate.
-         * @param kctx Kernal context.
+         * @param log Ignite logger.
          * @param readLockThreshold ReadLock threshold timeout.
          *
          */
-        public ReentrantReadWriteLockTracer(ReentrantReadWriteLock delegate, GridKernalContext kctx, long readLockThreshold) {
-            log = kctx.cache().context().logger(getClass());
+        public ReentrantReadWriteLockTracer(ReentrantReadWriteLock delegate, IgniteLogger log, long readLockThreshold) {
+            this.log = log;
 
             readLock = new ReadLockTracer(delegate, log, readLockThreshold);
 
