@@ -106,7 +106,6 @@ class TcpDiscoverySpi(DiscoverySpi):
         self.port = port
         self.port_range = port_range
         self.local_address = local_address
-        self.socket_linger: int = None
 
     @property
     def type(self):

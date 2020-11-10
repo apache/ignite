@@ -59,7 +59,8 @@ class DiscoveryTestConfig(NamedTuple):
     load_type: ClusterLoad = ClusterLoad.NONE
     sequential_failure: bool = False
     with_zk: bool = False
-    socket_linger: int = None
+    socket_linger: int = -1
+    failure_detection_timeout: int = 1000
 
 
 # pylint: disable=W0223
@@ -95,7 +96,7 @@ class DiscoveryTest(IgniteTest):
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
                                           load_type=load_type, sequential_failure=False,
-                                          socket_linger=None if ignite_version < V_2_8_0 else 0)
+                                          socket_linger=-1 if IgniteVersion(ignite_version) < V_2_8_0 else 0)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -108,7 +109,7 @@ class DiscoveryTest(IgniteTest):
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2, load_type=load_type,
                                           sequential_failure=True,
-                                          socket_linger=None if ignite_version < V_2_8_0 else 0)
+                                          socket_linger=-1 if IgniteVersion(ignite_version) < V_2_8_0 else 0)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -151,6 +152,9 @@ class DiscoveryTest(IgniteTest):
         else:
             discovery_spi = TcpDiscoverySpi()
 
+            if test_config.socket_linger >= 0:
+                discovery_spi.socket_linger = test_config.socket_linger
+
         ignite_config = IgniteConfiguration(
             version=test_config.version,
             discovery_spi=discovery_spi,
@@ -184,11 +188,12 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
 
-        results.update(self._simulate_nodes_failure(servers, node_fail_task(ignite_config, test_config), failed_nodes))
+        results.update(self._simulate_and_detect_failure(servers, node_fail_task(ignite_config, test_config),
+                                                         failed_nodes, test_config.failure_detection_timeout * 3))
 
         return results
 
-    def _simulate_nodes_failure(self, servers, kill_node_task, failed_nodes):
+    def _simulate_and_detect_failure(self, servers, kill_node_task, failed_nodes, timeout):
         """
         Perform node failure scenario
         """
@@ -208,11 +213,14 @@ class DiscoveryTest(IgniteTest):
         logged_timestamps = []
         data = {}
 
+        start = monotonic()
+
         for survivor in [n for n in servers.nodes if n not in failed_nodes]:
             for failed_id in ids_to_wait:
-                logged_timestamps.append(get_event_time(servers, survivor, node_failed_event_pattern(failed_id)))
+                logged_timestamps.append(get_event_time(servers, survivor, node_failed_event_pattern(failed_id),
+                                                        timeout=start + timeout - monotonic()))
 
-                self._check_failed_number(failed_nodes, survivor)
+            self._check_failed_number(failed_nodes, survivor)
 
         self._check_not_segmented(failed_nodes)
 
