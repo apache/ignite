@@ -94,6 +94,11 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
         if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.DEFAULT_QRY_TIMEOUT) || timeout > 0)
             QueryUtils.withQueryTimeout(qry, timeout, TimeUnit.MILLISECONDS);
 
+        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.QRY_PARTITIONS_BATCH_SIZE)) {
+            qry.setPartitions(reader.readIntArray());
+            qry.setUpdateBatchSize(reader.readInt());
+        }
+
         this.qry = qry;
     }
 
