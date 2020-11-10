@@ -35,8 +35,19 @@ import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTask
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskArg;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskResult;
 
+import static org.apache.ignite.internal.commandline.Command.usage;
+import static org.apache.ignite.internal.commandline.CommandList.DEFRAGMENTATION;
+import static org.apache.ignite.internal.commandline.defragmentation.DefragmentationSubcommands.CANCEL;
+import static org.apache.ignite.internal.commandline.defragmentation.DefragmentationSubcommands.SCHEDULE;
+
 /** */
 public class DefragmentationCommand implements Command<DefragmentationArguments> {
+    /** */
+    private static final String NODES_ARG = "--nodes";
+
+    /** */
+    private static final String CACHES_ARG = "--caches";
+
     /** */
     private DefragmentationArguments args;
 
@@ -98,12 +109,6 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        if (!argIter.hasNextSubArg()) {
-            args = new DefragmentationArguments(DefragmentationSubcommands.INFO);
-
-            return;
-        }
-
         DefragmentationSubcommands cmd = DefragmentationSubcommands.of(argIter.nextArg("Expected defragmentation subcommand."));
 
         if (cmd == null || cmd == DefragmentationSubcommands.STATUS) // Status subcommand is not yet completed.
@@ -112,9 +117,6 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
         args = new DefragmentationArguments(cmd);
 
         switch (cmd) {
-            case INFO:
-                break;
-
             case SCHEDULE:
                 List<String> consistentIds = null;
                 List<String> cacheNames = null;
@@ -125,8 +127,8 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
                     subarg = argIter.nextArg("Expected one of subcommand arguments.").toLowerCase(Locale.ENGLISH);
 
                     switch (subarg) {
-                        case "--nodes": {
-                            Set<String> ids = argIter.nextStringSet("--nodes");
+                        case NODES_ARG: {
+                            Set<String> ids = argIter.nextStringSet(NODES_ARG);
 
                             if (ids.isEmpty())
                                 throw new IllegalArgumentException("Consistent ids list is empty.");
@@ -136,8 +138,8 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
                             break;
                         }
 
-                        case "--caches": {
-                            Set<String> ids = argIter.nextStringSet("--caches");
+                        case CACHES_ARG: {
+                            Set<String> ids = argIter.nextStringSet(CACHES_ARG);
 
                             if (ids.isEmpty())
                                 throw new IllegalArgumentException("Caches list is empty.");
@@ -174,12 +176,41 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
+        String consistentIds = "consistentId0,consistentId1";
 
+        String cacheNames = "cache1,cache2,cache3";
+
+        usage(
+            log,
+            "Schedule PDS defragmentation on given nodes for all caches:",
+            DEFRAGMENTATION,
+            SCHEDULE.text(),
+            NODES_ARG,
+            consistentIds
+        );
+
+        usage(
+            log,
+            "Schedule PDS defragmentation on given nodes but only for given caches:",
+            DEFRAGMENTATION,
+            SCHEDULE.text(),
+            NODES_ARG,
+            consistentIds,
+            CACHES_ARG,
+            cacheNames
+        );
+
+        usage(
+            log,
+            "Cancel scheduled or active PDS defragmentation on underlying node:",
+            DEFRAGMENTATION,
+            CANCEL.text()
+        );
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return CommandList.DEFRAGMENTATION.toCommandName();
+        return DEFRAGMENTATION.toCommandName();
     }
 
     /** */

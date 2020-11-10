@@ -23,9 +23,6 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public enum DefragmentationSubcommands {
     /** */
-    INFO("info", VisorDefragmentationOperation.SCHEDULE),
-
-    /** */
     SCHEDULE("schedule", VisorDefragmentationOperation.SCHEDULE),
 
     /** */
