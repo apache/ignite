@@ -219,6 +219,8 @@ namespace Apache.Ignite.Core.Cache.Query
 #pragma warning restore 618
             writer.WriteBoolean(Colocated);
             writer.WriteString(Schema); // Schema
+            writer.WriteIntArray(Partitions);
+            writer.WriteInt(UpdateBatchSize);
         }
 
         /** <inheritdoc /> */
