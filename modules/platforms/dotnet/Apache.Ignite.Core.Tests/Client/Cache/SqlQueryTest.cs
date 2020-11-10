@@ -238,11 +238,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var cache = GetClientCache<Person>();
             var qry = new SqlFieldsQuery("SELECT * FROM Person") { Partitions = new int[0] };
 
-            var ex = Assert.Throws<ArgumentException>(() => cache.Query(qry).GetAll());
+            var ex = Assert.Throws<IgniteClientException>(() => cache.Query(qry).GetAll());
             StringAssert.EndsWith("Partitions must not be empty.", ex.Message);
 
             qry.Partitions = new[] {-1, -2};
-            ex = Assert.Throws<ArgumentException>(() => cache.Query(qry).GetAll());
+            ex = Assert.Throws<IgniteClientException>(() => cache.Query(qry).GetAll());
             StringAssert.EndsWith("Illegal partition", ex.Message);
         }
 
@@ -255,7 +255,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var cache = GetClientCache<Person>();
             var qry = new SqlFieldsQuery("SELECT * FROM Person") { UpdateBatchSize = -1 };
 
-            var ex = Assert.Throws<ArgumentException>(() => cache.Query(qry).GetAll());
+            var ex = Assert.Throws<IgniteClientException>(() => cache.Query(qry).GetAll());
             StringAssert.EndsWith("updateBatchSize cannot be lower than 1", ex.Message);
         }
     }
