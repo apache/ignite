@@ -104,7 +104,16 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
 
         if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.QRY_PARTITIONS_BATCH_SIZE)) {
             // Set qry values in process method so that validation errors are reported to the client.
-            partitions = reader.readIntArray();
+            int partCnt = reader.readInt();
+
+            if (partCnt >= 0) {
+                partitions = new int[partCnt];
+
+                for (int i = 0; i < partCnt; i++)
+                    partitions[i] = reader.readInt();
+            } else
+                partitions = null;
+
             updateBatchSize = reader.readInt();
         } else {
             partitions = null;

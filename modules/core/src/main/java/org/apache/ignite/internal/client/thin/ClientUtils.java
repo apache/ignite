@@ -60,6 +60,7 @@ import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
@@ -524,7 +525,16 @@ final class ClientUtils {
         out.writeBoolean(qry.isLazy());
         out.writeLong(qry.getTimeout());
         out.writeBoolean(true); // include column names
-        out.writeIntArray(qry.getPartitions());
+
+        if (qry.getPartitions() != null) {
+            out.writeInt(qry.getPartitions().length);
+
+            for (int part : qry.getPartitions())
+                out.writeInt(part);
+        }
+        else
+            out.writeInt(-1);
+
         out.writeInt(qry.getUpdateBatchSize());
     }
 

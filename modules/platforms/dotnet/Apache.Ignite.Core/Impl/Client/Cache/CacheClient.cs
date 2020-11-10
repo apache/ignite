@@ -951,7 +951,21 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteBoolean(qry.Lazy);
             writer.WriteTimeSpanAsLong(qry.Timeout);
             writer.WriteBoolean(includeColumns);
-            writer.WriteIntArray(qry.Partitions);
+
+            if (qry.Partitions != null)
+            {
+                writer.WriteInt(qry.Partitions.Length);
+
+                foreach (var part in qry.Partitions)
+                {
+                    writer.WriteInt(part);
+                }
+            }
+            else
+            {
+                writer.WriteInt(-1);
+            }
+
             writer.WriteInt(qry.UpdateBatchSize);
         }
 
