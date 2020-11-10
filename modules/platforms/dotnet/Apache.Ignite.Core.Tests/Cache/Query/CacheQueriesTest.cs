@@ -940,12 +940,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestPartitionsValidation()
         {
             var cache = Cache();
-
-            // Get before iteration.
-            var qry = new SqlFieldsQuery("SELECT * FROM QueryPerson")
-            {
-                Partitions = new int[0]
-            };
+            var qry = new SqlFieldsQuery("SELECT * FROM QueryPerson") { Partitions = new int[0] };
 
             var ex = Assert.Throws<ArgumentException>(() => cache.Query(qry).GetAll());
             StringAssert.EndsWith("Partitions must not be empty.", ex.Message);
@@ -953,6 +948,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             qry.Partitions = new[] {-1, -2};
             ex = Assert.Throws<ArgumentException>(() => cache.Query(qry).GetAll());
             StringAssert.EndsWith("Illegal partition", ex.Message);
+        }
+
+        /// <summary>
+        /// Tests <see cref="SqlFieldsQuery.UpdateBatchSize"/> argument propagation and validation.
+        /// </summary>
+        [Test]
+        public void TestUpdateBatchSizeValidation()
+        {
+            var cache = Cache();
+            var qry = new SqlFieldsQuery("SELECT * FROM QueryPerson") { UpdateBatchSize = -1 };
+
+            var ex = Assert.Throws<ArgumentException>(() => cache.Query(qry).GetAll());
+            StringAssert.EndsWith("updateBatchSize cannot be lower than 1", ex.Message);
         }
 
         /// <summary>
