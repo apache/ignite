@@ -46,7 +46,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.SpoolNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
@@ -299,7 +299,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableSpool rel) {
-        SpoolNode<Row> node = new SpoolNode<>(ctx, rel.getRowType());
+        TableSpoolNode<Row> node = new TableSpoolNode<>(ctx, rel.getRowType());
 
         Node<Row> input = visit(rel.getInput());
 

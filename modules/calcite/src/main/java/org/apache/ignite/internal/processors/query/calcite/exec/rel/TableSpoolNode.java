@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Spool node.
  */
-public class SpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** How many rows are requested by downstream. */
     private int requested;
 
@@ -41,7 +41,7 @@ public class SpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     /**
      * @param ctx Execution context.
      */
-    public SpoolNode(ExecutionContext<Row> ctx, RelDataType rowType) {
+    public TableSpoolNode(ExecutionContext<Row> ctx, RelDataType rowType) {
         super(ctx, rowType);
 
         rows = new ArrayList<>();
@@ -99,7 +99,7 @@ public class SpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         rowIdx++;
         requested--;
 
-        if (rowIdx >= rows.size() && waiting == -1)
+        if (rowIdx >= rows.size() && waiting == -1 && requested > 0)
             downstream().end();
     }
 

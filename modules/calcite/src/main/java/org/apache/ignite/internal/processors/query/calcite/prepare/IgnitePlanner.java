@@ -20,7 +20,12 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
@@ -30,6 +35,7 @@ import org.apache.calcite.plan.RelOptCostFactory;
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
@@ -59,6 +65,8 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.Program;
+import org.apache.calcite.tools.RuleSet;
+import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -345,6 +353,31 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private SqlToRelConverter sqlToRelConverter(SqlValidator validator, CalciteCatalogReader reader,
         SqlToRelConverter.Config config) {
         return new SqlToRelConverter(this, validator, reader, cluster(), convertletTbl, config);
+    }
+
+    /** */
+    public void setDisabledRules(Set<String> disabledRuleNames) {
+        final List<Pattern> disabledRulePatterns = disabledRuleNames.stream()
+            .map(Pattern::compile)
+            .collect(Collectors.toList());
+
+        ctx.rulesFilter(rulesSet -> {
+            List<RelOptRule> newSet = new ArrayList<>();
+
+            for (RelOptRule r : rulesSet) {
+                System.out.println("+++ " + r.toString());
+                boolean disabled = false;
+                for (Pattern disabledRulePtrn : disabledRulePatterns) {
+                    if (disabledRulePtrn.matcher(r.toString()).find())
+                        disabled = true;
+                }
+
+                if (!disabled)
+                    newSet.add(r);
+            }
+
+            return RuleSets.ofList(newSet);
+        });
     }
 
     /** */

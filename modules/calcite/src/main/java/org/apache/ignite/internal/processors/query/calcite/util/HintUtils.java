@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.calcite.rel.hint.Hintable;
 
 /** */
@@ -27,13 +30,13 @@ public class HintUtils {
     }
 
     /** */
-    public static boolean isRuleDisabledByHint(Hintable rel, String ruleDesc) {
-        return !rel.getHints().isEmpty()
-            && rel.getHints().stream()
-                .filter(h -> "DISABLE_RULE".equals(h.hintName)
-                    && h.kvOptions.containsKey(ruleDesc.toUpperCase()))
-            .findFirst()
-            .isPresent();
+    public static Set<String> disabledRules(Hintable rel) {
+        if (rel.getHints().isEmpty())
+            return Collections.emptySet();
 
+        return rel.getHints().stream()
+            .filter(h -> "DISABLE_RULE".equals(h.hintName))
+            .flatMap(h -> h.listOptions.stream())
+            .collect(Collectors.toSet());
     }
 }

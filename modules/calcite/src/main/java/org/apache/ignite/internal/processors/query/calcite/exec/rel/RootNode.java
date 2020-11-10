@@ -142,7 +142,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** {@inheritDoc} */
     @Override public void end() {
-        assert waiting >= 0;
+        assert waiting > 0;
 
         lock.lock();
         try {
