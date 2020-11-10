@@ -586,13 +586,13 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
         }
         else {
-            K key0 = (K)cctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false);
+            K key0 = (K)cctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false, null);
             V val0 = needVer ?
                 (V)new EntryGetResult(!skipVals ?
-                    (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
+                    (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false, null) :
                     (V)Boolean.TRUE, ver) :
                 !skipVals ?
-                    (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
+                    (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false, null) :
                     (V)Boolean.TRUE;
 
             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
@@ -676,7 +676,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         false,
                         needVer ? info.version() : null,
                         0,
-                        0);
+                        0,
+                        U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     if (log.isDebugEnabled())

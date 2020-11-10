@@ -19,12 +19,12 @@ package org.apache.ignite.internal.commandline.property.subcommands;
 
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.commandline.Command;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.meta.MetadataCommand;
 import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
 
 /** */
-public class PropertyHelpCommand implements Command<Void> {
+public class PropertyHelpCommand extends AbstractCommand<Void> {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
         throw new UnsupportedOperationException("printUsage");
