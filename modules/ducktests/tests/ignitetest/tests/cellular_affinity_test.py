@@ -111,7 +111,7 @@ class CellularAffinity(IgniteTest):
 
     # pylint: disable=R0914
     @cluster(num_nodes=NUM_NODES * (3 + 1))
-    @ignite_versions(str(LATEST_2_8))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(stop_type=[
         StopType.DISCONNECT,
         StopType.SIGKILL,
