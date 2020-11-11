@@ -20,15 +20,11 @@ This module contains class to start ignite cluster node.
 import os
 import re
 import signal
-import time
 from datetime import datetime
-from threading import Thread
 
-from time import monotonic
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
-from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
 
@@ -77,51 +73,6 @@ class IgniteService(IgniteAwareService):
         except Exception:
             self.thread_dump(node)
             raise
-
-    def exec_on_nodes_async(self, nodes, task, simultaneously=True, delay_ms=0, timeout_sec=20):
-        """
-        Executes given task on the nodes.
-        :param task: a 'lambda: node'.
-        :param simultaneously: Enables or disables simultaneous start of the task on each node.
-        :param delay_ms: delay before task run. Begins with 0, grows by delay_ms for each next node in nodes.
-        :param timeout_sec: timeout to wait the task.
-        """
-        sem = CountDownLatch(len(nodes)) if simultaneously else None
-        time_holder = AtomicValue()
-
-        delay = 0
-        threads = []
-
-        for node in nodes:
-            thread = Thread(target=self.__exec_on_node, args=(node, task, sem, delay, time_holder))
-
-            threads.append(thread)
-
-            thread.start()
-
-            delay += delay_ms
-
-        for thread in threads:
-            thread.join(timeout_sec)
-
-        return time_holder.get()
-
-    @staticmethod
-    def __exec_on_node(node, task, start_waiter=None, delay_ms=0, time_holder=None):
-        if start_waiter:
-            start_waiter.count_down()
-            start_waiter.wait()
-
-        if delay_ms > 0:
-            time.sleep(delay_ms / 1000.0)
-
-        if time_holder:
-            mono = monotonic()
-            timestamp = datetime.now()
-
-            time_holder.compare_and_set(None, (mono, timestamp))
-
-        task(node)
 
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
