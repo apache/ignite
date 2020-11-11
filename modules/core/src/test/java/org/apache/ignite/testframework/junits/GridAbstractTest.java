@@ -2491,7 +2491,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return Test case timeout.
      */
     protected long getTestTimeout() {
-        return getDefaultTestTimeout();
+        return getDefaultTestTimeout() * 100;
     }
 
     /**

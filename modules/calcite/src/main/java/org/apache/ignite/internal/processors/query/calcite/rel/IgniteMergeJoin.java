@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import com.google.common.collect.ImmutableList;
+import java.util.stream.Collectors;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -67,57 +70,86 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDi
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
 /** */
-public abstract class AbstractIgniteNestedLoopJoin extends Join implements TraitsAwareIgniteRel {
+public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
     /** */
-    protected AbstractIgniteNestedLoopJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,
+    public IgniteMergeJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,
         RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
         super(cluster, traitSet, left, right, condition, variablesSet, joinType);
     }
 
     /** {@inheritDoc} */
-    @Override public abstract Join copy(RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right,
-        JoinRelType joinType, boolean semiJoinDone);
+    @Override public Join copy(RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right,
+        JoinRelType joinType, boolean semiJoinDone) {
+        return new IgniteMergeJoin(getCluster(), traitSet, left, right, condition, variablesSet, joinType);
+    }
 
     /** {@inheritDoc} */
-    @Override public abstract <T> T accept(IgniteRelVisitor<T> visitor);
+    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 
     /** {@inheritDoc} */
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw)
-            .itemIf("variablesSet", Commons.transform(variablesSet.asList(), CorrelationId::getId), pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES);
+            .itemIf(
+                "variablesSet",
+                Commons.transform(variablesSet.asList(), CorrelationId::getId),
+                pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES
+            );
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // We preserve left collation since it's translated into a nested loop join with an outer loop
-        // over a left edge. The code below checks and projects left collation on an output row type.
-
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
+        RelCollation leftCollation = TraitUtils.collation(left), rightCollation = TraitUtils.collation(right);
 
-        RelTraitSet outTraits, leftTraits, rightTraits;
+        List<Integer> newLeftCollation, newRightCollation;
 
-        RelCollation collation = TraitUtils.collation(left);
+        if (isPrefix(leftCollation.getKeys(), joinInfo.leftKeys)) { // preserve left collation
+            newLeftCollation = new ArrayList<>(leftCollation.getKeys());
 
-        // If nulls are possible at left we has to check whether NullDirection.LAST flag is set on sorted fields.
-        // TODO set NullDirection.LAST for insufficient fields instead of erasing collation.
-        if (joinType == RIGHT || joinType == JoinRelType.FULL) {
-            for (RelFieldCollation field : collation.getFieldCollations()) {
-                if (RelFieldCollation.NullDirection.LAST != field.nullDirection) {
-                    collation = RelCollations.EMPTY;
-                    break;
-                }
-            }
+            Map<Integer, Integer> leftToRight = joinInfo.pairs().stream()
+                .collect(Collectors.toMap(p -> p.source, p -> p.target));
+
+            newRightCollation = newLeftCollation.stream().map(leftToRight::get).collect(Collectors.toList());
+        }
+        else if (isPrefix(rightCollation.getKeys(), joinInfo.rightKeys)) { // preserve right collation
+            newRightCollation = new ArrayList<>(rightCollation.getKeys());
+
+            Map<Integer, Integer> rightToLeft = joinInfo.pairs().stream()
+                .collect(Collectors.toMap(p -> p.target, p -> p.source));
+
+            newLeftCollation = newRightCollation.stream().map(rightToLeft::get).collect(Collectors.toList());
+        }
+        else { // generate new collations
+            // TODO: generate permutations when there will be multitraits
+
+            newLeftCollation = new ArrayList<>(joinInfo.leftKeys);
+            newRightCollation = new ArrayList<>(joinInfo.rightKeys);
         }
 
-        outTraits = nodeTraits.replace(collation);
-        leftTraits = left.replace(collation);
-        rightTraits = right.replace(RelCollations.EMPTY);
+        leftCollation = createCollation(newLeftCollation);
+        rightCollation = createCollation(newRightCollation);
 
-        return ImmutableList.of(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
+        return ImmutableList.of(
+            Pair.of(
+                nodeTraits.replace(leftCollation),
+                ImmutableList.of(
+                    left.replace(leftCollation),
+                    right.replace(rightCollation)
+                )
+            )
+        );
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
         // The node is rewindable only if both sources are rewindable.
 
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
@@ -142,7 +174,10 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
         // Tere are several rules:
         // 1) any join is possible on broadcast or single distribution
         // 2) hash distributed join is possible when join keys equal to source distribution keys
@@ -188,7 +223,7 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
                 && Objects.equals(joinInfo.rightKeys, rightDistr.getKeys()))
                 functions.add(rightDistr.function());
 
-            functions.add(DistributionFunction.hash());
+            functions.add(DistributionFunction.HashDistribution.INSTANCE);
 
             for (DistributionFunction function : functions) {
                 leftTraits = left.replace(hash(joinInfo.leftKeys, function));
@@ -227,36 +262,90 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // We preserve left collation since it's translated into a nested loop join with an outer loop
-        // over a left edge. The code below checks whether a desired collation is possible and requires
-        // appropriate collation from the left edge.
-
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
         RelCollation collation = TraitUtils.collation(nodeTraits);
-
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
-        if (collation.equals(RelCollations.EMPTY))
-            return ImmutableList.of(Pair.of(nodeTraits,
-                ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(RelCollations.EMPTY))));
+        int rightOff = this.left.getRowType().getFieldCount();
 
-        if (!projectsLeft(collation))
-            collation = RelCollations.EMPTY;
-        else if (joinType == RIGHT || joinType == JoinRelType.FULL) {
-            for (RelFieldCollation field : collation.getFieldCollations()) {
-                if (RelFieldCollation.NullDirection.LAST != field.nullDirection) {
-                    collation = RelCollations.EMPTY;
-                    break;
-                }
-            }
+        Map<Integer, Integer> rightToLeft = joinInfo.pairs().stream()
+            .collect(Collectors.toMap(p -> p.target, p -> p.source));
+
+        List<Integer> collationLeftPrj = new ArrayList<>();
+
+        for (Integer c : collation.getKeys()) {
+            collationLeftPrj.add(
+                c >= rightOff ? rightToLeft.get(c - rightOff) : c
+            );
         }
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(collation),
-            ImmutableList.of(left.replace(collation), right.replace(RelCollations.EMPTY))));
+        boolean preserveNodeCollation = false;
+
+        List<Integer> newLeftCollation, newRightCollation;
+
+        Map<Integer, Integer> leftToRight = joinInfo.pairs().stream()
+            .collect(Collectors.toMap(p -> p.source, p -> p.target));
+
+        if (isPrefix(collationLeftPrj, joinInfo.leftKeys)) { // preserve collation
+            newLeftCollation = new ArrayList<>();
+            newRightCollation = new ArrayList<>();
+
+            int ind = 0;
+            for (Integer c : collation.getKeys()) {
+                if (c < rightOff) {
+                    newLeftCollation.add(c);
+
+                    if (ind < joinInfo.leftKeys.size())
+                        newRightCollation.add(leftToRight.get(c));
+                }
+                else {
+                    c -= rightOff;
+                    newRightCollation.add(c);
+
+                    if (ind < joinInfo.leftKeys.size())
+                        newLeftCollation.add(rightToLeft.get(c));
+                }
+
+                ind++;
+            }
+
+            preserveNodeCollation = true;
+        }
+        else { // generate new collations
+            newLeftCollation = maxPrefix(collationLeftPrj, joinInfo.leftKeys);
+
+            Set<Integer> tail = new HashSet<>(joinInfo.leftKeys);
+
+            tail.removeAll(newLeftCollation);
+
+            // TODO: generate permutations when there will be multitraits
+            newLeftCollation.addAll(tail);
+
+            newRightCollation = newLeftCollation.stream().map(leftToRight::get).collect(Collectors.toList());
+        }
+
+        RelCollation leftCollation = createCollation(newLeftCollation);
+        RelCollation rightCollation = createCollation(newRightCollation);
+
+        return ImmutableList.of(
+            Pair.of(
+                nodeTraits.replace(preserveNodeCollation ? collation : leftCollation),
+                ImmutableList.of(
+                    left.replace(leftCollation),
+                    right.replace(rightCollation)
+                )
+            )
+        );
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
         // The node is rewindable only if both sources are rewindable.
 
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
@@ -268,7 +357,10 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
         // Tere are several rules:
         // 1) any join is possible on broadcast or single distribution
         // 2) hash distributed join is possible when join keys equal to source distribution keys
@@ -308,7 +400,7 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
                 // so, we require hash distribution (wich satisfies random distribution) instead.
                 DistributionFunction function = distrType == HASH_DISTRIBUTED
                     ? distribution.function()
-                    : DistributionFunction.hash();
+                    : DistributionFunction.HashDistribution.INSTANCE;
 
                 IgniteDistribution outDistr; // TODO distribution multitrait support
 
@@ -374,7 +466,7 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
             result = multiply(mq.getSelectivity(getLeft(), semiJoinSelectivity),
                 mq.getRowCount(getLeft()));
         }
-        else { // Row count estimates of 0 will be rounded up to 1.
+        else {// Row count estimates of 0 will be rounded up to 1.
 // So, use maxRowCount where the product is very small.
             final Double left1 = mq.getRowCount(getLeft());
             final Double right1 = mq.getRowCount(getRight());
@@ -454,13 +546,47 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
         return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }
 
-    /** */
-    protected boolean projectsLeft(RelCollation collation) {
-        int leftFieldCount = getLeft().getRowType().getFieldCount();
-        for (int field : RelCollations.ordinals(collation)) {
-            if (field >= leftFieldCount)
-                return false;
+    private static <T> List<T> maxPrefix(List<T> seq, Collection<T> elems) {
+        List<T> res = new ArrayList<>();
+
+        Set<T> elems0 = new HashSet<>(elems);
+
+        for (T e : seq) {
+            if (!elems0.remove(e))
+                break;
+
+            res.add(e);
         }
+
+        return res;
+    }
+
+    private static <T> boolean isPrefix(List<T> seq, Collection<T> elems) {
+        Set<T> elems0 = new HashSet<>(elems);
+
+        if (seq.size() < elems0.size())
+            return false;
+
+        for (T e : seq) {
+            if (!elems0.remove(e))
+                return false;
+
+            if (elems0.isEmpty())
+                break;
+        }
+
         return true;
+    }
+
+    /**
+     * Creates collations from provided keys.
+     *
+     * @param keys The keys to create collation from.
+     * @return New collation.
+     */
+    private static RelCollation createCollation(List<Integer> keys) {
+        return RelCollations.of(
+            keys.stream().map(RelFieldCollation::new).collect(Collectors.toList())
+        );
     }
 }

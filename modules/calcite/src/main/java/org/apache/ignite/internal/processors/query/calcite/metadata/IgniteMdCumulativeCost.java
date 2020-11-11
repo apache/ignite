@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import java.util.Set;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptCostFactory;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.plan.volcano.VolcanoUtils;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
@@ -30,6 +32,8 @@ import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.BuiltInMethod;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNestedLoopJoinNode;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.any;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.distribution;
@@ -58,8 +62,38 @@ public class IgniteMdCumulativeCost implements MetadataHandler<BuiltInMetadata.C
         if (cost.isInfinite())
             return cost;
 
-        for (RelNode input : rel.getInputs())
-            cost = cost.plus(mq.getCumulativeCost(input));
+        for (RelNode input : rel.getInputs()) {
+            RelOptCost inputCost = mq.getCumulativeCost(input);
+            if (inputCost.isInfinite())
+                return inputCost;
+
+            cost = cost.plus(inputCost);
+        }
+
+        return cost;
+    }
+
+    /** */
+    public RelOptCost getCumulativeCost(IgniteCorrelatedNestedLoopJoin rel, RelMetadataQuery mq) {
+        RelOptCost cost = nonCumulativeCost(rel, mq);
+
+        if (cost.isInfinite())
+            return cost;
+
+        RelNode left = rel.getLeft();
+        RelNode right = rel.getRight();
+
+        Set<CorrelationId> corIds = rel.getVariablesSet();
+
+        RelOptCost leftCost = mq.getCumulativeCost(left);
+        if (leftCost.isInfinite())
+            return leftCost;
+
+        RelOptCost rightCost = mq.getCumulativeCost(right);
+        if (rightCost.isInfinite())
+            return rightCost;
+
+        cost.plus(leftCost).plus(rightCost.multiplyBy(left.estimateRowCount(mq) / corIds.size()));
 
         return cost;
     }

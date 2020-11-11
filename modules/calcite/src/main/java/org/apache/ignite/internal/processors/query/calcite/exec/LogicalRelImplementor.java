@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
@@ -217,6 +218,28 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         assert rel.getJoinType() == JoinRelType.INNER; // TODO LEFT, SEMI, ANTI
 
+        Node<Row> node = new CorrelatedNestedLoopJoinNode<>(ctx, outType, cond, rel.getVariablesSet());
+
+        Node<Row> leftInput = visit(rel.getLeft());
+        Node<Row> rightInput = visit(rel.getRight());
+
+        node.register(F.asList(leftInput, rightInput));
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteMergeJoin rel) {
+        RelDataType outType = rel.getRowType();
+        RelDataType leftType = rel.getLeft().getRowType();
+        RelDataType rightType = rel.getRight().getRowType();
+
+        RelDataType rowType = combinedRowType(ctx.getTypeFactory(), leftType, rightType);
+        Predicate<Row> cond = expressionFactory.predicate(rel.getCondition(), rowType);
+
+        assert rel.getJoinType() == JoinRelType.INNER; // TODO LEFT, SEMI, ANTI
+
+        // TODO: change to IgniteMergeJoinNode
         Node<Row> node = new CorrelatedNestedLoopJoinNode<>(ctx, outType, cond, rel.getVariablesSet());
 
         Node<Row> leftInput = visit(rel.getLeft());

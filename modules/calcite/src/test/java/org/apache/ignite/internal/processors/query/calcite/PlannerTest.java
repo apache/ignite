@@ -42,6 +42,7 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
@@ -57,6 +58,7 @@ import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -86,6 +88,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
@@ -2630,6 +2633,111 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
     }
 
+    @Test
+    public void testMergeJoin() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable emp = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("DEPTNO", f.createJavaType(Integer.class))
+                .build()) {
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        emp.addIndex(new IgniteIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "emp_idx", null, emp));
+
+        TestTable dept = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("DEPTNO", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .build()) {
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        dept.addIndex(new IgniteIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "dep_idx", null, dept));
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("EMP", emp);
+        publicSchema.addTable("DEPT", dept);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "select * from dept d join emp e on d.deptno = e.deptno and e.name = d.name order by e.name";
+
+        RelTraitDef<?>[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE,
+            RewindabilityTraitDef.INSTANCE
+        };
+
+        PlanningContext ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        try (IgnitePlanner planner = ctx.planner()) {
+            assertNotNull(planner);
+
+            String qry = ctx.query();
+
+            assertNotNull(qry);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(qry);
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            RelRoot relRoot = planner.rel(sqlNode);
+
+            RelNode rel = relRoot.rel;
+
+            assertNotNull(rel);
+            assertEquals("" +
+                    "LogicalSort(sort0=[$3], dir0=[ASC])\n" +
+                    "  LogicalProject(DEPTNO=[$0], NAME=[$1], ID=[$2], NAME0=[$3], DEPTNO0=[$4])\n" +
+                    "    LogicalJoin(condition=[AND(=($0, $4), =($3, $1))], joinType=[inner])\n" +
+                    "      IgniteLogicalTableScan(table=[[PUBLIC, DEPT]])\n" +
+                    "      IgniteLogicalTableScan(table=[[PUBLIC, EMP]])\n",
+                RelOptUtil.toString(rel));
+
+            // Transformation chain
+            RelTraitSet desired = rel.getTraitSet()
+                .replace(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single())
+                .simplify();
+
+            RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+
+            assertNotNull(phys);
+            assertEquals("" +
+                    "IgniteMergeJoin(condition=[AND(=($0, $4), =($3, $1))], joinType=[inner])\n" +
+                    "  IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[dep_idx])\n" +
+                    "  IgniteIndexScan(table=[[PUBLIC, EMP]], index=[emp_idx])\n",
+                RelOptUtil.toString(phys));
+        }
+    }
+
     /** */
     private List<UUID> intermediateMapping(@NotNull AffinityTopologyVersion topVer, boolean single, @Nullable Predicate<ClusterNode> filter) {
         return single ? select(nodes, 0) : select(nodes, 0, 1, 2, 3);
@@ -2674,8 +2782,6 @@ public class PlannerTest extends GridCommonAbstractTest {
         /** */
         private TestTable(RelDataType type) {
             protoType = RelDataTypeImpl.proto(type);
-
-            addIndex(new IgniteIndex(null, "PK", null, this));
         }
 
         /** {@inheritDoc} */
@@ -2690,7 +2796,9 @@ public class PlannerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
             RelTraitSet traitSet = cluster.traitSetOf(Convention.NONE)
-                .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
+                .replaceIf(DistributionTraitDef.INSTANCE, this::distribution)
+                .replaceIf(RewindabilityTraitDef.INSTANCE, () -> RewindabilityTrait.REWINDABLE)
+                .replaceIf(RelCollationTraitDef.INSTANCE, getIndex(idxName)::collation);
 
             return IgniteLogicalIndexScan.create(cluster, traitSet, relOptTbl, idxName, null, null, null);
         }
