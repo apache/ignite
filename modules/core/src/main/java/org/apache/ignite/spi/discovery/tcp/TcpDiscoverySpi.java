@@ -633,12 +633,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      * Sets local host IP address that discovery SPI uses.
      * <p>
-     * If not provided, by default a first found non-loopback address
-     * will be used. If there is no non-loopback address available,
-     * then {@link InetAddress#getLocalHost()} will be used.
+     * If not provided, the value is resolved from {@link IgniteConfiguration#getLocalHost()}. If it is empty too, by
+     * default node binds to all available IP addresses. If there is no non-loopback address then
+     * {@link InetAddress#getLocalHost()} is used.
+     * <p>
+     * <b>NOTE:</b> You should assign node address through {@link IgniteConfiguration#setLocalHost(String)} or
+     * {@code setLocalAddress(String)}. Otherwise, several node addresses may be picked up and can prolong
+     * detection of node failure. Parameters like {@code failureDetectionTimeout} or {@code reconCnt} work per address
+     * sequentionally. Example: if node is binded to 3 ip addresses, previous node can take up to
+     * '{@code failureDetectionTimeout} * 3 + {@code connRecoveryTimeout}' to detect failure of malfunctional node and
+     * establish connection to other one.
      *
      * @param locAddr IP address.
      * @return {@code this} for chaining.
+     * @see IgniteConfiguration#setLocalHost(String).
      */
     @IgniteSpiConfiguration(optional = true)
     public TcpDiscoverySpi setLocalAddress(String locAddr) {
@@ -897,15 +905,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * <p>
      * If not provided {@link org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder} will
      * be used by default.
-     * <p>
-     * <b>NOTE:</b> You should assing multiple addresses to a node only if they represent some real physical connections
-     * which can give more reliability. Providing several addresses can prolong failure detection of current node.
-     * The timeouts and settings on network operations ({@link #failureDetectionTimeout()}, {@link #sockTimeout},
-     * {@link #ackTimeout}, {@link #maxAckTimeout}, {@link #reconCnt}) work per connection/address. The exception is
-     * {@link #connRecoveryTimeout}. And node addresses are sorted out sequentially.
-     * </p>
-     * Example: if you use {@code failureDetectionTimeout} and have set 3 ip addresses for this node, previous node in
-     * the ring can take up to 'failureDetectionTimeout * 3' to detect failure of current node.
      *
      * @param ipFinder IP finder.
      * @return {@code this} for chaining.
