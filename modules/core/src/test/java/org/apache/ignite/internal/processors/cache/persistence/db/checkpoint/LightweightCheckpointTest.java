@@ -19,7 +19,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightCheckpointManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightweightCheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -35,7 +35,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  *
  */
-public class LightCheckpointTest extends GridCommonAbstractTest {
+public class LightweightCheckpointTest extends GridCommonAbstractTest {
     /** Data region which should not be checkpointed. */
     public static final String NOT_CHECKPOINTED_REGION = "NotCheckpointedRegion";
 
@@ -125,7 +125,7 @@ public class LightCheckpointTest extends GridCommonAbstractTest {
         DataRegion regionForCheckpoint = db.dataRegion(DFLT_DATA_REG_DEFAULT_NAME);
 
         //and: Create light checkpoint with only one region.
-        LightCheckpointManager lightCheckpointManager = new LightCheckpointManager(
+        LightweightCheckpointManager lightweightCheckpointManager = new LightweightCheckpointManager(
             context::log,
             context.igniteInstanceName(),
             "light-test-checkpoint",
@@ -143,12 +143,12 @@ public class LightCheckpointTest extends GridCommonAbstractTest {
         );
 
         //and: Add checkpoint listener for DEFAULT_CACHE in order of storing the meta pages.
-        lightCheckpointManager.addCheckpointListener(
+        lightweightCheckpointManager.addCheckpointListener(
             (CheckpointListener)context.cache().cacheGroup(groupIdForCache(ignite0, DEFAULT_CACHE_NAME)).offheap(),
             regionForCheckpoint
         );
 
-        lightCheckpointManager.start();
+        lightweightCheckpointManager.start();
 
         //when: Fill the caches
         for (int j = 0; j < 1024; j++) {
@@ -157,7 +157,7 @@ public class LightCheckpointTest extends GridCommonAbstractTest {
         }
 
         //and: Trigger and wait for the checkpoint.
-        lightCheckpointManager.forceCheckpoint("test", null)
+        lightweightCheckpointManager.forceCheckpoint("test", null)
             .futureFor(CheckpointState.FINISHED)
             .get();
 

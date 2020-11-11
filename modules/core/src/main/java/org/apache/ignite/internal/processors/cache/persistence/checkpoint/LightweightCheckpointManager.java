@@ -49,21 +49,19 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 
 /**
- *This checkpoint ensures that all pages marked as
- * dirty under {@link #checkpointTimeoutLock ()} will be consistently saved to disk.
+ * Like a sharp checkpoint algorithm implemented in {@link CheckpointManager} this checkpoint ensures that
+ * all pages marked dirty under {@link #checkpointTimeoutLock()} will be consistently saved to disk.
  *
- * This checkpoint unlike {@link CheckpointManager} doesn't store the checkpoint markers to disk and
- * it write nothing checkpooint specific to WAL.
+ * But unlike {@link CheckpointManager} lightweight checkpoint doesn't store any checkpoint markers to disk
+ * nor write cp-related records to WAL log.
  *
- * Configuration of this checkpoint allows the following:
- * <p>Collecting all pages from configured dataRegions which was marked as dirty under {@link #checkpointTimeoutLock
- * ()}.</p> *
- * <p>Marking the start of checkpoint in WAL and on disk.</p>
- * <p>Notifying the subscribers of different checkpoint states through {@link CheckpointListener}.</p> *
- * <p>Storing collected pages to {@link FilePageStoreManager}.</p>
- * <p>Restoring the checkpoint state if the node fail on middle of checkpoint.</p>
+ * This allows to use it in situations where no recovery is needed after crush in the middle of checkpoint
+ * but work can simply be replayed from the beginning.
+ *
+ * Such situations include defragmentation and node recovery after crush
+ * (regular sharp checkpoint cannot be used during recovery).
  */
-public class LightCheckpointManager {
+public class LightweightCheckpointManager {
     /** Checkpoint worker. */
     private volatile Checkpointer checkpointer;
 
@@ -95,7 +93,7 @@ public class LightCheckpointManager {
      * @param cacheProcessor Cache processor.
      * @throws IgniteCheckedException if fail.
      */
-    public LightCheckpointManager(
+    public LightweightCheckpointManager(
         Function<Class<?>, IgniteLogger> logger,
         String igniteInstanceName,
         String checkpointThreadName,
