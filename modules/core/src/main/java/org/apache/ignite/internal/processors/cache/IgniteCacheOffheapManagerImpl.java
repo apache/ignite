@@ -1593,7 +1593,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 return grp.mvccEnabled() ? dataTree.isEmpty() : storageSize.get() == 0;
             }
             catch (IgniteCheckedException e) {
-                U.error(grp.shared().logger(IgniteCacheOffheapManagerImpl.class), "Failed to perform operation.", e);
+                U.error(log, "Failed to perform operation.", e);
 
                 return false;
             }
