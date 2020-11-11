@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -30,12 +30,10 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.LongJVMPauseDetector;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
@@ -43,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCa
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiPredicate;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -52,31 +49,24 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 
 /**
- * Main class to abstract checkpoint-related processes and actions and hide them from higher-level components.
- * Implements default checkpointing algorithm which is sharp checkpoint but can be replaced
- * by other implementations if needed.
- * Represents only an intermediate step in refactoring of checkpointing component and may change in the future.
+ * Like a sharp checkpoint algorithm implemented in {@link CheckpointManager} this checkpoint ensures that
+ * all pages marked dirty under {@link #checkpointTimeoutLock()} will be consistently saved to disk.
  *
- * This checkpoint ensures that all pages marked as
- * dirty under {@link #checkpointTimeoutLock ()} will be consistently saved to disk.
+ * But unlike {@link CheckpointManager} lightweight checkpoint doesn't store any checkpoint markers to disk
+ * nor write cp-related records to WAL log.
  *
- * Configuration of this checkpoint allows the following:
- * <p>Collecting all pages from configured dataRegions which was marked as dirty under {@link #checkpointTimeoutLock
- * ()}.</p> *
- * <p>Marking the start of checkpoint in WAL and on disk.</p>
- * <p>Notifying the subscribers of different checkpoint states through {@link CheckpointListener}.</p> *
- * <p>Synchronizing collected pages with disk using {@link FilePageStoreManager}.</p>
- * <p>Restoring memory in consistent state if the node failed in the middle of checkpoint.</p>
+ * This allows to use it in situations where no recovery is needed after crush in the middle of checkpoint
+ * but work can simply be replayed from the beginning.
+ *
+ * Such situations include defragmentation and node recovery after crush
+ * (regular sharp checkpoint cannot be used during recovery).
  */
-public class CheckpointManager {
+public class LightweightCheckpointManager {
     /** Checkpoint worker. */
     private volatile Checkpointer checkpointer;
 
     /** Main checkpoint steps. */
     private final CheckpointWorkflow checkpointWorkflow;
-
-    /** Checkpoint markers storage which mark the start and end of each checkpoint. */
-    private final CheckpointMarkersStorage checkpointMarkersStorage;
 
     /** Timeout checkpoint lock which should be used while write to memory happened. */
     final CheckpointTimeoutLock checkpointTimeoutLock;
@@ -91,13 +81,9 @@ public class CheckpointManager {
      * @param logger Logger producer.
      * @param igniteInstanceName Ignite instance name.
      * @param checkpointThreadName Name of main checkpoint thread.
-     * @param wal Write ahead log manager.
      * @param workersRegistry Workers registry.
      * @param persistenceCfg Persistence configuration.
-     * @param pageStoreManager File page store manager.
-     * @param checkpointInapplicableChecker Checker of checkpoints.
      * @param dataRegions Data regions.
-     * @param cacheGroupContexts Cache group contexts.
      * @param pageMemoryGroupResolver Page memory resolver.
      * @param throttlingPolicy Throttling policy.
      * @param snapshotMgr Snapshot manager.
@@ -107,52 +93,33 @@ public class CheckpointManager {
      * @param cacheProcessor Cache processor.
      * @throws IgniteCheckedException if fail.
      */
-    public CheckpointManager(
+    public LightweightCheckpointManager(
         Function<Class<?>, IgniteLogger> logger,
         String igniteInstanceName,
         String checkpointThreadName,
-        IgniteWriteAheadLogManager wal,
         WorkersRegistry workersRegistry,
         DataStorageConfiguration persistenceCfg,
-        FilePageStoreManager pageStoreManager,
-        IgniteThrowableBiPredicate<Long, Integer> checkpointInapplicableChecker,
         Supplier<Collection<DataRegion>> dataRegions,
-        Supplier<Collection<CacheGroupContext>> cacheGroupContexts,
         IgniteThrowableFunction<Integer, PageMemoryEx> pageMemoryGroupResolver,
         PageMemoryImpl.ThrottlingPolicy throttlingPolicy,
         IgniteCacheSnapshotManager snapshotMgr,
         DataStorageMetricsImpl persStoreMetrics,
         LongJVMPauseDetector longJvmPauseDetector,
         FailureProcessor failureProcessor,
-        GridCacheProcessor cacheProcessor
+        GridCacheProcessor cacheProcessor,
+        FilePageStoreManager pageStoreManager
     ) throws IgniteCheckedException {
-        CheckpointHistory cpHistory = new CheckpointHistory(
-            persistenceCfg,
-            logger,
-            wal,
-            checkpointInapplicableChecker
-        );
-
-        FileIOFactory ioFactory = persistenceCfg.getFileIOFactory();
-
-        checkpointMarkersStorage = new CheckpointMarkersStorage(
-            logger,
-            cpHistory,
-            ioFactory,
-            pageStoreManager.workDir().getAbsolutePath()
-        );
-
         CheckpointReadWriteLock lock = new CheckpointReadWriteLock(logger);
 
         checkpointWorkflow = new CheckpointWorkflow(
             logger,
-            wal,
+            null,
             snapshotMgr,
-            checkpointMarkersStorage,
+            null,
             lock,
             persistenceCfg.getCheckpointWriteOrder(),
             dataRegions,
-            cacheGroupContexts,
+            Collections::emptyList,
             persistenceCfg.getCheckpointThreads(),
             igniteInstanceName
         );
@@ -169,10 +136,13 @@ public class CheckpointManager {
         };
 
         checkpointPagesWriterFactory = new CheckpointPagesWriterFactory(
-            logger, snapshotMgr,
-            (pageMemEx, fullPage, buf, tag) -> pageStoreManager.writeInternal(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
+            logger,
+            snapshotMgr,
+            (pageMemEx, fullPage, buf, tag) ->
+                pageStoreManager.writeInternal(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
             persStoreMetrics,
-            throttlingPolicy, threadBuf,
+            throttlingPolicy,
+            threadBuf,
             pageMemoryGroupResolver
         );
 
@@ -231,7 +201,7 @@ public class CheckpointManager {
 
     /**
      * @param lsnr Listener.
-     * @param dataRegion Data region for which listener is corresponded to.
+     * @param dataRegion
      */
     public void addCheckpointListener(CheckpointListener lsnr, DataRegion dataRegion) {
         checkpointWorkflow.addCheckpointListener(lsnr, dataRegion);
@@ -252,21 +222,6 @@ public class CheckpointManager {
     }
 
     /**
-     * @return Checkpoint directory.
-     */
-    public File checkpointDirectory() {
-        return checkpointMarkersStorage.cpDir;
-    }
-
-    /**
-     * @return Read checkpoint status.
-     * @throws IgniteCheckedException If failed to read checkpoint status page.
-     */
-    public CheckpointStatus readCheckpointStatus() throws IgniteCheckedException {
-        return checkpointMarkersStorage.readCheckpointStatus();
-    }
-
-    /**
      * Start the new checkpoint immediately.
      *
      * @param reason Reason.
@@ -283,44 +238,6 @@ public class CheckpointManager {
             return null;
 
         return cp.scheduleCheckpoint(0, reason, lsnr);
-    }
-
-    /**
-     * @return Checkpoint history.
-     */
-    public CheckpointHistory checkpointHistory() {
-        return checkpointMarkersStorage.history();
-    }
-
-    /**
-     * Initialize checkpoint storage.
-     */
-    public void initializeStorage() throws IgniteCheckedException {
-        checkpointMarkersStorage.initialize();
-    }
-
-    /**
-     * Wal truncate callBack.
-     *
-     * @param highBound WALPointer.
-     */
-    public void removeCheckpointsUntil(WALPointer highBound) throws IgniteCheckedException {
-        checkpointMarkersStorage.removeCheckpointsUntil(highBound);
-    }
-
-    /**
-     * Cleanup checkpoint directory from all temporary files.
-     */
-    public void cleanupTempCheckpointDirectory() throws IgniteCheckedException {
-        checkpointMarkersStorage.cleanupTempCheckpointDirectory();
-    }
-
-    /**
-     * Clean checkpoint directory {@link CheckpointMarkersStorage#cpDir}. The operation is necessary when local node joined to
-     * baseline topology with different consistentId.
-     */
-    public void cleanupCheckpointDirectory() throws IgniteCheckedException {
-        checkpointMarkersStorage.cleanupCheckpointDirectory();
     }
 
     /**
