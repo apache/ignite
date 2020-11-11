@@ -225,7 +225,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         persStoreMetrics = databaseSharedManager.persistentStoreMetricsImpl();
 
-        databaseSharedManager.addCheckpointListener(this);
+        databaseSharedManager.addCheckpointListener(this, grp.dataRegion());
     }
 
     /**
