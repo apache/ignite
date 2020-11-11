@@ -53,9 +53,7 @@ You can find the complete list of properties in the javadoc:org.apache.ignite.sp
 ====
 You should not allow node bind to multiple ip addresses until they represent some real physical connections which can
 give you more reliability. Several node addresses can prolong detection of node failure. By default, node obtains all
-available IP addresses. Connection to node is established to first non-loopback. But if lost, other addresses are
-sequentially attempted to reconnect to.
-You should assign `IgniteConfiguration.localHost` or `TcpDiscoverySpi.localAddress`.
+available IP addresses. You should assign `IgniteConfiguration.localHost` or `TcpDiscoverySpi.localAddress`.
 ====
 
 [cols="1,2,1",opts="header"]
