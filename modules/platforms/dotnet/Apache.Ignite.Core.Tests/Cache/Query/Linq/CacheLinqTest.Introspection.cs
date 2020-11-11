@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             // Check fields query
             var fieldsQuery = cache
-                .AsCacheQueryable(new QueryOptions {Partitions = new[] {1, 2}})
+                .AsCacheQueryable(new QueryOptions {PartitionsTodo = new[] {1, 2}})
                 .Select(x => x.Value.Name)
                 .ToCacheQueryable();
 

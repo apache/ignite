@@ -137,7 +137,7 @@ namespace Apache.Ignite.Linq
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays",
             Justification = "Consistency")]
-        public int[] Partitions { get; set; }
+        public int[] PartitionsTodo { get; set; }
 
         /// <summary>
         /// Gets or sets batch size for update queries.
