@@ -103,6 +103,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
 
 /**
  *
@@ -363,6 +364,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected void initDataRegions0(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         DataRegionConfiguration[] dataRegionCfgs = memCfg.getDataRegionConfigurations();
 
+        boolean persistenceEnabled = CU.isPersistenceEnabled(memCfg);
+
         if (dataRegionCfgs != null) {
             for (DataRegionConfiguration dataRegionCfg : dataRegionCfgs)
                 addDataRegion(memCfg, dataRegionCfg, dataRegionCfg.isPersistenceEnabled());
@@ -379,9 +382,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             createSystemDataRegion(
                 memCfg.getSystemRegionInitialSize(),
                 memCfg.getSystemRegionMaxSize(),
-                CU.isPersistenceEnabled(memCfg)
+                persistenceEnabled
             ),
-            CU.isPersistenceEnabled(memCfg)
+            persistenceEnabled
+        );
+
+        addDataRegion(
+            memCfg,
+            createVolatileDataRegion(
+                memCfg.getSystemRegionInitialSize(),
+                memCfg.getSystemRegionMaxSize()
+            ),
+            false
         );
 
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
@@ -401,7 +413,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dataRegionCfg Data region config.
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
-    public void addDataRegion(
+    public DataRegion addDataRegion(
         DataStorageConfiguration dataStorageCfg,
         DataRegionConfiguration dataRegionCfg,
         boolean trackable
@@ -429,6 +441,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         else if (dataRegionName.equals(DFLT_DATA_REG_DEFAULT_NAME))
             U.warn(log, "Data Region with name 'default' isn't used as a default. " +
                     "Please, check Data Region configuration.");
+
+        return region;
     }
 
     /**
@@ -533,8 +547,24 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Validation of memory configuration.
+     * @param volatileCacheInitSize Initial size of PageMemory to be created for volatile cache.
+     * @param volatileCacheMaxSize Maximum size of PageMemory to be created for volatile cache.
      *
+     * @return {@link DataRegionConfiguration configuration} of DataRegion for volatile cache.
+     */
+    private DataRegionConfiguration createVolatileDataRegion(long volatileCacheInitSize, long volatileCacheMaxSize) {
+        DataRegionConfiguration res = new DataRegionConfiguration();
+
+        res.setName(VOLATILE_DATA_REGION_NAME);
+        res.setInitialSize(volatileCacheInitSize);
+        res.setMaxSize(volatileCacheMaxSize);
+        res.setPersistenceEnabled(false);
+        res.setLazyMemoryAllocation(true);
+
+        return res;
+    }
+
+    /**
      * @param memCfg configuration to validate.
      * @throws IgniteCheckedException In case of validation violation.
      */

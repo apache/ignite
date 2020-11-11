@@ -177,6 +177,14 @@ namespace ignite
              */
             SQLRETURN ExecQuery(const std::string& qry);
 
+            /**
+             * Prepares SQL query.
+             *
+             * @param qry Query.
+             * @return Result.
+             */
+            SQLRETURN PrepareQuery(const std::string& qry);
+
             /** ODBC Environment. */
             SQLHENV env;
 

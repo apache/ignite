@@ -137,11 +137,7 @@ namespace ignite
             const meta::ColumnMetaVector* meta = GetMeta();
 
             if (!meta)
-            {
-                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not executed.");
-
                 return SqlResult::AI_ERROR;
-            }
 
             res = static_cast<int32_t>(meta->size());
 
@@ -358,7 +354,7 @@ namespace ignite
         {
             if (!buf)
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Data buffer is NULL.");
+                AddStatusRecord("Data buffer is NULL.");
 
                 return SqlResult::AI_ERROR;
             }
@@ -889,7 +885,7 @@ namespace ignite
             {
                 case SQL_DROP:
                 {
-                    AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Deprecated, call SQLFreeHandle instead");
+                    AddStatusRecord("Deprecated, call SQLFreeHandle instead");
 
                     return SqlResult::AI_ERROR;
                 }
@@ -1005,12 +1001,16 @@ namespace ignite
             return res;
         }
 
-        const meta::ColumnMetaVector* Statement::GetMeta() const
+        const meta::ColumnMetaVector* Statement::GetMeta()
         {
             if (!currentQuery.get())
-                return 0;
+            {
+                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not executed.");
 
-            return &currentQuery->GetMeta();
+                return 0;
+            }
+
+            return currentQuery->GetMeta();
         }
 
         bool Statement::DataAvailable() const
@@ -1042,20 +1042,15 @@ namespace ignite
                 strbuf, buflen, reslen, numbuf));
         }
 
-        SqlResult::Type Statement::InternalGetColumnAttribute(uint16_t colIdx,
-            uint16_t attrId, char* strbuf, int16_t buflen, int16_t* reslen,
-            SqlLen* numbuf)
+        SqlResult::Type Statement::InternalGetColumnAttribute(uint16_t colIdx, uint16_t attrId, char* strbuf,
+            int16_t buflen, int16_t* reslen, SqlLen* numbuf)
         {
             const meta::ColumnMetaVector *meta = GetMeta();
 
             if (!meta)
-            {
-                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not executed.");
-
                 return SqlResult::AI_ERROR;
-            }
 
-            if (colIdx > meta->size() + 1 || colIdx < 1)
+            if (colIdx > meta->size() || colIdx < 1)
             {
                 AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
                     "Column index is out of range.", 0, colIdx);
@@ -1309,7 +1304,7 @@ namespace ignite
             }
             catch (const IgniteError& err)
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+                AddStatusRecord(err.GetText());
 
                 return SqlResult::AI_ERROR;
             }

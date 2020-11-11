@@ -149,8 +149,7 @@ namespace ignite
             {
                 LOG_MSG("Can not load OpenSSL library: " << err.GetText());
 
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
-                                "Can not load OpenSSL library (did you set OPENSSL_HOME environment variable?).");
+                AddStatusRecord("Can not load OpenSSL library (did you set OPENSSL_HOME environment variable?)");
 
                 return SqlResult::AI_ERROR;
             }
@@ -176,7 +175,7 @@ namespace ignite
 
             if (!config.IsHostSet() && config.IsAddressesSet() && config.GetAddresses().empty())
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "No valid address to connect.");
+                AddStatusRecord("No valid address to connect.");
 
                 return SqlResult::AI_ERROR;
             }
@@ -430,7 +429,7 @@ namespace ignite
             }
             catch (const IgniteError& err)
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+                AddStatusRecord(err.GetText());
 
                 return SqlResult::AI_ERROR;
             }
@@ -471,7 +470,7 @@ namespace ignite
             }
             catch (const IgniteError& err)
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+                AddStatusRecord(err.GetText());
 
                 return SqlResult::AI_ERROR;
             }
