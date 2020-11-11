@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -78,7 +77,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
-import org.apache.ignite.internal.processors.performancestatistics.PerformaceStatisticsProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -418,7 +417,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** Performance statistics processor. */
     @GridToStringExclude
-    private PerformaceStatisticsProcessor perfStatProc;
+    private PerformanceStatisticsProcessor perfStatProc;
 
     /** */
     private Thread.UncaughtExceptionHandler hnd;
@@ -709,8 +708,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             durableBackgroundTasksProcessor = (DurableBackgroundTasksProcessor)comp;
         else if (comp instanceof MaintenanceProcessor)
             maintenanceProc = (MaintenanceProcessor) comp;
-        else if (comp instanceof PerformaceStatisticsProcessor)
-            perfStatProc = (PerformaceStatisticsProcessor)comp;
+        else if (comp instanceof PerformanceStatisticsProcessor)
+            perfStatProc = (PerformanceStatisticsProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -1306,7 +1305,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public PerformaceStatisticsProcessor performanceStatistics() {
+    @Override public PerformanceStatisticsProcessor performanceStatistics() {
         return perfStatProc;
     }
 }

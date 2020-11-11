@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.processors.metastorage.DistributedMetaS
  * @see FilePerformanceStatisticsWriter
  * @see FilePerformanceStatisticsReader
  */
-public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
+public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Prefix for performance statistics enabled key. */
     private static final String PERF_STAT_KEY = IGNITE_INTERNAL_KEY_PREFIX + "performanceStatistics.enabled";
 
@@ -60,7 +60,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
     private final Object mux = new Object();
 
     /** @param ctx Kernal context. */
-    public PerformaceStatisticsProcessor(GridKernalContext ctx) {
+    public PerformanceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
@@ -76,7 +76,7 @@ public class PerformaceStatisticsProcessor extends GridProcessorAdapter {
             }
 
             @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
-                PerformaceStatisticsProcessor.this.metastorage = metastorage;
+                PerformanceStatisticsProcessor.this.metastorage = metastorage;
 
                 try {
                     Boolean performanceStatsEnabled = metastorage.read(PERF_STAT_KEY);
