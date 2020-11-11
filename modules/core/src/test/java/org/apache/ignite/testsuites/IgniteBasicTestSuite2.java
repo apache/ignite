@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.defragmentation.L
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.ClockPageReplacementFlagsTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.ExponentialBackoffTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagePoolTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageTimestampHistogramTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.ProgressSpeedCalculationTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.SegmentedLruPageListTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
@@ -224,7 +225,8 @@ import org.junit.runners.Suite;
     ExponentialBackoffTest.class,
     ProgressSpeedCalculationTest.class,
 
-    ConcurrentMappingFileReadWriteTest.class
+    ConcurrentMappingFileReadWriteTest.class,
+    PageTimestampHistogramTest.class,
 })
 public class IgniteBasicTestSuite2 {
 }

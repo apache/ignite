@@ -457,7 +457,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.STATISTICS_LOCAL_DATA",
                 "SYS.STATISTICS_GLOBAL_DATA",
                 "SYS.STATISTICS_PARTITION_DATA",
-                "SYS.STATISTICS_CONFIGURATION"
+                "SYS.STATISTICS_CONFIGURATION",
+                "SYS.PAGES_TIMESTAMP_HISTOGRAM"
             ))
         );
     }
@@ -1132,7 +1133,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.STATISTICS_GLOBAL_DATA.TOTAL.null.19",
                 "SYS.STATISTICS_GLOBAL_DATA.SIZE.null.10",
                 "SYS.STATISTICS_GLOBAL_DATA.VERSION.null.19",
-                "SYS.STATISTICS_GLOBAL_DATA.LAST_UPDATE_TIME.null.2147483647"
+                "SYS.STATISTICS_GLOBAL_DATA.LAST_UPDATE_TIME.null.2147483647",
+                "SYS.PAGES_TIMESTAMP_HISTOGRAM.DATA_REGION_NAME.null.2147483647",
+                "SYS.PAGES_TIMESTAMP_HISTOGRAM.INTERVAL_START.null.26.6",
+                "SYS.PAGES_TIMESTAMP_HISTOGRAM.INTERVAL_END.null.26.6",
+                "SYS.PAGES_TIMESTAMP_HISTOGRAM.PAGES_COUNT.null.19"
                 ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);
