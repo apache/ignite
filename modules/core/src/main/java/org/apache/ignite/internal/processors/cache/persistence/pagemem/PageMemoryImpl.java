@@ -640,7 +640,6 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return Data region configuration.
      */
     private DataRegionConfiguration getDataRegionConfiguration() {
-        //TODO
         DataStorageConfiguration memCfg = ctx.kernalContext().config().getDataStorageConfiguration();
 
         assert memCfg != null;
@@ -2479,7 +2478,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
 
-            //TODO dataRegionCfg is null
             throw new IgniteOutOfMemoryException("Failed to find a page for eviction [segmentCapacity=" + cap +
                 ", loaded=" + loadedPages.size() +
                 ", maxDirtyPages=" + maxDirtyPages +
@@ -2488,10 +2486,14 @@ public class PageMemoryImpl implements PageMemoryEx {
                 ", pinnedInSegment=" + pinnedCnt +
                 ", failedToPrepare=" + failToPrepare +
                 ']' + U.nl() + "Out of memory in data region [" +
-                "name=" + dataRegionCfg.getName() +
-                ", initSize=" + U.readableSize(dataRegionCfg.getInitialSize(), false) +
-                ", maxSize=" + U.readableSize(dataRegionCfg.getMaxSize(), false) +
-                ", persistenceEnabled=" + dataRegionCfg.isPersistenceEnabled() + "] Try the following:" + U.nl() +
+                (dataRegionCfg == null ? "NULL" : (
+                    "name=" + dataRegionCfg.getName() +
+                    ", initSize=" + U.readableSize(dataRegionCfg.getInitialSize(), false) +
+                    ", maxSize=" + U.readableSize(dataRegionCfg.getMaxSize(), false) +
+                    ", persistenceEnabled=" + dataRegionCfg.isPersistenceEnabled()
+                )) +
+                "]" +
+                " Try the following:" + U.nl() +
                 "  ^-- Increase maximum off-heap memory size (DataRegionConfiguration.maxSize)" + U.nl() +
                 "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
                 "  ^-- Enable eviction or expiration policies"

@@ -64,7 +64,8 @@ public class ObjectHashInlineIndexColumn extends AbstractInlineIndexColumn {
     /** {@inheritDoc} */
     @Override protected Value get0(long pageAddr, int off) {
         int hashCode = PageUtils.getInt(pageAddr, off + 1);
-        return new ValueObjectHashCode(hashCode); //TODO Is this ok?
+
+        return new ValueObjectHashCode(hashCode);
     }
 
     /**
