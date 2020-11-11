@@ -444,7 +444,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "PARTITION_STATES",
             "BINARY_METADATA",
             "METASTORAGE",
-            "DISTRIBUTED_METASTORAGE"
+            "DISTRIBUTED_METASTORAGE",
+            "PAGES_TIMESTAMP_HISTOGRAM"
         ));
 
         Set<String> viewNames = new HashSet<>();

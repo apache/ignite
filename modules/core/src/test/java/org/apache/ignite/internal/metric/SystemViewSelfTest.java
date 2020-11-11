@@ -33,10 +33,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.IgniteSystemProperties;
@@ -64,9 +67,11 @@ import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageTimestampHistogram;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -87,6 +92,7 @@ import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.spi.systemview.view.PagesListView;
+import org.apache.ignite.spi.systemview.view.PagesTimestampHistogramView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
@@ -111,6 +117,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_METADATA_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.DATA_REGION_PAGE_LIST_VIEW;
+import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.PAGE_TS_HISTOGRAM_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
@@ -134,6 +141,20 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     public static final String TEST_TRANSFORMER = "TestTransformer";
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        cleanPersistenceDir();
+    }
 
     /** Tests work of {@link SystemView} for caches. */
     @Test
@@ -1186,6 +1207,95 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 (IgnitePredicate<? super MetastorageView>)view -> name.equals(view.name()) && val.equals(view.value()));
 
             assertNotNull(testKey);
+        }
+    }
+
+    /** */
+    @Test
+    public void testPagesTimestampHistogram() throws Exception {
+        AtomicLong curTime = new AtomicLong(System.currentTimeMillis());
+
+        LongSupplier timeSupplier = curTime::get;
+
+        GridTestClockTimer.timeSupplier(timeSupplier);
+
+        String regionName = "default";
+
+        try (IgniteEx ignite = startGrid(getConfiguration().setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setMaxSize(100L * 1024 * 1024)
+                    .setPersistenceEnabled(true)
+                    .setName(regionName)
+                    .setMetricsEnabled(true)
+            )))) {
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+            IgniteCache<Integer, Integer> cache1 = ignite.createCache("test-pages-ts1");
+
+            long ts1 = curTime.get();
+
+            for (int i = 0; i < 1000; i++)
+                cache1.put(i, i);
+
+            long ts2 = curTime.addAndGet(PageTimestampHistogram.DFLT_BUCKETS_INTERVAL);
+
+            for (int i = 1000; i < 2000; i++)
+                cache1.put(i, i);
+
+            SystemView<PagesTimestampHistogramView> pagesTsHistogram =
+                ignite.context().systemView().view(PAGE_TS_HISTOGRAM_VIEW);
+
+            assertNotNull(pagesTsHistogram);
+
+            long totalCnt = 0;
+
+            for (PagesTimestampHistogramView view : pagesTsHistogram) {
+                if (regionName.equals(view.dataRegionName())) {
+                    if ((ts1 >= view.intervalStart().getTime() && ts1 <= view.intervalEnd().getTime()) ||
+                        (ts2 >= view.intervalStart().getTime() && ts2 <= view.intervalEnd().getTime())) {
+                        assertTrue("Unexpected pages count: " + view.pagesCount(), view.pagesCount() > 0);
+
+                        totalCnt += view.pagesCount();
+                    }
+                    else
+                        assertEquals(0, view.pagesCount());
+                }
+            }
+
+            assertTrue(totalCnt > 0);
+            assertEquals(ignite.dataRegionMetrics(regionName).getPhysicalMemoryPages(), totalCnt);
+
+            // Check histogram after replacement.
+            curTime.addAndGet(PageTimestampHistogram.DFLT_BUCKETS_INTERVAL);
+
+            ignite.getOrCreateCache("test-pages-ts2");
+
+            try (IgniteDataStreamer<Integer, Object> streamer = ignite.dataStreamer("test-pages-ts2")) {
+                for (int i = 0; i < 100_000; i++)
+                    streamer.addData(i, new byte[1000]);
+            }
+
+            assertEquals(ignite.dataRegionMetrics(regionName).getPhysicalMemoryPages(),
+                F.sumInt(F.iterator(pagesTsHistogram, v -> (int)v.pagesCount(), true)));
+
+            // Check histogram after cache destroy and replacement of outdated pages.
+            curTime.addAndGet(PageTimestampHistogram.DFLT_BUCKETS_INTERVAL);
+
+            ignite.destroyCache("test-pages-ts2");
+
+            IgniteCache<Integer, Object> cache2 = ignite.getOrCreateCache("test-pages-ts2");
+
+            for (int i = 0; i < 10_000; i++) {
+                cache1.put(i, i);
+                cache2.put(i, new byte[1000]);
+            }
+
+            assertEquals(ignite.dataRegionMetrics(regionName).getPhysicalMemoryPages(),
+                F.sumInt(F.iterator(pagesTsHistogram, v -> (int)v.pagesCount(), true)));
+        }
+        finally {
+            GridTestClockTimer.timeSupplier(GridTestClockTimer.DFLT_TIME_SUPPLIER);
         }
     }
 

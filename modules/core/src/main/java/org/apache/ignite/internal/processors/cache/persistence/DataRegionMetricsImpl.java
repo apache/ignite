@@ -16,20 +16,27 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageTimestampHistogram;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.systemview.view.PagesTimestampHistogramView;
 
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -113,6 +120,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /** Time interval (in milliseconds) when allocations/evictions are counted to calculate rate. */
     private volatile long rateTimeInterval;
 
+    /** Histogram of cold/hot pages. */
+    private final PageTimestampHistogram pageTsHistogram;
+
     /**
      * @param memPlcCfg DataRegionConfiguration.
      * @param mmgr Metrics manager.
@@ -194,6 +204,11 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         mreg.longMetric("MaxSize", "Maximum memory region size in bytes defined by its data region.")
             .value(memPlcCfg.getMaxSize());
+
+        if (persistenceEnabled)
+            pageTsHistogram = new PageTimestampHistogram();
+        else
+            pageTsHistogram = null;
     }
 
     /** {@inheritDoc} */
@@ -583,6 +598,49 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     public void addThrottlingTime(long time) {
         if (metricsEnabled)
             totalThrottlingTime.add(time);
+    }
+
+    /**
+     * Increment count of pages with given last access time.
+     *
+     * @param ts Last access timestamp.
+     */
+    public void incrementPagesWithTimestamp(long ts) {
+        if (metricsEnabled && pageTsHistogram != null)
+            pageTsHistogram.increment(ts);
+    }
+
+    /**
+     * Decrement count of pages with given last access time.
+     *
+     * @param ts Last access timestamp.
+     */
+    public void decrementPagesWithTimestamp(long ts) {
+        if (metricsEnabled && pageTsHistogram != null)
+            pageTsHistogram.decrement(ts);
+    }
+
+    /**
+     * Creates pages timestamp histogram view.
+     */
+    public Collection<PagesTimestampHistogramView> pagesTimestampHistogramView() {
+        if (!metricsEnabled || pageTsHistogram == null)
+            return Collections.emptyList();
+
+        IgniteBiTuple<long[], long[]> hist = pageTsHistogram.histogram();
+
+        long[] bounds = hist.get1();
+        long[] vals = hist.get2();
+
+        List<PagesTimestampHistogramView> list = new ArrayList<>(vals.length);
+
+        for (int i = 0; i < vals.length - 1; i++)
+            list.add(new PagesTimestampHistogramView(getName(), bounds[i], bounds[i + 1], vals[i]));
+
+        list.add(new PagesTimestampHistogramView(getName(), bounds[vals.length - 1],
+            U.currentTimeMillis(), vals[vals.length - 1]));
+
+        return list;
     }
 
     /**

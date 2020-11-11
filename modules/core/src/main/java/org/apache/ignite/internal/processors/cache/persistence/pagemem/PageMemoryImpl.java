@@ -561,15 +561,22 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (relPtr == INVALID_REL_PTR)
                 relPtr = seg.borrowOrAllocateFreePage(pageId);
 
-            if (relPtr == INVALID_REL_PTR)
+            boolean pageReplaced = false;
+
+            if (relPtr == INVALID_REL_PTR) {
                 relPtr = seg.removePageForReplacement(delayedWriter == null ? flushDirtyPage : delayedWriter);
+
+                pageReplaced = true;
+            }
 
             long absPtr = seg.absolute(relPtr);
 
             GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
 
             PageHeader.fullPageId(absPtr, fullId);
-            PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
+
+            touchPage(absPtr, pageReplaced);
+
             rwLock.init(absPtr + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
 
             assert PageIO.getCrc(absPtr + PAGE_OVERHEAD) == 0; //TODO GG-11480
@@ -776,13 +783,19 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (pageAllocated != null)
                     pageAllocated.set(true);
 
-                if (relPtr == INVALID_REL_PTR)
+                boolean pageReplaced = false;
+
+                if (relPtr == INVALID_REL_PTR) {
                     relPtr = seg.removePageForReplacement(delayedWriter == null ? flushDirtyPage : delayedWriter);
+
+                    pageReplaced = true;
+                }
 
                 absPtr = seg.absolute(relPtr);
 
                 PageHeader.fullPageId(absPtr, fullId);
-                PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
+
+                touchPage(absPtr, pageReplaced);
 
                 assert !PageHeader.isAcquired(absPtr) :
                     "Pin counter must be 0 for a new page [relPtr=" + U.hexLong(relPtr) +
@@ -835,7 +848,9 @@ public class PageMemoryImpl implements PageMemoryEx {
                 GridUnsafe.setMemory(pageAddr, pageSize(), (byte)0);
 
                 PageHeader.fullPageId(absPtr, fullId);
-                PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
+
+                touchPage(absPtr, true);
+
                 PageIO.setPageId(pageAddr, pageId);
 
                 assert !PageHeader.isAcquired(absPtr) :
@@ -1473,7 +1488,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         CountDownFuture completeFut = new CountDownFuture(segments.length);
 
         for (Segment seg : segments) {
-            Runnable clear = new ClearSegmentRunnable(seg, pred, cleanDirty, completeFut, pageSize());
+            Runnable clear = new ClearSegmentRunnable(seg, memMetrics, pred, cleanDirty, completeFut, pageSize());
 
             try {
                 asyncRunner.execute(clear);
@@ -1586,7 +1601,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             return 0;
 
         if (touch)
-            PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
+            touchPage(absPtr, true);
 
         assert PageIO.getCrc(absPtr + PAGE_OVERHEAD) == 0; //TODO GG-11480
 
@@ -1647,7 +1662,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return Pointer to the page write buffer.
      */
     private long postWriteLockPage(long absPtr, FullPageId fullId) {
-        PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
+        touchPage(absPtr, true);
 
         // Create a buffer copy if the page is scheduled for a checkpoint.
         if (isInCheckpoint(fullId) && PageHeader.tempBufferPointer(absPtr) == INVALID_REL_PTR) {
@@ -2612,6 +2627,26 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /**
+     * Update timestamp for the page and reflect this change to the hot/cold pages histogram.
+     *
+     * @param absPtr Absolute pointer.
+     * @param pageExists Page already exists in page memory (histogram for old timestamp should be changed).
+     */
+    private void touchPage(long absPtr, boolean pageExists) {
+        if (pageExists) {
+            long ts = PageHeader.readTimestamp(absPtr);
+
+            memMetrics.decrementPagesWithTimestamp(ts);
+        }
+
+        long ts = U.currentTimeMillis();
+
+        PageHeader.writeTimestamp(absPtr, ts);
+
+        memMetrics.incrementPagesWithTimestamp(ts & PageHeader.TIMESTAMP_MASK);
+    }
+
+    /**
      *
      */
     private static class ClearSegmentRunnable implements Runnable {
@@ -2630,6 +2665,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         /** */
         private boolean rmvDirty;
 
+        /** */
+        private final DataRegionMetricsImpl memMetrics;
+
         /**
          * @param seg Segment.
          * @param clearPred Clear predicate for (cache group ID, page ID).
@@ -2637,12 +2675,14 @@ public class PageMemoryImpl implements PageMemoryEx {
          */
         private ClearSegmentRunnable(
             Segment seg,
+            DataRegionMetricsImpl memMetrics,
             LoadedPagesMap.KeyPredicate clearPred,
             boolean rmvDirty,
             CountDownFuture doneFut,
             int pageSize
         ) {
             this.seg = seg;
+            this.memMetrics = memMetrics;
             this.clearPred = clearPred;
             this.rmvDirty = rmvDirty;
             this.doneFut = doneFut;
@@ -2677,6 +2717,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                         long relPtr = ptrs.get(i);
 
                         long absPtr = seg.pool.absolute(relPtr);
+
+                        memMetrics.decrementPagesWithTimestamp(PageHeader.readTimestamp(absPtr));
 
                         if (rmvDirty) {
                             FullPageId fullId = PageHeader.fullPageId(absPtr);
