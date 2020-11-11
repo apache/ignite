@@ -135,9 +135,8 @@ namespace Apache.Ignite.Linq
         /// <para />
         /// The query will be executed only on nodes which are primary for specified partitions.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays",
-            Justification = "Consistency")]
-        public int[] PartitionsTodo { get; set; }
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
+        public int[] Partitions { get; set; }
 
         /// <summary>
         /// Gets or sets batch size for update queries.
