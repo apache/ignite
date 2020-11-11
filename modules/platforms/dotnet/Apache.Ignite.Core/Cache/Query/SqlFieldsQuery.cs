@@ -161,6 +161,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <para />
         /// The query will be executed only on nodes which are primary for specified partitions.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public int[] Partitions { get; set; }
 
         /// <summary>
