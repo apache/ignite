@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -5036,6 +5037,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public void lockEntry() {
         lock.lock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean tryLockEntry(long timeout) {
+        try {
+            return lock.tryLock(timeout, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException ignite) {
+            Thread.currentThread().interrupt();
+
+            return false;
+        }
     }
 
     /** {@inheritDoc} */
