@@ -1799,11 +1799,16 @@ public class IgnitionEx {
 
             WorkersRegistry workerRegistry = new WorkersRegistry(
                 new IgniteBiInClosure<GridWorker, FailureType>() {
-                    @Override public void apply(GridWorker deadWorker, FailureType failureType) {
+                    @Override public void apply(GridWorker worker, FailureType failureType) {
+                        IgniteException ex = new IgniteException(S.toString(GridWorker.class, worker));
+
+                        Thread runner = worker.runner();
+
+                        if (runner != null && runner != Thread.currentThread())
+                            ex.setStackTrace(runner.getStackTrace());
+
                         if (grid != null)
-                            grid.context().failure().process(new FailureContext(
-                                failureType,
-                                new IgniteException(S.toString(GridWorker.class, deadWorker))));
+                            grid.context().failure().process(new FailureContext(failureType, ex));
                     }
                 },
                 IgniteSystemProperties.getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT,
@@ -1849,6 +1854,7 @@ public class IgnitionEx {
             // Note, that we do not pre-start threads here as class loading pool may
             // not be needed.
             validateThreadPoolSize(cfg.getPeerClassLoadingThreadPoolSize(), "peer class loading");
+
             p2pExecSvc = new IgniteThreadPoolExecutor(
                 "p2p",
                 cfg.getIgniteInstanceName(),
