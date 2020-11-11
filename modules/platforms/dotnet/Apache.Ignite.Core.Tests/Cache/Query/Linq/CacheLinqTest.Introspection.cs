@@ -57,7 +57,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 #pragma warning restore 618
                 Colocated = true,
                 Lazy = true,
-                Partitions = new[]{1,2},
                 UpdateBatchSize = 12,
                 EnableDistributedJoins = true
             }).Where(x => x.Key > 10).ToCacheQueryable();
@@ -88,7 +87,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             Assert.IsTrue(fq.Lazy);
             Assert.IsTrue(fq.EnableDistributedJoins);
             Assert.AreEqual(12, fq.UpdateBatchSize);
-            Assert.AreEqual(new[]{1,2}, fq.Partitions);
+            Assert.IsNull(fq.Partitions);
 
             var str = query.ToString();
             Assert.AreEqual(GetSqlEscapeAll()
@@ -96,17 +95,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                   "[Sql=select _T0._KEY, _T0._VAL from PERSON_ORG_SCHEMA.\"Person\" as _T0 where " +
                   "(_T0.\"_KEY\" > ?), Arguments=[10], " +
                   "Local=True, PageSize=999, EnableDistributedJoins=True, EnforceJoinOrder=True, " +
-                  "Timeout=00:00:02.5000000, Partitions=[1, 2], UpdateBatchSize=12, " +
+                  "Timeout=00:00:02.5000000, Partitions=[], UpdateBatchSize=12, " +
                   "Colocated=True, Schema=, Lazy=True]]"
                 : "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
                   "[Sql=select _T0._KEY, _T0._VAL from PERSON_ORG_SCHEMA.Person as _T0 where " +
                   "(_T0._KEY > ?), Arguments=[10], " +
                   "Local=True, PageSize=999, EnableDistributedJoins=True, EnforceJoinOrder=True, " +
-                  "Timeout=00:00:02.5000000, Partitions=[1, 2], UpdateBatchSize=12, " +
+                  "Timeout=00:00:02.5000000, Partitions=[], UpdateBatchSize=12, " +
                   "Colocated=True, Schema=, Lazy=True]]", str);
 
             // Check fields query
-            var fieldsQuery = cache.AsCacheQueryable().Select(x => x.Value.Name).ToCacheQueryable();
+            var fieldsQuery = cache
+                .AsCacheQueryable(new QueryOptions {Partitions = new[] {1, 2}})
+                .Select(x => x.Value.Name)
+                .ToCacheQueryable();
 
             Assert.AreEqual(cache.Name, fieldsQuery.CacheName);
 #pragma warning disable 618 // Type or member is obsolete
@@ -124,17 +126,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             Assert.IsFalse(fq.EnableDistributedJoins);
             Assert.IsFalse(fq.EnforceJoinOrder);
             Assert.IsFalse(fq.Lazy);
+            Assert.AreEqual(new[] {1, 2}, fq.Partitions);
 
             str = fieldsQuery.ToString();
             Assert.AreEqual(GetSqlEscapeAll()
                 ? "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
                   "[Sql=select _T0.\"Name\" from PERSON_ORG_SCHEMA.\"Person\" as _T0, Arguments=[], Local=False, " +
                   "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False, " +
-                  "Timeout=00:00:00, Partitions=[], UpdateBatchSize=1, Colocated=False, Schema=, Lazy=False]]"
+                  "Timeout=00:00:00, Partitions=[1, 2], UpdateBatchSize=1, Colocated=False, Schema=, Lazy=False]]"
                 : "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
                   "[Sql=select _T0.NAME from PERSON_ORG_SCHEMA.Person as _T0, Arguments=[], Local=False, " +
                   "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False, " +
-                  "Timeout=00:00:00, Partitions=[], UpdateBatchSize=1, Colocated=False, Schema=, Lazy=False]]", str);
+                  "Timeout=00:00:00, Partitions=[1, 2], UpdateBatchSize=1, Colocated=False, Schema=, Lazy=False]]", str);
 
             // Check distributed joins flag propagation
             var distrQuery = cache.AsCacheQueryable(new QueryOptions { EnableDistributedJoins = true })
