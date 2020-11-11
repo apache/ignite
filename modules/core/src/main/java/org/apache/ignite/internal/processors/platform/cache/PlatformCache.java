@@ -977,6 +977,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             case OP_QRY_CONTINUOUS: {
                 long ptr = reader.readLong();
                 boolean loc = reader.readBoolean();
+                boolean includeExpired = reader.readBoolean();
                 boolean hasFilter = reader.readBoolean();
                 Object filter = reader.readObjectDetached();
                 int bufSize = reader.readInt();
@@ -986,7 +987,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 PlatformContinuousQuery qry = platformCtx.createContinuousQuery(ptr, hasFilter, filter);
 
-                qry.start(cache, loc, bufSize, timeInterval, autoUnsubscribe, initQry);
+                qry.start(cache, loc, bufSize, timeInterval, autoUnsubscribe, initQry, includeExpired);
 
                 return new PlatformContinuousQueryProxy(platformCtx, qry);
             }
