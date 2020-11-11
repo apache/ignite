@@ -26,7 +26,6 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
@@ -35,6 +34,7 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
@@ -65,7 +65,7 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
 
     /** Instance. */
     public static final FilterScanMergeRule<IgniteLogicalTableScan> TABLE_SCAN =
-        new FilterScanMergeRule<IgniteLogicalTableScan>(LogicalFilter.class, IgniteLogicalTableScan.class, "FilterTableScanMergeRule") {
+        new FilterScanMergeRule<IgniteLogicalTableScan>(IgniteFilter.class, IgniteLogicalTableScan.class, "FilterTableScanMergeRule") {
             /** {@inheritDoc} */
             @Override protected IgniteLogicalTableScan createNode(
                 RelOptCluster cluster,
@@ -81,7 +81,7 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
      * Constructor.
      *
      * @param clazz Class of relational expression to match.
-     * @param desc Description, or null to guess description
+     * @param desc Description, or null to guess description.
      */
     private FilterScanMergeRule(Class<? extends RelNode> clazz, Class<T> tableClass, String desc) {
         super(operand(clazz,

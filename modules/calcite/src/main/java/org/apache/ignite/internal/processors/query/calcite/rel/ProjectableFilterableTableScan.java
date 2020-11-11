@@ -57,7 +57,7 @@ public class ProjectableFilterableTableScan extends TableScan {
     /** Projects. */
     private final List<RexNode> projects;
 
-    /** Participating colunms. */
+    /** Participating columns. */
     private final ImmutableBitSet requiredColunms;
 
     /** */
@@ -92,7 +92,7 @@ public class ProjectableFilterableTableScan extends TableScan {
         super(input);
         condition = input.getExpression("filters");
         projects = input.get("projects") == null ? null : input.getExpressionList("projects");
-        requiredColunms = input.get("requiredColunms") == null ? null : input.getBitSet("requiredColunms");
+        requiredColunms = input.get("requiredColumns") == null ? null : input.getBitSet("requiredColumns");
     }
 
     /** @return Projections. */
