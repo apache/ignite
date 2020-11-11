@@ -36,7 +36,7 @@ public class SortConverterRule extends AbstractIgniteConverterRule<LogicalSort> 
 
     /** */
     public SortConverterRule() {
-        super(LogicalSort.class);
+        super(LogicalSort.class, "SortConverterRule");
     }
 
     /** {@inheritDoc} */

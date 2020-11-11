@@ -43,7 +43,7 @@ public class UnionConverterRule extends AbstractIgniteConverterRule<LogicalUnion
 
     /** */
     public UnionConverterRule() {
-        super(LogicalUnion.class);
+        super(LogicalUnion.class, "UnionConverterRule");
     }
 
     /** {@inheritDoc} */

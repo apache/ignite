@@ -37,7 +37,7 @@ public class AggregateConverterRule extends AbstractIgniteConverterRule<LogicalA
 
     /** */
     public AggregateConverterRule() {
-        super(LogicalAggregate.class);
+        super(LogicalAggregate.class, "AggregateConverterRule");
     }
 
     /** {@inheritDoc} */

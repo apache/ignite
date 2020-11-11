@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTableScan> extends AbstractIgniteConverterRule<T> {
     /** Instance. */
     public static final LogicalScanConverterRule<IgniteLogicalIndexScan> INDEX_SCAN =
-        new LogicalScanConverterRule<IgniteLogicalIndexScan>(IgniteLogicalIndexScan.class) {
+        new LogicalScanConverterRule<IgniteLogicalIndexScan>(IgniteLogicalIndexScan.class, "LogicalTableScanConverterRule") {
             /** {@inheritDoc} */
             @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, IgniteLogicalIndexScan rel) {
                 return new IgniteIndexScan(rel.getCluster(), rel.getTraitSet().replace(IgniteConvention.INSTANCE),
@@ -42,7 +42,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
 
     /** Instance. */
     public static final LogicalScanConverterRule<IgniteLogicalTableScan> TABLE_SCAN =
-        new LogicalScanConverterRule<IgniteLogicalTableScan>(IgniteLogicalTableScan.class) {
+        new LogicalScanConverterRule<IgniteLogicalTableScan>(IgniteLogicalTableScan.class, "LogicalIndexScanConverterRule") {
             /** {@inheritDoc} */
             @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, IgniteLogicalTableScan rel) {
                 return new IgniteTableScan(rel.getCluster(), rel.getTraitSet().replace(IgniteConvention.INSTANCE),
@@ -51,7 +51,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
         };
 
     /** */
-    private LogicalScanConverterRule(Class<T> clazz) {
-        super(clazz);
+    private LogicalScanConverterRule(Class<T> clazz, String descPrefix) {
+        super(clazz, descPrefix);
     }
 }

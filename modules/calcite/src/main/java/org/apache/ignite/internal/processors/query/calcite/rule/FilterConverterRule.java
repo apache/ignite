@@ -43,7 +43,7 @@ public class FilterConverterRule extends AbstractIgniteConverterRule<LogicalFilt
 
     /** */
     public FilterConverterRule() {
-        super(LogicalFilter.class);
+        super(LogicalFilter.class, "FilterConverterRule");
     }
 
     /** {@inheritDoc} */

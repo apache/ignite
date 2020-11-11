@@ -357,22 +357,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** */
     public void setDisabledRules(Set<String> disabledRuleNames) {
-        final List<Pattern> disabledRulePatterns = disabledRuleNames.stream()
-            .map(Pattern::compile)
-            .collect(Collectors.toList());
-
         ctx.rulesFilter(rulesSet -> {
             List<RelOptRule> newSet = new ArrayList<>();
 
             for (RelOptRule r : rulesSet) {
-                System.out.println("+++ " + r.toString());
-                boolean disabled = false;
-                for (Pattern disabledRulePtrn : disabledRulePatterns) {
-                    if (disabledRulePtrn.matcher(r.toString()).find())
-                        disabled = true;
-                }
-
-                if (!disabled)
+                if (!disabledRuleNames.contains(r.toString()))
                     newSet.add(r);
             }
 
