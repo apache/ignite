@@ -1085,7 +1085,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             var w = ctx.Writer;
             w.WriteInt(continuousQuery.BufferSize);
             w.WriteLong((long) continuousQuery.TimeInterval.TotalMilliseconds);
-            w.WriteBoolean(false); // Include expired.
+            w.WriteBoolean(continuousQuery.IncludeExpired);
 
             if (continuousQuery.Filter == null)
             {
