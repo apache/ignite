@@ -200,10 +200,12 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
+        waitForDefragmentation(0);
+
         long[] newPartLen = partitionSizes(workDir);
 
         for (int p = 0; p < PARTS; p++)
-            assertTrue(newPartLen[p] < oldPartLen[p]); //TODO Fails.
+            assertTrue(newPartLen[p] < oldPartLen[p]);
 
         long newIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
 
@@ -248,8 +250,19 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private void waitForDefragmentation(int idx) throws IgniteCheckedException {
+        IgniteEx ig = grid(idx);
+
+        ((GridCacheDatabaseSharedManager)ig.context().cache().context().database())
+            .defragmentationManager()
+            .completionFuture()
+            .get();
+    }
+
+    /** */
     protected void createMaintenanceRecord() throws IgniteCheckedException {
         IgniteEx grid = grid(0);
+
         MaintenanceRegistry mntcReg = grid.context().maintenanceRegistry();
 
         mntcReg.registerMaintenanceTask(toStore(Collections.singletonList(DEFAULT_CACHE_NAME)));
@@ -419,7 +432,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         c.accept(workDir);
 
-        startGrid(0);
+        startGrid(0); // Fails here VERY rarely. WTF?
+
+        waitForDefragmentation(0);
 
         stopGrid(0);
 
@@ -458,6 +473,8 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         stopGrid(0);
 
         startGrid(0);
+
+        waitForDefragmentation(0);
 
         File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 

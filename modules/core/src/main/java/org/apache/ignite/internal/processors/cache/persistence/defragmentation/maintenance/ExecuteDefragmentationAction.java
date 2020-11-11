@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.cache.persistence.defragmentation.
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,16 +38,22 @@ class ExecuteDefragmentationAction implements MaintenanceAction<Boolean> {
     /** Defragmentation manager. */
     private final CachePartitionDefragmentationManager defrgMgr;
 
+    /** Failure processor. */
+    private final FailureProcessor failureProc;
+
     /**
      * @param logFunction Logger provider.
      * @param defrgMgr Defragmentation manager.
+     * @param failureProc Failure processor.
      */
     public ExecuteDefragmentationAction(
         Function<Class<?>, IgniteLogger> logFunction,
-        CachePartitionDefragmentationManager defrgMgr
+        CachePartitionDefragmentationManager defrgMgr,
+        FailureProcessor failureProc
     ) {
         this.log = logFunction.apply(ExecuteDefragmentationAction.class);
         this.defrgMgr = defrgMgr;
+        this.failureProc = failureProc;
     }
 
     /** {@inheritDoc} */
@@ -62,8 +71,11 @@ class ExecuteDefragmentationAction implements MaintenanceAction<Boolean> {
             try {
                 defrgMgr.executeDefragmentation();
             }
-            catch (IgniteCheckedException e) {
+            catch (Throwable e) {
                 log.error("Defragmentation failed", e);
+
+                // TODO Check other options.
+                failureProc.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }
         });
 

@@ -756,7 +756,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         mntcReg.registerWorkflowCallback(
                             DEFRAGMENTATION_MNTC_TASK_NAME,
-                            new DefragmentationWorkflowCallback(cctx.kernalContext()::log, defrgMgr)
+                            new DefragmentationWorkflowCallback(
+                                cctx.kernalContext()::log,
+                                defrgMgr,
+                                cctx.kernalContext().failure()
+                            )
                         );
                     }
                 }
@@ -1027,6 +1031,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
         checkpointManager.stop(cancel);
+
+        if (defrgMgr != null)
+            defrgMgr.cancel();
 
         super.onKernalStop0(cancel);
 
@@ -1814,6 +1821,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     public void resumeWalLogging() throws IgniteCheckedException {
         cctx.wal().resumeLogging(walTail);
+    }
+
+    /** */
+    public void preserveWalTailPointer() throws IgniteCheckedException {
+        walTail = cctx.wal().flush(null, true);
     }
 
     /**

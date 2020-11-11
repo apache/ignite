@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.function.Function;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
 import org.jetbrains.annotations.NotNull;
@@ -37,16 +38,22 @@ public class DefragmentationWorkflowCallback implements MaintenanceWorkflowCallb
     /** Logger provider. */
     private final Function<Class<?>, IgniteLogger> logProvider;
 
+    /** Failure processor. */
+    private final FailureProcessor failureProc;
+
     /**
      * @param logProvider Logger provider.
      * @param defrgMgr Defragmentation manager.
+     * @param failureProc Failure processor.
      */
     public DefragmentationWorkflowCallback(
         Function<Class<?>, IgniteLogger> logProvider,
-        CachePartitionDefragmentationManager defrgMgr
+        CachePartitionDefragmentationManager defrgMgr,
+        FailureProcessor failureProc
     ) {
         this.defrgMgr = defrgMgr;
         this.logProvider = logProvider;
+        this.failureProc = failureProc;
     }
 
     /** {@inheritDoc} */
@@ -61,6 +68,6 @@ public class DefragmentationWorkflowCallback implements MaintenanceWorkflowCallb
 
     /** {@inheritDoc} */
     @Override public @Nullable MaintenanceAction<Boolean> automaticAction() {
-        return new ExecuteDefragmentationAction(logProvider, defrgMgr);
+        return new ExecuteDefragmentationAction(logProvider, defrgMgr, failureProc);
     }
 }

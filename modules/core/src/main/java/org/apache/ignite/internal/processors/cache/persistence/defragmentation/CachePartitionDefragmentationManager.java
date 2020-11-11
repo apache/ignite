@@ -198,6 +198,8 @@ public class CachePartitionDefragmentationManager {
 
         nodeCheckpoint.forceCheckpoint("beforeDefragmentation", null).futureFor(FINISHED).get();
 
+        dbMgr.preserveWalTailPointer();
+
         sharedCtx.wal().onDeActivate(sharedCtx.kernalContext());
     }
 
@@ -423,7 +425,7 @@ public class CachePartitionDefragmentationManager {
                                 .futureFor(CheckpointState.FINISHED);
                         }
 
-                        idxDfrgFut.listen(fut -> {
+                        idxDfrgFut = idxDfrgFut.chain(fut -> {
                             oldPageMem.invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
 
                             PageMemoryEx partPageMem = (PageMemoryEx)partDataRegion.pageMemory();
@@ -450,12 +452,10 @@ public class CachePartitionDefragmentationManager {
                             catch (IgniteCheckedException e) {
                                 throw new IgniteException(e);
                             }
+
+                            return null;
                         });
                     }
-
-                    // I guess we should wait for it?
-                    if (idxDfrgFut != null)
-                        idxDfrgFut.get();
                 }
                 catch (DefragmentationCancelledException e) {
                     DefragmentationFileUtils.deleteLeftovers(workDir);
@@ -463,6 +463,9 @@ public class CachePartitionDefragmentationManager {
                     throw e;
                 }
             }
+
+            if (idxDfrgFut != null)
+                idxDfrgFut.get();
 
             mntcReg.unregisterMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
 
@@ -485,6 +488,11 @@ public class CachePartitionDefragmentationManager {
         finally {
             defragmentationCheckpoint.stop(true);
         }
+    }
+
+    /** */
+    public IgniteInternalFuture<?> completionFuture() {
+        return completionFut.chain(future -> null);
     }
 
     /** */
