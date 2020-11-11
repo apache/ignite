@@ -25,7 +25,7 @@
 #endif //_MSC_VER
 
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0501
+#define _WIN32_WINNT 0x0601
 #endif // _WIN32_WINNT
 
 #include <boost/asio.hpp>
@@ -33,7 +33,7 @@
 #include <boost/make_shared.hpp>
 
 #ifdef _MSC_VER
-#   pragma warning(pop
+#   pragma warning(pop)
 #endif //_MSC_VER
 
 #include <ignite/binary/binary.h>
