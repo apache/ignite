@@ -19,7 +19,6 @@ package org.apache.ignite.internal.ducktest.tests.loader;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
@@ -42,7 +41,7 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
 
         long start = System.currentTimeMillis();
 
-        parallelLoad(ignite, cacheName, iterSize, dataSize);
+        loadParallel(ignite, cacheName, iterSize, dataSize);
 
         recordResult("DURATION", System.currentTimeMillis() - start);
 
@@ -50,7 +49,7 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void parallelLoad(Ignite ignite, String cacheName, long iterSize, int dataSize)
+    private void loadParallel(Ignite ignite, String cacheName, long iterSize, int dataSize)
             throws InterruptedException {
         int threads = Runtime.getRuntime().availableProcessors() / 2;
 
@@ -96,15 +95,8 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
             try (IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
                 dataStreamer.autoFlushFrequency(100L);
 
-                for (long i = 0L; i <= iterSize; i++) {
-                    UUID uuid = UUID.randomUUID();
-
-                    byte[] data = new byte[dataSize];
-
-                    ThreadLocalRandom.current().nextBytes(data);
-
-                    dataStreamer.addData(uuid, data);
-                }
+                for (long i = 0L; i <= iterSize; i++)
+                    dataStreamer.addData(UUID.randomUUID(), new byte[dataSize]);
             }
 
             latch.countDown();
