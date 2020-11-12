@@ -116,14 +116,14 @@ class IgniteService(IgniteAwareService):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
         node.account.ssh("sudo rm -rf -- %s" % self.PERSISTENT_ROOT, allow_fail=False)
 
-    def rename_database(self, new_db_name: str):
+    def rename_database(self, new_name: str):
         """
         Rename ignite database.
         """
         for node in self.nodes:
             assert len(self.pids(node)) == 0
 
-            node.account.ssh(f'mv {self.WORK_DIR}/db {self.WORK_DIR}/{new_db_name}')
+            node.account.ssh(f'mv {self.WORK_DIR}/db {self.WORK_DIR}/{new_name}')
 
     def restore_from_snapshot(self, snapshot_name: str):
         """

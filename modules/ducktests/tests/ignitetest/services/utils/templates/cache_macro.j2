@@ -23,9 +23,18 @@
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="{{ cache.name }}"/>
                     {% if cache.cache_mode == 'PARTITIONED' %}
-                        <property name="backups" value="{{ cache.backups or 0 }}"/>
+                    <property name="backups" value="{{ cache.backups or 0 }}"/>
                     {% endif %}
                     <property name="atomicityMode" value="{{ cache.atomicity_mode or 'ATOMIC' }}"/>
+                    {% if cache.indexed_types %}
+                    <property name="indexedTypes">
+                        <list>
+                        {% for class in cache.indexed_types %}
+                            <value>{{ class }}</value>
+                        {% endfor %}
+                        </list>
+                    </property>
+                    {% endif %}
                 </bean>
                 {% endfor %}
             </list>

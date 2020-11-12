@@ -24,7 +24,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
@@ -39,15 +38,9 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
 
         long iterSize = jNode.get("iterSize").asLong();
 
-        CacheConfiguration<UUID, byte[]> cacheCfg = new CacheConfiguration<>(cacheName);
-        cacheCfg.setBackups(1);
-        cacheCfg.setIndexedTypes(UUID.class, byte[].class);
-
-        ignite.getOrCreateCache(cacheCfg);
+        markInitialized();
 
         long start = System.currentTimeMillis();
-
-        markInitialized();
 
         parallelLoad(ignite, cacheName, iterSize, dataSize);
 

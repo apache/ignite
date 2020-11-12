@@ -22,6 +22,7 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
+from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils import ignite_versions
@@ -38,6 +39,8 @@ class SnapshotTest(IgniteTest):
 
     SNAPSHOT_NAME = "test_snap"
 
+    CACHE_NAME = "TEST_CACHE"
+
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH))
     def snapshot_test(self, ignite_version):
@@ -48,7 +51,8 @@ class SnapshotTest(IgniteTest):
 
         ignite_config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
-            data_storage=data_storage
+            data_storage=data_storage,
+            caches=[CacheConfiguration(name=self.CACHE_NAME, backups=1, indexed_types=['java.util.UUID', 'byte[]'])]
         )
 
         service = IgniteService(self.test_context, ignite_config, num_nodes=self.NUM_NODES - 1)
@@ -68,7 +72,7 @@ class SnapshotTest(IgniteTest):
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.loader.UuidDataLoaderApplication",
             params={
-                "cacheName": "test-cache",
+                "cacheName": self.CACHE_NAME,
                 "iterSize": 1024 * 1024,
                 "dataSize": 1024
             }
@@ -93,7 +97,7 @@ class SnapshotTest(IgniteTest):
 
         service.stop()
 
-        service.rename_database(new_db_name='old_db')
+        service.rename_database(new_name='old_db')
         service.restore_from_snapshot(self.SNAPSHOT_NAME)
 
         service.restart()
