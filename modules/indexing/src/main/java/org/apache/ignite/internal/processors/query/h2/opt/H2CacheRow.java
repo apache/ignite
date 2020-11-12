@@ -182,6 +182,9 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
         }
     }
 
+    /**
+     * @return Cache data row.
+     */
     public CacheDataRow getRow() {
         return row;
     }
@@ -350,6 +353,9 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
         return sb.toString();
     }
 
+    /**
+     * @return H2 row descriptor.
+     */
     public GridH2RowDescriptor getDesc() {
         return desc;
     }

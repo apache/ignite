@@ -164,6 +164,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** Marshaller. */
     private final Marshaller marshaller;
 
+    /** Page manager. */
     private final PageReadWriteManager pmPageMgr;
 
     /**

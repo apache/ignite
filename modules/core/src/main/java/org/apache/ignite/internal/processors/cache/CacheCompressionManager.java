@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.checkCompressionLevelBounds;
@@ -45,15 +46,15 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        if (cctx.kernalContext().clientNode()) {
+        CacheConfiguration cfg = cctx.config();
+
+        if (cctx.kernalContext().clientNode() || !CU.isPersistentCache(cfg, cctx.gridConfig().getDataStorageConfiguration())) {
             diskPageCompression = DiskPageCompression.DISABLED;
 
             return;
         }
 
         compressProc = cctx.kernalContext().compress();
-
-        CacheConfiguration cfg = cctx.config();
 
         diskPageCompression = cctx.kernalContext().config().isClientMode() ? null : cfg.getDiskPageCompression();
 

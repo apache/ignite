@@ -50,6 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
@@ -708,7 +709,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected DataRegion addDataRegion(DataStorageConfiguration dataStorageCfg, DataRegionConfiguration dataRegionCfg,
+    @Override public DataRegion addDataRegion(DataStorageConfiguration dataStorageCfg, DataRegionConfiguration dataRegionCfg,
         boolean trackable, PageReadWriteManager pmPageMgr) throws IgniteCheckedException {
         DataRegion region = super.addDataRegion(dataStorageCfg, dataRegionCfg, trackable, pmPageMgr);
 
@@ -1745,7 +1746,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
                 new CorruptedPdsMaintenanceCallback(workDir,
-                    Arrays.asList(mntcTask.parameters().split(File.separator)))
+                    Arrays.asList(mntcTask.parameters().split(Pattern.quote(File.separator))))
             );
 
             return;

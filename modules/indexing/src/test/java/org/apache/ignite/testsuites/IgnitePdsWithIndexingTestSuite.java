@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.database.IgnitePersistentStoreSchem
 import org.apache.ignite.internal.processors.database.IgniteTwoRegionsRebuildIndexTest;
 import org.apache.ignite.internal.processors.database.RebuildIndexTest;
 import org.apache.ignite.internal.processors.database.RebuildIndexWithHistoricalRebalanceTest;
+import org.apache.ignite.internal.processors.database.RebuildIndexWithMVCCTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -54,6 +55,7 @@ import org.junit.runners.Suite;
     IndexingMultithreadedLoadContinuousRestartTest.class,
     LongDestroyDurableBackgroundTaskTest.class,
     RebuildIndexTest.class,
+    RebuildIndexWithMVCCTest.class,
     IgniteClusterSnapshotWithIndexesTest.class,
     ClientReconnectWithSqlTableConfiguredTest.class,
     MultipleParallelCacheDeleteDeadlockTest.class,

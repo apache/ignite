@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.util;
 
-/** */
+/**
+ * Rows with this marker interface will always be inserted in the very end of the tree.
+ */
 public interface InsertLast {
 }

@@ -2297,6 +2297,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public CacheDataTree tree() {
+            return dataTree;
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean init() {
             try {
                 return init0(true) != null;
