@@ -79,16 +79,18 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
     private static final int NUM_ENTITIES = 1_000;
 
     /** Test parameters. */
-    @Parameterized.Parameters(name = "await_eviction={0}")
+    @Parameterized.Parameters(name = "backups_count={0}")
     public static Iterable<Object[]> params() {
         return Arrays.asList(
-            new Object[] { false },
-            new Object[] { true });
+                new Object[] { 0 },
+                new Object[] { 1 },
+                new Object[] { 2 }
+            );
     }
 
     /** */
     @Parameterized.Parameter
-    public boolean awaitEviction;
+    public int backupsCount;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -99,7 +101,9 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
             .setSqlSchema("DOMAIN")
             .setQueryEntities(Collections.singletonList(queryEntity()))
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setCacheMode(CacheMode.PARTITIONED));
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setBackups(backupsCount)
+        );
 
         cfg.setActiveOnStart(true);
 
@@ -122,10 +126,7 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
 
         ignitionStart(2);
 
-        if (awaitEviction)
-            awaitPartitionMapExchange(true, true, null);
-        else
-            awaitPartitionMapExchange();
+        awaitPartitionMapExchange();
 
         for (Ignite g: G.allGrids())
             assertEquals(NUM_ENTITIES, query(g, "SELECT * FROM " + POI_TABLE_NAME).size());
