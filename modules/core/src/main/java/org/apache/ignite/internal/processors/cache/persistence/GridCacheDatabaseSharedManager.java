@@ -118,7 +118,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointStatus;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightCheckpointManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightweightCheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.ReservationReason;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationPageReadWriteManager;
@@ -679,7 +679,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             dataRegion(DEFRAGMENTATION_PART_REGION_NAME)
         );
 
-        LightCheckpointManager lightCheckpointMgr = new LightCheckpointManager(
+        LightweightCheckpointManager lightCheckpointMgr = new LightweightCheckpointManager(
             kernalCtx::log,
             cctx.igniteInstanceName(),
             "db-checkpoint-thread-defrag",
