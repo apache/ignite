@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.Set;
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -26,6 +29,9 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /** */
 public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTableScan> extends AbstractIgniteConverterRule<T> {
@@ -45,7 +51,13 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
         new LogicalScanConverterRule<IgniteLogicalTableScan>(IgniteLogicalTableScan.class, "LogicalIndexScanConverterRule") {
             /** {@inheritDoc} */
             @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, IgniteLogicalTableScan rel) {
-                return new IgniteTableScan(rel.getCluster(), rel.getTraitSet().replace(IgniteConvention.INSTANCE),
+                RelTraitSet traits = rel.getTraitSet().replace(IgniteConvention.INSTANCE);
+
+                Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.condition());
+                if (!corrIds.isEmpty())
+                    traits = traits.replace(RewindabilityTrait.REWINDABLE).replace(CorrelationTrait.correlations(corrIds));
+
+                return new IgniteTableScan(rel.getCluster(), traits,
                     rel.getTable(), rel.projects(), rel.condition(), rel.requiredColunms());
             }
         };

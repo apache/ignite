@@ -65,7 +65,7 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
 
     /** Instance. */
     public static final FilterScanMergeRule<IgniteLogicalTableScan> TABLE_SCAN =
-        new FilterScanMergeRule<IgniteLogicalTableScan>(IgniteFilter.class, IgniteLogicalTableScan.class, "FilterTableScanMergeRule") {
+        new FilterScanMergeRule<IgniteLogicalTableScan>(LogicalFilter.class, IgniteLogicalTableScan.class, "FilterTableScanMergeRule") {
             /** {@inheritDoc} */
             @Override protected IgniteLogicalTableScan createNode(
                 RelOptCluster cluster,
@@ -151,7 +151,7 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         CorrelationTrait filterCorr = TraitUtils.correlation(filter);
 
         if (filterCorr.correlated())
-            trait.replace(filterCorr);
+            trait = trait.replace(filterCorr);
 
         RelNode res = createNode(cluster, scan, trait, condition);
 

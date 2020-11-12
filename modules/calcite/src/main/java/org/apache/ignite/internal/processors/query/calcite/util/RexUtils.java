@@ -426,6 +426,9 @@ public class RexUtils {
 
     /** */
     public static Set<CorrelationId> extractCorrelationIds(RexNode node) {
+        if (node == null)
+            return Collections.emptySet();
+
         return extractCorrelationIds(Collections.singletonList(node));
     }
 

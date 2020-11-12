@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -125,11 +126,19 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
     /** */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
-        if (RexUtils.hasCorrelation(getCondition()))
-            return ImmutableList.of();
+        Set<CorrelationId> corrSet = RexUtils.extractCorrelationIds(getCondition());
 
-        return ImmutableList.of(Pair.of(nodeTraits,
-            ImmutableList.of(inTraits.get(0).replace(TraitUtils.correlation(nodeTraits)))));
+        if (corrSet.isEmpty() && TraitUtils.correlation(nodeTraits).correlated())
+            return ImmutableList.of(Pair.of(nodeTraits,
+                ImmutableList.of(inTraits.get(0).replace(TraitUtils.correlation(nodeTraits)))));
+
+        if (corrSet.isEmpty()
+            || RexUtils.extractCorrelationIds(getCondition()).containsAll(TraitUtils.correlation(nodeTraits).correlationIds())) {
+            return ImmutableList.of(Pair.of(nodeTraits,
+                ImmutableList.of(inTraits.get(0).replace(CorrelationTrait.UNCORRELATED))));
+        }
+        else
+            return ImmutableList.of();
     }
 
     /** */

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.Set;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
@@ -50,17 +49,18 @@ public class FilterConverterRule extends AbstractIgniteConverterRule<LogicalFilt
     @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalFilter rel) {
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traits = rel.getTraitSet().replace(IgniteConvention.INSTANCE);
+        RelTraitSet inTraits = rel.getTraitSet().replace(IgniteConvention.INSTANCE);
         RelNode input = rel.getInput();
 
         Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.getCondition());
 
         if (!corrIds.isEmpty()) {
-            input = RelOptRule.convert(input, RewindabilityTrait.REWINDABLE);
+            inTraits = rel.getTraitSet().replace(RewindabilityTrait.REWINDABLE);
 
             traits = traits.replace(RewindabilityTrait.REWINDABLE).replace(CorrelationTrait.correlations(corrIds));
         }
-        else
-            input = convert(rel.getInput(), traits);
+
+        input = RelOptRule.convert(input, inTraits);
 
         return new IgniteFilter(cluster, traits, input, rel.getCondition());
     }

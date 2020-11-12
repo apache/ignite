@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -27,17 +25,23 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
-import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
-import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
 /**
  * Relational operator that returns the contents of a table.
  */
-public class IgniteTableSpool extends Spool implements TraitsAwareIgniteRel {
+public class IgniteTableSpool extends Spool implements IgniteRel {
+    /**
+     */
+    public IgniteTableSpool(
+        RelOptCluster cluster,
+        RelTraitSet traits,
+        RelNode input
+    ) {
+        super(cluster, traits, input, Type.LAZY, Type.EAGER);
+    }
+
     /**
      * Constructor used for deserialization.
      *
@@ -53,16 +57,6 @@ public class IgniteTableSpool extends Spool implements TraitsAwareIgniteRel {
         );
     }
 
-    /**
-     */
-    public IgniteTableSpool(
-        RelOptCluster cluster,
-        RelTraitSet traits,
-        RelNode input
-    ) {
-        super(cluster, traits, input, Type.LAZY, Type.EAGER);
-    }
-
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
@@ -74,59 +68,8 @@ public class IgniteTableSpool extends Spool implements TraitsAwareIgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits,
-            ImmutableList.of(inTraits.get(0).replace(RewindabilityTrait.ONE_WAY))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits,
-            ImmutableList.of(inTraits.get(0).replace(TraitUtils.distribution(nodeTraits)))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits,
-            ImmutableList.of(inTraits.get(0).replace(TraitUtils.collation(nodeTraits)))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE),
-            inTraits));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.distribution(inTraits.get(0))),
-            inTraits));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.collation(inTraits.get(0))),
-            inTraits));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits,
-            ImmutableList.of(inTraits.get(0).replace(TraitUtils.correlation(nodeTraits)))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.collation(inTraits.get(0))),
-            inTraits));
+    @Override public boolean isEnforcer() {
+        return true;
     }
 
     /** {@inheritDoc} */

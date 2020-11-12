@@ -2669,8 +2669,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         TestTable t0 = new TestTable(
             new RelDataTypeFactory.Builder(f)
                 .add("ID", f.createJavaType(Integer.class))
-                .add("JID", f.createJavaType(String.class))
-                .add("VAL", f.createJavaType(Integer.class))
+                .add("JID", f.createJavaType(Integer.class))
+                .add("VAL", f.createJavaType(String.class))
                 .build()) {
 
             @Override public IgniteDistribution distribution() {
@@ -2698,7 +2698,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
 
-        String sql = "select t0.val, t1.val " +
+        String sql = "select * " +
             "from t0 "  +
             "join t1 on t0.jid = t1.jid ";
 
@@ -2756,6 +2756,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             assertNotNull(phys);
+
+            System.out.println("+++ " + RelOptUtil.toString(phys));
 
             AtomicInteger spoolCnt = new AtomicInteger();
 

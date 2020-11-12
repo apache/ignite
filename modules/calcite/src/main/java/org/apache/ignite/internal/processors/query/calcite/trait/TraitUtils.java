@@ -157,7 +157,9 @@ public class TraitUtils {
 
         return new IgniteTableSpool(
             rel.getCluster(),
-            rel.getTraitSet().replace(toTrait).replace(CorrelationTrait.UNCORRELATED),
+            rel.getTraitSet()
+                .replace(toTrait)
+                .replace(CorrelationTrait.UNCORRELATED),
             RelOptRule.convert(
                 rel,
                 rel.getTraitSet()

@@ -107,10 +107,11 @@ public class CorrelatedNestedLoopJoinRule extends RelRule<CorrelatedNestedLoopJo
             conditionList.add(condition2);
         }
 
-        RelTraitSet filterTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replace(RewindabilityTrait.REWINDABLE);
-
-        RelNode filterInput = convert(rel.getRight(), filterTraits);
+        RelTraitSet filterInTraits = rel.getRight().getTraitSet()
+            .replace(RewindabilityTrait.REWINDABLE)
+            .replace(CorrelationTrait.UNCORRELATED);
+        RelNode filterInput = convert(rel.getRight(), filterInTraits);
+//        RelNode filterInput = rel.getRight();
 
         // Push a filter with batchSize disjunctions
         relBuilder.push(filterInput).filter(relBuilder.or(conditionList));
@@ -121,7 +122,7 @@ public class CorrelatedNestedLoopJoinRule extends RelRule<CorrelatedNestedLoopJo
         RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
 
-        CorrelationTrait corrTrait = CorrelationTraitDef.INSTANCE.canonize(new CorrelationTrait(correlationIds));
+        CorrelationTrait corrTrait = CorrelationTrait.correlations(correlationIds);
         RelTraitSet rightInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replace(RewindabilityTrait.REWINDABLE)
             .replace(corrTrait);
