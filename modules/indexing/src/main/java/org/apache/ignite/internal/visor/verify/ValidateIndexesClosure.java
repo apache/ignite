@@ -738,43 +738,6 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
     }
 
     /**
-     * Get session with MVCC snapshot and QueryContext.
-     *
-     * @param cctx Cache context.
-     * @return Session with QueryContext and MVCC snapshot.
-     * @throws IgniteCheckedException If failed.
-     */
-    private Session mvccSession(GridCacheContext<Object, Object> cctx) throws IgniteCheckedException {
-        Session session = null;
-
-        boolean mvccEnabled = cctx.mvccEnabled();
-
-        if (mvccEnabled) {
-            ConnectionManager connMgr = ((IgniteH2Indexing) ignite.context().query().getIndexing()).connections();
-
-            JdbcConnection connection = (JdbcConnection) connMgr.connection().connection();
-
-            session = (Session) connection.getSession();
-
-            MvccQueryTracker tracker = MvccUtils.mvccTracker(cctx, true);
-
-            MvccSnapshot mvccSnapshot = tracker.snapshot();
-
-            final QueryContext qctx = new QueryContext(
-                0,
-                cacheName -> null,
-                null,
-                mvccSnapshot,
-                null,
-                true
-            );
-
-            session.setVariable(H2Utils.QCTX_VARIABLE_NAME, new H2Utils.ValueRuntimeSimpleObject<>(qctx));
-        }
-        return session;
-    }
-
-    /**
      *
      */
     private void printProgressOfIndexValidationIfNeeded() {
