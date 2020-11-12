@@ -227,7 +227,14 @@ namespace ignite
         {
             std::vector<SQLCHAR> sql = MakeQuery(qry);
 
-            return SQLExecDirect(stmt, &sql[0], static_cast<SQLINTEGER>(sql.size()));
+            return SQLExecDirect(stmt, sql.data(), static_cast<SQLINTEGER>(sql.size()));
+        }
+
+        SQLRETURN OdbcTestSuite::PrepareQuery(const std::string& qry)
+        {
+            std::vector<SQLCHAR> sql = MakeQuery(qry);
+
+            return SQLPrepare(stmt, sql.data(), static_cast<SQLINTEGER>(sql.size()));
         }
 
         void OdbcTestSuite::InsertTestStrings(int recordsNum, bool merge)
