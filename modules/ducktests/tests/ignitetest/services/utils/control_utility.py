@@ -227,8 +227,10 @@ class ControlUtility:
     def __parse_cluster_state(output):
         state_pattern = re.compile("Cluster state: (?P<cluster_state>[^\\s]+)")
         topology_pattern = re.compile("Current topology version: (?P<topology_version>\\d+)")
-        baseline_pattern = re.compile("Consistent(Id|ID)=(?P<consistent_id>[^\\s]+),\\sS(tate|TATE)=(?P<state>[^\\s]+),"
-                                      "?(\\sOrder=(?P<order>\\d+))?")
+        baseline_pattern = re.compile("Consistent(Id|ID)=(?P<consistent_id>[^\\s]+)"
+                                      "(,\\sA(ddress|DDRESS)=(?P<address>[^\\s]+))?"
+                                      ",\\sS(tate|TATE)=(?P<state>[^\\s]+)"
+                                      "(,\\sOrder=(?P<order>\\d+))?")
 
         match = state_pattern.search(output)
         state = match.group("cluster_state") if match else None
@@ -238,7 +240,9 @@ class ControlUtility:
 
         baseline = []
         for match in baseline_pattern.finditer(output):
-            node = BaselineNode(consistent_id=match.group("consistent_id"), state=match.group("state"),
+            node = BaselineNode(consistent_id=match.group("consistent_id"),
+                                state=match.group("state"),
+                                address=match.group("address"),
                                 order=int(match.group("order")) if match.group("order") else None)
             baseline.append(node)
 
@@ -284,6 +288,7 @@ class BaselineNode(NamedTuple):
     """
     consistent_id: str
     state: str
+    address: str
     order: int
 
 
