@@ -26,7 +26,7 @@ public class Activators {
     /**
      * Sigmoid activation function.
      */
-    public static IgniteDifferentiableDoubleToDoubleFunction SIGMOID = new IgniteDifferentiableDoubleToDoubleFunction() {
+    public static final IgniteDifferentiableDoubleToDoubleFunction SIGMOID = new IgniteDifferentiableDoubleToDoubleFunction() {
         /** {@inheritDoc} */
         @Override public double differential(double pnt) {
             double v = apply(pnt);
@@ -42,7 +42,7 @@ public class Activators {
     /**
      * Rectified linear unit (ReLU) activation function.
      */
-    public static IgniteDifferentiableDoubleToDoubleFunction RELU = new IgniteDifferentiableDoubleToDoubleFunction() {
+    public static final IgniteDifferentiableDoubleToDoubleFunction RELU = new IgniteDifferentiableDoubleToDoubleFunction() {
         /**
          * Differential of ReLU at pnt. Formally, function is not differentiable at 0, but we let differential at 0 be 0.
          *
@@ -62,7 +62,7 @@ public class Activators {
     /**
      * Linear unit activation function.
      */
-    public static IgniteDifferentiableDoubleToDoubleFunction LINEAR = new IgniteDifferentiableDoubleToDoubleFunction() {
+    public static final IgniteDifferentiableDoubleToDoubleFunction LINEAR = new IgniteDifferentiableDoubleToDoubleFunction() {
         /** {@inheritDoc} */
         @Override public double differential(double pnt) {
             return 1.0;

@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl;
@@ -249,7 +250,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class,
         /// performing a deep copy of specified cache configuration.
         /// </summary>
-        /// <param name="other">The other configuration to perfrom deep copy from.</param>
+        /// <param name="other">The other configuration to perform deep copy from.</param>
         public CacheConfiguration(CacheConfiguration other)
         {
             if (other != null)
@@ -339,6 +340,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             EvictionPolicy = EvictionPolicyBase.Read(reader);
             AffinityFunction = AffinityFunctionSerializer.Read(reader);
             ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
+
+            NodeFilter = reader.ReadBoolean() ? new AttributeNodeFilter(reader) : null;
 
             KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
             
@@ -447,6 +450,26 @@ namespace Apache.Ignite.Core.Cache.Configuration
             EvictionPolicyBase.Write(writer, EvictionPolicy);
             AffinityFunctionSerializer.Write(writer, AffinityFunction);
             ExpiryPolicySerializer.WritePolicyFactory(writer, ExpiryPolicyFactory);
+
+            if (NodeFilter != null)
+            {
+                writer.WriteBoolean(true);
+
+                var attributeNodeFilter = NodeFilter as AttributeNodeFilter;
+                if (attributeNodeFilter == null)
+                {
+                    throw new NotSupportedException(string.Format(
+                        "Unsupported CacheConfiguration.NodeFilter: '{0}'. " +
+                        "Only predefined implementations are supported: '{1}'",
+                        NodeFilter.GetType().Name, typeof(AttributeNodeFilter).Name));
+                }
+
+                attributeNodeFilter.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
 
             writer.WriteCollectionRaw(KeyConfiguration);
             
@@ -949,5 +972,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [IgniteExperimental]
         public PlatformCacheConfiguration PlatformCacheConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cluster node filter. Cache will be started only on nodes that match the filter.
+        /// <para />
+        /// Only predefined implementations are supported: <see cref="AttributeNodeFilter"/>.
+        /// </summary>
+        public IClusterNodeFilter NodeFilter { get; set; }
     }
 }
