@@ -59,9 +59,11 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeaf
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.InsertLast;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
@@ -90,6 +92,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlus
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Result.NOT_FOUND;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Result.RETRY;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Result.RETRY_ROOT;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver.DEFAULT_PAGE_IO_RESOLVER;
 
 /**
  * Abstract B+Tree.
@@ -778,7 +781,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             metaPageId,
             reuseList,
             failureProcessor,
-            lockLsnr
+            lockLsnr,
+            DEFAULT_PAGE_IO_RESOLVER
         );
 
         setIos(innerIos, leafIos);
@@ -806,9 +810,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long metaPageId,
         ReuseList reuseList,
         @Nullable FailureProcessor failureProcessor,
-        @Nullable PageLockListener lsnr
-    ) throws IgniteCheckedException {
-        super(cacheGrpId, grpName, pageMem, wal, lsnr);
+        @Nullable PageLockListener lsnr,
+        PageIoResolver pageIoRslvr
+    ) {
+        super(cacheGrpId, grpName, pageMem, wal, lsnr, pageIoRslvr);
 
         assert !F.isEmpty(name);
 
@@ -5288,6 +5293,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private int findInsertionPoint(int lvl, BPlusIO<L> io, long buf, int low, int cnt, L row, int shift)
         throws IgniteCheckedException {
         assert row != null;
+
+        if (row instanceof InsertLast)
+            return -cnt - 1;
 
         int high = cnt - 1;
 
