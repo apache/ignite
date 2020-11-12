@@ -194,7 +194,7 @@ class DiscoveryTest(IgniteTest):
 
         ids_to_wait = [node_id(n) for n in failed_nodes]
 
-        _, first_terminated = servers.disconnect(failed_nodes)
+        _, first_terminated = servers.drop_network(failed_nodes)
 
         # Keeps dates of logged node failures.
         logged_timestamps = []

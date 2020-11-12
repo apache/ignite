@@ -200,15 +200,18 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         task(node)
 
-    def disconnect(self, nodes=None):
+    def drop_network(self, nodes=None):
         """
         Disconnects node from cluster.
         """
-        self.logger.info("Disconnecting the node.")
+        self.logger.info("Disconnecting the node(s)...")
 
         if nodes is None:
             assert self.num_nodes == 1
             nodes = self.nodes
+
+        for node in nodes:
+            self.logger.debug("Disconnecting " + node.account.hostname + ".")
 
         self.__backup_iptables(nodes)
 

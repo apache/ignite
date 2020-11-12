@@ -154,7 +154,7 @@ class CellularAffinity(IgniteTest):
         elif stop_type is StopType.SIGKILL:
             failed_loader.stop(clean_shutdown=False)
         elif stop_type is StopType.DISCONNECT:
-            failed_loader.disconnect()
+            failed_loader.drop_network()
 
         for streamer in streamers:
             streamer.await_event("Node left topology\\|Node FAILED", 60, from_the_beginning=True)
