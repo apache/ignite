@@ -59,7 +59,6 @@ class DiscoveryTestConfig(NamedTuple):
     load_type: ClusterLoad = ClusterLoad.NONE
     sequential_failure: bool = False
     with_zk: bool = False
-    socket_linger: int = -1
     failure_detection_timeout: int = 1000
 
 
@@ -95,8 +94,7 @@ class DiscoveryTest(IgniteTest):
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
-                                          load_type=load_type, sequential_failure=False,
-                                          socket_linger=-1 if IgniteVersion(ignite_version) < V_2_8_0 else 0)
+                                          load_type=load_type, sequential_failure=False)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -108,8 +106,7 @@ class DiscoveryTest(IgniteTest):
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2, load_type=load_type,
-                                          sequential_failure=True,
-                                          socket_linger=-1 if IgniteVersion(ignite_version) < V_2_8_0 else 0)
+                                          sequential_failure=True)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -151,9 +148,6 @@ class DiscoveryTest(IgniteTest):
             discovery_spi = from_zookeeper_cluster(zk_quorum)
         else:
             discovery_spi = TcpDiscoverySpi()
-
-            if test_config.socket_linger >= 0:
-                discovery_spi.socket_linger = test_config.socket_linger
 
         ignite_config = IgniteConfiguration(
             version=test_config.version,
