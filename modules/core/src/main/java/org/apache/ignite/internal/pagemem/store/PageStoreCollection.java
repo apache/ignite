@@ -15,18 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.database.io;
+package org.apache.ignite.internal.pagemem.store;
+
+import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Leaf page for H2 row references.
+ * A collection that contains {@link PageStore} elements.
  */
-public class H2ExtrasLeafIO extends AbstractH2ExtrasLeafIO {
+public interface PageStoreCollection {
     /**
-     * @param type Page type.
-     * @param ver Page format version.
-     * @param payloadSize Payload size.
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     * @return Page store for the corresponding parameters.
+     * @throws IgniteCheckedException If cache or partition with the given ID was not created.
      */
-    public H2ExtrasLeafIO(short type, int ver, int payloadSize) {
-        super(type, ver, 8, payloadSize);
-    }
+    public PageStore getStore(int grpId, int partId) throws IgniteCheckedException;
+
+    /**
+     * @param grpId Cache group ID.
+     * @return Collection of related page stores.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Collection<PageStore> getStores(int grpId) throws IgniteCheckedException;
 }
