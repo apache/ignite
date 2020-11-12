@@ -37,12 +37,6 @@ class PageStoreMap implements PageStoreCollection {
         int partId,
         PageStore pageStore
     ) {
-        System.out.println(S.toString("Adding page store.",
-            "grpId", grpId, false,
-            "partId", partId, false,
-            "this", hashCode(), false
-        ));
-
         IntMap<PageStore> pageStoresMap = grpPageStoresMap.get(grpId);
 
         //This code cannot be used concurrently. If we decide to parallel defragmentation then we should correct current class.
@@ -57,12 +51,6 @@ class PageStoreMap implements PageStoreCollection {
         int grpId,
         int partId
     ) {
-        System.out.println(S.toString("Removing page store.",
-            "grpId", grpId, false,
-            "partId", partId, false,
-            "this", hashCode(), false
-        ));
-
         IntMap<PageStore> pageStoresMap = grpPageStoresMap.get(grpId);
 
         if (pageStoresMap != null)
