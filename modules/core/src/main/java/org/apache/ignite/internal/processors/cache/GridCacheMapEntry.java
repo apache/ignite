@@ -564,7 +564,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             checkObsolete();
 
             if (isStartVersion() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
-                assert row == null || row.key() == key : "Unexpected row key";
+                assert row == null || Objects.equals(row.key(), key) :
+                        "Unexpected row key [row.key=" + row.key() + ", cacheEntry.key=" + key + "]";
 
                 CacheDataRow read = row == null ? cctx.offheap().read(this) : row;
 
@@ -1519,7 +1520,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 intercept = !skipInterceptor(explicitVer);
 
             if (intercept) {
-                val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
+                val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false, null);
 
                 CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinary);
 
@@ -2004,7 +2005,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         updateTtl(expiryPlc);
 
                     Object val = retval ?
-                        cctx.cacheObjectContext().unwrapBinaryIfNeeded(CU.value(old, cctx, false), keepBinary, false)
+                        cctx.cacheObjectContext().unwrapBinaryIfNeeded(CU.value(old, cctx, false), keepBinary, false, null)
                         : null;
 
                     return new T3<>(false, val, null);
@@ -2243,7 +2244,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         return new GridTuple3<>(res,
             cctx.unwrapTemporary(interceptorRes != null ?
                 interceptorRes.get2() :
-                cctx.cacheObjectContext().unwrapBinaryIfNeeded(old, keepBinary, false)),
+                cctx.cacheObjectContext().unwrapBinaryIfNeeded(old, keepBinary, false, null)),
             invokeRes);
     }
 
@@ -2564,7 +2565,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (val != null)
             return val;
 
-        return cctx.unwrapBinaryIfNeeded(cacheObj, keepBinary, cpy);
+        return cctx.unwrapBinaryIfNeeded(cacheObj, keepBinary, cpy, null);
     }
 
     /**
@@ -5725,12 +5726,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         /** {@inheritDoc} */
         @Override public K getKey() {
-            return (K)cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, true);
+            return (K)cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, true, null);
         }
 
         /** {@inheritDoc} */
         @Override public V getValue() {
-            return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(peekVisibleValue(), keepBinary, true);
+            return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(peekVisibleValue(), keepBinary, true, null);
         }
 
         /** {@inheritDoc} */
@@ -5786,6 +5787,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         /** */
         private CacheDataRow oldRow;
+
+        /** */
+        private boolean oldRowExpiredFlag;
 
         /** */
         private IgniteTree.OperationType treeOp = IgniteTree.OperationType.PUT;
@@ -5856,6 +5860,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             return oldRow;
         }
 
+        /** {@inheritDoc} */
+        @Override public boolean oldRowExpiredFlag() {
+            return oldRowExpiredFlag;
+        }
+
         /**
          * Checks row for expiration and fire expire events if needed.
          *
@@ -5901,6 +5910,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             cctx.continuousQueries().onEntryExpired(entry, entry.key(), expiredVal);
 
             entry.updatePlatformCache(null, null);
+
+            oldRowExpiredFlag = true;
 
             return null;
         }
@@ -6049,6 +6060,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** {@inheritDoc} */
         @Nullable @Override public CacheDataRow oldRow() {
             return oldRow;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean oldRowExpiredFlag() {
+            return oldRowExpiredFlag;
         }
 
         /** {@inheritDoc} */
@@ -6414,7 +6430,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (intercept && (conflictVer == null || !skipInterceptorOnConflict)) {
-                Object updated0 = cctx.unwrapBinaryIfNeeded(updated, keepBinary, false);
+                Object updated0 = cctx.unwrapBinaryIfNeeded(updated, keepBinary, false, null);
 
                 CacheLazyEntry<Object, Object> interceptEntry =
                     new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinary);
@@ -6764,6 +6780,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 entry.context().kernalContext(), EntryProcessor.class, (EntryProcessor<Object, Object, ?>)writeObj);
 
             IgniteThread.onEntryProcessorEntered(true);
+
+            if (invokeEntry.cctx.kernalContext().deploy().enabled() &&
+                invokeEntry.cctx.kernalContext().deploy().isGlobalLoader(entryProcessor.getClass().getClassLoader())) {
+                U.restoreDeploymentContext(invokeEntry.cctx.kernalContext(), invokeEntry.cctx.kernalContext()
+                    .deploy().getClassLoaderId(entryProcessor.getClass().getClassLoader()));
+            }
 
             try {
                 Object computed = entryProcessor.process(invokeEntry, invokeArgs);

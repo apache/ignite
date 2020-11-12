@@ -805,8 +805,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     KeyCacheObject key = nextRow.key();
                     CacheObject val = nextRow.value();
 
-                    Object key0 = cctx.unwrapBinaryIfNeeded(key, keepBinary, false);
-                    Object val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
+                    Object key0 = cctx.unwrapBinaryIfNeeded(key, keepBinary, false, null);
+                    Object val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false, null);
 
                     next = new CacheEntryImplEx(key0, val0, nextRow.version());
 
@@ -1717,7 +1717,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     CacheDataRow oldRow = c.oldRow();
 
-                    finishUpdate(cctx, c.newRow(), oldRow);
+                    finishUpdate(cctx, c.newRow(), oldRow, c.oldRowExpiredFlag());
 
                     break;
                 }
@@ -2623,10 +2623,20 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          */
         private void finishUpdate(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow)
             throws IgniteCheckedException {
-            if (oldRow == null)
-                incrementSize(cctx.cacheId());
+            finishUpdate(cctx, newRow, oldRow, false);
+        }
 
-            KeyCacheObject key = newRow.key();
+        /**
+         * @param cctx Cache context.
+         * @param newRow New row.
+         * @param oldRow Old row if available.
+         * @param oldRowExpired Old row expiration flag
+         * @throws IgniteCheckedException If failed.
+         */
+        private void finishUpdate(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow, boolean oldRowExpired)
+            throws IgniteCheckedException {
+            if (oldRow == null && !oldRowExpired)
+                incrementSize(cctx.cacheId());
 
             GridCacheQueryManager qryMgr = cctx.queries();
 
@@ -3163,6 +3173,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             /** {@inheritDoc} */
             @Nullable @Override public CacheDataRow oldRow() {
                 return oldRow;
+            }
+
+            /**
+            * Flag that indicates if oldRow was expired during invoke.
+            * @return {@code true} if old row was expired, {@code false} otherwise.
+            */
+            @Override public boolean oldRowExpiredFlag() {
+                return false;
             }
 
             /** {@inheritDoc} */

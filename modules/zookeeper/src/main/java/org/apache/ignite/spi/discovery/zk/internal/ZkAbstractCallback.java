@@ -22,12 +22,12 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 /**
  *
  */
-abstract class ZkAbstractCallabck {
+abstract class ZkAbstractCallback {
     /** */
     final ZkRuntimeState rtState;
 
     /** */
-    private final ZookeeperDiscoveryImpl impl;
+    final ZookeeperDiscoveryImpl impl;
 
     /** */
     private final GridSpinBusyLock busyLock;
@@ -36,7 +36,7 @@ abstract class ZkAbstractCallabck {
      * @param rtState Runtime state.
      * @param impl Discovery impl.
      */
-    ZkAbstractCallabck(ZkRuntimeState rtState, ZookeeperDiscoveryImpl impl) {
+    ZkAbstractCallback(ZkRuntimeState rtState, ZookeeperDiscoveryImpl impl) {
         this.rtState = rtState;
         this.impl = impl;
 

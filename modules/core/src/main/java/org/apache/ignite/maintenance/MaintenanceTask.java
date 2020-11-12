@@ -24,8 +24,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Represents request to handle maintenance situation.
  *
- * It can be created automatically or by user request by any component needed maintenance and should be registered
- * in Maintenance Registry with the method {@link MaintenanceRegistry#registerMaintenanceTask(MaintenanceTask)}.
+ * Maintenance request can be created programmatically
+ * with {@link MaintenanceRegistry#registerMaintenanceTask(MaintenanceTask)} public API call.
  *
  * Lifecycle of Maintenance Task is managed by {@link MaintenanceRegistry}.
  *

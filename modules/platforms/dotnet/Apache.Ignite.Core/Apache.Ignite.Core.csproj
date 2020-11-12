@@ -71,6 +71,7 @@
     <Compile Include="Client\ISslStreamFactory.cs" />
     <Compile Include="Client\Services\IServicesClient.cs" />
     <Compile Include="Client\SslStreamFactory.cs" />
+    <Compile Include="Cluster\AttributeNodeFilter.cs" />
     <Compile Include="Client\Transactions\ITransactionClient.cs" />
     <Compile Include="Client\Transactions\ITransactionsClient.cs" />
     <Compile Include="Client\Transactions\TransactionClientConfiguration.cs" />
