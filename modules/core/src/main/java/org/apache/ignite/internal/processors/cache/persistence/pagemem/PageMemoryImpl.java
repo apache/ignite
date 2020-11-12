@@ -640,7 +640,6 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return Data region configuration.
      */
     private DataRegionConfiguration getDataRegionConfiguration() {
-        //TODO
         DataStorageConfiguration memCfg = ctx.kernalContext().config().getDataStorageConfiguration();
 
         assert memCfg != null;
@@ -2479,7 +2478,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
 
-            //TODO dataRegionCfg is null
             throw new IgniteOutOfMemoryException("Failed to find a page for eviction [segmentCapacity=" + cap +
                 ", loaded=" + loadedPages.size() +
                 ", maxDirtyPages=" + maxDirtyPages +
