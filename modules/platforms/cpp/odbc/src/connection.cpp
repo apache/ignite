@@ -210,7 +210,9 @@ namespace ignite
             {
                 AddStatusRecord(SqlState::S08003_NOT_CONNECTED, "Connection is not open.");
 
-                return SqlResult::AI_ERROR;
+                // It is important to return SUCCESS_WITH_INFO and not ERROR here, as if we return an error, Windows
+                // Driver Manager may decide that connection is not valid anymore which results in memory leak.
+                return SqlResult::AI_SUCCESS_WITH_INFO;
             }
 
             Close();
@@ -680,7 +682,7 @@ namespace ignite
                 if (!rsp.GetError().empty())
                     constructor << "Additional info: " << rsp.GetError() << " ";
 
-                constructor << "Current version of the protocol, used by the server node is " 
+                constructor << "Current version of the protocol, used by the server node is "
                             << rsp.GetCurrentVer().ToString() << ", "
                             << "driver protocol version introduced in version "
                             << protocolVersion.ToString() << ".";
