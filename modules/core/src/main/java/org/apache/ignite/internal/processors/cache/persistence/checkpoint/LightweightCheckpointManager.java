@@ -139,7 +139,7 @@ public class LightweightCheckpointManager {
             logger,
             snapshotMgr,
             (pageMemEx, fullPage, buf, tag) ->
-                pageStoreManager.writeInternal(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
+                pageStoreManager.write(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
             persStoreMetrics,
             throttlingPolicy,
             threadBuf,
