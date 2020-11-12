@@ -49,7 +49,7 @@ tab:C++[unsupported]
 The following table describes some most important properties of `TcpDiscoverySpi`.
 You can find the complete list of properties in the javadoc:org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi[] javadoc.
 
-[NOTE]
+[CAUTION]
 ====
 You should assign `IgniteConfiguration.localHost` or `TcpDiscoverySpi.localAddress`.
 By default, node obtains all available IP addresses. Several node addresses can prolong detection of node failure.
@@ -60,7 +60,7 @@ give you more reliability.
 [cols="1,2,1",opts="header"]
 |===
 |Property | Description| Default Value
-| `localAddress`| Local host IP address used for discovery. Prevails `IgniteConfiguration.localHost`. | By default, all available addresses are assigned to node. If there is no non-loopback address available, then `java.net.InetAddress.getLocalHost()` is used.
+| `localAddress`| Local host IP address used for discovery. Prevails over `IgniteConfiguration.localHost`. | By default, all available addresses are assigned to node. If there is no non-loopback address available, then `java.net.InetAddress.getLocalHost()` is used.
 | `localPort`  | The port that the node binds to. If set to a non-default value, other cluster nodes must know this port to be able to discover the node. | `47500`
 | `localPortRange`| If the `localPort` is busy, the node attempts to bind to the next port (incremented by 1) and continues this process until it finds a free port. The `localPortRange` property defines the number of ports the node will try (starting from `localPort`).
    | `100`
@@ -119,7 +119,7 @@ You can find the list of all properties in the javadoc:org.apache.ignite.spi.com
 [cols="1,2,1",opts="header"]
 |===
 |Property | Description| Default Value
-| `localAddress` | The local address for the communication SPI to bind to. Prevails `IgniteConfiguration.localHost`. |
+| `localAddress` | The local address for the communication SPI to bind to. Prevails over `IgniteConfiguration.localHost`. |
 
 | `localPort` | The local port that the node uses for communication.  | `47100`
 
