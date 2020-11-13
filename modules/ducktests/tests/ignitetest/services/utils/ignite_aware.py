@@ -204,14 +204,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         Disconnects node from cluster.
         """
-        self.logger.info("Disconnecting the node(s)...")
-
         if nodes is None:
             assert self.num_nodes == 1
             nodes = self.nodes
 
         for node in nodes:
-            self.logger.debug("Disconnecting " + node.account.hostname + ".")
+            self.logger.info("Disconnecting " + node.account.hostname + ".")
 
         self.__backup_iptables(nodes)
 
