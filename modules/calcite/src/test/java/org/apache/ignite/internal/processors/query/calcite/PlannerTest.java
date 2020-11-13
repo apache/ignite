@@ -955,10 +955,11 @@ public class PlannerTest extends GridCommonAbstractTest {
             .add("PUBLIC", publicSchema);
 
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
-            "FROM PUBLIC.Developer d JOIN (" +
-            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
-            ") p " +
-            "ON d.projectId = p.id0 " +
+            "FROM PUBLIC.Developer d " +
+            "JOIN (" +
+            "   SELECT pp.id as id0, pp.ver as ver0 " +
+            "   FROM PUBLIC.Project pp" +
+            ") p ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
         RelTraitDef<?>[] traitDefs = {
@@ -1011,7 +1012,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .replace(IgniteDistributions.single())
                 .simplify();
 
-            rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+            try {
+                rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+            }
+            catch (Exception e) {
+                System.out.println("+++ " + planner.dump());
+
+                throw e;
+            }
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
         }

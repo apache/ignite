@@ -31,6 +31,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
@@ -155,16 +156,15 @@ public class TraitUtils {
         if (fromTrait.satisfies(toTrait))
             return rel;
 
+        if (correlation(rel).correlated())
+            return null;
+
         return new IgniteTableSpool(
             rel.getCluster(),
             rel.getTraitSet()
                 .replace(toTrait)
                 .replace(CorrelationTrait.UNCORRELATED),
-            RelOptRule.convert(
-                rel,
-                rel.getTraitSet()
-                    .replace(CorrelationTrait.UNCORRELATED)
-            )
+            rel
         );
     }
 
