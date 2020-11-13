@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -27,7 +27,6 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MarshallingContext;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -41,13 +40,10 @@ public class FragmentDescription implements MarshalableMessage {
     private long fragmentId;
 
     /** */
-    private int[] localPartitions;
+    private FragmentMapping mapping;
 
     /** */
-    private int partitionsCount;
-
-    /** */
-    private NodesMapping targetMapping;
+    private ColocationGroup target;
 
     /** */
     @GridDirectTransient
@@ -62,12 +58,11 @@ public class FragmentDescription implements MarshalableMessage {
     }
 
     /** */
-    public FragmentDescription(long fragmentId, int[] localPartitions, int partitionsCount, NodesMapping targetMapping,
+    public FragmentDescription(long fragmentId, FragmentMapping mapping, ColocationGroup target,
         Map<Long, List<UUID>> remoteSources) {
         this.fragmentId = fragmentId;
-        this.localPartitions = localPartitions;
-        this.partitionsCount = partitionsCount;
-        this.targetMapping = targetMapping;
+        this.mapping = mapping;
+        this.target = target;
         this.remoteSources = remoteSources;
     }
 
@@ -77,23 +72,23 @@ public class FragmentDescription implements MarshalableMessage {
     }
 
     /** */
-    public NodesMapping targetMapping() {
-        return targetMapping;
+    public List<UUID> nodeIds() {
+        return mapping.nodeIds();
     }
 
     /** */
-    public Map<Long, List<UUID>> remoteSources() {
+    public ColocationGroup target() {
+        return target;
+    }
+
+    /** */
+    public Map<Long, List<UUID>> remotes() {
         return remoteSources;
     }
 
     /** */
-    public int[] localPartitions() {
-        return localPartitions;
-    }
-
-    /** */
-    public int partitionsCount() {
-        return partitionsCount;
+    public FragmentMapping mapping() {
+        return mapping;
     }
 
     /** {@inheritDoc} */
@@ -120,25 +115,19 @@ public class FragmentDescription implements MarshalableMessage {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIntArray("localPartitions", localPartitions))
+                if (!writer.writeMessage("mapping", mapping))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeInt("partitionsCount", partitionsCount))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
                 if (!writer.writeMap("remoteSources0", remoteSources0, MessageCollectionItemType.LONG, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
-                if (!writer.writeMessage("targetMapping", targetMapping))
+            case 3:
+                if (!writer.writeMessage("target", target))
                     return false;
 
                 writer.incrementState();
@@ -165,7 +154,7 @@ public class FragmentDescription implements MarshalableMessage {
                 reader.incrementState();
 
             case 1:
-                localPartitions = reader.readIntArray("localPartitions");
+                mapping = reader.readMessage("mapping");
 
                 if (!reader.isLastRead())
                     return false;
@@ -173,14 +162,6 @@ public class FragmentDescription implements MarshalableMessage {
                 reader.incrementState();
 
             case 2:
-                partitionsCount = reader.readInt("partitionsCount");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
                 remoteSources0 = reader.readMap("remoteSources0", MessageCollectionItemType.LONG, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
@@ -188,8 +169,8 @@ public class FragmentDescription implements MarshalableMessage {
 
                 reader.incrementState();
 
-            case 4:
-                targetMapping = reader.readMessage("targetMapping");
+            case 3:
+                target = reader.readMessage("target");
 
                 if (!reader.isLastRead())
                     return false;
@@ -203,32 +184,38 @@ public class FragmentDescription implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 4;
     }
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(MarshallingContext ctx) {
+        if (mapping != null)
+            mapping.prepareMarshal(ctx);
+
+        if (target != null)
+            target.prepareMarshal(ctx);
+
         if (remoteSources0 == null && remoteSources != null) {
             remoteSources0 = U.newHashMap(remoteSources.size());
 
             for (Map.Entry<Long, List<UUID>> e : remoteSources.entrySet())
                 remoteSources0.put(e.getKey(), new UUIDCollectionMessage(e.getValue()));
         }
-
-        if (targetMapping != null)
-            targetMapping.prepareMarshal(ctx);
     }
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(MarshallingContext ctx) {
+        if (mapping != null)
+            mapping.prepareUnmarshal(ctx);
+
+        if (target != null)
+            target.prepareUnmarshal(ctx);
+
         if (remoteSources == null && remoteSources0 != null) {
             remoteSources = U.newHashMap(remoteSources0.size());
 
             for (Map.Entry<Long, UUIDCollectionMessage> e : remoteSources0.entrySet())
                 remoteSources.put(e.getKey(), new ArrayList<>(e.getValue().uuids()));
         }
-
-        if (targetMapping != null)
-            targetMapping.prepareUnmarshal(ctx);
     }
 }

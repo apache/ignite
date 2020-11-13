@@ -136,4 +136,9 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
         // Give it some penalty
         return super.computeSelfCost(planner, mq).multiplyBy(5);
     }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        return new IgniteCorrelatedNestedLoopJoin(cluster, getTraitSet(), inputs.get(0), inputs.get(1), getCondition(), getVariablesSet(), getJoinType());
+    }
 }

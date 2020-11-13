@@ -28,6 +28,7 @@ import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.plan.RelOptSchema;
@@ -55,10 +56,18 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.t
 /** */
 public class TypeUtils {
     /** */
-    public static final EnumSet<SqlTypeName> CONVERTABLE_TYPES = EnumSet.of(
+    private static final EnumSet<SqlTypeName> CONVERTABLE_SQL_TYPES = EnumSet.of(
         SqlTypeName.DATE,
         SqlTypeName.TIME,
         SqlTypeName.TIMESTAMP
+    );
+
+    /** */
+    private static final Set<Type> CONVERTABLE_TYPES = ImmutableSet.of(
+        java.util.Date.class,
+        java.sql.Date.class,
+        java.sql.Time.class,
+        java.sql.Timestamp.class
     );
 
     /** */
@@ -222,7 +231,7 @@ public class TypeUtils {
 
     /** */
     private static Function<Object, Object> fieldConverter(ExecutionContext<?> ectx, RelDataType fieldType) {
-        if (CONVERTABLE_TYPES.contains(fieldType.getSqlTypeName())) {
+        if (CONVERTABLE_SQL_TYPES.contains(fieldType.getSqlTypeName())) {
             Type storageType = ectx.getTypeFactory().getJavaClass(fieldType);
             return v -> fromInternal(ectx, v, storageType);
         }
@@ -230,9 +239,24 @@ public class TypeUtils {
     }
 
     /** */
+    public static boolean isConvertableType(Type type) {
+        return CONVERTABLE_TYPES.contains(type);
+    }
+
+    /** */
+    public static boolean isConvertableType(RelDataType type) {
+        return CONVERTABLE_SQL_TYPES.contains(type.getSqlTypeName());
+    }
+
+    /** */
     private static boolean hasConvertableFields(RelDataType resultType) {
         return RelOptUtil.getFieldTypeList(resultType).stream()
-            .anyMatch(t -> CONVERTABLE_TYPES.contains(t.getSqlTypeName()));
+            .anyMatch(t -> CONVERTABLE_SQL_TYPES.contains(t.getSqlTypeName()));
+    }
+
+    /** */
+    public static Object toInternal(ExecutionContext<?> ectx, Object val) {
+        return val == null ? null : toInternal(ectx, val, val.getClass());
     }
 
     /** */

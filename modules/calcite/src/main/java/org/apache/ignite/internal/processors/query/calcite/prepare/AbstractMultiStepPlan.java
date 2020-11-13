@@ -21,8 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.util.typedef.F;
@@ -42,7 +43,7 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     protected final QueryMappings queryMappings;
 
     /** */
-    protected Map<Long, NodesMapping> mappings;
+    protected Map<Long, FragmentMapping> mappings;
 
     /** */
     protected AbstractMultiStepPlan(List<Fragment> fragments, FieldsMetadata fieldsMetadata, QueryMappings queryMappings) {
@@ -62,20 +63,22 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     }
 
     /** {@inheritDoc} */
-    @Override public NodesMapping fragmentMapping(Fragment fragment) {
+    @Override public FragmentMapping mapping(Fragment fragment) {
         return fragmentMapping(fragment.fragmentId());
     }
 
     /** {@inheritDoc} */
-    @Override public NodesMapping targetMapping(Fragment fragment) {
-        if (fragment.local())
+    @Override public ColocationGroup target(Fragment fragment) {
+        if (fragment.rootFragment())
             return null;
 
-        return fragmentMapping(((IgniteSender)fragment.root()).targetFragmentId());
+        IgniteSender sender = (IgniteSender)fragment.root();
+
+        return fragmentMapping(sender.targetFragmentId()).findGroup(fragment.fragmentId());
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Long, List<UUID>> remoteSources(Fragment fragment) {
+    @Override public Map<Long, List<UUID>> remotes(Fragment fragment) {
         List<IgniteReceiver> remotes = fragment.remotes();
 
         if (F.isEmpty(remotes))
@@ -84,7 +87,7 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
         HashMap<Long, List<UUID>> res = U.newHashMap(remotes.size());
 
         for (IgniteReceiver remote : remotes)
-            res.put(remote.exchangeId(), fragmentMapping(remote.sourceFragmentId()).nodes());
+            res.put(remote.exchangeId(), fragmentMapping(remote.sourceFragmentId()).nodeIds());
 
         return res;
     }
@@ -95,7 +98,7 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     }
 
     /** */
-    private NodesMapping fragmentMapping(long fragmentId) {
+    private FragmentMapping fragmentMapping(long fragmentId) {
         return mappings == null ? null : mappings.get(fragmentId);
     }
 }

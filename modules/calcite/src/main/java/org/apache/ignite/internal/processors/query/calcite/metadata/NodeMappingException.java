@@ -17,14 +17,30 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import org.apache.calcite.rel.RelNode;
+
 /**
  *
  */
-public class LocationMappingException extends Exception {
+public class NodeMappingException extends RuntimeException {
+    /** */
+    private final RelNode node;
+
     /**
+     *
      * @param message Message.
+     * @param node Node of a query plan, where the exception was thrown.
+     * @param cause Cause.
      */
-    public LocationMappingException(String message) {
-        super(message);
+    public NodeMappingException(String message, RelNode node, Throwable cause) {
+        super(message, cause);
+        this.node = node;
+    }
+
+    /**
+     * @return Node of a query plan, where the exception was thrown.
+     */
+    public RelNode node() {
+        return node;
     }
 }

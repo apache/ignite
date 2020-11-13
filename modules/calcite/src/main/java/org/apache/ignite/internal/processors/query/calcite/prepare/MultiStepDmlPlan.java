@@ -49,8 +49,7 @@ public class MultiStepDmlPlan extends AbstractMultiStepPlan {
         return Type.DML;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public QueryPlan clone(@NotNull PlanningContext ctx) {
         return new MultiStepDmlPlan(new Cloner(ctx.cluster()).go(fragments), fieldsMetadata, queryMappings);
     }

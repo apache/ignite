@@ -24,13 +24,17 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
@@ -41,10 +45,10 @@ public class QueryMappings {
         private final AffinityTopologyVersion ver;
 
         /** */
-        private final Map<Long, NodesMapping> nodeMappings;
+        private final Map<Long, FragmentMapping> nodeMappings;
 
         /** */
-        private Mapping(AffinityTopologyVersion ver, Map<Long, NodesMapping> nodeMappings) {
+        private Mapping(AffinityTopologyVersion ver, Map<Long, FragmentMapping> nodeMappings) {
             this.ver = ver;
             this.nodeMappings = nodeMappings;
         }
@@ -54,45 +58,51 @@ public class QueryMappings {
     private final AtomicReference<Mapping> mapping = new AtomicReference<>();
 
     /** */
-    public Map<Long, NodesMapping> map(MappingService mappingService, PlanningContext ctx, List<Fragment> fragments) {
+    public Map<Long, FragmentMapping> map(MappingService mappingService, PlanningContext ctx, List<Fragment> fragments) {
         Mapping mapping = this.mapping.get();
-
         if (mapping != null && Objects.equals(mapping.ver, ctx.topologyVersion()))
             return mapping.nodeMappings;
 
-        ImmutableMap.Builder<Long, NodesMapping> b = ImmutableMap.builder();
-
+        Exception ex = null;
         RelMetadataQuery mq = F.first(fragments).root().getCluster().getMetadataQuery();
-
-        boolean save = true;
-        for (int i = 0, j = 0; i < fragments.size();) {
-            Fragment fragment = fragments.get(i);
-
+        for (int i = 0; i < 3; i++) {
             try {
-                b.put(fragment.fragmentId(), fragment.map(mappingService, ctx, mq));
+                Map<Long, FragmentMapping> res = finalize(mappingService, ctx, fragments, Commons.transform(fragments, f -> f.map(ctx, mq)));
 
-                i++;
+                if (i == 0) // TODO at this point we don't allow to cache some queries running on a client
+                    this.mapping.compareAndSet(mapping, new Mapping(ctx.topologyVersion(), res));
+
+                return res;
             }
-            catch (OptimisticPlanningException e) {
-                save = false; // we mustn't save mappings for mutated fragments
+            catch (FragmentMappingException e) {
+                if (ex == null)
+                    ex = e;
+                else
+                    ex.addSuppressed(e);
 
-                if (++j > 3)
-                    throw new IgniteSQLException("Failed to map query.", e);
-
-                replace(fragments, fragment, new FragmentSplitter(e.node()).go(fragment));
-
-                // restart init routine.
-                b = ImmutableMap.builder();
-                i = 0;
+                replace(fragments, e.fragment(), new FragmentSplitter(e.node()).go(e.fragment()));
             }
         }
 
-        ImmutableMap<Long, NodesMapping> mappings = b.build();
+        throw new IgniteSQLException("Failed to map query.", ex);
+    }
 
-        if (save)
-            this.mapping.compareAndSet(mapping, new Mapping(ctx.topologyVersion(), mappings));
+    private Map<Long, FragmentMapping> finalize(MappingService mappingService, PlanningContext ctx, List<Fragment> fragments, List<FragmentMapping> mappings) {
+        AffinityTopologyVersion topVer = ctx.topologyVersion();
 
-        return mappings;
+        ImmutableMap.Builder<Long, FragmentMapping> b = ImmutableMap.builder();
+        for (Pair<Fragment, FragmentMapping> p : Pair.zip(fragments, mappings))
+            b.put(p.left.fragmentId(),
+                p.right.finalize(
+                    () -> mappingService.executionNodes(topVer, single(p.left.root()), null)));
+
+        return b.build();
+    }
+
+    /** */
+    private boolean single(IgniteRel root) {
+        return root instanceof IgniteSender
+            && ((IgniteSender)root).sourceDistribution().satisfies(IgniteDistributions.single());
     }
 
     /** */
@@ -111,7 +121,7 @@ public class QueryMappings {
 
             if (fragment0 == fragment)
                 fragments.set(i, F.first(replacement));
-            else if (!fragment0.local()) {
+            else if (!fragment0.rootFragment()) {
                 IgniteSender sender = (IgniteSender)fragment0.root();
                 Long newTargetId = newTargets.get(sender.exchangeId());
 

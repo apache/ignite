@@ -74,16 +74,16 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageServic
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
+import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadataImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
-import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepDmlPlan;
@@ -146,7 +146,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private FailureProcessor failureProcessor;
 
     /** */
-    private PartitionService partSvc;
+    private AffinityService partSvc;
 
     /** */
     private MailboxRegistry mailboxRegistry;
@@ -253,14 +253,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /**
      * @param partSvc Partition service.
      */
-    public void partitionService(PartitionService partSvc) {
+    public void partitionService(AffinityService partSvc) {
         this.partSvc = partSvc;
     }
 
     /**
      * @return Partition service.
      */
-    public PartitionService partitionService() {
+    public AffinityService partitionService() {
         return partSvc;
     }
 
@@ -565,7 +565,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
-        return new MultiStepQueryPlan(fragments, fieldsMetadata(ctx, validated.dataType(), validated.origins()));
+        return new MultiStepQueryPlan(fragments, queryFieldsMetadata(ctx, validated.dataType(), validated.origins()));
     }
 
     /** */
@@ -581,7 +581,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
-        return new MultiStepDmlPlan(fragments, fieldsMetadata(ctx, igniteRel.getRowType(), null));
+        return new MultiStepDmlPlan(fragments, queryFieldsMetadata(ctx, igniteRel.getRowType(), null));
     }
 
     /** */
@@ -617,18 +617,18 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
 
-        return new ExplainPlan(plan, buildExplainColumnMeta(ctx));
+        return new ExplainPlan(plan, explainFieldsMetadata(ctx));
     }
 
     /** */
-    private FieldsMetadata buildExplainColumnMeta(PlanningContext ctx) {
+    private FieldsMetadata explainFieldsMetadata(PlanningContext ctx) {
         IgniteTypeFactory factory = ctx.typeFactory();
         RelDataType planStrDataType =
             factory.createSqlType(SqlTypeName.VARCHAR, RelDataType.PRECISION_NOT_SPECIFIED);
         T2<String, RelDataType> planField = new T2<>(ExplainPlan.PLAN_COL_NAME, planStrDataType);
         RelDataType planDataType = factory.createStructType(singletonList(planField));
 
-        return fieldsMetadata(ctx, planDataType, null);
+        return queryFieldsMetadata(ctx, planDataType, null);
     }
 
     /** */
@@ -654,24 +654,24 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         // Local execution
         Fragment fragment = F.first(fragments);
-        NodesMapping mapping = plan.fragmentMapping(fragment);
 
         if (U.assertionsEnabled()) {
             assert fragment != null;
+
+            FragmentMapping mapping = plan.mapping(fragment);
+
             assert mapping != null;
 
-            List<UUID> nodes = mapping.nodes();
+            List<UUID> nodes = mapping.nodeIds();
 
             assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(pctx.localNodeId());
         }
 
         FragmentDescription fragmentDesc = new FragmentDescription(
             fragment.fragmentId(),
-            mapping.partitions(pctx.localNodeId()),
-            mapping.assignments().size(),
-            plan.targetMapping(fragment),
-            plan.remoteSources(fragment)
-        );
+            plan.mapping(fragment),
+            plan.target(fragment),
+            plan.remotes(fragment));
 
         ExecutionContext<Row> ectx = new ExecutionContext<>(
             taskExecutor(),
@@ -691,36 +691,31 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         // start remote execution
         for (int i = 1; i < fragments.size(); i++) {
-            Fragment fragment0 = fragments.get(i);
-            NodesMapping mapping0 = plan.fragmentMapping(fragment0);
+            fragment = fragments.get(i);
+            fragmentDesc = new FragmentDescription(
+                fragment.fragmentId(),
+                plan.mapping(fragment),
+                plan.target(fragment),
+                plan.remotes(fragment));
 
-            boolean error = false;
-            for (UUID nodeId : mapping0.nodes()) {
-                if (error)
-                    info.onResponse(nodeId, fragment0.fragmentId(), new QueryCancelledException());
+            Exception ex = null;
+            for (UUID nodeId : fragmentDesc.nodeIds()) {
+                if (ex != null)
+                    info.onResponse(nodeId, fragment.fragmentId(), ex);
                 else {
                     try {
-                        FragmentDescription fragmentDesc0 = new FragmentDescription(
-                            fragment0.fragmentId(),
-                            mapping0.partitions(nodeId),
-                            mapping0.assignments().size(),
-                            plan.targetMapping(fragment0),
-                            plan.remoteSources(fragment0)
-                        );
-
                         QueryStartRequest req = new QueryStartRequest(
                             qryId,
                             pctx.schemaName(),
-                            fragment0.serialized(),
+                            fragment.serialized(),
                             pctx.topologyVersion(),
-                            fragmentDesc0,
+                            fragmentDesc,
                             pctx.parameters());
 
                         messageService().send(nodeId, req);
                     }
                     catch (Exception e) {
-                        info.onResponse(nodeId, fragment0.fragmentId(), e);
-                        error = true;
+                        info.onResponse(nodeId, fragment.fragmentId(), ex = e);
                     }
                 }
             }
@@ -731,9 +726,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private FieldsQueryCursor<List<?>> executeExplain(ExplainPlan plan, PlanningContext pctx) {
-        List<List<?>> resSet = singletonList(singletonList(plan.plan()));
-
-        QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(resSet);
+        QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(singletonList(singletonList(plan.plan())));
         cur.fieldsMeta(plan.fieldsMeta().queryFieldsMetadata(pctx.typeFactory()));
 
         return cur;
@@ -812,7 +805,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsMetadata fieldsMetadata(PlanningContext ctx, RelDataType sqlType,
+    private FieldsMetadata queryFieldsMetadata(PlanningContext ctx, RelDataType sqlType,
         @Nullable List<List<String>> origins) {
         RelDataType resultType = TypeUtils.getResultType(
             ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
@@ -944,7 +937,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             for (int i = 1; i < plan.fragments().size(); i++) {
                 Fragment fragment = plan.fragments().get(i);
-                List<UUID> nodes = plan.fragmentMapping(fragment).nodes();
+                List<UUID> nodes = plan.mapping(fragment).nodeIds();
 
                 remotes.addAll(nodes);
 

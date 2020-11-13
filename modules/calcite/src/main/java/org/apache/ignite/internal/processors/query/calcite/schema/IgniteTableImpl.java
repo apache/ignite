@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -37,30 +35,16 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheStoppedException;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.TableScan;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 
 /**
  * Ignite table implementation.
@@ -76,11 +60,9 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
 
     /**
-     *
-     * @param desc Table descriptor.
-     * @param collation Table collation.
+     *  @param desc Table descriptor.
      */
-    public IgniteTableImpl(TableDescriptor desc, RelCollation collation) {
+    public IgniteTableImpl(TableDescriptor desc) {
         this.desc = desc;
         statistic = new StatisticsImpl();
     }
@@ -122,36 +104,22 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     /** {@inheritDoc} */
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
+        int[] parts,
         Predicate<Row> filter,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet usedColumns
     ) {
-        return new TableScan<>(execCtx, desc, filter, rowTransformer, usedColumns);
-    }
-
-    /** {@inheritDoc} */
-    @Override public NodesMapping mapping(PlanningContext ctx) {
-        GridCacheContext<?, ?> cctx = desc.cacheContext();
-
-        assert cctx != null;
-
-        if (!cctx.gate().enterIfNotStopped())
-            throw U.convertException(new CacheStoppedException(cctx.name()));
-
-        try {
-            if (cctx.isReplicated())
-                return replicatedMapping(cctx, ctx.topologyVersion());
-
-            return partitionedMapping(cctx, ctx.topologyVersion());
-        }
-        finally {
-            cctx.gate().leave();
-        }
+        return new TableScan<>(execCtx, desc, parts, filter, rowTransformer, usedColumns);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteDistribution distribution() {
         return desc.distribution();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+        return desc.colocationGroup(ctx);
     }
 
     /** {@inheritDoc} */
@@ -180,81 +148,6 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
             return aCls.cast(desc);
 
         return super.unwrap(aCls);
-    }
-
-    /** */
-    private NodesMapping partitionedMapping(@NotNull GridCacheContext<?,?> cctx, @NotNull AffinityTopologyVersion topVer) {
-        byte flags = NodesMapping.HAS_PARTITIONED_CACHES;
-
-        List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
-        List<List<UUID>> res;
-
-        if (cctx.config().getWriteSynchronizationMode() == CacheWriteSynchronizationMode.PRIMARY_SYNC) {
-            res = new ArrayList<>(assignments.size());
-
-            for (List<ClusterNode> partNodes : assignments)
-                res.add(F.isEmpty(partNodes) ? emptyList() : singletonList(F.first(partNodes).id()));
-        }
-        else if (!cctx.topology().rebalanceFinished(topVer)) {
-            res = new ArrayList<>(assignments.size());
-
-            flags |= NodesMapping.HAS_MOVING_PARTITIONS;
-
-            for (int part = 0; part < assignments.size(); part++) {
-                List<ClusterNode> partNodes = assignments.get(part);
-                List<UUID> partIds = new ArrayList<>(partNodes.size());
-
-                for (ClusterNode node : partNodes) {
-                    if (cctx.topology().partitionState(node.id(), part) == GridDhtPartitionState.OWNING)
-                        partIds.add(node.id());
-                }
-
-                res.add(partIds);
-            }
-        }
-        else
-            res = Commons.transform(assignments, nodes -> Commons.transform(nodes, ClusterNode::id));
-
-        return new NodesMapping(null, res, flags);
-    }
-
-    /** */
-    private NodesMapping replicatedMapping(@NotNull GridCacheContext<?,?> cctx, @NotNull AffinityTopologyVersion topVer) {
-        byte flags = NodesMapping.HAS_REPLICATED_CACHES;
-
-        if (cctx.config().getNodeFilter() != null)
-            flags |= NodesMapping.PARTIALLY_REPLICATED;
-
-        GridDhtPartitionTopology top = cctx.topology();
-
-        List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.cacheId());
-        List<UUID> res;
-
-        if (!top.rebalanceFinished(topVer)) {
-            flags |= NodesMapping.PARTIALLY_REPLICATED;
-
-            res = new ArrayList<>(nodes.size());
-
-            int parts = top.partitions();
-
-            for (ClusterNode node : nodes) {
-                if (isOwner(node.id(), top, parts))
-                    res.add(node.id());
-            }
-        }
-        else
-            res = Commons.transform(nodes, ClusterNode::id);
-
-        return new NodesMapping(res, null, flags);
-    }
-
-    /** */
-    private boolean isOwner(UUID nodeId, GridDhtPartitionTopology top, int parts) {
-        for (int p = 0; p < parts; p++) {
-            if (top.partitionState(nodeId, p) != GridDhtPartitionState.OWNING)
-                return false;
-        }
-        return true;
     }
 
     /** */

@@ -50,8 +50,7 @@ public class MultiStepQueryPlan extends AbstractMultiStepPlan {
         return Type.QUERY;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public QueryPlan clone(@NotNull PlanningContext ctx) {
         return new MultiStepQueryPlan(new Cloner(ctx.cluster()).go(fragments), fieldsMetadata, queryMappings);
     }

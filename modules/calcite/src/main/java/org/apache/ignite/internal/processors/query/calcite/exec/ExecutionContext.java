@@ -28,11 +28,12 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
@@ -118,32 +119,20 @@ public class ExecutionContext<Row> implements DataContext {
     }
 
     /**
-     * @return Interested partitions.
-     */
-    public int[] localPartitions() {
-        return fragmentDesc.localPartitions();
-    }
-
-    /** */
-    public int partitionsCount() {
-        return fragmentDesc.partitionsCount();
-    }
-
-    /**
      * @return Target mapping.
      */
-    public NodesMapping targetMapping() {
-        return fragmentDesc.targetMapping();
+    public ColocationGroup target() {
+        return fragmentDesc.target();
     }
 
     /** */
-    public List<UUID> remoteSources(long exchangeId) {
-        return fragmentDesc.remoteSources().get(exchangeId);
+    public List<UUID> remotes(long exchangeId) {
+        return fragmentDesc.remotes().get(exchangeId);
     }
 
     /** */
-    public FragmentDescription fragmentDescription() {
-        return fragmentDesc;
+    public ColocationGroup group(long sourceId) {
+        return fragmentDesc.mapping().findGroup(sourceId);
     }
 
     /**
@@ -202,6 +191,8 @@ public class ExecutionContext<Row> implements DataContext {
             return cancelFlag;
         if (Variable.TIME_ZONE.camelName.equals(name))
             return TIME_ZONE; // TODO DistributedSqlConfiguration#timeZone
+        if (name.startsWith("?"))
+            return TypeUtils.toInternal(this, params.get(name));
 
         return params.get(name);
     }

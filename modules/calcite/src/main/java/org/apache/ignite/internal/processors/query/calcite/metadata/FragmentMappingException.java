@@ -17,19 +17,42 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.util.function.ToIntFunction;
-
-import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 
 /**
  *
  */
-public interface PartitionService extends Service {
+public class FragmentMappingException extends RuntimeException {
+    /** */
+    private final Fragment fragment;
+
+    /** */
+    private final RelNode node;
+
     /**
-     * Creates a partition mapping function on the basis of affinity function of cache with given ID.
      *
-     * @param cacheId Cache ID.
-     * @return Partition mapping function.
+     * @param message Message.
+     * @param node Node of a query plan, where the exception was thrown.
+     * @param cause Cause.
      */
-    ToIntFunction<Object> partitionFunction(int cacheId);
+    public FragmentMappingException(String message, Fragment fragment, RelNode node, Throwable cause) {
+        super(message, cause);
+        this.fragment = fragment;
+        this.node = node;
+    }
+
+    /**
+     * @return Fragment of a query plan, where the exception was thrown.
+     */
+    public Fragment fragment() {
+        return fragment;
+    }
+
+    /**
+     * @return Node of a query plan, where the exception was thrown.
+     */
+    public RelNode node() {
+        return node;
+    }
 }

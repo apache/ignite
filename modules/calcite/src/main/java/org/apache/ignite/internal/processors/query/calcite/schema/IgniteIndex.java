@@ -74,6 +74,7 @@ public class IgniteIndex {
     /** */
     public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
+        int[] parts,
         Predicate<Row> filters,
         Supplier<Row> lowerIdxConditions,
         Supplier<Row> upperIdxConditions,
@@ -81,6 +82,6 @@ public class IgniteIndex {
         @Nullable ImmutableBitSet requiredColunms
     ) {
         return new IndexScan<>(
-            execCtx, table().descriptor(), idx, filters, lowerIdxConditions, upperIdxConditions, rowTransformer, requiredColunms);
+            execCtx, table().descriptor(), idx, parts, filters, lowerIdxConditions, upperIdxConditions, rowTransformer, requiredColunms);
     }
 }

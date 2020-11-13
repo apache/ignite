@@ -106,4 +106,9 @@ public class RelRegistrar extends AbstractRelNode implements IgniteRel {
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         throw new AssertionError();
     }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        throw new AssertionError();
+    }
 }

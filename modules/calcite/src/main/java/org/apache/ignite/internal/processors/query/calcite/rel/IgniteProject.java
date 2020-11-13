@@ -197,4 +197,8 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         rowCount = RelMdUtil.addEpsilon(rowCount); // to differ from rel nodes with integrated projection
         return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }
+
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        return new IgniteProject(cluster, getTraitSet(), sole(inputs), getProjects(), getRowType());
+    }
 }

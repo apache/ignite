@@ -15,32 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.metadata;
+package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import org.apache.calcite.rel.RelNode;
-
-/**
- *
- */
-public class OptimisticPlanningException extends RuntimeException {
+public interface SourceAwareIgniteRel extends IgniteRel {
     /** */
-    private final RelNode node;
+    long sourceId();
 
-    /**
-     *
-     * @param message Message.
-     * @param node Node of a query plan, where the exception was thrown.
-     * @param cause Cause.
-     */
-    public OptimisticPlanningException(String message, RelNode node, Throwable cause) {
-        super(message, cause);
-        this.node = node;
-    }
-
-    /**
-     * @return Node of a query plan, where the exception was thrown.
-     */
-    public RelNode node() {
-        return node;
-    }
+    /** */
+    IgniteRel clone(long sourceId);
 }

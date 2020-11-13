@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistributions;
@@ -140,5 +139,10 @@ public class IgniteSender extends SingleRel implements IgniteRel {
         RelTraitSet childTraits, int childId) {
         throw new RuntimeException(getClass().getName()
             + "#deriveTraits() is not implemented.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        return new IgniteSender(cluster, getTraitSet(), sole(inputs), exchangeId(), targetFragmentId(), distribution());
     }
 }

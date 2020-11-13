@@ -25,6 +25,9 @@ import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 
 import static org.apache.calcite.rel.RelDistribution.Type.ANY;
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
@@ -74,6 +77,11 @@ public final class DistributionTrait implements IgniteDistribution {
     /** {@inheritDoc} */
     @Override public DistributionFunction function() {
         return function;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ectx, AffinityService affSrvc, ColocationGroup target) {
+        return function.destination(ectx, affSrvc, target, keys);
     }
 
     /** {@inheritDoc} */

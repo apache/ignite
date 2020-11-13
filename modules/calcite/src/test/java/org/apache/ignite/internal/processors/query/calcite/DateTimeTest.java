@@ -79,9 +79,57 @@ public class DateTimeTest extends GridCommonAbstractTest {
     }
 
     @Test
-    public void testSimpleQuery() throws Exception {
+    public void testQuery1() throws Exception {
+        checkQuery("SELECT SQLDATE FROM datetimetable where SQLTIME = '12:00:00'")
+            .returns(sqlDate("2020-10-01"))
+            .check();
+    }
+
+    @Test
+    public void testQuery2() throws Exception {
+        checkQuery("SELECT SQLDATE FROM datetimetable where JAVADATE = ?")
+            .withParams(javaDate("2020-12-01 00:10:20.000"))
+            .returns(sqlDate("2020-12-01"))
+            .check();
+    }
+
+    @Test
+    public void testQuery3() throws Exception {
+        checkQuery("SELECT SQLDATE FROM datetimetable where JAVADATE = ?")
+            .withParams(sqlTimestamp("2020-12-01 00:10:20.000"))
+            .returns(sqlDate("2020-12-01"))
+            .check();
+    }
+
+    @Test
+    public void testQuery4() throws Exception {
         checkQuery("SELECT MAX(SQLDATE) FROM datetimetable")
             .returns(sqlDate("2020-12-01"))
+            .check();
+    }
+
+    @Test
+    public void testQuery5() throws Exception {
+        checkQuery("SELECT MIN(SQLDATE) FROM datetimetable")
+            .returns(sqlDate("2020-01-01"))
+            .check();
+    }
+
+    @Test
+    public void testQuery6() throws Exception {
+        checkQuery("SELECT JAVADATE FROM datetimetable WHERE SQLTIME = '13:15:00'")
+            .returns(javaDate("2020-10-20 13:15:00.000"))
+            .check();
+    }
+
+    @Test
+    public void testQuery7() throws Exception {
+        checkQuery("SELECT t1.JAVADATE, t2.JAVADATE FROM datetimetable t1 " +
+            "INNER JOIN " +
+            "(SELECT JAVADATE, CAST(SQLTIMESTAMP AS TIME) AS CASTED_TIME FROM datetimetable) t2 " +
+            "ON t1.SQLTIME = t2.CASTED_TIME " +
+            "WHERE t2.JAVADATE = '2020-10-20 13:15:00.000'")
+            .returns(javaDate("2020-10-20 13:15:00.000"), javaDate("2020-10-20 13:15:00.000"))
             .check();
     }
 
