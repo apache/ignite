@@ -3455,8 +3455,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     newNextNode = true;
                 }
-                else if (log.isTraceEnabled())
-                    log.trace("Next node remains the same [nextId=" + next.id() +
+                else if (log.isDebugEnabled())
+                    log.debug("Next node remains the same [nextId=" + next.id() +
                         ", nextOrder=" + next.internalOrder() + ']');
 
                 final boolean sameHost = U.sameMacs(locNode, next);
@@ -3508,11 +3508,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (changeTop)
                                     hndMsg.changeTopology(ring.previousNodeOf(next).id());
 
-                                if (log.isDebugEnabled())
-                                    log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState + ']');
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState +
+                                        "] with timeout " + timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                                }
 
                                 spi.writeToSocket(sock, out, hndMsg,
                                     timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Reading handshake response with timeout " +
+                                        timeoutHelper.nextTimeoutChunk(ackTimeout0));
+                                }
 
                                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null,
                                     timeoutHelper.nextTimeoutChunk(ackTimeout0));
@@ -6777,16 +6784,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                     byte[] buf = new byte[4];
                     int read = 0;
 
+                    if(log.isDebugEnabled())
+                        log.debug("Reading initiating header. soTimeout: " + sock.getSoTimeout());
+
                     while (read < buf.length) {
                         int r = in.read(buf, read, buf.length - read);
 
                         if (r >= 0)
                             read += r;
                         else {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to read magic header (too few bytes received) " +
-                                    "[rmtAddr=" + rmtAddr +
+                            if (log.isDebugEnabled()) {
+                                log.debug("Failed to read magic header (too few bytes received): " + read +
+                                    ", expected: " + buf.length + ". [rmtAddr=" + rmtAddr +
                                     ", locAddr=" + sock.getLocalSocketAddress() + ']');
+                            }
 
                             LT.warn(log, "Failed to read magic header (too few bytes received) [rmtAddr=" +
                                 rmtAddr + ", locAddr=" + sock.getLocalSocketAddress() + ']');
@@ -6814,6 +6825,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     // Restore timeout.
                     sock.setSoTimeout(timeout);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Reading first message with timeout " + spi.netTimeout);
 
                     TcpDiscoveryAbstractMessage msg = spi.readMessage(sock, in, spi.netTimeout);
 
@@ -6856,6 +6870,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     // Handshake.
                     TcpDiscoveryHandshakeRequest req = (TcpDiscoveryHandshakeRequest)msg;
+
+                    if (log.isDebugEnabled()) {
+                        log.info("Received handshake request from " +
+                            "[rmtNodeId=" + msg.creatorNodeId() +
+                            ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
+                    }
 
                     srvSock = !req.client();
 
@@ -6902,15 +6922,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 Collection<InetSocketAddress> nodeAddrs = spi.getNodeAddresses(previous, false);
 
                                 if (log.isDebugEnabled()) {
-                                    log.debug("Checking connection to previous node [" + previous +
-                                        " with timeout " + U.nanosToMillis(timeThreshold - now));
+                                    log.debug("Remote node requests topology change. Checking connection to " +
+                                        "previous [" + previous + "] with timeout " +
+                                        U.nanosToMillis(timeThreshold - now));
                                 }
 
                                 liveAddr = checkConnection(new ArrayList<>(nodeAddrs),
                                     (int)U.nanosToMillis(timeThreshold - now));
 
                                 if (log.isInfoEnabled())
-                                    log.info("Connection check done [liveAddr=" + liveAddr
+                                    log.info("Connection check to previous node done: [liveAddr=" + liveAddr
                                         + ", previousNode=" + previous + ", addressesToCheck=" + nodeAddrs
                                         + ", connectingNodeId=" + nodeId + ']');
                             }
@@ -6929,6 +6950,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 ", lastMessageReceivedTime=" + rcvdTime + ", now=" + now +
                                 ", connCheckInterval=" + connCheckInterval + ']');
                         }
+                    }
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("Sending [" + res + "] with timeout " + spi.getEffectiveSocketTimeout(srvSock) +
+                            " to " + rmtAddr + ":" + sock.getPort());
                     }
 
                     spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(srvSock));
