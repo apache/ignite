@@ -967,7 +967,7 @@ public class CachePartitionDefragmentationManager {
     }
 
     /** */
-    private static class DefragmentationCancelledException extends Exception {
+    private static class DefragmentationCancelledException extends RuntimeException {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
     }
