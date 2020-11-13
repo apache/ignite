@@ -450,6 +450,7 @@ namespace ignite
 
                 rawWriter.WriteInt64(handle);
                 rawWriter.WriteBool(qry0.GetLocal());
+                rawWriter.WriteBool(false); // IncludeExpired
 
                 event::CacheEntryEventFilterHolderBase& filterOp = qry0.GetFilterHolder();
 

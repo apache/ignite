@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.function.LongConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.lang.IgniteOutClosure;
 
 /**
@@ -37,7 +37,7 @@ public interface FilePageStoreFactory {
      * @return page store
      * @throws IgniteCheckedException if failed.
      */
-    default PageStore createPageStore(byte type, File file, LongAdderMetric allocatedTracker)
+    default PageStore createPageStore(byte type, File file, LongConsumer allocatedTracker)
         throws IgniteCheckedException {
         return createPageStore(type, file::toPath, allocatedTracker);
     }
@@ -51,6 +51,6 @@ public interface FilePageStoreFactory {
      * @return page store
      * @throws IgniteCheckedException if failed
      */
-    PageStore createPageStore(byte type, IgniteOutClosure<Path> pathProvider, LongAdderMetric allocatedTracker)
+    PageStore createPageStore(byte type, IgniteOutClosure<Path> pathProvider, LongConsumer allocatedTracker)
         throws IgniteCheckedException;
 }

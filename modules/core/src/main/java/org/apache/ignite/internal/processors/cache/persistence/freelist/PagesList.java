@@ -74,6 +74,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA_PART;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_META;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageId;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver.DEFAULT_PAGE_IO_RESOLVER;
 
 /**
  * Striped doubly-linked list of page IDs optionally organized in buckets.
@@ -220,7 +221,7 @@ public abstract class PagesList extends DataStructure {
         GridKernalContext ctx,
         byte pageFlag
     ) {
-        super(cacheId, null, pageMem, wal, lockLsnr, pageFlag);
+        super(cacheId, null, pageMem, wal, lockLsnr, DEFAULT_PAGE_IO_RESOLVER, pageFlag);
 
         this.name = name;
         this.buckets = buckets;

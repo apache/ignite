@@ -22,13 +22,13 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 /**
  * Leaf page for H2 row references.
  */
-class H2MvccExtrasLeafIO extends AbstractH2ExtrasLeafIO {
+public class H2MvccExtrasLeafIO extends AbstractH2ExtrasLeafIO {
     /**
      * @param type Page type.
      * @param ver Page format version.
      * @param payloadSize Payload size.
      */
-    H2MvccExtrasLeafIO(short type, int ver, int payloadSize) {
+    protected H2MvccExtrasLeafIO(short type, int ver, int payloadSize) {
         super(type, ver, 28, payloadSize);
     }
 
