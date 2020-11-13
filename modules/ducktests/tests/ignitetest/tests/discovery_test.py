@@ -49,6 +49,7 @@ class ClusterLoad(IntEnum):
     TRANSACTIONAL = 2
 
 
+# pylint: disable=R0913
 class DiscoveryTestConfig(NamedTuple):
     """
     Configuration for DiscoveryTest.
@@ -58,6 +59,7 @@ class DiscoveryTestConfig(NamedTuple):
     load_type: ClusterLoad = ClusterLoad.NONE
     sequential_failure: bool = False
     with_zk: bool = False
+    failure_detection_timeout: int = 1000
 
 
 # pylint: disable=W0223
@@ -180,11 +182,12 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
 
-        results.update(self._simulate_nodes_failure(servers, failed_nodes))
+        results.update(self._simulate_and_detect_failure(servers, failed_nodes,
+                                                         test_config.failure_detection_timeout * 3))
 
         return results
 
-    def _simulate_nodes_failure(self, servers, failed_nodes):
+    def _simulate_and_detect_failure(self, servers, failed_nodes, timeout):
         """
         Perform node failure scenario
         """
@@ -200,11 +203,14 @@ class DiscoveryTest(IgniteTest):
         logged_timestamps = []
         data = {}
 
+        start = monotonic()
+
         for survivor in [n for n in servers.nodes if n not in failed_nodes]:
             for failed_id in ids_to_wait:
-                logged_timestamps.append(get_event_time(servers, survivor, node_failed_event_pattern(failed_id)))
+                logged_timestamps.append(get_event_time(servers, survivor, node_failed_event_pattern(failed_id),
+                                                        timeout=start + timeout - monotonic()))
 
-                self._check_failed_number(failed_nodes, survivor)
+            self._check_failed_number(failed_nodes, survivor)
 
         self._check_not_segmented(failed_nodes)
 
