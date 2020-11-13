@@ -3315,7 +3315,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (locNode == null)
                 return;
 
-            checkConnection();
+            checkConnectionToNext();
 
             sendMetricsUpdateMessage();
 
@@ -6496,11 +6496,18 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * Check connection to next node in the ring.
          */
-        private void checkConnection() {
+        private void checkConnectionToNext() {
             long elapsed = (lastRingMsgSentTime + U.millisToNanos(connCheckInterval)) - System.nanoTime();
 
-            if (elapsed > 0)
+            if (elapsed > 0 || sock == null) {
+                // If there is no socket to next node, the connection is lost, not established, or new is being searched
+                // for. Sending ping can mark next apropriate node as failed. That could cause segmentation of current
+                // node.
+                if (sock == null && log.isTraceEnabled())
+                    log.trace("Won't check connection to next [" + next + "]. Connection is not established yet.");
+
                 return;
+            }
 
             if (ring.hasRemoteServerNodes())
                 sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
