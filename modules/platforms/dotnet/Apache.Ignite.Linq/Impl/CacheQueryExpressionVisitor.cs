@@ -516,8 +516,8 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitInvocation(InvocationExpression expression)
         {
-            throw new NotSupportedException("The LINQ expression " +
-                " could not be translated. Either rewrite the query in a form that can be translated, or switch to client evaluation explicitly by inserting a call to either AsEnumerable() or ToList().");
+            throw new NotSupportedException("The LINQ expression '" + expression +
+                "' could not be translated. Either rewrite the query in a form that can be translated, or switch to client evaluation explicitly by inserting a call to either AsEnumerable() or ToList().");
         }
 
         /** <inheritdoc /> */
