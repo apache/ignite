@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.ducktest.tests.start_stop_client;
+package org.apache.ignite.internal.ducktest.tests.client_test;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -33,7 +33,7 @@ public class IgniteCachePutClient extends IgniteAwareApplication {
 
         long pacing = Optional.ofNullable(jsonNode.get("pacing"))
                 .map(JsonNode::asLong)
-                .orElse(0l);
+                .orElse(0L);
 
         log.info("Test props:" +
                 " cacheName=" + cacheName +

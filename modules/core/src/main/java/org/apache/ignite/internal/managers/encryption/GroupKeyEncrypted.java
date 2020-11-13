@@ -15,41 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.zk.internal;
+package org.apache.ignite.internal.managers.encryption;
+
+import java.io.Serializable;
 
 /**
- *
+ * Cache group encryption key with identifier. Key is encrypted.
  */
-class ZkDiscoveryNodeFailEventData extends ZkDiscoveryEventData {
-    /** */
+public class GroupKeyEncrypted implements Serializable {
+    /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private long failedNodeInternalId;
+    /** Encryption key ID. */
+    private final int id;
+
+    /** Encryption key. */
+    private final byte[] key;
 
     /**
-     * @param evtId Event ID.
-     * @param topVer Topology version.
-     * @param failedNodeInternalId Failed node ID.
+     * @param id Encryption key ID.
+     * @param key Encryption key.
      */
-    ZkDiscoveryNodeFailEventData(long evtId, long topVer, long failedNodeInternalId) {
-        super(evtId, ZK_EVT_NODE_FAILED, topVer);
-
-        this.failedNodeInternalId = failedNodeInternalId;
+    public GroupKeyEncrypted(int id, byte[] key) {
+        this.id = id;
+        this.key = key;
     }
 
     /**
-     * @return Failed node ID.
+     * @return Encryption key ID.
      */
-    long failedNodeInternalId() {
-        return failedNodeInternalId;
+    public int id() {
+        return id;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return "ZkDiscoveryNodeFailEventData [" +
-            "evtId=" + eventId() +
-            ", topVer=" + topologyVersion() +
-            ", nodeId=" + failedNodeInternalId + ']';
+    /**
+     * @return Encryption key.
+     */
+    public byte[] key() {
+        return key;
     }
 }

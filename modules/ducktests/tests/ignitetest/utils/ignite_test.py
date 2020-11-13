@@ -16,9 +16,6 @@
 """
 This module contains basic ignite test.
 """
-import os
-import random
-import string
 from time import monotonic
 
 from ducktape.utils.local_filesystem_utils import mkdir_p
@@ -33,29 +30,6 @@ class IgniteTest(Test):
     """
     def __init__(self, test_context):
         super().__init__(test_context=test_context)
-
-        self.tmp_path_root = None
-
-    def setup(self):
-        super().setup()
-
-        self.tmp_path_root = os.path.join("/tmp", ''.join(random.choices(string.ascii_letters + string.digits, k=10)),
-                                          self.test_context.cls_name)
-
-        self.clear_tmp_dir(True)
-
-    def teardown(self):
-        self.clear_tmp_dir()
-
-        super().teardown()
-
-    def clear_tmp_dir(self, recreate=False):
-        """Creates temporary directory for current test."""
-        for node in self.test_context.cluster.nodes:
-            node.account.ssh_client.exec_command("rm -drf " + self.tmp_path_root)
-
-            if recreate:
-                node.account.ssh_client.exec_command("mkdir -p " + self.tmp_path_root)
 
     @staticmethod
     def monotonic():

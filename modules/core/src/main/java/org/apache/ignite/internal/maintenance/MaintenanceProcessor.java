@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -162,12 +161,21 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             );
         }
 
-        if (!workflowCallbacks.isEmpty())
+        if (!workflowCallbacks.isEmpty()) {
+            if (log.isInfoEnabled()) {
+                String mntcTasksNames = String.join(", ", workflowCallbacks.keySet());
+
+                log.info("Node requires maintenance, non-empty set of maintenance tasks is found: [" +
+                    mntcTasksNames + ']');
+            }
+
             proceedWithMaintenance();
-        else {
-            if (log.isInfoEnabled())
+        }
+        else if (isMaintenanceMode()) {
+            if (log.isInfoEnabled()) {
                 log.info("All maintenance tasks are fixed, no need to enter maintenance mode. " +
                     "Restart the node to get it back to normal operations.");
+            }
         }
     }
 
@@ -182,11 +190,11 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
      */
     private void proceedWithMaintenance() {
         for (Map.Entry<String, MaintenanceWorkflowCallback> cbE : workflowCallbacks.entrySet()) {
-            MaintenanceAction mntcAction = cbE.getValue().automaticAction();
+            MaintenanceAction mntcAct = cbE.getValue().automaticAction();
 
-            if (mntcAction != null) {
+            if (mntcAct != null) {
                 try {
-                    mntcAction.execute();
+                    mntcAct.execute();
                 }
                 catch (Throwable t) {
                     log.warning("Failed to execute automatic action for maintenance task: " +
@@ -236,7 +244,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
         if (inMemoryMode)
             throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
 
-        List<MaintenanceAction> actions = cb.allActions();
+        List<MaintenanceAction<?>> actions = cb.allActions();
 
         if (actions == null || actions.isEmpty())
             throw new IgniteException("Maintenance workflow callback should provide at least one mainetance action");
@@ -263,7 +271,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     }
 
     /** {@inheritDoc} */
-    @Override public List<MaintenanceAction> actionsForMaintenanceTask(String maintenanceTaskName) {
+    @Override public List<MaintenanceAction<?>> actionsForMaintenanceTask(String maintenanceTaskName) {
         if (inMemoryMode)
             throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
 

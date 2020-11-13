@@ -163,8 +163,7 @@ class DiscoveryTest(IgniteTest):
 
         results['Ignite cluster start time (s)'] = start_servers_sec
 
-        failed_nodes, survived_node = choose_node_to_kill(servers, test_config.nodes_to_kill,
-                                                          test_config.sequential_failure)
+        failed_nodes = choose_node_to_kill(servers, test_config.nodes_to_kill, test_config.sequential_failure)
 
         if test_config.load_type is not ClusterLoad.NONE:
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
@@ -181,12 +180,11 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
 
-        results.update(self._simulate_nodes_failure(servers, node_fail_task(ignite_config, test_config), failed_nodes,
-                                                    survived_node))
+        results.update(self._simulate_nodes_failure(servers, failed_nodes))
 
         return results
 
-    def _simulate_nodes_failure(self, servers, kill_node_task, failed_nodes, survived_node):
+    def _simulate_nodes_failure(self, servers, failed_nodes):
         """
         Perform node failure scenario
         """
@@ -196,30 +194,25 @@ class DiscoveryTest(IgniteTest):
 
         ids_to_wait = [node_id(n) for n in failed_nodes]
 
-        _, first_terminated = servers.exec_on_nodes_async(failed_nodes, kill_node_task)
-
-        for node in failed_nodes:
-            self.logger.debug(
-                "Netfilter activated on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+        _, first_terminated = servers.drop_network(failed_nodes)
 
         # Keeps dates of logged node failures.
         logged_timestamps = []
         data = {}
 
-        for failed_id in ids_to_wait:
-            logged_timestamps.append(
-                get_event_time(servers, survived_node, node_failed_event_pattern(failed_id)))
+        for survivor in [n for n in servers.nodes if n not in failed_nodes]:
+            for failed_id in ids_to_wait:
+                logged_timestamps.append(get_event_time(servers, survivor, node_failed_event_pattern(failed_id)))
 
-        self._check_failed_number(failed_nodes, survived_node)
+                self._check_failed_number(failed_nodes, survivor)
+
         self._check_not_segmented(failed_nodes)
 
         logged_timestamps.sort(reverse=True)
 
-        first_kill_time = epoch_mills(first_terminated)
-        detection_delay = epoch_mills(logged_timestamps[0]) - first_kill_time
-
-        data['Detection of node(s) failure (ms)'] = detection_delay
-        data['All detection delays (ms):'] = str([epoch_mills(ts) - first_kill_time for ts in logged_timestamps])
+        data['Detection of node(s) failure (ms)'] = epoch_mills(logged_timestamps[0]) - epoch_mills(first_terminated)
+        data['All detection delays (ms):'] = str(
+            [epoch_mills(ts) - epoch_mills(first_terminated) for ts in logged_timestamps])
         data['Nodes failed'] = len(failed_nodes)
 
         return data
@@ -252,47 +245,6 @@ class DiscoveryTest(IgniteTest):
                 if int(failed) > 0:
                     raise AssertionError(
                         "Wrong node failed (segmented) on '%s'. Check the logs." % node.name)
-
-    def setup(self):
-        super().setup()
-
-        self.netfilter_store_path = os.path.join(self.tmp_path_root, "iptables.bak")
-
-        # Store current network filter settings.
-        for node in self.test_context.cluster.nodes:
-            cmd = "sudo iptables-save | tee " + self.netfilter_store_path
-
-            exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
-
-            if "Warning: iptables-legacy tables present" in exec_error:
-                cmd = "sudo iptables-legacy-save | tee " + self.netfilter_store_path
-
-                exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
-
-            assert len(exec_error) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, exec_error)
-
-            self.logger.debug("Netfilter before launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
-
-    def teardown(self):
-        # Restore previous network filter settings.
-        cmd = "sudo iptables-restore < " + self.netfilter_store_path
-
-        errors = []
-
-        for node in self.test_context.cluster.nodes:
-            exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
-
-            if len(exec_error) > 0:
-                errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, exec_error))
-            else:
-                self.logger.debug("Netfilter after launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
-
-        if len(errors) > 0:
-            self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))
-
-            raise RuntimeError("Unable to restore node states. See the log above.")
-
-        super().teardown()
 
 
 def start_zookeeper(test_context, num_nodes):
@@ -348,13 +300,9 @@ def choose_node_to_kill(servers, nodes_to_kill, sequential):
     idx = random.randint(0, len(to_kill) - nodes_to_kill)
     to_kill = to_kill[idx:idx + nodes_to_kill]
 
-    survive = random.choice([node for node in servers.nodes if node not in to_kill])
-
     assert len(to_kill) == nodes_to_kill, "Unable to pick up required number of nodes to kill."
 
-    assert survive, "Unable to select survived node to monitor the cluster on it."
-
-    return to_kill, survive
+    return to_kill
 
 
 def order(node):
@@ -365,32 +313,3 @@ def order(node):
 def node_id(node):
     """Return node id."""
     return node.discovery_info().node_id
-
-
-def node_fail_task(ignite_config, test_config):
-    """
-    Creates proper task to simulate network failure depending on the configurations.
-    """
-    cm_spi = ignite_config.communication_spi
-    dsc_spi = ignite_config.discovery_spi
-
-    cm_ports = str(cm_spi.port) if cm_spi.port_range < 1 else str(cm_spi.port) + ':' + str(
-        cm_spi.port + cm_spi.port_range)
-
-    if test_config.with_zk:
-        dsc_ports = str(ignite_config.discovery_spi.port)
-    else:
-        dsc_ports = str(dsc_spi.port) if dsc_spi.port_range < 1 else str(dsc_spi.port) + ':' + str(
-            dsc_spi.port + dsc_spi.port_range)
-
-    cmd = f"sudo iptables -I %s 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"
-
-    return lambda node: (node.account.ssh_client.exec_command(cmd % "INPUT"),
-                         node.account.ssh_client.exec_command(cmd % "OUTPUT"))
-
-
-def dump_netfilter_settings(node):
-    """
-    Reads current netfilter settings on the node for debugging purposes.
-    """
-    return str(node.account.ssh_client.exec_command("sudo iptables -L -n")[1].read(), sys.getdefaultencoding())

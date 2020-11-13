@@ -126,4 +126,4 @@ Easy!
 From here, you may want to:
 
 * Read more about using Ignite and link:SQL/sql-introduction[SQL]
-* Read more about using link:sqlline[sqlline]
+* Read more about using link:tools/sqlline[sqlline]

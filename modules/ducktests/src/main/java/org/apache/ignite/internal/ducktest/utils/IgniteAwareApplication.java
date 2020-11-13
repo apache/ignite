@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeMan
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import sun.misc.Signal;
 
 /**
  *
@@ -73,7 +74,7 @@ public abstract class IgniteAwareApplication {
      * Default constructor.
      */
     protected IgniteAwareApplication() {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        Signal.handle(new Signal("TERM"), signal -> {
             log.info("SIGTERM recorded.");
 
             if (!finished && !broken)
@@ -100,11 +101,10 @@ public abstract class IgniteAwareApplication {
                 }
             }
 
-            if (log.isDebugEnabled())
-                log.debug("Graceful termination done.");
-        }));
+            log.info("Application finished. Waiting for graceful termination.");
+        });
 
-        log.info("ShutdownHook registered.");
+        log.info("SIGTERM handler registered.");
     }
 
     /**

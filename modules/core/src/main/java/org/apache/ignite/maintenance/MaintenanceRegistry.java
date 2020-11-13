@@ -18,7 +18,6 @@
 package org.apache.ignite.maintenance;
 
 import java.util.List;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -142,7 +141,7 @@ public interface MaintenanceRegistry {
      *
      * @throws IgniteException if no Maintenance Tasks are registered for provided name.
      */
-    public List<MaintenanceAction> actionsForMaintenanceTask(String maintenanceTaskName);
+    public List<MaintenanceAction<?>> actionsForMaintenanceTask(String maintenanceTaskName);
 
     /**
      * Examine all components if they need to execute maintenance actions.

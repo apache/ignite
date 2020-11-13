@@ -595,7 +595,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
         /** {@inheritDoc} */
         @Override public long getNodesLeft() {
-            return 0;
+            return stats.leftNodesCnt();
         }
 
         /** {@inheritDoc} */

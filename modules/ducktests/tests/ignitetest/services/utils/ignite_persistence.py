@@ -28,6 +28,7 @@ class PersistenceAware:
     """
     # Root directory for persistent output
     PERSISTENT_ROOT = "/mnt/service"
+    TEMP_DIR = os.path.join(PERSISTENT_ROOT, "tmp")
     PATH_TO_LOGS_DIR = os.path.join(PERSISTENT_ROOT, "logs")
     STDOUT_STDERR_CAPTURE = os.path.join(PATH_TO_LOGS_DIR, "console.log")
     CONSOLE_ALL_CAPTURE = os.path.join(PATH_TO_LOGS_DIR, "console_all.log")
@@ -45,6 +46,7 @@ class PersistenceAware:
         :param node: Service node.
         """
         node.account.mkdirs(self.PERSISTENT_ROOT)
+        node.account.mkdirs(self.TEMP_DIR)
         node.account.mkdirs(self.PATH_TO_LOGS_DIR)
 
 
