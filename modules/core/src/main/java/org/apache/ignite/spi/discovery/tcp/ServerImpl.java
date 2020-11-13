@@ -6503,8 +6503,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // If there is no socket to next node, the connection is lost, not established, or new is being searched
                 // for. Sending ping can mark next apropriate node as failed. That could cause segmentation of current
                 // node.
-                if (sock == null && log.isTraceEnabled())
-                    log.trace("Won't check connection to next [" + next + "]. Connection is not established yet.");
+                if (sock == null)
+                    log.error("TEST | Won't check connection to next [" + next + "]. Connection is not established yet.");
 
                 return;
             }
