@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -36,14 +36,11 @@ import org.apache.calcite.rel.RelNodes;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
@@ -53,7 +50,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
@@ -61,7 +57,7 @@ import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
 import static org.apache.calcite.rel.core.JoinRelType.INNER;
 import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
-import static org.apache.calcite.util.NumberUtil.multiply;
+import static org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdRowCount.joinRowCount;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.broadcast;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.hash;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
@@ -363,59 +359,7 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
 
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        @Nullable Double result = null;
-        boolean finished = false;
-        if (!getJoinType().projectsRight()) {
-          // Create a RexNode representing the selectivity of the
-          // semijoin filter and pass it to getSelectivity
-          RexNode semiJoinSelectivity =
-              RelMdUtil.makeSemiJoinSelectivityRexNode(mq, this);
-
-            result = multiply(mq.getSelectivity(getLeft(), semiJoinSelectivity),
-                mq.getRowCount(getLeft()));
-        }
-        else { // Row count estimates of 0 will be rounded up to 1.
-// So, use maxRowCount where the product is very small.
-            final Double left1 = mq.getRowCount(getLeft());
-            final Double right1 = mq.getRowCount(getRight());
-            if (left1 != null && right1 != null) {
-                if (left1 <= 1D || right1 <= 1D) {
-                    Double max = mq.getMaxRowCount(this);
-                    if (max != null && max <= 1D) {
-                        result = max;
-                        finished = true;
-                    }
-                }
-                if (!finished) {
-                    JoinInfo joinInfo1 = analyzeCondition();
-                    ImmutableIntList leftKeys = joinInfo1.leftKeys;
-                    ImmutableIntList rightKeys = joinInfo1.rightKeys;
-                    double selectivity = mq.getSelectivity(this, getCondition());
-                    if (F.isEmpty(leftKeys) || F.isEmpty(rightKeys)) {
-                        result = left1 * right1 * selectivity;
-                    }
-                    else {
-                        double leftDistinct = Util.first(
-                            mq.getDistinctRowCount(getLeft(), ImmutableBitSet.of(leftKeys), null), left1);
-                        double rightDistinct = Util.first(
-                            mq.getDistinctRowCount(getRight(), ImmutableBitSet.of(rightKeys), null), right1);
-                        double leftCardinality = leftDistinct / left1;
-                        double rightCardinality = rightDistinct / right1;
-                        double rowsCount = (Math.min(left1, right1) / (leftCardinality * rightCardinality)) * selectivity;
-                        JoinRelType type = getJoinType();
-                        if (type == LEFT)
-                            rowsCount += left1;
-                        else if (type == RIGHT)
-                            rowsCount += right1;
-                        else if (type == JoinRelType.FULL)
-                            rowsCount += left1 + right1;
-                        result = rowsCount;
-                    }
-                }
-            }
-        }
-
-        return Util.first(result, 1D);
+        return Util.first(joinRowCount(mq, this), 1D);
     }
 
     /** {@inheritDoc} */

@@ -17,32 +17,26 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.List;
-import java.util.Set;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.util.List;
+import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelNodes;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-
-import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
-import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
 
 /**
  * Relational expression that combines two relational expressions according to
@@ -140,40 +134,7 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         // Give it some penalty
-        double rowCount = mq.getRowCount(this);
-
-        // Joins can be flipped, and for many algorithms, both versions are viable
-        // and have the same cost. To make the results stable between versions of
-        // the planner, make one of the versions slightly more expensive.
-        switch (joinType) {
-            case SEMI:
-            case ANTI:
-                // SEMI and ANTI join cannot be flipped
-                break;
-            case RIGHT:
-                rowCount = RelMdUtil.addEpsilon(rowCount);
-                break;
-            default:
-                if (RelNodes.COMPARATOR.compare(left, right) > 0)
-                    rowCount = RelMdUtil.addEpsilon(rowCount);
-        }
-
-        final double rightRowCount = right.estimateRowCount(mq);
-        final double leftRowCount = left.estimateRowCount(mq);
-
-        if (Double.isInfinite(leftRowCount))
-            rowCount = leftRowCount;
-        if (Double.isInfinite(rightRowCount))
-            rowCount = rightRowCount;
-
-        RelDistribution.Type type = distribution().getType();
-
-        if (type == BROADCAST_DISTRIBUTED || type == SINGLETON)
-            rowCount = RelMdUtil.addEpsilon(rowCount);
-
-        RelOptCost cost = planner.getCostFactory().makeCost(rowCount, 0, 0);
-
-        return cost.multiplyBy(5);
+        return super.computeSelfCost(planner, mq).multiplyBy(5);
     }
 
     /** {@inheritDoc} */

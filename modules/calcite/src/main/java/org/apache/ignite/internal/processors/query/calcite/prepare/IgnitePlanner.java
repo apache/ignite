@@ -343,17 +343,5 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         @Override public RelOptCost getCost(RelNode rel, RelMetadataQuery mq) {
             return mq.getCumulativeCost(rel);
         }
-
-        public String dump() {
-            StringWriter w = new StringWriter();
-            dump(new PrintWriter(w));
-            return w.toString();
-        }
-    }
-
-    public String dump() {
-        StringWriter w = new StringWriter();
-        ((VolcanoPlanner)planner).dump(new PrintWriter(w));
-        return w.toString();
     }
 }

@@ -563,8 +563,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         IgniteRel igniteRel = optimize(sqlNode, planner);
 
-        log.info("+++ Plan dump: " + planner.dump());
-
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
