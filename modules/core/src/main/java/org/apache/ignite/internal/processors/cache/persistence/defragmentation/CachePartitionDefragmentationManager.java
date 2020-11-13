@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongConsumer;
@@ -884,43 +883,5 @@ public class CachePartitionDefragmentationManager {
 
             this.newCacheDataStore = newCacheDataStore;
         }
-    }
-
-    /** */
-    public static class DefragmentationStatus {
-        /** */
-        private final List<CacheGroupDefragmentationStatus> cacheGrpsStatus = new CopyOnWriteArrayList<>();
-
-        /** */
-        private final long startNanos = System.nanoTime();
-
-        /** */
-        private final AtomicLong totalDuration = new AtomicLong();
-
-        /** */
-        public void heartbeat() {
-            long newTotalDuration = System.nanoTime() - startNanos;
-
-            totalDuration.set(newTotalDuration);
-        }
-
-        /** */
-        public long getTotalDuration() {
-            heartbeat(); //?
-
-            return U.nanosToMillis(totalDuration.get());
-        }
-    }
-
-    /** */
-    public static class CacheGroupDefragmentationStatus {
-
-
-    }
-
-    /** */
-    private static class DefragmentationCancelledException extends Exception {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
     }
 }
