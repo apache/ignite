@@ -25,13 +25,24 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
  * Allocates page ID's.
  */
 public interface PageIdAllocator {
-    /** */
+    /**
+     * Flag for Data page.
+     * Also used by partition meta and tracking pages.
+     * This type doesn't use Page ID rotation mechanizm.
+     */
     public static final byte FLAG_DATA = 1;
 
-    /** */
+    /**
+     * Flag for index page.
+     * Also used by internal structure in inmemory caches.
+     * This type uses Page ID rotation mechanizm.
+     */
     public static final byte FLAG_IDX = 2;
 
-    /** */
+    /**
+     * Flag for internal structure page.
+     * This type uses Page ID rotation mechanizm.
+     */
     public static final byte FLAG_AUX = 4;
 
     /** Max partition ID that can be used by affinity. */
