@@ -1,0 +1,57 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Persistence Defragmentation
+
+== Overview
+
+As memory management mechanism of Apache Ignite can only create or reuse pages for user data but never frees them files where Ignite persists data can only grow and never shrinks.
+
+In most use cases it doesn't cause any problems as once created page can be reused multiple times. However in certain cases it is possible that cache contains very little data but occupies large chunks of disk space because a lot of data was removed from the cache.
+
+Defragmentation is aimed to enable user to shrink data files and claim back disk space.
+
+[NOTE]
+====
+Defragmentation can only be used with historical rebalance enabled (link to historical rebalance page). If historical rebalance is disabled server node always triggers full rebalance after restart throwing away defragmented partition. Full set of data is transferred to the node from other nodes over network, depending of size of data set it may require a lot of time and may slow down the whole cluster as network capacity is important to fulfill user requests.
+====
+
+== Usage: how and when
+
+Defragmentation is costly operation in terms of disk IO so to avoid slowing down user operations it cannot be executed on regular node joined to the cluster. To execute defragmentation user needs to request it first on a particular node or set of nodes and than restart these nodes.
+
+To request defragmentation use the following command: <specific command>
+
+After restart node with requested defragmentation will enter special mode called maintenance mode. Node in maintenance doesn't join the rest of the cluster but stays isolated until defragmentation is completed (or cancelled by explicit user request). After that user has to restart the node one more time: it will exit maintenance mode and returns back to normal operations (joins the cluster and starts to serve regular workload).
+
+[NOTE]
+====
+As nodes in maintenance don't participate in serving usual workload, it is not recommended to execute defragmentation on several nodes at once as it reduces number of backups thus increasing the risk of partition loss.
+====
+
+When node executes defragmentation it is possible to retrieve operation status or cancel it fully or partially using the following commands available in control utility:
+<command for status>
+<command for cancel>.
+
+For more information about commands refer to their help.
+
+[NOTE]
+====
+To reduce disk space requirements during defragmentation caches are defragmented one by one (if defragmentation of more than one cache was requested). To calculate additional space required find the cache that occupies the most disk space. The same amount of disk space is required for defragmentation at max.
+====
+
+== Conclusion
+In most situations defragmentation isn't needed as existing memory management mechanism effectively reuses memory left after data deletion. But in rare cases it may be necessary to employ it to free up disk space.
+
+Its usage requires taking nodes out of normal operations so it careful planning is needed.
