@@ -88,7 +88,7 @@ class DiscoveryTest(IgniteTest):
     @matrix(nodes_to_kill=[1, 2],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL], socket_linger=[0, 1],
             failure_detection_timeout=[1000])
-    def _test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, socket_linger,
+    def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, socket_linger,
                                            failure_detection_timeout):
         """
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
@@ -123,7 +123,7 @@ class DiscoveryTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL], socket_linger=[0, 1],
             failure_detection_timeout=[1000])
-    def _test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, socket_linger, failure_detection_timeout):
+    def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, socket_linger, failure_detection_timeout):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
         """
@@ -154,7 +154,7 @@ class DiscoveryTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[1000],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def _test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
+    def test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
         """
         Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
         """
@@ -169,7 +169,7 @@ class DiscoveryTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
             failure_detection_timeout=[1000])
-    def _test_2_nodes_fail_sequential_zk(self, ignite_version, load_type, failure_detection_timeout):
+    def test_2_nodes_fail_sequential_zk(self, ignite_version, load_type, failure_detection_timeout):
         """
         Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
         """
