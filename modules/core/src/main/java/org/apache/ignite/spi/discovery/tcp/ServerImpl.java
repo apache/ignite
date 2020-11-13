@@ -6499,15 +6499,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void checkConnectionToNext() {
             long elapsed = (lastRingMsgSentTime + U.millisToNanos(connCheckInterval)) - System.nanoTime();
 
-            if (elapsed > 0 || sock == null) {
-                // If there is no socket to next node, the connection is lost, not established, or new is being searched
-                // for. Sending ping can mark next apropriate node as failed. That could cause segmentation of current
-                // node.
-                if (sock == null)
-                    log.error("TEST | Won't check connection to next [" + next + "]. Connection is not established yet.");
-
+            if (elapsed > 0)
                 return;
-            }
 
             if (ring.hasRemoteServerNodes())
                 sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
@@ -6907,6 +6900,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (previous != null && !previous.id().equals(nodeId) &&
                                 (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
                                 Collection<InetSocketAddress> nodeAddrs = spi.getNodeAddresses(previous, false);
+
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Checking connection to previous node [" + previous +
+                                        " with timeout " + U.nanosToMillis(timeThreshold - now));
+                                }
 
                                 liveAddr = checkConnection(new ArrayList<>(nodeAddrs),
                                     (int)U.nanosToMillis(timeThreshold - now));
