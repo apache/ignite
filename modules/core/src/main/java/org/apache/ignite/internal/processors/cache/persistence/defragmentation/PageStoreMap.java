@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
 import java.util.Arrays;
 import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.util.collection.IntMap;
@@ -38,7 +39,7 @@ class PageStoreMap implements PageStoreCollection {
     ) {
         IntMap<PageStore> pageStoresMap = grpPageStoresMap.get(grpId);
 
-        //TODO This code cannot be used concurrently. If we deside to parallel defragmentation then we should correct current class.
+        //This code cannot be used concurrently. If we decide to parallel defragmentation then we should correct current class.
         if (pageStoresMap == null)
             grpPageStoresMap.put(grpId, pageStoresMap = new IntRWHashMap<>());
 
@@ -62,33 +63,43 @@ class PageStoreMap implements PageStoreCollection {
     }
 
     /** {@inheritDoc} */
-    @Override public PageStore getStore(int grpId, int partId) {
+    @Override public PageStore getStore(int grpId, int partId) throws IgniteCheckedException {
         IntMap<PageStore> partPageStoresMap = grpPageStoresMap.get(grpId);
 
-        assert partPageStoresMap != null : S.toString("Page store map not found. ",
-            "grpId", grpId, false,
-            "partId", partId, false,
-            "keys", Arrays.toString(grpPageStoresMap.keys()), false,
-            "this", hashCode(), false
-        ); //TODO Throw meaningful exception?
+        if (partPageStoresMap == null) {
+            throw new IgniteCheckedException(S.toString("Page store map not found. ",
+                "grpId", grpId, false,
+                "partId", partId, false,
+                "keys", Arrays.toString(grpPageStoresMap.keys()), false,
+                "this", hashCode(), false
+            ));
+        }
 
         PageStore pageStore = partPageStoresMap.get(partId);
 
-        assert pageStore != null : S.toString("Page store not found. ",
-            "grpId", grpId, false,
-            "partId", partId, false,
-            "keys", Arrays.toString(partPageStoresMap.keys()), false,
-            "this", hashCode(), false
-        ); //TODO Throw meaningful exception?
+        if (pageStore == null) {
+            throw new IgniteCheckedException(S.toString("Page store not found. ",
+                "grpId", grpId, false,
+                "partId", partId, false,
+                "keys", Arrays.toString(partPageStoresMap.keys()), false,
+                "this", hashCode(), false
+            ));
+        }
 
         return pageStore;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<PageStore> getStores(int grpId) {
+    @Override public Collection<PageStore> getStores(int grpId) throws IgniteCheckedException {
         IntMap<PageStore> partPageStoresMap = grpPageStoresMap.get(grpId);
 
-        assert partPageStoresMap != null; //TODO Throw meaningful exception?
+        if (partPageStoresMap == null) {
+            throw new IgniteCheckedException(S.toString("Page store map not found. ",
+                "grpId", grpId, false,
+                "keys", Arrays.toString(grpPageStoresMap.keys()), false,
+                "this", hashCode(), false
+            ));
+        }
 
         return Arrays.asList(partPageStoresMap.values());
     }

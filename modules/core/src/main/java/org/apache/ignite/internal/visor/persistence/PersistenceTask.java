@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -250,11 +251,12 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
 
             List<MaintenanceAction<?>> actions = mntcReg.actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
-            Optional<MaintenanceAction<?>> checkActionOpt = actions.stream().filter(a -> a.name().equals(CheckCorruptedCacheStoresCleanAction.ACTION_NAME))
+            Optional<MaintenanceAction<?>> checkActionOpt = actions.stream()
+                .filter(a -> a.name().equals(CheckCorruptedCacheStoresCleanAction.ACTION_NAME))
                 .findFirst();
 
             if (checkActionOpt.isPresent()) {
-                MaintenanceAction<Boolean> action = ((MaintenanceAction<Boolean>)checkActionOpt.get());
+                MaintenanceAction<Boolean> action = (MaintenanceAction<Boolean>)checkActionOpt.get();
 
                 Boolean mntcTaskCompleted = action.execute();
 
@@ -358,7 +360,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
         private List<String> corruptedCacheDirectories(MaintenanceTask task) {
             String params = task.parameters();
 
-            String[] namesArr = params.split(File.separator);
+            String[] namesArr = params.split(Pattern.quote(File.separator));
 
             return Arrays.asList(namesArr);
         }

@@ -50,7 +50,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapM
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.GridCacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightCheckpointManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightweightCheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
@@ -135,7 +135,7 @@ public class CachePartitionDefragmentationManager {
      * Checkpoint for specific defragmentation regions which would store the data to new partitions
      * during the defragmentation.
      */
-    private final LightCheckpointManager defragmentationCheckpoint;
+    private final LightweightCheckpointManager defragmentationCheckpoint;
 
     /** Default checkpoint for current node. */
     private final CheckpointManager nodeCheckpoint;
@@ -170,7 +170,7 @@ public class CachePartitionDefragmentationManager {
         GridCacheDatabaseSharedManager dbMgr,
         FilePageStoreManager filePageStoreMgr,
         CheckpointManager nodeCheckpoint,
-        LightCheckpointManager defragmentationCheckpoint,
+        LightweightCheckpointManager defragmentationCheckpoint,
         int pageSize
     ) throws IgniteCheckedException {
         cachesForDefragmentation = new HashSet<>(cacheNames);

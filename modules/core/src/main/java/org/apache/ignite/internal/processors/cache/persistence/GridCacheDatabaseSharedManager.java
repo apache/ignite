@@ -50,6 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
@@ -117,7 +118,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointStatus;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightCheckpointManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightweightCheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.ReservationReason;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationPageReadWriteManager;
@@ -678,7 +679,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             dataRegion(DEFRAGMENTATION_PART_REGION_NAME)
         );
 
-        LightCheckpointManager lightCheckpointMgr = new LightCheckpointManager(
+        LightweightCheckpointManager lightCheckpointMgr = new LightweightCheckpointManager(
             kernalCtx::log,
             cctx.igniteInstanceName(),
             "db-checkpoint-thread-defrag",
@@ -713,7 +714,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected DataRegion addDataRegion(DataStorageConfiguration dataStorageCfg, DataRegionConfiguration dataRegionCfg,
+    @Override public DataRegion addDataRegion(DataStorageConfiguration dataStorageCfg, DataRegionConfiguration dataRegionCfg,
         boolean trackable, PageReadWriteManager pmPageMgr) throws IgniteCheckedException {
         DataRegion region = super.addDataRegion(dataStorageCfg, dataRegionCfg, trackable, pmPageMgr);
 
@@ -1757,7 +1758,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
                 new CorruptedPdsMaintenanceCallback(workDir,
-                    Arrays.asList(mntcTask.parameters().split(File.separator)))
+                    Arrays.asList(mntcTask.parameters().split(Pattern.quote(File.separator))))
             );
 
             return;

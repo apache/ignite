@@ -799,8 +799,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     KeyCacheObject key = nextRow.key();
                     CacheObject val = nextRow.value();
 
-                    Object key0 = cctx.unwrapBinaryIfNeeded(key, keepBinary, false);
-                    Object val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
+                    Object key0 = cctx.unwrapBinaryIfNeeded(key, keepBinary, false, null);
+                    Object val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false, null);
 
                     next = new CacheEntryImplEx(key0, val0, nextRow.version());
 
@@ -1525,6 +1525,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             mvccApplyChanges = new MvccApplyChangesHandler(grp);
         }
 
+        /** {@inheritDoc} */
         @Override public CacheDataTree tree() {
             return dataTree;
         }

@@ -65,6 +65,7 @@ set(SOURCES src/teamcity/teamcity_boost.cpp
         src/authentication_test.cpp
         src/sql_parsing_test.cpp
         src/streaming_test.cpp
+        src/test_server.cpp
         ../odbc/src/log.cpp
         ../odbc/src/cursor.cpp
         ../odbc/src/diagnostic/diagnostic_record.cpp
