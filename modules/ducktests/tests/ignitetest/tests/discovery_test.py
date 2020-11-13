@@ -180,11 +180,11 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
 
-        results.update(self._simulate_nodes_failure(servers, node_fail_task(ignite_config, test_config), failed_nodes))
+        results.update(self._simulate_nodes_failure(servers, failed_nodes))
 
         return results
 
-    def _simulate_nodes_failure(self, servers, kill_node_task, failed_nodes):
+    def _simulate_nodes_failure(self, servers, failed_nodes):
         """
         Perform node failure scenario
         """
@@ -194,11 +194,7 @@ class DiscoveryTest(IgniteTest):
 
         ids_to_wait = [node_id(n) for n in failed_nodes]
 
-        _, first_terminated = servers.exec_on_nodes_async(failed_nodes, kill_node_task)
-
-        for node in failed_nodes:
-            self.logger.debug(
-                "Netfilter activated on '%s': %s" % (node.name, dump_netfilter_settings(node)))
+        _, first_terminated = servers.drop_network(failed_nodes)
 
         # Keeps dates of logged node failures.
         logged_timestamps = []
@@ -249,47 +245,6 @@ class DiscoveryTest(IgniteTest):
                 if int(failed) > 0:
                     raise AssertionError(
                         "Wrong node failed (segmented) on '%s'. Check the logs." % node.name)
-
-    def setup(self):
-        super().setup()
-
-        self.netfilter_store_path = os.path.join(self.tmp_path_root, "iptables.bak")
-
-        # Store current network filter settings.
-        for node in self.test_context.cluster.nodes:
-            cmd = "sudo iptables-save | tee " + self.netfilter_store_path
-
-            exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
-
-            if "Warning: iptables-legacy tables present" in exec_error:
-                cmd = "sudo iptables-legacy-save | tee " + self.netfilter_store_path
-
-                exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
-
-            assert len(exec_error) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, exec_error)
-
-            self.logger.debug("Netfilter before launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
-
-    def teardown(self):
-        # Restore previous network filter settings.
-        cmd = "sudo iptables-restore < " + self.netfilter_store_path
-
-        errors = []
-
-        for node in self.test_context.cluster.nodes:
-            exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
-
-            if len(exec_error) > 0:
-                errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, exec_error))
-            else:
-                self.logger.debug("Netfilter after launch on '%s': %s" % (node.name, dump_netfilter_settings(node)))
-
-        if len(errors) > 0:
-            self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))
-
-            raise RuntimeError("Unable to restore node states. See the log above.")
-
-        super().teardown()
 
 
 def start_zookeeper(test_context, num_nodes):
@@ -358,32 +313,3 @@ def order(node):
 def node_id(node):
     """Return node id."""
     return node.discovery_info().node_id
-
-
-def node_fail_task(ignite_config, test_config):
-    """
-    Creates proper task to simulate network failure depending on the configurations.
-    """
-    cm_spi = ignite_config.communication_spi
-    dsc_spi = ignite_config.discovery_spi
-
-    cm_ports = str(cm_spi.port) if cm_spi.port_range < 1 else str(cm_spi.port) + ':' + str(
-        cm_spi.port + cm_spi.port_range)
-
-    if test_config.with_zk:
-        dsc_ports = str(ignite_config.discovery_spi.port)
-    else:
-        dsc_ports = str(dsc_spi.port) if dsc_spi.port_range < 1 else str(dsc_spi.port) + ':' + str(
-            dsc_spi.port + dsc_spi.port_range)
-
-    cmd = f"sudo iptables -I %s 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"
-
-    return lambda node: (node.account.ssh_client.exec_command(cmd % "INPUT"),
-                         node.account.ssh_client.exec_command(cmd % "OUTPUT"))
-
-
-def dump_netfilter_settings(node):
-    """
-    Reads current netfilter settings on the node for debugging purposes.
-    """
-    return str(node.account.ssh_client.exec_command("sudo iptables -L -n")[1].read(), sys.getdefaultencoding())
