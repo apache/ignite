@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Spool;
+import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
@@ -75,7 +76,8 @@ public class IgniteTableSpool extends Spool implements IgniteRel {
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         // TODO: add memory usage to cost
-        double rowCount = mq.getRowCount(getInput());
+        double rowCount = mq.getRowCount(this);
+        rowCount = RelMdUtil.addEpsilon(rowCount);
         return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }
 }

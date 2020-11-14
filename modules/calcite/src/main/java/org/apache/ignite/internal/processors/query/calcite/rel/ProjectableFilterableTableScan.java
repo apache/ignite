@@ -92,7 +92,7 @@ public class ProjectableFilterableTableScan extends TableScan {
         super(input);
         condition = input.getExpression("filters");
         projects = input.get("projects") == null ? null : input.getExpressionList("projects");
-        requiredColunms = input.get("requiredColumns") == null ? null : input.getBitSet("requiredColumns");
+        requiredColunms = input.get("requiredColunms") == null ? null : input.getBitSet("requiredColunms");
     }
 
     /** @return Projections. */
