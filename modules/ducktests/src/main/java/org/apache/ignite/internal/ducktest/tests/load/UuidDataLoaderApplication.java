@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.ducktest.tests.loader;
+package org.apache.ignite.internal.ducktest.tests.load;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;

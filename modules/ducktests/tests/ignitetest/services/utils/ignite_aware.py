@@ -28,7 +28,6 @@ from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
-from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware

@@ -16,6 +16,8 @@
 """
 Module contains discovery tests.
 """
+import time
+
 from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
@@ -35,7 +37,7 @@ class SnapshotTest(IgniteTest):
     """
     Test Snapshot.
     """
-    NUM_NODES = 4
+    NUM_NODES = 5
 
     SNAPSHOT_NAME = "test_snap"
 
@@ -52,10 +54,10 @@ class SnapshotTest(IgniteTest):
         ignite_config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
             data_storage=data_storage,
-            caches=[CacheConfiguration(name=self.CACHE_NAME, backups=1, indexed_types=['java.util.UUID', 'byte[]'])]
+            caches=[CacheConfiguration(name=self.CACHE_NAME, indexed_types=['java.util.UUID', 'byte[]'])]
         )
 
-        service = IgniteService(self.test_context, ignite_config, num_nodes=self.NUM_NODES - 1)
+        service = IgniteService(self.test_context, ignite_config, num_nodes=self.NUM_NODES - 2)
         service.start()
 
         control_utility = ControlUtility(service, self.test_context)
@@ -67,28 +69,42 @@ class SnapshotTest(IgniteTest):
             discovery_spi=from_ignite_cluster(service),
         )
 
-        streamer = IgniteApplicationService(
+        time.sleep(180)
+
+        loader = IgniteApplicationService(
             self.test_context,
             client_config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.loader.UuidDataLoaderApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.load.UuidDataLoaderApplication",
             params={
                 "cacheName": self.CACHE_NAME,
-                "iterSize": 1024 * 1024,
+                "iterSize": 2 * 1024 * 1024,
                 "dataSize": 1024
-            }
+            },
+            timeout_sec=180
         )
 
-        streamer.run()
+        deleter = IgniteApplicationService(
+            self.test_context,
+            client_config,
+            java_class_name="org.apache.ignite.internal.ducktest.tests.delete.DeleteDataApplication",
+            params={
+                "cacheName": self.CACHE_NAME,
+                "iterSize": 512 * 1024,
+                "bachSize": 512
+            },
+            timeout_sec=180
+        )
+
+        loader.run()
 
         node = service.nodes[0]
 
         control_utility.validate_indexes(check_assert=True)
-        control_utility.idle_verify(check_assert=True)
         dump_1 = control_utility.idle_verify_dump(node, return_path=True)
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
-        streamer.run()
+        deleter.run()
 
         dump_2 = control_utility.idle_verify_dump(node, return_path=True)
 
@@ -105,7 +121,6 @@ class SnapshotTest(IgniteTest):
         control_utility.activate()
 
         control_utility.validate_indexes(check_assert=True)
-        control_utility.idle_verify(check_assert=True)
         dump_3 = control_utility.idle_verify_dump(node, return_path=True)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
