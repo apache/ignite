@@ -142,7 +142,7 @@
     </category>
 
 <!--    <category name="org.apache.calcite">-->
-<!--        <level value="DEBUG"/>-->
+<!--        <level value="TRACE"/>-->
 <!--    </category>-->
 
     <!-- Default settings. -->

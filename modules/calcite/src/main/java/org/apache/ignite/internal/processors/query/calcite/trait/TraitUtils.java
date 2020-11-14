@@ -159,6 +159,7 @@ public class TraitUtils {
         if (correlation(rel).correlated())
             return null;
 
+//        return null;
         return new IgniteTableSpool(
             rel.getCluster(),
             rel.getTraitSet()

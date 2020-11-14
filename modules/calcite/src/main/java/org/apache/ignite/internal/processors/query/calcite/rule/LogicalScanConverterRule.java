@@ -42,7 +42,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
             @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, IgniteLogicalIndexScan rel) {
                 return new IgniteIndexScan(rel.getCluster(), rel.getTraitSet().replace(IgniteConvention.INSTANCE),
                     rel.getTable(), rel.indexName(), rel.projects(), rel.condition(), rel.lowerCondition(),
-                    rel.upperCondition(), rel.requiredColunms());
+                    rel.upperCondition(), rel.requiredColumns());
             }
         };
 
@@ -58,7 +58,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                     traits = traits.replace(RewindabilityTrait.REWINDABLE).replace(CorrelationTrait.correlations(corrIds));
 
                 return new IgniteTableScan(rel.getCluster(), traits,
-                    rel.getTable(), rel.projects(), rel.condition(), rel.requiredColunms());
+                    rel.getTable(), rel.projects(), rel.condition(), rel.requiredColumns());
             }
         };
 

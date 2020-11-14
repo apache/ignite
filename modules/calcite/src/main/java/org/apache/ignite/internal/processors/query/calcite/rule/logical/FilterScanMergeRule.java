@@ -34,7 +34,6 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.mapping.Mappings;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
@@ -59,7 +58,7 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
                 RelTraitSet traits,
                 RexNode cond) {
                 return IgniteLogicalIndexScan.create(cluster, traits, scan.getTable(), scan.indexName(),
-                    scan.projects(), cond, scan.requiredColunms());
+                    scan.projects(), cond, scan.requiredColumns());
             }
         };
 
@@ -73,7 +72,7 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
                 RelTraitSet traits,
                 RexNode cond) {
                 return IgniteLogicalTableScan.create(cluster, traits, scan.getTable(), scan.projects(),
-                    cond, scan.requiredColunms());
+                    cond, scan.requiredColumns());
             }
         };
 
@@ -112,7 +111,7 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
 
             IgniteTable tbl = scan.getTable().unwrap(IgniteTable.class);
 
-            RelDataType cols = tbl.getRowType(typeFactory, scan.requiredColunms());
+            RelDataType cols = tbl.getRowType(typeFactory, scan.requiredColumns());
 
             Mappings.TargetMapping permutation = RexUtils.permutation(scan.projects(), cols, true);
 

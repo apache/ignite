@@ -29,6 +29,7 @@ import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -51,24 +52,24 @@ public class IgniteMdRowCount extends RelMdRowCount {
         return joinRowCount(mq, rel);
     }
 
-    /** {@inheritDoc} */
-    @Override public Double getRowCount(RelSubset subset, RelMetadataQuery mq) {
-        // IgniteTableSpool creates cycle.
-        // if (!Bug.CALCITE_1048_FIXED) {
-        //     return mq.getRowCount(Util.first(subset.getBest(), subset.getOriginal()));
-        // }
-        Double v = null;
-        for (RelNode r : subset.getRels()) {
-            try {
-                v = NumberUtil.min(v, mq.getRowCount(r));
-            } catch (CyclicMetadataException e) {
-                // ignore this rel; there will be other, non-cyclic ones
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
-        }
-        return Util.first(v, 1e6d); // if set is empty, estimate large
-    }
+//    /** {@inheritDoc} */
+//    @Override public Double getRowCount(RelSubset subset, RelMetadataQuery mq) {
+//        // IgniteTableSpool creates cycle.
+////         if (!Bug.CALCITE_1048_FIXED) {
+////             return mq.getRowCount(Util.first(subset.getBest(), subset.getOriginal()));
+////         }
+//        Double v = null;
+//        for (RelNode r : subset.getRels()) {
+//            try {
+//                v = NumberUtil.min(v, mq.getRowCount(r));
+//            } catch (CyclicMetadataException e) {
+//                // ignore this rel; there will be other, non-cyclic ones
+//            } catch (Throwable e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        return Util.first(v, 1e6d); // if set is empty, estimate large
+//    }
 
     /** */
     @Nullable public static Double joinRowCount(RelMetadataQuery mq, Join rel) {
