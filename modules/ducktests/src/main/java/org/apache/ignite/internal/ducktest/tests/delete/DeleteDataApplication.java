@@ -41,11 +41,11 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
         int bachSize = jNode.get("bachSize").asInt();
 
+        markInitialized();
+
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cacheName);
 
         log.info("Cache size before: " + cache.size());
-
-        markInitialized();
 
         long start = System.currentTimeMillis();
 
@@ -60,10 +60,9 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
             cnt++;
         }
-
-        log.info("Start removing: " + keys.size());
-
         int listSize = keys.size();
+
+        log.info("Start removing: " + listSize);
 
         List<IgniteFuture<Void>> futures = new LinkedList<>();
 
@@ -75,7 +74,7 @@ public class DeleteDataApplication extends IgniteAwareApplication {
 
             futures.add(cache.removeAllAsync(new TreeSet<>(keys.subList(fromIdx, toIdx))));
 
-            fromIdx = toIdx + 1;
+            fromIdx = toIdx;
         }
 
         futures.forEach(IgniteFuture::get);

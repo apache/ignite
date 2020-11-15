@@ -16,8 +16,6 @@
 """
 Module contains discovery tests.
 """
-import time
-
 from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
@@ -68,8 +66,6 @@ class SnapshotTest(IgniteTest):
             version=IgniteVersion(ignite_version),
             discovery_spi=from_ignite_cluster(service),
         )
-
-        time.sleep(180)
 
         loader = IgniteApplicationService(
             self.test_context,

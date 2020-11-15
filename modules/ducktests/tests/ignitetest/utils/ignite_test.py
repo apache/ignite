@@ -16,6 +16,7 @@
 """
 This module contains basic ignite test.
 """
+import os
 from time import monotonic
 
 from ducktape.utils.local_filesystem_utils import mkdir_p
