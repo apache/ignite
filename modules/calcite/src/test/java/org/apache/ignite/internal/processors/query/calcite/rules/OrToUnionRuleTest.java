@@ -140,6 +140,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13710")
     public void testNonDistinctOrToUnionAllRewrite() throws Exception {
         checkQuery("SELECT * " +
             "FROM products " +
