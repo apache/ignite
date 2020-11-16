@@ -6559,9 +6559,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             long perNodeTimeout = Math.max((sndState.failTimeNanos - now) / nodesLeft, MIN_RECOVERY_TIMEOUT);
 
             if (log.isDebugEnabled()) {
-                log.debug("Calculated connection recovery timeout: perNodeTimeout=" + perNodeTimeout +
-                    ", failedNodesNumber=" + sndState.failedNodes + ", serversLeft=" + nodesLeft +
-                    ", minPerNodeTimeout" + MIN_RECOVERY_TIMEOUT);
+                log.debug("Connection recovery timeout: totalTimeLeft=" +
+                    U.nanosToMillis(sndState.failTimeNanos - now) + ", perNodeTimeout=" + perNodeTimeout +
+                    ", totalServers=" + ring.serverNodes().size() + ", failedServers=" + sndState.failedNodes +
+                    ", aliveServers=" + nodesLeft + ", minPerNodeTimeout=" + MIN_RECOVERY_TIMEOUT);
             }
 
             absoluteThreshold = Math.min(sndState.failTimeNanos, now + perNodeTimeout);
