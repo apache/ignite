@@ -31,7 +31,7 @@ Defragmentation can only be used with historical rebalance enabled (link to hist
 
 Defragmentation is costly operation in terms of disk IO so to avoid slowing down user operations it cannot be executed on regular node joined to the cluster. To execute defragmentation user needs to request it first on a particular node or set of nodes and than restart these nodes.
 
-To request defragmentation use the following command: <specific command>
+To request defragmentation use the following command: *control.(sh|bat) --defragmentation schedule --nodes <consistentIds> [--caches <cacheNames>]*.
 
 After restart node with requested defragmentation will enter special mode called maintenance mode. Node in maintenance doesn't join the rest of the cluster but stays isolated until defragmentation is completed (or cancelled by explicit user request). After that user has to restart the node one more time: it will exit maintenance mode and returns back to normal operations (joins the cluster and starts to serve regular workload).
 
@@ -40,9 +40,7 @@ After restart node with requested defragmentation will enter special mode called
 As nodes in maintenance don't participate in serving usual workload, it is not recommended to execute defragmentation on several nodes at once as it reduces number of backups thus increasing the risk of partition loss.
 ====
 
-When node executes defragmentation it is possible to retrieve operation status or cancel it fully or partially using the following commands available in control utility:
-<command for status>
-<command for cancel>.
+When node executes defragmentation it is possible to cancel it using the following command available in control utility: *control.(sh|bat) --defragmentation cancel --host --port.*
 
 For more information about commands refer to their help.
 
