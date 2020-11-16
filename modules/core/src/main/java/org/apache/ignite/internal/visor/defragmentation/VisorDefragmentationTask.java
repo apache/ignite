@@ -198,7 +198,7 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
 
                     String msg = cancelled
                         ? "Defragmentation cancelled successfully."
-                        : "Defragmnentation is already completed or has been cancelled previously.";
+                        : "Defragmentation is already completed or has been cancelled previously.";
 
                     return new VisorDefragmentationTaskResult(true, msg);
                 }
