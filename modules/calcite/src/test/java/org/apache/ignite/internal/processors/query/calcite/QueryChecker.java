@@ -116,7 +116,7 @@ public abstract class QueryChecker {
      */
     public static Matcher<String> containsProject(String schema, String tblName, int... requiredColunms) {
         Matcher<String> res = matches(".*Ignite(Table|Index)Scan\\(table=\\[\\[" + schema + ", " +
-            tblName + "\\]\\], " + ".*requiredColunms=\\[\\{" +
+            tblName + "\\]\\], " + ".*requiredColumns=\\[\\{" +
             Arrays.toString(requiredColunms)
                 .replaceAll("\\[", "")
                 .replaceAll("]", "") + "\\}\\].*");
@@ -133,7 +133,7 @@ public abstract class QueryChecker {
      */
     public static Matcher<String> containsOneProject(String schema, String tblName, int... requiredColunms) {
         return matchesOnce(".*Ignite(Table|Index)Scan\\(table=\\[\\[" + schema + ", " +
-            tblName + "\\]\\], " + ".*requiredColunms=\\[\\{" +
+            tblName + "\\]\\], " + ".*requiredColumns=\\[\\{" +
             Arrays.toString(requiredColunms)
                 .replaceAll("\\[", "")
                 .replaceAll("]", "") + "\\}\\].*");

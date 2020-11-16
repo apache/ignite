@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
@@ -31,7 +30,6 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
@@ -71,7 +69,10 @@ public class TraitUtils {
         RelOptPlanner planner = rel.getCluster().getPlanner();
         RelTraitSet fromTraits = rel.getTraitSet();
         int size = Math.min(fromTraits.size(), toTraits.size());
+
         if (!fromTraits.satisfies(toTraits)) {
+            RelNode old = null;
+
             for (int i = 0; rel != null && i < size; i++) {
                 RelTrait fromTrait = rel.getTraitSet().getTrait(i);
                 RelTrait toTrait = toTraits.getTrait(i);
@@ -79,8 +80,12 @@ public class TraitUtils {
                 if (fromTrait.satisfies(toTrait))
                     continue;
 
-                RelNode old = rel;
-                rel = convertTrait(planner, fromTrait, toTrait, old);
+                if (old != null && old != rel)
+                    rel = planner.register(rel, old);
+
+                old = rel;
+
+                rel = convertTrait(planner, fromTrait, toTrait, rel);
 
                 assert rel == null || rel.getTraitSet().getTrait(i).satisfies(toTrait);
             }
@@ -159,14 +164,12 @@ public class TraitUtils {
         if (correlation(rel).correlated())
             return null;
 
+        RelTraitSet traits = rel.getTraitSet()
+            .replace(toTrait)
+            .replace(CorrelationTrait.UNCORRELATED);
+
 //        return null;
-        return new IgniteTableSpool(
-            rel.getCluster(),
-            rel.getTraitSet()
-                .replace(toTrait)
-                .replace(CorrelationTrait.UNCORRELATED),
-            rel
-        );
+        return new IgniteTableSpool(rel.getCluster(), traits, rel);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

@@ -566,8 +566,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         IgniteRel igniteRel = optimize(sqlNode, planner);
 
-        log.info("+++ " + planner.dump());
-
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
@@ -622,13 +620,21 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         explain = planner.validate(sql);
 
         // Convert to Relational operators graph
-        IgniteRel igniteRel = optimize(explain, planner);
+        try {
+            IgniteRel igniteRel = optimize(explain, planner);
 
-        List<GridQueryFieldMetadata> meta = buildExplainColumnMeta(ctx);
+            List<GridQueryFieldMetadata> meta = buildExplainColumnMeta(ctx);
 
-        String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
+            String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
 
-        return new ExplainPlan(plan, meta);
+            return new ExplainPlan(plan, meta);
+        }
+        catch (Throwable ex) {
+            log.error("Unexpected error at query optimizer.", ex);
+            log.error(planner.dump());
+
+            throw ex;
+        }
     }
 
     /** */
