@@ -45,6 +45,11 @@ public interface SnapshotMXBean {
 
     /**
      * Status snapshot.
+     * Check the snapshot operation on server nodes.
+     * @see IgniteSnapshot#statusSnapshot()
+     *
+     * @return Map with Consistent ID's and status of the snapshot operation.
+     * If True then snapshot operation is in progress.
      */
     @MXBeanDescription("Map with Consistent ID's and status of the snapshot operation. " +
             "If True then snapshot operation is in progress.")
