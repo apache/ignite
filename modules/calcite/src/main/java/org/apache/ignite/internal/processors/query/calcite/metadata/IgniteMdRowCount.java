@@ -17,23 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import org.apache.calcite.plan.volcano.RelSubset;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.metadata.CyclicMetadataException;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdRowCount;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.Bug;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.calcite.util.NumberUtil;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -51,25 +46,6 @@ public class IgniteMdRowCount extends RelMdRowCount {
     @Override public Double getRowCount(Join rel, RelMetadataQuery mq) {
         return joinRowCount(mq, rel);
     }
-
-//    /** {@inheritDoc} */
-//    @Override public Double getRowCount(RelSubset subset, RelMetadataQuery mq) {
-//        // IgniteTableSpool creates cycle.
-////         if (!Bug.CALCITE_1048_FIXED) {
-////             return mq.getRowCount(Util.first(subset.getBest(), subset.getOriginal()));
-////         }
-//        Double v = null;
-//        for (RelNode r : subset.getRels()) {
-//            try {
-//                v = NumberUtil.min(v, mq.getRowCount(r));
-//            } catch (CyclicMetadataException e) {
-//                // ignore this rel; there will be other, non-cyclic ones
-//            } catch (Throwable e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        return Util.first(v, 1e6d); // if set is empty, estimate large
-//    }
 
     /** */
     @Nullable public static Double joinRowCount(RelMetadataQuery mq, Join rel) {

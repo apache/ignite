@@ -168,7 +168,6 @@ public class TraitUtils {
             .replace(toTrait)
             .replace(CorrelationTrait.UNCORRELATED);
 
-//        return null;
         return new IgniteTableSpool(rel.getCluster(), traits, rel);
     }
 
