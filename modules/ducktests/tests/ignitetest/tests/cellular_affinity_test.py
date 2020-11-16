@@ -16,6 +16,7 @@
 """
 This module contains Cellular Affinity tests.
 """
+import math
 from enum import IntEnum
 
 from ducktape.mark import matrix
@@ -56,7 +57,8 @@ class CellularAffinity(IgniteTest):
     """
     Tests Cellular Affinity scenarios.
     """
-    NUM_NODES = 3
+    NODES_PER_CELL = 3
+    ZOOKEPER_CLUSTER_SIZE = 3
 
     ATTRIBUTE = "CELL"
 
@@ -78,7 +80,7 @@ class CellularAffinity(IgniteTest):
                             </bean>
                         </property>
                         <property name="name" value="{{ cacheName }}"/>
-                        <property name="backups" value="{{ nodes }}"/>
+                        <property name="backups" value="{{ backups }}"/>
                         <property name="atomicityMode" value="TRANSACTIONAL"/>
                     </bean>
                 </list>
@@ -91,11 +93,12 @@ class CellularAffinity(IgniteTest):
         :return: Configuration properties.
         """
         return Template(CellularAffinity.CONFIG_TEMPLATE) \
-            .render(nodes=CellularAffinity.NUM_NODES,  # bigger than cell capacity (to handle single cell useless test)
-                    attr=CellularAffinity.ATTRIBUTE,
-                    cacheName=CellularAffinity.CACHE_NAME)
+            .render(
+            backups=CellularAffinity.NODES_PER_CELL,  # bigger than cell capacity (to handle single cell useless test)
+            attr=CellularAffinity.ATTRIBUTE,
+            cacheName=CellularAffinity.CACHE_NAME)
 
-    @cluster(num_nodes=NUM_NODES * 3 + 1)
+    @cluster(num_nodes=NODES_PER_CELL * 3 + 1)
     @version_if(lambda version: version >= DEV_BRANCH)
     @ignite_versions(str(DEV_BRANCH))
     def test_distribution(self, ignite_version):
@@ -117,12 +120,13 @@ class CellularAffinity(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.cellular_affinity_test.DistributionChecker",
             params={"cacheName": CellularAffinity.CACHE_NAME,
                     "attr": CellularAffinity.ATTRIBUTE,
-                    "nodesPerCell": self.NUM_NODES})
+                    "nodesPerCell": self.NODES_PER_CELL})
 
         checker.run()
 
+    # pylint: disable=R0912
     # pylint: disable=R0914
-    @cluster(num_nodes=NUM_NODES * (3 + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
+    @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(stop_type=[StopType.DISCONNECT, StopType.SIGKILL, StopType.SIGTERM],
             discovery_type=[DiscoreryType.ZooKeeper, DiscoreryType.TCP])
@@ -130,42 +134,57 @@ class CellularAffinity(IgniteTest):
         """
         Tests Cellular switch tx latency.
         """
+        cluster_size = len(self.test_context.cluster)
+
+        cells_amount = math.floor((cluster_size - self.ZOOKEPER_CLUSTER_SIZE) / (self.NODES_PER_CELL + 1))
+
+        assert cells_amount >= 2
+
+        self.test_context.logger.info(
+            "Cells amount calculated as %d at cluster with %d nodes in total" % (cells_amount, cluster_size))
+
         data = {}
 
         discovery_spi = None
 
+        modules = []
+
         if discovery_type == DiscoreryType.ZooKeeper:
             zk_settings = ZookeeperSettings()
-            zk_quorum = ZookeeperService(self.test_context, 3, settings=zk_settings)
+            zk_quorum = ZookeeperService(self.test_context, self.ZOOKEPER_CLUSTER_SIZE, settings=zk_settings)
             zk_quorum.start()
+
+            modules.append('zookeeper')
 
             discovery_spi = from_zookeeper_cluster(zk_quorum)
 
-        cell1, prepared_tx_loader1 = self.start_cell_with_prepared_txs(ignite_version, "C1", discovery_spi)
+        cell0, prepared_tx_loader1 = self.start_cell_with_prepared_txs(ignite_version, "C0", discovery_spi, modules)
 
         if discovery_type == DiscoreryType.TCP:
-            discovery_spi = from_ignite_cluster(cell1)
+            discovery_spi = from_ignite_cluster(cell0)
 
         assert discovery_spi is not None
 
-        _, prepared_tx_loader2 = self.start_cell_with_prepared_txs(ignite_version, "C2", discovery_spi)
-        _, prepared_tx_loader3 = self.start_cell_with_prepared_txs(ignite_version, "C3", discovery_spi)
+        loaders = [prepared_tx_loader1]
 
-        loaders = [prepared_tx_loader1, prepared_tx_loader2, prepared_tx_loader3]
+        for cell in range(1, cells_amount):
+            _, prepared_tx_loader = \
+                self.start_cell_with_prepared_txs(ignite_version, "C%d" % cell, discovery_spi, modules)
 
-        failed_loader = prepared_tx_loader3
+            loaders.append(prepared_tx_loader)
 
-        tx_streamer1 = self.start_tx_streamer(ignite_version, "C1", discovery_spi)
-        tx_streamer2 = self.start_tx_streamer(ignite_version, "C2", discovery_spi)
-        tx_streamer3 = self.start_tx_streamer(ignite_version, "C3", discovery_spi)
+        failed_loader = loaders[1]
 
-        streamers = [tx_streamer1, tx_streamer2, tx_streamer3]
+        streamers = []
+
+        for cell in range(0, cells_amount):
+            streamers.append(self.start_tx_streamer(ignite_version, "C%d" % cell, discovery_spi, modules))
 
         for streamer in streamers:  # starts tx streaming with latency record (with some warmup).
             streamer.start()
 
-        ControlUtility(cell1, self.test_context).disable_baseline_auto_adjust()  # baseline set.
-        ControlUtility(cell1, self.test_context).activate()
+        ControlUtility(cell0, self.test_context).disable_baseline_auto_adjust()  # baseline set.
+        ControlUtility(cell0, self.test_context).activate()
 
         for loader in loaders:
             loader.await_event("ALL_TRANSACTIONS_PREPARED", 180, from_the_beginning=True)
@@ -198,14 +217,14 @@ class CellularAffinity(IgniteTest):
 
             cell = streamer.params["cell"]
 
-            data["[%s cell %s]" % ("alive" if cell is not failed_loader.params["cell"] else "broken", cell)] = \
+            data["[%s cell %s]" % ("alive" if cell != failed_loader.params["cell"] else "broken", cell)] = \
                 "worst_latency=%s, tx_streamed=%s, measure_duration=%s" % (
                     streamer.extract_result("WORST_LATENCY"), streamer.extract_result("STREAMED"),
                     streamer.extract_result("MEASURE_DURATION"))
 
         return data
 
-    def start_tx_streamer(self, version, cell, discovery_spi):
+    def start_tx_streamer(self, version, cell, discovery_spi, modules):
         """
         Starts transaction streamer.
         """
@@ -218,33 +237,33 @@ class CellularAffinity(IgniteTest):
                     "attr": CellularAffinity.ATTRIBUTE,
                     "cell": cell,
                     "warmup": 10000},
-            timeout_sec=180)
+            modules=modules, timeout_sec=180)
 
-    def start_cell_with_prepared_txs(self, version, cell_id, discovery_spi):
+    def start_cell_with_prepared_txs(self, version, cell_id, discovery_spi, modules):
         """
         Starts cell with prepared transactions.
         """
-        nodes = self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=' + cell_id], discovery_spi,
-                                CellularAffinity.NUM_NODES - 1)
+        nodes = self.start_cell(version, ['-D' + CellularAffinity.ATTRIBUTE + '=' + cell_id], discovery_spi, modules,
+                                CellularAffinity.NODES_PER_CELL - 1)
 
         prepared_tx_streamer = IgniteApplicationService(  # last server node at the cell.
             self.test_context,
             IgniteConfiguration(version=IgniteVersion(version), properties=self.properties(),
-                                discovery_spi=from_ignite_cluster(nodes)) if discovery_spi is None else discovery_spi,
+                                discovery_spi=from_ignite_cluster(nodes) if discovery_spi is None else discovery_spi),
             java_class_name="org.apache.ignite.internal.ducktest.tests.cellular_affinity_test."
                             "CellularPreparedTxStreamer",
             params={"cacheName": CellularAffinity.CACHE_NAME,
                     "attr": CellularAffinity.ATTRIBUTE,
                     "cell": cell_id,
                     "txCnt": CellularAffinity.PREPARED_TX_CNT},
-            jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=' + cell_id],
-            timeout_sec=180)
+            jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=' + cell_id], modules=modules, timeout_sec=180)
 
         prepared_tx_streamer.start()  # starts last server node and creates prepared txs on it.
 
         return nodes, prepared_tx_streamer
 
-    def start_cell(self, version, jvm_opts, discovery_spi=None, nodes_cnt=NUM_NODES):
+    # pylint: disable=R0913
+    def start_cell(self, version, jvm_opts, discovery_spi=None, modules=None, nodes_cnt=NODES_PER_CELL):
         """
         Starts cell.
         """
@@ -253,7 +272,7 @@ class CellularAffinity(IgniteTest):
             IgniteConfiguration(version=IgniteVersion(version), properties=self.properties(),
                                 cluster_state="INACTIVE",
                                 discovery_spi=TcpDiscoverySpi() if discovery_spi is None else discovery_spi),
-            num_nodes=nodes_cnt, jvm_opts=jvm_opts)
+            num_nodes=nodes_cnt, modules=modules, jvm_opts=jvm_opts)
 
         ignites.start()
 
