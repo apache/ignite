@@ -37,49 +37,53 @@ public class DeleteDataApplication extends IgniteAwareApplication {
     @Override public void run(JsonNode jNode) {
         String cacheName = jNode.get("cacheName").asText();
 
-        int iterSize = jNode.get("iterSize").asInt();
+        int size = jNode.get("size").asInt();
 
         int bachSize = jNode.get("bachSize").asInt();
 
         markInitialized();
 
-        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cacheName);
-
-        log.info("Cache size before: " + cache.size());
-
         long start = System.currentTimeMillis();
+
+        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cacheName);
 
         Iterator<Cache.Entry<Object, Object>> iter = cache.iterator();
 
-        ArrayList<Object> keys = new ArrayList<>(iterSize);
+        List<Object> keys = new ArrayList<>(size);
 
         int cnt = 0;
 
-        while (iter.hasNext() && cnt < iterSize) {
+        while (iter.hasNext() && cnt < size) {
             keys.add(iter.next().getKey());
 
             cnt++;
         }
-        int listSize = keys.size();
 
-        log.info("Start removing: " + listSize);
+        int sizeBefore = cache.size();
 
-        List<IgniteFuture<Void>> futures = new LinkedList<>();
+        log.info("Cache size before: " + sizeBefore);
+        log.info("Start removing: " + cnt);
+
+        List<IgniteFuture<Void>> ftrs = new LinkedList<>();
 
         int fromIdx = 0;
         int toIdx;
 
-        while(fromIdx < listSize) {
-            toIdx = Math.min(fromIdx + bachSize, listSize);
+        while(fromIdx < cnt) {
+            toIdx = Math.min(fromIdx + bachSize, cnt);
 
-            futures.add(cache.removeAllAsync(new TreeSet<>(keys.subList(fromIdx, toIdx))));
+            ftrs.add(cache.removeAllAsync(new TreeSet<>(keys.subList(fromIdx, toIdx))));
 
             fromIdx = toIdx;
         }
 
-        futures.forEach(IgniteFuture::get);
+        ftrs.forEach(IgniteFuture::get);
 
-        log.info("Cache size after: " + cache.size());
+        int sizeAfter = cache.size();
+
+        log.info("Cache size after: " + sizeAfter);
+
+        assert (sizeBefore - cnt) == sizeAfter;
 
         recordResult("DURATION", System.currentTimeMillis() - start);
 

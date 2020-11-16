@@ -33,15 +33,15 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
     @Override public void run(JsonNode jNode) throws InterruptedException {
         String cacheName = jNode.get("cacheName").asText();
 
-        int dataSize = jNode.get("dataSize").asInt();
+        long size = jNode.get("size").asLong();
 
-        long iterSize = jNode.get("iterSize").asLong();
+        int dataSize = jNode.get("dataSize").asInt();
 
         markInitialized();
 
         long start = System.currentTimeMillis();
 
-        loadParallel(ignite, cacheName, iterSize, dataSize);
+        loadParallel(ignite, cacheName, size, dataSize);
 
         recordResult("DURATION", System.currentTimeMillis() - start);
 
@@ -49,11 +49,11 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void loadParallel(Ignite ignite, String cacheName, long iterSize, int dataSize)
+    private void loadParallel(Ignite ignite, String cacheName, long size, int dataSize)
             throws InterruptedException {
         int threads = Runtime.getRuntime().availableProcessors() / 2;
 
-        long iterThread = iterSize / threads;
+        long iterThread = size / threads;
 
         CountDownLatch latch = new CountDownLatch(threads);
 

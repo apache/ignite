@@ -171,9 +171,9 @@ class ControlUtility:
         self.logger.info(res)
 
         if ("Command [SNAPSHOT] finished with code: 0" in res) & sync_mode:
-            self.await_snapshot(time_out)
+            self.await_snapshot(snapshot_name, time_out)
 
-    def await_snapshot(self, time_out=60):
+    def await_snapshot(self, snapshot_name: str, time_out=60):
         """
         Waiting for the snapshot to complete.
         """
@@ -182,16 +182,18 @@ class ControlUtility:
         while datetime.now() < delta_time:
             for node in self._cluster.nodes:
                 mbean = JmxClient(node).find_mbean('snapshot')
-                start_time = int(list(mbean.__getattr__('LastSnapshotStartTime'))[0])
-                end_time = int(list(mbean.__getattr__('LastSnapshotEndTime'))[0])
-                err_msg = list(mbean.__getattr__('LastSnapshotErrorMessage'))[0]
+                start_time = int(list(mbean.LastSnapshotStartTime)[0])
+                end_time = int(list(mbean.LastSnapshotEndTime)[0])
+                err_msg = list(mbean.LastSnapshotErrorMessage)[0]
+                name = list(mbean.LastSnapshotName)[0]
 
-                if (0 < start_time < end_time) & (err_msg == ''):
+                if (snapshot_name == name) & (0 < start_time < end_time) & (err_msg == ''):
                     return
 
             time.sleep(1)
 
-        raise TimeoutError(f'LastSnapshotStartTime={start_time}, '
+        raise TimeoutError(f'LastSnapshotName={name}, '
+                           f'LastSnapshotStartTime={start_time}, '
                            f'LastSnapshotEndTime={end_time}, '
                            f'LastSnapshotErrorMessage={err_msg}')
 
