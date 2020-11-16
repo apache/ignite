@@ -17,7 +17,8 @@
 
 package org.apache.ignite.mxbean;
 
-import java.util.Collection;
+import java.util.Map;
+
 import org.apache.ignite.IgniteSnapshot;
 
 /**
@@ -45,6 +46,7 @@ public interface SnapshotMXBean {
     /**
      * Status snapshot.
      */
-    @MXBeanDescription("Сollection of Consistent ID's where the snapshot operation is in progress.")
-    public Collection<Object> statusSnapshot();
+    @MXBeanDescription("Map with Consistent ID's and status of the snapshot operation. " +
+            "If True then snapshot operation is in progress.")
+    public Map<Object, Boolean> statusSnapshot();
 }

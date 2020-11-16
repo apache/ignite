@@ -17,48 +17,28 @@
 
 package org.apache.ignite.internal.visor.snapshot;
 
-import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-import java.util.Set;
+import java.util.Collection;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * Task that collects caches that have index rebuild in progress.
  */
 @GridInternal
-public class SnapshotStatusTask extends VisorMultiNodeTask<Void, String, Boolean> {
+public abstract class SnapshotStatusTask<T> extends VisorMultiNodeTask<Void, T, Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected SnapshotStatusJob job(Void arg) {
         return new SnapshotStatusJob(arg, debug);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override protected String reduce0(List<ComputeJobResult> results) {
-        Set<Object> ids = results.stream()
-                .filter(ComputeJobResult::<Boolean>getData)
-                .map(j -> j.getNode().consistentId())
-                .collect(Collectors.toSet());
-
-
-        if (ids.isEmpty())
-            return "No snapshot operations.";
-
-        StringBuilder sb = new StringBuilder("Snapshot operation in progress on nodes with Consistent ID:");
-
-        ids.stream()
-                .map(String::valueOf)
-                .forEach(s -> sb.append(IgniteUtils.nl()).append(s));
-
-        return sb.toString();
     }
 
     /**  */
@@ -80,5 +60,11 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<Void, String, Boolean
         @Override protected Boolean run(@Nullable Void arg) {
             return ignite.context().cache().context().snapshotMgr().isSnapshotCreating();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<Void> arg) {
+        return ignite.context().discovery().aliveServerNodes().stream()
+                .map(ClusterNode::id).collect(Collectors.toSet());
     }
 }

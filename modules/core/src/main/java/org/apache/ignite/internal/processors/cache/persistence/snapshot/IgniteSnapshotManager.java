@@ -52,12 +52,19 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
@@ -100,8 +107,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.snapshot.SnapshotStatusTask;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -697,16 +705,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Collection<Object>> statusSnapshot() {
+    @Override public IgniteFuture<Map<Object, Boolean>> statusSnapshot() {
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-        IgniteInternalFuture<Collection<Object>> fut0 = cctx.kernalContext().closure()
-                .broadcast(new StatusSnapshotClosure(),
-                        null,
-                        cctx.discovery().aliveServerNodes(),
-                        null);
-
-        return new IgniteFutureImpl<>(fut0);
+        return ((ClusterGroupAdapter) cctx.kernalContext().cluster().get().forServers()).compute()
+                .executeAsync(new StatusSnapshotTask(), new VisorTaskArgument<>());
     }
 
     /**
@@ -1468,24 +1471,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Get the status of a cluster snapshot operation. */
     @GridInternal
-    private static class StatusSnapshotClosure implements IgniteClosure<Void, Object> {
+    private static class StatusSnapshotTask extends SnapshotStatusTask<Map<Object, Boolean>> {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 
-        /** Auto-injected grid instance. */
-        @IgniteInstanceResource
-        private transient IgniteEx ignite;
-
-        /** */
-        public StatusSnapshotClosure() {
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object apply(Void unused) {
-            if (ignite.context().cache().context().snapshotMgr().isSnapshotCreating())
-                return ignite.context().discovery().localNode().consistentId();
-
-            return null;
+        @Override protected @Nullable Map<Object, Boolean> reduce0(List<ComputeJobResult> results)
+                throws IgniteException {
+            return results.stream().collect(
+                    Collectors.toMap(jobRslt -> jobRslt.getNode().consistentId(), ComputeJobResult::getData));
         }
     }
 

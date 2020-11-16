@@ -22,6 +22,8 @@ import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
+
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.mxbean.SnapshotMXBean;
@@ -84,29 +86,28 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testStatusSnapshot() throws Exception {
-        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx ignite = startGridsWithCache(2, new CacheConfiguration<>("TEST_CACHE"), CACHE_KEYS_RANGE);
 
         DynamicMBean snpMBean = metricRegistry(ignite.name(), null, SNAPSHOT_METRICS);
 
-        assertEquals("Snapshot end time must be undefined on first snapshot operation starts.",
-                0, getLastSnapshotEndTime(snpMBean));
-
         SnapshotMXBean mxBean = getMxBean(ignite.name(), "Snapshot", SnapshotMXBeanImpl.class, SnapshotMXBean.class);
 
-        assertTrue(mxBean.statusSnapshot().isEmpty());
+        assertTrue(mxBean.statusSnapshot().values().stream().noneMatch(Boolean::booleanValue));
 
         mxBean.createSnapshot(SNAPSHOT_NAME);
 
-        assertFalse(mxBean.statusSnapshot().isEmpty());
+        assertTrue("Waiting for snapshot operation started on all nodes.",
+                GridTestUtils.waitForCondition(() ->
+                        mxBean.statusSnapshot().values().stream().allMatch(Boolean::booleanValue),
+                        10_000));
 
         assertTrue("Waiting for snapshot operation failed.",
                 GridTestUtils.waitForCondition(() -> getLastSnapshotEndTime(snpMBean) > 0, 10_000));
 
-        assertTrue(mxBean.statusSnapshot().isEmpty());
+        assertTrue(mxBean.statusSnapshot().values().stream().noneMatch(Boolean::booleanValue));
     }
 
     /**
-
      * @param mBean Ignite snapshot MBean.
      * @return Value of snapshot end time.
      */

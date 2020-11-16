@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.Collection;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
@@ -52,9 +50,7 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Object> statusSnapshot() {
-        return mgr.statusSnapshot().get().stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+    @Override public Map<Object, Boolean> statusSnapshot() {
+        return mgr.statusSnapshot().get();
     }
 }

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
-import org.apache.ignite.internal.visor.snapshot.SnapshotStatusTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
 import org.apache.ignite.mxbean.SnapshotMXBean;
@@ -61,7 +61,8 @@ public class SnapshotCommand implements Command<Object> {
                     clientCfg
             );
 
-            log.info(String.valueOf(res));
+            if (res != null)
+                log.info(String.valueOf(res));
 
             return res;
         }
@@ -99,7 +100,7 @@ public class SnapshotCommand implements Command<Object> {
                 break;
 
             case STATUS:
-                taskName = SnapshotStatusTask.class.getName();
+                taskName = VisorSnapshotStatusTask.class.getName();
                 taskArgs = null;
 
                 break;

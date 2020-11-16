@@ -17,7 +17,8 @@
 
 package org.apache.ignite;
 
-import java.util.Collection;
+import java.util.Map;
+
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
@@ -54,7 +55,8 @@ public interface IgniteSnapshot {
      * Status snapshot operation.
      * Checks if running snapshot operations exist on nodes.
      *
-     * @return Сollection of Consistent ID's where the snapshot operation is in progress.
+     * @return Map with Consistent ID's and status of the snapshot operation.
+     * If True then snapshot operation is in progress.
      */
-    public IgniteFuture<Collection<Object>> statusSnapshot();
+    public IgniteFuture<Map<Object, Boolean>> statusSnapshot();
 }
