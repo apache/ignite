@@ -66,14 +66,15 @@ public class TimeTracker<Stage extends Enum<Stage>> {
     /** {@inheritDoc} */
     // TODO Remove. This version sucks.
     @Override public String toString() {
-        StringBuilder sb = new StringBuilder("|> {\n");
+        StringBuilder sb = new StringBuilder("|> {");
 
         for (Stage s : stageCls.getEnumConstants()) {
-            sb.append("    ").append(s.name().toLowerCase()).append("=")
-                .append(U.nanosToMillis(t[s.ordinal()]) * 1e-3).append("s.\n");
+            sb.append(s.name().toLowerCase()).append("=")
+                .append(U.nanosToMillis(t[s.ordinal()]) * 1e-3).append("s. ");
         }
 
-        sb.append("}\n");
+        sb.append("}");
+
         return sb.toString();
     }
 }

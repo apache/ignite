@@ -17,7 +17,9 @@
 
 package org.apache.ignite.util;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.UnaryOperator;
 import java.util.logging.Formatter;
@@ -33,6 +35,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.maintenance.MaintenanceTask;
@@ -49,6 +52,9 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** */
     private static CountDownLatch blockCdl;
+
+    /** */
+    private static CountDownLatch waitCdl;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -205,7 +211,9 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
         assertTrue(logLsnr.check());
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testDefragmentationCancelInProgress() throws Exception {
         IgniteEx ig = startGrid(0);
@@ -309,6 +317,136 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
         ));
 
         assertTrue(logLsnr.check());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDefragmentationStatus() throws Exception {
+        IgniteEx ig = startGrid(0);
+
+        ig.cluster().state(ClusterState.ACTIVE);
+
+        ig.getOrCreateCache(DEFAULT_CACHE_NAME + "1");
+
+        IgniteCache<Object, Object> cache = ig.getOrCreateCache(DEFAULT_CACHE_NAME + "2");
+
+        ig.getOrCreateCache(DEFAULT_CACHE_NAME + "3");
+
+        for (int i = 0; i < 1024; i++)
+            cache.put(i, i);
+
+        forceCheckpoint(ig);
+
+        String grid0ConsId = ig.configuration().getConsistentId().toString();
+
+        ListeningTestLogger testLog = new ListeningTestLogger();
+
+        CommandHandler cmd = createCommandHandler(testLog);
+
+        assertEquals(EXIT_CODE_OK, execute(
+            cmd,
+            "--defragmentation",
+            "schedule",
+            "--nodes",
+            grid0ConsId
+        ));
+
+        String port = grid(0).localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+
+        stopGrid(0);
+
+        blockCdl = new CountDownLatch(128);
+        waitCdl = new CountDownLatch(1);
+
+        UnaryOperator<IgniteConfiguration> cfgOp = cfg -> {
+            DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
+            FileIOFactory delegate = dsCfg.getFileIOFactory();
+
+            dsCfg.setFileIOFactory((file, modes) -> {
+                if (file.getName().contains("dfrg")) {
+                    if (blockCdl.getCount() == 0) {
+                        try {
+                            waitCdl.await();
+                        }
+                        catch (InterruptedException ignore) {
+                            // No-op.
+                        }
+                    }
+                    else
+                        blockCdl.countDown();
+                }
+
+                return delegate.create(file, modes);
+            });
+
+            return cfg;
+        };
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            try {
+                startGrid(0, cfgOp);
+            }
+            catch (Exception e) {
+                // No-op.
+                throw new RuntimeException(e);
+            }
+        });
+
+        blockCdl.await();
+
+        List<LogListener> logLsnrs = Arrays.asList(
+            LogListener.matches("default1 - size before/after: 0MB/0MB").build(),
+            LogListener.matches("default2 - partitions processed/all:").build(),
+            LogListener.matches("Awaiting defragmentation: default3").build()
+        );
+
+        for (LogListener logLsnr : logLsnrs)
+            testLog.registerListener(logLsnr);
+
+        assertEquals(EXIT_CODE_OK, execute(
+            cmd,
+            "--port",
+            port,
+            "--defragmentation",
+            "status"
+        ));
+
+        waitCdl.countDown();
+
+        for (LogListener logLsnr : logLsnrs)
+            assertTrue(logLsnr.check());
+
+        fut.get();
+
+        ((GridCacheDatabaseSharedManager)grid(0).context().cache().context().database())
+            .defragmentationManager()
+            .completionFuture()
+            .get();
+
+        testLog.clearListeners();
+
+        logLsnrs = Arrays.asList(
+            LogListener.matches("default1 - size before/after: 0MB/0MB").build(),
+            LogListener.matches("default2 - size before/after: 44.02MB/44.02MB").build(),
+            LogListener.matches("default3 - size before/after: 0MB/0MB").build()
+        );
+
+        for (LogListener logLsnr : logLsnrs)
+            testLog.registerListener(logLsnr);
+
+        assertEquals(EXIT_CODE_OK, execute(
+            cmd,
+            "--port",
+            port,
+            "--defragmentation",
+            "status"
+        ));
+
+        for (LogListener logLsnr : logLsnrs)
+            assertTrue(logLsnr.check());
     }
 
     /** */
