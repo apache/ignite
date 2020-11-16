@@ -52,7 +52,7 @@ class SnapshotTest(IgniteTest):
         ignite_config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
             data_storage=data_storage,
-            caches=[CacheConfiguration(name=self.CACHE_NAME, indexed_types=['java.util.UUID', 'byte[]'])]
+            caches=[CacheConfiguration(name=self.CACHE_NAME, backups=2, indexed_types=['java.util.UUID', 'byte[]'])]
         )
 
         service = IgniteService(self.test_context, ignite_config, num_nodes=self.NUM_NODES - 2)
@@ -73,7 +73,7 @@ class SnapshotTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.load.UuidDataLoaderApplication",
             params={
                 "cacheName": self.CACHE_NAME,
-                "size": 2 * 1024 * 1024,
+                "size": 512 * 1024,
                 "dataSize": 1024
             },
             timeout_sec=180
@@ -85,7 +85,7 @@ class SnapshotTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.delete.DeleteDataApplication",
             params={
                 "cacheName": self.CACHE_NAME,
-                "size": 512 * 1024,
+                "size": 128 * 1024,
                 "bachSize": 512
             },
             timeout_sec=180
@@ -96,6 +96,7 @@ class SnapshotTest(IgniteTest):
         node = service.nodes[0]
 
         control_utility.validate_indexes(check_assert=True)
+        control_utility.idle_verify(check_assert=True)
         dump_1 = control_utility.idle_verify_dump(node, return_path=True)
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
@@ -117,6 +118,7 @@ class SnapshotTest(IgniteTest):
         control_utility.activate()
 
         control_utility.validate_indexes(check_assert=True)
+        control_utility.idle_verify(check_assert=True)
         dump_3 = control_utility.idle_verify_dump(node, return_path=True)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
