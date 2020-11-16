@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.jetbrains.annotations.NotNull;
 
 /** */
 public class FragmentPlan implements QueryPlan {
@@ -27,7 +27,9 @@ public class FragmentPlan implements QueryPlan {
 
     /** */
     public FragmentPlan(IgniteRel root) {
-        this.root = root;
+        RelOptCluster cluster = PlanningContext.empty().cluster();
+
+        this.root = new Cloner(cluster).visit(root);
     }
 
     /** */
@@ -41,7 +43,7 @@ public class FragmentPlan implements QueryPlan {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryPlan clone(@NotNull PlanningContext ctx) {
-        return new FragmentPlan(new Cloner(ctx.cluster()).visit(root));
+    @Override public QueryPlan copy() {
+        return this;
     }
 }

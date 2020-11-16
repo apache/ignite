@@ -178,7 +178,7 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
      * See {@link IgniteMdFragmentMapping#fragmentMapping(RelNode, RelMetadataQuery)}
      */
     public FragmentMapping fragmentMapping(IgniteReceiver rel, RelMetadataQuery mq) {
-        return FragmentMapping.create(rel.sourceFragmentId());
+        return FragmentMapping.create(rel.exchangeId());
     }
 
     /**

@@ -17,32 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.List;
-import org.jetbrains.annotations.NotNull;
-
 /**
  * Distributed query plan.
  */
 public class MultiStepQueryPlan extends AbstractMultiStepPlan {
-
     /**
-     * @param fragments Query fragments.
-     */
-    public MultiStepQueryPlan(List<Fragment> fragments) {
-        this(fragments, null);
-    }
-
-    /**
-     * @param fragments Query fragments.
      * @param fieldsMeta Fields metadata.
      */
-    public MultiStepQueryPlan(List<Fragment> fragments, FieldsMetadata fieldsMeta) {
-        this(fragments, fieldsMeta, new QueryMappings());
-    }
-
-    /** */
-    private MultiStepQueryPlan(List<Fragment> fragments, FieldsMetadata fieldsMeta, QueryMappings mappings) {
-        super(fragments, fieldsMeta, mappings);
+    public MultiStepQueryPlan(QueryTemplate queryTemplate, FieldsMetadata fieldsMeta) {
+        super(queryTemplate, fieldsMeta);
     }
 
     /** {@inheritDoc} */
@@ -51,7 +34,7 @@ public class MultiStepQueryPlan extends AbstractMultiStepPlan {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryPlan clone(@NotNull PlanningContext ctx) {
-        return new MultiStepQueryPlan(new Cloner(ctx.cluster()).go(fragments), fieldsMetadata, queryMappings);
+    @Override public QueryPlan copy() {
+        return new MultiStepQueryPlan(queryTemplate, fieldsMetadata);
     }
 }

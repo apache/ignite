@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -104,12 +105,15 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     /** {@inheritDoc} */
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
-        int[] parts,
+        ColocationGroup group,
         Predicate<Row> filter,
         Function<Row, Row> rowTransformer,
-        @Nullable ImmutableBitSet usedColumns
-    ) {
-        return new TableScan<>(execCtx, desc, parts, filter, rowTransformer, usedColumns);
+        @Nullable ImmutableBitSet usedColumns) {
+        UUID localNodeId = execCtx.planningContext().localNodeId();
+        if (group.nodeIds().contains(localNodeId))
+            return new TableScan<>(execCtx, desc, group.partitions(localNodeId), filter, rowTransformer, usedColumns);
+
+        return Collections.emptyList();
     }
 
     /** {@inheritDoc} */

@@ -84,7 +84,7 @@ public interface IgniteTable extends TranslatableTable {
      * Creates rows iterator over the table.
      *
      * @param execCtx Execution context.
-     * @param parts Lical partitions.
+     * @param group Colocation group.
      * @param filter Row filter.
      * @param rowTransformer Row transformer.
      * @param usedColumns Used columns enumeration.
@@ -92,7 +92,7 @@ public interface IgniteTable extends TranslatableTable {
      */
     public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
-        int[] parts,
+        ColocationGroup group,
         Predicate<Row> filter,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet usedColumns);

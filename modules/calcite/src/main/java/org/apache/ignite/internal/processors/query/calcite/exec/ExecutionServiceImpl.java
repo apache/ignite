@@ -93,6 +93,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -565,7 +566,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
-        return new MultiStepQueryPlan(fragments, queryFieldsMetadata(ctx, validated.dataType(), validated.origins()));
+        QueryTemplate template = new QueryTemplate(mappingSvc, fragments);
+
+        return new MultiStepQueryPlan(template, queryFieldsMetadata(ctx, validated.dataType(), validated.origins()));
     }
 
     /** */
@@ -581,7 +584,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
-        return new MultiStepDmlPlan(fragments, queryFieldsMetadata(ctx, igniteRel.getRowType(), null));
+        QueryTemplate template = new QueryTemplate(mappingSvc, fragments);
+
+        return new MultiStepDmlPlan(template, queryFieldsMetadata(ctx, igniteRel.getRowType(), null));
     }
 
     /** */

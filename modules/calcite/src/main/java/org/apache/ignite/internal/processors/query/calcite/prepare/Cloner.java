@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
@@ -57,16 +56,6 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     /**
      * Clones and associates a plan with a new cluster.
      *
-     * @param src Fragments to clone.
-     * @return New plan.
-     */
-    public List<Fragment> go(List<Fragment> src) {
-        return Commons.transform(src, this::go);
-    }
-
-    /**
-     * Clones and associates a plan with a new cluster.
-     *
      * @param src Fragment to clone.
      * @return New plan.
      */
@@ -77,7 +66,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
             IgniteRel newRoot = visit(src.root());
             ImmutableList<IgniteReceiver> remotes = this.remotes.build();
 
-            return new Fragment(src.fragmentId(), newRoot, remotes, src.serialized());
+            return new Fragment(src.fragmentId(), newRoot, remotes, src.serialized(), src.mapping());
         }
         finally {
             remotes = null;

@@ -17,42 +17,33 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.List;
+import com.google.common.collect.ImmutableList;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+
 /**
- * Query explain plan.
+ *
  */
-public class ExplainPlan implements QueryPlan {
-    /** Column name. */
-    public static final String PLAN_COL_NAME = "PLAN";
+class ExecutionPlan {
+    /** */
+    private final AffinityTopologyVersion ver;
 
     /** */
-    private final FieldsMetadata fieldsMeta;
+    private final ImmutableList<Fragment> fragments;
 
     /** */
-    private final String plan;
-
-    /** */
-    public ExplainPlan(String plan, FieldsMetadata fieldsMeta) {
-        this.fieldsMeta = fieldsMeta;
-        this.plan = plan;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Type type() {
-        return Type.EXPLAIN;
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryPlan copy() {
-        return this;
+    ExecutionPlan(AffinityTopologyVersion ver, List<Fragment> fragments) {
+        this.ver = ver;
+        this.fragments = ImmutableList.copyOf(fragments);
     }
 
     /** */
-    public FieldsMetadata fieldsMeta() {
-        return fieldsMeta;
+    public AffinityTopologyVersion topologyVersion() {
+        return ver;
     }
 
     /** */
-    public String plan() {
-        return plan;
+    public List<Fragment> fragments() {
+        return fragments;
     }
 }

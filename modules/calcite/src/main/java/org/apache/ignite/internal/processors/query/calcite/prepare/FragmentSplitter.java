@@ -74,11 +74,6 @@ public class FragmentSplitter extends IgniteRelShuttle {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteRel rel) {
-        return rel.accept(this);
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteExchange rel) {
         throw new AssertionError();
     }

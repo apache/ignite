@@ -249,9 +249,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteIndex idx = tbl.getIndex(rel.indexName());
 
         ColocationGroup group = ctx.group(rel.sourceId());
-        int[] parts = group.partitions(ctx.planningContext().localNodeId());
 
-        Iterable<Row> rowsIter = idx.scan(ctx, parts, filters, lower, upper, prj, requiredColunms);
+        Iterable<Row> rowsIter = idx.scan(ctx, group, filters, lower, upper, prj, requiredColunms);
 
         return new ScanNode<>(ctx, rowType, rowsIter);
     }
@@ -271,9 +270,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
 
         ColocationGroup group = ctx.group(rel.sourceId());
-        int[] parts = group.partitions(ctx.planningContext().localNodeId());
 
-        Iterable<Row> rowsIter = tbl.scan(ctx, parts, filters, prj, requiredColunms);
+        Iterable<Row> rowsIter = tbl.scan(ctx, group, filters, prj, requiredColunms);
 
         return new ScanNode<>(ctx, rowType, rowsIter);
     }

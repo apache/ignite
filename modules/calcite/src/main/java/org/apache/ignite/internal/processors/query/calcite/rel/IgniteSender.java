@@ -39,7 +39,7 @@ public class IgniteSender extends SingleRel implements IgniteRel {
     private final long exchangeId;
 
     /** */
-    private long targetFragmentId;
+    private final long targetFragmentId;
 
     /** */
     private final IgniteDistribution distribution;
@@ -85,11 +85,6 @@ public class IgniteSender extends SingleRel implements IgniteRel {
     /** */
     public long targetFragmentId() {
         return targetFragmentId;
-    }
-
-    /** */
-    public void targetFragmentId(long targetFragmentId) {
-        this.targetFragmentId = targetFragmentId;
     }
 
     /** {@inheritDoc} */
