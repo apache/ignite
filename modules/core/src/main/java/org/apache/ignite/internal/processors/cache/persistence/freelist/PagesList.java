@@ -67,6 +67,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.MAX_ITEMID_NUM;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageId;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver.DEFAULT_PAGE_IO_RESOLVER;
 
 /**
  * Striped doubly-linked list of page IDs optionally organized in buckets.
@@ -211,7 +212,7 @@ public abstract class PagesList extends DataStructure {
         PageLockListener lockLsnr,
         GridKernalContext ctx
     ) {
-        super(cacheId, null, pageMem, wal, lockLsnr);
+        super(cacheId, null, pageMem, wal, lockLsnr, DEFAULT_PAGE_IO_RESOLVER);
 
         this.name = name;
         this.buckets = buckets;

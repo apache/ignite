@@ -19,6 +19,8 @@ package org.apache.ignite.internal.pagemem;
 
 import org.apache.ignite.IgniteCheckedException;
 
+import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+
 /**
  * Allocates page ID's.
  */
@@ -40,6 +42,9 @@ public interface PageIdAllocator {
 
     /** Special partition reserved for metastore space. */
     public static final int METASTORE_PARTITION = 0x1;
+
+    /** Cache group meta page id. */
+    public static final long META_PAGE_ID = pageId(INDEX_PARTITION, FLAG_IDX, 0);
 
     /**
      * Allocates a page from the space for the given partition ID and the given flags.

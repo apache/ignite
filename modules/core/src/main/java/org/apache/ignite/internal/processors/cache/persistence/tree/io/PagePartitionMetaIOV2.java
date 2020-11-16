@@ -18,9 +18,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
@@ -36,6 +34,9 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
 
     /** */
     private static final int GAPS_LINK = PART_META_REUSE_LIST_ROOT_OFF + 8;
+
+    /** */
+    public static final int END_OF_PARTITION_PAGE_META_V2 = GAPS_LINK + 8;
 
     /**
      * @param ver Version.
@@ -102,10 +103,10 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
     }
 
     /** {@inheritDoc} */
-    @Override protected void printPage(long pageAddr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
-        byte state = getPartitionState(pageAddr);
+    @Override protected void printFields(long pageAddr, GridStringBuilder sb) {
+        super.printFields(pageAddr, sb);
 
-        sb.a("PagePartitionMeta[\n\ttreeRoot=").a(getReuseListRoot(pageAddr));
+        sb.a("\ttreeRoot=").a(getReuseListRoot(pageAddr));
         sb.a(",\n\tpendingTreeRoot=").a(getLastSuccessfulFullSnapshotId(pageAddr));
         sb.a(",\n\tlastSuccessfulFullSnapshotId=").a(getLastSuccessfulFullSnapshotId(pageAddr));
         sb.a(",\n\tlastSuccessfulSnapshotId=").a(getLastSuccessfulSnapshotId(pageAddr));
@@ -113,13 +114,7 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
         sb.a(",\n\tlastSuccessfulSnapshotTag=").a(getLastSuccessfulSnapshotTag(pageAddr));
         sb.a(",\n\tlastAllocatedPageCount=").a(getLastAllocatedPageCount(pageAddr));
         sb.a(",\n\tcandidatePageCount=").a(getCandidatePageCount(pageAddr));
-        sb.a(",\n\tsize=").a(getSize(pageAddr));
-        sb.a(",\n\tupdateCounter=").a(getUpdateCounter(pageAddr));
-        sb.a(",\n\tglobalRemoveId=").a(getGlobalRemoveId(pageAddr));
-        sb.a(",\n\tpartitionState=").a(state).a("(").a(GridDhtPartitionState.fromOrdinal(state)).a(")");
-        sb.a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr));
         sb.a(",\n\tcntrUpdDataPageId=").a(getGapsLink(pageAddr));
-        sb.a("\n]");
     }
 
     /**
