@@ -3441,7 +3441,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         log.debug("New next node [newNext=" + newNext + ", formerNext=" + next +
                             ", ring=" + ring + ", failedNodes=" + failedNodes + ']');
                     else if (log.isInfoEnabled())
-                        log.info("New next node [newNext=" + newNext + ']');
+                        log.info("New next node [newNext=" + U.toShortString(newNext) + ']');
 
                     if (debugMode)
                         debugLog(msg, "New next node [newNext=" + newNext + ", formerNext=" + next +
@@ -3815,9 +3815,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             errs.add(e);
 
-                            if (log.isDebugEnabled())
-                                U.error(log, "Failed to send message to next node [next=" + next.id() + ", msg=" + msg +
-                                    ", err=" + e + ']', e);
+                            if (log.isDebugEnabled()) {
+                                U.error(log, "Failed to send message to next node [next=" +
+                                    U.toShortString(next) + ", msg=" + msg + ", err=" + e + ']', e);
+                            }
 
                             onException("Failed to send message to next node [next=" + next.id() + ", msg=" + msg + ']',
                                 e);
@@ -3857,12 +3858,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
+                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
                         sndState = new CrossRingMessageSendState();
+
+                        if (log.isDebugEnabled())
+                            log.debug("Created send state [" + sndState + ']');
+                    }
                     else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
                         return; // Nothing to do here.
+                    }
+                    else if (sndState == null && log.isDebugEnabled()) {
+                        log.debug("Failed to send message to next but no sendState created. Msg=[" + msg +
+                            "], next=[" + U.toShortString(next) + "].");
                     }
 
                     boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
@@ -3878,15 +3887,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             // If node existed on connection initialization we should check
                             // whether it has not gone yet.
-                            U.warn(log, "Failed to send message to next node [msg=" + msg + ", next=" + next +
-                                ", errMsg=" + (err != null ? err.getMessage() : "N/A") + ']');
+                            U.warn(log, "Failed to send message to next node [msg=" + msg + ", next=" +
+                                U.toShortString(next) + ", errMsg=" + (err != null ? err.getMessage() : "N/A") + ']');
                         }
                     }
                     else if (!failedNextNode && sndState != null && sndState.isBackward()) {
                         boolean prev = sndState.markLastFailedNodeAlive();
 
                         U.warn(log, "Failed to send message to next node, try previous [msg=" + msg +
-                            ", next=" + next + ']');
+                            ", next=" + U.toShortString(next) + ']');
 
                         if (prev)
                             failedNodes.remove(failedNodes.size() - 1);
@@ -3895,6 +3904,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             next = ring.nextNode(failedNodes);
                         }
+                    }
+                    else if (log.isDebugEnabled()) {
+                        log.debug("Failed to send message to next node. No actions. Msg=[" + msg +
+                            "], next=[" + U.toShortString(next) + ", sendState=[" + sndState + ']');
                     }
 
                     next = null;
@@ -6545,6 +6558,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             // timeout per one of the next nodes. It should not appear too small like 1, 5 or 10ms.
             long perNodeTimeout = Math.max((sndState.failTimeNanos - now) / nodesLeft, MIN_RECOVERY_TIMEOUT);
 
+            if (log.isDebugEnabled()) {
+                log.debug("Calculated connection recovery timeout: perNodeTimeout=" + perNodeTimeout +
+                    ", failedNodesNumber=" + sndState.failedNodes + ", serversLeft=" + nodesLeft +
+                    ", minPerNodeTimeout" + MIN_RECOVERY_TIMEOUT);
+            }
+
             absoluteThreshold = Math.min(sndState.failTimeNanos, now + perNodeTimeout);
         }
 
@@ -6923,7 +6942,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 if (log.isDebugEnabled()) {
                                     log.debug("Remote node requests topology change. Checking connection to " +
-                                        "previous [" + previous + "] with timeout " +
+                                        "previous node [" + U.toShortString(previous) + "] with timeout " +
                                         U.nanosToMillis(timeThreshold - now));
                                 }
 
