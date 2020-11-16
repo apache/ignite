@@ -409,6 +409,8 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * @return {@code this} for chaining.
      */
     public SqlFieldsQuery setUpdateBatchSize(int updateBatchSize) {
+        A.ensure(updateBatchSize >= 1, "updateBatchSize cannot be lower than 1");
+
         this.updateBatchSize = updateBatchSize;
 
         return this;

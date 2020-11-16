@@ -36,10 +36,11 @@ public interface PlatformContinuousQuery extends CacheEntryUpdatedListener, Plat
      * @param timeInterval Time interval.
      * @param autoUnsubscribe Auto-unsubscribe flag.
      * @param initialQry Initial query.
+     * @param includeExpired Whether to include expired events.
      * @throws org.apache.ignite.IgniteCheckedException If failed.
      */
     public void start(IgniteCacheProxy cache, boolean loc, int bufSize, long timeInterval, boolean autoUnsubscribe,
-        Query initialQry) throws IgniteCheckedException;
+        Query initialQry, boolean includeExpired) throws IgniteCheckedException;
 
     /**
      * Close continuous query.
