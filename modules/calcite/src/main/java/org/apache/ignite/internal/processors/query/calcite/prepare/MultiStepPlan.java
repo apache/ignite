@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
-import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 
 /**
  * Regular query or DML
@@ -53,8 +52,7 @@ public interface MultiStepPlan extends QueryPlan {
     /**
      * Inits query fragments.
      *
-     * @param mappingService Mapping service.
      * @param ctx Planner context.
      */
-    void init(MappingService mappingService, PlanningContext ctx);
+    void init(PlanningContext ctx);
 }

@@ -148,8 +148,24 @@ public class ColocationGroup implements MarshalableMessage {
             throw new ColocationMappingException("Failed to map fragment to location. Replicated query parts are not co-located on all nodes");
 
         List<List<UUID>> assignments;
-        if (this.assignments == null || other.assignments == null)
+        if (this.assignments == null || other.assignments == null) {
             assignments = U.firstNotNull(this.assignments, other.assignments);
+
+            if (assignments != null && nodeIds != null) {
+                Set<UUID> filter = new HashSet<>(nodeIds);
+                List<List<UUID>> assignments0 = new ArrayList<>(assignments.size());
+                for (int i = 0; i < assignments.size(); i++) {
+                    List<UUID> assignment = Commons.intersect(filter, assignments.get(i));
+
+                    if (assignment.isEmpty()) // TODO check with partition filters
+                        throw new ColocationMappingException("Failed to map fragment to location. Partition mapping is empty [part=" + i + "]");
+
+                    assignments0.add(assignment);
+                }
+
+                assignments = assignments0;
+            }
+        }
         else {
             assert this.assignments.size() == other.assignments.size();
             assignments = new ArrayList<>(this.assignments.size());

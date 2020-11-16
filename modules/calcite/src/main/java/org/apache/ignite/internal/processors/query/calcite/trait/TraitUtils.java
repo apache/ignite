@@ -69,6 +69,7 @@ public class TraitUtils {
         RelTraitSet fromTraits = rel.getTraitSet();
         int size = Math.min(fromTraits.size(), toTraits.size());
         if (!fromTraits.satisfies(toTraits)) {
+            RelNode old = null;
             for (int i = 0; rel != null && i < size; i++) {
                 RelTrait fromTrait = rel.getTraitSet().getTrait(i);
                 RelTrait toTrait = toTraits.getTrait(i);
@@ -76,8 +77,11 @@ public class TraitUtils {
                 if (fromTrait.satisfies(toTrait))
                     continue;
 
-                RelNode old = rel;
-                rel = convertTrait(planner, fromTrait, toTrait, old);
+                if (old != null)
+                    rel = planner.register(rel, old);
+
+                old = rel;
+                rel = convertTrait(planner, fromTrait, toTrait, rel);
 
                 assert rel == null || rel.getTraitSet().getTrait(i).satisfies(toTrait);
             }

@@ -653,7 +653,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private FieldsQueryCursor<List<?>> executeQuery(UUID qryId, MultiStepPlan plan, PlanningContext pctx) {
-        plan.init(mappingService(), pctx);
+        plan.init(pctx);
 
         List<Fragment> fragments = plan.fragments();
 
