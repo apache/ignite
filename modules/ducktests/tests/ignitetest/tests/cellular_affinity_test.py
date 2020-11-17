@@ -19,7 +19,6 @@ This module contains Cellular Affinity tests.
 from enum import IntEnum
 
 from ducktape.mark import matrix
-from ducktape.mark.resource import cluster
 from jinja2 import Template
 
 from ignitetest.services.ignite import IgniteService
@@ -27,7 +26,7 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteClientConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.utils import ignite_versions, version_if
+from ignitetest.utils import ignite_versions, version_if, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST_2_8
 

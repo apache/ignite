@@ -19,14 +19,13 @@ This module contains client tests
 import time
 
 from ducktape.mark import parametrize
-from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
-from ignitetest.utils import ignite_versions
+from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, V_2_8_1, IgniteVersion
 
