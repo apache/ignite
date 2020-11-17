@@ -98,7 +98,7 @@ class CellularAffinity(IgniteTest):
             attr=CellularAffinity.ATTRIBUTE,
             cacheName=CellularAffinity.CACHE_NAME)
 
-    # @cluster(num_nodes=NODES_PER_CELL * 3 + 1)
+    @cluster(num_nodes=NODES_PER_CELL * 3 + 1)
     @version_if(lambda version: version >= DEV_BRANCH)
     @ignite_versions(str(DEV_BRANCH))
     def test_distribution(self, ignite_version):
@@ -126,7 +126,7 @@ class CellularAffinity(IgniteTest):
 
     # pylint: disable=R0912
     # pylint: disable=R0914
-    @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
+    #  @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(stop_type=[StopType.DISCONNECT, StopType.SIGKILL, StopType.SIGTERM],
             discovery_type=[DiscoreryType.ZooKeeper, DiscoreryType.TCP])
