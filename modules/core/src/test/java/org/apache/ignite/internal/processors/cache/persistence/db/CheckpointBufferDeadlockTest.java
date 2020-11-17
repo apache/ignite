@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -235,6 +236,17 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
                                 PAGES_TOUCHED_UNDER_CP_LOCK, pages - PAGES_TOUCHED_UNDER_CP_LOCK);
 
                             long pageId = PageIdUtils.pageId(0, PageIdAllocator.FLAG_DATA, pageIdx);
+
+                            long page = pageMem.acquirePage(CU.cacheId(cacheName), pageId);
+
+                            try {
+                                // We do not know correct flag(FLAG_DATA or FLAG_AUX). Skip page if no luck.
+                                if (pageId != PageIO.getPageId(page + PageMemoryImpl.PAGE_OVERHEAD))
+                                    continue;
+                            }
+                            finally {
+                                pageMem.releasePage(CU.cacheId(cacheName), pageId, page);
+                            }
 
                             pickedPagesSet.add(new FullPageId(pageId, CU.cacheId(cacheName)));
                         }

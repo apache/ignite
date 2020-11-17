@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRemoveDu
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRestartAfterFailedToWriteMetaPageTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSpuriousRebalancingOnNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
+import org.apache.ignite.internal.processors.cache.persistence.PendingTreeCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheWalDisabledOnRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageReplacementDuringPartitionClearTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
@@ -120,6 +121,8 @@ public class IgnitePdsTestSuite4 {
         // Warm-up tests.
         GridTestUtils.addTestIfNeeded(suite, WarmUpSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, LoadAllWarmUpStrategySelfTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, PendingTreeCorruptionTest.class, ignoredTests);
 
         return suite;
     }
