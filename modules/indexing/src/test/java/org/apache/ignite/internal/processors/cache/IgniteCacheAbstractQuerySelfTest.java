@@ -1549,7 +1549,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testQueryExecutionEvents() throws Exception {
-        CountDownLatch execLatch = new CountDownLatch(11);
+        CountDownLatch execLatch = new CountDownLatch(9);
 
         IgnitePredicate<Event> lsnr = evt -> {
             assert evt instanceof QueryExecutionEvent;
@@ -1570,19 +1570,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         ignite().events().localListen(lsnr, EVT_QUERY_EXECUTION);
 
-        String cacheName = "CACHE_NAME";
-
-        CacheConfiguration<String, String> ccfg = new CacheConfiguration<>();
-
-        ccfg.setName(cacheName);
-        ccfg.setIndexedTypes(String.class, String.class);
-
         ClientConfiguration cc = new ClientConfiguration().setAddresses(Config.SERVER);
 
         try (IgniteClient client = Ignition.startClient(cc)) {
-            ignite().createCache(ccfg).query(new TextQuery<>(String.class, "text"))
-                .getAll();
-
             client.query(new SqlFieldsQuery("create table TEST_TABLE(key int primary key, val int)"))
                 .getAll();
 
@@ -1608,9 +1598,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 .getAll();
 
             client.query(new SqlFieldsQuery("drop table TEST_TABLE"))
-                .getAll();
-
-            client.getOrCreateCache(cacheName).query(new ScanQuery<>())
                 .getAll();
 
             assert execLatch.await(3_000, MILLISECONDS);
