@@ -35,7 +35,7 @@ class SnapshotTest(IgniteTest):
     """
     Test Snapshot.
     """
-    NUM_NODES = 5
+    NUM_NODES = 4
 
     SNAPSHOT_NAME = "test_snap"
 
@@ -55,7 +55,7 @@ class SnapshotTest(IgniteTest):
             caches=[CacheConfiguration(name=self.CACHE_NAME, backups=2, indexed_types=['java.util.UUID', 'byte[]'])]
         )
 
-        service = IgniteService(self.test_context, ignite_config, num_nodes=self.NUM_NODES - 2)
+        service = IgniteService(self.test_context, ignite_config, num_nodes=self.NUM_NODES - 1)
         service.start()
 
         control_utility = ControlUtility(service, self.test_context)
