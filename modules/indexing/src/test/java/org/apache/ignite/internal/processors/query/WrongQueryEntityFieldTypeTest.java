@@ -32,7 +32,6 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
-import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -233,11 +232,11 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
 
             Class<?> organization = ldr.loadClass("org.apache.ignite.tests.p2p.cache.Organization");
             Class<?> person = ldr.loadClass("org.apache.ignite.tests.p2p.cache.Person");
-            Class<?> address = ldr.loadClass("org.apache.ignite.tests.p2p.cache.Address");
+            Class<?> addr = ldr.loadClass("org.apache.ignite.tests.p2p.cache.Address");
 
             Object p = person.getConstructor(String.class).newInstance("test");
 
-            return organization.getConstructor(String.class, person, address).newInstance("org", p, null);
+            return organization.getConstructor(String.class, person, addr).newInstance("org", p, null);
         }
         catch (Exception e) {
             throw new RuntimeException(e);

@@ -37,6 +37,7 @@ import org.apache.ignite.internal.GridSpiExceptionSelfTest;
 import org.apache.ignite.internal.GridVersionSelfTest;
 import org.apache.ignite.internal.IgniteConcurrentEntryProcessorAccessStopTest;
 import org.apache.ignite.internal.IgniteConnectionConcurrentReserveAndRemoveTest;
+import org.apache.ignite.internal.IgniteNodeValidationFailedEventTest;
 import org.apache.ignite.internal.IgniteUpdateNotifierPerClusterSettingSelfTest;
 import org.apache.ignite.internal.LongJVMPauseDetectorTest;
 import org.apache.ignite.internal.managers.GridManagerStopSelfTest;
@@ -73,6 +74,7 @@ import org.junit.runners.Suite;
     GridRuntimeExceptionSelfTest.class,
     GridFailedInputParametersSelfTest.class,
     GridNodeFilterSelfTest.class,
+    IgniteNodeValidationFailedEventTest.class,
     GridNodeVisorAttributesSelfTest.class,
     GridDiscoverySelfTest.class,
     GridCommunicationSelfTest.class,
