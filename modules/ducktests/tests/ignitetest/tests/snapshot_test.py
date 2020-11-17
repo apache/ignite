@@ -79,18 +79,6 @@ class SnapshotTest(IgniteTest):
             timeout_sec=180
         )
 
-        deleter = IgniteApplicationService(
-            self.test_context,
-            client_config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.delete.DeleteDataApplication",
-            params={
-                "cacheName": self.CACHE_NAME,
-                "size": 128 * 1024,
-                "bachSize": 512
-            },
-            timeout_sec=180
-        )
-
         loader.run()
 
         node = service.nodes[0]
@@ -101,7 +89,7 @@ class SnapshotTest(IgniteTest):
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
-        deleter.run()
+        loader.run()
 
         dump_2 = control_utility.idle_verify_dump(node, return_path=True)
 
