@@ -166,6 +166,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMP
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
@@ -182,6 +183,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** */
     public static final String NODES_SYS_VIEW_DESC = "Cluster nodes";
 
+    /** @see IgniteSystemProperties#IGNITE_DISCOVERY_HISTORY_SIZE */
+    public static final int DFLT_DISCOVERY_HISTORY_SIZE = 500;
+
+    /** Name of the discovery metrics registry. */
+    public static final String DISCO_METRICS = metricName("io", "discovery");
+
     /** Predicate filtering out daemon nodes. */
     private static final IgnitePredicate<ClusterNode> FILTER_NOT_DAEMON = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
@@ -197,7 +204,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     };
 
     /** Discovery cached history size. */
-    private final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 500);
+    private final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, DFLT_DISCOVERY_HISTORY_SIZE);
 
     /** */
     private final Object discoEvtMux = new Object();
