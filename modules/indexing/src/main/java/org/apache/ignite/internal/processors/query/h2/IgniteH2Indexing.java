@@ -1117,17 +1117,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     // Check if cluster state is valid.
                     checkClusterState(parseRes);
 
-                    if (ctx.event().isRecordable(EVT_QUERY_EXECUTION)) {
-                        ctx.event().record(new QueryExecutionEvent<>(
-                            ctx.discovery().localNode(),
-                            CacheQueryType.SQL_FIELDS.name() + " query execution.",
-                            EVT_QUERY_EXECUTION,
-                            CacheQueryType.SQL_FIELDS.name(),
-                            newQryDesc.sql(),
-                            null,
-                            newQryParams.arguments(),
-                            ctx.localNodeId()));
-                    }
+                if (ctx.event().isRecordable(EVT_QUERY_EXECUTION)) {
+                    ctx.event().record(new QueryExecutionEvent<>(
+                        ctx.discovery().localNode(),
+                        CacheQueryType.SQL_FIELDS.name() + " query execution.",
+                        EVT_QUERY_EXECUTION,
+                        CacheQueryType.SQL_FIELDS.name(),
+                        newQryDesc.sql(),
+                        newQryParams.arguments(),
+                        ctx.localNodeId()));
+                }
 
                     // Execute.
                     if (parseRes.isCommand()) {

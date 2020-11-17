@@ -39,8 +39,6 @@ import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
-import org.apache.ignite.events.QueryExecutionEvent;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
@@ -76,7 +74,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.events.EventType.EVT_QUERY_EXECUTION;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
@@ -595,20 +592,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
-
-        GridKernalContext ctx = cctx.kernalContext();
-
-        if (ctx.event().isRecordable(EVT_QUERY_EXECUTION)) {
-            ctx.event().record(new QueryExecutionEvent<>(
-                ctx.discovery().localNode(),
-                CacheQueryType.SCAN.name() + " query execution.",
-                EVT_QUERY_EXECUTION,
-                CacheQueryType.SCAN.name(),
-                null,
-                scanFilter(),
-                null,
-                ctx.localNodeId()));
-        }
 
         if (cctx.deploymentEnabled())
             cctx.deploy().registerClasses(filter);
