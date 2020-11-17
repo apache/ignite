@@ -38,7 +38,7 @@ class StopDefragmentationAction implements MaintenanceAction<Boolean> {
 
     /** {@inheritDoc} */
     @Override public Boolean execute() {
-        defragmentationManager.cancel();
+//        defragmentationManager.cancel();
 
         return true;
     }

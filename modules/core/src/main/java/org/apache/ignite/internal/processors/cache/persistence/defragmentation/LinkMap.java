@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLoc
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 
 /**
@@ -158,7 +159,7 @@ public class LinkMap {
            @Nullable PageLockListener lockLsnr,
            boolean initNew
         ) throws IgniteCheckedException {
-            super(name, cacheGrpId, cacheGrpName, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos, failureProcessor, lockLsnr);
+            super(name, cacheGrpId, cacheGrpName, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos, FLAG_AUX, failureProcessor, lockLsnr);
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
 
