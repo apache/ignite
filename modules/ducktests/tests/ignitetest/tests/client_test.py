@@ -48,8 +48,8 @@ class ClientTest(IgniteTest):
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.client_test.IgniteCachePutClient"
 
     # pylint: disable=R0913
-    @ignite_versions(str(V_2_8_1), str(DEV_BRANCH))
     @cluster(num_nodes=7)
+    @ignite_versions(str(V_2_8_1), str(DEV_BRANCH))
     @parametrize(num_nodes=7, static_clients=2, temp_client=3, iteration_count=3, client_work_time=30)
     def test_ignite_start_stop_nodes(self, ignite_version, num_nodes, static_clients, temp_client, iteration_count,
                                      client_work_time):
@@ -61,8 +61,8 @@ class ClientTest(IgniteTest):
                                temp_client, iteration_count, client_work_time)
 
     # pylint: disable=R0913
-    @ignite_versions(str(V_2_8_1), str(DEV_BRANCH))
     @cluster(num_nodes=7)
+    @ignite_versions(str(V_2_8_1), str(DEV_BRANCH))
     @parametrize(num_nodes=7, static_clients=2, temp_client=3, iteration_count=3, client_work_time=30)
     def test_ignite_kill_start_nodes(self, ignite_version, num_nodes, static_clients, temp_client, iteration_count,
                                      client_work_time):
