@@ -161,6 +161,91 @@ BOOST_AUTO_TEST_CASE(TestGetTypeInfoAllTypes)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 }
 
+BOOST_AUTO_TEST_CASE(TestDateTypeColumnAttributeCurdate)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR req[] = "select CURDATE()";
+    SQLExecDirect(stmt, req, SQL_NTS);
+
+    SQLLEN intVal = 0;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_DESC_TYPE, 0, 0, 0, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, SQL_TYPE_DATE);
+}
+
+BOOST_AUTO_TEST_CASE(TestDateTypeColumnAttributeLiteral)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR req[] = "select DATE '2020-10-25'";
+    SQLExecDirect(stmt, req, SQL_NTS);
+
+    SQLLEN intVal = 0;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_DESC_TYPE, 0, 0, 0, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, SQL_TYPE_DATE);
+}
+
+BOOST_AUTO_TEST_CASE(TestDateTypeColumnAttributeField)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR req[] = "select CAST (dateField as DATE) from TestType";
+    SQLExecDirect(stmt, req, SQL_NTS);
+
+    SQLLEN intVal = 0;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_DESC_TYPE, 0, 0, 0, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, SQL_TYPE_DATE);
+}
+
+BOOST_AUTO_TEST_CASE(TestTimeTypeColumnAttributeLiteral)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR req[] = "select TIME '12:42:13'";
+    SQLExecDirect(stmt, req, SQL_NTS);
+
+    SQLLEN intVal = 0;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_DESC_TYPE, 0, 0, 0, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, SQL_TYPE_TIME);
+}
+
+BOOST_AUTO_TEST_CASE(TestTimeTypeColumnAttributeField)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR req[] = "select timeField from TestType";
+    SQLExecDirect(stmt, req, SQL_NTS);
+
+    SQLLEN intVal = 0;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_DESC_TYPE, 0, 0, 0, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, SQL_TYPE_TIME);
+}
+
 BOOST_AUTO_TEST_CASE(TestColAttributesColumnLength)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");

@@ -464,7 +464,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             if (sesTok != null)
                 cmdRes.setSessionToken(U.byteArray2HexString(sesTok));
 
-            res.setStatus(HttpServletResponse.SC_OK);
+            res.setStatus(cmdRes.getSuccessStatus() == GridRestResponse.SERVICE_UNAVAILABLE ? HttpServletResponse.SC_SERVICE_UNAVAILABLE : HttpServletResponse.SC_OK);
         }
         catch (Throwable e) {
             res.setStatus(HttpServletResponse.SC_OK);
@@ -720,7 +720,8 @@ public class GridJettyRestHandler extends AbstractHandler {
             case DATA_REGION_METRICS:
             case DATA_STORAGE_METRICS:
             case NAME:
-            case VERSION: {
+            case VERSION:
+            case PROBE: {
                 restReq = new GridRestRequest();
 
                 break;
