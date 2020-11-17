@@ -6950,10 +6950,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 liveAddr = checkConnection(new ArrayList<>(nodeAddrs),
                                     (int)U.nanosToMillis(timeThreshold - now));
 
-                                if (log.isInfoEnabled())
+                                if (log.isInfoEnabled()) {
                                     log.info("Connection check to previous node done: [liveAddr=" + liveAddr
-                                        + ", previousNode=" + previous + ", addressesToCheck=" + nodeAddrs
-                                        + ", connectingNodeId=" + nodeId + ']');
+                                        + ", previousNode=" + U.toShortString(previous) + ", addressesToCheck=" +
+                                        nodeAddrs + ", connectingNodeId=" + nodeId + ']');
+                                }
                             }
 
                             // If local node was able to connect to previous, confirm that it's alive.
