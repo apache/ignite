@@ -227,9 +227,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
     /** */
     private void simulateFailureOfTwoNodes(boolean sequentionally) throws Exception {
-        failureDetectionTimeout = 1000;
+        failureDetectionTimeout = 700;
 
-        int gridCnt = 20;
+        int gridCnt = 7;
 
         startGrids(gridCnt);
 

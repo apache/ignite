@@ -30,6 +30,9 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     /** */
     private UUID prevNodeId;
 
+    /** Max await time for response. If > 0, responding can use it to estimate available time for additional actions. */
+    private long maxAwaitMills;
+
     /**
      * Constructor.
      *
@@ -59,6 +62,13 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     }
 
     /**
+     * @return maximal await mills for the handshake response. Actual if positive.
+     */
+    public long maxAwaitMills() {
+        return maxAwaitMills;
+    }
+
+    /**
      * Sets topology change flag and previous node ID to check.<br>
      *
      * @param prevNodeId If not {@code null}, will set topology check flag and set node ID to check.
@@ -68,6 +78,19 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
 
         this.prevNodeId = prevNodeId;
     }
+
+    /**
+     * Sets topology change flag and previous node ID to check.<br>
+     *
+     * @param prevNodeId If not {@code null}, will set topology check flag and set node ID to check.
+     * @param maxAwaitMills Maximal await mills for the handshake response. Actual if positive.
+     */
+    public void changeTopology(UUID prevNodeId, long maxAwaitMills) {
+        changeTopology(prevNodeId);
+
+        this.maxAwaitMills = maxAwaitMills;
+    }
+
 
     /** {@inheritDoc} */
     @Override public String toString() {
