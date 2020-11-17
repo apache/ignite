@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-Module contains discovery tests.
+Module contains snapshot test.
 """
 from ducktape.mark.resource import cluster
 

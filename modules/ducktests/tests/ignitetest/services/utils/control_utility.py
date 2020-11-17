@@ -134,7 +134,6 @@ class ControlUtility:
     def validate_indexes(self, check_assert: bool = None):
         """
         Validate indexes.
-        If check is true, will be return
         """
         data = self.__run("--cache validate_indexes")
 
