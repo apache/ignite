@@ -108,7 +108,7 @@ public final class PageIdUtils {
      * @return Page ID.
      */
     public static long pageId(long link) {
-        return flag(link) == PageIdAllocator.FLAG_IDX ? link : link & PAGE_ID_MASK;
+        return flag(link) == PageIdAllocator.FLAG_DATA ? link & PAGE_ID_MASK : link;
     }
 
     /**

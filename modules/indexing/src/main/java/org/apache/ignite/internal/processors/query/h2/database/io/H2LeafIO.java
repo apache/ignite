@@ -31,7 +31,7 @@ public class H2LeafIO extends AbstractH2LeafIO {
     /**
      * @param ver Page format version.
      */
-    private H2LeafIO(int ver) {
+    public H2LeafIO(int ver) {
         super(T_H2_REF_LEAF, ver, 8);
     }
 }

@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -249,13 +249,14 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             if (!failedToCleanCaches.isEmpty())
                 res.failedCaches(failedToCleanCaches);
 
-            List<MaintenanceAction> actions = mntcReg.actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
+            List<MaintenanceAction<?>> actions = mntcReg.actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
-            Optional<MaintenanceAction> checkActionOpt = actions.stream().filter(a -> a.name().equals(CheckCorruptedCacheStoresCleanAction.ACTION_NAME))
+            Optional<MaintenanceAction<?>> checkActionOpt = actions.stream()
+                .filter(a -> a.name().equals(CheckCorruptedCacheStoresCleanAction.ACTION_NAME))
                 .findFirst();
 
             if (checkActionOpt.isPresent()) {
-                MaintenanceAction<Boolean> action = checkActionOpt.get();
+                MaintenanceAction<Boolean> action = (MaintenanceAction<Boolean>)checkActionOpt.get();
 
                 Boolean mntcTaskCompleted = action.execute();
 
@@ -296,10 +297,10 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
         private PersistenceTaskResult cleanCorrupted(MaintenanceRegistry mntcReg) {
             PersistenceTaskResult res = new PersistenceTaskResult(true);
 
-            List<MaintenanceAction> actions = mntcReg
+            List<MaintenanceAction<?>> actions = mntcReg
                 .actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
-            Optional<MaintenanceAction> cleanCorruptedActionOpt = actions
+            Optional<MaintenanceAction<?>> cleanCorruptedActionOpt = actions
                 .stream()
                 .filter(a -> a.name().equals(CleanCacheStoresMaintenanceAction.ACTION_NAME))
                 .findFirst();
@@ -359,7 +360,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
         private List<String> corruptedCacheDirectories(MaintenanceTask task) {
             String params = task.parameters();
 
-            String[] namesArr = params.split(File.separator);
+            String[] namesArr = params.split(Pattern.quote(File.separator));
 
             return Arrays.asList(namesArr);
         }

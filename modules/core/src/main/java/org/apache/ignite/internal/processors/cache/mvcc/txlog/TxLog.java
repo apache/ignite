@@ -33,6 +33,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
@@ -102,6 +103,8 @@ public class TxLog implements CheckpointListener {
 
         PageLockListener txLogLockLsnr = diagnosticMgr.pageLockTracker().createPageLockTracker(txLogName);
 
+        DataRegion txLogDataRegion = mgr.dataRegion(TX_LOG_CACHE_NAME);
+
         if (CU.isPersistenceEnabled(ctx.config())) {
             String txLogReuseListName = TX_LOG_CACHE_NAME + "##ReuseList";
             PageLockListener txLogReuseListLockLsnr = diagnosticMgr.pageLockTracker().createPageLockTracker(txLogReuseListName);
@@ -110,9 +113,9 @@ public class TxLog implements CheckpointListener {
 
             try {
                 IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
-                PageMemoryEx pageMemory = (PageMemoryEx)mgr.dataRegion(TX_LOG_CACHE_NAME).pageMemory();
+                PageMemoryEx pageMemory = (PageMemoryEx)txLogDataRegion.pageMemory();
 
-                long metaId = pageMemory.metaPageId(TX_LOG_CACHE_ID);
+                long metaId = PageMemory.META_PAGE_ID;
                 long metaPage = pageMemory.acquirePage(TX_LOG_CACHE_ID, metaId);
 
                 long treeRoot, reuseListRoot;
@@ -181,7 +184,8 @@ public class TxLog implements CheckpointListener {
                     isNew,
                     txLogReuseListLockLsnr,
                     ctx,
-                    null
+                    null,
+                    FLAG_IDX
                 );
 
                 tree = new TxLogTree(
@@ -195,14 +199,14 @@ public class TxLog implements CheckpointListener {
                     txLogLockLsnr
                 );
 
-                ((GridCacheDatabaseSharedManager)mgr).addCheckpointListener(this);
+                ((GridCacheDatabaseSharedManager)mgr).addCheckpointListener(this, txLogDataRegion);
             }
             finally {
                 mgr.checkpointReadUnlock();
             }
         }
         else {
-            PageMemory pageMemory = mgr.dataRegion(TX_LOG_CACHE_NAME).pageMemory();
+            PageMemory pageMemory = txLogDataRegion.pageMemory();
             ReuseList reuseList1 = mgr.reuseList(TX_LOG_CACHE_NAME);
 
             long treeRoot;

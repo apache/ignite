@@ -61,4 +61,9 @@ public interface H2RowLinkIO {
     public default boolean storeMvccInfo() {
         return false;
     }
+
+    /**
+     * @return Size of reserved data array for data inlining.
+     */
+    public int getPayloadSize();
 }
