@@ -40,7 +40,7 @@ public interface GridQueryIndexingDefragmentation {
      *
      * @throws IgniteCheckedException If failed.
      */
-    void defragmentate(
+    void defragment(
         CacheGroupContext grpCtx,
         CacheGroupContext newCtx,
         PageMemoryEx partPageMem,

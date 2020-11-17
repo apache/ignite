@@ -93,7 +93,7 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
     }
 
     /** {@inheritDoc} */
-    @Override public void defragmentate(
+    @Override public void defragment(
         CacheGroupContext grpCtx,
         CacheGroupContext newCtx,
         PageMemoryEx partPageMem,
@@ -181,7 +181,9 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
                             lastCpLockTs.set(System.currentTimeMillis());
                         }
 
-                        assert 1 == io.getVersion();
+                        assert 1 == io.getVersion()
+                            : "IO version " + io.getVersion() + " is not supported by current defragmentation algorithm." +
+                            " Please implement copying of tree in a new format.";
 
                         BPlusIO<H2Row> h2IO = wrap(io);
 
@@ -225,7 +227,8 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
             cpLock.checkpointReadUnlock();
         }
 
-        System.out.println(tracker.toString());
+        if (log.isDebugEnabled())
+            log.debug("Indexes defragmentation timings for cache group " + grpCtx.groupId() + ": " + tracker.toString());
     }
 
     /** */

@@ -77,7 +77,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     public static final int PARTS = 5;
 
     /** */
-    public static final int ADDED_KEYS_COUNT = 1000;
+    public static final int ADDED_KEYS_COUNT = 150;
 
     /** */
     protected static final String GRP_NAME = "group";
