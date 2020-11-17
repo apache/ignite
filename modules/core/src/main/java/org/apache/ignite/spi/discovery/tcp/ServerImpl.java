@@ -216,7 +216,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private static final long MAX_CON_CHECK_INTERVAL = 500;
 
     /** Minimal timeout to find connection to some next node in the ring while connection recovering. */
-    private static final long MIN_RECOVERY_TIMEOUT = 100;
+    private static final long MIN_RECOVERY_TIMEOUT = 200;
 
     /** Interval of checking connection to next node in the ring. */
     private long connCheckInterval;
@@ -3505,8 +3505,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 // Topology treated as changes if next node is not available.
                                 boolean changeTop = sndState != null && !sndState.isStartingPoint();
 
-                                if (changeTop)
-                                    hndMsg.changeTopology(ring.previousNodeOf(next).id());
+                                if (changeTop) {
+                                    hndMsg.changeTopology(ring.previousNodeOf(next).id(),
+                                        timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout() + ackTimeout0));
+                                }
 
                                 if (log.isDebugEnabled()) {
                                     log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState +
@@ -6941,6 +6943,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
                                 Collection<InetSocketAddress> nodeAddrs = spi.getNodeAddresses(previous, false);
 
+                                // If node loses connection, it determines piece of the connection recovery timeout for
+                                // each node left in the ring to establish connection with. Current node has no
+                                // reason to do any checks longer. Otherwise, the requesting node can get segmented.
+                                // Also, we have to suppose network delays. We put half of the timeout on it.
+                                // @see serverOperationTimeoutHelper(CrossRingMessageSendState, long)
+                                // @see MIN_RECOVERY_TIMEOUT
+                                int checkTimeout = (int)(req.maxAwaitMills() > 0 ?
+                                    Math.min(req.maxAwaitMills() / 2, U.nanosToMillis(timeThreshold - now)) :
+                                    U.nanosToMillis(timeThreshold - now));
+
                                 if (log.isDebugEnabled()) {
                                     log.debug("Remote node requests topology change. Checking connection to " +
                                         "previous node [" + U.toShortString(previous) + "] with timeout " +
@@ -6974,8 +6986,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (log.isDebugEnabled()) {
-                        log.debug("Sending [" + res + "] with timeout " + spi.getEffectiveSocketTimeout(srvSock) +
-                            " to " + rmtAddr + ":" + sock.getPort());
+                        log.debug("Sending handshake response [" + res + "] with timeout " +
+                            spi.getEffectiveSocketTimeout(srvSock) + " to " + rmtAddr + ":" + sock.getPort());
                     }
 
                     spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(srvSock));
