@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.IgniteBinary;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -101,8 +103,8 @@ public class TcpIgniteClient implements IgniteClient {
      * Constructor with custom channel factory.
      */
     TcpIgniteClient(
-        Function<ClientChannelConfiguration, ClientChannel> chFactory,
-        ClientConfiguration cfg
+            BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory,
+            ClientConfiguration cfg
     ) throws ClientException {
         final ClientBinaryMetadataHandler metadataHandler = new ClientBinaryMetadataHandler();
 

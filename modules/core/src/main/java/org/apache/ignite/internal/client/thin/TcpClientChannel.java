@@ -80,6 +80,7 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
@@ -169,7 +170,7 @@ class TcpClientChannel implements ClientChannel {
     private Thread receiverThread;
 
     /** Constructor. */
-    TcpClientChannel(ClientChannelConfiguration cfg)
+    TcpClientChannel(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connectionMultiplexer)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         validateConfiguration(cfg);
 
