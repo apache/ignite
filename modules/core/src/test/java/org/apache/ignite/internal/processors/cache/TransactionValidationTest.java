@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -27,8 +28,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-
-import javax.cache.CacheException;
 
 import static org.apache.ignite.testframework.MvccFeatureChecker.Feature.NEAR_CACHE;
 import static org.apache.ignite.testframework.MvccFeatureChecker.skipIfNotSupported;
