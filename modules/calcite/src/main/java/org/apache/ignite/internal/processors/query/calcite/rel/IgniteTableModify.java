@@ -90,4 +90,10 @@ public class IgniteTableModify extends TableModify implements IgniteRel {
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        return new IgniteTableModify(cluster, getTraitSet(), getTable(), sole(inputs),
+            getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened());
+    }
 }

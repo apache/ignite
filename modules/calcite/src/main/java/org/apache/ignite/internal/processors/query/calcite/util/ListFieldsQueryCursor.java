@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -50,7 +50,9 @@ public class ListFieldsQueryCursor<Row> implements FieldsQueryCursor<List<?>>, Q
      * @param ectx Row converter.
      */
     public ListFieldsQueryCursor(MultiStepPlan plan, Iterator<Row> it, ExecutionContext<Row> ectx) {
-        fieldsMeta = plan.fieldsMetadata();
+        FieldsMetadata metadata0 = plan.fieldsMetadata();
+        assert metadata0 != null;
+        fieldsMeta = metadata0.queryFieldsMetadata(ectx.getTypeFactory());
         isQry = plan.type() == QueryPlan.Type.QUERY;
 
         this.it = new ConvertingClosableIterator<>(it, ectx);

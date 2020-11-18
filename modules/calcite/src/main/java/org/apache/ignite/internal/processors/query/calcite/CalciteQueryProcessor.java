@@ -48,10 +48,10 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
+import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
+import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServiceImpl;
-import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
@@ -102,7 +102,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final FailureProcessor failureProcessor;
 
     /** */
-    private final PartitionService partSvc;
+    private final AffinityService partSvc;
 
     /** */
     private final SchemaHolder schemaHolder;
@@ -134,7 +134,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         mailboxRegistry = new MailboxRegistryImpl(ctx);
         taskExecutor = new QueryTaskExecutorImpl(ctx);
         executionSvc = new ExecutionServiceImpl<>(ctx, ArrayRowHandler.INSTANCE);
-        partSvc = new PartitionServiceImpl(ctx);
+        partSvc = new AffinityServiceImpl(ctx);
         msgSvc = new MessageServiceImpl(ctx);
         mappingSvc = new MappingServiceImpl(ctx);
         exchangeSvc = new ExchangeServiceImpl(ctx);
@@ -143,7 +143,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /**
      * @return Affinity service.
      */
-    public PartitionService affinityService() {
+    public AffinityService affinityService() {
         return partSvc;
     }
 

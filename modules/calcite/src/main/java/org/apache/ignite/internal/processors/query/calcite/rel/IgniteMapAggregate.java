@@ -98,4 +98,10 @@ public class IgniteMapAggregate extends Aggregate implements IgniteRel {
 
         return builder.build();
     }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        return new IgniteMapAggregate(cluster, getTraitSet(), sole(inputs),
+            getGroupSet(), getGroupSets(), getAggCallList());
+    }
 }

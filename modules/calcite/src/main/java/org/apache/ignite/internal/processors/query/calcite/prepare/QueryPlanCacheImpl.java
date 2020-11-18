@@ -79,14 +79,14 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
         List<QueryPlan> template = cache.get(key);
 
         if (template != null)
-            return Commons.transform(template, t -> t.clone(ctx));
+            return Commons.transform(template, QueryPlan::copy);
         else {
             List<QueryPlan> prepared = factory.create(ctx);
 
             if (prepared.size() == 1) // do not cache multiline queries.
-                cache.putIfAbsent(key, Commons.transform(prepared, p -> p.clone(PlanningContext.empty())));
+                cache.putIfAbsent(key, prepared);
 
-            return prepared;
+            return Commons.transform(prepared, QueryPlan::copy);
         }
     }
 

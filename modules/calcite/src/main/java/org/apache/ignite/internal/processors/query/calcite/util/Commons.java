@@ -76,13 +76,27 @@ public final class Commons {
     }
 
     /**
+     * Combines two lists.
+     */
+    public static <T> List<T> combine(List<T> left, List<T> right) {
+        Set<T> set = new HashSet<>(left.size() + right.size());
+
+        set.addAll(left);
+        set.addAll(right);
+
+        return new ArrayList<>(set);
+    }
+
+    /**
      * Intersects two lists.
      */
     public static <T> List<T> intersect(List<T> left, List<T> right) {
         if (F.isEmpty(left) || F.isEmpty(right))
             return Collections.emptyList();
 
-        return intersect0(left, right);
+        return left.size() > right.size()
+            ? intersect(new HashSet<>(right), left)
+            : intersect(new HashSet<>(left), right);
     }
 
     /**
@@ -94,22 +108,9 @@ public final class Commons {
         if (F.isEmpty(set) || F.isEmpty(list))
             return Collections.emptyList();
 
-        List<T> res = new ArrayList<>(Math.min(set.size(), list.size()));
-
-        for (T t : list) {
-            if (set.contains(t))
-                res.add(t);
-        }
-
-        return res;
-    }
-
-    /** */
-    private static <T> List<T> intersect0(@NotNull List<T> left, @NotNull List<T> right) {
-        if (left.size() > right.size())
-            return intersect0(right, left);
-
-        return intersect(new HashSet<>(left), right);
+        return list.stream()
+            .filter(set::contains)
+            .collect(Collectors.toList());
     }
 
     /**

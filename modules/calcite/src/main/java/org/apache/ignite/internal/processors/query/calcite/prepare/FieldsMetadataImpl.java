@@ -15,21 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.metadata;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.function.ToIntFunction;
+import java.util.List;
+import org.apache.calcite.rel.type.RelDataType;
 
-import org.apache.ignite.internal.processors.query.calcite.util.Service;
+/** */
+public class FieldsMetadataImpl implements FieldsMetadata {
+    /** */
+    private final RelDataType rowType;
 
-/**
- *
- */
-public interface PartitionService extends Service {
-    /**
-     * Creates a partition mapping function on the basis of affinity function of cache with given ID.
-     *
-     * @param cacheId Cache ID.
-     * @return Partition mapping function.
-     */
-    ToIntFunction<Object> partitionFunction(int cacheId);
+    /** */
+    private final List<List<String>> origins;
+
+    /** */
+    public FieldsMetadataImpl(RelDataType rowType, List<List<String>> origins) {
+        this.rowType = rowType;
+        this.origins = origins;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType rowType() {
+        return rowType;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<List<String>> origins() {
+        return origins;
+    }
 }

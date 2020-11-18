@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
@@ -37,7 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
-import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -147,7 +146,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
 
     /** */
     protected ExecutionContext<Object[]> executionContext(UUID nodeId, UUID qryId, long fragmentId) {
-        FragmentDescription fragmentDesc = new FragmentDescription(fragmentId, null, -1, null, null);
+        FragmentDescription fragmentDesc = new FragmentDescription(fragmentId, null, null, null);
         return new ExecutionContext<>(
             taskExecutor(nodeId),
             PlanningContext.builder()

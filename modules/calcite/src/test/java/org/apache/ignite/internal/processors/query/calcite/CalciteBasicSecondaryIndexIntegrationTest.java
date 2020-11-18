@@ -524,6 +524,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
 
     /** */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13710")
     public void testOrCondition2() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND (depId=1 OR depId=3)")
             .matches(containsUnion(true))
@@ -534,6 +535,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
 
     /** */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13710")
     public void testOrCondition3() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND (age > 22 AND (depId=1 OR depId=3))")
             .matches(containsUnion(true))

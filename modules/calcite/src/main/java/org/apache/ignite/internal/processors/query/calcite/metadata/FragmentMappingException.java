@@ -18,11 +18,15 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 
 /**
  *
  */
-public class OptimisticPlanningException extends RuntimeException {
+public class FragmentMappingException extends RuntimeException {
+    /** */
+    private final Fragment fragment;
+
     /** */
     private final RelNode node;
 
@@ -32,9 +36,17 @@ public class OptimisticPlanningException extends RuntimeException {
      * @param node Node of a query plan, where the exception was thrown.
      * @param cause Cause.
      */
-    public OptimisticPlanningException(String message, RelNode node, Throwable cause) {
+    public FragmentMappingException(String message, Fragment fragment, RelNode node, Throwable cause) {
         super(message, cause);
+        this.fragment = fragment;
         this.node = node;
+    }
+
+    /**
+     * @return Fragment of a query plan, where the exception was thrown.
+     */
+    public Fragment fragment() {
+        return fragment;
     }
 
     /**

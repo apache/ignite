@@ -44,7 +44,7 @@ public interface ColumnDescriptor {
     RelDataType logicalType(IgniteTypeFactory f);
 
     /** */
-    Class<?> javaType();
+    Class<?> storageType();
 
     /** */
     Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src)

@@ -18,15 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.AffinityDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.AnyDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.BroadcastDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.HashDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.RandomDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.SingletonDistribution;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
@@ -34,16 +27,16 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
  */
 public class IgniteDistributions {
     /** */
-    private static final IgniteDistribution BROADCAST = canonize(new DistributionTrait(BroadcastDistribution.INSTANCE));
+    private static final IgniteDistribution BROADCAST = canonize(new DistributionTrait(DistributionFunction.broadcast()));
 
     /** */
-    private static final IgniteDistribution SINGLETON = canonize(new DistributionTrait(SingletonDistribution.INSTANCE));
+    private static final IgniteDistribution SINGLETON = canonize(new DistributionTrait(DistributionFunction.singleton()));
 
     /** */
-    private static final IgniteDistribution RANDOM = canonize(new DistributionTrait(RandomDistribution.INSTANCE));
+    private static final IgniteDistribution RANDOM = canonize(new DistributionTrait(DistributionFunction.random()));
 
     /** */
-    private static final IgniteDistribution ANY = canonize(new DistributionTrait(AnyDistribution.INSTANCE));
+    private static final IgniteDistribution ANY = canonize(new DistributionTrait(DistributionFunction.any()));
 
     /**
      * @return Any distribution.
@@ -90,7 +83,7 @@ public class IgniteDistributions {
      * @return Affinity distribution.
      */
     public static IgniteDistribution affinity(int key, int cacheId, Object identity) {
-        return hash(ImmutableIntList.of(key), new AffinityDistribution(cacheId, identity));
+        return hash(ImmutableIntList.of(key), DistributionFunction.affinity(cacheId, identity));
     }
 
     /**
@@ -98,7 +91,7 @@ public class IgniteDistributions {
      * @return Hash distribution.
      */
     public static IgniteDistribution hash(List<Integer> keys) {
-        return canonize(new DistributionTrait(ImmutableIntList.copyOf(keys), HashDistribution.INSTANCE));
+        return canonize(new DistributionTrait(ImmutableIntList.copyOf(keys), DistributionFunction.hash()));
     }
 
     /**

@@ -15,44 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite.rel;
 
 /**
- * Query explain plan.
+ *
  */
-public class ExplainPlan implements QueryPlan {
-    /** Column name. */
-    public static final String PLAN_COL_NAME = "PLAN";
+public interface SourceAwareIgniteRel extends IgniteRel {
+    /** */
+    long sourceId();
 
     /** */
-    private final FieldsMetadata fieldsMeta;
-
-    /** */
-    private final String plan;
-
-    /** */
-    public ExplainPlan(String plan, FieldsMetadata fieldsMeta) {
-        this.fieldsMeta = fieldsMeta;
-        this.plan = plan;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Type type() {
-        return Type.EXPLAIN;
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryPlan copy() {
-        return this;
-    }
-
-    /** */
-    public FieldsMetadata fieldsMeta() {
-        return fieldsMeta;
-    }
-
-    /** */
-    public String plan() {
-        return plan;
-    }
+    IgniteRel clone(long sourceId);
 }

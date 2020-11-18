@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
@@ -38,22 +39,36 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 
 /**
  *
@@ -101,7 +116,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         List<ColumnDescriptor> descriptors = new ArrayList<>(fields.size() + 2);
 
-        // A _key/_val fields is virtual in case there is an alias or a property(es) mapped to _key/_val object fields.
+        // A _key/_val field is virtual in case there is an alias or a property(es) mapped to the _key/_val field.
         BitSet virtualFields = new BitSet();
 
         descriptors.add(
@@ -132,9 +147,9 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             else if (Objects.equals(field, typeDesc.valueFieldAlias())) {
                 valField = descriptors.size();
 
-                descriptors.add(new KeyValDescriptor(typeDesc.valueFieldAlias(), typeDesc.valueClass(), false, fldIdx++));
-
                 virtualFields.set(1);
+
+                descriptors.add(new KeyValDescriptor(typeDesc.valueFieldAlias(), typeDesc.valueClass(), false, fldIdx++));
             }
             else {
                 GridQueryProperty prop = typeDesc.property(field);
@@ -149,21 +164,17 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         for (ColumnDescriptor descriptor : descriptors)
             descriptorsMap.put(descriptor.name(), descriptor);
 
+        if (TypeUtils.isConvertableType(descriptors.get(affField).storageType()))
+            affField = -1;
+
         this.keyField = keyField;
         this.valField = valField;
         this.affField = affField;
         this.descriptors = descriptors.toArray(DUMMY);
         this.descriptorsMap = descriptorsMap;
 
-        ImmutableBitSet.Builder b = ImmutableBitSet.builder();
-        for (int i = 0; i < this.descriptors.length; i++) {
-            if (virtualFields.get(i))
-                continue;
-
-            b.set(i);
-        }
-
-        insertFields = b.build();
+        virtualFields.flip(0, descriptors.size());
+        insertFields = ImmutableBitSet.fromBitSet(virtualFields);
     }
 
     /** {@inheritDoc} */
@@ -180,8 +191,10 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     @Override public IgniteDistribution distribution() {
         if (affinityIdentity == null)
             return IgniteDistributions.broadcast();
-
-        return IgniteDistributions.affinity(affField, cctx.cacheId(), affinityIdentity);
+        else if (affField == -1)
+            return IgniteDistributions.random();
+        else
+            return IgniteDistributions.affinity(affField, cctx.cacheId(), affinityIdentity);
     }
 
     /** {@inheritDoc} */
@@ -205,12 +218,20 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         assert handler.columnCount(res) == (requiredColunms == null ? descriptors.length : requiredColunms.cardinality());
 
         if (requiredColunms == null) {
-            for (int i = 0; i < descriptors.length; i++)
-                handler.set(i, res, descriptors[i].value(ectx, cctx, row));
+            for (int i = 0; i < descriptors.length; i++) {
+                ColumnDescriptor desc = descriptors[i];
+
+                handler.set(i, res, TypeUtils.toInternal(ectx,
+                    desc.value(ectx, cctx, row), desc.storageType()));
+            }
         }
         else {
-            for (int i = 0, j = requiredColunms.nextSetBit(0); j != -1; j = requiredColunms.nextSetBit(j + 1), i++)
-                handler.set(i, res, descriptors[j].value(ectx, cctx, row));
+            for (int i = 0, j = requiredColunms.nextSetBit(0); j != -1; j = requiredColunms.nextSetBit(j + 1), i++) {
+                ColumnDescriptor desc = descriptors[j];
+
+                handler.set(i, res, TypeUtils.toInternal(ectx,
+                    desc.value(ectx, cctx, row), desc.storageType()));
+            }
         }
 
         return res;
@@ -220,7 +241,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     @Override public boolean isUpdateAllowed(RelOptTable tbl, int colIdx) {
         final ColumnDescriptor desc = descriptors[colIdx];
 
-        return !desc.key() && (desc.field() || QueryUtils.isSqlType(desc.javaType()));
+        return !desc.key() && (desc.field() || QueryUtils.isSqlType(desc.storageType()));
     }
 
     /** {@inheritDoc} */
@@ -295,9 +316,11 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
                 Object fieldVal = handler.get(i, row);
 
                 if (desc.field() && desc.key() && fieldVal != null)
-                    desc.set(key, fieldVal);
+                    desc.set(key, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
         }
+        else
+            key = TypeUtils.fromInternal(ectx, key, descriptors[QueryUtils.KEY_COL].storageType());
 
         return key;
     }
@@ -318,9 +341,11 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
                 Object fieldVal = handler.get(i, row);
 
                 if (desc.field() && !desc.key() && fieldVal != null)
-                    desc.set(val, fieldVal);
+                    desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
         }
+        else
+            val = TypeUtils.fromInternal(ectx, val, descriptors[QueryUtils.VAL_COL].storageType());
 
         return val;
     }
@@ -380,9 +405,9 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             Object fieldVal = handler.get(i + 2, row);
 
             if (desc.field())
-                desc.set(val, fieldVal);
+                desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             else
-                val = fieldVal;
+                val = TypeUtils.fromInternal(ectx, fieldVal, desc.storageType());
         }
 
         if (cctx.binaryMarshaller() && val instanceof BinaryObjectBuilder)
@@ -411,7 +436,8 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** */
     private <Row> IgniteBiTuple deleteTuple(Row row, ExecutionContext<Row> ectx) {
-        Object key = ectx.rowHandler().get(QueryUtils.KEY_COL, row);
+        Object key = TypeUtils.fromInternal(ectx,
+            ectx.rowHandler().get(QueryUtils.KEY_COL, row), descriptors[QueryUtils.KEY_COL].storageType());
         return F.t(Objects.requireNonNull(key), null);
     }
 
@@ -428,22 +454,77 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
                 b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
         }
 
-        return b.build();
+        return TypeUtils.sqlType(factory, b.build());
     }
 
     /** {@inheritDoc} */
-    @Override public ColumnDescriptor[] columnDescriptors() {
-        return descriptors;
+    @Override public ColumnDescriptor columnDescriptor(String fieldName) {
+        return fieldName == null ? null : descriptorsMap.get(fieldName);
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, ColumnDescriptor> columnDescriptorsMap() {
-        return descriptorsMap;
+    @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+        if (!cctx.gate().enterIfNotStopped())
+            throw U.convertException(new CacheStoppedException(cctx.name()));
+
+        try {
+            return cctx.isReplicated()
+                ? replicatedGroup(ctx.topologyVersion())
+                : partitionedGroup(ctx.topologyVersion());
+
+        }
+        finally {
+            cctx.gate().leave();
+        }
     }
 
-    /** {@inheritDoc} */
-    @Override public int keyField() {
-        return keyField;
+    /** */
+    private CollocationGroup partitionedGroup(@NotNull AffinityTopologyVersion topVer) {
+        List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
+        List<List<UUID>> assignments0;
+
+        if (cctx.config().getWriteSynchronizationMode() != CacheWriteSynchronizationMode.PRIMARY_SYNC)
+            assignments0 = Commons.transform(assignments, nodes -> Commons.transform(nodes, ClusterNode::id));
+        else {
+            assignments0 = new ArrayList<>(assignments.size());
+
+            for (List<ClusterNode> partNodes : assignments)
+                assignments0.add(F.isEmpty(partNodes) ? emptyList() : singletonList(F.first(partNodes).id()));
+        }
+
+        return CollocationGroup.forAssignments(assignments0);
+    }
+
+    /** */
+    private CollocationGroup replicatedGroup(@NotNull AffinityTopologyVersion topVer) {
+        GridDhtPartitionTopology top = cctx.topology();
+
+        List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.cacheId());
+        List<UUID> nodes0;
+
+        if (!top.rebalanceFinished(topVer)) {
+            nodes0 = new ArrayList<>(nodes.size());
+
+            int parts = top.partitions();
+
+            for (ClusterNode node : nodes) {
+                if (isOwner(node.id(), top, parts))
+                    nodes0.add(node.id());
+            }
+        }
+        else
+            nodes0 = Commons.transform(nodes, ClusterNode::id);
+
+        return CollocationGroup.forNodes(nodes0);
+    }
+
+    /** */
+    private boolean isOwner(UUID nodeId, GridDhtPartitionTopology top, int parts) {
+        for (int p = 0; p < parts; p++) {
+            if (top.partitionState(nodeId, p) != GridDhtPartitionState.OWNING)
+                return false;
+        }
+        return true;
     }
 
     /** */
@@ -452,20 +533,21 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         private final String name;
 
         /** */
-        private final Class<?> type;
-
-        /** */
         private final boolean isKey;
 
         /** */
         private final int fieldIdx;
 
         /** */
+        private final Class<?> storageType;
+
+        /** */
         private KeyValDescriptor(String name, Class<?> type, boolean isKey, int fieldIdx) {
             this.name = name;
-            this.type = type;
             this.isKey = isKey;
             this.fieldIdx = fieldIdx;
+
+            storageType = type;
         }
 
         /** {@inheritDoc} */
@@ -500,12 +582,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            return f.createJavaType(javaType());
+            return f.createJavaType(storageType);
         }
 
         /** {@inheritDoc} */
-        @Override public Class<?> javaType() {
-            return type;
+        @Override public Class<?> storageType() {
+            return storageType;
         }
 
         /** {@inheritDoc} */
@@ -531,10 +613,15 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         private final int fieldIdx;
 
         /** */
+        private final Class<?> storageType;
+
+        /** */
         private FieldDescriptor(GridQueryProperty desc, int fieldIdx) {
             this.desc = desc;
-            dfltVal = desc.defaultValue();
             this.fieldIdx = fieldIdx;
+
+            dfltVal = desc.defaultValue();
+            storageType = desc.type();
         }
 
         /** */
@@ -569,12 +656,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            return f.createJavaType(javaType());
+            return f.createJavaType(storageType);
         }
 
         /** {@inheritDoc} */
-        @Override public Class<?> javaType() {
-            return desc.type();
+        @Override public Class<?> storageType() {
+            return storageType;
         }
 
         /** {@inheritDoc} */

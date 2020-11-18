@@ -267,4 +267,10 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
         return TraitUtils.distribution(out).satisfies(single())
             && TraitUtils.distribution(in).satisfies(random());
     }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        return new IgniteAggregate(cluster, getTraitSet(), sole(inputs),
+            getGroupSet(), getGroupSets(), getAggCallList());
+    }
 }
