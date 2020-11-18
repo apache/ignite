@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelCollation;
@@ -39,6 +39,13 @@ public interface IgniteRel extends PhysicalNode {
      * @return Visit result.
      */
     <T> T accept(IgniteRelVisitor<T> visitor);
+
+    /**
+     * Clones this rel associating it with given cluster.
+     * @param cluster Cluster.
+     * @return New rel.
+     */
+    IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs);
 
     /**
      * @return Node distribution.

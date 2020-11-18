@@ -54,7 +54,7 @@ public class FragmentSplitter extends IgniteRelShuttle {
     public List<Fragment> go(Fragment fragment) {
         ArrayList<Fragment> res = new ArrayList<>();
 
-        stack.push(new FragmentProto(Fragment.ID_GEN.getAndIncrement(), fragment.root()));
+        stack.push(new FragmentProto(IdGenerator.nextId(), fragment.root()));
 
         while (!stack.isEmpty()) {
             curr = stack.pop();
@@ -71,11 +71,6 @@ public class FragmentSplitter extends IgniteRelShuttle {
         curr.remotes.add(rel);
 
         return rel;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteRel rel) {
-        return rel.accept(this);
     }
 
     /** {@inheritDoc} */
@@ -110,7 +105,7 @@ public class FragmentSplitter extends IgniteRelShuttle {
         RelNode input = rel instanceof IgniteTrimExchange ? rel.getInput(0) : rel;
 
         long targetFragmentId = curr.id;
-        long sourceFragmentId = Fragment.ID_GEN.getAndIncrement();
+        long sourceFragmentId = IdGenerator.nextId();
         long exchangeId = sourceFragmentId;
 
         IgniteReceiver receiver = new IgniteReceiver(cluster, traits, rowType, exchangeId, sourceFragmentId);

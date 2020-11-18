@@ -98,4 +98,9 @@ public class IgniteSort extends Sort implements IgniteRel {
 
         return Pair.of(childTraits.replace(collation()), ImmutableList.of(childTraits));
     }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        return new IgniteSort(cluster, getTraitSet(), sole(inputs), collation, offset, fetch);
+    }
 }

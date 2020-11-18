@@ -97,7 +97,6 @@ import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.AffinityDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -313,14 +312,12 @@ class RelJson {
         }
 
         Map<String, Object> map = (Map<String, Object>)distribution;
-        DistributionFunction function = DistributionFunction.HashDistribution.INSTANCE;
-
         Number cacheId = (Number)map.get("cacheId");
-
         if (cacheId != null)
-            function = new AffinityDistribution(cacheId.intValue(), cacheId);
+            return IgniteDistributions.hash((List<Integer>)map.get("keys"),
+                DistributionFunction.affinity(cacheId.intValue(), cacheId));
 
-        return IgniteDistributions.hash((List<Integer>)map.get("keys"), function);
+        return IgniteDistributions.hash((List<Integer>)map.get("keys"), DistributionFunction.hash());
     }
 
     /** */
@@ -828,8 +825,10 @@ class RelJson {
 
                 map.put("keys", keys);
 
-                if (distribution.function() instanceof AffinityDistribution)
-                    map.put("cacheId", ((AffinityDistribution)distribution.function()).cacheId());
+                DistributionFunction function = distribution.function();
+
+                if (function.affinity())
+                    map.put("cacheId", function.cacheId());
 
                 return map;
             default:

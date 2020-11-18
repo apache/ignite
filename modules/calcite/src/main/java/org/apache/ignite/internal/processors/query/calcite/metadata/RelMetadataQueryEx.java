@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
@@ -51,11 +50,11 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
     }
 
     /** */
-    private static final IgniteMetadata.NodesMappingMetadata.Handler SOURCE_DISTRIBUTION_INITIAL_HANDLER =
-        initialHandler(IgniteMetadata.NodesMappingMetadata.Handler.class);
+    private static final IgniteMetadata.FragmentMappingMetadata.Handler SOURCE_DISTRIBUTION_INITIAL_HANDLER =
+        initialHandler(IgniteMetadata.FragmentMappingMetadata.Handler.class);
 
     /** */
-    private IgniteMetadata.NodesMappingMetadata.Handler sourceDistributionHandler;
+    private IgniteMetadata.FragmentMappingMetadata.Handler sourceDistributionHandler;
 
     /**
      * Factory method.
@@ -92,12 +91,12 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
      * @param rel Relational node.
      * @return Fragment meta information.
      */
-    public NodesMapping nodesMapping(RelNode rel) {
+    public FragmentMapping fragmentMapping(RelNode rel) {
         for (;;) {
             try {
-                return sourceDistributionHandler.nodesMapping(rel, this);
+                return sourceDistributionHandler.fragmentMapping(rel, this);
             } catch (JaninoRelMetadataProvider.NoHandler e) {
-                sourceDistributionHandler = revise(e.relClass, IgniteMetadata.NodesMappingMetadata.DEF);
+                sourceDistributionHandler = revise(e.relClass, IgniteMetadata.FragmentMappingMetadata.DEF);
             }
         }
     }

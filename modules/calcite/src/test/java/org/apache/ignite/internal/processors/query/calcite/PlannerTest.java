@@ -75,14 +75,15 @@ import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonRe
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
-import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -121,9 +122,6 @@ import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter.toJson;
-import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.DEDUPLICATED;
-import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.HAS_REPLICATED_CACHES;
-import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.PARTIALLY_REPLICATED;
 
 /**
  *
@@ -403,14 +401,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
                     select(nodes, 0, 1),
                     select(nodes, 1, 2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+                ));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -425,14 +423,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
                     select(nodes, 0, 1),
                     select(nodes, 1, 2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+                ));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -447,14 +445,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
                     select(nodes, 0, 1),
                     select(nodes, 1, 2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+                ));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -547,14 +545,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
                     select(nodes, 0, 1),
                     select(nodes, 1, 2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+                ));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -569,14 +567,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
                     select(nodes, 0, 1),
                     select(nodes, 1, 2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+                ));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -591,14 +589,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
                     select(nodes, 0, 1),
                     select(nodes, 1, 2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+                ));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -691,14 +689,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
                     select(nodes, 0, 1),
                     select(nodes, 1, 2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+                ));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -787,6 +785,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 return new IgniteIndex(null, null, null, null) {
                     @Override public <Row> Iterable<Row> scan(
                         ExecutionContext<Row> execCtx,
+                        CollocationGroup group,
                         Predicate<Row> filters,
                         Supplier<Row> lowerIdxConditions,
                         Supplier<Row> upperIdxConditions,
@@ -801,14 +800,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                 };
             }
 
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
                     select(nodes, 0, 1),
                     select(nodes, 1, 2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+                ));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -826,6 +825,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 return new IgniteIndex(null, null, null, null) {
                     @Override public <Row> Iterable<Row> scan(
                         ExecutionContext<Row> execCtx,
+                        CollocationGroup group,
                         Predicate<Row> filters,
                         Supplier<Row> lowerIdxConditions,
                         Supplier<Row> upperIdxConditions,
@@ -840,14 +840,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                 };
             }
 
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
                     select(nodes, 0, 1),
                     select(nodes, 1, 2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+                ));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1040,14 +1040,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
                     select(nodes, 0, 1),
                     select(nodes, 1, 2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+                ));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1061,14 +1061,13 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
                     select(nodes, 0, 1),
-                    select(nodes, 1, 2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+                    select(nodes, 1, 2)));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1149,11 +1148,11 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) relRoot.rel));
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) relRoot.rel)), null);
 
         assertNotNull(plan);
 
-        plan.init(this::intermediateMapping, ctx);
+        plan.init(ctx);
 
         assertNotNull(plan);
 
@@ -1177,6 +1176,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
+                CollocationGroup group,
                 Predicate<Row> filter,
                 Function<Row, Row> transformer,
                 ImmutableBitSet requiredColunms
@@ -1187,8 +1187,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 );
             }
 
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(select(nodes, 1), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forNodes(select(nodes, 1));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1204,6 +1204,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
+                CollocationGroup group,
                 Predicate<Row> filter,
                 Function<Row, Row> transformer,
                 ImmutableBitSet requiredColunms
@@ -1214,8 +1215,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 );
             }
 
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(select(nodes, 1), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forNodes(select(nodes, 1));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1289,11 +1290,11 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             assertNotNull(phys);
 
-            MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) phys));
+            MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) phys)), null);
 
             assertNotNull(plan);
 
-            plan.init(this::intermediateMapping, ctx);
+            plan.init(ctx);
 
             List<Fragment> fragments = plan.fragments();
             assertEquals(2, fragments.size());
@@ -1312,7 +1313,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             //// Local part
 
             Fragment fragment = fragments.get(0);
-            assert fragment.local();
+            assert fragment.rootFragment();
 
             kernal = newContext();
 
@@ -1349,10 +1350,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 qryId,
                 new FragmentDescription(
                     fragment.fragmentId(),
-                    null,
-                    0,
-                    plan.targetMapping(fragment),
-                    plan.remoteSources(fragment)),
+                    fragment.mapping(),
+                    plan.target(fragment),
+                    plan.remotes(fragment)),
                 ArrayRowHandler.INSTANCE,
                 Commons.parametersMap(ctx.parameters()));
 
@@ -1366,7 +1366,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             fragment = fragments.get(1);
 
-            assert !fragment.local();
+            assert !fragment.rootFragment();
 
             kernal = newContext();
 
@@ -1412,10 +1412,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 qryId,
                 new FragmentDescription(
                     fragment.fragmentId(),
-                    null,
-                    0,
-                    plan.targetMapping(fragment),
-                    plan.remoteSources(fragment)),
+                    fragment.mapping(),
+                    plan.target(fragment),
+                    plan.remotes(fragment)),
                 ArrayRowHandler.INSTANCE,
                 Commons.parametersMap(ctx.parameters()));
 
@@ -1458,6 +1457,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
+                CollocationGroup group,
                 Predicate<Row> filter,
                 Function<Row, Row> rowTransformer,
                 ImmutableBitSet requiredColunms
@@ -1480,8 +1480,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 return checkRes0;
             }
 
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(select(nodes, 1), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forNodes(select(nodes, 1));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1549,11 +1549,11 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             assertNotNull(phys);
 
-            MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) phys));
+            MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) phys)), null);
 
             assertNotNull(plan);
 
-            plan.init(this::intermediateMapping, ctx);
+            plan.init(ctx);
 
             List<Fragment> fragments = plan.fragments();
             assertEquals(2, fragments.size());
@@ -1572,7 +1572,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             //// Local part
 
             Fragment fragment = fragments.get(0);
-            assert fragment.local();
+            assert fragment.rootFragment();
 
             kernal = newContext();
 
@@ -1609,10 +1609,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 qryId,
                 new FragmentDescription(
                     fragment.fragmentId(),
-                    null,
-                    0,
-                    plan.targetMapping(fragment),
-                    plan.remoteSources(fragment)),
+                    fragment.mapping(),
+                    plan.target(fragment),
+                    plan.remotes(fragment)),
                 ArrayRowHandler.INSTANCE,
                 Commons.parametersMap(ctx.parameters()));
 
@@ -1626,7 +1625,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             fragment = fragments.get(1);
 
-            assert !fragment.local();
+            assert !fragment.rootFragment();
 
             kernal = newContext();
 
@@ -1672,10 +1671,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 qryId,
                 new FragmentDescription(
                     fragment.fragmentId(),
-                    null,
-                    -1,
-                    plan.targetMapping(fragment),
-                    plan.remoteSources(fragment)),
+                    fragment.mapping(),
+                    plan.target(fragment),
+                    plan.remotes(fragment)),
                 ArrayRowHandler.INSTANCE,
                 Commons.parametersMap(ctx.parameters()));
 
@@ -1715,8 +1713,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(select(nodes, 0,1,2,3), null, HAS_REPLICATED_CACHES);
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forNodes(select(nodes, 0,1,2,3));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1730,8 +1728,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(select(nodes, 0,1,2,3), null, HAS_REPLICATED_CACHES);
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forNodes(select(nodes, 0,1,2,3));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1811,11 +1809,11 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) relRoot.rel));
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) relRoot.rel)), null);
 
         assertNotNull(plan);
 
-        plan.init((t,d,n) -> null, ctx);
+        plan.init(ctx);
 
         assertNotNull(plan);
 
@@ -1835,8 +1833,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(select(nodes, 0), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forNodes(select(nodes, 0));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1850,13 +1848,13 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 1,2),
                     select(nodes, 2,3),
                     select(nodes, 3,0),
                     select(nodes, 0,1)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+                ));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1936,14 +1934,11 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) relRoot.rel));
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) relRoot.rel)), null);
 
         assertNotNull(plan);
-        assertEquals(2, plan.fragments().size());
 
-        plan.init(this::intermediateMapping, ctx);
-
-        assertNotNull(plan);
+        plan.init(ctx);
 
         assertEquals(3, plan.fragments().size());
     }
@@ -1961,8 +1956,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(select(nodes, 1,2,3), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forNodes(select(nodes, 1,2,3));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1976,12 +1971,12 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0),
                     select(nodes, 1),
                     select(nodes, 2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+                ));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -2061,11 +2056,11 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) relRoot.rel));
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) relRoot.rel)), null);
 
         assertNotNull(plan);
 
-        plan.init(this::intermediateMapping, ctx);
+        plan.init(ctx);
 
         assertNotNull(plan);
 
@@ -2085,8 +2080,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(select(nodes, 0), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forNodes(select(nodes, 0));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -2100,12 +2095,12 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 1),
                     select(nodes, 2),
                     select(nodes, 3)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+                ));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -2185,15 +2180,11 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) relRoot.rel));
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) relRoot.rel)), null);
 
         assertNotNull(plan);
 
-        assertEquals(2, plan.fragments().size());
-
-        plan.init(this::intermediateMapping, ctx);
-
-        assertNotNull(plan);
+        plan.init(ctx);
 
         assertEquals(3, plan.fragments().size());
     }
@@ -2211,8 +2202,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(select(nodes, 2), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forNodes(select(nodes, 2));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -2226,8 +2217,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(select(nodes, 0,1), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forNodes(select(nodes, 0,1));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -2307,15 +2298,15 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) relRoot.rel));
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) relRoot.rel)), null);
 
         assertNotNull(plan);
 
-        plan.init(this::intermediateMapping, ctx);
+        plan.init(ctx);
 
         assertNotNull(plan);
 
-        assertEquals(2, plan.fragments().size());
+        assertEquals(3, plan.fragments().size());
     }
 
     /** */
@@ -2785,9 +2776,8 @@ public class PlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private NodesMapping intermediateMapping(@NotNull AffinityTopologyVersion topVer, int desiredCnt, @Nullable Predicate<ClusterNode> filter) {
-        List<UUID> nodes = desiredCnt == 1 ? select(this.nodes, 0) : select(this.nodes, 0, 1, 2, 3);
-        return new NodesMapping(nodes, null, DEDUPLICATED);
+    private List<UUID> intermediateMapping(@NotNull AffinityTopologyVersion topVer, boolean single, @Nullable Predicate<ClusterNode> filter) {
+        return single ? select(nodes, 0) : select(nodes, 0, 1, 2, 3);
     }
 
     /** */
@@ -2902,7 +2892,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public <Row> Iterable<Row> scan(
             ExecutionContext<Row> execCtx,
-            Predicate<Row> filter,
+            CollocationGroup group, Predicate<Row> filter,
             Function<Row, Row> transformer,
             ImmutableBitSet bitSet
         ) {
@@ -2925,8 +2915,9 @@ public class PlannerTest extends GridCommonAbstractTest {
             throw new AssertionError();
         }
 
-        /** {@inheritDoc} */
-        @Override public NodesMapping mapping(PlanningContext ctx) {
+        /** {@inheritDoc}
+         * @return*/
+        @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
             throw new AssertionError();
         }
 
@@ -3010,4 +3001,5 @@ public class PlannerTest extends GridCommonAbstractTest {
             return true;
         }
     }
+
 }

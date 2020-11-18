@@ -24,9 +24,12 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 
 /**
  * Splits a query into a list of query fragments.
@@ -42,7 +45,7 @@ public class Splitter extends IgniteRelShuttle {
     public List<Fragment> go(IgniteRel root) {
         ArrayList<Fragment> res = new ArrayList<>();
 
-        stack.push(new FragmentProto(Fragment.ID_GEN.getAndIncrement(), root));
+        stack.push(new FragmentProto(IdGenerator.nextId(), root));
 
         while (!stack.isEmpty()) {
             curr = stack.pop();
@@ -64,7 +67,7 @@ public class Splitter extends IgniteRelShuttle {
         RelOptCluster cluster = rel.getCluster();
 
         long targetFragmentId = curr.id;
-        long sourceFragmentId = Fragment.ID_GEN.getAndIncrement();
+        long sourceFragmentId = IdGenerator.nextId();
         long exchangeId = sourceFragmentId;
 
         IgniteReceiver receiver = new IgniteReceiver(cluster, rel.getTraitSet(), rel.getRowType(), exchangeId, sourceFragmentId);
@@ -74,6 +77,21 @@ public class Splitter extends IgniteRelShuttle {
         stack.push(new FragmentProto(sourceFragmentId, sender));
 
         return receiver;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteTrimExchange rel) {
+        return rel.clone(IdGenerator.nextId());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteIndexScan rel) {
+        return rel.clone(IdGenerator.nextId());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteTableScan rel) {
+        return rel.clone(IdGenerator.nextId());
     }
 
     /** */

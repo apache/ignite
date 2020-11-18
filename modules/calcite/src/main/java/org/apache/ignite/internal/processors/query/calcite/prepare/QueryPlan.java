@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import org.jetbrains.annotations.NotNull;
-
 /**
  *
  */
@@ -33,7 +31,6 @@ public interface QueryPlan {
 
     /**
      * Clones this plan.
-     * @param ctx Planner context.
      */
-    QueryPlan clone(@NotNull PlanningContext ctx);
+    QueryPlan copy();
 }

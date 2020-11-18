@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.Map;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
@@ -30,6 +29,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -49,6 +50,15 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @return Distribution.
      */
     IgniteDistribution distribution();
+
+
+    /**
+     * Returns nodes mapping.
+     *
+     * @param ctx Planning context.
+     * @return Nodes mapping.
+     */
+    CollocationGroup colocationGroup(PlanningContext ctx);
 
     /** {@inheritDoc} */
     @Override default RelDataType apply(RelDataTypeFactory factory) {
@@ -127,23 +137,9 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
         throws IgniteCheckedException;
 
     /**
-     * Returns column descriptors.
+     * Returns column descriptor for given field name.
      *
-     * @return Column descriptors
+     * @return Column descriptor
      */
-    ColumnDescriptor[] columnDescriptors();
-
-    /**
-     * Returns map of column descriptors.
-     *
-     * @return Map of column descriptors.
-     */
-    Map<String, ColumnDescriptor> columnDescriptorsMap();
-
-    /**
-     * Returns key field index.
-     *
-     * @return Key field index.
-     */
-    int keyField();
+    ColumnDescriptor columnDescriptor(String fieldName);
 }

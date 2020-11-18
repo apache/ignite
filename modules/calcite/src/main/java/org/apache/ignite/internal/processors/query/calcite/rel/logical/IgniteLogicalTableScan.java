@@ -29,6 +29,18 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public class IgniteLogicalTableScan extends ProjectableFilterableTableScan {
+    /** Creates a IgniteTableScan. */
+    public static IgniteLogicalTableScan create(
+        RelOptCluster cluster,
+        RelTraitSet traits,
+        RelOptTable tbl,
+        @Nullable List<RexNode> proj,
+        @Nullable RexNode cond,
+        @Nullable ImmutableBitSet requiredColunms
+    ) {
+        return new IgniteLogicalTableScan(cluster, traits, tbl, proj, cond, requiredColunms);
+    }
+
     /**
      * Creates a TableScan.
      * @param cluster Cluster that this relational expression belongs to
@@ -47,17 +59,5 @@ public class IgniteLogicalTableScan extends ProjectableFilterableTableScan {
         @Nullable ImmutableBitSet requiredColunms
     ) {
         super(cluster, traits, ImmutableList.of(), tbl, proj, cond, requiredColunms);
-    }
-
-    /** Creates a IgniteTableScan. */
-    public static IgniteLogicalTableScan create(
-        RelOptCluster cluster,
-        RelTraitSet traits,
-        RelOptTable tbl,
-        @Nullable List<RexNode> proj,
-        @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColunms
-    ) {
-        return new IgniteLogicalTableScan(cluster, traits, tbl, proj, cond, requiredColunms);
     }
 }

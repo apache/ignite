@@ -50,28 +50,18 @@ import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.
 import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.replaceLocalRefs;
 
 /** Scan with projects and filters. */
-public class ProjectableFilterableTableScan extends TableScan {
+public abstract class ProjectableFilterableTableScan extends TableScan {
     /** Filters. */
-    private final RexNode condition;
+    protected final RexNode condition;
 
     /** Projects. */
-    private final List<RexNode> projects;
+    protected final List<RexNode> projects;
 
-    /** Participating columns. */
-    private final ImmutableBitSet requiredColumns;
-
-    /** */
-    public ProjectableFilterableTableScan(
-        RelOptCluster cluster,
-        RelTraitSet traitSet,
-        List<RelHint> hints,
-        RelOptTable tbl
-    ) {
-        this(cluster, traitSet, hints, tbl, null, null, null);
-    }
+    /** Participating colunms. */
+    protected final ImmutableBitSet requiredColunms;
 
     /** */
-    public ProjectableFilterableTableScan(
+    protected ProjectableFilterableTableScan(
         RelOptCluster cluster,
         RelTraitSet traitSet,
         List<RelHint> hints,
@@ -88,7 +78,7 @@ public class ProjectableFilterableTableScan extends TableScan {
     }
 
     /** */
-    public ProjectableFilterableTableScan(RelInput input) {
+    protected ProjectableFilterableTableScan(RelInput input) {
         super(input);
         condition = input.getExpression("filters");
         projects = input.get("projects") == null ? null : input.getExpressionList("projects");

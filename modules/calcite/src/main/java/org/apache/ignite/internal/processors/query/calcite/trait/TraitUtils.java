@@ -384,6 +384,9 @@ public class TraitUtils {
         if (nodes.isEmpty())
             return null;
 
+        if (nodes.size() == 1)
+            return F.first(nodes);
+
         return new RelRegistrar(rel.getCluster(), outTraits, rel, nodes);
     }
 

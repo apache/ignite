@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.query.calcite.CalciteBasicSecondaryIndexIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
+import org.apache.ignite.internal.processors.query.calcite.DateTimeTest;
 import org.apache.ignite.internal.processors.query.calcite.PlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.QueryCheckerTest;
 import org.apache.ignite.internal.processors.query.calcite.TableSpoolTest;
@@ -48,6 +49,7 @@ import org.junit.runners.Suite;
     CalciteBasicSecondaryIndexIntegrationTest.class,
     CancelTest.class,
     QueryCheckerTest.class,
+    DateTimeTest.class,
     TableSpoolTest.class,
 })
 public class IgniteCalciteTestSuite {

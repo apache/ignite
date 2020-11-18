@@ -158,4 +158,9 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
         rowCount = RelMdUtil.addEpsilon(rowCount); // to differ from rel nodes with integrated filter
         return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        return new IgniteFilter(cluster, getTraitSet(), sole(inputs), getCondition());
+    }
 }

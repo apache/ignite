@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.util.typedef.F;
@@ -34,49 +34,46 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     /** */
-    protected final List<Fragment> fragments;
+    protected final FieldsMetadata fieldsMetadata;
 
     /** */
-    protected final List<GridQueryFieldMetadata> fieldsMeta;
+    protected final QueryTemplate queryTemplate;
 
     /** */
-    protected final QueryMappings queryMappings;
+    protected ExecutionPlan executionPlan;
 
     /** */
-    protected Map<Long, NodesMapping> mappings;
-
-    /** */
-    protected AbstractMultiStepPlan(List<Fragment> fragments, List<GridQueryFieldMetadata> fieldsMeta, QueryMappings queryMappings) {
-        this.fragments = fragments;
-        this.fieldsMeta = fieldsMeta;
-        this.queryMappings = queryMappings;
+    protected AbstractMultiStepPlan(QueryTemplate queryTemplate, FieldsMetadata fieldsMetadata) {
+        this.queryTemplate = queryTemplate;
+        this.fieldsMetadata = fieldsMetadata;
     }
 
     /** {@inheritDoc} */
     @Override public List<Fragment> fragments() {
-        return fragments;
+        return Objects.requireNonNull(executionPlan).fragments();
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridQueryFieldMetadata> fieldsMetadata() {
-        return fieldsMeta;
+    @Override public FieldsMetadata fieldsMetadata() {
+        return fieldsMetadata;
     }
 
     /** {@inheritDoc} */
-    @Override public NodesMapping fragmentMapping(Fragment fragment) {
-        return fragmentMapping(fragment.fragmentId());
+    @Override public FragmentMapping mapping(Fragment fragment) {
+        return mapping(fragment.fragmentId());
     }
 
     /** {@inheritDoc} */
-    @Override public NodesMapping targetMapping(Fragment fragment) {
-        if (fragment.local())
+    @Override public CollocationGroup target(Fragment fragment) {
+        if (fragment.rootFragment())
             return null;
 
-        return fragmentMapping(((IgniteSender)fragment.root()).targetFragmentId());
+        IgniteSender sender = (IgniteSender)fragment.root();
+        return mapping(sender.targetFragmentId()).findGroup(sender.exchangeId());
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Long, List<UUID>> remoteSources(Fragment fragment) {
+    @Override public Map<Long, List<UUID>> remotes(Fragment fragment) {
         List<IgniteReceiver> remotes = fragment.remotes();
 
         if (F.isEmpty(remotes))
@@ -85,18 +82,23 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
         HashMap<Long, List<UUID>> res = U.newHashMap(remotes.size());
 
         for (IgniteReceiver remote : remotes)
-            res.put(remote.exchangeId(), fragmentMapping(remote.sourceFragmentId()).nodes());
+            res.put(remote.exchangeId(), mapping(remote.sourceFragmentId()).nodeIds());
 
         return res;
     }
 
     /** {@inheritDoc} */
-    @Override public void init(MappingService mappingService, PlanningContext ctx) {
-        mappings = queryMappings.map(mappingService, ctx, fragments);
+    @Override public void init(PlanningContext ctx) {
+        executionPlan = queryTemplate.map(ctx);
     }
 
     /** */
-    private NodesMapping fragmentMapping(long fragmentId) {
-        return mappings == null ? null : mappings.get(fragmentId);
+    private FragmentMapping mapping(long fragmentId) {
+        return Objects.requireNonNull(executionPlan).fragments().stream()
+            .filter(f -> f.fragmentId() == fragmentId)
+            .findAny().orElseThrow(() -> new IllegalStateException("Cannot find fragment with given ID. [" +
+                "fragmentId=" + fragmentId + ", " +
+                "fragments=" + fragments() + "]"))
+            .mapping();
     }
 }

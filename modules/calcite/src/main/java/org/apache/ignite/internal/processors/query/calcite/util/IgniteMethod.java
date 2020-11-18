@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.lang.reflect.Method;
-
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.Scalar;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.NodesMappingMetadata;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.FragmentMappingMetadata;
 
 /**
  * Contains methods used in metadata definitions.
@@ -39,8 +38,8 @@ public enum IgniteMethod {
     CONTEXT_GET_CORRELATED_VALUE(ExecutionContext.class, "getCorrelated", int.class),
     /** See {@link Scalar#execute(ExecutionContext, Object, Object)} */
     SCALAR_EXECUTE(Scalar.class, "execute", ExecutionContext.class, Object.class, Object.class),
-    /** See {@link NodesMappingMetadata#nodesMapping()} */
-    NODES_MAPPING(NodesMappingMetadata.class, "nodesMapping");
+    /** See {@link FragmentMappingMetadata#fragmentMapping()} */
+    FRAGMENT_MAPPING(FragmentMappingMetadata.class, "fragmentMapping");
 
     /** */
     private final Method method;
