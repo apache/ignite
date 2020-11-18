@@ -136,7 +136,6 @@ public class CommonArgParser {
         SENSITIVE_ARGUMENTS.add(CMD_TRUSTSTORE_PASSWORD);
     }
 
-
     /**
      * @param arg To check.
      * @return True if provided argument is among sensitive one and not should be displayed.
