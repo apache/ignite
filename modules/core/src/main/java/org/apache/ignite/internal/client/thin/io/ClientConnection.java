@@ -25,9 +25,9 @@ import java.util.function.Consumer;
  * Client connection: abstracts away sending and receiving messages.
  */
 public interface ClientConnection {
-    CompletableFuture<Void> sendAsync(ByteBuffer msg); // TODO: What should we return?
+    CompletableFuture<Void> sendAsync(ByteBuffer msg); // TODO: What should we return from the future?
 
-    void setMessageHandler(Consumer<ByteBuffer> handler);
+    void setMessageHandler(Consumer<ByteBuffer> hnd);
 
     void close();
 }

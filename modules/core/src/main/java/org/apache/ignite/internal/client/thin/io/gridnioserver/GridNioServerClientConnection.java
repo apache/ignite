@@ -62,13 +62,13 @@ class GridNioServerClientConnection implements ClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public void setMessageHandler(Consumer<ByteBuffer> handler) {
-        this.messageHandler = handler;
+    @Override public void setMessageHandler(Consumer<ByteBuffer> hnd) {
+        this.messageHandler = hnd;
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-
+        ses.close();
     }
 
     /**
