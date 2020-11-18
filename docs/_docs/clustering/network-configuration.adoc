@@ -64,7 +64,11 @@ give you more reliability.
 | `localPort`  | The port that the node binds to. If set to a non-default value, other cluster nodes must know this port to be able to discover the node. | `47500`
 | `localPortRange`| If the `localPort` is busy, the node attempts to bind to the next port (incremented by 1) and continues this process until it finds a free port. The `localPortRange` property defines the number of ports the node will try (starting from `localPort`).
    | `100`
-| `soLinger`| Setting linger-on-close can help with socket deadlocks of SSL issues like JDK-8219658. But costs longer detection of node failure. | `0`
+| `soLinger`| Specifies a linger-on-close timeout of TCP sockets used by Discovery SPI. See Java `Socket.setSoLinger` API
+for details on how to adjust this setting. In Ignite, the timeout defaults to a non-negative value to prevent
+link:https://bugs.openjdk.java.net/browse/JDK-8219658[potential deadlocks with SSL connections, window=_blank] but,
+as a side effect, this can prolong the detection of cluster node failures. Alternatively, update your JRE version to the
+one with the SSL issue fixed and adjust this setting accordingly. | `0`
 | `reconnectCount` | The number of times the node tries to (re)establish connection to another node. |`10`
 | `networkTimeout` |  The maximum network timeout in milliseconds for network operations. |`5000`
 | `socketTimeout` |  The socket operations timeout. This timeout is used to limit connection time and write-to-socket time. |`5000`
