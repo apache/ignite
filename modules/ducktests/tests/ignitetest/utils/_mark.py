@@ -18,7 +18,9 @@ Module contains useful test decorators.
 """
 
 from collections.abc import Iterable
+import copy
 
+from ducktape.cluster.cluster_spec import ClusterSpec
 from ducktape.mark._mark import Ignore, Mark, _inject
 
 from ignitetest.utils.version import IgniteVersion
@@ -121,6 +123,62 @@ class IgniteVersionParametrize(Mark):
         return super().__eq__(other) and self.versions == other.versions
 
 
+CLUSTER_SPEC_KEYWORD = "cluster_spec"
+CLUSTER_SIZE_KEYWORD = "num_nodes"
+
+
+class ParametrizableClusterMetadata(Mark):
+    """Provide a hint about how a given test will use the cluster."""
+
+    def __init__(self, **kwargs):
+        self.metadata = copy.copy(kwargs)
+
+    @property
+    def name(self):
+        return "PARAMETRIZABLE_RESOURCE_HINT_CLUSTER_USE"
+
+    def apply(self, seed_context, context_list):
+        assert len(context_list) > 0, "parametrizable cluster use annotation is not being applied to any test cases"
+
+        cluster_size_param = self._extract_cluster_size(seed_context)
+
+        for ctx in context_list:
+            if cluster_size_param:
+                self._modify_metadata(cluster_size_param)
+
+            if not ctx.cluster_use_metadata:
+                ctx.cluster_use_metadata = self.metadata
+
+        return context_list
+
+    @staticmethod
+    def _extract_cluster_size(seed_context):
+        cluster_size = seed_context.globals.get('cluster_size')
+
+        if cluster_size is None:
+            return None
+
+        res = int(cluster_size) if isinstance(cluster_size, str) else cluster_size
+
+        if not isinstance(res, int):
+            raise ValueError(f"Expected string or int param, {cluster_size} of {type(cluster_size)} passed instead.")
+
+        if res <= 0:
+            raise ValueError(f"Expected cluster_size greater than 0, {cluster_size} passed instead.")
+
+        return res
+
+    def _modify_metadata(self, new_size):
+        cluster_spec = self.metadata.get(CLUSTER_SPEC_KEYWORD)
+        cluster_size = self.metadata.get(CLUSTER_SIZE_KEYWORD)
+
+        if cluster_spec is not None and not cluster_spec.empty():
+            node_spec = next(iter(cluster_spec))
+            self.metadata[CLUSTER_SPEC_KEYWORD] = ClusterSpec.from_nodes([node_spec] * new_size)
+        elif cluster_size is not None:
+            self.metadata[CLUSTER_SIZE_KEYWORD] = new_size
+
+
 def ignite_versions(*args, version_prefix="ignite_version"):
     """
     Decorate test function to inject ignite versions. Versions will be overriden by globals "ignite_versions" param.
@@ -146,3 +204,18 @@ def version_if(condition, *, variable_name='ignite_version'):
         return func
 
     return ignorer
+
+
+def cluster(**kwargs):
+    """Test method decorator used to provide hints about how the test will use the given cluster.
+
+    :Keywords:
+
+      - ``num_nodes`` provide hint about how many nodes the test will consume
+      - ``cluster_spec`` provide hint about how many nodes of each type the test will consume
+    """
+    def cluster_use_metadata_adder(func):
+        Mark.mark(func, ParametrizableClusterMetadata(**kwargs))
+        return func
+
+    return cluster_use_metadata_adder
