@@ -23,5 +23,9 @@ import java.net.InetSocketAddress;
  * Client connection multiplexer: manages multiple connections with a shared resource pool (worker threads, etc).
  */
 public interface ClientConnectionMultiplexer {
+    void start();
+
+    void stop();
+
     ClientConnection open(InetSocketAddress address);
 }
