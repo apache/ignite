@@ -61,6 +61,9 @@ class PmeFreeSwitchTest(IgniteTest):
         config = IgniteConfiguration(version=IgniteVersion(ignite_version), caches=caches, cluster_state="INACTIVE")
 
         num_nodes = len(self.test_context.cluster) - 2
+
+        self.test_context.logger.info("Nodes amount calculated as %d." % num_nodes)
+
         ignites = IgniteService(self.test_context, config, num_nodes=num_nodes)
 
         ignites.start()
