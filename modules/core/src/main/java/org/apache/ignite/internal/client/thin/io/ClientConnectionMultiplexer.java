@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.client.thin.io;
 
+import java.net.InetSocketAddress;
+
 /**
  * Client connection multiplexer: manages multiple connections with a shared resource pool (worker threads, etc).
  */
 public interface ClientConnectionMultiplexer {
-    // TODO: Config - worker thread count
+    ClientConnection open(InetSocketAddress address);
 }
