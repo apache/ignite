@@ -36,6 +36,11 @@ class GridNioServerClientConnection implements ClientConnection {
     /** */
     private Consumer<ByteBuffer> messageHandler;
 
+    /**
+     * Ctor.
+     *
+     * @param ses Session.
+     */
     public GridNioServerClientConnection(GridNioSession ses) {
         assert ses != null;
 
@@ -63,7 +68,7 @@ class GridNioServerClientConnection implements ClientConnection {
 
     /** {@inheritDoc} */
     @Override public void setMessageHandler(Consumer<ByteBuffer> hnd) {
-        this.messageHandler = hnd;
+        messageHandler = hnd;
     }
 
     /** {@inheritDoc} */
