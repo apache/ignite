@@ -153,6 +153,215 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEquals(3, rows.size());
     }
 
+    /** */
+    private void populateTables() {
+        IgniteCache<Integer, Employer> orders = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName("orders")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("orders")))
+            .setBackups(2)
+        );
+
+        IgniteCache<Integer, Employer> account = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName("account")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("account")))
+            .setBackups(1)
+        );
+
+        orders.put(1, new Employer("Igor", 10d));
+        orders.put(2, new Employer("Igor", 11d));
+        orders.put(3, new Employer("Igor", 12d));
+        orders.put(4, new Employer("Igor1", 13d));
+        orders.put(5, new Employer("Igor1", 13d));
+        orders.put(6, new Employer("Igor1", 13d));
+        orders.put(7, new Employer("Roman", 14d));
+
+        account.put(1, new Employer("Roman", 10d));
+        account.put(2, new Employer("Roman", 11d));
+        account.put(3, new Employer("Roman", 12d));
+        account.put(4, new Employer("Roman", 13d));
+        account.put(5, new Employer("Igor1", 13d));
+        account.put(6, new Employer("Igor1", 13d));
+
+        /*
+        select * from orders;
+        +----+-------+-------+
+        | ID | NAME  | SALARY|
+        +----+-------+-------+
+        |  1 | igor  |   10  |
+        |  2 | igor  |   11  |
+        |  3 | igor  |   12  |
+        |  4 | igor1 |   13  |
+        |  5 | igor1 |   13  |
+        |  6 | igor1 |   13  |
+        |  7 | roman |   14  |
+        +----+-------+-------+
+
+        select * from account;
+        +----+-------+-------+
+        | ID | NAME  | SALARY|
+        +----+-------+-------+
+        |  1 | roman |   10  |
+        |  2 | roman |   11  |
+        |  3 | roman |   12  |
+        |  4 | roman |   13  |
+        |  5 | igor1 |   13  |
+        |  6 | igor1 |   13  |
+        +----+-------+-------+
+         */
+    }
+
+    @Test
+    public void commontTest1() {
+        populateTables();
+
+        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
+
+        exist1(engine);
+        // uncomment after: https://issues.apache.org/jira/browse/IGNITE-13729
+        //exist2(engine);
+
+        in1(engine);
+
+        except1(engine);
+        // uncomment after: https://issues.apache.org/jira/browse/IGNITE-13721
+        //except2(engine);
+
+        union1(engine);
+        // uncomment after: https://issues.apache.org/jira/browse/IGNITE-13727
+        //union2(engine);
+
+        inner1(engine);
+        inner2(engine);
+        inner3(engine);
+    }
+
+    /** */
+    private void inner1(QueryEngine engine) {
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT name FROM Orders WHERE salary = (SELECT DISTINCT(salary) from Account WHERE name='Igor1')");
+
+        List<List<?>> rows = query.get(0).getAll();
+        assertEquals(3, rows.size());
+    }
+
+    /** */
+    private void inner2(QueryEngine engine) {
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT name FROM Orders WHERE salary = (SELECT MAX(salary) from Account WHERE name='Roman')");
+
+        List<List<?>> rows = query.get(0).getAll();
+        assertEquals(3, rows.size());
+    }
+
+    /** */
+    private void inner3(QueryEngine engine) {
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT name FROM Orders WHERE salary = (SELECT MIN(salary) from Account WHERE name='Roman')");
+
+        List<List<?>> rows = query.get(0).getAll();
+        assertEquals(1, rows.size());
+    }
+
+    /** */
+    private void except1(QueryEngine engine) {
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT name FROM Orders WHERE name IN (SELECT name from Account)");
+
+        List<List<?>> rows = query.get(0).getAll();
+        assertEquals(4, rows.size());
+    }
+
+    /** */
+    private void union1(QueryEngine engine) {
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT name FROM Orders UNION SELECT name from Account");
+
+        List<List<?>> rows = query.get(0).getAll();
+        assertEquals(3, rows.size());
+    }
+
+    /** */
+    private void union2(QueryEngine engine) {
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT distinct(name) FROM Orders UNION SELECT name from Account");
+
+        List<List<?>> rows = query.get(0).getAll();
+        assertEquals(3, rows.size());
+    }
+
+    /** */
+    private void except2(QueryEngine engine) {
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT name FROM Orders WHERE name NOT IN (SELECT name from Account)");
+
+        List<List<?>> rows = query.get(0).getAll();
+        assertEquals(3, rows.size());
+    }
+
+    /** */
+    private void exist1(QueryEngine engine) {
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT name FROM Orders o WHERE EXISTS (" +
+                "   SELECT 1" +
+                "   FROM Account a" +
+                "   WHERE o.name = a.name)");
+
+        List<List<?>> rows = query.get(0).getAll();
+        assertEquals(4, rows.size());
+    }
+
+    /** */
+    private void exist2(QueryEngine engine) {
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "EXPLAIN PLAN FOR SELECT name FROM Orders o WHERE NOT EXISTS (" +
+                "   SELECT 1" +
+                "   FROM Account a" +
+                "   WHERE o.name = a.name)");
+
+        List<List<?>> rows = query.get(0).getAll();
+        assertEquals(3, rows.size());
+
+        query = engine.query(null, "PUBLIC",
+            "SELECT name FROM Orders o WHERE NOT EXISTS (" +
+                "   SELECT name" +
+                "   FROM Account a" +
+                "   WHERE o.name = a.name)");
+
+        rows = query.get(0).getAll();
+        assertEquals(3, rows.size());
+
+        query = engine.query(null, "PUBLIC",
+            "SELECT distinct(name) FROM Orders o WHERE NOT EXISTS (" +
+                "   SELECT name" +
+                "   FROM Account a" +
+                "   WHERE o.name = a.name)");
+
+        rows = query.get(0).getAll();
+        assertEquals(1, rows.size());
+    }
+
+    /** */
+    private void in1(QueryEngine engine) {
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT name FROM Orders o WHERE name IN (" +
+                "   SELECT name" +
+                "   FROM Account)");
+
+        List<List<?>> rows = query.get(0).getAll();
+        assertEquals(4, rows.size());
+
+        query = engine.query(null, "PUBLIC",
+            "SELECT distinct(name) FROM Orders o WHERE name IN (" +
+                "   SELECT name" +
+                "   FROM Account)");
+
+        rows = query.get(0).getAll();
+        assertEquals(2, rows.size());
+    }
+
+    /** */
     @Test
     public void aggregate() throws Exception {
         IgniteCache<Integer, Employer> employer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
