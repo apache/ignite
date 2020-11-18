@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.client.thin.io;
 
 import java.nio.ByteBuffer;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Decodes thin client messages from partial buffers.
   */
-public class ClientMessageDecoder implements Consumer<ByteBuffer> {
+public class ClientMessageDecoder implements Function<ByteBuffer, byte[]> {
     /** */
     private byte[] data;
 
@@ -34,13 +34,10 @@ public class ClientMessageDecoder implements Consumer<ByteBuffer> {
     private int msgSize;
 
     /** {@inheritDoc} */
-    @Override public void accept(ByteBuffer buf) {
+    @Override public byte[] apply(ByteBuffer buf) {
         boolean msgReady = read(buf);
 
-        if (msgReady) {
-            // TODO: pass data to consumer
-            System.out.println(data.length);
-        }
+        return msgReady ? data : null;
     }
 
     private boolean read(ByteBuffer buf) {

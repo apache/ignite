@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.client.thin.io.ClientConnection;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
+import org.apache.ignite.internal.client.thin.io.ClientMessageDecoder;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
@@ -55,13 +56,14 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
     public GridNioServerClientConnectionMultiplexer() {
         IgniteLogger gridLog = new JavaLogger(false);
 
+        ClientMessageDecoder decoder = new ClientMessageDecoder();
+
         GridNioFilter[] filters;
 
         GridNioFilter codecFilter = new GridNioCodecFilter(new GridNioParser() {
             @Override
             public @Nullable Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
-                // TODO: See ClientMessage.readFrom
-                return buf.remaining();
+                return decoder.apply(buf);
             }
 
             @Override
