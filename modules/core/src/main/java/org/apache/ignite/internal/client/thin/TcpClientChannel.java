@@ -80,6 +80,7 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.client.thin.io.ClientConnection;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
@@ -137,13 +138,7 @@ class TcpClientChannel implements ClientChannel {
     private AffinityTopologyVersion srvTopVer;
 
     /** Channel. */
-    private final Socket sock;
-
-    /** Output stream. */
-    private final OutputStream out;
-
-    /** Data input. */
-    private final ByteCountingDataInput dataInput;
+    private final ClientConnection sock;
 
     /** Request id. */
     private final AtomicLong reqId = new AtomicLong(1);
@@ -166,11 +161,8 @@ class TcpClientChannel implements ClientChannel {
     /** Executor for async operation listeners. */
     private final Executor asyncContinuationExecutor;
 
-    /** Receiver thread (processes incoming messages). */
-    private Thread receiverThread;
-
     /** Constructor. */
-    TcpClientChannel(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connectionMultiplexer)
+    TcpClientChannel(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         validateConfiguration(cfg);
 
@@ -178,13 +170,13 @@ class TcpClientChannel implements ClientChannel {
         asyncContinuationExecutor = cfgExec != null ? cfgExec : ForkJoinPool.commonPool();
 
         try {
-            sock = createSocket(cfg);
-
-            out = sock.getOutputStream();
-            dataInput = new ByteCountingDataInput(sock.getInputStream());
+            sock = createSocket(cfg, connMgr);
         }
         catch (IOException e) {
             throw handleIOError("addr=" + cfg.getAddress(), e);
+        } catch (IgniteCheckedException e) {
+            // TODO: ???
+            throw U.convertException(e);
         }
 
         handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
@@ -200,8 +192,6 @@ class TcpClientChannel implements ClientChannel {
      */
     private void close(Throwable cause) {
         if (closed.compareAndSet(false, true)) {
-            U.closeQuiet(dataInput);
-            U.closeQuiet(out);
             U.closeQuiet(sock);
 
             sndLock.lock(); // Lock here to prevent creation of new pending requests.
@@ -379,33 +369,6 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /**
-     * Init and start receiver thread if it wasn't started before.
-     *
-     * Note: Method should be called only under external synchronization.
-     */
-    private void initReceiverThread() {
-        if (receiverThread == null) {
-            Socket sock = this.sock;
-
-            String sockInfo = sock == null ? null : sock.getInetAddress().getHostName() + ":" + sock.getPort();
-
-            receiverThread = new Thread(() -> {
-                try {
-                    while (!closed())
-                        processNextMessage();
-                }
-                catch (Throwable e) {
-                    close(e);
-                }
-            }, RECEIVER_THREAD_PREFIX + sockInfo);
-
-            receiverThread.setDaemon(true);
-
-            receiverThread.start();
-        }
-    }
-
-    /**
      * Process next message from the input stream and complete corresponding future.
      */
     private void processNextMessage() throws ClientProtocolError, ClientConnectionException {
@@ -534,23 +497,24 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** Create socket. */
-    private static Socket createSocket(ClientChannelConfiguration cfg) throws IOException {
-        Socket sock = cfg.getSslMode() == SslMode.REQUIRED ?
-            new ClientSslSocketFactory(cfg).create() :
-            new Socket(cfg.getAddress().getHostName(), cfg.getAddress().getPort());
-
-        sock.setTcpNoDelay(cfg.isTcpNoDelay());
-
-        if (cfg.getTimeout() > 0)
-            sock.setSoTimeout(cfg.getTimeout());
-
-        if (cfg.getSendBufferSize() > 0)
-            sock.setSendBufferSize(cfg.getSendBufferSize());
-
-        if (cfg.getReceiveBufferSize() > 0)
-            sock.setReceiveBufferSize(cfg.getReceiveBufferSize());
-
-        return sock;
+    private static ClientConnection createSocket(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr) throws IOException, IgniteCheckedException {
+        return connMgr.open(cfg.getAddress());
+//        Socket sock = cfg.getSslMode() == SslMode.REQUIRED ?
+//            new ClientSslSocketFactory(cfg).create() :
+//            new Socket(cfg.getAddress().getHostName(), cfg.getAddress().getPort());
+//
+//        sock.setTcpNoDelay(cfg.isTcpNoDelay());
+//
+//        if (cfg.getTimeout() > 0)
+//            sock.setSoTimeout(cfg.getTimeout());
+//
+//        if (cfg.getSendBufferSize() > 0)
+//            sock.setSendBufferSize(cfg.getSendBufferSize());
+//
+//        if (cfg.getReceiveBufferSize() > 0)
+//            sock.setReceiveBufferSize(cfg.getReceiveBufferSize());
+//
+//        return sock;
     }
 
     /** Client handshake. */

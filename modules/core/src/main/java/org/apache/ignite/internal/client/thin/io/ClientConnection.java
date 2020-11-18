@@ -24,10 +24,10 @@ import java.util.function.Consumer;
 /**
  * Client connection: abstracts away sending and receiving messages.
  */
-public interface ClientConnection {
+public interface ClientConnection extends AutoCloseable {
     CompletableFuture<Void> sendAsync(ByteBuffer msg); // TODO: What should we return from the future?
 
     void setMessageHandler(Consumer<ByteBuffer> hnd);
 
-    void close();
+    @Override void close();
 }
