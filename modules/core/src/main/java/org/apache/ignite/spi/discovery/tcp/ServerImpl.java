@@ -216,7 +216,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private static final long MAX_NEXT_NODE_PING_INTERVAL = 500;
 
     /** Interval of checking connection to next node in the ring. */
-    private long nextNodePingInterval;
+    private long connCheckInterval;
 
     /** Fundamental value for connection checking actions. */
     private long connectionCheckTimeout;
@@ -380,7 +380,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public long connectionCheckInterval() {
-        return nextNodePingInterval;
+        return connCheckInterval;
     }
 
     /** {@inheritDoc} */
@@ -395,7 +395,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         // Since we take in account time of last sent message, the interval should be quite short to give enough piece
         // of failure detection timeout as send-and-acknowledge timeout of the message to send.
-        nextNodePingInterval = Math.min(effectiveExchangeTimeout() / 4, MAX_NEXT_NODE_PING_INTERVAL);
+        connCheckInterval = Math.min(effectiveExchangeTimeout() / 4, MAX_NEXT_NODE_PING_INTERVAL);
 
         connectionCheckTimeout = effectiveExchangeTimeout() / 5;
 
@@ -3507,10 +3507,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 // Topology treated as changes if next node is not available.
                                 boolean changeTop = sndState != null && !sndState.isStartingPoint();
 
-                                if (changeTop) {
-                                    hndMsg.changeTopology(ring.previousNodeOf(next).id(),
-                                        timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout() + ackTimeout0));
-                                }
+                                if (changeTop)
+                                    hndMsg.changeTopology(ring.previousNodeOf(next).id());
 
                                 if (log.isDebugEnabled()) {
                                     log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState +
@@ -6508,7 +6506,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Check connection to next node in the ring.
          */
         private void checkConnection() {
-            long elapsed = (lastRingMsgSentTime + U.millisToNanos(nextNodePingInterval)) - System.nanoTime();
+            long elapsed = (lastRingMsgSentTime + U.millisToNanos(connCheckInterval)) - System.nanoTime();
 
             if (elapsed > 0)
                 return;
@@ -6923,7 +6921,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 ", checkPreviousNodeId=" + req.checkPreviousNodeId() +
                                 ", actualPreviousNode=" + previous +
                                 ", lastMessageReceivedTime=" + rcvdTime + ", now=" + now +
-                                ", connCheckInterval=" + nextNodePingInterval + ']');
+                                ", connCheckInterval=" + connCheckInterval + ']');
                         }
                     }
 
