@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin.io;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -24,9 +25,9 @@ import java.util.function.Consumer;
  * Client connection: abstracts away sending and receiving messages.
  */
 public interface ClientConnection {
-    CompletableFuture<Void> sendAsync(byte[] message); // TODO: What should we return?
+    CompletableFuture<Void> sendAsync(ByteBuffer message); // TODO: What should we return?
 
-    void setMessageHandler(Consumer<byte[]> handler);
+    void setMessageHandler(Consumer<ByteBuffer> handler);
 
     void close();
 }
