@@ -98,4 +98,11 @@ public interface InlineIndexColumn {
      * @return Index of the column.
      */
     public int columnIndex();
+
+    /**
+     * Returns sql representation of the inlined column.
+     *
+     * @return Sql representation of the column.
+     */
+    public String columnSql();
 }
