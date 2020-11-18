@@ -171,6 +171,7 @@ public class TraitUtils {
         return new IgniteTableSpool(rel.getCluster(), traits, rel);
     }
 
+    /** */
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Nullable private static RelNode convertOther(RelOptPlanner planner, RelTraitDef converter,
         RelTrait toTrait, RelNode rel) {
