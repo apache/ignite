@@ -66,7 +66,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  * Sandbox test to measure progress of grid write operations. If no progress occur during period of time, then thread
  * dumps are generated.
  */
-@Ignore("Benchmark")
+// Benchmark.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
 public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** Cache name. Random to cover external stores possible problems. */
     public static final String CACHE_NAME = "partitioned" + new Random().nextInt(10000000);

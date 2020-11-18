@@ -46,7 +46,7 @@ import org.junit.Test;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 
 /** */
-@Ignore("FAILED!")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
 public class WalCompactionAfterRestartTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {

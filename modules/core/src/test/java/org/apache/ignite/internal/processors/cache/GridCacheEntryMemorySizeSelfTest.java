@@ -48,7 +48,8 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
-@Ignore("Test have a special version for Binary Marshaller, IGNITE-9214")
+// Test have a special version for Binary Marshaller.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     /** Null reference size (optimized marshaller writes one byte for null reference). */
     private static final int NULL_REF_SIZE = 1;

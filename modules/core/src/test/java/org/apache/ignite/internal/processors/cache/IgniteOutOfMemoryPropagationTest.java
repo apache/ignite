@@ -43,7 +43,8 @@ import org.junit.Test;
 /**
  *
  */
-@Ignore("IGNITE-6753, now it takes too long, IGNITE-9218")
+// Now it takes too long.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-6753, https://issues.apache.org/jira/browse/IGNITE-9218")
 public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
     /** */
     public static final int NODES = 3;

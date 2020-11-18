@@ -30,7 +30,7 @@ import org.junit.Test;
 /**
  * Test of creating and using secondary indexes for tables created through SQL.
  */
-@Ignore("Failed")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
 public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest {
     /** Counter to generate unique table names. */

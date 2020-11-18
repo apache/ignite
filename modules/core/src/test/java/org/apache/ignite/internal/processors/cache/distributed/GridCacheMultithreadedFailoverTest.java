@@ -70,8 +70,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Base test for all multithreaded cache scenarios w/ and w/o failover.
  */
-@Ignore("FAILED! Abstract")
-public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstractTest {
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
+public class GridCacheMultithreadedFailoverTest extends GridCommonAbstractTest {
     /** Node name prefix. */
     private static final String NODE_PREFIX = "node";
 

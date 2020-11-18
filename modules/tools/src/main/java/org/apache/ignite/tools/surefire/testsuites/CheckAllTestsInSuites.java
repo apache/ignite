@@ -44,7 +44,7 @@ public class CheckAllTestsInSuites {
         // Also it works for DynamicSuite that can use a base class to create new test classes with reflection.
         Set<Class<?>> superClasses = new HashSet<>();
 
-        for (Class<?> clazz: testClasses) {
+        for (Class<?> clazz : testClasses) {
             if (Modifier.isAbstract(clazz.getModifiers()))
                 continue;
 
@@ -98,15 +98,15 @@ public class CheckAllTestsInSuites {
      * Check whether class is a test class or a suite.
      *
      * Suite classes are marked with RunWith annotation and value of it is a descender of Suite.class.
-     * For scala tests suite must be inherited from {@link org.scalatest.Suites} class.
+     * For scala tests suite must be inherited from {@code org.scalatest.Suites} class.
      * Exclusion of the rule is Parameterized.class, so classes are marked with it are test classes.
      */
     private boolean isTestClass(Description desc) {
         RunWith runWith = desc.getAnnotation(RunWith.class);
 
         return runWith == null
-                || runWith.value().equals(Parameterized.class)
-                || !(Suite.class.isAssignableFrom(runWith.value()) ||
-                        "org.scalatest.Suites".equals(desc.getTestClass().getSuperclass().getName()));
+            || runWith.value().equals(Parameterized.class)
+            || !(Suite.class.isAssignableFrom(runWith.value())
+                || "org.scalatest.Suites".equals(desc.getTestClass().getSuperclass().getName()));
     }
 }

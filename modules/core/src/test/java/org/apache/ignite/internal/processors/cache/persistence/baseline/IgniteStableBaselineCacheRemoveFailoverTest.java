@@ -41,7 +41,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Failover cache test with remove operations executed with presence of BaselineTopology
  * when one random node from BLT is constantly restarted during the load.
  */
-@Ignore("IGNITE-9214")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class IgniteStableBaselineCacheRemoveFailoverTest extends GridCacheAbstractRemoveFailureTest {
     /** */
     private static final int GRIDS_COUNT = 3;

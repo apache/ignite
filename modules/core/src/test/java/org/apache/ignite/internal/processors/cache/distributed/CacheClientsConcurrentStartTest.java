@@ -53,7 +53,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-@Ignore("IGNITE-9218")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
     /** */
     private static final int SRV_CNT = 4;

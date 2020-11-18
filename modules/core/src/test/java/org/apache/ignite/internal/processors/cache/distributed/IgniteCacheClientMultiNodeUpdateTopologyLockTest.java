@@ -47,7 +47,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-@Ignore("IGNITE-9218")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class IgniteCacheClientMultiNodeUpdateTopologyLockTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_CACHE = "testCache";

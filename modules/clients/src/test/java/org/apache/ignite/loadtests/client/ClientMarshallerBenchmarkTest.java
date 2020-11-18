@@ -39,7 +39,8 @@ import static org.apache.ignite.internal.processors.rest.client.message.GridClie
 /**
  * Tests basic performance of marshallers.
  */
-@Ignore("Benchmark")
+// Benchmark.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
 public class ClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
     /** Marshallers to test. */
     private GridClientMarshaller[] marshallers;

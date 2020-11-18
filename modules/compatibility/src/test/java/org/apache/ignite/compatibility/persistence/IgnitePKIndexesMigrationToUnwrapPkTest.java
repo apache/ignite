@@ -38,7 +38,7 @@ import org.junit.Test;
 /**
  * Test to check that starting node with PK index of the old format present doesn't break anything.
  */
-@Ignore("FAILED")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
 public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
     private static String TABLE_NAME = "TEST_IDX_TABLE";

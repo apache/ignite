@@ -28,7 +28,8 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 /**
  *
  */
-@Ignore("Test have a special version for Binary Marshaller, IGNITE-9214")
+// Test have a special version for Binary Marshaller.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class IgniteCacheAtomicLocalExpiryPolicyTest extends IgniteCacheExpiryPolicyAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.binary.distributed.dht;
 
 import org.junit.Ignore;
 
-@Ignore("IGNITE-9214")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridCacheBinaryObjectsPartitionedNearDisabledOnheapSelfTest extends GridCacheBinaryObjectsPartitionedNearDisabledSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean onheapCacheEnabled() {

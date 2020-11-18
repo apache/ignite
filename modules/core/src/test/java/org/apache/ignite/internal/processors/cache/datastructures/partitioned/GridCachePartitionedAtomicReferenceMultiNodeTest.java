@@ -27,7 +27,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *  AtomicReference and AtomicStamped multi node tests.
  */
-@Ignore("IGNITE-9214")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridCachePartitionedAtomicReferenceMultiNodeTest extends GridCacheAtomicReferenceMultiNodeAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {

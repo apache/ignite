@@ -47,7 +47,8 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 /**
  *
  */
-@Ignore("GG-11141, IGNITE-10420")
+// GG-11141.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-10420")
 public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     /** Test p2p value. */
     private static final String TEST_VALUE = "org.apache.ignite.tests.p2p.GridCacheDeploymentTestValue3";

@@ -26,7 +26,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *
  */
-@Ignore("IGNITE-3141, IGNITE-9214")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-3141, https://issues.apache.org/jira/browse/IGNITE-9214")
 public class IgnitePartitionedLockSelfTest extends IgniteLockAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {

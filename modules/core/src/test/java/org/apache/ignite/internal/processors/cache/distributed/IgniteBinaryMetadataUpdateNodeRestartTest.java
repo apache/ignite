@@ -48,7 +48,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-@Ignore("IGNITE-4768, IGNITE-9214")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-4768, https://issues.apache.org/jira/browse/IGNITE-9214")
 public class IgniteBinaryMetadataUpdateNodeRestartTest extends GridCommonAbstractTest {
     /** */
     private static final String ATOMIC_CACHE = "atomicCache";

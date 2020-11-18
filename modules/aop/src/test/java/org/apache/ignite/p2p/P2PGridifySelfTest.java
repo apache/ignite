@@ -35,7 +35,7 @@ import org.junit.Test;
  *
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
-@Ignore("FAILED")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
 @GridCommonTest(group = "P2P")
 public class P2PGridifySelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */

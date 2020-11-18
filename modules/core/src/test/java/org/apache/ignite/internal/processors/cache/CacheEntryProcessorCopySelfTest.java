@@ -42,7 +42,8 @@ import org.junit.Test;
  */
 // Test fails due to incorrect handling of CacheConfiguration#getCopyOnRead() and
 // CacheObjectContext#storeValue() properties. Heap storage should be redesigned in this ticket.
-@Ignore("GG-11148, IGNITE-10420")
+// GG-11148.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-10420")
 public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
     /** Old value. */
     private static final int OLD_VAL = 100;

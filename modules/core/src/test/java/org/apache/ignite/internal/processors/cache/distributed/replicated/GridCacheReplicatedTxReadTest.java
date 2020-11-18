@@ -24,7 +24,7 @@ import org.junit.Ignore;
 /**
  * Checks transactional reads for local cache.
  */
-@Ignore("IGNITE-9218")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class GridCacheReplicatedTxReadTest extends GridCacheAbstractTxReadTest {
     /**
      * @return {@code LOCAL} for this test.

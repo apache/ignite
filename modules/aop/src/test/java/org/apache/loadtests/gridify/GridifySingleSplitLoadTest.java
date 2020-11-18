@@ -37,7 +37,8 @@ import org.junit.Test;
 /**
  * Gridify single split load test.
  */
-@Ignore("Load Test")
+// Load test.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
 @GridCommonTest(group = "Load Test")
 public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
     /** */
