@@ -146,9 +146,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableSpool rel) {
-        RelNode input = visit((IgniteRel) rel.getInput());
-
-        return new IgniteTableSpool(cluster, rel.getTraitSet(), input);
+        return rel.clone(cluster, F.asList(visit((IgniteRel) rel.getInput())));
     }
 
     /** {@inheritDoc} */

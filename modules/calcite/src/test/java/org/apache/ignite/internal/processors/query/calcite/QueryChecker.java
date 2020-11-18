@@ -311,6 +311,7 @@ public abstract class QueryChecker {
         }
     }
 
+    /** */
     protected abstract QueryEngine getEngine();
 
     /**

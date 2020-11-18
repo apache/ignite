@@ -57,8 +57,8 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
     /** Projects. */
     protected final List<RexNode> projects;
 
-    /** Participating colunms. */
-    protected final ImmutableBitSet requiredColunms;
+    /** Participating columns. */
+    protected final ImmutableBitSet requiredColumns;
 
     /** */
     protected ProjectableFilterableTableScan(
@@ -68,13 +68,13 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         RelOptTable table,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable ImmutableBitSet reqColunms
+        @Nullable ImmutableBitSet reqColumns
     ) {
         super(cluster, traitSet, hints, table);
 
         projects = proj;
         condition = cond;
-        requiredColumns = reqColunms;
+        requiredColumns = reqColumns;
     }
 
     /** */
