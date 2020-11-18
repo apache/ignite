@@ -213,7 +213,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private static final TcpDiscoveryAbstractMessage WAKEUP = new TcpDiscoveryDummyWakeupMessage();
 
     /** Maximal interval of connection check to next node in the ring. */
-    private static final long MAX_NEXT_NODE_PING_INTERVAL = 500;
+    private static final long MAX_CON_CHECK_INTERVAL = 500;
 
     /** Interval of checking connection to next node in the ring. */
     private long connCheckInterval;
@@ -395,7 +395,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         // Since we take in account time of last sent message, the interval should be quite short to give enough piece
         // of failure detection timeout as send-and-acknowledge timeout of the message to send.
-        connCheckInterval = Math.min(effectiveExchangeTimeout() / 4, MAX_NEXT_NODE_PING_INTERVAL);
+        connCheckInterval = Math.min(effectiveExchangeTimeout() / 4, MAX_CON_CHECK_INTERVAL);
 
         connectionCheckTimeout = effectiveExchangeTimeout() / 5;
 
