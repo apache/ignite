@@ -595,24 +595,32 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private IgniteRel optimize(SqlNode sqlNode, IgnitePlanner planner) {
-        // Convert to Relational operators graph
-        RelRoot root = planner.rel(sqlNode);
+        try {
+            // Convert to Relational operators graph
+            RelRoot root = planner.rel(sqlNode);
 
-        RelNode rel = root.project();
+            RelNode rel = root.project();
 
-        if (rel instanceof Hintable)
-            planner.setDisabledRules(HintUtils.disabledRules((Hintable)rel));
+            if (rel instanceof Hintable)
+                planner.setDisabledRules(HintUtils.disabledRules((Hintable)rel));
 
-        // Transformation chain
-        rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
+            // Transformation chain
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 
-        RelTraitSet desired = rel.getCluster().traitSet()
-            .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteDistributions.single())
-            .replace(root.collation == null ? RelCollations.EMPTY : root.collation)
-            .simplify();
+            RelTraitSet desired = rel.getCluster().traitSet()
+                .replace(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single())
+                .replace(root.collation == null ? RelCollations.EMPTY : root.collation)
+                .simplify();
 
-        return planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+            return planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+        }
+        catch (Throwable ex) {
+            log.error("Unexpected error at query optimizer.", ex);
+            log.error(planner.dump());
+
+            throw ex;
+        }
     }
 
     /** */
@@ -624,20 +632,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         // Validate
         explain = planner.validate(sql);
 
-        // Convert to Relational operators graph
-        try {
-            IgniteRel igniteRel = optimize(explain, planner);
+        IgniteRel igniteRel = optimize(explain, planner);
 
-            String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
+        String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
 
-            return new ExplainPlan(plan, explainFieldsMetadata(ctx));
-        }
-        catch (Throwable ex) {
-            log.error("Unexpected error at query optimizer.", ex);
-            log.error(planner.dump());
-
-            throw ex;
-        }
+        return new ExplainPlan(plan, explainFieldsMetadata(ctx));
     }
 
     /** */
