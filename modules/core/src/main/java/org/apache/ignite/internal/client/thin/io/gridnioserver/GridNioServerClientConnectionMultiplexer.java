@@ -162,22 +162,12 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
         Map<Integer, Object> meta = new HashMap<>();
 
         // TODO: What does async param mean?
-        GridNioFuture sesFut = srv.createSession(ch, meta, false, new CI1<IgniteInternalFuture<GridNioSession>>() {
-            @Override
-            public void apply(IgniteInternalFuture<GridNioSession> sesFut) {
-                System.out.println("Session created: " + sesFut.result().toString());
-//                try {
-//                    sesFut.get().send(null);
-//                } catch (IgniteCheckedException e) {
-//                    e.printStackTrace();
-//                }
-            }
-        });
+        GridNioFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
 
-        GridNioSession ses = (GridNioSession)sesFut.get();
+        GridNioSession ses = sesFut.get();
 
         // Socket send is handled by worker threads.
-        GridNioFuture<?> sendFut = ses.send(new byte[0]);
+        GridNioFuture<?> sendFut = ses.send(new byte[0]); // TODO: Handshake.
         sendFut.listen(f -> {
             System.out.println(f.isDone());
         });
