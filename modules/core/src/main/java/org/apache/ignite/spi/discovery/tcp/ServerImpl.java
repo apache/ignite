@@ -3315,7 +3315,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (locNode == null)
                 return;
 
-            checkConnectionToNext();
+            checkConnection();
 
             sendMetricsUpdateMessage();
 
@@ -3441,7 +3441,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         log.debug("New next node [newNext=" + newNext + ", formerNext=" + next +
                             ", ring=" + ring + ", failedNodes=" + failedNodes + ']');
                     else if (log.isInfoEnabled())
-                        log.info("New next node [newNext=" + U.toShortString(newNext) + ']');
+                        log.info("New next node [newNext=" + newNext + ']');
 
                     if (debugMode)
                         debugLog(msg, "New next node [newNext=" + newNext + ", formerNext=" + next +
@@ -3455,8 +3455,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     newNextNode = true;
                 }
-                else if (log.isDebugEnabled())
-                    log.debug("Next node remains the same [nextId=" + next.id() +
+                else if (log.isTraceEnabled())
+                    log.trace("Next node remains the same [nextId=" + next.id() +
                         ", nextOrder=" + next.internalOrder() + ']');
 
                 final boolean sameHost = U.sameMacs(locNode, next);
@@ -3817,10 +3817,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             errs.add(e);
 
-                            if (log.isDebugEnabled()) {
-                                U.error(log, "Failed to send message to next node [next=" +
-                                    U.toShortString(next) + ", msg=" + msg + ", err=" + e + ']', e);
-                            }
+                            if (log.isDebugEnabled())
+                                U.error(log, "Failed to send message to next node [next=" + next.id() + ", msg=" + msg +
+                                    ", err=" + e + ']', e);
 
                             onException("Failed to send message to next node [next=" + next.id() + ", msg=" + msg + ']',
                                 e);
@@ -3860,20 +3859,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
+                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
                         sndState = new CrossRingMessageSendState();
-
-                        if (log.isDebugEnabled())
-                            log.debug("Created send state [" + sndState + ']');
-                    }
                     else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
                         return; // Nothing to do here.
-                    }
-                    else if (sndState == null && log.isDebugEnabled()) {
-                        log.debug("Failed to send message to next but no sendState created. Msg=[" + msg +
-                            "], next=[" + U.toShortString(next) + "].");
                     }
 
                     boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
@@ -3889,15 +3880,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             // If node existed on connection initialization we should check
                             // whether it has not gone yet.
-                            U.warn(log, "Failed to send message to next node [msg=" + msg + ", next=" +
-                                U.toShortString(next) + ", errMsg=" + (err != null ? err.getMessage() : "N/A") + ']');
+                            U.warn(log, "Failed to send message to next node [msg=" + msg + ", next=" + next +
+                                ", errMsg=" + (err != null ? err.getMessage() : "N/A") + ']');
                         }
                     }
                     else if (!failedNextNode && sndState != null && sndState.isBackward()) {
                         boolean prev = sndState.markLastFailedNodeAlive();
 
                         U.warn(log, "Failed to send message to next node, try previous [msg=" + msg +
-                            ", next=" + U.toShortString(next) + ']');
+                            ", next=" + next + ']');
 
                         if (prev)
                             failedNodes.remove(failedNodes.size() - 1);
@@ -3906,10 +3897,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             next = ring.nextNode(failedNodes);
                         }
-                    }
-                    else if (log.isDebugEnabled()) {
-                        log.debug("Failed to send message to next node. No actions. Msg=[" + msg +
-                            "], next=[" + U.toShortString(next) + ", sendState=[" + sndState + ']');
                     }
 
                     next = null;
@@ -6518,7 +6505,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * Check connection to next node in the ring.
          */
-        private void checkConnectionToNext() {
+        private void checkConnection() {
             long elapsed = (lastRingMsgSentTime + U.millisToNanos(connCheckInterval)) - System.nanoTime();
 
             if (elapsed > 0)
@@ -6806,20 +6793,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                     byte[] buf = new byte[4];
                     int read = 0;
 
-                    if(log.isDebugEnabled())
-                        log.debug("Reading initiating header. soTimeout: " + sock.getSoTimeout());
-
                     while (read < buf.length) {
                         int r = in.read(buf, read, buf.length - read);
 
                         if (r >= 0)
                             read += r;
                         else {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Failed to read magic header (too few bytes received): " + read +
-                                    ", expected: " + buf.length + ". [rmtAddr=" + rmtAddr +
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to read magic header (too few bytes received) " +
+                                    "[rmtAddr=" + rmtAddr +
                                     ", locAddr=" + sock.getLocalSocketAddress() + ']');
-                            }
 
                             LT.warn(log, "Failed to read magic header (too few bytes received) [rmtAddr=" +
                                 rmtAddr + ", locAddr=" + sock.getLocalSocketAddress() + ']');
@@ -6847,9 +6830,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     // Restore timeout.
                     sock.setSoTimeout(timeout);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Reading first message with timeout " + spi.netTimeout);
 
                     TcpDiscoveryAbstractMessage msg = spi.readMessage(sock, in, spi.netTimeout);
 
@@ -6956,11 +6936,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (log.isDebugEnabled()) {
                                     log.debug("Remote node requests topology change. Checking connection to " +
                                         "previous node [" + U.toShortString(previous) + "] with timeout " +
-                                        U.nanosToMillis(timeThreshold - now));
+                                        checkTimeout);
                                 }
 
-                                liveAddr = checkConnection(new ArrayList<>(nodeAddrs),
-                                    (int)U.nanosToMillis(timeThreshold - now));
+                                liveAddr = checkConnection(new ArrayList<>(nodeAddrs), checkTimeout);
 
                                 if (log.isInfoEnabled()) {
                                     log.info("Connection check to previous node done: [liveAddr=" + liveAddr

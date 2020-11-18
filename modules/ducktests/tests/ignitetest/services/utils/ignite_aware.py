@@ -225,8 +225,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         cmd = f"sudo iptables -I %s 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"
 
         res = self.exec_on_nodes_async(nodes,
-                                        lambda n: (n.account.ssh_client.exec_command(cmd % "INPUT"),
-                                                   n.account.ssh_client.exec_command(cmd % "OUTPUT")))
+                                       lambda n: (n.account.ssh_client.exec_command(cmd % "INPUT"),
+                                                  n.account.ssh_client.exec_command(cmd % "OUTPUT")))
 
         for node in nodes:
             self.logger.debug("Activated netfilter on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
