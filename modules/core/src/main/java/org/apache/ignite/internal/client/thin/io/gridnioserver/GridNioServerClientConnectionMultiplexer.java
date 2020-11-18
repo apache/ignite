@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.jetbrains.annotations.Nullable;
 
@@ -126,7 +125,8 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
                     })
                     .filters(filters)
                     .logger(gridLog)
-                    .selectorCount(1)
+                    .selectorCount(1) // TODO: Get from settings
+                    // TODO: Review settings below
                     .sendQueueLimit(1024)
                     .byteOrder(ByteOrder.nativeOrder())
                     .directBuffer(true)
@@ -153,7 +153,7 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
     }
 
     /** {@inheritDoc} */
-    @Override public ClientConnection open(InetSocketAddress address) {
+    @Override public ClientConnection open(InetSocketAddress address) throws IOException, IgniteCheckedException {
         java.nio.channels.SocketChannel ch = java.nio.channels.SocketChannel.open();
         Socket sock = ch.socket();
 

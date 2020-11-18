@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.client.thin.io;
 
+import org.apache.ignite.IgniteCheckedException;
+
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
 /**
@@ -27,5 +30,5 @@ public interface ClientConnectionMultiplexer {
 
     void stop();
 
-    ClientConnection open(InetSocketAddress address);
+    ClientConnection open(InetSocketAddress address) throws IOException, IgniteCheckedException;
 }
