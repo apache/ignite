@@ -164,14 +164,15 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
         // TODO: What does async param mean?
         GridNioFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
 
+        // TODO: Create connection, add it to ses meta, return
         GridNioSession ses = sesFut.get();
 
-        // Socket send is handled by worker threads.
-        GridNioFuture<?> sendFut = ses.send(new byte[0]); // TODO: Handshake.
-        sendFut.listen(f -> {
-            System.out.println(f.isDone());
-        });
-        // sendFut.get();
+//        // Socket send is handled by worker threads.
+//        GridNioFuture<?> sendFut = ses.send(new byte[0]); // TODO: Handshake.
+//        sendFut.listen(f -> {
+//            System.out.println(f.isDone());
+//        });
+//        // sendFut.get();
 
         return null;
     }
