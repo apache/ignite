@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -267,6 +268,7 @@ public class IndexStorageImpl implements IndexStorage {
                 reuseList,
                 innerIos,
                 leafIos,
+                PageIdAllocator.FLAG_IDX,
                 failureProcessor,
                 lockLsnr
             );

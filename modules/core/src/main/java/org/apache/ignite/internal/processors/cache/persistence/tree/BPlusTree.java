@@ -59,9 +59,11 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeaf
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.InsertLast;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
@@ -90,6 +92,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlus
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Result.NOT_FOUND;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Result.RETRY;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Result.RETRY_ROOT;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver.DEFAULT_PAGE_IO_RESOLVER;
 
 /**
  * Abstract B+Tree.
@@ -751,6 +754,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param reuseList Reuse list.
      * @param innerIos Inner IO versions.
      * @param leafIos Leaf IO versions.
+     * @param pageFlag Default flag value for allocated pages.
      * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
      */
@@ -765,6 +769,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos,
+        byte pageFlag,
         @Nullable FailureProcessor failureProcessor,
         @Nullable PageLockListener lockLsnr
     ) throws IgniteCheckedException {
@@ -777,8 +782,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             globalRmvId,
             metaPageId,
             reuseList,
+            pageFlag,
             failureProcessor,
-            lockLsnr
+            lockLsnr,
+            DEFAULT_PAGE_IO_RESOLVER
         );
 
         setIos(innerIos, leafIos);
@@ -793,6 +800,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param globalRmvId Remove ID.
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
+     * @param pageFlag Default flag value for allocated pages.
      * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
      */
@@ -805,10 +813,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         AtomicLong globalRmvId,
         long metaPageId,
         ReuseList reuseList,
+        byte pageFlag,
         @Nullable FailureProcessor failureProcessor,
-        @Nullable PageLockListener lsnr
+        @Nullable PageLockListener lsnr,
+        PageIoResolver pageIoRslvr
     ) throws IgniteCheckedException {
-        super(cacheGrpId, grpName, pageMem, wal, lsnr);
+        super(cacheGrpId, grpName, pageMem, wal, lsnr, pageIoRslvr, pageFlag);
 
         assert !F.isEmpty(name);
 
@@ -5288,6 +5298,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private int findInsertionPoint(int lvl, BPlusIO<L> io, long buf, int low, int cnt, L row, int shift)
         throws IgniteCheckedException {
         assert row != null;
+
+        if (row instanceof InsertLast)
+            return -cnt - 1;
 
         int high = cnt - 1;
 

@@ -1477,6 +1477,16 @@ public class IgnitionEx {
     }
 
     /**
+     * @param name Grid name (possibly {@code null} for default grid).
+     * @return true when all managers, processors, and plugins have started and ignite kernal start method has fully
+     * completed.
+     */
+    public static boolean hasKernalStarted(String name) {
+        IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
+        return grid != null && grid.hasStartLatchCompleted();
+    }
+
+    /**
      * Start context encapsulates all starting parameters.
      */
     private static final class GridStartContext {
@@ -1849,11 +1859,16 @@ public class IgnitionEx {
 
             WorkersRegistry workerRegistry = new WorkersRegistry(
                 new IgniteBiInClosure<GridWorker, FailureType>() {
-                    @Override public void apply(GridWorker deadWorker, FailureType failureType) {
+                    @Override public void apply(GridWorker worker, FailureType failureType) {
+                        IgniteException ex = new IgniteException(S.toString(GridWorker.class, worker));
+
+                        Thread runner = worker.runner();
+
+                        if (runner != null && runner != Thread.currentThread())
+                            ex.setStackTrace(runner.getStackTrace());
+
                         if (grid != null)
-                            grid.context().failure().process(new FailureContext(
-                                failureType,
-                                new IgniteException(S.toString(GridWorker.class, deadWorker))));
+                            grid.context().failure().process(new FailureContext(failureType, ex));
                     }
                 },
                 IgniteSystemProperties.getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT,
@@ -1899,6 +1914,7 @@ public class IgnitionEx {
             // Note, that we do not pre-start threads here as class loading pool may
             // not be needed.
             validateThreadPoolSize(cfg.getPeerClassLoadingThreadPoolSize(), "peer class loading");
+
             p2pExecSvc = new IgniteThreadPoolExecutor(
                 "p2p",
                 cfg.getIgniteInstanceName(),
@@ -3208,6 +3224,13 @@ public class IgnitionEx {
             public void setCounter(int cnt) {
                 this.cnt = cnt;
             }
+        }
+
+        /**
+         * @return whether the startLatch has been counted down, thereby indicating that the kernal has full started.
+         */
+        public boolean hasStartLatchCompleted() {
+            return startLatch.getCount() == 0;
         }
     }
 
