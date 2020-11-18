@@ -102,8 +102,9 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
 
                         @Override
                         public void onMessage(GridNioSession ses, byte[] msg) {
-                            // TODO: Handle response for a connection denoted by ses
-                            // Call decoder here.
+                            GridNioServerClientConnection conn = ses.meta(GridNioServerClientConnection.SES_META_CONN);
+
+                            conn.onMessage(ByteBuffer.wrap(msg));
                         }
 
                         @Override

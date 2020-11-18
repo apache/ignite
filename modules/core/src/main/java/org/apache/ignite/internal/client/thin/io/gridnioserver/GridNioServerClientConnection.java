@@ -19,7 +19,6 @@ package org.apache.ignite.internal.client.thin.io.gridnioserver;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.thin.io.ClientConnection;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 
@@ -29,10 +28,13 @@ import java.util.function.Consumer;
 
 class GridNioServerClientConnection implements ClientConnection {
     /** */
-    private static final int SES_META_CONN = GridNioSessionMetaKey.nextUniqueKey();
+    static final int SES_META_CONN = GridNioSessionMetaKey.nextUniqueKey();
 
     /** */
     private final GridNioSession ses;
+
+    /** */
+    private Consumer<ByteBuffer> messageHandler;
 
     public GridNioServerClientConnection(GridNioSession ses) {
         assert ses != null;
@@ -61,11 +63,24 @@ class GridNioServerClientConnection implements ClientConnection {
 
     /** {@inheritDoc} */
     @Override public void setMessageHandler(Consumer<ByteBuffer> handler) {
-
+        this.messageHandler = handler;
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
 
+    }
+
+    /**
+     * Handle incoming message.
+     *
+     * @param msg Message.
+     */
+    void onMessage(ByteBuffer msg) {
+        Consumer<ByteBuffer> handler0 = messageHandler;
+
+        if (handler0 != null) {
+            handler0.accept(msg);
+        }
     }
 }
