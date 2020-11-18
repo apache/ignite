@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.client.thin.io;
 
+/**
+ * Client connection multiplexer: manages multiple connections with a shared resource pool (worker threads, etc).
+ */
 public interface ClientConnectionMultiplexer {
     // TODO: Config - worker thread count
 }

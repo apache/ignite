@@ -20,6 +20,9 @@ package org.apache.ignite.internal.client.thin.io;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+/**
+ * Client connection: abstracts away sending and receiving messages.
+ */
 public interface ClientConnection {
     CompletableFuture<Void> sendAsync(byte[] message); // TODO: What should we return?
 
