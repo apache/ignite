@@ -214,7 +214,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        startGrid(0);
+        IgniteEx ig0 = startGrid(0);
+
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         assertFalse(completionMarkerFile.exists());
 

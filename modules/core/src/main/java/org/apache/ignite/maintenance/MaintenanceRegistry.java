@@ -20,6 +20,7 @@ package org.apache.ignite.maintenance;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -153,4 +154,22 @@ public interface MaintenanceRegistry {
      * and their {@link MaintenanceAction maintenance actions} are not executed.
      */
     public void prepareAndExecuteMaintenance();
+
+    /**
+     * Call the {@link #registerWorkflowCallback(String, MaintenanceWorkflowCallback)} if the active maintenance task
+     * with given name exists.
+     *
+     * @param maintenanceTaskName name of {@link MaintenanceTask} this callback is registered for.
+     * @param workflowCalProvider provider of {@link MaintenanceWorkflowCallback} which construct the callback by given
+     * task.
+     */
+    default public void registerWorkflowCallbackIfTaskExists(
+        @NotNull String maintenanceTaskName,
+        @NotNull IgniteThrowableFunction<MaintenanceTask, MaintenanceWorkflowCallback> workflowCalProvider
+    ) throws IgniteCheckedException {
+        MaintenanceTask task = activeMaintenanceTask(maintenanceTaskName);
+
+        if (task != null)
+            registerWorkflowCallback(maintenanceTaskName, workflowCalProvider.apply(task));
+    }
 }
