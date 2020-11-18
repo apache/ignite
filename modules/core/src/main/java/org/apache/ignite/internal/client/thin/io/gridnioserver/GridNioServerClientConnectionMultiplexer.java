@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.thin.io.ClientConnection;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
@@ -31,7 +30,6 @@ import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.jetbrains.annotations.Nullable;
 
@@ -164,16 +162,9 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
         // TODO: What does async param mean?
         GridNioFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
 
-        // TODO: Create connection, add it to ses meta, return
+        // TODO: Should this method be async? Why is createSession async?
         GridNioSession ses = sesFut.get();
 
-//        // Socket send is handled by worker threads.
-//        GridNioFuture<?> sendFut = ses.send(new byte[0]); // TODO: Handshake.
-//        sendFut.listen(f -> {
-//            System.out.println(f.isDone());
-//        });
-//        // sendFut.get();
-
-        return null;
+        return new GridNioServerClientConnection(ses);
     }
 }
