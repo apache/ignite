@@ -24,8 +24,63 @@ import java.util.function.Consumer;
  * Decodes thin client messages from partial buffers.
   */
 public class ClientMessageDecoder implements Consumer<ByteBuffer> {
+    /** */
+    private byte[] data;
+
+    /** */
+    private int cnt = -4;
+
+    /** */
+    private int msgSize;
+
     /** {@inheritDoc} */
-    @Override public void accept(ByteBuffer byteBuffer) {
-        // TODO: Compose full message from parts here.
+    @Override public void accept(ByteBuffer buf) {
+        boolean msgReady = read(buf);
+
+        if (msgReady) {
+            // TODO: pass data to consumer
+            System.out.println(data.length);
+        }
+    }
+
+    private boolean read(ByteBuffer buf) {
+        // TODO: Review the logic
+        // Borrowed from org.apache.ignite.internal.processors.odbc.ClientMessage
+        if (cnt < 0) {
+            for (; cnt < 0 && buf.hasRemaining(); cnt++)
+                msgSize |= (buf.get() & 0xFF) << (8 * (4 + cnt));
+
+            if (cnt < 0)
+                return false;
+
+            data = new byte[msgSize];
+        }
+
+        assert data != null;
+        assert cnt >= 0;
+        assert msgSize > 0;
+
+        int remaining = buf.remaining();
+
+        if (remaining > 0) {
+            int missing = msgSize - cnt;
+
+            if (missing > 0) {
+                int len = Math.min(missing, remaining);
+
+                buf.get(data, cnt, len);
+
+                cnt += len;
+            }
+        }
+
+        if (cnt == msgSize) {
+            cnt = -4;
+            msgSize = 0;
+
+            return true;
+        }
+
+        return false;
     }
 }
