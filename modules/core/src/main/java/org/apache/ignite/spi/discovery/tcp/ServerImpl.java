@@ -213,13 +213,13 @@ class ServerImpl extends TcpDiscoveryImpl {
     private static final TcpDiscoveryAbstractMessage WAKEUP = new TcpDiscoveryDummyWakeupMessage();
 
     /** Maximal interval of connection check to next node in the ring. */
-    private static final long MAX_CON_CHECK_INTERVAL = 500;
-
-    /** Minimal timeout to find connection to some next node in the ring while connection recovering. */
-    private static final long MIN_RECOVERY_TIMEOUT = 100;
+    private static final long MAX_NEXT_NODE_PING_INTERVAL = 500;
 
     /** Interval of checking connection to next node in the ring. */
     private long connCheckInterval;
+
+    /** Fundamental value for connection checking actions. */
+    private long connectionCheckTimeout;
 
     /** */
     private IgniteThreadPoolExecutor utilityPool;
@@ -395,7 +395,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         // Since we take in account time of last sent message, the interval should be quite short to give enough piece
         // of failure detection timeout as send-and-acknowledge timeout of the message to send.
-        connCheckInterval = Math.min(effectiveExchangeTimeout() / 4, MAX_CON_CHECK_INTERVAL);
+        connCheckInterval = Math.min(effectiveExchangeTimeout() / 4, MAX_NEXT_NODE_PING_INTERVAL);
+
+        connectionCheckTimeout = effectiveExchangeTimeout() / 5;
 
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
@@ -3508,11 +3510,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (changeTop)
                                     hndMsg.changeTopology(ring.previousNodeOf(next).id());
 
-                                if (log.isDebugEnabled())
-                                    log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState + ']');
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState +
+                                        "] with timeout " + timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                                }
 
                                 spi.writeToSocket(sock, out, hndMsg,
                                     timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Reading handshake response with timeout " +
+                                        timeoutHelper.nextTimeoutChunk(ackTimeout0));
+                                }
 
                                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null,
                                     timeoutHelper.nextTimeoutChunk(ackTimeout0));
@@ -6521,27 +6530,12 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private IgniteSpiOperationTimeoutHelper serverOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState,
         long lastOperationNanos) {
-        long absoluteThreshold = -1;
-
-        // Active send-state means we lost connection to next node and have to find another.
-        // We don't know how many nodes failed. May be several failed in a row. But we got only one
-        // connectionRecoveryTimeout to establish new connection to the ring. We can't spend this timeout wholly on one
-        // or two next nodes. We should slice it and try to travers as many as we can.
-        if (sndState != null) {
-            int nodesLeft = ring.serverNodes().size() - 1 - sndState.failedNodes;
-
-            assert nodesLeft > 0;
-
-            long now = System.nanoTime();
-
-            // In case of large cluster and small connectionRecoveryTimeout we have to provide reasonable minimal
-            // timeout per one of the next nodes. It should not appear too small like 1, 5 or 10ms.
-            long perNodeTimeout = Math.max((sndState.failTimeNanos - now) / nodesLeft, MIN_RECOVERY_TIMEOUT);
-
-            absoluteThreshold = Math.min(sndState.failTimeNanos, now + perNodeTimeout);
-        }
-
-        return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos, absoluteThreshold);
+        // Active send-state means we lost connection to next node and have to find another. We don't know how many
+        // nodes failed. May be several failed in a row. But we got only one connectionRecoveryTimeout to establish new
+        // connection. We should travers rest of the cluster with sliced timeout for each node. connectionCheckTimeout
+        // is doubled because the backward connection is performed with this timeout. And network delays are supposed.
+        return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos, sndState == null ? -1 :
+            Math.min(sndState.failTimeNanos, System.nanoTime() + connectionCheckTimeout * 2));
     }
 
     /** Fixates time of last sent message. */
@@ -6901,13 +6895,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
                                 Collection<InetSocketAddress> nodeAddrs = spi.getNodeAddresses(previous, false);
 
-                                liveAddr = checkConnection(new ArrayList<>(nodeAddrs),
-                                    (int)U.nanosToMillis(timeThreshold - now));
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Remote node requests topology change. Checking connection to " +
+                                        "previous node [" + previous + "] with timeout " + (int)connectionCheckTimeout);
+                                }
 
-                                if (log.isInfoEnabled())
-                                    log.info("Connection check done [liveAddr=" + liveAddr
-                                        + ", previousNode=" + previous + ", addressesToCheck=" + nodeAddrs
-                                        + ", connectingNodeId=" + nodeId + ']');
+                                liveAddr = checkConnection(new ArrayList<>(nodeAddrs), (int)connectionCheckTimeout);
+
+                                if (log.isInfoEnabled()) {
+                                    log.info("Connection check to previous node done: [liveAddr=" + liveAddr
+                                        + ", previousNode=" + U.toShortString(previous) + ", addressesToCheck=" +
+                                        nodeAddrs + ", connectingNodeId=" + nodeId + ']');
+                                }
                             }
 
                             // If local node was able to connect to previous, confirm that it's alive.
@@ -6924,6 +6923,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 ", lastMessageReceivedTime=" + rcvdTime + ", now=" + now +
                                 ", connCheckInterval=" + connCheckInterval + ']');
                         }
+                    }
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("Sending handshake response [" + res + "] with timeout " +
+                            spi.getEffectiveSocketTimeout(srvSock) + " to " + rmtAddr + ":" + sock.getPort());
                     }
 
                     spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(srvSock));
