@@ -352,6 +352,7 @@ public final class DmlAstUtils {
 
         for (GridSqlColumn c : update.cols()) {
             String newColName = Parser.quoteIdentifier("_upd_" + c.columnName());
+
             // We have to use aliases to cover cases when the user
             // wants to update _val field directly (if it's a literal)
             GridSqlAlias alias = new GridSqlAlias(newColName, elementOrDefault(update.set().get(c.columnName()), c), true);
@@ -373,7 +374,9 @@ public final class DmlAstUtils {
         //    UPDATE test SET val1 = val1 + 1 WHERE val0 >= ?
         mapQry.canBeLazy(!isIndexWithUpdateColumnsMayBeUsed(
             gridTbl,
-            update.cols().stream().map(sqlCol-> sqlCol.column()).collect(Collectors.toSet()),
+            update.cols().stream()
+                .map(GridSqlColumn::column)
+                .collect(Collectors.toSet()),
             extractColumns(gridTbl, where)));
 
         mapQry.where(where);
