@@ -23,7 +23,7 @@ import org.junit.Ignore;
 /**
  *
  */
-@Ignore("IGNITE-9214")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class IgniteDataStructuresNoClassOnServerTest extends IgniteNoClassOnServerAbstractTest {
     /** {@inheritDoc} */
     @Override protected String clientClassName() {

@@ -29,7 +29,7 @@ import org.junit.Test;
 /**
  *
  */
-@Ignore("IGNITE-9081")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9081")
 public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbstractTest {
     /**
      *

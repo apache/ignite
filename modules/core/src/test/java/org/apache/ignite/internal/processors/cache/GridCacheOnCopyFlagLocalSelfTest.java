@@ -27,7 +27,8 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 /**
  * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
-@Ignore("GG-11141, IGNITE-9214")
+// GG-11141.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridCacheOnCopyFlagLocalSelfTest extends GridCacheOnCopyFlagAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

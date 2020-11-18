@@ -28,7 +28,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test transaction with wrong marshalling.
  */
-@Ignore("IGNITE-9218")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class GridCacheReplicatedMarshallerTxTest extends GridCacheMarshallerTxAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

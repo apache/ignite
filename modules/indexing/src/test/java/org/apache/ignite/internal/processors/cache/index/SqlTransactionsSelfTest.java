@@ -49,7 +49,7 @@ import org.junit.Test;
 /**
  * Tests to check behavior regarding transactions started via SQL.
  */
-@Ignore("FAILED")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
 public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

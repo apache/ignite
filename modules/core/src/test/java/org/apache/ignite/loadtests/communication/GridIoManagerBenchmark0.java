@@ -52,7 +52,8 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
 /**
  *
  */
-@Ignore("Benchmark")
+// Benchmark.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
 public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     /** */
     public static final int CONCUR_MSGS = 10 * 1024;

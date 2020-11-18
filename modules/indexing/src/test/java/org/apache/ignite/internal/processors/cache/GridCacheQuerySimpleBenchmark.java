@@ -43,7 +43,8 @@ import org.junit.Test;
 /**
  *
  */
-@Ignore("Benchmark")
+// Benchmark.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
 public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
     /** */
     private Ignite ignite;

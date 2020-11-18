@@ -43,7 +43,7 @@ import org.junit.Test;
 /**
  * Class for {@link TcpCommunicationSpi} logging tests.
  */
-@Ignore("FAILED!")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
 public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
     /** Listener log messages. */
     private static ListeningTestLogger srvTestLog;

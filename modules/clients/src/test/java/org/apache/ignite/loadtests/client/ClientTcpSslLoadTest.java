@@ -26,7 +26,8 @@ import org.junit.Test;
 /**
  * Makes a long run to ensure stability and absence of memory leaks.
  */
-@Ignore("Load Test")
+// Load test.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
 public class ClientTcpSslLoadTest extends ClientTcpSslMultiThreadedSelfTest {
     /** Test duration. */
     private static final long TEST_RUN_TIME = 8 * 60 * 60 * 1000;

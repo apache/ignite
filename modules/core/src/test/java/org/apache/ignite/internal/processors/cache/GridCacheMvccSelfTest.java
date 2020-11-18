@@ -36,7 +36,8 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Test cases for multi-threaded tests.
  */
-@Ignore("Tests that are not ready to be used with BinaryMarshaller, IGNITE-9214")
+// Tests that are not ready to be used with BinaryMarshaller.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /** Grid. */
     private IgniteKernal grid;

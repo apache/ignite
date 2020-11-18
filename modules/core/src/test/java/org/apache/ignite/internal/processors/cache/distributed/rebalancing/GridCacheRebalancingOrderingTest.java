@@ -104,7 +104,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *     </li>
  * </ol>
  */
-@Ignore("IGNITE-9218")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     /** {@link Random} for test key generation. */
     private static final Random RANDOM = new Random();

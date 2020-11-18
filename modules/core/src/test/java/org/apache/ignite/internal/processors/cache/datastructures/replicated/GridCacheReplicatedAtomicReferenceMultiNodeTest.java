@@ -26,7 +26,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * AtomicReference and AtomicStamped tests with replicated cache.
  */
-@Ignore("IGNITE-9214")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridCacheReplicatedAtomicReferenceMultiNodeTest extends GridCacheAtomicReferenceMultiNodeAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {

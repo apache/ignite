@@ -46,7 +46,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Simple test for preloading in ATOMIC cache.
  */
-@Ignore("IGNITE-9218")
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean nearEnabled;
