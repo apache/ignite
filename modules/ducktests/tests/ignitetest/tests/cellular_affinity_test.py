@@ -108,8 +108,12 @@ class CellularAffinity(IgniteTest):
 
         discovery_spi = from_ignite_cluster(cell1)
 
-        self.start_cell(ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=2'], discovery_spi)
-        self.start_cell(ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=XXX', '-DRANDOM=42'], discovery_spi)
+        cell2 = self.start_cell(ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=2'], discovery_spi)
+        cell3 = self.start_cell(ignite_version, ['-D' + CellularAffinity.ATTRIBUTE + '=XXX', '-DRANDOM=42'],
+                                discovery_spi)
+
+        for cell in [cell1, cell2, cell3]:
+            cell.await_started()
 
         ControlUtility(cell1, self.test_context).activate()
 
@@ -125,7 +129,7 @@ class CellularAffinity(IgniteTest):
 
     # pylint: disable=R0912
     # pylint: disable=R0914
-    #  @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
+    @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(stop_type=[StopType.DISCONNECT, StopType.SIGKILL, StopType.SIGTERM],
             discovery_type=[DiscoreryType.ZooKeeper, DiscoreryType.TCP])
@@ -165,14 +169,19 @@ class CellularAffinity(IgniteTest):
         assert discovery_spi is not None
 
         loaders = [prepared_tx_loader1]
+        nodes = [cell0]
 
         for cell in range(1, cells_amount):
-            _, prepared_tx_loader = \
+            node, prepared_tx_loader = \
                 self.start_cell_with_prepared_txs(ignite_version, "C%d" % cell, discovery_spi, modules)
 
             loaders.append(prepared_tx_loader)
+            nodes.append(node)
 
         failed_loader = loaders[1]
+
+        for node in [*nodes, *loaders]:
+            node.await_started()
 
         streamers = []
 
@@ -180,7 +189,10 @@ class CellularAffinity(IgniteTest):
             streamers.append(self.start_tx_streamer(ignite_version, "C%d" % cell, discovery_spi, modules))
 
         for streamer in streamers:  # starts tx streaming with latency record (with some warmup).
-            streamer.start()
+            streamer.start_async()
+
+        for streamer in streamers:
+            streamer.await_started()
 
         ControlUtility(cell0, self.test_context).disable_baseline_auto_adjust()  # baseline set.
         ControlUtility(cell0, self.test_context).activate()
@@ -257,7 +269,7 @@ class CellularAffinity(IgniteTest):
                     "txCnt": CellularAffinity.PREPARED_TX_CNT},
             jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=' + cell_id], modules=modules, timeout_sec=180)
 
-        prepared_tx_streamer.start()  # starts last server node and creates prepared txs on it.
+        prepared_tx_streamer.start_async()  # starts last server node and creates prepared txs on it.
 
         return nodes, prepared_tx_streamer
 
@@ -273,6 +285,6 @@ class CellularAffinity(IgniteTest):
                                 discovery_spi=TcpDiscoverySpi() if discovery_spi is None else discovery_spi),
             num_nodes=nodes_cnt, modules=modules, jvm_opts=jvm_opts)
 
-        ignites.start()
+        ignites.start_async()
 
         return ignites

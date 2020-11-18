@@ -57,6 +57,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         self.disconnected_nodes = []
 
+    def start_async(self):
+        """
+        Starts in async way.
+        """
+        super().start()
+
     def start_node(self, node):
         self.init_persistent(node)
 

@@ -45,8 +45,13 @@ class IgniteApplicationService(IgniteAwareService):
         self.params = params
 
     def start(self):
-        super().start()
+        self.start_async()
+        self.await_started()
 
+    def await_started(self):
+        """
+        Awaits start finished.
+        """
         self.logger.info("Waiting for Ignite aware Application (%s) to start..." % self.java_class_name)
 
         self.await_event("Topology snapshot", self.timeout_sec, from_the_beginning=True)

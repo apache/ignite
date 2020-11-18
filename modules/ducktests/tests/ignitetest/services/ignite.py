@@ -41,8 +41,14 @@ class IgniteService(IgniteAwareService):
 
     # pylint: disable=W0221
     def start(self, timeout_sec=180):
-        super().start()
+        self.start_async()
+        self.await_started(timeout_sec)
 
+    def await_started(self, timeout_sec=180):
+        """
+        Awaits start finished.
+        :param timeout_sec: timeout.
+        """
         self.logger.info("Waiting for Ignite(s) to start...")
 
         for node in self.nodes:
