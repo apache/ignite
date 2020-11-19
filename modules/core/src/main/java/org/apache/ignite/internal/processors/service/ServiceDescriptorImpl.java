@@ -41,7 +41,7 @@ public class ServiceDescriptorImpl implements ServiceDescriptor {
     private static final long serialVersionUID = 0L;
 
     /** Kernel context. */
-    private final GridKernalContext ctx;
+    private final transient GridKernalContext ctx;
 
     /** Configuration. */
     @GridToStringInclude
@@ -52,7 +52,7 @@ public class ServiceDescriptorImpl implements ServiceDescriptor {
     private Map<UUID, Integer> top;
 
     /** Service class. */
-    private volatile Class<? extends Service> srvcCls;
+    private transient volatile Class<? extends Service> srvcCls;
 
     /**
      * @param dep Deployment.
@@ -83,13 +83,15 @@ public class ServiceDescriptorImpl implements ServiceDescriptor {
                 return srvcCls;
             }
             catch (ClassNotFoundException e) {
-                GridDeployment srvcDep = ctx.deploy().getDeployment(clsName);
+                if (ctx != null) {
+                    GridDeployment srvcDep = ctx.deploy().getDeployment(clsName);
 
-                if (srvcDep != null) {
-                    srvcCls = (Class<? extends Service>)srvcDep.deployedClass(clsName);
+                    if (srvcDep != null) {
+                        srvcCls = (Class<? extends Service>)srvcDep.deployedClass(clsName);
 
-                    if (srvcCls != null)
-                        return srvcCls;
+                        if (srvcCls != null)
+                            return srvcCls;
+                    }
                 }
 
                 throw new IgniteException("Failed to find service class: " + clsName, e);
