@@ -37,8 +37,10 @@ from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
 from ignitetest.utils import ignite_versions, version_if, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, V_2_8_0, IgniteVersion
+from ignitetest.utils.enum import constructible
 
 
+@constructible
 class ClusterLoad(IntEnum):
     """
     Type of cluster loading.
@@ -61,7 +63,7 @@ class DiscoveryTestConfig(NamedTuple):
     failure_detection_timeout: int = 1000
 
 
-# pylint: disable=W0223
+# pylint: disable=W0223, no-member
 class DiscoveryTest(IgniteTest):
     """
     Test various node failure scenarios (TCP and ZooKeeper).
@@ -89,7 +91,7 @@ class DiscoveryTest(IgniteTest):
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
-                                          load_type=load_type, sequential_failure=False,
+                                          load_type=ClusterLoad.construct_from(load_type), sequential_failure=False,
                                           failure_detection_timeout=failure_detection_timeout)
 
         return self._perform_node_fail_scenario(test_config)
@@ -102,8 +104,9 @@ class DiscoveryTest(IgniteTest):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
         """
-        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2, load_type=load_type,
-                                          sequential_failure=True, failure_detection_timeout=failure_detection_timeout)
+        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2,
+                                          load_type=ClusterLoad.construct_from(load_type), sequential_failure=True,
+                                          failure_detection_timeout=failure_detection_timeout)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -117,8 +120,8 @@ class DiscoveryTest(IgniteTest):
         Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
-                                          load_type=load_type, sequential_failure=False, with_zk=True,
-                                          failure_detection_timeout=failure_detection_timeout)
+                                          load_type=ClusterLoad.construct_from(load_type), sequential_failure=False,
+                                          with_zk=True, failure_detection_timeout=failure_detection_timeout)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -131,9 +134,9 @@ class DiscoveryTest(IgniteTest):
         """
         Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
         """
-        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2, load_type=load_type,
-                                          sequential_failure=True, with_zk=True,
-                                          failure_detection_timeout=failure_detection_timeout)
+        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2,
+                                          load_type=ClusterLoad.construct_from(load_type), sequential_failure=True,
+                                          with_zk=True, failure_detection_timeout=failure_detection_timeout)
 
         return self._perform_node_fail_scenario(test_config)
 
