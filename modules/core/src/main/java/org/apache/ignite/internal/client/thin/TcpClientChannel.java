@@ -411,23 +411,24 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
         else
             status = dataInput.readInt();
 
-        int hdrSize = (int)(dataInput.totalBytesRead() - bytesReadOnStartMsg);
+        //int hdrSize = (int)(dataInput.totalBytesRead() - bytesReadOnStartMsg);
+        int hdrSize = dataInput.position();
+        int msgSize = buf.limit();
 
         byte[] res = null;
         Exception err = null;
 
         if (status == 0) {
             if (msgSize > hdrSize)
-                res = dataInput.spinRead(msgSize - hdrSize);
+                res = dataInput.readByteArray(msgSize - hdrSize);
         }
         else if (status == ClientStatus.SECURITY_VIOLATION) {
-            dataInput.spinRead(msgSize - hdrSize); // Read message to the end.
+            // TODO ?
+            // dataInput.spinRead(msgSize - hdrSize); // Read message to the end.
 
             err = new ClientAuthorizationException();
         } else {
-            resIn = new BinaryHeapInputStream(dataInput.spinRead(msgSize - hdrSize));
-
-            String errMsg = ClientUtils.createBinaryReader(null, resIn).readString();
+            String errMsg = ClientUtils.createBinaryReader(null, dataInput).readString();
 
             err = new ClientServerError(errMsg, status, resId);
         }
