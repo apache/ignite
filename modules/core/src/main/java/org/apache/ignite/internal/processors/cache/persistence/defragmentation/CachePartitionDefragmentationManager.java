@@ -135,7 +135,7 @@ public class CachePartitionDefragmentationManager {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Database schared manager. */
+    /** Database shared manager. */
     private final GridCacheDatabaseSharedManager dbMgr;
 
     /** File page store manager. */
@@ -402,17 +402,20 @@ public class CachePartitionDefragmentationManager {
                         //TODO Move inside of defragmentSinglePartition.
                         IgniteInClosure<IgniteInternalFuture<?>> cpLsnr = fut -> {
                             if (fut.error() == null) {
-                                log.info(S.toString(
-                                    "Partition defragmented",
-                                    "grpId", grpId, false,
-                                    "partId", partId, false,
-                                    "oldPages", oldPageStore.pages(), false,
-                                    "newPages", partCtx.partPagesAllocated.get(), false,
-                                    "bytesSaved", (oldPageStore.pages() - partCtx.partPagesAllocated.get()) * pageSize, false,
-                                    "mappingPages", partCtx.mappingPagesAllocated.get(), false,
-                                    "partFile", defragmentedPartFile(workDir, partId).getName(), false,
-                                    "workDir", workDir, false
-                                ));
+
+                                if (log.isDebugEnabled()) {
+                                    log.debug(S.toString(
+                                        "Partition defragmented",
+                                        "grpId", grpId, false,
+                                        "partId", partId, false,
+                                        "oldPages", oldPageStore.pages(), false,
+                                        "newPages", partCtx.partPagesAllocated.get() + 1, false,
+                                        "mappingPages", partCtx.mappingPagesAllocated.get() + 1, false,
+                                        "pageSize", pageSize, false,
+                                        "partFile", defragmentedPartFile(workDir, partId).getName(), false,
+                                        "workDir", workDir, false
+                                    ));
+                                }
 
                                 oldPageMem.invalidate(grpId, partId);
 
@@ -639,7 +642,7 @@ public class CachePartitionDefragmentationManager {
         PendingEntriesTree newPendingTree = partCtx.newCacheDataStore.pendingTree();
         AbstractFreeList<CacheDataRow> freeList = partCtx.newCacheDataStore.getCacheStoreFreeList();
 
-        long cpLockThreshold = 250L;
+        long cpLockThreshold = 150L;
 
         TimeTracker<PartStages> tracker = new TimeTracker<>(PartStages.class);
 
@@ -725,7 +728,12 @@ public class CachePartitionDefragmentationManager {
             defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
         }
 
-        System.out.println(tracker.toString());
+        if (log.isDebugEnabled()) {
+            log.debug(
+                "Partition defragmentation timings for cache group " + partCtx.grpId +
+                " and partition " + partCtx.partId + ": " + tracker.toString()
+            );
+        }
     }
 
     /** */
@@ -739,7 +747,9 @@ public class CachePartitionDefragmentationManager {
             PagePartitionMetaIO oldPartMetaIo = PageIO.getPageIO(oldPartMetaPageAddr);
 
             // Newer meta versions may contain new data that we don't copy during defragmentation.
-            assert Arrays.asList(1, 2, 3).contains(oldPartMetaIo.getVersion()) : oldPartMetaIo.getVersion();
+            assert Arrays.asList(1, 2, 3).contains(oldPartMetaIo.getVersion())
+                : "IO version " + oldPartMetaIo.getVersion() + " is not supported by current defragmentation algorithm." +
+                " Please implement copying of all data added in new version.";
 
             access(ACCESS_WRITE, partCtx.partPageMemory, partCtx.grpId, partMetaPageId, newPartMetaPageAddr -> {
                 PagePartitionMetaIOV3 newPartMetaIo = PageIO.getPageIO(newPartMetaPageAddr);
@@ -827,7 +837,7 @@ public class CachePartitionDefragmentationManager {
 
         Runnable cancellationChecker = this::checkCancellation;
 
-        idx.defragmentator().defragmentate(
+        idx.defragmentator().defragment(
             grpCtx,
             newCtx,
             (PageMemoryEx)partDataRegion.pageMemory(),

@@ -1686,7 +1686,8 @@ public class GridToStringBuilder {
      * @return String presentation.
      */
     public static String toString(String str, Object... triplets) {
-        assert triplets.length % 3 == 0;
+        if (triplets.length % 3 != 0)
+            throw new IllegalArgumentException("Array length must be a multiple of 3");
 
         int propCnt = triplets.length / 3;
 

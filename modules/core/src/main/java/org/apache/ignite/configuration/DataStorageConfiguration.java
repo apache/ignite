@@ -317,9 +317,6 @@ public class DataStorageConfiguration implements Serializable {
     /** Encryption configuration. */
     private EncryptionConfiguration encCfg = new EncryptionConfiguration();
 
-    /** */
-    private DefragmentationConfiguration defrgCfg = new DefragmentationConfiguration();
-
     /**
      * Creates valid durable memory configuration with all default values.
      */
@@ -1166,22 +1163,6 @@ public class DataStorageConfiguration implements Serializable {
      */
     @Nullable public WarmUpConfiguration getDefaultWarmUpConfiguration() {
         return dfltWarmUpCfg;
-    }
-
-    /**
-     * @return Defragmentation configuration.
-     *
-     * @see #setDefragmentationConfiguration(DefragmentationConfiguration)
-     */
-    public DefragmentationConfiguration getDefragmentationConfiguration() {
-        return defrgCfg;
-    }
-
-    /**
-     * @param defrgCfg
-     */
-    public void setDefragmentationConfiguration(DefragmentationConfiguration defrgCfg) {
-        this.defrgCfg = defrgCfg;
     }
 
     /** {@inheritDoc} */

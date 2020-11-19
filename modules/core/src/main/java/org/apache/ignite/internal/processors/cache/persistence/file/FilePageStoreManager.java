@@ -64,7 +64,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
@@ -750,7 +749,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             PageStore idxStore =
                 pageStoreFactory.createPageStore(
-                    PageMemory.FLAG_IDX,
+                    PageStore.TYPE_IDX,
                     idxFile,
                     allocatedTracker);
 
@@ -761,7 +760,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
                 PageStore partStore =
                     pageStoreFactory.createPageStore(
-                        PageMemory.FLAG_DATA,
+                        PageStore.TYPE_DATA,
                         () -> getPartitionFilePath(cacheWorkDir, p),
                         allocatedTracker);
 

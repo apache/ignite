@@ -64,7 +64,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DefragmentationConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -168,6 +167,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.nonNull;
 import static java.util.function.Function.identity;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RECOVERY_SEMAPHORE_PERMITS;
@@ -187,6 +187,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.checkpoint
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_TASK_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.fromStore;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
+import static org.apache.ignite.internal.util.IgniteUtils.GB;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 
 /**
@@ -237,6 +238,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** @see IgniteSystemProperties#IGNITE_PDS_WAL_REBALANCE_THRESHOLD */
     public static final int DFLT_PDS_WAL_REBALANCE_THRESHOLD = 500;
 
+    /** @see IgniteSystemProperties#IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE */
+    public static final int DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE = 40;
+
     /** */
     private final int walRebalanceThreshold =
         getInteger(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, DFLT_PDS_WAL_REBALANCE_THRESHOLD);
@@ -247,6 +251,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Value of property for throttling policy override. */
     private final String throttlingPolicyOverride = IgniteSystemProperties.getString(
         IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED);
+
+    /** Defragmentation region size percentage of configured one. */
+    private final int defragmentationRegionSizePercentageOfConfiguredSize =
+        getInteger(IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE, DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE);
 
     /** */
     private static final String MBEAN_NAME = "DataStorageMetrics";
@@ -465,14 +473,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** */
-    private DataRegionConfiguration createDefragmentationDataRegionConfig(DataStorageConfiguration storageCfg) {
+    private DataRegionConfiguration createDefragmentationDataRegionConfig(long regionSize) {
         DataRegionConfiguration cfg = new DataRegionConfiguration();
 
-        DefragmentationConfiguration defrgCfg = storageCfg.getDefragmentationConfiguration();
-
         cfg.setName(DEFRAGMENTATION_PART_REGION_NAME);
-        cfg.setInitialSize(defrgCfg.getRegionSize());
-        cfg.setMaxSize(defrgCfg.getRegionSize());
+        cfg.setInitialSize(regionSize);
+        cfg.setMaxSize(regionSize);
         cfg.setPersistenceEnabled(true);
         cfg.setLazyMemoryAllocation(false);
 
@@ -480,14 +486,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** */
-    private DataRegionConfiguration createDefragmentationMappingRegionConfig(DataStorageConfiguration storageCfg) {
+    private DataRegionConfiguration createDefragmentationMappingRegionConfig(long regionSize) {
         DataRegionConfiguration cfg = new DataRegionConfiguration();
 
-        DefragmentationConfiguration defrgCfg = storageCfg.getDefragmentationConfiguration();
-
         cfg.setName(DEFRAGMENTATION_MAPPING_REGION_NAME);
-        cfg.setInitialSize(defrgCfg.getMappingRegionSize());
-        cfg.setMaxSize(defrgCfg.getMappingRegionSize());
+        cfg.setInitialSize(regionSize);
+        cfg.setMaxSize(regionSize);
         cfg.setPersistenceEnabled(true);
         cfg.setLazyMemoryAllocation(false);
 
@@ -542,6 +546,89 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             persStoreMetrics.wal(cctx.wal());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void initDataRegions(DataStorageConfiguration memCfg) throws IgniteCheckedException {
+        if (isDefragmentationScheduled() && !dataRegionsInitialized) {
+            //Region size configuration will be changed for defragmentation needs.
+            memCfg = configureDataRegionForDefragmentation(memCfg);
+        }
+
+        super.initDataRegions(memCfg);
+    }
+
+    /**
+     * Configure data regions:
+     * <p> Size of configured cache data regions will be decreased in order of freeing space for</p>
+     * <p>defragmentation needs. * New defragmentation regions will be created which size would be based on freed space
+     * from previous step.</p>
+     *
+     * @param memCfg Data storage configuration with data region configurations.
+     * @return New data storage configuration which contains data regions with changed size.
+     * @throws IgniteCheckedException If fail.
+     */
+    private DataStorageConfiguration configureDataRegionForDefragmentation(
+        DataStorageConfiguration memCfg
+    ) throws IgniteCheckedException {
+        List<DataRegionConfiguration> regionConfs = new ArrayList<>();
+
+        DataStorageConfiguration dataConf = memCfg;//not do the changes in-place it's better to make the copy of memCfg.
+
+        regionConfs.add(dataConf.getDefaultDataRegionConfiguration());
+
+        if (dataConf.getDataRegionConfigurations() != null)
+            regionConfs.addAll(Arrays.asList(dataConf.getDataRegionConfigurations()));
+
+        long totalDefrRegionSize = 0;
+
+        for (DataRegionConfiguration region : regionConfs) {
+            long newSize = (long)(region.getMaxSize() / 100.0 * defragmentationRegionSizePercentageOfConfiguredSize);
+            long newInitSize = Math.min(region.getInitialSize(), newSize);
+
+            totalDefrRegionSize += region.getMaxSize() - newSize;
+
+            log.info("Region size was reassigned by defragmentation reason: " +
+                "region = '" + region.getName() + "', " +
+                "oldInitialSize = '" + region.getInitialSize() + "', " +
+                "newInitialSize = '" + newInitSize + "', " +
+                "oldMaxSize = '" + region.getMaxSize() + "', " +
+                "newMaxSize = '" + newSize
+            );
+
+            region.setMaxSize(newSize);
+            region.setInitialSize(newInitSize);
+            region.setCheckpointPageBufferSize(0);
+        }
+
+        long mappingRegionSize = Math.min(GB, (long)(totalDefrRegionSize * 0.1));
+
+        checkpointedDataRegions.remove(
+            addDataRegion(
+                memCfg,
+                createDefragmentationDataRegionConfig(totalDefrRegionSize - mappingRegionSize),
+                true,
+                new DefragmentationPageReadWriteManager(cctx.kernalContext(), "defrgPartitionsStore")
+            )
+        );
+
+        checkpointedDataRegions.remove(
+            addDataRegion(
+                memCfg,
+                createDefragmentationMappingRegionConfig(mappingRegionSize),
+                true,
+                new DefragmentationPageReadWriteManager(cctx.kernalContext(), "defrgLinkMappingStore")
+            )
+        );
+
+        return dataConf;
+    }
+
+    /**
+     * @return {@code true} if maintenance mode is on and defragmentation task exists.
+     */
+    private boolean isDefragmentationScheduled() {
+        return cctx.kernalContext().maintenanceRegistry().activeMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME) != null;
     }
 
     /** */
@@ -657,23 +744,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         assert CU.isPersistenceEnabled(dsCfg);
 
-        checkpointedDataRegions.remove(
-            addDataRegion(
-                dsCfg,
-                createDefragmentationDataRegionConfig(dsCfg),
-                true,
-                new DefragmentationPageReadWriteManager(kernalCtx, "defrgPartitionsStore")
-            )
-        );
-        checkpointedDataRegions.remove(
-            addDataRegion(
-                dsCfg,
-                createDefragmentationMappingRegionConfig(dsCfg),
-                true,
-                new DefragmentationPageReadWriteManager(kernalCtx, "defrgLinkMappingStore")
-            )
-        );
-
         List<DataRegion> regions = Arrays.asList(
             dataRegion(DEFRAGMENTATION_MAPPING_REGION_NAME),
             dataRegion(DEFRAGMENTATION_PART_REGION_NAME)
@@ -747,24 +817,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 notifyMetastorageReadyForRead();
 
-                MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
+                cctx.kernalContext().maintenanceRegistry()
+                    .registerWorkflowCallbackIfTaskExists(
+                        DEFRAGMENTATION_MNTC_TASK_NAME,
+                        task -> {
+                            prepareCacheDefragmentation(fromStore(task).cacheNames());
 
-                if (mntcReg.isMaintenanceMode()) {
-                    MaintenanceTask task = mntcReg.activeMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
-
-                    if (task != null) {
-                        prepareCacheDefragmentation(fromStore(task).cacheNames());
-
-                        mntcReg.registerWorkflowCallback(
-                            DEFRAGMENTATION_MNTC_TASK_NAME,
-                            new DefragmentationWorkflowCallback(
+                            return new DefragmentationWorkflowCallback(
                                 cctx.kernalContext()::log,
                                 defrgMgr,
                                 cctx.kernalContext().failure()
-                            )
-                        );
-                    }
-                }
+                            );
+                        }
+                    );
             }
             finally {
                 metaStorage = null;

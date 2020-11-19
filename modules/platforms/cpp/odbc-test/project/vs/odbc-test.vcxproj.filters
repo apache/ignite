@@ -37,6 +37,9 @@
     <ClCompile Include="..\..\src\row_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\cursor_binding_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\cursor_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>

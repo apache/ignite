@@ -81,6 +81,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.DFLT_MVCC_TX_SIZE_CACHING_THRESHOLD;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory.DFLT_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWorkflow.DFLT_CHECKPOINT_PARALLEL_SORT_THRESHOLD;
@@ -1947,6 +1948,14 @@ public final class IgniteSystemProperties {
         "Use it as a last resort only, prefer another toolchain like DI, mocks and etc. if possible",
         type = Boolean.class)
     public static final String IGNITE_TEST_ENV = "IGNITE_TEST_ENV";
+
+    /**
+     * Defragmentation region size percentage of configured region size.
+     */
+    @SystemProperty(value = "Defragmentation region size percentage of configured region size", type = Integer.class,
+        defaults = "" + DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE)
+    public static final String IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE =
+        "IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE";
 
     /**
      * Enforces singleton.
