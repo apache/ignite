@@ -628,18 +628,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * Sets local host IP address that discovery SPI uses.
+     * Sets network addresses for the Discovery SPI.
      * <p>
-     * If not provided, the value is resolved from {@link IgniteConfiguration#getLocalHost()}. If it is empty too, by
-     * default node binds to all available IP addresses. If there is no non-loopback address then
-     * {@link InetAddress#getLocalHost()} is used.
+     * If not provided, the value is resolved from {@link IgniteConfiguration#getLocalHost()}. If the latter is not set
+     * as well, the the node binds to all available IP addresses of an environment it's running on.
+     * If there is no a non-loopback address, then {@link InetAddress#getLocalHost()} is used.
      * <p>
-     * <b>NOTE:</b> You should assign node address through {@link IgniteConfiguration#setLocalHost(String)} or
-     * {@code setLocalAddress(String)}. Otherwise, several node addresses may be picked up and can prolong
-     * detection of node failure. Parameters like {@code failureDetectionTimeout} or {@code reconCnt} work per address
-     * sequentionally. Example: if node is binded to 3 ip addresses, previous node can take up to
-     * '{@code failureDetectionTimeout} * 3 + {@code connRecoveryTimeout}' to detect failure of malfunctional node and
-     * establish connection to other one.
+     * <b>NOTE:</b> You should initialize the {@link IgniteConfiguration#getLocalHost()} or
+     * {@link TcpDiscoverySpi#getLocalAddress()} parameter with the network
+     * interface that will be used for inter-node communication. Otherwise, the node can listen on multiple network
+     * addresses available in the environment and this can prolong node failures detection if some of the addresses are
+     * not reachable from other cluster nodes. For instance, if the node is bound to 3 network interfaces,
+     * it can take up to
+     * '{@link IgniteConfiguration#getFailureDetectionTimeout()} * 3 + {@link TcpDiscoverySpi#getConnectionRecoveryTimeout()}'
+     * milliseconds for another node to detect a disconnect of the give node.
      *
      * @param locAddr IP address.
      * @return {@code this} for chaining.
