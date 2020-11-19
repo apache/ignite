@@ -564,8 +564,10 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                         failedLatch.await();
                         checkRebalanced.get();
 
+                        primaryCache.put(key1, key1);
+
                         try {
-                            primaryCache.put(key1, key1);
+                            tx.commit();
 
                             fail("Should not happen");
                         }
