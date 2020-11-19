@@ -6545,7 +6545,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             // In case of large cluster and small connectionRecoveryTimeout we have to provide reasonable minimal
             // timeout per one of the next nodes. It should not appear too small like 1, 5 or 10ms.
-            long perNodeTimeout = Math.max((sndState.failTimeNanos - now) / nodesLeft, MIN_RECOVERY_TIMEOUT);
+            long perNodeTimeout = Math.max((sndState.failTimeNanos - now) / nodesLeft,
+                U.millisToNanos(MIN_RECOVERY_TIMEOUT));
 
             if (log.isDebugEnabled()) {
                 log.debug("Connection recovery timeout: totalTimeLeft=" +
@@ -6873,12 +6874,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     // Handshake.
                     TcpDiscoveryHandshakeRequest req = (TcpDiscoveryHandshakeRequest)msg;
 
-                    if (log.isDebugEnabled()) {
-                        log.info("Received handshake request from " +
-                            "[rmtNodeId=" + msg.creatorNodeId() +
-                            ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
-                    }
-
                     srvSock = !req.client();
 
                     UUID nodeId = req.creatorNodeId();
@@ -6935,8 +6930,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 if (log.isDebugEnabled()) {
                                     log.debug("Remote node requests topology change. Checking connection to " +
-                                        "previous node [" + U.toShortString(previous) + "] with timeout " +
-                                        checkTimeout);
+                                        "previous node [" + previous + "] with timeout " + checkTimeout);
                                 }
 
                                 liveAddr = checkConnection(new ArrayList<>(nodeAddrs), checkTimeout);
