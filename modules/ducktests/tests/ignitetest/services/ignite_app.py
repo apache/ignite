@@ -58,13 +58,6 @@ class IgniteApplicationService(IgniteAwareService):
 
         self.__check_status("IGNITE_APPLICATION_INITIALIZED", timeout=self.timeout_sec)
 
-    def stop_async(self, clean_shutdown=True):
-        """
-        Stop in async way.
-        """
-        for node in self.nodes:
-            self.stop_node(node=node, clean_shutdown=clean_shutdown)
-
     # pylint: disable=W0221
     def stop_node(self, node, clean_shutdown=True):
         """

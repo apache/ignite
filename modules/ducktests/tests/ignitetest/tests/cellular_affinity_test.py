@@ -30,9 +30,9 @@ from ignitetest.services.utils.ignite_configuration.discovery import from_ignite
     TcpDiscoverySpi
 from ignitetest.services.zk.zookeeper import ZookeeperSettings, ZookeeperService
 from ignitetest.utils import ignite_versions, version_if, cluster
+from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST_2_8
-from ignitetest.utils.enum import constructible
 
 
 @constructible
@@ -45,6 +45,7 @@ class StopType(IntEnum):
     DISCONNECT = 2
 
 
+@constructible
 class DiscoreryType(IntEnum):
     """
     Discovery type.
@@ -131,6 +132,7 @@ class CellularAffinity(IgniteTest):
 
     # pylint: disable=R0912
     # pylint: disable=R0914
+    # pylint: disable=no-member
     @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
     @matrix(stop_type=[StopType.DISCONNECT, StopType.SIGKILL, StopType.SIGTERM],
@@ -154,7 +156,9 @@ class CellularAffinity(IgniteTest):
 
         modules = []
 
-        if discovery_type == DiscoreryType.ZooKeeper:
+        d_type = DiscoreryType.construct_from(discovery_type)
+
+        if d_type is DiscoreryType.ZooKeeper:
             zk_settings = ZookeeperSettings()
             zk_quorum = ZookeeperService(self.test_context, self.ZOOKEPER_CLUSTER_SIZE, settings=zk_settings)
             zk_quorum.start()
@@ -165,7 +169,7 @@ class CellularAffinity(IgniteTest):
 
         cell0, prepared_tx_loader1 = self.start_cell_with_prepared_txs(ignite_version, "C0", discovery_spi, modules)
 
-        if discovery_type == DiscoreryType.TCP:
+        if d_type is DiscoreryType.TCP:
             discovery_spi = from_ignite_cluster(cell0)
 
         assert discovery_spi is not None
@@ -206,7 +210,6 @@ class CellularAffinity(IgniteTest):
             streamer.await_event("WARMUP_FINISHED", 180, from_the_beginning=True)
 
         # node left with prepared txs.
-        # pylint: disable=no-member
         with StopType.construct_from(stop_type) as s_type:
             if s_type is StopType.SIGTERM:
                 failed_loader.stop_async()

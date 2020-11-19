@@ -72,6 +72,20 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         ignite_jmx_mixin(node, self.pids(node))
 
+    def stop_async(self, clean_shutdown=True):
+        """
+        Stops in async way.
+        """
+        for node in self.nodes:
+            self.stop_node(node=node, clean_shutdown=clean_shutdown)
+
+    @abstractmethod
+    def stop_node(self, node, clean_shutdown=True):
+        """
+        Stops node in async way.
+        """
+        raise NotImplementedError
+
     def clean(self):
         self.__restore_iptables()
 

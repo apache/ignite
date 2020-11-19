@@ -29,10 +29,12 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils import ignite_versions, cluster
+from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST_2_7, V_2_8_0, IgniteVersion
 
 
+@constructible
 class LoadType(IntEnum):
     """
     Load type.
@@ -43,6 +45,7 @@ class LoadType(IntEnum):
 
 
 # pylint: disable=W0223
+# pylint: disable=no-member
 class PmeFreeSwitchTest(IgniteTest):
     """
     Tests PME free switch scenarios.
@@ -61,10 +64,12 @@ class PmeFreeSwitchTest(IgniteTest):
 
         caches = [CacheConfiguration(name='test-cache', backups=2, atomicity_mode='TRANSACTIONAL')]
 
+        l_type = LoadType.construct_from(load_type)
+
         # Checking PME (before 2.8) vs PME-free (2.8+) switch duration, but
         # focusing on switch duration (which depends on caches amount) when long_txs is false and
         # on waiting for previously started txs before the switch (which depends on txs duration) when long_txs of true.
-        if load_type is LoadType.EXTRA_CACHES:
+        if l_type is LoadType.EXTRA_CACHES:
             for idx in range(1, self.EXTRA_CACHES_AMOUNT):
                 caches.append(CacheConfiguration(name="cache-%d" % idx, backups=2, atomicity_mode='TRANSACTIONAL'))
 
@@ -93,7 +98,7 @@ class PmeFreeSwitchTest(IgniteTest):
             params={"cacheName": "test-cache"},
             timeout_sec=180)
 
-        if load_type is LoadType.LONG_TXS:
+        if l_type is LoadType.LONG_TXS:
             long_tx_streamer.start()
 
         single_key_tx_streamer = IgniteApplicationService(
@@ -110,7 +115,7 @@ class PmeFreeSwitchTest(IgniteTest):
 
         single_key_tx_streamer.await_event("Node left topology", 60, from_the_beginning=True)
 
-        if load_type is LoadType.LONG_TXS:
+        if l_type is LoadType.LONG_TXS:
             time.sleep(30)  # keeping txs alive for 30 seconds.
 
             long_tx_streamer.stop_async()
