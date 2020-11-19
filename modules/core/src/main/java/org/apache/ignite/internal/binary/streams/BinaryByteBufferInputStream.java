@@ -25,7 +25,7 @@ import org.apache.ignite.binary.BinaryObjectException;
  */
 public class BinaryByteBufferInputStream implements BinaryInputStream {
     /** */
-    private ByteBuffer buf;
+    private final ByteBuffer buf;
 
     /**
      * @param buf Buffer to wrap.
@@ -71,7 +71,7 @@ public class BinaryByteBufferInputStream implements BinaryInputStream {
     @Override public boolean readBoolean() {
         ensureHasData(1);
 
-        return false;
+        return readByte() == 1;
     }
 
     /** {@inheritDoc} */
