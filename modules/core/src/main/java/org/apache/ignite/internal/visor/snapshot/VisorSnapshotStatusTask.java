@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.visor.snapshot;
 
-import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.IgniteUtils;
-
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.IgniteUtils;
 
 /**
  * Task that collects nodes that have snapshot operation in progress.

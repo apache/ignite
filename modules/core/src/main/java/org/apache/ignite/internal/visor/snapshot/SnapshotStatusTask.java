@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.visor.snapshot;
 
+import java.util.Collection;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Task that collects nodes that have snapshot operation in progress.
