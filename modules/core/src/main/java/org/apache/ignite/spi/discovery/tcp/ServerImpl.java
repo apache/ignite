@@ -6532,10 +6532,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         long lastOperationNanos) {
         // Active send-state means we lost connection to next node and have to find another. We don't know how many
         // nodes failed. May be several failed in a row. But we got only one connectionRecoveryTimeout to establish new
-        // connection. We should travers rest of the cluster with sliced timeout for each node. connectionCheckTimeout
-        // is doubled because the backward connection is performed with this timeout. And network delays are supposed.
+        // connection. We should travers rest of the cluster with sliced timeout for each node.
         return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos, sndState == null ? -1 :
-            Math.min(sndState.failTimeNanos, System.nanoTime() + connectionCheckTimeout * 2));
+            Math.min(sndState.failTimeNanos, System.nanoTime() + U.millisToNanos(connectionCheckTimeout)));
     }
 
     /** Fixates time of last sent message. */
@@ -6897,10 +6896,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 if (log.isDebugEnabled()) {
                                     log.debug("Remote node requests topology change. Checking connection to " +
-                                        "previous node [" + previous + "] with timeout " + (int)connectionCheckTimeout);
+                                        "previous [" + previous + "] with timeout " + (int)connectionCheckTimeout / 2);
                                 }
 
-                                liveAddr = checkConnection(new ArrayList<>(nodeAddrs), (int)connectionCheckTimeout);
+                                // Connection recoverty to next node has timeout {@code connectionCheckTimeout}.
+                                // We need to suppose network delays. So we use hals of this time.
+                                liveAddr = checkConnection(new ArrayList<>(nodeAddrs), (int)connectionCheckTimeout / 2);
 
                                 if (log.isInfoEnabled()) {
                                     log.info("Connection check to previous node done: [liveAddr=" + liveAddr
