@@ -21,8 +21,8 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -599,9 +599,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         long duration,
         long totalPages,
         long dataPages,
-        long cowPages,
-        long storageSize,
-        long sparseStorageSize
+        long cowPages
     ) {
         if (metricsEnabled) {
             lastCpLockWaitDuration.value(lockWaitDuration);
@@ -612,10 +610,22 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             lastCpTotalPages.value(totalPages);
             lastCpDataPages.value(dataPages);
             lastCpCowPages.value(cowPages);
-            this.storageSize.value(storageSize);
-            this.sparseStorageSize.value(sparseStorageSize);
 
             totalCheckpointTime.add(duration);
+        }
+    }
+
+    /**
+     * @param sparseStorageSize Sparse storage size.
+     * @param storageSize Storage size.
+     */
+    public void onStorageSizeChanged(
+        long storageSize,
+        long sparseStorageSize
+    ) {
+        if (metricsEnabled) {
+            this.storageSize.value(storageSize);
+            this.sparseStorageSize.value(sparseStorageSize);
         }
     }
 

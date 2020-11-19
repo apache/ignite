@@ -52,7 +52,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -77,6 +76,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridFilteredClosableIterator;
@@ -353,9 +353,11 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 val = cctx.toCacheObject("value-" + i);
 
             entries.add(mvcc ?
-                new MvccDataEntry(cctx.cacheId(), key, val, op, null, cctx.versions().next(), 0L,
+                new MvccDataEntry(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
+                    0L,
                     cctx.affinity().partition(i), i, new MvccVersionImpl(1000L, 10L, i + 1 /* Non-zero */)) :
-                new DataEntry(cctx.cacheId(), key, val, op, null, cctx.versions().next(), 0L,
+                new DataEntry(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
+                    0L,
                     cctx.affinity().partition(i), i));
         }
 
@@ -1014,7 +1016,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                     long writeStart = System.nanoTime();
 
-                    storeMgr.write(cacheId, fullId.pageId(), tmpBuf, tag);
+                    storeMgr.write(cacheId, fullId.pageId(), tmpBuf, tag, true);
 
                     long writeEnd = System.nanoTime();
 

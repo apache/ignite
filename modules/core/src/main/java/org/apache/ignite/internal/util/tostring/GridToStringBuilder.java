@@ -37,8 +37,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.function.Supplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -96,11 +96,18 @@ public class GridToStringBuilder {
     /** */
     private static final Map<String, GridToStringClassDescriptor> classCache = new ConcurrentHashMap<>();
 
+    /** @see IgniteSystemProperties#IGNITE_TO_STRING_MAX_LENGTH */
+    public static final int DFLT_TO_STRING_MAX_LENGTH = 10_000;
+
+    /** @see IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE */
+    public static final boolean DFLT_TO_STRING_INCLUDE_SENSITIVE = true;
+
     /** Supplier for {@link #includeSensitive} with default behavior. */
     private static final AtomicReference<Supplier<Boolean>> INCL_SENS_SUP_REF =
         new AtomicReference<>(new Supplier<Boolean>() {
             /** Value of "IGNITE_TO_STRING_INCLUDE_SENSITIVE". */
-            final boolean INCLUDE_SENSITIVE = getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true);
+            final boolean INCLUDE_SENSITIVE =
+                getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE);
 
             /** {@inheritDoc} */
             @Override public Boolean get() {
@@ -108,9 +115,12 @@ public class GridToStringBuilder {
             }
         });
 
+    /** @see IgniteSystemProperties#IGNITE_TO_STRING_COLLECTION_LIMIT */
+    public static final int DFLT_TO_STRING_COLLECTION_LIMIT = 100;
+
     /** */
     private static final int COLLECTION_LIMIT =
-        IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
+        IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, DFLT_TO_STRING_COLLECTION_LIMIT);
 
     /** Every thread has its own string builder. */
     private static ThreadLocal<SBLimitedLength> threadLocSB = new ThreadLocal<SBLimitedLength>() {

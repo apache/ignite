@@ -141,7 +141,7 @@ namespace ignite
                 {
                     std::string port = common::StripSurroundingWhitespaces(value.begin(), value.end());
 
-                    if (!common::AllOf(port.begin(), port.end(), &isdigit))
+                    if (!common::AllDigits(port))
                         return 0;
 
                     if (port.size() >= sizeof("65535"))

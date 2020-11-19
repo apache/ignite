@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -30,10 +31,10 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
@@ -42,7 +43,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
-import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -114,6 +114,7 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
             provider,
             sizes,
             sharedCtx,
+            sharedCtx.pageStore(),
             PAGE_SIZE,
             (fullPageId, byteBuf, tag) -> {
                 assert false : "No page replacement (rotation with disk) should happen during the test";

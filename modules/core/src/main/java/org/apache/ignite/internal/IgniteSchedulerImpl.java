@@ -23,9 +23,12 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteScheduler;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteFuture;
@@ -63,7 +66,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         guard();
 
         try {
-            return new IgniteFutureImpl<>(ctx.closure().runLocalSafe(r, false));
+            return new IgniteFutureImpl<>(ctx.closure().runLocalSafe(securityRunnable(r), false));
         }
         finally {
             unguard();
@@ -78,7 +81,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         guard();
 
         try {
-            return ctx.timeout().schedule(r, timeUnit.toMillis(delay), -1);
+            return ctx.timeout().schedule(securityRunnable(r), timeUnit.toMillis(delay), -1);
         }
         finally {
             unguard();
@@ -92,7 +95,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         guard();
 
         try {
-            return new IgniteFutureImpl<>(ctx.closure().callLocalSafe(c, false));
+            return new IgniteFutureImpl<>(ctx.closure().callLocalSafe(securityCallable(c), false));
         }
         finally {
             unguard();
@@ -106,7 +109,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         guard();
 
         try {
-            return ctx.schedule().schedule(job, ptrn);
+            return ctx.schedule().schedule(securityRunnable(job), ptrn);
         }
         finally {
             unguard();
@@ -120,7 +123,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         guard();
 
         try {
-            return ctx.schedule().schedule(job, ptrn);
+            return ctx.schedule().schedule(securityCallable(job), ptrn);
         }
         finally {
             unguard();
@@ -159,5 +162,70 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
      */
     private Object readResolve() throws ObjectStreamException {
         return ctx.grid().scheduler();
+    }
+
+    /**
+     * @return Security aware runnable.
+     */
+    private Runnable securityRunnable(Runnable original) {
+        return ctx.security().enabled() ?
+            new SecurityAwareClosure<Void>(ctx.security().securityContext().subject().id(), original) : original;
+    }
+
+    /**
+     * @return Security aware callable.
+     */
+    private <T> Callable<T> securityCallable(Callable<T> original) {
+        return ctx.security().enabled() ?
+            new SecurityAwareClosure<>(ctx.security().securityContext().subject().id(), original) : original;
+    }
+
+    /** */
+    private class SecurityAwareClosure<T> implements Runnable, Callable<T>, GridInternalWrapper<Object> {
+        /** Security subject id. */
+        private final UUID secSubjId;
+
+        /** Runnable. */
+        private final Runnable runnable;
+
+        /** Callable. */
+        private final Callable<T> call;
+
+        /** */
+        private SecurityAwareClosure(UUID secSubjId, Runnable r) {
+            this.secSubjId = secSubjId;
+            runnable = SecurityUtils.sandboxedProxy(ctx, Runnable.class, r);
+            call = null;
+        }
+
+        /** */
+        private SecurityAwareClosure(UUID secSubjId, Callable<T> c) {
+            this.secSubjId = secSubjId;
+            call = SecurityUtils.sandboxedProxy(ctx, Callable.class, c);
+            runnable = null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            assert runnable != null;
+
+            try (OperationSecurityContext c = ctx.security().withContext(secSubjId)) {
+                runnable.run();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public T call() throws Exception {
+            assert call != null;
+
+            try (OperationSecurityContext c = ctx.security().withContext(secSubjId)) {
+                return call.call();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object userObject() {
+            return runnable != null ? runnable : call;
+        }
     }
 }

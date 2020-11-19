@@ -1,0 +1,471 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= SQL Conformance
+
+Apache Ignite supports most of the major features of ANSI-99 out-of-the-box. The following table shows Ignite compliance to link:https://en.wikipedia.org/wiki/SQL_compliance[SQL:1999 (Core), window=_blank].
+
+
+
+[width="100%", cols="20%,80%a"]
+|=======
+|Feature ID, Name
+|Support
+
+| `E011` Numeric data types
+| Ignite fully supports the following sub-features:
+
+`E011–01` INTEGER and SMALLINT data types (including all spellings)
+
+`E011–02` REAL, DOUBLE PRECISON, and FLOAT data types
+
+`E011–05` Numeric comparison
+
+`E011–06` Implicit casting among the numeric data types
+
+Ignite provides partial support for the following sub-features:
+
+`E011–03` DECIMAL and NUMERIC data types. Fixed <scale> is not supported for DEC and NUMERIC, so there are violations for:
+
+7) If a <scale> is omitted, then a <scale> of 0 (zero) is implicit (6.1 <data type>)
+
+22) NUMERIC specifies the data type exact numeric, with the decimal precision and scale specified by the <precision> and <scale>.
+
+23) DECIMAL specifies the data type exact numeric, with the decimal scale specified by the <scale> and the implementation-defined decimal precision equal to or greater than the value of the specified <precision>.
+
+`E011–04` Arithmetic operator. See issue for feature E011–03
+
+| `E021` Character string types
+| Ignite fully supports the following sub-features:
+
+`E021–03` Character literals
+
+`E021–04` CHARACTER_LENGTH function
+
+`E021–05` OCTET_LENGTH function
+
+`E021–06` SUBSTRING function
+
+`E021–07` Character concatenation
+
+`E021–08` UPPER and LOWER functions
+
+`E021–09` TRIM function
+
+`E021–10` Implicit casting among the fixed-length and variable-length character string types
+
+`E021–11` POSITION function
+
+`E021–12` Character comparison
+
+Ignite provides partial support for the following sub-features:
+
+E021–01 CHARACTER data type (including all its spellings).
+
+----
+<character string type> ::=
+CHARACTER [ <left paren> <length> <right paren> ]
+\| CHAR [ <left paren> <length> <right paren> ]
+\| CHARACTER VARYING <left paren> <length> <right paren>
+\| CHAR VARYING <left paren> <length> <right paren>
+\| VARCHAR <left paren> <length> <right paren>
+----
+
+<length> is not supported for CHARACTER and CHARACTER VARYING data type.
+
+`E021–02` CHARACTER VARYING data type (including all its spellings). See issue for feature E021–01
+
+| `E031` Identifiers
+| Ignite fully supports the following sub-features:
+
+`E031–01` Delimited identifiers
+
+`E031–02` Lower case identifiers
+
+`E031–03` Trailing underscore
+
+| `E051` Basic query specification
+| Ignite fully supports the following sub-features:
+
+`E051–01` SELECT DISTINCT
+
+`E051–04` GROUP BY can contain columns not in <select-list>
+
+`E051–05` Select list items can be renamed
+
+`E051–06` HAVING clause
+
+`E051–07` Qualified * in select list
+
+`E051–08` Correlation names in the FROM clause
+
+Ignite does not support the following sub-features:
+
+`E051–02` GROUP BY clause; No support for ROLLUP, CUBE, GROUPING SETS.
+
+`E051–09` Rename columns in the FROM clause. Some information about support from other products is link:http://modern-sql.com/feature/table-column-aliases[here, window=_blank].
+
+| `E061` Basic predicates and search conditions
+| Ignite fully supports the following sub-features:
+
+`E061–01` Comparison predicate
+
+`E061–02` BETWEEN predicate
+
+`E061–03` IN predicate with list of values
+
+`E061–06` NULL predicate
+
+`E061–08` EXISTS predicate
+
+`E061–09` Subqueries in comparison predicate
+
+`E061–11` Subqueries in IN predicate
+
+`E061–13` Correlated subqueries
+
+`E061–14` Search condition
+
+Ignite provides partial support for the following sub-features:
+
+`E061–04` LIKE predicate; There is support for <character like predicate>, but <octet like predicate> could not be checked because of link:https://issues.apache.org/jira/browse/IGNITE-7480[this issue, window=_blank].
+
+`E061–05` LIKE predicate: ESCAPE clause; There is support for <character like predicate>, but <octet like predicate> could not be checked because of link:https://issues.apache.org/jira/browse/IGNITE-7480[this issue, window=_blank].
+
+`E061–07` Quantified comparison predicate; Except ALL (see link:https://issues.apache.org/jira/browse/IGNITE-5749[issue, window=_blank]).
+
+Ignite does not support the following sub-feature:
+
+`E061–12` Subqueries in quantified comparison predicate.
+
+| `E071` Basic query expressions
+| Ignite provides partial support for the following sub-features:
+
+`E071–01` UNION DISTINCT table operator
+
+`E071–02` UNION ALL table operator
+
+`E071–03` EXCEPT DISTINCT table operator
+
+`E071–05` Columns combined via table operators need not have exactly the same data type
+
+`E071–06` Table operators in subqueries
+
+Note that there is no support for non-recursive WITH clause in H2 and Ignite. According to link:http://www.h2database.com/html/grammar.html#with[the H2 docs, window=_blank] there is support for recursive WITH clause, but it fails in Ignite.
+
+| E081 Basic Privileges
+| Ignite does not support the following sub-feature:
+
+`E081–01` SELECT privilege at the table level
+
+`E081–02` DELETE privilege
+
+`E081–03` INSERT privilege at the table level
+
+`E081–04` UPDATE privilege at the table level
+
+`E081–05` UPDATE privilege at the column level
+
+`E081–06` REFERENCES privilege at the table
+
+`E081–07` REFERENCES privilege at the column
+
+`E081–08` WITH GRANT OPTION
+
+`E081–09` USAGE privilege
+
+`E081–10` EXECUTE privilege
+
+| `E091` Set functions
+| Ignite provides partial support for the following sub-features:
+
+`E091–01` AVG
+
+`E091–02` COUNT
+
+`E091–03` MAX
+
+`E091–04` MIN
+
+`E091–05` SUM
+
+`E091–06` ALL quantifier
+
+`E091–07` DISTINCT quantifier
+
+Note that there is no support for:
+
+- GROUPING and ANY (both in H2 and Ignite).
+
+- EVERY and SOME functions. There is support in H2, but fails in Ignite.
+
+| `E101` Basic data manipulation
+| Ignite fully supports the following sub-features:
+
+`E101–03` Searched UPDATE statement
+
+`E101–04` Searched DELETE statement
+
+Ignite provides partial support for the following sub-features:
+
+`E101–01` INSERT statement. No support for DEFAULT values in Ignite. Works in H2.
+
+| `E111` Single row SELECT statement
+| Ignite does not support this feature.
+
+| `E121` Basic cursor support
+| Ignite does not support the following sub-features
+
+`E121–01` DECLARE CURSOR
+
+`E121–02` ORDER BY columns need not be in select list
+
+`E121–03` Value expressions in ORDER BY clause
+
+`E121–04` OPEN statement
+
+`E121–06` Positioned UPDATE statement
+
+`E121–07` Positioned DELETE statement
+
+`E121–08` CLOSE statement
+
+`E121–10` FETCH statement: implicit NEXT
+
+`E121–17` WITH HOLD cursors
+
+| `E131` Null value support (nulls in lieu of values)
+| Ignite fully supports this feature.
+
+| `E141` Basic integrity constraints
+| Ignite fully supports the following sub-feature:
+
+`E141–01` NOT NULL constraints YES
+
+Ignite provides partial support for the following sub-features:
+
+`E141–03` PRIMARY KEY constraints. See link:https://issues.apache.org/jira/browse/IGNITE-7479[IGNITE-7479, window=_blank]
+
+`E141–08` NOT NULL inferred on PRIMARY KEY. See link:https://issues.apache.org/jira/browse/IGNITE-7479[IGNITE-7479, window=_blank]
+
+Ignite does not support the following sub-features:
+
+`E141–02` UNIQUE constraints of NOT NULL columns
+
+`E141–04` Basic FOREIGN KEY constraint with the NO ACTION default for both referential delete action and referential update action
+
+`E141–06` CHECK constraints
+
+`E141–07` Column defaults
+
+`E141–10` Names in a foreign key can be specified in any order
+
+| `E151` Transaction support
+| Ignite does not support the following sub-features:
+
+`E151–01` COMMIT statement
+
+`E151–02` ROLLBACK statement
+
+| `E152` Basic SET TRANSACTION statement
+| Ignite does not support the following sub-features:
+
+`E152–01` SET TRANSACTION statement: ISOLATION LEVEL SERIALIZABLE clause
+
+`E152–02` SET TRANSACTION statement: READ ONLY and READ WRITE clauses
+
+| `E153` Updatable queries with subqueries
+| Ignite fully supports this feature.
+
+| `E161` SQL comments using leading double minus
+| Ignite fully supports this feature.
+
+| `E171` SQLSTATE support
+| Ignite provides partial support for this feature implementing a subset of standard error codes and introducing custom ones. A full list of errors​ supported by Ignite can be found here:
+
+link:SQL/JDBC/jdbc-driver#error-codes[JDBC Error Codes]
+
+link:SQL/ODBC/error-codes[ODBC Error Codes]
+
+| `E182` Host language Binding (previously "Module Language")
+| Ignite does not support this feature.
+
+| `F021` Basic information schema
+| Ignite does not support the following sub-features:
+
+`F021–01` COLUMNS view
+
+`F021–02` TABLES view
+
+`F021–03` VIEWS view
+
+`F021–04` TABLE_CONSTRAINTS
+
+`F021–05` REFERENTIAL_CONSTRAINTS view
+
+`F021–06` CHECK_CONSTRAINTS view
+
+| `F031` Basic schema manipulation
+| Ignite fully supports the following feature:
+
+`F031–04` ALTER TABLE statement: ADD COLUMN clause
+
+Ignite provides partial support for the following sub-feature:
+
+`F031–01` CREATE TABLE statement to create persistent base tables.
+
+Basic syntax is supported. 'AS' is supported in H2 but not in Ignite. No support for privileges (INSERT, SELECT, UPDATE, DELETE).
+
+Ignite does not support the following sub-features:
+
+`F031–02` CREATE VIEW statement
+
+`F031–03` GRANT statement
+
+`F031–13` DROP TABLE statement: RESTRICT clause
+
+`F031–16` DROP VIEW statement: RESTRICT clause
+
+`F031–19REVOKE` statement: RESTRICT clause
+
+A link:sql-reference/ddl[DDL, window=_blank] is being actively developed; more features will be supported in upcoming releases.
+
+| `F041` Basic joined table
+| Ignite fully supports the following sub-features:
+
+`F041–01` Inner join (but not necessarily the INNER keyword)
+`F041–02` INNER keyword
+
+`F041–03` LEFT OUTER JOIN
+
+`F041–04` RIGHT OUTER JOIN
+
+`F041–05` Outer joins can be nested
+
+`F041–07` The inner table in a left or right outer join can also be used in an inner join
+
+`F041–08` All comparison operators are supported (rather than just =)
+
+| `F051` Basic date and time
+| Ignite fully supports the following sub-features:
+
+`F051–04` Comparison predicate on DATE, TIME, and TIMESTAMP data types
+
+`F051–05` Explicit CAST between datetime types and character string types
+
+`F051–06` CURRENT_DATE
+
+`F051–07` LOCALTIME
+
+`F051–08` LOCALTIMESTAMP
+
+Ignite provides partial support for the following sub-features:
+
+`F051–01` DATE data type (including support of DATE literal). See link:https://issues.apache.org/jira/browse/IGNITE-7360[IGNITE-7360, window=_blank].
+
+`F051–02` TIME data type (including support of TIME literal) with fractional seconds precision of at least 0. <precision> is not supported correctly for TIME data type. Also see link:https://issues.apache.org/jira/browse/IGNITE-7360[IGNITE-7360, window=_blank].
+
+`F051–03` TIMESTAMP data type (including support of TIMESTAMP literal) with fractional seconds precision of at least 0 and 6. <precision> is not supported correctly for TIME data type. Also see link:https://issues.apache.org/jira/browse/IGNITE-7360[IGNITE-7360, window=_blank].
+
+| `F081` UNION and EXCEPT in views
+| Ignite does not support this feature.
+
+| `F131` Grouped operations
+| Ignite does not support the following sub-features:
+
+`F131–01` WHERE, GROUP BY, and HAVING clauses supported in queries with grouped views
+
+`F131–02` Multiple tables supported in queries with grouped views
+
+`F131–03` Set functions supported in queries with grouped views
+
+`F131–04` Subqueries with GROUP BY and HAVING clauses and grouped views
+
+`F131–05` Single row SELECT with GROUP BY and HAVING clauses and grouped views
+
+| `F181` Multiple module support
+| Ignite does not support this feature.
+
+| `F201` CAST function
+| Ignite fully supports this feature.
+
+| `F221` Explicit defaults
+| Ignite fully supports this feature.
+
+| `F261` CASE expression
+| Ignite fully supports the following sub-features:
+
+`F261–01` Simple CASE
+
+`F261–02` Searched CASE
+
+`F261–03` NULLIF
+
+`F261–04` COALESCE
+
+| `F311` Schema definition statement
+| Ignite does not support the following sub-features:
+
+`F311–01` CREATE SCHEMA
+
+`F311–02` CREATE TABLE for persistent base tables
+
+`F311–03` CREATE VIEW
+
+`F311–04` CREATE VIEW: WITH CHECK OPTION
+
+`F311–05` GRANT statement
+
+| `F471` Scalar subquery values
+| Ignite fully supports this feature.
+
+| `F481` Expanded NULL predicate
+| Ignite fully supports this feature.
+
+| `F501` Features and conformance views
+| Ignite does not support the following sub-features:
+
+`F501–01` SQL_FEATURES view
+
+`F501–02` SQL_SIZING view
+
+`F501–03` SQL_LANGUAGES view
+
+| `F812` Basic flagging
+| Ignite does not support this feature.
+
+`S011` Distinct data types
+
+Ignite does not support the following sub-feature:
+
+`S011–01` USER_DEFINED_TYPES view
+
+| `T321` Basic SQL-invoked routines
+| Ignite does not support the following sub-features:
+
+`T321–01` User-defined functions with no overloading
+
+`T321–02` User-defined stored procedures with no overloading
+
+`T321–03` Function invocation
+
+`T321–04` CALL statement
+
+`T321–05` RETURN statement
+
+`T321–06` ROUTINES view
+
+`T321–07` PARAMETERS view
+
+|=======

@@ -39,6 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeExecutionRejectedException;
 import org.apache.ignite.compute.ComputeJobSibling;
@@ -68,8 +69,8 @@ import org.apache.ignite.internal.managers.systemview.walker.ComputeJobViewWalke
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
@@ -125,8 +126,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** */
     public static final String JOBS_VIEW_DESC = "Running compute jobs, part of compute task started on remote host.";
 
+    /** @see IgniteSystemProperties#IGNITE_JOBS_HISTORY_SIZE */
+    public static final int DFLT_JOBS_HISTORY_SIZE = 10240;
+
     /** */
-    private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, 10240);
+    private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, DFLT_JOBS_HISTORY_SIZE);
 
     /** Metrics prefix. */
     public static final String JOBS_METRICS = metricName("compute", "jobs");
@@ -287,7 +291,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     };
 
     /** Current session. */
-    private final ThreadLocal<ComputeTaskSession> currSess = new ThreadLocal<>();
+    private final ThreadLocal<GridJobSessionImpl> currSess = new ThreadLocal<>();
 
     /**
      * @param ctx Kernal context.
@@ -1373,7 +1377,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      *
      * @param ses Session.
      */
-    public void currentTaskSession(ComputeTaskSession ses) {
+    public void currentTaskSession(GridJobSessionImpl ses) {
         currSess.set(ses);
     }
 
@@ -1403,6 +1407,20 @@ public class GridJobProcessor extends GridProcessorAdapter {
             return null;
 
         return ses.getTaskName();
+    }
+
+    /**
+     * Returns current deployment.
+     *
+     * @return Deployment.
+     */
+    public GridDeployment currentDeployment() {
+        GridJobSessionImpl session = currSess.get();
+
+        if (session == null || session.deployment() == null)
+            return null;
+
+        return session.deployment();
     }
 
     /**

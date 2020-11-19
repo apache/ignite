@@ -169,7 +169,7 @@ public class SchemaManager {
         ctx.systemView().registerInnerCollectionView(SQL_IDXS_VIEW, SQL_IDXS_VIEW_DESC,
             new SqlIndexViewWalker(),
             dataTables.values(),
-            GridH2Table::getIndexes,
+            GridH2Table::indexesInformation,
             SqlIndexView::new);
 
         ctx.systemView().registerInnerArrayView(SQL_TBL_COLS_VIEW, SQL_TBL_COLS_VIEW_DESC,
@@ -653,9 +653,11 @@ public class SchemaManager {
 
         try {
             // Populate index with existing cache data.
-            final GridH2RowDescriptor rowDesc = h2Tbl.rowDescriptor();
+            IndexRebuildPartialClosure idxBuild = new IndexRebuildPartialClosure(h2Tbl.cacheContext());
 
-            cacheVisitor.visit(new IndexBuildClosure(rowDesc, h2Idx));
+            idxBuild.addIndex(h2Tbl, h2Idx);
+
+            cacheVisitor.visit(idxBuild);
 
             // At this point index is in consistent state, promote it through H2 SQL statement, so that cached
             // prepared statements are re-built.

@@ -2773,6 +2773,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 reuseList,
                 new IOVersions<>(new LongInnerIO(canGetRow)),
                 new IOVersions<>(new LongLeafIO()),
+                PageIdAllocator.FLAG_IDX,
                 new FailureProcessor(new GridTestKernalContext(log)) {
                     @Override public boolean process(FailureContext failureCtx) {
                         lockTrackerManager.dumpLocksToLog();

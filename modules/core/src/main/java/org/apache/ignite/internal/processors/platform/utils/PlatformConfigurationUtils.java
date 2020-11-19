@@ -53,8 +53,26 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CheckpointWriteOrder;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
+import org.apache.ignite.configuration.ExecutorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.PlatformCacheConfiguration;
+import org.apache.ignite.configuration.SqlConnectorConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
@@ -93,6 +111,7 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.util.AttributeNodeFilter;
 
 /**
  * Configuration utils.
@@ -228,6 +247,8 @@ public class PlatformConfigurationUtils {
         ccfg.setAffinity(readAffinityFunction(in));
         ccfg.setExpiryPolicyFactory(readExpiryPolicyFactory(in));
 
+        ccfg.setNodeFilter(readAttributeNodeFilter(in));
+
         int keyCnt = in.readInt();
 
         if (keyCnt > 0) {
@@ -329,6 +350,48 @@ public class PlatformConfigurationUtils {
     }
 
     /**
+     * Reads the node filter config.
+     *
+     * @param in Stream.
+     * @return AttributeNodeFilter.
+     */
+    public static AttributeNodeFilter readAttributeNodeFilter(BinaryRawReader in) {
+        if (!in.readBoolean())
+            return null;
+
+        int cnt = in.readInt();
+
+        Map<String, Object> attrs = new HashMap<>(cnt);
+        for (int i = 0; i < cnt; i++)
+            attrs.put(in.readString(), in.readObject());
+
+        return new AttributeNodeFilter(attrs);
+    }
+
+    /**
+     * Writes the node filter.
+     * @param out Stream.
+     * @param nodeFilter IgnitePredicate.
+     */
+    private static void writeAttributeNodeFilter(BinaryRawWriter out, IgnitePredicate nodeFilter) {
+        if (!(nodeFilter instanceof AttributeNodeFilter)) {
+            out.writeBoolean(false);
+            return;
+        }
+
+        out.writeBoolean(true);
+
+        Map<String, Object> attrs = ((AttributeNodeFilter) nodeFilter).getAttrs();
+
+        out.writeInt(attrs.size());
+
+        for (Map.Entry<String, Object> entry : attrs.entrySet()) {
+            out.writeString(entry.getKey());
+            out.writeObject(entry.getValue());
+        }
+    }
+
+    /**
      * Reads the eviction policy.
      *
      * @param in Stream.
@@ -399,7 +462,7 @@ public class PlatformConfigurationUtils {
     }
 
     /**
-     * Reads the near config.
+     * Writes the near config.
      *
      * @param out Stream.
      * @param cfg NearCacheConfiguration.
@@ -1065,6 +1128,8 @@ public class PlatformConfigurationUtils {
         writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
         writeAffinityFunction(writer, ccfg.getAffinity());
         writeExpiryPolicyFactory(writer, ccfg.getExpiryPolicyFactory());
+
+        writeAttributeNodeFilter(writer, ccfg.getNodeFilter());
 
         CacheKeyConfiguration[] keys = ccfg.getKeyConfiguration();
 

@@ -164,7 +164,7 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
                 ) :
                 Collections.<IgniteBiTuple<String, Object>>emptyList();
         }
-        catch (IgniteCheckedException | IOException ignored) {
+        catch (IOException ignored) {
             return null;
         }
     }
@@ -192,6 +192,11 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onProcessorStart() {
         // No-op.
     }
 }

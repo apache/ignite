@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -417,7 +419,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * {@inheritDoc}
      */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        opsLock.writeLock().lock();
+        try {
+            opsLock.writeLock().lockInterruptibly();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedException(e);
+        }
 
         try {
             if (log.isDebugEnabled()) {
@@ -1688,7 +1697,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 registeredServices.entrySet().removeIf(e -> {
                     ServiceInfo desc = e.getValue();
 
-                    if (desc.cacheName().equals(chReq.cacheName())) {
+                    if (Objects.equals(desc.cacheName(), chReq.cacheName())) {
                         toUndeploy.put(desc.serviceId(), desc);
 
                         return true;

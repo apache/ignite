@@ -112,11 +112,15 @@
     <Compile Include="Binary\Serializable\DynamicFieldSetTest.cs" />
     <Compile Include="Cache\Affinity\AffinityAttributeTest.cs" />
     <Compile Include="Cache\CacheCreateTest.cs" />
+    <Compile Include="Cache\CacheNodeFilterTest.cs" />
     <Compile Include="Cache\CacheQueryMetricsTest.cs" />
     <Compile Include="Cache\CacheTimeoutOnPmeTransactionalTest.cs" />
+    <Compile Include="Cache\CacheTransactionGridStopTest.cs" />
     <Compile Include="Cache\DataRegionMetricsTest.cs" />
     <Compile Include="Cache\DataStorageMetricsTest.cs" />
+    <Compile Include="Cache\CacheLocalActiveTransactionsTest.cs" />
     <Compile Include="Cache\NearCacheTest.cs" />
+    <Compile Include="Cache\OptimisticTransactionTest.cs" />
     <Compile Include="Cache\Platform\PlatformCacheTestCreateDestroy.cs" />
     <Compile Include="Cache\Platform\PlatformCacheTopologyChangeTest.cs" />
     <Compile Include="Cache\Platform\PlatformCacheTest.cs" />
@@ -141,9 +145,18 @@
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Misc.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Custom.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Contains.cs" />
+    <Compile Include="Cache\Query\QueryEntityMetadataRegistrationTest.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestCodeConfig.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestSharedFactory.cs" />
+    <Compile Include="Client\Cache\ClientQueryEntityMetadataRegistrationTest.cs" />
+    <Compile Include="Client\Cache\ClientQueryEntityMetadataRegistrationTestJavaOnlyServer.cs" />
+    <Compile Include="Client\Cache\ContinuousQueryTest.cs" />
+    <Compile Include="Client\Cache\CacheClientAbstractTxTest.cs" />
+    <Compile Include="Client\Cache\CacheClientLocalTxTest.cs" />
+    <Compile Include="Client\Cache\CacheClientPartitionedTxDisconnectTest.cs" />
+    <Compile Include="Client\Cache\CacheClientPartitionedTxTest.cs" />
     <Compile Include="Client\Cache\DynamicFieldSetTest.cs" />
+    <Compile Include="Client\Cache\CacheClientOptimisticTxTest.cs" />
     <Compile Include="Client\Cache\SerializableObjectsTest.cs" />
     <Compile Include="Client\Cache\PartitionAwarenessTest.cs" />
     <Compile Include="Client\Cache\BinaryBuilderTest.cs" />
@@ -164,13 +177,10 @@
     <Compile Include="Client\Cache\SqlQueryTestBase.cs" />
     <Compile Include="Client\Cache\TestKey.cs" />
     <Compile Include="Client\Cache\TestKeyWithAffinity.cs" />
-    <Compile Include="Client\ClientProtocolCompatibilityTest.cs" />
     <Compile Include="Client\ClientFeaturesTest.cs" />
     <Compile Include="Client\ClientProtocolVersionTest.cs" />
-    <Compile Include="Client\ClientReconnectCompatibilityTest.cs" />
     <Compile Include="Client\ClientServerCacheAdapter.cs" />
     <Compile Include="Client\ClientServerCacheAdapterExtensions.cs" />
-    <Compile Include="Client\ClientServerCompatibilityTest.cs" />
     <Compile Include="Client\ClientTestBase.cs" />
     <Compile Include="Client\Cluster\ClientClusterDiscoveryTests.cs" />
     <Compile Include="Client\Cluster\ClientClusterDiscoveryTestsBase.cs" />
@@ -179,6 +189,9 @@
     <Compile Include="Client\Cluster\ClientClusterDiscoveryTestsSsl.cs" />
     <Compile Include="Client\Cluster\ClientClusterGroupTests.cs" />
     <Compile Include="Client\Cluster\ClientClusterTests.cs" />
+    <Compile Include="Client\Compatibility\ClientProtocolCompatibilityTest.cs" />
+    <Compile Include="Client\Compatibility\ClientReconnectCompatibilityTest.cs" />
+    <Compile Include="Client\Compatibility\ClientServerCompatibilityTest.cs" />
     <Compile Include="Client\Compute\ComputeClientDisabledTests.cs" />
     <Compile Include="Client\Compute\ComputeClientTests.cs" />
     <Compile Include="Client\EndpointTest.cs" />
@@ -186,7 +199,18 @@
     <Compile Include="Client\RawSocketTest.cs" />
     <Compile Include="Client\ClientConnectionTest.cs" />
     <Compile Include="Client\IgniteClientConfigurationTest.cs" />
+    <Compile Include="Client\Services\ITestService.cs" />
+    <Compile Include="Client\Services\ITestServiceClient.cs" />
+    <Compile Include="Client\Services\ITestServiceDataTypes.cs" />
+    <Compile Include="Client\Services\ITestServiceGenericMethods.cs" />
+    <Compile Include="Client\Services\ITestServiceOverloads.cs" />
+    <Compile Include="Client\Services\ServicesClientTest.cs" />
+    <Compile Include="Client\Services\TestService.cs" />
+    <Compile Include="Client\Services\TestServiceDataTypes.cs" />
+    <Compile Include="Client\Services\TestServiceGenericMethods.cs" />
+    <Compile Include="Client\Services\TestServiceOverloads.cs" />
     <Compile Include="Common\IgniteProductVersionTests.cs" />
+    <Compile Include="Common\MemoryInfoTest.cs" />
     <Compile Include="Compute\ComputeApiTest.JavaTask.cs" />
     <Compile Include="Compute\ComputeWithExecutorTest.cs" />
     <Compile Include="Deployment\CacheGetFunc.cs" />
@@ -241,8 +265,8 @@
     <Compile Include="FailureHandlerTest.cs" />
     <Compile Include="IgniteLockFailoverTests.cs" />
     <Compile Include="IgniteLockTests.cs" />
+    <Compile Include="IgniteStartStopProcessorInitTest.cs" />
     <Compile Include="IgniteUtilsTest.cs" />
-    <Compile Include="Impl\Compute\ComputeImplTest.cs" />
     <Compile Include="JavaServer.cs" />
     <Compile Include="Log\ConsoleLoggerTest.cs" />
     <Compile Include="Log\FixedDateTimeProvider.cs" />
@@ -261,6 +285,7 @@
     <Compile Include="Plugin\TestIgnitePluginConfiguration.cs" />
     <Compile Include="Plugin\TestIgnitePluginException.cs" />
     <Compile Include="Plugin\TestIgnitePluginProvider.cs" />
+    <Compile Include="Services\IJavaService.cs" />
     <Compile Include="Ssl\SslConfigurationTest.cs" />
     <Compile Include="TaskExtensions.cs" />
     <Compile Include="TestAppConfig.cs" />
@@ -357,7 +382,6 @@
     <Compile Include="IgniteStartStopTest.cs" />
     <Compile Include="Services\ServicesTestFullFooter.cs" />
     <Compile Include="TestBase.cs" />
-    <Compile Include="TestUtils.Common.cs" />
     <Compile Include="Memory\InteropMemoryTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTest.cs" />
     <Compile Include="Binary\BinarySelfTest.cs" />
@@ -374,6 +398,8 @@
     <Compile Include="Services\ServiceProxyTest.cs" />
     <Compile Include="Services\ServicesAsyncWrapper.cs" />
     <Compile Include="TestRunner.cs" />
+    <Compile Include="TestUtils.cs" />
+    <Compile Include="TestUtilsJni.cs" />
     <Compile Include="Unmanaged\JniThreadDetachTest.cs" />
     <Compile Include="Unmanaged\UnmanagedThreadTest.cs" />
     <Compile Include="WindowsServiceTest.cs" />
@@ -414,6 +440,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Config\cache-attribute-node-filter.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Config\cache-binarizables.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -500,6 +529,9 @@
     <Content Include="Config\Log\custom-log.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Config\query-entity-metadata-registration.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Config\spring-test.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -573,7 +605,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
-    <Compile Include="TestUtils.Windows.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="AfterBuild">

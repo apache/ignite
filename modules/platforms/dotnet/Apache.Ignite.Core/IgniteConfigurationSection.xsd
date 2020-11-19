@@ -623,6 +623,18 @@
                                                 </xs:attribute>
                                             </xs:complexType>
                                         </xs:element>
+                                        <xs:element name="nodeFilter" minOccurs="0" maxOccurs="1">
+                                          <xs:annotation>
+                                            <xs:documentation>Node filter to match selected nodes. Only predefined AttributeNodeFilter is supported.</xs:documentation>
+                                          </xs:annotation>
+                                          <xs:complexType>
+                                            <xs:attribute name="type" type="xs:string" use="required">
+                                              <xs:annotation>
+                                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                              </xs:annotation>
+                                            </xs:attribute>
+                                          </xs:complexType>
+                                        </xs:element>
                                         <xs:element name="keyConfiguration" minOccurs="0">
                                             <xs:annotation>
                                                 <xs:documentation>Cache key configuration collection.</xs:documentation>

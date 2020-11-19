@@ -25,13 +25,13 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -62,7 +62,7 @@ public class CheckpointEntry {
      * @param cpId Checkpoint ID.
      * @param cacheGrpStates Cache groups states.
      */
-    public CheckpointEntry(
+    CheckpointEntry(
         long cpTs,
         WALPointer cpMark,
         UUID cpId,
@@ -96,21 +96,22 @@ public class CheckpointEntry {
     }
 
     /**
-     * @param cctx Cache shred context.
+     * @param wal Write ahead log manager.
+     * @return Group id -> group state map.
      */
     public Map<Integer, GroupState> groupState(
-        GridCacheSharedContext cctx
+        IgniteWriteAheadLogManager wal
     ) throws IgniteCheckedException {
-        GroupStateLazyStore store = initIfNeeded(cctx);
+        GroupStateLazyStore store = initIfNeeded(wal);
 
         return store.grpStates;
     }
 
     /**
-     * @param cctx Cache shred context.
+     * @param wal Write ahead log manager.
      * @return Group lazy store.
      */
-    private GroupStateLazyStore initIfNeeded(GridCacheSharedContext cctx) throws IgniteCheckedException {
+    private GroupStateLazyStore initIfNeeded(IgniteWriteAheadLogManager wal) throws IgniteCheckedException {
         GroupStateLazyStore store = grpStateLazyStore.get();
 
         if (store == null) {
@@ -119,22 +120,22 @@ public class CheckpointEntry {
             grpStateLazyStore = new SoftReference<>(store);
         }
 
-        store.initIfNeeded(cctx, cpMark);
+        store.initIfNeeded(wal, cpMark);
 
         return store;
     }
 
     /**
-     * @param cctx Cache shared context.
+     * @param wal Write ahead log manager.
      * @param grpId Cache group ID.
      * @param part Partition ID.
      * @return Partition counter or {@code null} if not found.
      */
-    public Long partitionCounter(GridCacheSharedContext cctx, int grpId, int part) {
+    public Long partitionCounter(IgniteWriteAheadLogManager wal, int grpId, int part) {
         GroupStateLazyStore store;
 
         try {
-            store = initIfNeeded(cctx);
+            store = initIfNeeded(wal);
         }
         catch (IgniteCheckedException e) {
             return null;
@@ -152,13 +153,13 @@ public class CheckpointEntry {
      *
      */
     public static class GroupState {
-        /** */
+        /** Partition ids. */
         private int[] parts;
 
-        /** */
+        /** Partition counters which corresponds to partition ids. */
         private long[] cnts;
 
-        /** */
+        /** Next index to insert to parts and cnts. */
         private int idx;
 
         /**
@@ -204,8 +205,8 @@ public class CheckpointEntry {
         }
 
         /**
-         * Return a partition id by an index of this group state.
-         * Index was passed through parameter have to be less than size.
+         * Return a partition id by an index of this group state. Index was passed through parameter have to be less
+         * than size.
          *
          * @param idx Partition index.
          * @return Patition id.
@@ -238,7 +239,7 @@ public class CheckpointEntry {
     }
 
     /**
-     *  Group state lazy store.
+     * Group state lazy store.
      */
     public static class GroupStateLazyStore {
         /** */
@@ -335,16 +336,16 @@ public class CheckpointEntry {
         }
 
         /**
-         * @param cctx Cache shared context.
+         * @param wal Write ahead log manager.
          * @param ptr Checkpoint wal pointer.
          * @throws IgniteCheckedException If failed to read WAL entry.
          */
         private void initIfNeeded(
-            GridCacheSharedContext cctx,
+            IgniteWriteAheadLogManager wal,
             WALPointer ptr
         ) throws IgniteCheckedException {
             if (initGuardUpdater.compareAndSet(this, 0, 1)) {
-                try (WALIterator it = cctx.wal().replay(ptr)) {
+                try (WALIterator it = wal.replay(ptr)) {
                     if (it.hasNextX()) {
                         IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
 

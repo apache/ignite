@@ -52,6 +52,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -104,6 +105,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Manager of data structures.
  */
 public final class DataStructuresProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
+    /** DataRegionConfiguration name reserved for volatile caches. */
+    public static final String VOLATILE_DATA_REGION_NAME = "volatileDsMemPlc";
+
     /** */
     public static final String DEFAULT_VOLATILE_DS_GROUP_NAME = "default-volatile-ds-group";
 
@@ -358,8 +362,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return {@code True} if group name is reserved to store data structures.
      */
     public static boolean isReservedGroup(@Nullable String grpName) {
-        return DEFAULT_DS_GROUP_NAME.equals(grpName) ||
-            DEFAULT_VOLATILE_DS_GROUP_NAME.equals(grpName);
+        return grpName != null &&
+            (DEFAULT_DS_GROUP_NAME.equals(grpName) ||
+            grpName.startsWith(DEFAULT_VOLATILE_DS_GROUP_NAME));
     }
 
     /**
@@ -510,11 +515,18 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             cfg = dfltAtomicCfg;
         }
 
+        String dataRegionName = null;
         final String grpName;
 
-        if (type.isVolatile())
-            grpName = DEFAULT_VOLATILE_DS_GROUP_NAME;
-        else if (cfg.getGroupName() != null)
+        if (type.isVolatile()) {
+            String volatileGrpName = DEFAULT_VOLATILE_DS_GROUP_NAME;
+
+            dataRegionName = VOLATILE_DATA_REGION_NAME;
+
+            volatileGrpName += "@" + dataRegionName;
+
+            grpName = volatileGrpName;
+        } else if (cfg.getGroupName() != null)
             grpName = cfg.getGroupName();
         else
             grpName = DEFAULT_DS_GROUP_NAME;
@@ -527,7 +539,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             if (!create && ctx.cache().cacheDescriptor(cacheName) == null)
                 return null;
 
-            ctx.cache().dynamicStartCache(cacheConfiguration(cfg, cacheName, grpName),
+            ctx.cache().dynamicStartCache(cacheConfiguration(cfg, cacheName, grpName, dataRegionName),
                 cacheName,
                 null,
                 CacheType.DATA_STRUCTURES,
@@ -887,9 +899,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param cfg Atomic configuration.
      * @param name Cache name.
      * @param grpName Group name.
+     * @param dataRegionName Name of data region for this cache.
+     *
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(AtomicConfiguration cfg, String name, String grpName) {
+    private CacheConfiguration cacheConfiguration(AtomicConfiguration cfg, String name, String grpName,
+        String dataRegionName) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(name);
@@ -900,6 +915,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         ccfg.setCacheMode(cfg.getCacheMode());
         ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
         ccfg.setAffinity(cfg.getAffinity());
+        ccfg.setDataRegionName(dataRegionName);
 
         if (cfg.getCacheMode() == PARTITIONED)
             ccfg.setBackups(cfg.getBackups());
@@ -1662,6 +1678,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
             try {
                 return c.applyx();
+            }
+            catch (NodeStoppingException e) {
+                throw e;
             }
             catch (IgniteCheckedException e) {
                 if (i == GridCacheAdapter.MAX_RETRIES - 1)

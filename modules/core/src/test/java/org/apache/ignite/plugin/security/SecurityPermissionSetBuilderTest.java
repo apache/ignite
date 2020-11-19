@@ -33,10 +33,10 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
+import static org.apache.ignite.plugin.security.SecurityPermission.EVENTS_ENABLE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_INVOKE;
-import static org.apache.ignite.plugin.security.SecurityPermission.EVENTS_ENABLE;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;

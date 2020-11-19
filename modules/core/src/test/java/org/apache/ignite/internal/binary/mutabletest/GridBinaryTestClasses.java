@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.binary.mutabletest;
 
-import com.google.common.base.Throwables;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutput;
@@ -32,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import com.google.common.base.Throwables;
 import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;

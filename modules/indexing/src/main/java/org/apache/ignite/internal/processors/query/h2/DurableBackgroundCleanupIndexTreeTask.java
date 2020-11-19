@@ -28,6 +28,7 @@ import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -46,6 +47,9 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
 
     /** */
     private transient List<H2Tree> trees;
+
+    /** */
+    private transient volatile boolean completed;
 
     /** */
     private String cacheGrpName;
@@ -73,6 +77,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     ) {
         this.rootPages = rootPages;
         this.trees = trees;
+        this.completed = false;
         this.cacheGrpName = cacheGrpName;
         this.cacheName = cacheName;
         this.schemaName = schemaName;
@@ -137,7 +142,8 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                         null,
                         stats,
                         null,
-                        0
+                        0,
+                        PageIoResolver.DEFAULT_PAGE_IO_RESOLVER
                     );
 
                     trees0.add(tree);
@@ -165,6 +171,21 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
         finally {
             ctx.cache().context().database().checkpointReadUnlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void complete() {
+        completed = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isCompleted() {
+        return completed;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCancel() {
+        trees = null;
     }
 
     /** {@inheritDoc} */

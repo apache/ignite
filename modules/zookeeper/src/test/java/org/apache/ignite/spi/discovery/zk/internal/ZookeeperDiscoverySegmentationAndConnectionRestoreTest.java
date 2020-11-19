@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.curator.test.TestingZooKeeperServer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteState;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -390,7 +391,7 @@ public class ZookeeperDiscoverySegmentationAndConnectionRestoreTest extends Zook
 
             closeZkClient(spi);
 
-            helper.checkEvents(node0, evts, ZookeeperDiscoverySpiTestHelper.failEvent(4));
+            helper.checkEvents(node0, evts, ZookeeperDiscoverySpiTestHelper.leftEvent(4, true));
         }
 
         c1.allowConnect();
@@ -398,9 +399,9 @@ public class ZookeeperDiscoverySegmentationAndConnectionRestoreTest extends Zook
         helper.checkEvents(ignite(1), evts, ZookeeperDiscoverySpiTestHelper.joinEvent(3));
 
         if (failWhenDisconnected) {
-            helper.checkEvents(ignite(1), evts, ZookeeperDiscoverySpiTestHelper.failEvent(4));
+            helper.checkEvents(ignite(1), evts, ZookeeperDiscoverySpiTestHelper.leftEvent(4, true));
 
-            IgnitionEx.stop(getTestIgniteInstanceName(2), true, true);
+            IgnitionEx.stop(getTestIgniteInstanceName(2), true, ShutdownPolicy.IMMEDIATE, true);
         }
 
         fut.get();

@@ -17,9 +17,8 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Platform cache configuration.

@@ -1,0 +1,225 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= SSL/TLS
+
+:javaFile: {javaCodeDir}/Security.java
+:xmlFile: code-snippets/xml/ssl.xml
+
+This page explains how to configure SSL/TLS encryption between cluster nodes (both server and client nodes) and thin clients that connect to your cluster.
+
+== Considerations
+
+To ensure a sufficient level of security, we recommend that each node (server or client) has its own unique certificate in the node's keystore (including the private key).
+This certificate must be trusted by all other server nodes.
+//This configuration allows for an easier certificate replacement procedure (for example when they are expired).
+
+
+== SSL/TLS for Nodes
+
+To enable SSL/TLS for cluster nodes, configure an `SSLContext` factory in the node configuration.
+You can use the `org.apache.ignite.ssl.SslContextFactory`, which is the default factory that uses a configurable keystore to initialize the SSL context.
+//You can also implement your own `SSLContext` factory.
+
+[CAUTION]
+====
+Ensure that your version of the JVM addresses
+link:https://bugs.openjdk.java.net/browse/JDK-8219658[the following issue, window=_blank] that can cause deadlocks
+in SSL connections. If your JVM is affected but can't be updated, then set
+the link:clustering/network-configuration[`TcpDiscoverySpi.soLinger`] parameter to a non-negative value.
+====
+
+Below is an example of `SslContextFactory` configuration:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::{xmlFile}[tags=ignite-config;!discovery,indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=ssl-context-factory,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+
+----
+tab:C++[unsupported]
+--
+
+The keystore must contain the node's certificate, including its private key.
+The trust store must contain the trusted certificates for all other cluster nodes.
+
+You can define other properties, such as key algorithm, key store type, or trust manager. See the description of the properties in the <<SslContextFactory Properties>> section.
+
+After starting the node, you should see the following messages in the logs:
+
+
+[source, text,subs="verbatim,quotes"]
+----
+Security status [authentication=off, *tls/ssl=on*]
+----
+
+
+
+////
+== SSL/TLS for Thin Clients
+
+To enable SSL/TLS for thin clients, refer to the link:thin-clients/getting-started-with-thin-clients#enabling-ssltls-for-thin-clients[thin client documentation].
+////
+
+== SSL/TLS for Thin Clients and JDBC/ODBC [[ssl-for-clients]]
+
+Ignite uses the same SSL/TLS properties for all clients, including thin clients and JDBC/ODBC connections. The properties are configured within the client connector configuration.
+The client connector configuration is defined via the `IgniteConfiguration.clientConnectorConfiguration` property.
+
+To enable SSL/TLS for client connections, set the `sslEnabled` property to `true` and provide an `SslContextFactory` in the client connector configuration.
+You can re-use the <<SSL/TLS for Nodes,SSLContextFactory configured for nodes>>, or you can configure an SSLContext factory that will be used for client connections only.
+
+Then, configure SSL on the client side in the same way. Refer to the specific client documentation for details.
+
+Here is an example configuration that sets `SslContextFactory` for client connection:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/thin-client-cluster-config.xml[tag=ssl-configuration,indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/JavaThinClient.java[tag=cluster-ssl-configuration,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/ThinClient.cs[tag=ssl,indent=0]
+----
+tab:C++[unsupported]
+--
+
+If you want to re-use the SSLContext factory configured for nodes, you only need to set the `sslEnabled` property to `true`, and  `ClientConnectorConfiguration` will look for the SSLContext configured in `IgniteConfiguration`:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<property name="clientConnectorConfiguration">
+    <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+        <property name="sslEnabled" value="true"/>
+    </bean>
+</property>
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/JavaThinClient.java[tag=use-global-ssl,indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+== Disabling Certificate Validation
+
+In some cases, it is useful to disable certificate validation, for example when connecting to a server with a self-signed certificate.
+This can be achieved by using a disabled trust manager, which can be obtained by calling the `SslContextFactory.getDisabledTrustManager()` method.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/ssl-without-validation.xml[tags=ignite-config;!discovery,indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=disable-validation,indent=0]
+----
+--
+
+== Upgrading Certificates
+If your SSL certificates are about to expire or have been compromised, you can install new certificates without shutting down the whole cluster.
+
+The following is a procedure for updating certificate.
+
+. First of all, make sure the new certificates are trusted by all cluster nodes.
+This step may not be necessary if your trusted stores contain the root certificate and the new certificates are signed by the same CA.
++
+--
+Repeat the following procedure for the nodes where the certificate is not trusted:
+
+.. Import the new certificate to the trusted store of the node.
+.. Gracefully restart the node.
+.. Repeat these steps for all server nodes.
+
+Now all nodes trust the new certificates.
+--
+
+. Import the new certificate (including the private key) to the key store of the corresponding node and remove the old certificate. Then gracefully restart the node. Repeat this procedure for all certificates you want to update.
+
+
+//Otherwise, first you have to push the trust store to all nodes one by one. It will contain trusts for both new and old certificates while you transition.
+
+== SslContextFactory Properties
+
+`SslContextFactory` supports the following properties:
+
+[width="100%", cols="30%, 60%, 10%"]
+|=================
+| Property | Description | Default
+
+|`keyAlgorithm`
+|The key manager algorithm that will be used to create a key manager.
+|`SunX509`
+
+|`keyStoreFilePath`
+|The path to the key store file. This is a mandatory parameter since the SSL context can not be initialized without a key manager.
+|`N/A`
+
+|`keyStorePassword`
+|The key store password.
+|`N/A`
+
+|`keyStoreType`
+|The key store type.
+|`JKS`
+
+|`protocol`
+|The protocol for secure transport. https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#sslcontext-algorithms[Supported algorithms,window=_blank].
+|`TLS`
+
+|`trustStoreFilePath`
+|The path to the trust store file.
+|`N/A`
+
+|`trustStorePassword`
+|The trust store password.
+|`N/A`
+
+|`trustStoreType`
+|The trust store type.
+|`JKS`
+
+|`trustManagers`
+|A list of pre-configured trust managers.
+|`N/A`
+|=================

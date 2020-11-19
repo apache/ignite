@@ -26,13 +26,19 @@ public class RebalanceReassignExchangeTask implements CachePartitionExchangeWork
     /** */
     private final GridDhtPartitionExchangeId exchId;
 
+    /** */
+    private final GridDhtPartitionsExchangeFuture exchFut;
+
     /**
      * @param exchId Exchange ID.
+     * @param exchFut Exchange future.
      */
-    public RebalanceReassignExchangeTask(GridDhtPartitionExchangeId exchId) {
+    public RebalanceReassignExchangeTask(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut) {
         assert exchId != null;
+        assert exchFut != null;
 
         this.exchId = exchId;
+        this.exchFut = exchFut;
     }
 
     /** {@inheritDoc} */
@@ -45,5 +51,12 @@ public class RebalanceReassignExchangeTask implements CachePartitionExchangeWork
      */
     public GridDhtPartitionExchangeId exchangeId() {
         return exchId;
+    }
+
+    /**
+     * @return Exchange future.
+     */
+    public GridDhtPartitionsExchangeFuture future() {
+        return exchFut;
     }
 }

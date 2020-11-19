@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Common;
@@ -264,6 +265,78 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             {
                 Assert.IsNotNull(cb.ignite);
             }
+        }
+
+        /// <summary>
+        /// Tests that <see cref="ContinuousQuery{TK,TV}.IncludeExpired"/> is false by default
+        /// and expiration events are not delivered.
+        ///
+        /// - Create a cache with expiry policy
+        /// - Start a continuous query with default settings
+        /// - Check that Created events are delivered, but Expired events are not
+        /// </summary>
+        [Test]
+        public void TestIncludeExpiredIsFalseByDefaultAndExpiredEventsAreSkipped()
+        {
+            var cache = cache1.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100), null, null));
+            var cb = new Listener<BinarizableEntry>();
+
+            var qry = new ContinuousQuery<int, BinarizableEntry>(cb);
+            Assert.IsFalse(qry.IncludeExpired);
+
+            using (cache.QueryContinuous(qry))
+            {
+                cache[1] = Entry(1);
+
+                TestUtils.WaitForTrueCondition(() => !cache.ContainsKey(1));
+
+                cache[2] = Entry(2);
+            }
+
+            var events = CB_EVTS.SelectMany(e => e.entries).ToList();
+            Assert.AreEqual(2, events.Count);
+
+            Assert.AreEqual(CacheEntryEventType.Created, events[0].EventType);
+            Assert.AreEqual(CacheEntryEventType.Created, events[1].EventType);
+        }
+
+        /// <summary>
+        /// Tests that enabling <see cref="ContinuousQuery{TK,TV}.IncludeExpired"/> causes
+        /// <see cref="CacheEntryEventType.Expired"/> events to be delivered.
+        ///
+        /// - Create a cache with expiry policy
+        /// - Start a continuous query with <see cref="ContinuousQuery{TK,TV}.IncludeExpired"/> set to <c>true</c>
+        /// - Check that Expired events are delivered
+        /// </summary>
+        [Test]
+        public void TestExpiredEventsAreDeliveredWhenIncludeExpiredIsTrue()
+        {
+            var cache = cache1.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100), null, null));
+            var cb = new Listener<BinarizableEntry>();
+
+            var qry = new ContinuousQuery<int, BinarizableEntry>(cb)
+            {
+                IncludeExpired = true
+            };
+
+            using (cache.QueryContinuous(qry))
+            {
+                cache[1] = Entry(2);
+
+                TestUtils.WaitForTrueCondition(() => CB_EVTS.Count == 2, 5000);
+            }
+
+            var events = CB_EVTS.SelectMany(e => e.entries).ToList();
+
+            Assert.AreEqual(2, events.Count);
+            Assert.AreEqual(CacheEntryEventType.Created, events[0].EventType);
+            Assert.AreEqual(CacheEntryEventType.Expired, events[1].EventType);
+
+            Assert.IsTrue(events[1].HasValue);
+            Assert.IsTrue(events[1].HasOldValue);
+            Assert.AreEqual(2, ((BinarizableEntry)events[1].Value).val);
+            Assert.AreEqual(2, ((BinarizableEntry)events[1].Value).val);
+            Assert.AreEqual(1, events[1].Key);
         }
 
         /// <summary>
@@ -707,30 +780,30 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Test whether timeout works fine.
+        /// Test that TimeInterval causes incomplete buffer to be sent when BufferSize is greater than 1.
         /// </summary>
         [Test]
-        public void TestTimeout()
+        public void TestTimeInterval()
         {
             int key1 = PrimaryKey(cache1);
             int key2 = PrimaryKey(cache2);
 
-            ContinuousQuery<int, BinarizableEntry> qry =
-                new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
-
-            qry.BufferSize = 2;
-            qry.TimeInterval = TimeSpan.FromMilliseconds(500);
+            var qry = new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>())
+            {
+                BufferSize = 2,
+                TimeInterval = TimeSpan.FromMilliseconds(500)
+            };
 
             using (cache1.QueryContinuous(qry))
             {
                 // Put from local node.
                 cache1.GetAndPut(key1, Entry(key1));
-                CheckCallbackSingle(key1, null, Entry(key1), CacheEntryEventType.Created);
+                CheckCallbackSingle(key1, null, Entry(key1), CacheEntryEventType.Created, 2000);
 
                 // Put from remote node.
                 cache1.GetAndPut(key2, Entry(key2));
                 CheckNoCallback(100);
-                CheckCallbackSingle(key2, null, Entry(key2), CacheEntryEventType.Created);
+                CheckCallbackSingle(key2, null, Entry(key2), CacheEntryEventType.Created, 2000);
             }
         }
 
@@ -1051,6 +1124,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     return new CacheEntryCreateEvent<object, object>(e.Key, e.Value);
                 case CacheEntryEventType.Updated:
                     return new CacheEntryUpdateEvent<object, object>(e.Key, e.OldValue, e.Value);
+                case CacheEntryEventType.Expired:
+                    return new CacheEntryExpireEvent<object, object>(e.Key, e.OldValue);
                 default:
                     return new CacheEntryRemoveEvent<object, object>(e.Key, e.OldValue);
             }

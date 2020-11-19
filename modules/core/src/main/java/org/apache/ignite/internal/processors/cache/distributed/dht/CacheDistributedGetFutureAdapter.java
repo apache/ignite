@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CIX1;
@@ -128,6 +129,10 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     /** */
     protected final boolean recovery;
 
+    /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
+    @GridToStringExclude
+    protected final IgniteUuid deploymentLdrId;
+
     /** */
     protected Map<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>> invalidNodes = Collections.emptyMap();
 
@@ -175,6 +180,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
+        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         futId = IgniteUuid.randomUuid();
     }
@@ -227,9 +233,8 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
      * @param topVer Topology version.
      */
     protected synchronized void addNodeAsInvalid(ClusterNode node, int part, AffinityTopologyVersion topVer) {
-        if (invalidNodes == Collections.<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>>emptyMap()) {
+        if (invalidNodes == Collections.<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>>emptyMap())
             invalidNodes = new HashMap<>();
-        }
 
         Map<Integer, Set<ClusterNode>> invalidNodeMap = invalidNodes.get(topVer);
 

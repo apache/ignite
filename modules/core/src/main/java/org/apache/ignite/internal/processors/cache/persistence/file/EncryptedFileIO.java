@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 
 /**
  * Implementation of {@code FileIO} that supports encryption(decryption) of pages written(readed) to(from) file.
@@ -62,11 +62,6 @@ public class EncryptedFileIO implements FileIO {
      * Shared database manager.
      */
     private final EncryptionSpi encSpi;
-
-    /**
-     * Encryption key.
-     */
-    private Serializable encKey;
 
     /**
      * Extra bytes added by encryption.
@@ -242,11 +237,15 @@ public class EncryptedFileIO implements FileIO {
 
         srcBuf.limit(srcBuf.position() + plainDataSize());
 
-        encSpi.encryptNoPadding(srcBuf, key(), res);
+        GroupKey grpKey = encMgr.groupKey(groupId);
+
+        encSpi.encryptNoPadding(srcBuf, grpKey.key(), res);
 
         res.rewind();
 
         storeCRC(res);
+
+        res.put(grpKey.id());
 
         srcBuf.limit(srcLimit);
         srcBuf.position(srcBuf.position() + encryptionOverhead);
@@ -260,11 +259,31 @@ public class EncryptedFileIO implements FileIO {
         assert encrypted.remaining() >= pageSize;
         assert encrypted.limit() >= pageSize;
 
-        checkCRC(encrypted);
+        int crc = FastCrc.calcCrc(encrypted, encryptedDataSize());
+
+        int storedCrc = 0;
+
+        storedCrc |= (int)encrypted.get() << 24;
+        storedCrc |= ((int)encrypted.get() & 0xff) << 16;
+        storedCrc |= ((int)encrypted.get() & 0xff) << 8;
+        storedCrc |= encrypted.get() & 0xff;
+
+        if (crc != storedCrc) {
+            throw new IOException("Content of encrypted page is broken. [StoredCrc=" + storedCrc +
+                ", calculatedCrc=" + crc + "]");
+        }
+
+        int keyId = encrypted.get() & 0xff;
+
+        encrypted.position(encrypted.position() - (encryptedDataSize() + 4 /* CRC size. */ + 1 /* key identifier. */));
 
         encrypted.limit(encryptedDataSize());
 
-        encSpi.decryptNoPadding(encrypted, key(), destBuf);
+        GroupKey grpKey = encMgr.groupKey(groupId, keyId);
+
+        assert grpKey != null : keyId;
+
+        encSpi.decryptNoPadding(encrypted, grpKey.key(), destBuf);
 
         destBuf.put(zeroes); //Forcibly purge page buffer tail.
     }
@@ -281,29 +300,6 @@ public class EncryptedFileIO implements FileIO {
         res.put((byte) (crc >> 16));
         res.put((byte) (crc >> 8));
         res.put((byte) crc);
-    }
-
-    /**
-     * Checks encrypted data integrity.
-     *
-     * @param encrypted Encrypted data buffer.
-     */
-    private void checkCRC(ByteBuffer encrypted) throws IOException {
-        int crc = FastCrc.calcCrc(encrypted, encryptedDataSize());
-
-        int storedCrc = 0;
-
-        storedCrc |= (int)encrypted.get() << 24;
-        storedCrc |= ((int)encrypted.get() & 0xff) << 16;
-        storedCrc |= ((int)encrypted.get() & 0xff) << 8;
-        storedCrc |= encrypted.get() & 0xff;
-
-        if (crc != storedCrc) {
-            throw new IOException("Content of encrypted page is broken. [StoredCrc=" + storedCrc +
-                ", calculatedCrd=" + crc + "]");
-        }
-
-        encrypted.position(encrypted.position() - (encryptedDataSize() + 4 /* CRC size. */));
     }
 
     /**
@@ -332,16 +328,6 @@ public class EncryptedFileIO implements FileIO {
         src.position(srcPos);
 
         return true;
-    }
-
-    /**
-     * @return Encryption key.
-     */
-    private Serializable key() {
-        if (encKey == null)
-            return encKey = encMgr.groupKey(groupId);
-
-        return encKey;
     }
 
     /** {@inheritDoc} */

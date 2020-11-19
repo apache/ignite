@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.nio.ByteBuffer;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 
 /**
  * Tracks various checkpoint phases and stats.
@@ -236,7 +236,7 @@ public class CheckpointMetricsTracker {
     /**
      * @return Duration of checkpoint entry buffer writing to file.
      *
-     * @see GridCacheDatabaseSharedManager#writeCheckpointEntry(ByteBuffer, CheckpointEntry, CheckpointEntryType)
+     * @see CheckpointMarkersStorage#writeCheckpointEntry(long, UUID, WALPointer, CheckpointRecord, CheckpointEntryType, boolean)
      */
     public long writeCheckpointEntryDuration() {
         return splitAndSortCpPagesStart - walCpRecordFsyncEnd;

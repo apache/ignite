@@ -82,6 +82,7 @@ import org.junit.Before;
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
@@ -102,8 +103,14 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Number of cache keys to pre-create at node start. */
     protected static final int CACHE_KEYS_RANGE = 1024;
 
+    /** List of collected snapshot test events. */
+    protected final List<Integer> locEvts = new CopyOnWriteArrayList<>();
+
     /** Configuration for the 'default' cache. */
     protected volatile CacheConfiguration<Integer, Integer> dfltCacheCfg;
+
+    /** Enable default data region persistence. */
+    protected boolean persistence = true;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -118,11 +125,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setMaxSize(100L * 1024 * 1024)
-                    .setPersistenceEnabled(true))
+                    .setPersistenceEnabled(persistence))
                 .setCheckpointFrequency(3000)
                 .setPageSize(4096))
             .setCacheConfiguration(dfltCacheCfg)
             .setClusterStateOnStart(INACTIVE)
+            .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
             .setDiscoverySpi(discoSpi);
     }
 
@@ -132,6 +140,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         dfltCacheCfg = txCacheConfig(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        locEvts.clear();
     }
 
     /** @throws Exception If fails. */
@@ -139,7 +148,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     public void afterTestSnapshot() throws Exception {
         try {
             for (Ignite ig : G.allGrids()) {
-                if (ig.configuration().isClientMode())
+                if (ig.configuration().isClientMode() || !persistence)
                     continue;
 
                 File storeWorkDir = ((FilePageStoreManager)((IgniteEx)ig).context()
@@ -156,6 +165,16 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         cleanPersistenceDir();
+    }
+
+    /**
+     * @param evts Events to check.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    protected void waitForEvents(List<Integer> evts) throws IgniteInterruptedCheckedException {
+        boolean caught = waitForCondition(() -> locEvts.containsAll(evts), 10_000);
+
+        assertTrue("Events must be caught [locEvts=" + locEvts + ']', caught);
     }
 
     /**
@@ -262,6 +281,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         forceCheckpoint();
+
+        ig.events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
 
         return ig;
     }

@@ -149,7 +149,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
             nestedTxMode = NestedTxMode.fromByte(nestedTxModeVal);
         }
 
-        AuthorizationContext actx = authenticate(ses.certificates(), user, passwd);
+        AuthorizationContext actx = authenticate(ses, user, passwd);
 
         ClientListenerResponseSender sender = new ClientListenerResponseSender() {
             @Override public void send(ClientListenerResponse resp) {
@@ -157,9 +157,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
                     if (log.isDebugEnabled())
                         log.debug("Async response: [resp=" + resp.status() + ']');
 
-                    byte[] outMsg = parser.encode(resp);
-
-                    ses.send(outMsg);
+                    ses.send(parser.encode(resp));
                 }
             }
         };

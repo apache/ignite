@@ -40,7 +40,13 @@ public enum ProtocolBitmaskFeature {
     CLUSTER_GROUPS(4),
 
     /** Invoke service methods. */
-    SERVICE_INVOKE(5);
+    SERVICE_INVOKE(5),
+
+    /** Feature for use default query timeout if the qry timeout isn't set explicitly. */
+    DEFAULT_QRY_TIMEOUT(6),
+
+    /** Additional SqlFieldsQuery properties: partitions, updateBatchSize */
+    QRY_PARTITIONS_BATCH_SIZE(7);
 
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

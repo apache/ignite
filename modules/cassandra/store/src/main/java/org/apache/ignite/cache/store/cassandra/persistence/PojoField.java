@@ -17,14 +17,13 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.Row;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.util.List;
-
-import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
+import com.datastax.driver.core.DataType;
+import com.datastax.driver.core.Row;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
 import org.w3c.dom.Element;
 

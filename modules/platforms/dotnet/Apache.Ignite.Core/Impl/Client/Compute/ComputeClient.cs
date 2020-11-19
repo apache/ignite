@@ -121,6 +121,12 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
             return SetFlag(ComputeClientFlags.KeepBinary);
         }
 
+        /** <inheritdoc /> */
+        public IClientClusterGroup ClusterGroup
+        {
+            get { return _clusterGroup ?? _ignite.GetCluster(); }
+        }
+
         /// <summary>
         /// Returns a new instance with the given flag enabled, or this instance if the flag is already present.
         /// </summary>
@@ -147,7 +153,7 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
 
                 foreach (var node in nodes)
                 {
-                    writer.WriteGuid(node.Id);
+                    BinaryUtils.WriteGuid(node.Id, ctx.Stream);
                 }
             }
             else
@@ -191,13 +197,13 @@ namespace Apache.Ignite.Core.Impl.Client.Compute
 
             ctx.Socket.AddNotificationHandler(taskId, (stream, ex) =>
             {
+                ctx.Socket.RemoveNotificationHandler(taskId);
+
                 if (ex != null)
                 {
                     tcs.TrySetException(ex);
                     return;
                 }
-
-                ctx.Socket.RemoveNotificationHandler(taskId);
 
                 var reader = ctx.Marshaller.StartUnmarshal(stream,
                     keepBinary ? BinaryMode.ForceBinary : BinaryMode.Deserialize);

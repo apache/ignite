@@ -17,6 +17,9 @@
 
 package org.apache.ignite.cache.store.cassandra.common;
 
+import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.regex.Pattern;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Session;
@@ -24,9 +27,6 @@ import com.datastax.driver.core.exceptions.DriverException;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.exceptions.ReadTimeoutException;
-import java.net.InetSocketAddress;
-import java.util.Map;
-import java.util.regex.Pattern;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
-import com.google.common.base.Strings;
 import java.util.concurrent.TimeUnit;
+import com.google.common.base.Strings;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -32,7 +32,6 @@ import org.junit.Test;
  * Puts data into grid, waits for checkpoint to start and then verifies data
  */
 public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);

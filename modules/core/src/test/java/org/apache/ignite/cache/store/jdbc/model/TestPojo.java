@@ -18,9 +18,9 @@
 package org.apache.ignite.cache.store.jdbc.model;
 
 import java.io.Serializable;
+import java.sql.Date;
 import java.util.Objects;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import java.sql.Date;
 
 /**
  * Test JDBC POJO object.

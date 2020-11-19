@@ -80,16 +80,20 @@ namespace ignite
 
                 if (!home.empty())
                 {
-                    std::stringstream constructor;
+                    const char* paths[] = {"bin", "lib"};
 
-                    constructor << home << Fs << "bin" << Fs << fullName;
+                    for (size_t i = 0; i < 2; i++) {
+                        std::stringstream constructor;
 
-                    std::string fullPath = constructor.str();
+                        constructor << home << Fs << paths[i] << Fs << fullName;
 
-                    Module mod = LoadModule(fullPath);
+                        std::string fullPath = constructor.str();
 
-                    if (mod.IsLoaded())
-                        return mod;
+                        Module mod = LoadModule(fullPath);
+
+                        if (mod.IsLoaded())
+                            return mod;
+                    }
                 }
 
                 return LoadModule(fullName);
@@ -215,7 +219,7 @@ namespace ignite
                 functions.fpSSL_CTX_set_options = TryLoadSslMethod("SSL_CTX_set_options");
                 functions.fpERR_print_errors_fp = TryLoadSslMethod("ERR_print_errors_fp");
 
-                (void)SSL_library_init_();
+                IGNITE_UNUSED(SSL_library_init_());
 
                 SSL_load_error_strings_();
 

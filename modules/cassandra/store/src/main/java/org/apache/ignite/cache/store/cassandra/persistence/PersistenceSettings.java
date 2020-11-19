@@ -17,14 +17,18 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
-import com.datastax.driver.core.DataType;
 import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import com.datastax.driver.core.DataType;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -540,7 +544,7 @@ public abstract class PersistenceSettings<F extends PojoField> implements Serial
      */
     protected List<F> enrichFields(List<F> src) {
         if (src != null) {
-            List<F> enriched = new ArrayList<>(src.size());
+            List<F> enriched = new ArrayList<>();
 
             for (F sourceField : src)
                 enriched.add(createPojoField(sourceField, getJavaClass()));
@@ -548,6 +552,6 @@ public abstract class PersistenceSettings<F extends PojoField> implements Serial
             return enriched;
         }
         else
-            return null;
+            return new ArrayList<>();
     }
 }

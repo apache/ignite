@@ -44,6 +44,7 @@
         <git.exec>git</git.exec>
         <javadoc.opts>-Xdoclint:none</javadoc.opts>
         <update.notifier.enabled.by.default>true</update.notifier.enabled.by.default>
+        <failIfNoTests>false</failIfNoTests>
 
         <!-- Dependency versions -->
         <activemq.version>5.12.0</activemq.version>
@@ -105,9 +106,9 @@
         <lucene.version>7.4.0</lucene.version>
         <lz4.version>1.5.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
-        <maven.checkstyle.plugin.version>3.0.0</maven.checkstyle.plugin.version>
-        <checkstyle.puppycrawl.version>8.21</checkstyle.puppycrawl.version>
-        <mockito.version>1.10.19</mockito.version>
+        <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
+        <checkstyle.puppycrawl.version>8.35</checkstyle.puppycrawl.version>
+        <mockito.version>3.4.6</mockito.version>
         <mysql.connector.version>8.0.13</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
@@ -124,12 +125,9 @@
         <snappy.version>1.1.7.2</snappy.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
         <spark.version>2.3.0</spark.version>
-        <spring.data.version>1.13.23.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
-        <spring.version>4.3.26.RELEASE</spring.version><!-- don't forget to update spring-data version -->
-        <spring.data-2.0.version>2.0.13.RELEASE</spring.data-2.0.version> <!-- don't forget to update spring-5.0 version -->
-        <spring-5.0.version>5.0.16.RELEASE</spring-5.0.version><!-- don't forget to update spring-data-2.0 version -->
-        <spring.data-2.2.version>2.2.3.RELEASE</spring.data-2.2.version> <!-- don't forget to update spring-5.2 version -->
-        <spring-5.2.version>5.2.3.RELEASE</spring-5.2.version><!-- don't forget to update spring-data-2.2 version -->
+        <spring.version>4.3.26.RELEASE</spring.version>
+        <spring-5.0.version>5.0.16.RELEASE</spring-5.0.version>
+        <spring-5.2.version>5.2.3.RELEASE</spring-5.2.version>
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <storm.version>1.1.1</storm.version>
         <tomcat.version>9.0.10</tomcat.version>
@@ -141,12 +139,14 @@
         <zookeeper.version>3.5.5</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
+        <commons.lang3.version>3.9</commons.lang3.version>
         <!--Spark 2.4 version support -->
         <spark24.hadoop.version>2.6.5</spark24.hadoop.version>
         <spark24.version>2.4.4</spark24.version>
+        <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
 
         <!-- Maven plugins versions -->
-        <maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
+        <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
@@ -211,7 +211,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.11</version>
+            <version>4.12</version>
             <scope>test</scope>
         </dependency>
 
@@ -235,6 +235,9 @@
                             <jvmArg>-Xms512m</jvmArg>
                             <jvmArg>-Xmx1024m</jvmArg>
                         </jvmArgs>
+                        <args>
+                            <arg>-nobootcp</arg>
+                        </args>
                     </configuration>
                     <executions>
                         <execution>
@@ -286,7 +289,7 @@
                         <use>true</use>
                         <author>false</author>
                         <version>false</version>
-                        <additionalparam>${javadoc.opts}</additionalparam>
+                        <additionalOptions>${javadoc.opts}</additionalOptions>
                         <groups>
                             <group>
                                 <title>Common Grid APIs</title>
@@ -321,16 +324,8 @@
                                 <packages>org.apache.ignite.client</packages>
                             </group>
                             <group>
-                                <title>File System APIs</title>
-                                <packages>org.apache.ignite.igfs*</packages>
-                            </group>
-                            <group>
-                                <title>Hadoop Accelerator APIs</title>
-                                <packages>org.apache.ignite.hadoop*</packages>
-                            </group>
-                            <group>
                                 <title>Streaming APIs</title>
-                                <packages>org.apache.ignite.streamer*::org.apache.ignite.stream*</packages>
+                                <packages>org.apache.ignite.streamer*:org.apache.ignite.stream*</packages>
                             </group>
                             <group>
                                 <title>Security APIs</title>
@@ -437,18 +432,6 @@
                                 <packages>org.apache.ignite.osgi*</packages>
                             </group>
                             <group>
-                                <title>SpringData integration</title>
-                                <packages>org.apache.ignite.springdata.repository*</packages>
-                            </group>
-                            <group>
-                                <title>SpringData 2.0 integration</title>
-                                <packages>org.apache.ignite.springdata20.repository*</packages>
-                            </group>
-                            <group>
-                                <title>Spring Data 2.2 Integration</title>
-                                <packages>org.apache.ignite.springdata22.repository*</packages>
-                            </group>
-                            <group>
                                 <title>Storm integration</title>
                                 <packages>org.apache.ignite.stream.storm*</packages>
                             </group>
@@ -465,16 +448,16 @@
                                 <packages>org.apache.ignite.spi.encryption*</packages>
                             </group>
                             <group>
-                                <title>Ignite Web Console</title>
-                                <packages>org.apache.ignite.console*</packages>
-                            </group>
-                            <group>
                                 <title>Metric SPI</title>
                                 <packages>org.apache.ignite.spi.metric*</packages>
                             </group>
                             <group>
                                 <title>System view SPI</title>
                                 <packages>org.apache.ignite.spi.systemview*</packages>
+                            </group>
+                            <group>
+                                <title>Tracing SPI</title>
+                                <packages>org.apache.ignite.spi.tracing*</packages>
                             </group>
                         </groups>
                         <bottom>
@@ -578,10 +561,24 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M3</version>
+                <version>3.0.0-M4</version>
                 <configuration>
                     <forkCount>0</forkCount>
+                    <statelessTestsetInfoReporter implementation="org.apache.ignite.tools.surefire.TestSuiteAwareTestsetReporter"/>
+                    <properties>
+                        <property>
+                            <name>listener</name>
+                            <value>org.apache.ignite.tools.junit.JUnitTeamcityReporter</value>
+                        </property>
+                    </properties>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.ignite</groupId>
+                        <artifactId>ignite-tools</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
 
             <plugin>
@@ -757,7 +754,7 @@
                                 <goals>
                                     <goal>check</goal>
                                 </goals>
-                                <phase>compile</phase>
+                                <phase>validate</phase>
                                 <configuration>
                                     <consoleOutput>true</consoleOutput>
                                     <logViolationsToConsole>true</logViolationsToConsole>
@@ -772,11 +769,6 @@
                             </execution>
                         </executions>
                         <dependencies>
-                            <dependency>
-                                <groupId>org.apache.ignite</groupId>
-                                <artifactId>ignite-tools</artifactId>
-                                <version>${project.version}</version>
-                            </dependency>
                             <dependency>
                                 <groupId>com.puppycrawl.tools</groupId>
                                 <artifactId>checkstyle</artifactId>
@@ -797,7 +789,7 @@
                         <artifactId>apache-rat-plugin</artifactId>
                         <version>0.12</version>
                         <configuration>
-                            <addDefaultLicenseMatchers>false</addDefaultLicenseMatchers>
+                            <addDefaultLicenseMatchers>true</addDefaultLicenseMatchers>
                             <licenses>
                                 <license implementation="org.apache.rat.analysis.license.FullTextMatchingLicense">
                                     <licenseFamilyCategory>IAL20</licenseFamilyCategory>
@@ -921,6 +913,8 @@
                                         <!--platforms-->
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.jar</exclude>
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.jar</exclude>
+                                        <exclude>**/*.cmake</exclude>
+                                        <exclude>**/CMakeLists.txt</exclude>
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>
                                         <exclude>**/Makefile.amrel</exclude>
@@ -968,20 +962,16 @@
                                         <exclude>modules/platforms/python/docs/conf.py</exclude><!--sphinx files: BSD license-->
                                         <exclude>modules/platforms/python/docs/source/**/*.rst</exclude><!--sphinx-apidoc generated files-->
                                         <exclude>modules/platforms/python/requirements/**/*.txt</exclude><!--plain text can not be commented-->
-                                        <!--web console-->
-                                        <exclude>**/web-console/**/.eslintrc</exclude>
-                                        <exclude>**/web-console/**/.babelrc</exclude>
-                                        <exclude>**/web-console/**/*.json</exclude>
-                                        <exclude>**/web-console/**/*.json.sample</exclude>
-                                        <exclude>**/web-console/backend/build/**</exclude>
-                                        <exclude>**/web-console/backend/node_modules/**</exclude>
-                                        <exclude>**/web-console/e2e/testcafe/node_modules/**</exclude>
-                                        <exclude>**/web-console/frontend/build/**</exclude>
-                                        <exclude>**/web-console/frontend/node_modules/**</exclude>
-                                        <exclude>**/web-console/frontend/**/*.png</exclude>
-                                        <exclude>**/web-console/frontend/**/*.svg</exclude>
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
+                                        <!-- Ignite Documentation-->
+                                        <exclude>docs/_site/**</exclude>
+                                        <exclude>docs/assets/images/**</exclude>
+                                        <exclude>docs/Gemfile.lock</exclude>
+                                        <exclude>docs/.jekyll-cache/**</exclude>
+                                        <exclude>docs/_docs/images/**</exclude>
+                                        <exclude>docs/Gemfile</exclude>
+                                        <exclude>docs/assets/js/anchor.min.js</exclude><!-- Distributed under the MIT license. The original license header is badly formatted. -->
                                     </excludes>
                                 </configuration>
                             </execution>
@@ -1047,7 +1037,17 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <argLine>--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit</argLine>
+                            <argLine>--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED --illegal-access=permit</argLine>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                            <!-- TODO https://issues.apache.org/jira/browse/IGNITE-13202 -->
+                            <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</additionalOptions>
+                            <detectJavaApiLink>false</detectJavaApiLink>
                         </configuration>
                     </plugin>
                 </plugins>

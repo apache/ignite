@@ -404,7 +404,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         //noinspection ConstantConditions
         ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 0,
-            TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics().totalAllocatedPages());
+            TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics().totalAllocatedPages()::add);
     }
 
     /** {@inheritDoc} */
@@ -506,25 +506,27 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             // 2. Notify previous queries.
             prevQueries.onNodeFailed(nodeId);
 
-            // 3. Recover transactions started by the failed node.
-            recoveryBallotBoxes.forEach((nearNodeId, ballotBox) -> {
-                // Put synthetic vote from another failed node
-                ballotBox.vote(nodeId);
+            if (mvccEnabled) {
+                // 3. Recover transactions started by the failed node.
+                recoveryBallotBoxes.forEach((nearNodeId, ballotBox) -> {
+                    // Put synthetic vote from another failed node
+                    ballotBox.vote(nodeId);
 
-                tryFinishRecoveryVoting(nearNodeId, ballotBox);
-            });
+                    tryFinishRecoveryVoting(nearNodeId, ballotBox);
+                });
 
-            if (evt.eventNode().isClient()) {
-                RecoveryBallotBox ballotBox = recoveryBallotBoxes
-                    .computeIfAbsent(nodeId, uuid -> new RecoveryBallotBox());
+                if (evt.eventNode().isClient()) {
+                    RecoveryBallotBox ballotBox = recoveryBallotBoxes
+                        .computeIfAbsent(nodeId, uuid -> new RecoveryBallotBox());
 
-                ballotBox.voters(evt.topologyNodes().stream()
-                    // Nodes not supporting MVCC will never send votes to us. So, filter them away.
-                    .filter(this::supportsMvcc)
-                    .map(ClusterNode::id)
-                    .collect(Collectors.toList()));
+                    ballotBox.voters(evt.topologyNodes().stream()
+                        // Nodes not supporting MVCC will never send votes to us. So, filter them away.
+                        .filter(this::supportsMvcc)
+                        .map(ClusterNode::id)
+                        .collect(Collectors.toList()));
 
-                tryFinishRecoveryVoting(nodeId, ballotBox);
+                    tryFinishRecoveryVoting(nodeId, ballotBox);
+                }
             }
         }
     }
@@ -591,12 +593,14 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             prevQueries.init(nodes, ctx.discovery()::alive);
         }
         else if (sndQrys) {
-            try {
-                sendMessage(newCrd.nodeId(), new MvccActiveQueriesMessage(qryIds));
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send active queries to mvcc coordinator: " + e);
-            }
+            ctx.getSystemExecutorService().submit(() -> {
+                try {
+                    sendMessage(newCrd.nodeId(), new MvccActiveQueriesMessage(qryIds));
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send active queries to mvcc coordinator: " + e);
+                }
+            });
         }
     }
 
@@ -1856,6 +1860,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      * @param msg Message.
      */
     private void processRecoveryFinishedMessage(UUID nodeId, MvccRecoveryFinishedMessage msg) {
+        if (!mvccEnabled)
+            return;
+
         UUID nearNodeId = msg.nearNodeId();
 
         RecoveryBallotBox ballotBox = recoveryBallotBoxes.computeIfAbsent(nearNodeId, uuid -> new RecoveryBallotBox());

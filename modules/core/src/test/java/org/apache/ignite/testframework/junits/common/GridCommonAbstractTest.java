@@ -107,6 +107,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -2175,7 +2176,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Conflicts result.
      * @throws IgniteException If none caches or node found.
      */
-    protected IdleVerifyResultV2 idleVerify(Ignite ig, String... caches) {
+    protected IdleVerifyResultV2 idleVerify(Ignite ig, @Nullable String... caches) {
         IgniteEx ig0 = (IgniteEx)ig;
 
         Set<String> cacheNames = new HashSet<>();
@@ -2234,7 +2235,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Load data into single partition.
+     * Load data into a single partition.
      *
      * @param p Partition.
      * @param cacheName Cache name.
@@ -2559,6 +2560,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     protected void enableCheckpoints(Collection<Ignite> nodes, boolean enable) throws IgniteCheckedException {
+        GridCompoundFuture<Void, Void> fut = new GridCompoundFuture<>();
+
         for (Ignite node : nodes) {
             assert !node.cluster().localNode().isClient();
 
@@ -2569,8 +2572,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             GridCacheDatabaseSharedManager dbMgr0 = (GridCacheDatabaseSharedManager) dbMgr;
 
-            dbMgr0.enableCheckpoints(enable).get();
+            fut.add(dbMgr0.enableCheckpoints(enable));
         }
+
+        fut.markInitialized();
+
+        fut.get();
     }
 
     /**

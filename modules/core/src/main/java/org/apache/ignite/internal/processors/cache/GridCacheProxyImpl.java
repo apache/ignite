@@ -489,30 +489,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isIgfsDataCache() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.isIgfsDataCache();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceUsed() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.igfsDataSpaceUsed();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
 

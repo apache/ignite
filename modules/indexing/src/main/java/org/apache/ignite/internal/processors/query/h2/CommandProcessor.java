@@ -105,8 +105,8 @@ import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
-import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
+import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -1051,7 +1051,7 @@ public class CommandProcessor {
                 sqlCode = IgniteQueryErrorCode.UNKNOWN;
         }
 
-        return new IgniteSQLException(e.getMessage(), sqlCode);
+        return new IgniteSQLException(e.getMessage(), sqlCode, e);
     }
 
     /**
@@ -1361,7 +1361,7 @@ public class CommandProcessor {
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
         BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter,
-            idx.runningQueryManager(), qryId);
+            idx.runningQueryManager(), qryId, ctx.tracing());
 
         BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.packetSize());
 

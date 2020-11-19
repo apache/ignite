@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import javax.cache.CacheException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -30,6 +29,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -43,6 +43,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
@@ -554,10 +555,22 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
 
     /**
      * Destroy SQL cache on given node.
+     *
      * @param node Node to create cache on.
+     * @throws IgniteCheckedException if failed.
      */
     protected void destroySqlCache(Ignite node) throws IgniteCheckedException {
-        ((IgniteEx)node).context().cache().dynamicDestroyCache(CACHE_NAME, true, true, false, null).get();
+        destroySqlCacheFuture(node).get();
+    }
+
+    /**
+     * Starting destroy SQL cache with return of future.
+     *
+     * @param node Node to create cache on.
+     * @return Future that will be completed when cache is destroyed.
+     */
+    protected IgniteInternalFuture<Boolean> destroySqlCacheFuture(Ignite node) {
+        return ((IgniteEx)node).context().cache().dynamicDestroyCache(CACHE_NAME, true, true, false, null);
     }
 
     /**
