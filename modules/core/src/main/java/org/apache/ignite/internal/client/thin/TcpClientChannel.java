@@ -420,6 +420,7 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
 
         if (status == 0) {
             if (msgSize > hdrSize)
+                // TODO: Get rid of this extra array allocation - pass ByteBuffer instead.
                 res = dataInput.readByteArray(msgSize - hdrSize);
         }
         else if (status == ClientStatus.SECURITY_VIOLATION) {
