@@ -75,6 +75,7 @@ import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
@@ -588,8 +589,9 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
     /** Receive and handle handshake response. */
     private void handshakeRes(ByteBuffer buf, ProtocolVersion proposedVer, String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
-        BinaryInputStream res = BinaryByteBufferInputStream.create(buf);
-        int resSize = buf.remaining();
+
+        // TODO: BinaryByteBufferInputStream seems to be problematic.
+        BinaryInputStream res = new BinaryHeapInputStream(buf.array());
 
         try (BinaryReaderExImpl reader = ClientUtils.createBinaryReader(null, res)) {
             boolean success = res.readBoolean();
