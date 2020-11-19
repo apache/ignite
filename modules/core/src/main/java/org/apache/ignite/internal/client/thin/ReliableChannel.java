@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -441,7 +442,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         ClientChannel ch,
         ClientOperation op,
         long rsrcId,
-        byte[] payload,
+        ByteBuffer payload,
         Exception err
     ) {
         for (NotificationListener lsnr : notificationLsnrs) {
