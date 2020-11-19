@@ -52,7 +52,7 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
     private static final int CLIENT_MODE_PORT = -1;
 
     /** */
-    private final GridNioServer<byte[]> srv;
+    private final GridNioServer<byte[]> srv; // TODO: <ByteBuffer> possible?
 
     public GridNioServerClientConnectionMultiplexer() {
         IgniteLogger gridLog = new JavaLogger(false);
@@ -69,7 +69,7 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
 
             @Override
             public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
-                return ByteBuffer.wrap((byte[])msg);
+                return (ByteBuffer)msg;
             }
         }, gridLog, false);
 
