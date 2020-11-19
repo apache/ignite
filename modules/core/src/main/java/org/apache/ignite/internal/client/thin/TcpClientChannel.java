@@ -381,8 +381,6 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
 
         ClientOperation notificationOp = null;
 
-        BinaryInputStream resIn;
-
         if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
             short flags = dataInput.readShort();
 
