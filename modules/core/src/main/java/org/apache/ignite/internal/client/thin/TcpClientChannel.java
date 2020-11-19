@@ -374,7 +374,8 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
         BinaryInputStream dataInput = BinaryByteBufferInputStream.create(buf);
 
         if (protocolCtx == null) {
-            // TODO: read handshake
+            // Process handshake.
+            pendingReqs.remove(-1L).onDone(buf);
             return;
         }
 
