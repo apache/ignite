@@ -43,6 +43,7 @@ class GridNioServerClientConnection implements ClientConnection {
      */
     public GridNioServerClientConnection(GridNioSession ses, Consumer<ByteBuffer> hnd) {
         assert ses != null;
+        assert hnd != null;
 
         this.ses = ses;
         this.hnd = hnd;
@@ -79,10 +80,8 @@ class GridNioServerClientConnection implements ClientConnection {
      * @param msg Message.
      */
     void onMessage(ByteBuffer msg) {
-        Consumer<ByteBuffer> handler0 = hnd;
+        assert msg != null;
 
-        if (handler0 != null) {
-            handler0.accept(msg);
-        }
+        hnd.accept(msg);
     }
 }

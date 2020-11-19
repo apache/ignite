@@ -23,7 +23,7 @@ import java.util.function.Function;
 /**
  * Decodes thin client messages from partial buffers.
   */
-public class ClientMessageDecoder implements Function<ByteBuffer, byte[]> {
+public class ClientMessageDecoder {
     /** */
     private byte[] data;
 
@@ -33,8 +33,7 @@ public class ClientMessageDecoder implements Function<ByteBuffer, byte[]> {
     /** */
     private int msgSize;
 
-    /** {@inheritDoc} */
-    @Override public byte[] apply(ByteBuffer buf) {
+    public byte[] apply(ByteBuffer buf) {
         boolean msgReady = read(buf);
 
         return msgReady ? data : null;

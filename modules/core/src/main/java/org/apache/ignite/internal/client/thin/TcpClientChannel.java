@@ -74,6 +74,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -236,7 +237,8 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
 
     /** {@inheritDoc} */
     @Override public void accept(ByteBuffer buf) {
-        // TODO: Handle responses.
+        // TODO: Inline?
+        processNextMessage(buf);
     }
 
     /**
@@ -369,16 +371,11 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
     /**
      * Process next message from the input stream and complete corresponding future.
      */
-    private void processNextMessage() throws ClientProtocolError, ClientConnectionException {
-        // blocking read a message header not to fall into a busy loop
-        int msgSize = dataInput.readInt(2048);
+    private void processNextMessage(ByteBuffer buf) throws ClientProtocolError, ClientConnectionException {
+        BinaryInputStream dataInput = BinaryByteBufferInputStream.create(buf);
 
-        if (msgSize <= 0)
-            throw new ClientProtocolError(String.format("Invalid message size: %s", msgSize));
-
-        long bytesReadOnStartMsg = dataInput.totalBytesRead();
-
-        long resId = dataInput.spinReadLong();
+        // TODO: Special handling for handshake?
+        long resId = dataInput.readLong();
 
         int status = 0;
 
@@ -387,11 +384,11 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
         BinaryInputStream resIn;
 
         if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
-            short flags = dataInput.spinReadShort();
+            short flags = dataInput.readShort();
 
             if ((flags & ClientFlag.AFFINITY_TOPOLOGY_CHANGED) != 0) {
-                long topVer = dataInput.spinReadLong();
-                int minorTopVer = dataInput.spinReadInt();
+                long topVer = dataInput.readLong();
+                int minorTopVer = dataInput.readInt();
 
                 srvTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
 
@@ -400,7 +397,7 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
             }
 
             if ((flags & ClientFlag.NOTIFICATION) != 0) {
-                short notificationCode = dataInput.spinReadShort();
+                short notificationCode = dataInput.readShort();
 
                 notificationOp = ClientOperation.fromCode(notificationCode);
 
@@ -409,10 +406,10 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
             }
 
             if ((flags & ClientFlag.ERROR) != 0)
-                status = dataInput.spinReadInt();
+                status = dataInput.readInt();
         }
         else
-            status = dataInput.spinReadInt();
+            status = dataInput.readInt();
 
         int hdrSize = (int)(dataInput.totalBytesRead() - bytesReadOnStartMsg);
 
