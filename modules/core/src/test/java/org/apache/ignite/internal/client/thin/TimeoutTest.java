@@ -71,10 +71,10 @@ public class TimeoutTest extends AbstractThinClientTest {
     }
 
     /**
-     * Test server timeout on handshake.
+     * Test that server closes thin client connection in case of handshake timeout.
      */
     @Test
-    public void testServerTimeoutOnHandshake() {
+    public void testServerClosesThinClientConnectionOnHandshakeTimeout() {
         try (Ignite ignite = startGrid(0)) {
             long ts0 = System.currentTimeMillis();
 
