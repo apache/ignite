@@ -41,7 +41,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
     NETFILTER_STORE_PATH = os.path.join(IgnitePersistenceAware.TEMP_DIR, "iptables.bak")
 
     # pylint: disable=R0913
-    def __init__(self, context, config, num_nodes, **kwargs):
+    def __init__(self, context, config, num_nodes, startup_timeout_sec, **kwargs):
         """
         **kwargs are params that passed to IgniteSpec
         """
@@ -52,6 +52,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         self.log_level = "DEBUG"
 
         self.config = config
+        self.startup_timeout_sec = startup_timeout_sec
 
         self.spec = resolve_spec(self, context, config, **kwargs)
 
@@ -63,12 +64,25 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         super().start()
 
+    def start(self):
+        self.start_async()
+        self.await_started()
+
+    def await_started(self):
+        """
+        Awaits start finished.
+        """
+        self.logger.info("Waiting for IgniteAware(s) to start...")
+
+        for node in self.nodes:
+            wait_until(lambda n=node: self.alive(n), timeout_sec=10)
+
+        self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
+
     def start_node(self, node):
         self.init_persistent(node)
 
         super().start_node(node)
-
-        wait_until(lambda: len(self.pids(node)) > 0, timeout_sec=10)
 
         ignite_jmx_mixin(node, self.pids(node))
 

@@ -75,14 +75,14 @@ class SelfTest(IgniteTest):
             IgniteClientConfiguration(version=IgniteVersion(ignite_version),
                                       discovery_spi=from_ignite_cluster(ignites)),
             java_class_name="org.apache.ignite.internal.ducktest.tests.self_test.TestKillableApplication",
-            timeout_sec=180)
+            startup_timeout_sec=180)
 
         node2 = IgniteApplicationService(
             self.test_context,
             IgniteClientConfiguration(version=IgniteVersion(ignite_version),
                                       discovery_spi=from_ignite_cluster(ignites)),
             java_class_name="org.apache.ignite.internal.ducktest.tests.self_test.TestSelfKillableApplication",
-            timeout_sec=180)
+            startup_timeout_sec=180)
 
         node1.start()
 

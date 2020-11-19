@@ -96,7 +96,7 @@ class PmeFreeSwitchTest(IgniteTest):
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test.LongTxStreamerApplication",
             params={"cacheName": "test-cache"},
-            timeout_sec=180)
+            startup_timeout_sec=180)
 
         if l_type is LoadType.LONG_TXS:
             long_tx_streamer.start()
@@ -107,7 +107,7 @@ class PmeFreeSwitchTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test."
                             "SingleKeyTxStreamerApplication",
             params={"cacheName": "test-cache", "warmup": 1000},
-            timeout_sec=180)
+            startup_timeout_sec=180)
 
         single_key_tx_streamer.start()
 

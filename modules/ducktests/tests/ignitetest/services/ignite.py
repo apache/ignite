@@ -36,34 +36,8 @@ class IgniteService(IgniteAwareService):
     HEAP_DUMP_FILE = os.path.join(IgniteAwareService.PERSISTENT_ROOT, "ignite-heap.bin")
 
     # pylint: disable=R0913
-    def __init__(self, context, config, num_nodes, jvm_opts=None, modules=None):
-        super().__init__(context, config, num_nodes, modules=modules, jvm_opts=jvm_opts)
-
-    # pylint: disable=W0221
-    def start(self, timeout_sec=180):
-        self.start_async()
-        self.await_started(timeout_sec)
-
-    def await_started(self, timeout_sec=180):
-        """
-        Awaits start finished.
-        :param timeout_sec: timeout.
-        """
-        self.logger.info("Waiting for Ignite(s) to start...")
-
-        for node in self.nodes:
-            self.await_node_started(node, timeout_sec)
-
-    def await_node_started(self, node, timeout_sec):
-        """
-        Await topology ready event on node start.
-        :param node: Node to wait
-        :param timeout_sec: Number of seconds to wait event.
-        """
-        self.await_event_on_node("Topology snapshot", node, timeout_sec, from_the_beginning=True)
-
-        if len(self.pids(node)) == 0:
-            raise Exception("No process ids recorded on node %s" % node.account.hostname)
+    def __init__(self, context, config, num_nodes, jvm_opts=None, startup_timeout_sec=60, modules=None):
+        super().__init__(context, config, num_nodes, startup_timeout_sec, modules=modules, jvm_opts=jvm_opts)
 
     # pylint: disable=W0221
     def stop_node(self, node, clean_shutdown=True, timeout_sec=60):

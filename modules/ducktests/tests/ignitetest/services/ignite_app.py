@@ -34,29 +34,20 @@ class IgniteApplicationService(IgniteAwareService):
     SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"
 
     # pylint: disable=R0913
-    def __init__(self, context, config, java_class_name, num_nodes=1, params="", timeout_sec=60, modules=None,
+    def __init__(self, context, config, java_class_name, num_nodes=1, params="", startup_timeout_sec=60, modules=None,
                  servicejava_class_name=SERVICE_JAVA_CLASS_NAME, jvm_opts=None, start_ignite=True):
-        super().__init__(context, config, num_nodes, modules=modules, servicejava_class_name=servicejava_class_name,
-                         java_class_name=java_class_name, params=params, jvm_opts=jvm_opts, start_ignite=start_ignite)
+        super().__init__(context, config, num_nodes, startup_timeout_sec, modules=modules,
+                         servicejava_class_name=servicejava_class_name, java_class_name=java_class_name, params=params,
+                         jvm_opts=jvm_opts, start_ignite=start_ignite)
 
         self.servicejava_class_name = servicejava_class_name
         self.java_class_name = java_class_name
-        self.timeout_sec = timeout_sec
         self.params = params
 
-    def start(self):
-        self.start_async()
-        self.await_started()
-
     def await_started(self):
-        """
-        Awaits start finished.
-        """
-        self.logger.info("Waiting for Ignite aware Application (%s) to start..." % self.java_class_name)
+        super().await_started()
 
-        self.await_event("Topology snapshot", self.timeout_sec, from_the_beginning=True)
-
-        self.__check_status("IGNITE_APPLICATION_INITIALIZED", timeout=self.timeout_sec)
+        self.__check_status("IGNITE_APPLICATION_INITIALIZED", timeout=self.startup_timeout_sec)
 
     def stop_async(self, clean_shutdown=True):
         """

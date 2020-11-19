@@ -166,9 +166,9 @@ class TransactionsTests(IgniteTest):
             caches=[CacheConfiguration(name=self.CACHE_NAME, atomicity_mode='TRANSACTIONAL')]
         )
 
-        servers = IgniteService(self.test_context, config=config, num_nodes=num_nodes)
+        servers = IgniteService(self.test_context, config=config, num_nodes=num_nodes, startup_timeout_sec=timeout_sec)
 
-        servers.start(timeout_sec=timeout_sec)
+        servers.start()
 
         return servers
 

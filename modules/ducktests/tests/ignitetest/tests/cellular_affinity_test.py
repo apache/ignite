@@ -255,7 +255,7 @@ class CellularAffinity(IgniteTest):
                     "attr": CellularAffinity.ATTRIBUTE,
                     "cell": cell,
                     "warmup": 10000},
-            modules=modules, timeout_sec=180)
+            modules=modules, startup_timeout_sec=180)
 
     def start_cell_with_prepared_txs(self, version, cell_id, discovery_spi, modules):
         """
@@ -274,7 +274,7 @@ class CellularAffinity(IgniteTest):
                     "attr": CellularAffinity.ATTRIBUTE,
                     "cell": cell_id,
                     "txCnt": CellularAffinity.PREPARED_TX_CNT},
-            jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=' + cell_id], modules=modules, timeout_sec=180)
+            jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=' + cell_id], modules=modules, startup_timeout_sec=180)
 
         prepared_tx_streamer.start_async()  # starts last server node and creates prepared txs on it.
 
@@ -290,7 +290,7 @@ class CellularAffinity(IgniteTest):
             IgniteConfiguration(version=IgniteVersion(version), properties=self.properties(),
                                 cluster_state="INACTIVE",
                                 discovery_spi=TcpDiscoverySpi() if discovery_spi is None else discovery_spi),
-            num_nodes=nodes_cnt, modules=modules, jvm_opts=jvm_opts)
+            num_nodes=nodes_cnt, modules=modules, jvm_opts=jvm_opts, startup_timeout_sec=180)
 
         ignites.start_async()
 
