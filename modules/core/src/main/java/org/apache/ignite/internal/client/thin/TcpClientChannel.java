@@ -160,22 +160,31 @@ class TcpClientChannel implements ClientChannel {
     /** Receiver thread (processes incoming messages). */
     private Thread receiverThread;
 
+    /** Send/receive timeout in milliseconds. */
+    private final int timeout;
+
     /** Constructor. */
     TcpClientChannel(ClientChannelConfiguration cfg)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         validateConfiguration(cfg);
+
+        timeout = cfg.getTimeout();
 
         try {
             sock = createSocket(cfg);
 
             out = sock.getOutputStream();
             dataInput = new ByteCountingDataInput(sock.getInputStream());
+
+            handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
+
+            // Disable timeout on socket after handshake, instead, get future result with timeout in "receive" method.
+            if (timeout > 0)
+                sock.setSoTimeout(0);
         }
         catch (IOException e) {
             throw handleIOError("addr=" + cfg.getAddress(), e);
         }
-
-        handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
     }
 
     /** {@inheritDoc} */
@@ -276,7 +285,7 @@ class TcpClientChannel implements ClientChannel {
         assert pendingReq != null : "Pending request future not found for request " + reqId;
 
         try {
-            byte[] payload = pendingReq.get();
+            byte[] payload = timeout > 0 ? pendingReq.get(timeout) : pendingReq.get();
 
             if (payload == null || payloadReader == null)
                 return null;
@@ -622,7 +631,7 @@ class TcpClientChannel implements ClientChannel {
         private long totalBytesRead;
 
         /** Temporary buffer to read long, int and short values. */
-        private byte[] tmpBuf = new byte[Long.BYTES];
+        private final byte[] tmpBuf = new byte[Long.BYTES];
 
         /**
          * @param in Input stream.
@@ -718,7 +727,7 @@ class TcpClientChannel implements ClientChannel {
     /** SSL Socket Factory. */
     private static class ClientSslSocketFactory {
         /** Trust manager ignoring all certificate checks. */
-        private static TrustManager ignoreErrorsTrustMgr = new X509TrustManager() {
+        private static final TrustManager ignoreErrorsTrustMgr = new X509TrustManager() {
             @Override public X509Certificate[] getAcceptedIssuers() {
                 return null;
             }
