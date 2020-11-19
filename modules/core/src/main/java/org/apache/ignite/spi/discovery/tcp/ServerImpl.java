@@ -6545,7 +6545,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             // In case of large cluster and small connectionRecoveryTimeout we have to provide reasonable minimal
             // timeout per one of the next nodes. It should not appear too small like 1, 5 or 10ms.
-            long perNodeTimeout = Math.max((sndState.failTimeNanos - now) / nodesLeft, MIN_RECOVERY_TIMEOUT);
+            long perNodeTimeout = Math.max((sndState.failTimeNanos - now) / nodesLeft,
+                U.millisToNanos(MIN_RECOVERY_TIMEOUT));
 
             if (log.isDebugEnabled()) {
                 log.debug("Connection recovery timeout: totalTimeLeft=" +
