@@ -106,8 +106,7 @@ public class QueryExecutionEvent<K, V> extends EventAdapter {
     /**
      * Gets query type.
      *
-     * @return Query type. Can be {@code "SQL"}, {@code "SQL_FIELDS"}, {@code "FULL_TEXT"}, {@code "SCAN"},
-     * {@code "CONTINUOUS"} or {@code "SPI"}.
+     * @return Query type. Can be {@code "SQL"}, {@code "SQL_FIELDS"}.
      */
     public String queryType() {
         return qryType;
@@ -116,7 +115,7 @@ public class QueryExecutionEvent<K, V> extends EventAdapter {
     /**
      * Gets query clause.
      * <p>
-     * Applicable for {@code SQL}, {@code SQL fields} and @{code full text} queries.
+     * Applicable for {@code SQL}, {@code SQL fields} queries.
      *
      * @return Query clause.
      */
