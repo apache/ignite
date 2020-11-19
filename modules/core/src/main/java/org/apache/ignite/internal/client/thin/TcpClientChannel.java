@@ -591,7 +591,8 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
 
         // TODO: BinaryByteBufferInputStream seems to be problematic.
-        BinaryInputStream res = new BinaryHeapInputStream(buf.array());
+        // BinaryInputStream res = new BinaryHeapInputStream(buf.array());
+        BinaryInputStream res = BinaryByteBufferInputStream.create(buf);
 
         try (BinaryReaderExImpl reader = ClientUtils.createBinaryReader(null, res)) {
             boolean success = res.readBoolean();

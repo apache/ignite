@@ -52,7 +52,7 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
     private static final int CLIENT_MODE_PORT = -1;
 
     /** */
-    private final GridNioServer<byte[]> srv; // TODO: <ByteBuffer> possible?
+    private final GridNioServer<ByteBuffer> srv; // TODO: <ByteBuffer> possible?
 
     public GridNioServerClientConnectionMultiplexer() {
         IgniteLogger gridLog = new JavaLogger(false);
@@ -64,7 +64,9 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
         GridNioFilter codecFilter = new GridNioCodecFilter(new GridNioParser() {
             @Override
             public @Nullable Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
-                return decoder.apply(buf);
+                byte[] bytes = decoder.apply(buf);
+
+                return ByteBuffer.wrap(bytes).order(ByteOrder.nativeOrder());
             }
 
             @Override
@@ -84,10 +86,10 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
         filters = new GridNioFilter[]{codecFilter};
 
         try {
-            srv = GridNioServer.<byte[]>builder()
+            srv = GridNioServer.<ByteBuffer>builder()
                     .address(InetAddress.getLoopbackAddress()) // TODO: Remove?
                     .port(CLIENT_MODE_PORT)
-                    .listener(new GridNioServerListener<byte[]>() {
+                    .listener(new GridNioServerListener<ByteBuffer>() {
                         @Override
                         public void onConnected(GridNioSession ses) {
                             System.out.println("Connect");
@@ -99,15 +101,15 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
                         }
 
                         @Override
-                        public void onMessageSent(GridNioSession ses, byte[] msg) {
+                        public void onMessageSent(GridNioSession ses, ByteBuffer msg) {
 
                         }
 
                         @Override
-                        public void onMessage(GridNioSession ses, byte[] msg) {
+                        public void onMessage(GridNioSession ses, ByteBuffer msg) {
                             GridNioServerClientConnection conn = ses.meta(GridNioServerClientConnection.SES_META_CONN);
 
-                            conn.onMessage(ByteBuffer.wrap(msg));
+                            conn.onMessage(msg);
                         }
 
                         @Override
