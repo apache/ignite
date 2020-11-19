@@ -107,7 +107,7 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.PART
 /**
  * Implements {@link ClientChannel} over TCP.
  */
-class TcpClientChannel implements ClientChannel {
+class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
     /** Protocol version used by default on first connection attempt. */
     private static final ProtocolVersion DEFAULT_VERSION = LATEST_VER;
 
@@ -232,6 +232,11 @@ class TcpClientChannel implements ClientChannel {
 
             return fut;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void accept(ByteBuffer buf) {
+        // TODO: Handle responses.
     }
 
     /**
@@ -490,8 +495,10 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** Create socket. */
-    private static ClientConnection createSocket(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr) throws IOException, IgniteCheckedException {
-        return connMgr.open(cfg.getAddress());
+    private ClientConnection createSocket(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr) throws IOException, IgniteCheckedException {
+        return connMgr.open(cfg.getAddress(), this);
+
+        // TODO: Move this config to multiplexer.
 //        Socket sock = cfg.getSslMode() == SslMode.REQUIRED ?
 //            new ClientSslSocketFactory(cfg).create() :
 //            new Socket(cfg.getAddress().getHostName(), cfg.getAddress().getPort());

@@ -27,7 +27,5 @@ import java.util.function.Consumer;
 public interface ClientConnection extends AutoCloseable {
     CompletableFuture<Void> sendAsync(ByteBuffer msg); // TODO: What should we return from the future?
 
-    void setMessageHandler(Consumer<ByteBuffer> hnd);
-
     @Override void close();
 }

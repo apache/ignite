@@ -34,17 +34,19 @@ class GridNioServerClientConnection implements ClientConnection {
     private final GridNioSession ses;
 
     /** */
-    private Consumer<ByteBuffer> messageHandler;
+    private final Consumer<ByteBuffer> hnd;
 
     /**
      * Ctor.
      *
      * @param ses Session.
      */
-    public GridNioServerClientConnection(GridNioSession ses) {
+    public GridNioServerClientConnection(GridNioSession ses, Consumer<ByteBuffer> hnd) {
         assert ses != null;
 
         this.ses = ses;
+        this.hnd = hnd;
+
         ses.addMeta(SES_META_CONN, this);
     }
 
@@ -67,11 +69,6 @@ class GridNioServerClientConnection implements ClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public void setMessageHandler(Consumer<ByteBuffer> hnd) {
-        messageHandler = hnd;
-    }
-
-    /** {@inheritDoc} */
     @Override public void close() {
         ses.close();
     }
@@ -82,7 +79,7 @@ class GridNioServerClientConnection implements ClientConnection {
      * @param msg Message.
      */
     void onMessage(ByteBuffer msg) {
-        Consumer<ByteBuffer> handler0 = messageHandler;
+        Consumer<ByteBuffer> handler0 = hnd;
 
         if (handler0 != null) {
             handler0.accept(msg);

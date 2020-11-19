@@ -42,6 +42,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Client connection multiplexer based on {@link org.apache.ignite.internal.util.nio.GridNioServer}.
@@ -154,7 +155,7 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
     }
 
     /** {@inheritDoc} */
-    @Override public ClientConnection open(InetSocketAddress address) throws IOException, IgniteCheckedException {
+    @Override public ClientConnection open(InetSocketAddress addr, Consumer<ByteBuffer> hnd) throws IOException, IgniteCheckedException {
         java.nio.channels.SocketChannel ch = java.nio.channels.SocketChannel.open();
         Socket sock = ch.socket();
 
@@ -168,6 +169,6 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
         // TODO: Should this method be async? Why is createSession async?
         GridNioSession ses = sesFut.get();
 
-        return new GridNioServerClientConnection(ses);
+        return new GridNioServerClientConnection(ses, hnd);
     }
 }

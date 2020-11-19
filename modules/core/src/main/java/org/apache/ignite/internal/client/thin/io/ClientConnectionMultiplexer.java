@@ -21,6 +21,8 @@ import org.apache.ignite.IgniteCheckedException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 /**
  * Client connection multiplexer: manages multiple connections with a shared resource pool (worker threads, etc).
@@ -30,5 +32,5 @@ public interface ClientConnectionMultiplexer {
 
     void stop();
 
-    ClientConnection open(InetSocketAddress address) throws IOException, IgniteCheckedException;
+    ClientConnection open(InetSocketAddress addr, Consumer<ByteBuffer> hnd) throws IOException, IgniteCheckedException;
 }
