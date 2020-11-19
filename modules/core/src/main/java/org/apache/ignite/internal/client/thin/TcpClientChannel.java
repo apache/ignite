@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -254,8 +255,6 @@ class TcpClientChannel implements ClientChannel {
         try (PayloadOutputChannel payloadCh = new PayloadOutputChannel(this)) {
             if (closed())
                 throw new ClientConnectionException("Channel is closed");
-
-            initReceiverThread(); // Start the receiver thread with the first request.
 
             ClientRequestFuture fut = new ClientRequestFuture();
 
@@ -634,13 +633,10 @@ class TcpClientChannel implements ClientChannel {
 
     /** Write bytes to the output stream. */
     private void write(byte[] bytes, int len) throws ClientConnectionException {
-        try {
-            out.write(bytes, 0, len);
-            out.flush();
-        }
-        catch (IOException e) {
-            throw handleIOError(e);
-        }
+        ByteBuffer buf = ByteBuffer.wrap(bytes, 0, len);
+
+        // TODO: handle errors (handleIOError).
+        sock.sendAsync(buf);
     }
 
     /**
