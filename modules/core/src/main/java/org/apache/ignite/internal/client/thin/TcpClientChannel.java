@@ -128,13 +128,13 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
     );
 
     /** Protocol context. */
-    private ProtocolContext protocolCtx;
+    private volatile ProtocolContext protocolCtx;
 
     /** Server node ID. */
-    private UUID srvNodeId;
+    private volatile UUID srvNodeId;
 
     /** Server topology version. */
-    private AffinityTopologyVersion srvTopVer;
+    private volatile AffinityTopologyVersion srvTopVer;
 
     /** Channel. */
     private final ClientConnection sock;
@@ -374,7 +374,11 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
     private void processNextMessage(ByteBuffer buf) throws ClientProtocolError, ClientConnectionException {
         BinaryInputStream dataInput = BinaryByteBufferInputStream.create(buf);
 
-        // TODO: Special handling for handshake?
+        if (protocolCtx == null) {
+            // TODO: read handshake
+            return;
+        }
+
         long resId = dataInput.readLong();
 
         int status = 0;
