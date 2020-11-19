@@ -75,7 +75,6 @@ import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
@@ -294,7 +293,7 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
     private <T> T receive(ClientRequestFuture pendingReq, Function<PayloadInputChannel, T> payloadReader)
         throws ClientException {
         try {
-            byte[] payload = pendingReq.get();
+            ByteBuffer payload = pendingReq.get();
 
             if (payload == null || payloadReader == null)
                 return null;
@@ -318,7 +317,7 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
 
         pendingReq.listen(payloadFut -> asyncContinuationExecutor.execute(() -> {
             try {
-                byte[] payload = payloadFut.get();
+                ByteBuffer payload = payloadFut.get();
 
                 if (payload == null || payloadReader == null)
                     fut.complete(null);
@@ -417,13 +416,13 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
         int hdrSize = dataInput.position();
         int msgSize = buf.limit();
 
-        byte[] res = null;
+        ByteBuffer res = null;
         Exception err = null;
 
         if (status == 0) {
             if (msgSize > hdrSize)
-                // TODO: Get rid of this extra array allocation - pass ByteBuffer instead.
-                res = dataInput.readByteArray(msgSize - hdrSize);
+                // TODO: Is buf.position correct here?
+                res = buf;
         }
         else if (status == ClientStatus.SECURITY_VIOLATION) {
             // TODO ?
@@ -521,8 +520,18 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
     /** Client handshake. */
     private void handshake(ProtocolVersion ver, String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
+        ClientRequestFuture fut = new ClientRequestFuture();
+        pendingReqs.put(-1L, fut);
+
         handshakeReq(ver, user, pwd, userAttrs);
-        handshakeRes(ver, user, pwd, userAttrs);
+
+        try {
+            ByteBuffer res = fut.get();
+            handshakeRes(res, ver, user, pwd, userAttrs);
+        } catch (IgniteCheckedException e) {
+            // TODO: unwrap cause
+            throw new ClientConnectionException("TODO", e);
+        }
     }
 
     /** Send handshake request. */
@@ -576,14 +585,10 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
     }
 
     /** Receive and handle handshake response. */
-    private void handshakeRes(ProtocolVersion proposedVer, String user, String pwd, Map<String, String> userAttrs)
+    private void handshakeRes(ByteBuffer buf, ProtocolVersion proposedVer, String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
-        int resSize = dataInput.readInt();
-
-        if (resSize <= 0)
-            throw new ClientProtocolError(String.format("Invalid handshake response size: %s", resSize));
-
-        BinaryInputStream res = new BinaryHeapInputStream(dataInput.read(resSize));
+        BinaryInputStream res = BinaryByteBufferInputStream.create(buf);
+        int resSize = buf.remaining();
 
         try (BinaryReaderExImpl reader = ClientUtils.createBinaryReader(null, res)) {
             boolean success = res.readBoolean();
@@ -824,7 +829,7 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
     /**
      *
      */
-    private static class ClientRequestFuture extends GridFutureAdapter<byte[]> {
+    private static class ClientRequestFuture extends GridFutureAdapter<ByteBuffer> {
     }
 
     /** SSL Socket Factory. */
