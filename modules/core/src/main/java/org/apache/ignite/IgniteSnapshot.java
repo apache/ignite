@@ -55,7 +55,7 @@ public interface IgniteSnapshot {
      * Status snapshot operation.
      * Checks if running snapshot operations exist on nodes.
      *
-     * @return Map with Consistent ID's and status of the snapshot operation.
+     * @return Future which Map from Consistent ID's to status of the snapshot operation.
      * If True then snapshot operation is in progress.
      */
     public IgniteFuture<Map<Object, Boolean>> statusSnapshot();

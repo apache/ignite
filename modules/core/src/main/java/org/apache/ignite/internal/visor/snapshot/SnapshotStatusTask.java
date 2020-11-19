@@ -29,7 +29,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Task that collects caches that have index rebuild in progress.
+ * Task that collects nodes that have snapshot operation in progress.
  */
 @GridInternal
 public abstract class SnapshotStatusTask<T> extends VisorMultiNodeTask<Void, T, Boolean> {

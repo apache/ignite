@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Task that collects caches that have index rebuild in progress.
+ * Task that collects nodes that have snapshot operation in progress.
  */
 @GridInternal
 public class VisorSnapshotStatusTask extends SnapshotStatusTask<String> {
