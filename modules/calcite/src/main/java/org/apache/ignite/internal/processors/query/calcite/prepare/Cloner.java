@@ -121,10 +121,8 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteMergeJoin rel) {
-        RelNode left = visit((IgniteRel) rel.getLeft());
-        RelNode right = visit((IgniteRel) rel.getRight());
-
-        return new IgniteMergeJoin(cluster, rel.getTraitSet(), left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
+        return rel.clone(cluster, F.asList(visit((IgniteRel) rel.getLeft()),
+            visit((IgniteRel) rel.getRight())));
     }
 
     /** {@inheritDoc} */

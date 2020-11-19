@@ -2672,7 +2672,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
 
-        String sql = "select * from dept d join emp e on d.deptno = e.deptno and e.name = d.name order by e.name";
+        String sql = "select * from dept d join emp e on d.deptno = e.deptno and e.name = d.name order by e.name, d.deptno";
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
@@ -2714,7 +2714,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             assertNotNull(rel);
             assertEquals("" +
-                    "LogicalSort(sort0=[$3], dir0=[ASC])\n" +
+                    "LogicalSort(sort0=[$3], sort1=[$0], dir0=[ASC], dir1=[ASC])\n" +
                     "  LogicalProject(DEPTNO=[$0], NAME=[$1], ID=[$2], NAME0=[$3], DEPTNO0=[$4])\n" +
                     "    LogicalJoin(condition=[AND(=($0, $4), =($3, $1))], joinType=[inner])\n" +
                     "      IgniteLogicalTableScan(table=[[PUBLIC, DEPT]])\n" +

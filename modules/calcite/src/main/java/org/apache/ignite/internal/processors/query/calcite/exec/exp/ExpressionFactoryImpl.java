@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.Primitives;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -28,10 +31,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Ordering;
-import com.google.common.primitives.Primitives;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator.InputGetter;
@@ -119,6 +118,20 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             .collect(Collectors.toList()));
     }
 
+    /** {@inheritDoc} */
+    @Override public Comparator<Row> comparator(List<RelFieldCollation> left, List<RelFieldCollation> right) {
+        if (F.isEmpty(left) || F.isEmpty(right) || left.size() != right.size())
+            throw new IllegalArgumentException("Both inputs should be non-empty and have the same size: left="
+                + (left != null ? left.size() : "null") + ", right=" + (right != null ? right.size() : "null"));
+
+        List<Comparator<Row>> comparators = new ArrayList<>();
+
+        for (int i = 0; i < left.size(); i++)
+            comparators.add(comparator(left.get(i), right.get(i)));
+
+        return Ordering.compound(comparators);
+    }
+
     /** */
     @SuppressWarnings("rawtypes")
     private Comparator<Row> comparator(RelFieldCollation fieldCollation) {
@@ -137,6 +150,36 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         return (o1, o2) -> {
             final Comparable c1 = (Comparable)handler.get(x, o1);
             final Comparable c2 = (Comparable)handler.get(x, o2);
+            return RelFieldCollation.compare(c2, c1, -nullComparison);
+        };
+    }
+
+    /** */
+    @SuppressWarnings("rawtypes")
+    private Comparator<Row> comparator(RelFieldCollation left, RelFieldCollation right) {
+        final int nullComparison = left.nullDirection.nullComparison;
+
+        if (nullComparison != right.nullDirection.nullComparison)
+            throw new IllegalArgumentException("Can't be compared: left=" + left + ", right=" + right);
+
+        final int lIdx = left.getFieldIndex();
+        final int rIdx = right.getFieldIndex();
+        RowHandler<Row> handler = ctx.rowHandler();
+
+        if (left.direction != right.direction)
+            throw new IllegalArgumentException("Can't be compared: left=" + left + ", right=" + right);
+
+        if (left.direction == RelFieldCollation.Direction.ASCENDING) {
+            return (o1, o2) -> {
+                final Comparable c1 = (Comparable)handler.get(lIdx, o1);
+                final Comparable c2 = (Comparable)handler.get(rIdx, o2);
+                return RelFieldCollation.compare(c1, c2, nullComparison);
+            };
+        }
+
+        return (o1, o2) -> {
+            final Comparable c1 = (Comparable)handler.get(lIdx, o1);
+            final Comparable c2 = (Comparable)handler.get(rIdx, o2);
             return RelFieldCollation.compare(c2, c1, -nullComparison);
         };
     }

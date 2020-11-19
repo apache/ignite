@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNod
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNestedLoopJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.MergeJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ModifyNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
@@ -233,14 +235,14 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType outType = rel.getRowType();
         RelDataType leftType = rel.getLeft().getRowType();
         RelDataType rightType = rel.getRight().getRowType();
+        JoinRelType joinType = rel.getJoinType();
 
-        RelDataType rowType = combinedRowType(ctx.getTypeFactory(), leftType, rightType);
-        Predicate<Row> cond = expressionFactory.predicate(rel.getCondition(), rowType);
+        Comparator<Row> comp = expressionFactory.comparator(
+            rel.getLeft().getTraitSet().getCollation().getFieldCollations().subList(0, rel.analyzeCondition().pairs().size()),
+            rel.getRight().getTraitSet().getCollation().getFieldCollations().subList(0, rel.analyzeCondition().pairs().size())
+        );
 
-        assert rel.getJoinType() == JoinRelType.INNER; // TODO LEFT, SEMI, ANTI
-
-        // TODO: change to IgniteMergeJoinNode
-        Node<Row> node = new CorrelatedNestedLoopJoinNode<>(ctx, outType, cond, rel.getVariablesSet());
+        Node<Row> node = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, comp);
 
         Node<Row> leftInput = visit(rel.getLeft());
         Node<Row> rightInput = visit(rel.getRight());

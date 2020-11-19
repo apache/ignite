@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
@@ -46,6 +47,17 @@ public interface ExpressionFactory<Row> {
      * @return Row comparator.
      */
     Comparator<Row> comparator(RelCollation collations);
+
+    /**
+     * Creates a comparator for different rows by given field collations. Mainly used for merge join rows comparison.
+     * Note: Both list has to have the same size and matched fields collations has to have the same traits
+     * (i.e. all pairs of field collations should have the same sorting and nulls ordering).
+     *
+     * @param left Collations of left row.
+     * @param right Collations of right row.
+     * @return Rows comparator.
+     */
+    Comparator<Row> comparator(List<RelFieldCollation> left, List<RelFieldCollation> right);
 
     /**
      * Creates a Filter predicate.

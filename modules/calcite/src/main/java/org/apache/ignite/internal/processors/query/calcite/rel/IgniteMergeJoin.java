@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -34,6 +35,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelFieldCollation;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelNodes;
 import org.apache.calcite.rel.RelWriter;
@@ -77,6 +79,17 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
         super(cluster, traitSet, left, right, condition, variablesSet, joinType);
     }
 
+    /** */
+    public IgniteMergeJoin(RelInput input) {
+        this(input.getCluster(),
+            input.getTraitSet().replace(IgniteConvention.INSTANCE),
+            input.getInputs().get(0),
+            input.getInputs().get(1),
+            input.getExpression("condition"),
+            ImmutableSet.copyOf(Commons.transform(input.getIntegerList("variablesSet"), CorrelationId::new)),
+            input.getEnum("joinType", JoinRelType.class));
+    }
+
     /** {@inheritDoc} */
     @Override public Join copy(RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right,
         JoinRelType joinType, boolean semiJoinDone) {
@@ -86,6 +99,11 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        return new IgniteMergeJoin(cluster, getTraitSet(), inputs.get(0), inputs.get(1), getCondition(), getVariablesSet(), getJoinType());
     }
 
     /** {@inheritDoc} */
@@ -223,7 +241,7 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
                 && Objects.equals(joinInfo.rightKeys, rightDistr.getKeys()))
                 functions.add(rightDistr.function());
 
-            functions.add(DistributionFunction.HashDistribution.INSTANCE);
+            functions.add(DistributionFunction.hash());
 
             for (DistributionFunction function : functions) {
                 leftTraits = left.replace(hash(joinInfo.leftKeys, function));
@@ -400,7 +418,7 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
                 // so, we require hash distribution (wich satisfies random distribution) instead.
                 DistributionFunction function = distrType == HASH_DISTRIBUTED
                     ? distribution.function()
-                    : DistributionFunction.HashDistribution.INSTANCE;
+                    : DistributionFunction.hash();
 
                 IgniteDistribution outDistr; // TODO distribution multitrait support
 
@@ -466,8 +484,8 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
             result = multiply(mq.getSelectivity(getLeft(), semiJoinSelectivity),
                 mq.getRowCount(getLeft()));
         }
-        else {// Row count estimates of 0 will be rounded up to 1.
-// So, use maxRowCount where the product is very small.
+        else { // Row count estimates of 0 will be rounded up to 1.
+               // So, use maxRowCount where the product is very small.
             final Double left1 = mq.getRowCount(getLeft());
             final Double right1 = mq.getRowCount(getRight());
             if (left1 != null && right1 != null) {
