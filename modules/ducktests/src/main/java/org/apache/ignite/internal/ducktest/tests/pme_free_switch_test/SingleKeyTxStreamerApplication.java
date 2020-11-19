@@ -61,7 +61,7 @@ public class SingleKeyTxStreamerApplication extends IgniteAwareApplication {
                     maxLatency = latency;
             }
 
-            if (cnt % 1000 == 0)
+            if (cnt % 100 == 0)
                 log.info("APPLICATION_STREAMED " + cnt + " transactions [max=" + maxLatency + "]");
         }
 
