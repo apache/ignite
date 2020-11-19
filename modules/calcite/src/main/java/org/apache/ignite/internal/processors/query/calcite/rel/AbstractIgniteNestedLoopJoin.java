@@ -184,7 +184,7 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
                 && Objects.equals(joinInfo.rightKeys, rightDistr.getKeys()))
                 functions.add(rightDistr.function());
 
-            functions.add(DistributionFunction.HashDistribution.INSTANCE);
+            functions.add(DistributionFunction.hash());
 
             for (DistributionFunction function : functions) {
                 leftTraits = left.replace(hash(joinInfo.leftKeys, function));
@@ -304,7 +304,7 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
                 // so, we require hash distribution (wich satisfies random distribution) instead.
                 DistributionFunction function = distrType == HASH_DISTRIBUTED
                     ? distribution.function()
-                    : DistributionFunction.HashDistribution.INSTANCE;
+                    : DistributionFunction.hash();
 
                 IgniteDistribution outDistr; // TODO distribution multitrait support
 

@@ -18,19 +18,18 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.function.ToIntFunction;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -47,7 +46,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
-import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
+import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
+import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
@@ -71,12 +71,14 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
+import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
 
 /**
@@ -88,7 +90,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     private final ExecutionContext<Row> ctx;
 
     /** */
-    private final PartitionService partSvc;
+    private final AffinityService affSrvc;
 
     /** */
     private final ExchangeService exchangeSvc;
@@ -101,19 +103,19 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /**
      * @param ctx Root context.
-     * @param partSvc Affinity service.
+     * @param affSrvc Affinity service.
      * @param mailboxRegistry Mailbox registry.
      * @param exchangeSvc Exchange service.
      * @param failure Failure processor.
      */
     public LogicalRelImplementor(
         ExecutionContext<Row> ctx,
-        PartitionService partSvc,
+        AffinityService affSrvc,
         MailboxRegistry mailboxRegistry,
         ExchangeService exchangeSvc,
         FailureProcessor failure
     ) {
-        this.partSvc = partSvc;
+        this.affSrvc = affSrvc;
         this.mailboxRegistry = mailboxRegistry;
         this.exchangeSvc = exchangeSvc;
         this.ctx = ctx;
@@ -125,7 +127,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteSender rel) {
         IgniteDistribution distribution = rel.distribution();
 
-        Destination<Row> dest = distribution.function().destination(ctx, partSvc, ctx.targetMapping(), distribution.getKeys());
+        Destination<Row> dest = distribution.destination(ctx, affSrvc, ctx.target());
 
         // Outbox fragment ID is used as exchange ID as well.
         Outbox<Row> outbox =
@@ -155,7 +157,14 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTrimExchange rel) {
-        FilterNode<Row> node = new FilterNode<>(ctx, rel.getRowType(), partitionFilter(rel.distribution()));
+        assert TraitUtils.distribution(rel).getType() == HASH_DISTRIBUTED;
+        assert TraitUtils.distribution(rel.getInput()).getType() == BROADCAST_DISTRIBUTED;
+
+        IgniteDistribution distr = rel.distribution();
+        Destination<Row> dest = distr.destination(ctx, affSrvc, ctx.group(rel.sourceId()));
+        UUID localNodeId = ctx.planningContext().localNodeId();
+
+        FilterNode<Row> node = new FilterNode<>(ctx, rel.getRowType(), r -> Objects.equals(localNodeId, F.first(dest.targets(r))));
 
         Node<Row> input = visit(rel.getInput());
 
@@ -238,7 +247,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
 
         IgniteIndex idx = tbl.getIndex(rel.indexName());
-        Iterable<Row> rowsIter = idx.scan(ctx, filters, lower, upper, prj, requiredColunms);
+
+        CollocationGroup group = ctx.group(rel.sourceId());
+
+        Iterable<Row> rowsIter = idx.scan(ctx, group, filters, lower, upper, prj, requiredColunms);
 
         return new ScanNode<>(ctx, rowType, rowsIter);
     }
@@ -257,7 +269,9 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
 
-        Iterable<Row> rowsIter = tbl.scan(ctx, filters, prj, requiredColunms);
+        CollocationGroup group = ctx.group(rel.sourceId());
+
+        Iterable<Row> rowsIter = tbl.scan(ctx, group, filters, prj, requiredColunms);
 
         return new ScanNode<>(ctx, rowType, rowsIter);
     }
@@ -323,7 +337,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         // here may be an already created (to consume rows from remote nodes) inbox
         // without proper context, we need to init it with a right one.
-        inbox.init(ctx, rel.getRowType(), ctx.remoteSources(rel.exchangeId()), expressionFactory.comparator(rel.collation()));
+        inbox.init(ctx, rel.getRowType(), ctx.remotes(rel.exchangeId()), expressionFactory.comparator(rel.collation()));
 
         return inbox;
     }
@@ -400,18 +414,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** */
     private Node<Row> visit(RelNode rel) {
         return visit((IgniteRel) rel);
-    }
-
-    /** */
-    private Predicate<Row> partitionFilter(IgniteDistribution distr) {
-        assert distr.getType() == RelDistribution.Type.HASH_DISTRIBUTED;
-
-        ImmutableBitSet filter = ImmutableBitSet.of(ctx.localPartitions());
-        DistributionFunction function = distr.function();
-        ImmutableIntList keys = distr.getKeys();
-        ToIntFunction<Row> partFunction = function.partitionFunction(ctx, partSvc, keys);
-
-        return o -> filter.get(partFunction.applyAsInt(o));
     }
 
     /** */

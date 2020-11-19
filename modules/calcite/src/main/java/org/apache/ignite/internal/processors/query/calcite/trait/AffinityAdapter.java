@@ -17,35 +17,33 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
 import java.util.function.ToIntFunction;
-import java.util.stream.Collectors;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public final class Partitioned<Row> implements Destination<Row> {
+final class AffinityAdapter<Row> implements ToIntFunction<Row> {
     /** */
-    private final List<List<UUID>> assignments;
+    private final ToIntFunction<Object> affinity;
 
     /** */
-    private final ToIntFunction<Row> partFun;
+    private final int[] keys;
 
     /** */
-    public Partitioned(List<List<UUID>> assignments, ToIntFunction<Row> partFun) {
-        this.assignments = assignments;
-        this.partFun = partFun;
+    private final RowHandler<Row> hndlr;
+
+    /** */
+    AffinityAdapter(ToIntFunction<Object> affinity, int[] keys, RowHandler<Row> hndlr) {
+        this.affinity = affinity;
+        this.keys = keys;
+        this.hndlr = hndlr;
     }
 
     /** {@inheritDoc} */
-    @Override public List<UUID> targets(Row row) {
-        return assignments.get(partFun.applyAsInt(row) % assignments.size());
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<UUID> targets() {
-        return assignments.stream()
-            .flatMap(Collection::stream)
-            .distinct().collect(Collectors.toList());
+    @Override public int applyAsInt(Row r) {
+        int hash = 0;
+        for (int i = 0; i < keys.length; i++)
+            hash = 31 * hash + affinity.applyAsInt(hndlr.get(keys[i], r));
+        return U.safeAbs(hash);
     }
 }

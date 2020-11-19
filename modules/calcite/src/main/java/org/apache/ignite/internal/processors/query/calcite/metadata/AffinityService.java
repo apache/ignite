@@ -15,44 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite.metadata;
+
+import java.util.function.ToIntFunction;
+import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
- * Query explain plan.
+ *
  */
-public class ExplainPlan implements QueryPlan {
-    /** Column name. */
-    public static final String PLAN_COL_NAME = "PLAN";
-
-    /** */
-    private final FieldsMetadata fieldsMeta;
-
-    /** */
-    private final String plan;
-
-    /** */
-    public ExplainPlan(String plan, FieldsMetadata fieldsMeta) {
-        this.fieldsMeta = fieldsMeta;
-        this.plan = plan;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Type type() {
-        return Type.EXPLAIN;
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryPlan copy() {
-        return this;
-    }
-
-    /** */
-    public FieldsMetadata fieldsMeta() {
-        return fieldsMeta;
-    }
-
-    /** */
-    public String plan() {
-        return plan;
-    }
+public interface AffinityService extends Service {
+    /**
+     * Creates a partition mapping function on the basis of affinity function of cache with given ID.
+     *
+     * @param cacheId Cache ID.
+     * @return Affinity function.
+     */
+    ToIntFunction<Object> affinity(int cacheId);
 }

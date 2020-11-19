@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -24,6 +25,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
@@ -36,22 +38,57 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
 /**
  *
  */
-public class IgniteTrimExchange extends Exchange implements IgniteRel {
+public class IgniteTrimExchange extends Exchange implements SourceAwareIgniteRel {
     /** */
-    public IgniteTrimExchange(RelOptCluster cluster, RelTraitSet traits, RelNode input, RelDistribution distribution) {
+    private final long sourceId;
+
+    /** */
+    public IgniteTrimExchange(RelOptCluster cluster, RelTraitSet traits, RelNode input,
+        RelDistribution distribution) {
+        this(-1, cluster, traits, input, distribution);
+    }
+
+    /** */
+    public IgniteTrimExchange(long sourceId, RelOptCluster cluster, RelTraitSet traits, RelNode input, RelDistribution distribution) {
         super(cluster, traits, input, distribution);
 
         assert distribution.getType() == HASH_DISTRIBUTED;
         assert input.getTraitSet().getTrait(DistributionTraitDef.INSTANCE).getType() == BROADCAST_DISTRIBUTED;
+
+        this.sourceId = sourceId;
     }
+
 
     public IgniteTrimExchange(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
+        sourceId = ((Number)input.get("sourceId")).longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long sourceId() {
+        return sourceId;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteDistribution distribution() {
         return (IgniteDistribution)distribution;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEnforcer() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        return super.explainTerms(pw)
+            .itemIf("sourceId", sourceId, sourceId != -1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        double rowCount = mq.getRowCount(this);
+        return planner.getCostFactory().makeCost(rowCount, rowCount, 0);
     }
 
     /** {@inheritDoc} */
@@ -65,13 +102,12 @@ public class IgniteTrimExchange extends Exchange implements IgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isEnforcer() {
-        return true;
+    @Override public IgniteRel clone(long sourceId) {
+        return new IgniteTrimExchange(sourceId, getCluster(), getTraitSet(), getInput(), getDistribution());
     }
 
     /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rowCount = mq.getRowCount(this);
-        return planner.getCostFactory().makeCost(rowCount, rowCount, 0);
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        return new IgniteTrimExchange(sourceId, cluster, getTraitSet(), sole(inputs), getDistribution());
     }
 }

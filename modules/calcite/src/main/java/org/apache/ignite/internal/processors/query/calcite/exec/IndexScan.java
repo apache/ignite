@@ -95,7 +95,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
     private final Supplier<Row> upperBound;
 
     /** */
-    private final int[] partsArr;
+    private final int[] parts;
 
     /** */
     private final MvccSnapshot mvccSnapshot;
@@ -121,6 +121,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         ExecutionContext<Row> ectx,
         TableDescriptor desc,
         GridIndex<H2Row> idx,
+        int[] parts,
         Predicate<Row> filters,
         Supplier<Row> lowerBound,
         Supplier<Row> upperBound,
@@ -141,7 +142,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         this.filters = filters;
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
-        partsArr = ectx.localPartitions();
+        this.parts = parts;
         mvccSnapshot = ectx.mvccSnapshot();
         this.rowTransformer = rowTransformer;
         this.requiredColunms = requiredColunms;
@@ -196,11 +197,11 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
                 toReserve.add(top.localPartition(i));
         }
         else if (cctx.isPartitioned()) {
-            assert partsArr != null;
+            assert parts != null;
 
-            toReserve = new ArrayList<>(partsArr.length);
-            for (int i = 0; i < partsArr.length; i++)
-                toReserve.add(top.localPartition(partsArr[i]));
+            toReserve = new ArrayList<>(parts.length);
+            for (int i = 0; i < parts.length; i++)
+                toReserve.add(top.localPartition(parts[i]));
         }
         else {
             assert cctx.isLocal();
@@ -246,7 +247,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
 
     /** */
     private H2TreeFilterClosure filterClosure() {
-        IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, partsArr);
+        IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
         IndexingQueryCacheFilter f = filter.forCache(cctx.name());
         H2TreeFilterClosure filterC = null;
 

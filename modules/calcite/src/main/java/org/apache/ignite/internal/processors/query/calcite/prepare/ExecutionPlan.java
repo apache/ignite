@@ -15,37 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.trait;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
-import java.util.function.ToIntFunction;
-import java.util.stream.Collectors;
+import com.google.common.collect.ImmutableList;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
-/** */
-public final class Partitioned<Row> implements Destination<Row> {
+/**
+ *
+ */
+class ExecutionPlan {
     /** */
-    private final List<List<UUID>> assignments;
-
-    /** */
-    private final ToIntFunction<Row> partFun;
+    private final AffinityTopologyVersion ver;
 
     /** */
-    public Partitioned(List<List<UUID>> assignments, ToIntFunction<Row> partFun) {
-        this.assignments = assignments;
-        this.partFun = partFun;
+    private final ImmutableList<Fragment> fragments;
+
+    /** */
+    ExecutionPlan(AffinityTopologyVersion ver, List<Fragment> fragments) {
+        this.ver = ver;
+        this.fragments = ImmutableList.copyOf(fragments);
     }
 
-    /** {@inheritDoc} */
-    @Override public List<UUID> targets(Row row) {
-        return assignments.get(partFun.applyAsInt(row) % assignments.size());
+    /** */
+    public AffinityTopologyVersion topologyVersion() {
+        return ver;
     }
 
-    /** {@inheritDoc} */
-    @Override public List<UUID> targets() {
-        return assignments.stream()
-            .flatMap(Collection::stream)
-            .distinct().collect(Collectors.toList());
+    /** */
+    public List<Fragment> fragments() {
+        return fragments;
     }
 }

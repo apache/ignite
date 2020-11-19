@@ -66,7 +66,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     private final AffinityTopologyVersion topVer;
 
     /** */
-    private final int[] partsArr;
+    private final int[] parts;
 
     /** */
     private final MvccSnapshot mvccSnapshot;
@@ -84,6 +84,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     public TableScan(
         ExecutionContext<Row> ectx,
         TableDescriptor desc,
+        int[] parts,
         Predicate<Row> filters,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColunms
@@ -91,6 +92,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
         this.ectx = ectx;
         cctx = desc.cacheContext();
         this.desc = desc;
+        this.parts = parts;
         this.filters = filters;
         this.rowTransformer = rowTransformer;
         this.requiredColunms = requiredColunms;
@@ -99,7 +101,6 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
 
         factory = this.ectx.rowHandler().factory(this.ectx.getTypeFactory(), rowType);
         topVer = ectx.planningContext().topologyVersion();
-        partsArr = ectx.localPartitions();
         mvccSnapshot = ectx.mvccSnapshot();
     }
 
@@ -148,11 +149,11 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                 toReserve.add(top.localPartition(i));
         }
         else if (cctx.isPartitioned()) {
-            assert partsArr != null;
+            assert parts != null;
 
-            toReserve = new ArrayList<>(partsArr.length);
-            for (int i = 0; i < partsArr.length; i++)
-                toReserve.add(top.localPartition(partsArr[i]));
+            toReserve = new ArrayList<>(parts.length);
+            for (int i = 0; i < parts.length; i++)
+                toReserve.add(top.localPartition(parts[i]));
         }
         else {
             assert cctx.isLocal();

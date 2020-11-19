@@ -36,7 +36,7 @@ public class IgniteMetadata {
         ChainedRelMetadataProvider.of(
             ImmutableList.of(
                 // Ignite specific providers
-                IgniteMdNodesMapping.SOURCE,
+                IgniteMdFragmentMapping.SOURCE,
 
                 // Ignite overriden providers
                 IgniteMdDistribution.SOURCE,
@@ -52,16 +52,16 @@ public class IgniteMetadata {
                 DefaultRelMetadataProvider.INSTANCE));
 
     /** */
-    public interface NodesMappingMetadata extends Metadata {
-        MetadataDef<NodesMappingMetadata> DEF = MetadataDef.of(NodesMappingMetadata.class,
-            NodesMappingMetadata.Handler.class, IgniteMethod.NODES_MAPPING.method());
+    public interface FragmentMappingMetadata extends Metadata {
+        MetadataDef<FragmentMappingMetadata> DEF = MetadataDef.of(FragmentMappingMetadata.class,
+            FragmentMappingMetadata.Handler.class, IgniteMethod.FRAGMENT_MAPPING.method());
 
         /** Determines how the rows are distributed. */
-        NodesMapping nodesMapping();
+        FragmentMapping fragmentMapping();
 
         /** Handler API. */
-        interface Handler extends MetadataHandler<NodesMappingMetadata> {
-            NodesMapping nodesMapping(RelNode r, RelMetadataQuery mq);
+        interface Handler extends MetadataHandler<FragmentMappingMetadata> {
+            FragmentMapping fragmentMapping(RelNode r, RelMetadataQuery mq);
         }
     }
 }

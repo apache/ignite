@@ -117,4 +117,10 @@ public class IgniteReduceAggregate extends SingleRel implements IgniteRel {
     public List<AggregateCall> aggregateCalls() {
         return aggCalls;
     }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        return new IgniteReduceAggregate(cluster, getTraitSet(), sole(inputs),
+            groupSet, groupSets, aggCalls, rowType);
+    }
 }
