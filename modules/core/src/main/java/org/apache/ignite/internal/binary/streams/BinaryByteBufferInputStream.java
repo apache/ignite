@@ -243,7 +243,7 @@ public class BinaryByteBufferInputStream implements BinaryInputStream {
 
         ensureHasData(4);
 
-        byte res = buf.get();
+        int res = buf.getInt();
 
         buf.position(oldPos);
 
