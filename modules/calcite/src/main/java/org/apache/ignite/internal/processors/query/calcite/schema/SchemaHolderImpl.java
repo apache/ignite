@@ -74,6 +74,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         /** */
         private final int hash;
 
+        /** */
         public AffinityIdentity(AffinityFunction aff, int backups, IgnitePredicate<ClusterNode> nodeFilter) {
             affFuncCls = aff.getClass();
 
