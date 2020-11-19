@@ -27,11 +27,14 @@
 namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
+    using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
+    using NUnit.Framework.Constraints;
 
     /// <summary>
     /// Tests LINQ.
@@ -352,6 +355,31 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             });
 
             Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
+        }
+
+        /// <summary>
+        /// Tests that <see cref="InvocationExpression"/> is not supported.
+        /// </summary>
+        [Test]
+        public void TestInvokeThrowsNotSupportedException()
+        {
+            var constraint = new ReusableConstraint(Is.TypeOf<NotSupportedException>()
+                .And.Message.StartsWith("The LINQ expression '")
+                .And.Message.Contains("Invoke")
+                .And.Message.Contains(
+                    "could not be translated. Either rewrite the query in a form that can be translated, or switch to client evaluation explicitly by inserting a call to either AsEnumerable() or ToList()."));
+
+            Func<ICacheEntry<int, Person>, bool> filter = entry => false;
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            Assert.Throws(constraint, () => GetPersonCache().AsCacheQueryable()
+                .Where(x => filter(x))
+                .ToList());
+
+            Func<ICacheEntry<int, Person>, int> selector = x => x.Key;
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            Assert.Throws(constraint, () => GetPersonCache().AsCacheQueryable()
+                .Select(x => selector(x))
+                .FirstOrDefault());
         }
     }
 }
