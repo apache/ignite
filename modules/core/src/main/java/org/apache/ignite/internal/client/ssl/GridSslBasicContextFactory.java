@@ -37,6 +37,7 @@ import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ssl.SSLContextWrapper;
+import org.apache.ignite.ssl.SslContextFactory;
 
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
@@ -101,8 +102,8 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
     }
 
     /**
-     * Sets key store type used in context initialization. If not provided, {@link #DFLT_STORE_TYPE} will
-     * be used.
+     * Sets key store type used in context initialization. If not provided, {@link SslContextFactory#DFLT_STORE_TYPE}
+     * will be used.
      *
      * @param keyStoreType Key store type.
      */
@@ -122,8 +123,8 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
     }
 
     /**
-     * Sets trust store type used in context initialization. If not provided, {@link #DFLT_STORE_TYPE} will
-     * be used.
+     * Sets trust store type used in context initialization. If not provided, {@link SslContextFactory#DFLT_STORE_TYPE}
+     * will be used.
      *
      * @param trustStoreType Trust store type.
      */
@@ -143,7 +144,7 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
     }
 
     /**
-     * Sets protocol for secure transport. If not specified, {@link #DFLT_SSL_PROTOCOL} will be used.
+     * Sets protocol for secure transport. If not specified, {@link SslContextFactory#DFLT_SSL_PROTOCOL} will be used.
      *
      * @param proto SSL protocol name.
      */
@@ -154,7 +155,7 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
     }
 
     /**
-     * Gets algorithm that will be used to create a key manager. If not specified, {@link #DFLT_KEY_ALGORITHM}
+     * Gets algorithm that will be used to create a key manager. If not specified, {@link SslContextFactory#DFLT_KEY_ALGORITHM}
      * will be used.
      *
      * @return Key manager algorithm.
