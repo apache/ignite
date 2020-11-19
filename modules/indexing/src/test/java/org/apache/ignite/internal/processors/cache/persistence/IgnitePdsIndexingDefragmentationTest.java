@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.Objects;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -74,7 +75,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
             .setAtomicityMode(TRANSACTIONAL)
             .setGroupName(GRP_NAME)
             .setIndexedTypes(
-                ObjKey.class, byte[].class,
+                IgniteCacheUpdateSqlQuerySelfTest.AllTypes.class, byte[].class,
                 Integer.class, byte[].class
             )
             .setAffinity(new RendezvousAffinityFunction(false, PARTS));
@@ -83,7 +84,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
             .setAtomicityMode(TRANSACTIONAL)
             .setGroupName(GRP_NAME)
             .setIndexedTypes(
-                ObjKey.class, byte[].class,
+                IgniteCacheUpdateSqlQuerySelfTest.AllTypes.class, byte[].class,
                 Integer.class, byte[].class
             )
             .setAffinity(new RendezvousAffinityFunction(false, PARTS));
@@ -182,6 +183,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         node.context().resource().injectGeneric(clo);
 
         VisorValidateIndexesJobResult call = clo.call();
+
         assertFalse(call.hasIssues());
     }
 
@@ -202,7 +204,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
      */
     @Test
     public void testIndexingWithComplexKey() throws Exception {
-        test(integer -> new ObjKey(integer, "test"));
+        test(integer -> new IgniteCacheUpdateSqlQuerySelfTest.AllTypes((long)integer));
     }
 
     /**
@@ -224,38 +226,66 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
     @Test
     @WithSystemProperty(key = USE_MVCC, value = "true")
     public void testIndexingWithComplexKeyAndMVCC() throws Exception {
-        test(integer -> new ObjKey(integer, "test"));
+        test(integer -> new IgniteCacheUpdateSqlQuerySelfTest.AllTypes((long)integer));
     }
 
     /**
-     * Complex key for cache.
+     * @throws Exception If failed.
      */
-    public static class ObjKey {
-        /** */
-        private Integer intKey;
+    @Test
+    public void testMultipleIndexes() throws Exception {
+        startGrid(0).cluster().state(ClusterState.ACTIVE);
 
-        /** */
-        private String strKey;
+        IgniteCache<?, ?> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        /** Constructor. */
-        public ObjKey(Integer intKey, String strKey) {
-            this.intKey = intKey;
-            this.strKey = strKey;
-        }
+        cache.query(new SqlFieldsQuery("CREATE TABLE TEST (ID INT PRIMARY KEY, VAL_INT INT, VAL_OBJ LONG)"));
 
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ObjKey key = (ObjKey) o;
-            return Objects.equals(intKey, key.intKey) &&
-                    Objects.equals(strKey, key.strKey);
-        }
+        cache.query(new SqlFieldsQuery("CREATE INDEX TEST_VAL_INT ON TEST(VAL_INT)"));
 
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(intKey, strKey);
-        }
+        cache.query(new SqlFieldsQuery("CREATE INDEX TEST_VAL_OBJ ON TEST(VAL_OBJ)"));
+
+        for (int i = 0; i < ADDED_KEYS_COUNT; i++)
+            cache.query(new SqlFieldsQuery("INSERT INTO TEST VALUES (?, ?, ?)").setArgs(i, i, (long)i));
+
+        cache.query(new SqlFieldsQuery("DELETE FROM TEST WHERE MOD(ID, 2) = 0"));
+
+        createMaintenanceRecord();
+
+        // Restart first time.
+        stopGrid(0);
+
+        startGrid(0);
+
+        // Restart second time.
+        stopGrid(0);
+
+        startGrid(0);
+
+        // Reinit cache object.
+        cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        assertTrue(explainQuery(cache, "EXPLAIN SELECT * FROM TEST WHERE ID > 0").contains("_key_pk_proxy"));
+
+        cache.query(new SqlFieldsQuery("SELECT * FROM TEST WHERE ID > 0")).getAll();
+
+        assertTrue(explainQuery(cache, "EXPLAIN SELECT * FROM TEST WHERE VAL_INT > 0").contains("test_val_int"));
+
+        cache.query(new SqlFieldsQuery("SELECT * FROM TEST WHERE VAL_INT > 0")).getAll();
+
+        assertTrue(explainQuery(cache, "EXPLAIN SELECT * FROM TEST WHERE VAL_OBJ > 0").contains("test_val_obj"));
+
+        cache.query(new SqlFieldsQuery("SELECT * FROM TEST WHERE VAL_OBJ > 0")).getAll();
+    }
+
+    /** */
+    private static String explainQuery(IgniteCache<?, ?> cache, String qry) {
+        return cache
+            .query(new SqlFieldsQuery(qry))
+            .getAll()
+            .get(0)
+            .get(0)
+            .toString()
+            .toLowerCase();
     }
 
     /**

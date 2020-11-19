@@ -520,7 +520,7 @@ public class CachePartitionDefragmentationManager {
         PendingEntriesTree newPendingTree = partCtx.newCacheDataStore.pendingTree();
         AbstractFreeList<CacheDataRow> freeList = partCtx.newCacheDataStore.getCacheStoreFreeList();
 
-        long cpLockThreshold = 250L;
+        long cpLockThreshold = 150L;
 
         TimeTracker<PartStages> tracker = new TimeTracker<>(PartStages.class);
 

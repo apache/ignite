@@ -163,7 +163,7 @@ public interface MaintenanceRegistry {
      * @param workflowCalProvider provider of {@link MaintenanceWorkflowCallback} which construct the callback by given
      * task.
      */
-    default public void registerWorkflowCallbackIfTaskExists(
+    public default void registerWorkflowCallbackIfTaskExists(
         @NotNull String maintenanceTaskName,
         @NotNull IgniteThrowableFunction<MaintenanceTask, MaintenanceWorkflowCallback> workflowCalProvider
     ) throws IgniteCheckedException {

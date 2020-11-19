@@ -111,7 +111,7 @@ public class IndexingDefragmentation implements GridQueryIndexingDefragmentation
 
         Collection<GridH2Table> tables = indexing.schemaManager().dataTables();
 
-        long cpLockThreshold = 250L;
+        long cpLockThreshold = 150L;
 
         TimeTracker<IndexStages> tracker = new TimeTracker<>(IndexStages.class);
 

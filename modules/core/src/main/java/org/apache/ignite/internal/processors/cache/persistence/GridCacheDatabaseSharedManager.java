@@ -550,7 +550,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override protected void initDataRegions(DataStorageConfiguration memCfg) throws IgniteCheckedException {
-        if(isDefragmentationScheduled() && !dataRegionsInitialized) {
+        if (isDefragmentationScheduled() && !dataRegionsInitialized) {
             //Region size configuration will be changed for defragmentation needs.
             memCfg = configureDataRegionForDefragmentation(memCfg);
         }
