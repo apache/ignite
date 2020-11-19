@@ -22,9 +22,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -68,7 +66,6 @@ import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.ClientReconnectedException;
-import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -200,9 +197,6 @@ class TcpClientChannel implements ClientChannel {
             try {
                 for (ClientRequestFuture pendingReq : pendingReqs.values())
                     pendingReq.onDone(new ClientConnectionException("Channel is closed", cause));
-
-                if (receiverThread != null)
-                    receiverThread.interrupt();
             }
             finally {
                 sndLock.unlock();
