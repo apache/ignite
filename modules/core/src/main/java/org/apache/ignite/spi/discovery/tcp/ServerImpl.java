@@ -6534,7 +6534,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         // nodes failed. May be several failed in a row. But we got only one connectionRecoveryTimeout to establish new
         // connection. We should travers rest of the cluster with sliced timeout for each node.
         return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos, sndState == null ? -1 :
-            Math.min(sndState.failTimeNanos, System.nanoTime() + connectionCheckTimeout));
+            Math.min(sndState.failTimeNanos, System.nanoTime() + U.millisToNanos(connectionCheckTimeout)));
     }
 
     /** Fixates time of last sent message. */
