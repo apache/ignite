@@ -21,7 +21,6 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
@@ -41,15 +40,6 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
 
         long start = System.currentTimeMillis();
 
-        loadParallel(ignite, cacheName, size, dataSize);
-
-        recordResult("DURATION", System.currentTimeMillis() - start);
-
-        markFinished();
-    }
-
-    /** */
-    private void loadParallel(Ignite ignite, String cacheName, long size, int dataSize) throws InterruptedException {
         int threads = Runtime.getRuntime().availableProcessors() / 2;
 
         long iterThread = size / threads;
@@ -57,7 +47,7 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
         CountDownLatch latch = new CountDownLatch(threads);
 
         for (int i = 0; i < threads; i++)
-            new Thread(()->{
+            new Thread(() -> {
                 try (IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
                     for (long j = 0L; j <= iterThread; j++)
                         dataStreamer.addData(UUID.randomUUID(), new byte[dataSize]);
@@ -67,5 +57,9 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
             }).start();
 
         latch.await();
+
+        recordResult("DURATION", System.currentTimeMillis() - start);
+
+        markFinished();
     }
 }
