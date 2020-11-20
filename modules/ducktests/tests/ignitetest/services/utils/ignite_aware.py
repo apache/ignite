@@ -76,15 +76,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         self.logger.info("Waiting for IgniteAware(s) to start...")
 
-        for node in self.nodes:
-            wait_until(lambda n=node: self.alive(n), timeout_sec=10)
-
         self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
 
     def start_node(self, node):
         self.init_persistent(node)
 
         super().start_node(node)
+
+        wait_until(lambda: self.alive(node), timeout_sec=10)
 
         ignite_jmx_mixin(node, self.pids(node))
 
