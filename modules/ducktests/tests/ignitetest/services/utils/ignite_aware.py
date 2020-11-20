@@ -88,9 +88,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         else:
             config = self.config
 
-        config.discovery_spi.prepare_on_start(cluster=self)
+        config = config._replace(local_host=socket.gethostbyname(node.account.hostname))
 
-        config.discovery_spi.local_address = socket.gethostbyname(node.account.hostname)
+        config.discovery_spi.prepare_on_start(cluster=self)
 
         node_config = self.spec.config_template.render(config_dir=self.PERSISTENT_ROOT, work_dir=self.WORK_DIR,
                                                        config=config)

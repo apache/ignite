@@ -50,6 +50,10 @@
 
         {{ cache_utils.cache_configs(config.caches) }}
 
+        {% if config.local_host %}
+            <property name="localHost" value="{{ config.local_host }}"/>
+        {% endif %}
+
         {% if config.properties %}
             {{ config.properties }}
         {% endif %}
