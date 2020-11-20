@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline.snapshot;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
@@ -43,7 +44,7 @@ import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand
  * @see SnapshotMXBean
  * @see IgniteSnapshotManager
  */
-public class SnapshotCommand implements Command<Object> {
+public class SnapshotCommand extends AbstractCommand<Object> {
     /** Command argument. */
     private Object taskArgs;
 

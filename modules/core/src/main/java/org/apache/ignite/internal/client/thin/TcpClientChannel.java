@@ -168,6 +168,9 @@ class TcpClientChannel implements ClientChannel {
     /** Receiver thread (processes incoming messages). */
     private Thread receiverThread;
 
+    /** Send/receive timeout in milliseconds. */
+    private final int timeout;
+
     /** Constructor. */
     TcpClientChannel(ClientChannelConfiguration cfg)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
@@ -176,17 +179,23 @@ class TcpClientChannel implements ClientChannel {
         Executor cfgExec = cfg.getAsyncContinuationExecutor();
         asyncContinuationExecutor = cfgExec != null ? cfgExec : ForkJoinPool.commonPool();
 
+        timeout = cfg.getTimeout();
+
         try {
             sock = createSocket(cfg);
 
             out = sock.getOutputStream();
             dataInput = new ByteCountingDataInput(sock.getInputStream());
+
+            handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
+
+            // Disable timeout on socket after handshake, instead, get future result with timeout in "receive" method.
+            if (timeout > 0)
+                sock.setSoTimeout(0);
         }
         catch (IOException e) {
             throw handleIOError("addr=" + cfg.getAddress(), e);
         }
-
-        handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
     }
 
     /** {@inheritDoc} */
@@ -303,7 +312,7 @@ class TcpClientChannel implements ClientChannel {
     private <T> T receive(ClientRequestFuture pendingReq, Function<PayloadInputChannel, T> payloadReader)
         throws ClientException {
         try {
-            byte[] payload = pendingReq.get();
+            byte[] payload = timeout > 0 ? pendingReq.get(timeout) : pendingReq.get();
 
             if (payload == null || payloadReader == null)
                 return null;
@@ -461,9 +470,11 @@ class TcpClientChannel implements ClientChannel {
             if (msgSize > hdrSize)
                 res = dataInput.spinRead(msgSize - hdrSize);
         }
-        else if (status == ClientStatus.SECURITY_VIOLATION)
+        else if (status == ClientStatus.SECURITY_VIOLATION) {
+            dataInput.spinRead(msgSize - hdrSize); // Read message to the end.
+
             err = new ClientAuthorizationException();
-        else {
+        } else {
             resIn = new BinaryHeapInputStream(dataInput.spinRead(msgSize - hdrSize));
 
             String errMsg = ClientUtils.createBinaryReader(null, resIn).readString();

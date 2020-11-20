@@ -64,6 +64,10 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
             "reservedForDsCacheGroupNameCheckFails";
 
     /** */
+    private static final String RESERVED_FOR_VOLATILE_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME =
+        "reservedForVolatileDsCacheGroupNameCheckFails";
+
+    /** */
     private static final String CACHE_NAME_WITH_SPECIAL_CHARACTERS_REPLICATED = "--№=+:(replicated)";
 
     /** */
@@ -135,6 +139,9 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         if (igniteInstanceName.contains(RESERVED_FOR_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME))
             namedCacheCfg.setGroupName("default-ds-group");
 
+        if (igniteInstanceName.contains(RESERVED_FOR_VOLATILE_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME))
+            namedCacheCfg.setGroupName("default-volatile-ds-group@volatileDsMemPlc");
+
         return cfg;
     }
 
@@ -177,6 +184,9 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
 
             // This grid should not start.
             startInvalidGrid(RESERVED_FOR_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME);
+
+            // This grid should not start.
+            startInvalidGrid(RESERVED_FOR_VOLATILE_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME);
 
             // This grid will start normally.
             startGrid(1);

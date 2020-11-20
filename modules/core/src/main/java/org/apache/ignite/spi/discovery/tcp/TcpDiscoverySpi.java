@@ -120,7 +120,7 @@ import org.jetbrains.annotations.TestOnly;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 
 /**
  * Discovery SPI implementation that uses TCP/IP for node discovery.
@@ -287,7 +287,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
     /** Default SO_LINGER to set for socket, 0 means enabled with 0 timeout. */
-    public static final int DFLT_SO_LINGER = 5;
+    public static final int DFLT_SO_LINGER = 0;
 
     /** Default connection recovery timeout in ms. */
     public static final long DFLT_CONNECTION_RECOVERY_TIMEOUT = IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT;
@@ -306,9 +306,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** @see IgniteSystemProperties#IGNITE_DISCOVERY_METRICS_QNT_WARN */
     public static final int DFLT_DISCOVERY_METRICS_QNT_WARN = 500;
-
-    /** Name of the discovery metrics registry. */
-    public static final String DISCO_METRICS = metricName("io", "discovery");
 
     /** Ssl message pattern for StreamCorruptedException. */
     private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
@@ -631,14 +628,24 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * Sets local host IP address that discovery SPI uses.
+     * Sets network addresses for the Discovery SPI.
      * <p>
-     * If not provided, by default a first found non-loopback address
-     * will be used. If there is no non-loopback address available,
-     * then {@link InetAddress#getLocalHost()} will be used.
+     * If not provided, the value is resolved from {@link IgniteConfiguration#getLocalHost()}. If the latter is not set
+     * as well, the the node binds to all available IP addresses of an environment it's running on.
+     * If there is no a non-loopback address, then {@link InetAddress#getLocalHost()} is used.
+     * <p>
+     * <b>NOTE:</b> You should initialize the {@link IgniteConfiguration#getLocalHost()} or
+     * {@link TcpDiscoverySpi#getLocalAddress()} parameter with the network
+     * interface that will be used for inter-node communication. Otherwise, the node can listen on multiple network
+     * addresses available in the environment and this can prolong node failures detection if some of the addresses are
+     * not reachable from other cluster nodes. For instance, if the node is bound to 3 network interfaces,
+     * it can take up to
+     * '{@link IgniteConfiguration#getFailureDetectionTimeout()} * 3 + {@link TcpDiscoverySpi#getConnectionRecoveryTimeout()}'
+     * milliseconds for another node to detect a disconnect of the give node.
      *
      * @param locAddr IP address.
      * @return {@code this} for chaining.
+     * @see IgniteConfiguration#setLocalHost(String).
      */
     @IgniteSpiConfiguration(optional = true)
     public TcpDiscoverySpi setLocalAddress(String locAddr) {
@@ -897,15 +904,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * <p>
      * If not provided {@link org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder} will
      * be used by default.
-     * <p>
-     * <b>NOTE:</b> You should assing multiple addresses to a node only if they represent some real physical connections
-     * which can give more reliability. Providing several addresses can prolong failure detection of current node.
-     * The timeouts and settings on network operations ({@link #failureDetectionTimeout()}, {@link #sockTimeout},
-     * {@link #ackTimeout}, {@link #maxAckTimeout}, {@link #reconCnt}) work per connection/address. The exception is
-     * {@link #connRecoveryTimeout}. And node addresses are sorted out sequentially.
-     * </p>
-     * Example: if you use {@code failureDetectionTimeout} and have set 3 ip addresses for this node, previous node in
-     * the ring can take up to 'failureDetectionTimeout * 3' to detect failure of current node.
      *
      * @param ipFinder IP finder.
      * @return {@code this} for chaining.

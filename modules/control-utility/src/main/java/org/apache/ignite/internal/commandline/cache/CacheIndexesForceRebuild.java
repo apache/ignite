@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.TaskExecutor;
@@ -50,7 +51,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.IndexListCom
 /**
  * Cache subcommand that triggers indexes force rebuild.
  */
-public class CacheIndexesForceRebuild implements Command<CacheIndexesForceRebuild.Arguments> {
+public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceRebuild.Arguments> {
     /** Command parsed arguments. */
     private Arguments args;
 

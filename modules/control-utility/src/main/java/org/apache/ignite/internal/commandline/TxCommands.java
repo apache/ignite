@@ -61,7 +61,7 @@ import static org.apache.ignite.internal.commandline.TxCommandArg.TX_INFO;
 /**
  * Transaction commands.
  */
-public class TxCommands implements Command<VisorTxTaskArg> {
+public class TxCommands extends AbstractCommand<VisorTxTaskArg> {
     /** Arguments */
     private VisorTxTaskArg args;
 

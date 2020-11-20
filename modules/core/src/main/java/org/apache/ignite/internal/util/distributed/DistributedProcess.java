@@ -430,6 +430,16 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
          *
          * @see IgniteSnapshotManager
          */
-        END_SNAPSHOT
+        END_SNAPSHOT,
+
+        /**
+         * Cache group encyption key change prepare phase.
+         */
+        CACHE_GROUP_KEY_CHANGE_PREPARE,
+
+        /**
+         * Cache group encyption key change perform phase.
+         */
+        CACHE_GROUP_KEY_CHANGE_FINISH
     }
 }
