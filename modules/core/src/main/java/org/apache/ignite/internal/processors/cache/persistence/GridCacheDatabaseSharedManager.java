@@ -1096,10 +1096,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        checkpointManager.stop(cancel);
-
         if (defrgMgr != null)
             defrgMgr.cancel();
+
+        checkpointManager.stop(cancel);
 
         super.onKernalStop0(cancel);
 

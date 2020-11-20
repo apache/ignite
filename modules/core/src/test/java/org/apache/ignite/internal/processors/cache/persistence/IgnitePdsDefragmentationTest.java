@@ -252,7 +252,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void waitForDefragmentation(int idx) throws IgniteCheckedException {
+    protected void waitForDefragmentation(int idx) throws IgniteCheckedException {
         IgniteEx ig = grid(idx);
 
         ((GridCacheDatabaseSharedManager)ig.context().cache().context().database())
