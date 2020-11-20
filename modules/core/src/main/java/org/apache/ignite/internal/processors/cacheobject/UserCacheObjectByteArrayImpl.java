@@ -47,12 +47,7 @@ public class UserCacheObjectByteArrayImpl extends CacheObjectByteArrayImpl {
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
-        return value(ctx, cpy, null);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
-        return super.value(ctx, false, ldr); // Do not need copy since user value is not in cache.
+        return super.value(ctx, false); // Do not need copy since user value is not in cache.
     }
 
     /** {@inheritDoc} */

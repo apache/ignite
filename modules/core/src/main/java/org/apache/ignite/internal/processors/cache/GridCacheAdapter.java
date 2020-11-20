@@ -944,7 +944,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         }
 
-        Object val = ctx.unwrapBinaryIfNeeded(cacheVal, ctx.keepBinary(), false, null);
+        Object val = ctx.unwrapBinaryIfNeeded(cacheVal, ctx.keepBinary(), false);
 
         return (V)val;
     }
@@ -1469,7 +1469,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         V val = repairableGet(key, !keepBinary, false);
 
         if (ctx.config().getInterceptor() != null) {
-            key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false, null) : key;
+            key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false) : key;
 
             val = (V)ctx.config().getInterceptor().onGet(key, val);
         }
@@ -1497,13 +1497,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             = (EntryGetResult)repairableGet(key, !keepBinary, true);
 
         CacheEntry<K, V> val = t != null ? new CacheEntryImplEx<>(
-            keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false, null) : key,
+            keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false) : key,
             (V)t.value(),
             t.version())
             : null;
 
         if (ctx.config().getInterceptor() != null) {
-            key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false, null) : key;
+            key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false) : key;
 
             V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
 
@@ -1539,7 +1539,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (ctx.config().getInterceptor() != null)
             fut = fut.chain(new CX1<IgniteInternalFuture<V>, V>() {
                 @Override public V applyx(IgniteInternalFuture<V> f) throws IgniteCheckedException {
-                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false, null) : key0;
+                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
 
                     return (V)ctx.config().getInterceptor().onGet(key, f.get());
                 }
@@ -1580,7 +1580,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     throws IgniteCheckedException {
                     EntryGetResult t = f.get();
 
-                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false, null) : key0;
+                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
 
                     CacheEntry val = t != null ? new CacheEntryImplEx<>(
                         key,
@@ -3163,7 +3163,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 V ret = fut.get().value();
 
                 if (ctx.config().getInterceptor() != null) {
-                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false, null) : key0;
+                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
 
                     return (V)ctx.config().getInterceptor().onBeforeRemove(new CacheEntryImpl(key, ret)).get2();
                 }
@@ -5351,8 +5351,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         KeyCacheObject key = entry.key();
 
-        Object key0 = ctx.unwrapBinaryIfNeeded(key, !deserializeBinary, true, null);
-        Object val0 = ctx.unwrapBinaryIfNeeded(val, !deserializeBinary, true, null);
+        Object key0 = ctx.unwrapBinaryIfNeeded(key, !deserializeBinary, true);
+        Object val0 = ctx.unwrapBinaryIfNeeded(val, !deserializeBinary, true);
 
         return new CacheEntryImpl<>((K)key0, (V)val0, entry.version());
     }
@@ -7214,7 +7214,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @Override public K next() {
             current = internalIterator.next();
 
-            return (K)ctx.unwrapBinaryIfNeeded(current.key(), keepBinary, true, null);
+            return (K)ctx.unwrapBinaryIfNeeded(current.key(), keepBinary, true);
         }
 
         /** {@inheritDoc} */

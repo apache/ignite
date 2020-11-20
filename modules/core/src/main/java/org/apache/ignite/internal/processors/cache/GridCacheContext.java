@@ -1801,11 +1801,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param o Object to unwrap.
      * @param keepBinary Keep binary flag.
-     * @param ldr Class loader, used for deserialization from binary representation.
      * @return Unwrapped object.
      */
-    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, @Nullable ClassLoader ldr) {
-        return unwrapBinaryIfNeeded(o, keepBinary, true, ldr);
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary) {
+        return unwrapBinaryIfNeeded(o, keepBinary, true);
     }
 
     /**
@@ -1814,11 +1813,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param o Object to unwrap.
      * @param keepBinary Keep binary flag.
      * @param cpy Copy value flag.
-     * @param ldr Class loader, used for deserialization from binary representation.
      * @return Unwrapped object.
      */
-    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, boolean cpy, @Nullable ClassLoader ldr) {
-        return cacheObjCtx.unwrapBinaryIfNeeded(o, keepBinary, cpy, ldr);
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, boolean cpy) {
+        return cacheObjCtx.unwrapBinaryIfNeeded(o, keepBinary, cpy);
     }
 
     /**
@@ -1834,7 +1832,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
                     if (invokeRes.result() != null)
                         res = CacheInvokeResult.fromResult(unwrapBinaryIfNeeded(invokeRes.result(),
-                            keepBinary, false, null));
+                            keepBinary, false));
                 }
 
                 return res;
@@ -1922,7 +1920,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param deserializeBinary Deserialize binary flag.
      * @param cpy Copy flag.
      * @param ver GridCacheVersion.
-     * @param ldr Class loader, used for deserialization from binary representation.
      */
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
@@ -1933,11 +1930,10 @@ public class GridCacheContext<K, V> implements Externalizable {
         boolean cpy,
         final GridCacheVersion ver,
         final long expireTime,
-        final long ttl,
-        @Nullable ClassLoader ldr) {
+        final long ttl) {
         // Creates EntryGetResult
         addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, cpy, null,
-            ver, expireTime, ttl, ver != null, ldr);
+            ver, expireTime, ttl, ver != null);
     }
 
     /**
@@ -1960,7 +1956,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         boolean needVer) {
         // Uses getRes as result.
         addResult(map, key, getRes.<CacheObject>value(), skipVals, keepCacheObjects, deserializeBinary, cpy, getRes,
-            null, 0, 0, needVer, null);
+            null, 0, 0, needVer);
     }
 
     /**
@@ -1976,7 +1972,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param expireTime Entry expire time.
      * @param ttl Entry TTL.
      * @param needVer Need version flag.
-     * @param ldr Class loader, used for deserialization from binary representation.
      */
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
@@ -1989,15 +1984,14 @@ public class GridCacheContext<K, V> implements Externalizable {
         final GridCacheVersion ver,
         final long expireTime,
         final long ttl,
-        boolean needVer,
-        @Nullable ClassLoader ldr) {
+        boolean needVer) {
         assert key != null;
         assert val != null || skipVals;
 
         if (!keepCacheObjects) {
-            Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary, cpy, ldr);
+            Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary, cpy);
 
-            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary, cpy, ldr);
+            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary, cpy);
 
             assert key0 != null : key;
             assert val0 != null : val;

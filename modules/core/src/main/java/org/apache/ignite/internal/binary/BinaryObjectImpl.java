@@ -136,19 +136,10 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
-        return value(ctx, cpy, null);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
         Object obj0 = obj;
 
-        if (obj0 == null || (cpy && needCopy(ctx))) {
-            if (ldr != null)
-                obj0 = deserialize(ldr);
-            else
-                obj0 = deserializeValue(ctx);
-        }
+        if (obj0 == null || (cpy && needCopy(ctx)))
+            obj0 = deserializeValue(ctx);
 
         return (T)obj0;
     }

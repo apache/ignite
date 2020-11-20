@@ -441,12 +441,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
-        return value(ctx, cpy, null);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
-        return deserialize(ldr);
+        return (T)deserializeValue();
     }
 
     /** {@inheritDoc} */

@@ -235,10 +235,6 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
-            return value(ctx, cpy, null);
-        }
-
-        @Override public <T> @Nullable T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
             A.notNull(ctx, "ctx");
 
             return (T)val;

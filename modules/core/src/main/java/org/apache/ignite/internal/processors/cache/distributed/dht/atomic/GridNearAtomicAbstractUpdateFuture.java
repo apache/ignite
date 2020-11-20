@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -117,10 +116,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
     /** Near cache flag. */
     protected final boolean nearEnabled;
-
-    /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
-    @GridToStringExclude
-    protected final IgniteUuid deploymentLdrId;
 
     /** Topology locked flag. Set if atomic update is performed inside a TX or explicit lock. */
     protected boolean topLocked;
@@ -203,7 +198,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
-        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         nearEnabled = CU.isNearEnabled(cctx);
 
@@ -356,11 +350,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      */
     final void completeFuture(@Nullable GridCacheReturn ret, Throwable err, @Nullable Long futId) {
         Object retval = ret == null ? null : rawRetval ? ret : (this.retval || op == TRANSFORM) ?
-            cctx.unwrapBinaryIfNeeded(
-                ret.value(),
-                keepBinary,
-                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
-            ) : ret.success();
+                cctx.unwrapBinaryIfNeeded(ret.value(), keepBinary) : ret.success();
 
         if (op == TRANSFORM && retval == null)
             retval = Collections.emptyMap();
@@ -416,12 +406,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
         for (KeyCacheObject key : keys0) {
             try {
-                keys.add(cctx.cacheObjectContext().unwrapBinaryIfNeeded(
-                    key,
-                    keepBinary,
-                    false,
-                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId))
-                );
+                keys.add(cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false));
             }
             catch (BinaryInvalidTypeException e) {
                 keys.add(cctx.toCacheKeyObject(key));

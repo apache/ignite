@@ -203,10 +203,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     @GridToStringInclude
     protected long timeout;
 
-    /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
-    @GridToStringExclude
-    protected IgniteUuid deploymentLdrId;
-
     /** Invalidate flag. */
     protected volatile boolean invalidate;
 
@@ -351,7 +347,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         this.txSize = txSize;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
-        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         startVer = cctx.versions().last();
 
@@ -1511,7 +1506,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                         key,
                                         e.cached().rawGet(),
                                         e.keepBinary()),
-                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(val, e.keepBinary(), false, null));
+                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(val, e.keepBinary(), false));
 
                                 if (interceptorVal == null)
                                     continue;
@@ -1649,14 +1644,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             return F.t(cacheCtx.writeThrough() ? RELOAD : DELETE, null);
 
         if (F.isEmpty(txEntry.entryProcessors())) {
-            if (ret != null) {
-                ret.value(
-                    cacheCtx,
-                    txEntry.value(),
-                    txEntry.keepBinary(),
-                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
-                );
-            }
+            if (ret != null)
+                ret.value(cacheCtx, txEntry.value(), txEntry.keepBinary());
 
             return F.t(txEntry.op(), txEntry.value());
         }

@@ -1502,7 +1502,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 intercept = !skipInterceptor(explicitVer);
 
             if (intercept) {
-                val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false, null);
+                val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
 
                 CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinary);
 
@@ -1987,7 +1987,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         updateTtl(expiryPlc);
 
                     Object val = retval ?
-                        cctx.cacheObjectContext().unwrapBinaryIfNeeded(CU.value(old, cctx, false), keepBinary, false, null)
+                        cctx.cacheObjectContext().unwrapBinaryIfNeeded(CU.value(old, cctx, false), keepBinary, false)
                         : null;
 
                     return new T3<>(false, val, null);
@@ -2226,7 +2226,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         return new GridTuple3<>(res,
             cctx.unwrapTemporary(interceptorRes != null ?
                 interceptorRes.get2() :
-                cctx.cacheObjectContext().unwrapBinaryIfNeeded(old, keepBinary, false, null)),
+                cctx.cacheObjectContext().unwrapBinaryIfNeeded(old, keepBinary, false)),
             invokeRes);
     }
 
@@ -2547,7 +2547,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (val != null)
             return val;
 
-        return cctx.unwrapBinaryIfNeeded(cacheObj, keepBinary, cpy, null);
+        return cctx.unwrapBinaryIfNeeded(cacheObj, keepBinary, cpy);
     }
 
     /**
@@ -5677,12 +5677,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         /** {@inheritDoc} */
         @Override public K getKey() {
-            return (K)cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, true, null);
+            return (K)cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, true);
         }
 
         /** {@inheritDoc} */
         @Override public V getValue() {
-            return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(peekVisibleValue(), keepBinary, true, null);
+            return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(peekVisibleValue(), keepBinary, true);
         }
 
         /** {@inheritDoc} */
@@ -6381,7 +6381,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (intercept && (conflictVer == null || !skipInterceptorOnConflict)) {
-                Object updated0 = cctx.unwrapBinaryIfNeeded(updated, keepBinary, false, null);
+                Object updated0 = cctx.unwrapBinaryIfNeeded(updated, keepBinary, false);
 
                 CacheLazyEntry<Object, Object> interceptEntry =
                     new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinary);
@@ -6728,12 +6728,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 entry.context().kernalContext(), EntryProcessor.class, (EntryProcessor<Object, Object, ?>)writeObj);
 
             IgniteThread.onEntryProcessorEntered(true);
-
-            if (invokeEntry.cctx.kernalContext().deploy().enabled() &&
-                invokeEntry.cctx.kernalContext().deploy().isGlobalLoader(entryProcessor.getClass().getClassLoader())) {
-                U.restoreDeploymentContext(invokeEntry.cctx.kernalContext(), invokeEntry.cctx.kernalContext()
-                    .deploy().getClassLoaderId(entryProcessor.getClass().getClassLoader()));
-            }
 
             try {
                 Object computed = entryProcessor.process(invokeEntry, invokeArgs);

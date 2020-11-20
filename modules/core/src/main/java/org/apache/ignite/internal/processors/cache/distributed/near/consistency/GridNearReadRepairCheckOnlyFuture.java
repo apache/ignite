@@ -138,8 +138,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
                         getRes.version(),
                         0,
                         0,
-                        needVer,
-                        null);
+                        needVer);
                 }
 
                 if (skipVals) {
@@ -180,8 +179,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
                         getRes.version(),
                         0,
                         0,
-                        needVer,
-                        null);
+                        needVer);
                 }
 
                 return map;

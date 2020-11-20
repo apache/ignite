@@ -82,7 +82,7 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
     /** {@inheritDoc} */
     @Override public K key() {
         if (key == null)
-            key = (K)cctx.unwrapBinaryIfNeeded(keyObj, keepBinary, null);
+            key = (K)cctx.unwrapBinaryIfNeeded(keyObj, keepBinary);
 
         return key;
     }
@@ -100,7 +100,7 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
      */
     public V value(boolean keepBinary) {
         if (val == null)
-            val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, true, null);
+            val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, true);
 
         return val;
     }

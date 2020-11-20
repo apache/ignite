@@ -36,9 +36,11 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CA;
@@ -71,6 +73,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /** Per-thread deployment context. */
     private ConcurrentMap<IgniteUuid, CachedDeploymentInfo<K, V>> deps = new ConcurrentHashMap<>();
 
+    /** Collection of all known participants (Node ID -> Loader ID). */
+    private Map<UUID, IgniteUuid> allParticipants = new ConcurrentHashMap<>();
+
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
 
@@ -88,7 +93,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private boolean depEnabled;
 
     /** Class loader id for local thread. */
-    private final ThreadLocal<IgniteUuid> localLdrId = new ThreadLocal<>();
+    private ThreadLocal<IgniteUuid> localLdrId = new ThreadLocal<>();
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
@@ -119,6 +124,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                                 log.debug("Removed cached info [d=" + d + ", deps=" + deps + ']');
                         }
                     }
+
+                    allParticipants.remove(id);
                 }
             };
 
@@ -447,27 +454,104 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             break;
         }
 
-        // Sender has left.
-        if (cctx.discovery().node(sndId) == null)
+        if (cctx.discovery().node(sndId) == null) {
+            // Sender has left.
             deps.remove(ldrId, depInfo);
+
+            allParticipants.remove(sndId);
+        }
 
         if (participants != null) {
             for (UUID id : participants.keySet()) {
                 if (cctx.discovery().node(id) == null) {
                     if (depInfo.removeParticipant(id))
                         deps.remove(ldrId, depInfo);
+
+                    allParticipants.remove(id);
                 }
             }
         }
     }
 
     /**
-     * Gets a local class loader id.
+     * Adds deployment info to deployment contexts queue.
      *
-     * @return Class loader uuid.
+     * @param info Info to add.
      */
-    public IgniteUuid locLoaderId() {
-        return localLdrId.get();
+    public void addDeploymentContext(GridDeploymentInfo info) {
+        IgniteUuid ldrId = info.classLoaderId();
+
+        while (true) {
+            CachedDeploymentInfo<K, V> depInfo = deps.get(ldrId);
+
+            if (depInfo == null) {
+                depInfo = new CachedDeploymentInfo<>(ldrId.globalId(), ldrId, info.userVersion(), info.deployMode(),
+                    info.participants());
+
+                CachedDeploymentInfo<K, V> old = deps.putIfAbsent(ldrId, depInfo);
+
+                if (old != null)
+                    depInfo = old;
+                else
+                    break;
+            }
+
+            Map<UUID, IgniteUuid> participants = info.participants();
+
+            if (participants != null) {
+                if (!depInfo.addParticipants(participants, cctx)) {
+                    deps.remove(ldrId, depInfo);
+
+                    continue;
+                }
+            }
+
+            break;
+        }
+    }
+
+    /**
+     * @param sndNodeId Sender node ID.
+     * @param sndLdrId Sender loader ID.
+     * @param participants Participants.
+     * @param locDepOwner {@code True} if local deployment owner.
+     * @return Added participants.
+     */
+    @Nullable private Map<UUID, IgniteUuid> addGlobalParticipants(UUID sndNodeId, IgniteUuid sndLdrId,
+        Map<UUID, IgniteUuid> participants, boolean locDepOwner) {
+        Map<UUID, IgniteUuid> added = null;
+
+        if (participants != null) {
+            for (Map.Entry<UUID, IgniteUuid> entry : participants.entrySet()) {
+                UUID nodeId = entry.getKey();
+                IgniteUuid ldrVer = entry.getValue();
+
+                if (!ldrVer.equals(allParticipants.get(nodeId))) {
+                    allParticipants.put(nodeId, ldrVer);
+
+                    if (added == null)
+                        added = IgniteUtils.newHashMap(participants.size());
+
+                    added.put(nodeId, ldrVer);
+                }
+            }
+        }
+
+        if (locDepOwner) {
+            assert sndNodeId != null;
+            assert sndLdrId != null;
+
+            if (!sndLdrId.equals(allParticipants.get(sndNodeId))) {
+                allParticipants.put(sndNodeId, sndLdrId);
+
+                if (added == null)
+                    added = U.newHashMap(1);
+
+                added.put(sndNodeId, sndLdrId);
+            }
+        }
+
+        return added;
     }
 
     /**
@@ -646,42 +730,25 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         if (cctx.gridConfig().getDeploymentMode() == CONTINUOUS)
             return null;
 
-        IgniteUuid localLdrId0 = localLdrId.get();
-
-        if (localLdrId0 != null) {
-            GridDeploymentInfoBean deploymentInfoBean = getDepBean(deps.get(localLdrId.get()));
-
-            if (deploymentInfoBean != null)
-                return deploymentInfoBean;
-        }
-
         for (CachedDeploymentInfo<K, V> d : deps.values()) {
-            GridDeploymentInfoBean deploymentInfoBean = getDepBean(d);
-            if (deploymentInfoBean != null)
-                return deploymentInfoBean;
-        }
+            if (cctx.discovery().node(d.senderId()) == null)
+                // Sender has left.
+                continue;
 
-        return null;
-    }
+            // Participants map.
+            Map<UUID, IgniteUuid> participants = d.participants();
 
-    @Nullable private GridDeploymentInfoBean getDepBean(CachedDeploymentInfo<K, V> d) {
-        if (d == null || cctx.discovery().node(d.senderId()) == null)
-            // Sender has left.
-            return null;
-
-        // Participants map.
-        Map<UUID, IgniteUuid> participants = d.participants();
-
-        if (participants != null) {
-            for (UUID id : participants.keySet()) {
-                if (cctx.discovery().node(id) != null) {
-                    // At least 1 participant is still in the grid.
-                    return new GridDeploymentInfoBean(
-                        d.loaderId(),
-                        d.userVersion(),
-                        d.mode(),
-                        participants
-                    );
+            if (participants != null) {
+                for (UUID id : participants.keySet()) {
+                    if (cctx.discovery().node(id) != null) {
+                        // At least 1 participant is still in the grid.
+                        return new GridDeploymentInfoBean(
+                            d.loaderId(),
+                            d.userVersion(),
+                            d.mode(),
+                            participants
+                        );
+                    }
                 }
             }
         }
@@ -695,6 +762,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         X.println(">>> Cache deployment manager memory stats [igniteInstanceName=" + cctx.igniteInstanceName() + ']');
         X.println(">>>   Undeploys: " + undeploys.size());
         X.println(">>>   Cached deployments: " + deps.size());
+        X.println(">>>   All participants: " + allParticipants.size());
     }
 
     /**
@@ -886,7 +954,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             this.ldrId = ldrId;
             this.userVer = userVer;
             this.depMode = depMode;
-            this.participants = F.isEmpty(participants) ? null : new ConcurrentLinkedHashMap<>(participants);
+            this.participants = participants == null || participants.isEmpty() ? null :
+                new ConcurrentLinkedHashMap<>(participants);
         }
 
         /**
@@ -904,8 +973,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 for (Map.Entry<UUID, IgniteUuid> e : newParticipants.entrySet()) {
                     assert e.getKey().equals(e.getValue().globalId());
 
-                    // Participant has been left.
-                    if (cctx.discovery().node(e.getKey()) == null)
+                    if (cctx.discovery().node(e.getKey()) != null)
+                        // Participant has left.
                         continue;
 
                     if (participants == null)

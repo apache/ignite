@@ -54,12 +54,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> @Nullable T value(CacheObjectValueContext ctx, boolean cpy) {
-        return value(ctx, cpy, null);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
+    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
         cpy = cpy && needCopy(ctx);
 
         try {
@@ -74,14 +69,16 @@ public class CacheObjectImpl extends CacheObjectAdapter {
                     valBytes = proc.marshal(ctx, val);
                 }
 
-                if (ldr == null) {
-                    if (val != null)
-                        ldr = val.getClass().getClassLoader();
-                    else if (kernalCtx.config().isPeerClassLoadingEnabled())
-                        ldr = kernalCtx.cache().context().deploy().globalLoader();
-                }
+                ClassLoader clsLdr;
 
-                return (T)proc.unmarshal(ctx, valBytes, ldr);
+                if (val != null)
+                    clsLdr = val.getClass().getClassLoader();
+                else if (kernalCtx.config().isPeerClassLoadingEnabled())
+                    clsLdr = kernalCtx.cache().context().deploy().globalLoader();
+                else
+                    clsLdr = null;
+
+                return (T)proc.unmarshal(ctx, valBytes, clsLdr);
             }
 
             if (val != null)

@@ -1239,8 +1239,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         V val0 = null;
 
                         if (readEvt && cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ)) {
-                            key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false, null);
-                            val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false, null);
+                            key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false);
+                            val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false);
 
                             switch (type) {
                                 case SQL:
@@ -1289,9 +1289,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         if (rdc != null) {
                             if (key0 == null)
-                                key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false, null);
+                                key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false);
                             if (val0 == null)
-                                val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false, null);
+                                val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false);
 
                             Cache.Entry<K, V> entry = new CacheEntryImpl(key0, val0);
 
