@@ -34,9 +34,10 @@ class IgniteApplicationService(IgniteAwareService):
     SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"
 
     # pylint: disable=R0913
-    def __init__(self, context, config, java_class_name, num_nodes=1, params="", startup_timeout_sec=60, modules=None,
-                 servicejava_class_name=SERVICE_JAVA_CLASS_NAME, jvm_opts=None, start_ignite=True):
-        super().__init__(context, config, num_nodes, startup_timeout_sec, modules=modules,
+    def __init__(self, context, config, java_class_name, num_nodes=1, params="", startup_timeout_sec=60,
+                 shutdown_timeout_sec=10, modules=None, servicejava_class_name=SERVICE_JAVA_CLASS_NAME, jvm_opts=None,
+                 start_ignite=True):
+        super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
                          servicejava_class_name=servicejava_class_name, java_class_name=java_class_name, params=params,
                          jvm_opts=jvm_opts, start_ignite=start_ignite)
 
@@ -49,43 +50,10 @@ class IgniteApplicationService(IgniteAwareService):
 
         self.__check_status("IGNITE_APPLICATION_INITIALIZED", timeout=self.startup_timeout_sec)
 
-    def stop_async(self, clean_shutdown=True):
-        """
-        Stop in async way.
-        """
-        for node in self.nodes:
-            self.stop_node(node=node, clean_shutdown=clean_shutdown)
+    def await_stopped(self):
+        super().await_stopped()
 
-    # pylint: disable=W0221
-    def stop_node(self, node, clean_shutdown=True):
-        """
-        Stops node in async way.
-        """
-        self.logger.info("%s Stopping node %s" % (self.__class__.__name__, str(node.account)))
-        node.account.kill_java_processes(self.servicejava_class_name, clean_shutdown=clean_shutdown,
-                                         allow_fail=True)
-
-    def await_stopped(self, timeout_sec=10):
-        """
-        Awaits node stop finish.
-        """
-        for node in self.nodes:
-            stopped = self.wait_node(node, timeout_sec=timeout_sec)
-            assert stopped, "Node %s: did not stop within the specified timeout of %s seconds" % \
-                            (str(node.account), str(timeout_sec))
-
-        self.__check_status("IGNITE_APPLICATION_FINISHED", timeout=timeout_sec)
-
-    # pylint: disable=W0221
-    def stop(self, clean_shutdown=True, timeout_sec=10):
-        """
-        Stop services.
-        """
-        if clean_shutdown:
-            self.stop_async(clean_shutdown)
-            self.await_stopped(timeout_sec)
-        else:
-            self.stop_async(clean_shutdown)
+        self.__check_status("IGNITE_APPLICATION_FINISHED")
 
     def __check_status(self, desired, timeout=1):
         self.await_event("%s\\|IGNITE_APPLICATION_BROKEN" % desired, timeout, from_the_beginning=True)

@@ -42,7 +42,7 @@ class StopType(IntEnum):
     """
     SIGTERM = 0
     SIGKILL = 1
-    DISCONNECT = 2
+    DROP_NETWORK = 2
 
 
 @constructible
@@ -135,7 +135,7 @@ class CellularAffinity(IgniteTest):
     # pylint: disable=no-member
     @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_8))
-    @matrix(stop_type=[StopType.DISCONNECT, StopType.SIGKILL, StopType.SIGTERM],
+    @matrix(stop_type=[StopType.DROP_NETWORK, StopType.SIGKILL, StopType.SIGTERM],
             discovery_type=[DiscoreryType.ZooKeeper, DiscoreryType.TCP])
     def test_latency(self, ignite_version, stop_type, discovery_type):
         """
@@ -214,8 +214,8 @@ class CellularAffinity(IgniteTest):
             if s_type is StopType.SIGTERM:
                 failed_loader.stop_async()
             elif s_type is StopType.SIGKILL:
-                failed_loader.stop(clean_shutdown=False)
-            elif s_type is StopType.DISCONNECT:
+                failed_loader.kill()
+            elif s_type is StopType.DROP_NETWORK:
                 failed_loader.drop_network()
 
         for streamer in streamers:

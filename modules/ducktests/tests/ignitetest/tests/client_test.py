@@ -74,7 +74,7 @@ class ClientTest(IgniteTest):
 
     # pylint: disable=R0914
     # pylint: disable=R0913
-    def ignite_start_stop(self, ignite_version, correct_stop_temp_node, nodes_num, static_clients_num, temp_client,
+    def ignite_start_stop(self, ignite_version, graceful_shutdown, nodes_num, static_clients_num, temp_client,
                           iteration_count, client_work_time):
         """
         Test for starting and stopping fat clients.
@@ -128,7 +128,10 @@ class ClientTest(IgniteTest):
 
             time.sleep(client_work_time)
 
-            temp_clients.stop(correct_stop_temp_node)
+            if graceful_shutdown:
+                temp_clients.stop()
+            else:
+                temp_clients.kill()
 
             current_top_v += temp_client
 

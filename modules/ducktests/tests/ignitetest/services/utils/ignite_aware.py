@@ -17,6 +17,7 @@
 This module contains the base class to build services aware of Ignite.
 """
 import os
+import signal
 import socket
 import sys
 import time
@@ -41,7 +42,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
     NETFILTER_STORE_PATH = os.path.join(IgnitePersistenceAware.TEMP_DIR, "iptables.bak")
 
     # pylint: disable=R0913
-    def __init__(self, context, config, num_nodes, startup_timeout_sec, **kwargs):
+    def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, **kwargs):
         """
         **kwargs are params that passed to IgniteSpec
         """
@@ -53,6 +54,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         self.config = config
         self.startup_timeout_sec = startup_timeout_sec
+        self.shutdown_timeout_sec = shutdown_timeout_sec
 
         self.spec = resolve_spec(self, context, config, **kwargs)
 
@@ -85,6 +87,48 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         super().start_node(node)
 
         ignite_jmx_mixin(node, self.pids(node))
+
+    def stop_async(self):
+        """
+        Stop in async way.
+        """
+        super().stop()
+
+    def stop(self):
+        self.stop_async()
+        self.await_stopped()
+
+    def await_stopped(self):
+        """
+        Awaits node stop finish.
+        """
+        self.logger.info("Waiting for IgniteAware(s) to stop...")
+
+        for node in self.nodes:
+            stopped = self.wait_node(node, timeout_sec=self.shutdown_timeout_sec)
+            assert stopped, "Node %s: did not stop within the specified timeout of %s seconds" % \
+                            (str(node.account), str(self.shutdown_timeout_sec))
+
+        for node in self.nodes:
+            assert self.alive(node), "Ignite node failed to stop."
+
+    def stop_node(self, node):
+        pids = self.pids(node)
+
+        for pid in pids:
+            node.account.signal(pid, signal.SIGTERM, allow_fail=False)
+
+    def kill(self):
+        """
+        Kills nodes.
+        """
+        self.logger.info("Killing IgniteAware(s)...")
+
+        for node in self.nodes:
+            pids = self.pids(node)
+
+            for pid in pids:
+                node.account.signal(pid, signal.SIGKILL, allow_fail=False)
 
     def clean(self):
         self.__restore_iptables()
