@@ -37,7 +37,7 @@ class SnapshotTest(IgniteTest):
     """
     NUM_NODES = 4
 
-    SNAPSHOT_NAME = "test_snap"
+    SNAPSHOT_NAME = "test_snapshot"
 
     CACHE_NAME = "TEST_CACHE"
 
@@ -83,15 +83,15 @@ class SnapshotTest(IgniteTest):
 
         node = service.nodes[0]
 
-        control_utility.validate_indexes(check_assert=True)
-        control_utility.idle_verify(check_assert=True)
-        dump_1 = control_utility.idle_verify_dump(node, return_path=True)
+        control_utility.validate_indexes()
+        control_utility.idle_verify()
+        dump_1 = control_utility.idle_verify_dump(node)
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
         loader.run()
 
-        dump_2 = control_utility.idle_verify_dump(node, return_path=True)
+        dump_2 = control_utility.idle_verify_dump(node)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
         assert len(diff) != 0
@@ -105,9 +105,9 @@ class SnapshotTest(IgniteTest):
 
         control_utility.activate()
 
-        control_utility.validate_indexes(check_assert=True)
-        control_utility.idle_verify(check_assert=True)
-        dump_3 = control_utility.idle_verify_dump(node, return_path=True)
+        control_utility.validate_indexes()
+        control_utility.idle_verify()
+        dump_3 = control_utility.idle_verify_dump(node)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
         assert len(diff) == 0, diff

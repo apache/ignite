@@ -85,7 +85,7 @@ class IgniteService(IgniteAwareService):
 
             node.account.ssh(f'rm -rf {self.WORK_DIR}/db', allow_fail=False)
 
-            node.account.ssh(f'cp -r {self.SNAPSHOT}/{snapshot_name}/db {self.WORK_DIR}', allow_fail=False)
+            node.account.ssh(f'cp -r {self.SNAPSHOTS}/{snapshot_name}/db {self.WORK_DIR}', allow_fail=False)
 
     def thread_dump(self, node):
         """

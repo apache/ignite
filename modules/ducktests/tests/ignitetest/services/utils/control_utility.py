@@ -131,52 +131,46 @@ class ControlUtility:
         res = self.__parse_tx_list(output)
         return res if res else output
 
-    def validate_indexes(self, check_assert: bool = None):
+    def validate_indexes(self):
         """
         Validate indexes.
         """
         data = self.__run("--cache validate_indexes")
 
-        if check_assert is not None:
-            assert (('no issues found.' in data) == check_assert), data
+        assert ('no issues found.' in data), data
 
-    def idle_verify(self, check_assert: bool = None):
+    def idle_verify(self):
         """
         Idle verify.
         """
         data = self.__run("--cache idle_verify")
 
-        if check_assert is not None:
-            assert (('idle_verify check has finished, no conflicts have been found.' in data) == check_assert), data
+        assert ('idle_verify check has finished, no conflicts have been found.' in data), data
 
-    def idle_verify_dump(self, node=None, return_path: bool = False):
+    def idle_verify_dump(self, node=None):
         """
         Idle verify dump.
         """
         data = self.__run("--cache idle_verify --dump", node=node)
 
-        if return_path & ('VisorIdleVerifyDumpTask successfully' in data):
-            match = re.search(r'/.*.txt', data)
-            return match[0]
+        assert ('VisorIdleVerifyDumpTask successfully' in data), data
 
-        return data
+        return re.search(r'/.*.txt', data)
 
-    def snapshot_create(self, snapshot_name: str, sync_mode: bool = True, time_out: int = 60):
+    def snapshot_create(self, snapshot_name: str, sync_mode: bool = True, timeout_sec: int = 60):
         """
         Create snapshot.
         """
         res = self.__run(f"--snapshot create {snapshot_name}")
 
-        self.logger.info(res)
-
         if ("Command [SNAPSHOT] finished with code: 0" in res) & sync_mode:
-            self.await_snapshot(snapshot_name, time_out)
+            self.await_snapshot(snapshot_name, timeout_sec)
 
-    def await_snapshot(self, snapshot_name: str, time_out=60):
+    def await_snapshot(self, snapshot_name: str, timeout_sec=60):
         """
         Waiting for the snapshot to complete.
         """
-        delta_time = datetime.now() + timedelta(seconds=time_out)
+        delta_time = datetime.now() + timedelta(seconds=timeout_sec)
 
         while datetime.now() < delta_time:
             for node in self._cluster.nodes:
@@ -186,7 +180,7 @@ class ControlUtility:
                 err_msg = list(mbean.LastSnapshotErrorMessage)[0]
                 name = list(mbean.LastSnapshotName)[0]
 
-                if (snapshot_name == name) & (0 < start_time < end_time) & (err_msg == ''):
+                if (snapshot_name == name) and (0 < start_time < end_time) and (err_msg == ''):
                     return
 
             time.sleep(1)
