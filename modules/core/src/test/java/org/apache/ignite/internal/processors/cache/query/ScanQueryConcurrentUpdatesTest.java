@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-
-import javax.cache.expiry.CreatedExpiryPolicy;
-import javax.cache.expiry.Duration;
 
 /**
  * {@link ScanQueryConcurrentUpdatesAbstractTest} with caches created, updates and destroyed using Java API.
