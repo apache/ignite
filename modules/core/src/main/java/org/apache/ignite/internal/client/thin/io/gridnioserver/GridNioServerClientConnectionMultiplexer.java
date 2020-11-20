@@ -161,7 +161,8 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
         java.nio.channels.SocketChannel ch = java.nio.channels.SocketChannel.open();
         Socket sock = ch.socket();
 
-        sock.connect(new InetSocketAddress("127.0.0.1", 10800), Integer.MAX_VALUE);
+        // TODO: Pass timeout?
+        sock.connect(addr, Integer.MAX_VALUE);
 
         Map<Integer, Object> meta = new HashMap<>();
 
