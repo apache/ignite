@@ -137,6 +137,18 @@ public abstract class DistributionFunction {
     }
 
     /** */
+    public static boolean satisfy(DistributionFunction f0, DistributionFunction f1) {
+        if (f0 == f1 || f0.name() == f1.name())
+            return true;
+
+        if (f0 instanceof AffinityDistribution && f1 instanceof AffinityDistribution &&
+            Objects.equals(((AffinityDistribution)f0).identity(), ((AffinityDistribution)f1).identity()))
+            return true;
+
+        return false;
+    }
+
+    /** */
     private static final class AnyDistribution extends DistributionFunction {
         /** */
         public static final DistributionFunction INSTANCE = new AnyDistribution();
@@ -288,6 +300,11 @@ public abstract class DistributionFunction {
             AffinityAdapter<Row> affinity = new AffinityAdapter<>(affSrvc.affinity(cacheId), k.toIntArray(), ctx.rowHandler());
 
             return new Partitioned<>(assignments, affinity);
+        }
+
+        /** */
+        public Object identity() {
+            return identity;
         }
 
         /** {@inheritDoc} */
