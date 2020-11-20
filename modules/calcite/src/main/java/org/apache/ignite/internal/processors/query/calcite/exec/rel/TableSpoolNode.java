@@ -152,7 +152,7 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
             waiting = -1;
 
-            if (rowIdx >= rows.size() && waiting == -1)
+            if (rowIdx >= rows.size() && requested > 0)
                 downstream().end();
         }
         catch (Exception e) {
