@@ -589,9 +589,6 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
     /** Receive and handle handshake response. */
     private void handshakeRes(ByteBuffer buf, ProtocolVersion proposedVer, String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
-
-        // TODO: BinaryByteBufferInputStream seems to be problematic.
-        // BinaryInputStream res = new BinaryHeapInputStream(buf.array());
         BinaryInputStream res = BinaryByteBufferInputStream.create(buf);
 
         try (BinaryReaderExImpl reader = ClientUtils.createBinaryReader(null, res)) {
