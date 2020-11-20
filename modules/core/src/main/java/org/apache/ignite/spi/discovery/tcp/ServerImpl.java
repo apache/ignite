@@ -6900,7 +6900,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
 
                                 // Connection recoverty to next node has timeout {@code connectionCheckTimeout}.
-                                // We need to suppose network delays. So we use hals of this time.
+                                // We need to suppose network delays. So we use half of this time.
                                 liveAddr = checkConnection(new ArrayList<>(nodeAddrs), (int)connectionCheckTimeout / 2);
 
                                 if (log.isInfoEnabled()) {
