@@ -66,6 +66,9 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
             public @Nullable Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
                 byte[] bytes = decoder.apply(buf);
 
+                if (bytes == null)
+                    return null; // Message is not yet completely received.
+
                 return ByteBuffer.wrap(bytes).order(ByteOrder.nativeOrder());
             }
 
