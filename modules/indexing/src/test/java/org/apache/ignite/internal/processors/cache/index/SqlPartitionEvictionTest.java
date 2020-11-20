@@ -93,7 +93,7 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
     @Parameterized.Parameter
     public int backupsCount;
 
-    private static CountDownLatch latch = new CountDownLatch(1);
+    private static CountDownLatch latch;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -113,10 +113,15 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    @Override protected void beforeTest() throws Exception {
+        latch = new CountDownLatch(1);
+
+        super.beforeTest();
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids(true);
-        latch = new CountDownLatch(1);
 
         super.afterTest();
     }
@@ -134,10 +139,7 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-//        System.out.println("========== await");
         U.await(latch);
-//        if (latch.getCount() > 0)
-//            latch.countDown();
 
         for (Ignite g: G.allGrids())
             assertEquals(NUM_ENTITIES, query(g, "SELECT * FROM " + POI_TABLE_NAME).size());
@@ -199,11 +201,8 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
         @Override public void remove(GridCacheContext cctx, GridQueryTypeDescriptor type,
             CacheDataRow row) throws IgniteCheckedException {
             U.sleep(50);
-//            U.await(latch);
-            if (latch.getCount() > 0) {
-                System.out.println("count down");
-                latch.countDown();
-            }
+
+            latch.countDown();
 
             super.remove(cctx, type, row);
         }
