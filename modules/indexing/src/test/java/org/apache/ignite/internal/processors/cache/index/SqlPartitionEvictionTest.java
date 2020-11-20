@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -92,6 +93,8 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
     @Parameterized.Parameter
     public int backupsCount;
 
+    private static CountDownLatch latch = new CountDownLatch(1);
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -113,24 +116,31 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids(true);
+        latch = new CountDownLatch(1);
 
         super.afterTest();
     }
 
     @Test
     public void testSqlConsistencyOnEviction() throws Exception {
-        ignitionStart(0);
-        IgniteEx ig = ignitionStart(1);
+        IgniteEx ig = null;
+        int idx = 0;
+        while (idx <= backupsCount)
+            ig = ignitionStart(idx++);
 
         loadData(ig, 0, NUM_ENTITIES);
 
-        ignitionStart(2);
+        ignitionStart(idx);
 
         awaitPartitionMapExchange();
 
+//        System.out.println("========== await");
+        U.await(latch);
+//        if (latch.getCount() > 0)
+//            latch.countDown();
+
         for (Ignite g: G.allGrids())
             assertEquals(NUM_ENTITIES, query(g, "SELECT * FROM " + POI_TABLE_NAME).size());
-
     }
 
     /** */
@@ -189,6 +199,11 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
         @Override public void remove(GridCacheContext cctx, GridQueryTypeDescriptor type,
             CacheDataRow row) throws IgniteCheckedException {
             U.sleep(50);
+//            U.await(latch);
+            if (latch.getCount() > 0) {
+                System.out.println("count down");
+                latch.countDown();
+            }
 
             super.remove(cctx, type, row);
         }
