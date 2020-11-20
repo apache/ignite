@@ -250,7 +250,7 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
         long id = reqId.getAndIncrement();
 
         // Only one thread at a time can have access to write to the channel.
-        sndLock.lock();
+        sndLock.lock(); // TODO: Remove
 
         try (PayloadOutputChannel payloadCh = new PayloadOutputChannel(this)) {
             if (closed())
@@ -271,7 +271,8 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
 
             req.writeInt(0, req.position() - 4); // Actual size.
 
-            write(req.array(), req.position());
+            // TODO: Avoid lots of array copies, use single ByteBuffer
+            write(req.arrayCopy(), req.position());
 
             return fut;
         }
