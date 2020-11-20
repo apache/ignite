@@ -162,7 +162,9 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
         Socket sock = ch.socket();
 
         // TODO: Pass timeout?
-        sock.connect(addr, Integer.MAX_VALUE);
+        // TODO: why can't we pass addr directly? The logic on the following line is copied from old TcpClientChannel
+        InetSocketAddress addr2 = new InetSocketAddress(addr.getHostName(), addr.getPort());
+        sock.connect(addr2, Integer.MAX_VALUE);
 
         Map<Integer, Object> meta = new HashMap<>();
 
