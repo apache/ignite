@@ -992,9 +992,6 @@ public class ExecutionTest extends AbstractExecutionTest {
         int[] leftSizes = {1, 99, 100, 101, 512, 513, 2000};
         int[] rightSizes = {1, 99, 100, 101, 512, 513, 2000};
         int[] rightBufSizes = {1, 100, 512};
-//        int[] leftSizes = {512};
-//        int[] rightSizes = {513};
-//        int[] rightBufSizes = {1};
 
         for (int rightBufSize : rightBufSizes) {
             for (int leftSize : leftSizes) {
