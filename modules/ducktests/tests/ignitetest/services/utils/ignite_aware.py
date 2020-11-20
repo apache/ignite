@@ -100,7 +100,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
     def await_stopped(self):
         """
-        Awaits node stop finish.
+        Awaits stop finished.
         """
         self.logger.info("Waiting for IgniteAware(s) to stop...")
 
