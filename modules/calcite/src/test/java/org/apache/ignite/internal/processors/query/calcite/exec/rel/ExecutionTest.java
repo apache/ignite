@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
@@ -34,7 +33,6 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
@@ -962,6 +960,77 @@ public class ExecutionTest extends AbstractExecutionTest {
                     GridTestUtils.setFieldValue(join, "rightInBufferSize", rightBufSize);
 
                     join.register(Arrays.asList(left, right));
+
+                    RootNode<Object[]> root = new RootNode<>(ctx, joinRowType);
+                    root.register(join);
+
+                    int cnt = 0;
+                    while (root.hasNext()) {
+                        root.next();
+
+                        cnt++;
+                    }
+
+                    assertEquals(
+                        "Invalid result size. [left=" + leftSize + ", right=" + rightSize + ", results=" + cnt,
+                        Math.min(leftSize, rightSize),
+                        cnt);
+                }
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testTableSpool() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
+
+        int[] leftSizes = {1, 99, 100, 101, 512, 513, 2000};
+        int[] rightSizes = {1, 99, 100, 101, 512, 513, 2000};
+        int[] rightBufSizes = {1, 100, 512};
+//        int[] leftSizes = {512};
+//        int[] rightSizes = {513};
+//        int[] rightBufSizes = {1};
+
+        for (int rightBufSize : rightBufSizes) {
+            for (int leftSize : leftSizes) {
+                for (int rightSize : rightSizes) {
+                    log.info("Check: rightBufSize=" + rightBufSize + ", leftSize=" + leftSize + ", rightSize=" + rightSize);
+
+                    ScanNode<Object[]> left = new ScanNode<>(ctx, rowType, new TestTable(leftSize, rowType));
+                    ScanNode<Object[]> right = new ScanNode<>(ctx, rowType, new TestTable(rightSize, rowType) {
+                        boolean first = true;
+
+                        @Override public @NotNull Iterator<Object[]> iterator() {
+                            assertTrue("Rewind right", first);
+
+                            first = false;
+                            return super.iterator();
+                        }
+                    });
+
+                    TableSpoolNode<Object[]> rightSpool = new TableSpoolNode<>(ctx, rowType);
+
+                    rightSpool.register(Arrays.asList(right));
+
+                    RelDataType joinRowType = TypeUtils.createRowType(
+                        tf,
+                        int.class, String.class, int.class,
+                        int.class, String.class, int.class);
+
+                    CorrelatedNestedLoopJoinNode<Object[]> join = new CorrelatedNestedLoopJoinNode<>(
+                        ctx,
+                        joinRowType,
+                        r -> r[0].equals(r[3]),
+                        ImmutableSet.of(new CorrelationId(0)));
+
+                    GridTestUtils.setFieldValue(join, "rightInBufferSize", rightBufSize);
+
+                    join.register(Arrays.asList(left, rightSpool));
 
                     RootNode<Object[]> root = new RootNode<>(ctx, joinRowType);
                     root.register(join);

@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Spool node.
+ * Table spool node.
  */
 public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** How many rows are requested by downstream. */
@@ -37,6 +37,12 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
     /** Rows buffer. */
     private final List<Row> rows;
+
+    /**
+     * Flag indicates that spool pushes row to downstream.
+     * Need to check a case when a downstream produces requests on push.
+     */
+    private boolean inLoop;
 
     /**
      * @param ctx Execution context.
@@ -76,7 +82,7 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
             requested += rowsCnt;
 
-            if (waiting == -1)
+            if (waiting == -1 && !inLoop)
                 context().execute(this::doPush);
             else if (waiting == 0)
                 source().request(waiting = IN_BUFFER_SIZE);
@@ -88,13 +94,23 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
     /** */
     private void doPush() {
+        if (rowIdx >= rows.size() && waiting == -1 && requested > 0) {
+            downstream().end();
+
+            return;
+        }
+
         while (requested > 0 && rowIdx < rows.size())
             pushToDownstream();
     }
 
     /** */
     private void pushToDownstream() {
+        inLoop = true;
+
         downstream().push(rows.get(rowIdx));
+
+        inLoop = false;
 
         rowIdx++;
         requested--;

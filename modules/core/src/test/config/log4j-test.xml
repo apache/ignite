@@ -141,10 +141,6 @@
         <level value="INFO"/>
     </category>
 
-<!--    <category name="org.apache.calcite">-->
-<!--        <level value="TRACE"/>-->
-<!--    </category>-->
-
     <!-- Default settings. -->
     <root>
         <!-- Print at info by default. -->

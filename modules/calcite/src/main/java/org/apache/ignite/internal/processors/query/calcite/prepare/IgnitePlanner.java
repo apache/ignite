@@ -23,10 +23,6 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
@@ -44,10 +40,7 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.hint.HintPredicate;
-import org.apache.calcite.rel.hint.HintPredicates;
 import org.apache.calcite.rel.hint.HintStrategyTable;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
@@ -65,7 +58,6 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.Program;
-import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
@@ -361,12 +353,22 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             List<RelOptRule> newSet = new ArrayList<>();
 
             for (RelOptRule r : rulesSet) {
-                if (!disabledRuleNames.contains(r.toString()))
+                if (!disabledRuleNames.contains(shortRuleName(r.toString())))
                     newSet.add(r);
             }
 
             return RuleSets.ofList(newSet);
         });
+    }
+
+    /** */
+    private static String shortRuleName(String ruleDesc) {
+        int pos = ruleDesc.indexOf('(');
+
+        if (pos == -1)
+            return ruleDesc;
+
+        return ruleDesc.substring(0, pos);
     }
 
     /** */
