@@ -64,8 +64,7 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
                 }
 
                 latch.countDown();
-            }
-            ).start();
+            }).start();
 
         latch.await();
     }

@@ -155,7 +155,7 @@ class ControlUtility:
 
         assert ('VisorIdleVerifyDumpTask successfully' in data), data
 
-        return re.search(r'/.*.txt', data)
+        return re.search(r'/.*.txt', data).group(0)
 
     def snapshot_create(self, snapshot_name: str, sync_mode: bool = True, timeout_sec: int = 60):
         """
