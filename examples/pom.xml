@@ -279,6 +279,21 @@
                     <version>${project.version}</version>
                 </dependency>
             </dependencies>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <configuration>
+                            <sourceDirectories combine.children="append">
+                                <sourceDirectory>${lgpl.folder}</sourceDirectory>
+                                <sourceDirectory>${lgpl.test.folder}</sourceDirectory>
+                            </sourceDirectories>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
         <profile>
             <id>spark-2.4</id>
