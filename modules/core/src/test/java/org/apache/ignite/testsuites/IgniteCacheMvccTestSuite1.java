@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReplicatedLocalStore
 import org.apache.ignite.internal.processors.cache.GridCacheStopSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTcpClientDiscoveryMultiThreadedTest;
 import org.apache.ignite.internal.processors.cache.GridDataStorageConfigurationConsistencySelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicConcurrentUnorderedUpdateAllTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalWithStoreInvokeTest;
@@ -152,7 +151,6 @@ public class IgniteCacheMvccTestSuite1 {
         ignoredTests.add(IgniteCacheAtomicWithStoreInvokeTest.class);
         ignoredTests.add(IgniteCacheAtomicLocalInvokeTest.class);
         ignoredTests.add(IgniteCacheAtomicLocalWithStoreInvokeTest.class);
-        ignoredTests.add(IgniteCacheAtomicConcurrentUnorderedUpdateAllTest.class);
         ignoredTests.add(GridCachePartitionedLocalStoreSelfTest.class);
         ignoredTests.add(GridCacheReplicatedLocalStoreSelfTest.class);
         ignoredTests.add(CacheStoreReadFromBackupTest.class);

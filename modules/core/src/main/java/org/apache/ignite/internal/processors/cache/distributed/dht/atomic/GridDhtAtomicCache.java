@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.LockedEntriesInfo;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -158,9 +157,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 return new HashMap<>();
             }
         };
-
-    /** Locked entries info for each thread. */
-    private final LockedEntriesInfo lockedEntriesInfo = new LockedEntriesInfo();
 
     /** Update reply closure. */
     @GridToStringExclude
@@ -3098,17 +3094,44 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
         else {
-            GridDhtCacheEntry[] locked = new GridDhtCacheEntry[req.size()];
+            List<GridDhtCacheEntry> locked = new ArrayList<>(req.size());
 
             while (true) {
                 for (int i = 0; i < req.size(); i++) {
                     GridDhtCacheEntry entry = entryExx(req.key(i), topVer);
 
-                    locked[i] = entry;
+                    locked.add(entry);
                 }
 
-                if (lockedEntriesInfo.tryLockEntries(locked))
-                    return Arrays.asList(locked);
+                boolean retry = false;
+
+                for (int i = 0; i < locked.size(); i++) {
+                    GridCacheMapEntry entry = locked.get(i);
+
+                    if (entry == null)
+                        continue;
+
+                    entry.lockEntry();
+
+                    if (entry.obsolete()) {
+                        // Unlock all locked.
+                        for (int j = 0; j <= i; j++) {
+                            if (locked.get(j) != null)
+                                locked.get(j).unlockEntry();
+                        }
+
+                        // Clear entries.
+                        locked.clear();
+
+                        // Retry.
+                        retry = true;
+
+                        break;
+                    }
+                }
+
+                if (!retry)
+                    return locked;
             }
         }
     }
