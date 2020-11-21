@@ -299,8 +299,9 @@ public class SqlStatisticsUserQueriesFastTest extends UserQueriesTestBase {
      */
     @Test
     public void testLocalSelectCanceled() {
-        assertMetricsIncrementedOnlyOnReducer(() ->
+        assertMetricsIncrementedOnlyOnReducerBySeveralQueries(() ->
                 startAndKillQuery(new SqlFieldsQuery("SELECT * FROM TAB WHERE ID <> suspendHook(ID)").setLocal(true)),
+            2,
             "success",
             "failed",
             "canceled");
