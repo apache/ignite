@@ -50,7 +50,7 @@ import java.util.Map;
  */
 public class GridNioServerClientConnectionMultiplexer implements ClientConnectionMultiplexer {
     /** Worker thread prefix. */
-    private static final String THREAD_PREFIX = "thin-client-channel#";
+    private static final String THREAD_PREFIX = "thin-client-channel";
 
     /** */
     private static final int CLIENT_MODE_PORT = -1;

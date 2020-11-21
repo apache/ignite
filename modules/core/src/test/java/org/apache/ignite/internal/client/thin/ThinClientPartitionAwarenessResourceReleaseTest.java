@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.client.thin.ReliableChannel.ASYNC_RUNNE
  */
 public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientAbstractPartitionAwarenessTest {
     /** Worker thread prefix. */
-    private static final String THREAD_PREFIX = "thin-client-channel#";
+    private static final String THREAD_PREFIX = "thin-client-channel";
 
     /**
      * Test that resources are correctly released after closing client with partition awareness.
@@ -70,7 +70,7 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
         for (long id : threadIds) {
             ThreadInfo info = U.getThreadMx().getThreadInfo(id);
 
-            if (info != null && info.getThreadState() != Thread.State.TERMINATED && info.getThreadName().startsWith(name))
+            if (info != null && info.getThreadState() != Thread.State.TERMINATED && info.getThreadName().contains(name))
                 cnt++;
         }
 
