@@ -100,7 +100,7 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
 
                         @Override
                         public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-                            System.out.println("Disconnect");
+                            System.out.println("MULTIPLEXER: Disconnect");
                         }
 
                         @Override
