@@ -144,7 +144,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     private final AtomicLong reqId = new AtomicLong(1);
 
     /** Send lock. */
-    private final Lock sndLock = new ReentrantLock();
+    private final Lock sndLock = new ReentrantLock(); // TODO: Remove
 
     /** Pending requests. */
     private final Map<Long, ClientRequestFuture> pendingReqs = new ConcurrentHashMap<>();
@@ -213,7 +213,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             finally {
                 sndLock.unlock();
             }
-
         }
     }
 
