@@ -75,7 +75,7 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.events.QueryExecutionEvent;
+import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -100,7 +100,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
-import static org.apache.ignite.events.EventType.EVT_QUERY_EXECUTION;
+import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.FULL_TEXT;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.SCAN;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -1552,20 +1552,21 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         CountDownLatch execLatch = new CountDownLatch(9);
 
         IgnitePredicate<Event> lsnr = evt -> {
-            assert evt instanceof QueryExecutionEvent;
+            assert evt instanceof SqlQueryExecutionEvent;
 
-            System.out.println(">>> EVENT: " + evt);
+            if (log.isInfoEnabled())
+                log.info(">>> EVENT: " + evt);
 
-            QueryExecutionEvent qe = (QueryExecutionEvent)evt;
+            SqlQueryExecutionEvent qe = (SqlQueryExecutionEvent)evt;
 
-            assertNotNull(qe.clause());
+            assertNotNull(qe.text());
 
             execLatch.countDown();
 
             return true;
         };
 
-        ignite().events().localListen(lsnr, EVT_QUERY_EXECUTION);
+        ignite().events().localListen(lsnr, EVT_SQL_QUERY_EXECUTION);
 
         ClientConfiguration cc = new ClientConfiguration().setAddresses(Config.SERVER);
 
@@ -1600,7 +1601,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             assert execLatch.await(3_000, MILLISECONDS);
         }
         finally {
-            ignite().events().stopLocalListen(lsnr, EVT_QUERY_EXECUTION);
+            ignite().events().stopLocalListen(lsnr, EVT_SQL_QUERY_EXECUTION);
         }
     }
 

@@ -56,17 +56,17 @@ import org.jetbrains.annotations.Nullable;
  * events are required for Ignite's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in Ignite configuration.
  *
- * @see EventType#EVT_QUERY_EXECUTION
+ * @see EventType#EVT_SQL_QUERY_EXECUTION
  */
-public class QueryExecutionEvent<K, V> extends EventAdapter {
+public class SqlQueryExecutionEvent<K, V> extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Query type. */
     private final String qryType;
 
-    /** Clause. */
-    private final String clause;
+    /** Query text. */
+    private final String text;
 
     /** Query arguments. */
     @GridToStringInclude
@@ -80,16 +80,16 @@ public class QueryExecutionEvent<K, V> extends EventAdapter {
      * @param msg Event message.
      * @param type Event type.
      * @param qryType Query type.
-     * @param clause Clause.
+     * @param text Query text.
      * @param args Query arguments.
      * @param subjId Security subject ID.
      */
-    public QueryExecutionEvent(
+    public SqlQueryExecutionEvent(
         ClusterNode node,
         String msg,
         int type,
         String qryType,
-        @Nullable String clause,
+        @Nullable String text,
         @Nullable Object[] args,
         @Nullable UUID subjId
     ) {
@@ -98,7 +98,7 @@ public class QueryExecutionEvent<K, V> extends EventAdapter {
         assert qryType != null;
 
         this.qryType = qryType;
-        this.clause = clause;
+        this.text = text;
         this.args = args;
         this.subjId = subjId;
     }
@@ -113,14 +113,14 @@ public class QueryExecutionEvent<K, V> extends EventAdapter {
     }
 
     /**
-     * Gets query clause.
+     * Gets query text.
      * <p>
      * Applicable for {@code SQL}, {@code SQL fields} queries.
      *
-     * @return Query clause.
+     * @return Query text.
      */
-    @Nullable public String clause() {
-        return clause;
+    @Nullable public String text() {
+        return text;
     }
 
     /**
@@ -145,7 +145,7 @@ public class QueryExecutionEvent<K, V> extends EventAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QueryExecutionEvent.class, this,
+        return S.toString(SqlQueryExecutionEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

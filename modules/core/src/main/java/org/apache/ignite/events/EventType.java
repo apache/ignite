@@ -928,9 +928,9 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see QueryExecutionEvent
+     * @see SqlQueryExecutionEvent
      */
-    public static final int EVT_QUERY_EXECUTION = 160;
+    public static final int EVT_SQL_QUERY_EXECUTION = 160;
 
     /**
      * All cluster snapshot events. This array can be directly passed into
