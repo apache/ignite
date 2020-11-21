@@ -18,7 +18,6 @@
 package org.apache.ignite;
 
 import java.util.Map;
-
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
