@@ -44,12 +44,14 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * Client connection multiplexer based on {@link org.apache.ignite.internal.util.nio.GridNioServer}.
  */
 public class GridNioServerClientConnectionMultiplexer implements ClientConnectionMultiplexer {
+    /** Worker thread prefix. */
+    private static final String THREAD_PREFIX = "thin-client-channel#";
+
     /** */
     private static final int CLIENT_MODE_PORT = -1;
 
@@ -145,7 +147,7 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
                     .socketSendBufferSize(0)
                     .idleTimeout(Long.MAX_VALUE)
                     .igniteInstanceName("thinClient")
-                    .serverName("tcp-client")
+                    .serverName(THREAD_PREFIX)
                     .build();
         } catch (IgniteCheckedException e) {
             throw new IgniteException(e);

@@ -71,7 +71,6 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
@@ -112,9 +111,6 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.PART
 class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientConnectionStateHandler {
     /** Protocol version used by default on first connection attempt. */
     private static final ProtocolVersion DEFAULT_VERSION = LATEST_VER;
-
-    /** Receiver thread prefix. */
-    static final String RECEIVER_THREAD_PREFIX = "thin-client-channel#";
 
     /** Supported protocol versions. */
     private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(
