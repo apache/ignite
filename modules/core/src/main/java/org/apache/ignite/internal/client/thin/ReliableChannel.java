@@ -63,9 +63,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     /** Do nothing helper function. */
     private static final Consumer<Integer> DO_NOTHING = (v) -> {};
 
-    /** Async runner thread name. */
-    static final String ASYNC_RUNNER_THREAD_NAME = "thin-client-channel-async-init";
-
     /** Channel factory. */
     private final BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory;
 
@@ -850,6 +847,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     /**
      * Channels holder.
      */
+    @SuppressWarnings("PackageVisibleInnerClass") // Visible for tests.
     class ClientChannelHolder {
         /** Channel configuration. */
         private final ClientChannelConfiguration chCfg;
@@ -991,6 +989,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     /**
      * Get holders reference. For test purposes.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType") // For tests.
     List<ClientChannelHolder> getChannelHolders() {
         return channels;
     }
@@ -998,6 +997,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     /**
      * Get node channels reference. For test purposes.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType") // For tests.
     Map<UUID, ClientChannelHolder> getNodeChannels() {
         return nodeChannels;
     }
