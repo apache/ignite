@@ -32,10 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -58,15 +55,11 @@ import org.apache.ignite.internal.client.thin.io.gridnioserver.GridNioServerClie
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Communication channel with failover and partition awareness.
  */
 final class ReliableChannel implements AutoCloseable, NotificationListener {
-    /** Timeout to wait for executor service to shutdown (in milliseconds). */
-    private static final long EXECUTOR_SHUTDOWN_TIMEOUT = 10_000L;
-
     /** Do nothing helper function. */
     private static final Consumer<Integer> DO_NOTHING = (v) -> {};
 
@@ -99,19 +92,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
     /** Listeners of channel close events. */
     private final Collection<Consumer<ClientChannel>> channelCloseLsnrs = new CopyOnWriteArrayList<>();
-
-    /** Async tasks thread pool. */
-    private final ExecutorService asyncRunner = Executors.newSingleThreadExecutor(
-        new ThreadFactory() {
-            @Override public Thread newThread(@NotNull Runnable r) {
-                Thread thread = new Thread(r, ASYNC_RUNNER_THREAD_NAME);
-
-                thread.setDaemon(true);
-
-                return thread;
-            }
-        }
-    );
 
     /** Channels reinit was scheduled. */
     private final AtomicBoolean scheduledChannelsReinit = new AtomicBoolean();
@@ -170,15 +150,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         closed = true;
 
         connMgr.stop();
-
-        asyncRunner.shutdown();
-
-        try {
-            asyncRunner.awaitTermination(EXECUTOR_SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS);
-        }
-        catch (InterruptedException ignore) {
-            // No-op.
-        }
 
         List<ClientChannelHolder> holders = channels;
 
@@ -591,7 +562,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
      * Asynchronously try to establish a connection to all configured servers.
      */
     private void initAllChannelsAsync() {
-        asyncRunner.submit(
+        ForkJoinPool.commonPool().submit(
             () -> {
                 List<ClientChannelHolder> holders = channels;
 
@@ -620,7 +591,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
             if (scheduledChannelsReinit.compareAndSet(false, true)) {
                 // If partition awareness is disabled then only schedule and wait for the default channel to fail.
                 if (partitionAwarenessEnabled)
-                    asyncRunner.submit(this::channelsInit);
+                    ForkJoinPool.commonPool().submit(this::channelsInit);
             }
         }
     }
