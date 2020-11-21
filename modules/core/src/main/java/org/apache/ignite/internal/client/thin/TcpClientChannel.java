@@ -80,6 +80,8 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.io.ClientConnection;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
+import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
+import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
@@ -107,7 +109,7 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.PART
 /**
  * Implements {@link ClientChannel} over TCP.
  */
-class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
+class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientConnectionStateHandler {
     /** Protocol version used by default on first connection attempt. */
     private static final ProtocolVersion DEFAULT_VERSION = LATEST_VER;
 
@@ -185,6 +187,16 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
         close(null);
     }
 
+    /** {@inheritDoc} */
+    @Override public void onMessage(ByteBuffer buf) {
+        processNextMessage(buf);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(@Nullable Exception e) {
+        close(e);
+    }
+
     /**
      * Close the channel with cause.
      */
@@ -232,12 +244,6 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
 
             return fut;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void accept(ByteBuffer buf) {
-        // TODO: Inline?
-        processNextMessage(buf);
     }
 
     /**
@@ -498,7 +504,7 @@ class TcpClientChannel implements ClientChannel, Consumer<ByteBuffer> {
 
     /** Create socket. */
     private ClientConnection createSocket(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr) throws IOException, IgniteCheckedException {
-        return connMgr.open(cfg.getAddress(), this);
+        return connMgr.open(cfg.getAddress(), this, this);
 
         // TODO: Move this config to multiplexer.
 //        Socket sock = cfg.getSslMode() == SslMode.REQUIRED ?
