@@ -1474,7 +1474,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 
-        @Override protected @Nullable Map<Object, Boolean> reduce0(List<ComputeJobResult> results)
+        @Override protected Map<Object, Boolean> reduce0(List<ComputeJobResult> results)
                 throws IgniteException {
             return results.stream().collect(
                     Collectors.toMap(jobRslt -> jobRslt.getNode().consistentId(), ComputeJobResult::getData));

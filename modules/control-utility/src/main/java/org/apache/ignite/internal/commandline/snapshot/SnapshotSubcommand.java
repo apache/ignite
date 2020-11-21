@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.commandline.snapshot;
 
-import org.apache.ignite.IgniteSnapshot;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,10 +31,7 @@ public enum SnapshotSubcommand {
     /** Sub-command to cancel running snapshot. */
     CANCEL("cancel"),
 
-    /**
-     * Sub-command to get Consistent ID's where the snapshot operation is in progress.
-     * @see IgniteSnapshot#statusSnapshot()
-     */
+    /** Sub-command to get consistent IDs of the nodes on which the snapshot operation is in progress. */
     STATUS("status");
 
     /** Sub-command name. */
