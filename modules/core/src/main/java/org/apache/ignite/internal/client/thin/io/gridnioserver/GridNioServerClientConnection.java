@@ -19,6 +19,8 @@ package org.apache.ignite.internal.client.thin.io.gridnioserver;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.thin.io.ClientConnection;
+import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
+import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 
@@ -34,19 +36,26 @@ class GridNioServerClientConnection implements ClientConnection {
     private final GridNioSession ses;
 
     /** */
-    private final Consumer<ByteBuffer> hnd;
+    private final ClientMessageHandler msgHnd;
+
+    /** */
+    private final ClientConnectionStateHandler stateHnd;
 
     /**
      * Ctor.
      *
      * @param ses Session.
      */
-    public GridNioServerClientConnection(GridNioSession ses, Consumer<ByteBuffer> hnd) {
+    public GridNioServerClientConnection(GridNioSession ses,
+                                         ClientMessageHandler msgHnd,
+                                         ClientConnectionStateHandler stateHnd) {
         assert ses != null;
-        assert hnd != null;
+        assert msgHnd != null;
+        assert stateHnd != null;
 
         this.ses = ses;
-        this.hnd = hnd;
+        this.msgHnd = msgHnd;
+        this.stateHnd = stateHnd;
 
         ses.addMeta(SES_META_CONN, this);
     }
@@ -75,13 +84,22 @@ class GridNioServerClientConnection implements ClientConnection {
     }
 
     /**
-     * Handle incoming message.
+     * Handles incoming message.
      *
      * @param msg Message.
      */
     void onMessage(ByteBuffer msg) {
         assert msg != null;
 
-        hnd.accept(msg);
+        msgHnd.onMessage(msg);
+    }
+
+    /**
+     * Handles disconnect.
+     *
+     * @param e Exception that caused the disconnect.
+     */
+    void onDisconnected(Exception e) {
+        stateHnd.onDisconnected(e);
     }
 }

@@ -17,24 +17,15 @@
 
 package org.apache.ignite.internal.client.thin.io;
 
-import org.apache.ignite.IgniteCheckedException;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.function.Consumer;
 
 /**
- * Client connection multiplexer: manages multiple connections with a shared resource pool (worker threads, etc).
+ * Handles thin client responses and server -> client notifications.
  */
-public interface ClientConnectionMultiplexer {
-    void start();
-
-    void stop();
-
-    ClientConnection open(
-            InetSocketAddress addr,
-            ClientMessageHandler msgHnd,
-            ClientConnectionStateHandler stateHnd)
-            throws IOException, IgniteCheckedException;
+public interface ClientMessageHandler {
+    /**
+     * Handles messages from the server.
+     * @param buf Buffer.
+     */
+    void onMessage(ByteBuffer buf);
 }

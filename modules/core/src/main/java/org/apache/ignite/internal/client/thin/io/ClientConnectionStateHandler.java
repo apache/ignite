@@ -17,24 +17,15 @@
 
 package org.apache.ignite.internal.client.thin.io;
 
-import org.apache.ignite.IgniteCheckedException;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.util.function.Consumer;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Client connection multiplexer: manages multiple connections with a shared resource pool (worker threads, etc).
+ * Handles thin client connection state.
  */
-public interface ClientConnectionMultiplexer {
-    void start();
-
-    void stop();
-
-    ClientConnection open(
-            InetSocketAddress addr,
-            ClientMessageHandler msgHnd,
-            ClientConnectionStateHandler stateHnd)
-            throws IOException, IgniteCheckedException;
+public interface ClientConnectionStateHandler {
+    /**
+     * Handles connection loss
+     * @param e Exception that caused the disconnect, can be null.
+     */
+    void onDisconnected(@Nullable Exception e);
 }

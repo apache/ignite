@@ -23,7 +23,9 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.client.thin.io.ClientConnection;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
+import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.thin.io.ClientMessageDecoder;
+import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
@@ -100,7 +102,9 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
 
                         @Override
                         public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-                            System.out.println("MULTIPLEXER: Disconnect");
+                            GridNioServerClientConnection conn = ses.meta(GridNioServerClientConnection.SES_META_CONN);
+
+                            conn.onDisconnected(e);
                         }
 
                         @Override
@@ -160,7 +164,10 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
     }
 
     /** {@inheritDoc} */
-    @Override public ClientConnection open(InetSocketAddress addr, Consumer<ByteBuffer> hnd) throws IOException, IgniteCheckedException {
+    @Override public ClientConnection open(InetSocketAddress addr,
+                                           ClientMessageHandler msgHnd,
+                                           ClientConnectionStateHandler stateHnd)
+            throws IOException, IgniteCheckedException {
         java.nio.channels.SocketChannel ch = java.nio.channels.SocketChannel.open();
         Socket sock = ch.socket();
 
@@ -177,6 +184,6 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
         // TODO: Should this method be async? Why is createSession async?
         GridNioSession ses = sesFut.get();
 
-        return new GridNioServerClientConnection(ses, hnd);
+        return new GridNioServerClientConnection(ses, msgHnd, stateHnd);
     }
 }
