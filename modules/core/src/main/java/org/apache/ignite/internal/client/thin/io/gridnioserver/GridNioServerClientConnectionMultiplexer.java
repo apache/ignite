@@ -95,9 +95,8 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
                     .address(InetAddress.getLoopbackAddress()) // TODO: Remove?
                     .port(CLIENT_MODE_PORT)
                     .listener(new GridNioServerListener<ByteBuffer>() {
-                        @Override
-                        public void onConnected(GridNioSession ses) {
-                            System.out.println("Connect");
+                        @Override public void onConnected(GridNioSession ses) {
+                            // No-op.
                         }
 
                         @Override
