@@ -20,6 +20,8 @@ package org.apache.ignite.internal.client.thin.io.gridnioserver;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.client.SslMode;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.client.thin.io.ClientConnection;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
@@ -33,15 +35,25 @@ import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.ssl.SSLContextWrapper;
 import org.jetbrains.annotations.Nullable;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,9 +68,9 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
     private static final int CLIENT_MODE_PORT = -1;
 
     /** */
-    private final GridNioServer<ByteBuffer> srv; // TODO: <ByteBuffer> possible?
+    private final GridNioServer<ByteBuffer> srv;
 
-    public GridNioServerClientConnectionMultiplexer() {
+    public GridNioServerClientConnectionMultiplexer(ClientConfiguration cfg) {
         IgniteLogger gridLog = new JavaLogger(false);
 
         ClientMessageDecoder decoder = new ClientMessageDecoder();
@@ -82,15 +94,14 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
             }
         }, gridLog, false);
 
-//        if (sslCtx != null) {
-//            GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog);
-//
-//            sslFilter.directMode(false);
-//
-//            filters = new GridNioFilter[]{codecFilter, sslFilter};
-//        }
-//        else
-        filters = new GridNioFilter[]{codecFilter};
+        SSLContext sslCtx = createSslContext(cfg);
+
+        if (sslCtx != null) {
+            GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog);
+            sslFilter.directMode(false);
+            filters = new GridNioFilter[]{codecFilter, sslFilter};
+        } else
+            filters = new GridNioFilter[]{codecFilter};
 
         try {
             srv = GridNioServer.<ByteBuffer>builder()
@@ -186,5 +197,51 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
         GridNioSession ses = sesFut.get();
 
         return new GridNioServerClientConnection(ses, msgHnd, stateHnd);
+    }
+
+    private SSLContext createSslContext(ClientConfiguration cfg) throws SSLException {
+        if (cfg.getSslMode() != SslMode.REQUIRED)
+            return null;
+
+        try {
+            KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
+
+            KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
+
+            keyMgrFactory.init(keyStore, keyStorePwd);
+
+            TrustManager[] mgrs = trustMgrs;
+
+            if (mgrs == null) {
+                TrustManagerFactory trustMgrFactory = TrustManagerFactory.getInstance(keyAlgorithm);
+
+                KeyStore trustStore = loadKeyStore(trustStoreType, trustStoreFilePath, trustStorePwd);
+
+                trustMgrFactory.init(trustStore);
+
+                mgrs = trustMgrFactory.getTrustManagers();
+            }
+
+            SSLContext ctx = SSLContext.getInstance(proto);
+
+            if (cipherSuites != null || protocols != null) {
+                SSLParameters sslParameters = new SSLParameters();
+
+                if (cipherSuites != null)
+                    sslParameters.setCipherSuites(cipherSuites);
+
+                if (protocols != null)
+                    sslParameters.setProtocols(protocols);
+
+                ctx = new SSLContextWrapper(ctx, sslParameters);
+            }
+
+            ctx.init(keyMgrFactory.getKeyManagers(), mgrs, null);
+
+            return ctx;
+        }
+        catch (GeneralSecurityException e) {
+            throw new SSLException("Failed to initialize SSL context " + parameters(), e);
+        }
     }
 }

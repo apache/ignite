@@ -138,7 +138,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
         affinityCtx = new ClientCacheAffinityContext(binary);
 
-        connMgr = new GridNioServerClientConnectionMultiplexer();
+        connMgr = new GridNioServerClientConnectionMultiplexer(clientCfg);
         connMgr.start(); // TODO: Move to channelsInit?
     }
 
