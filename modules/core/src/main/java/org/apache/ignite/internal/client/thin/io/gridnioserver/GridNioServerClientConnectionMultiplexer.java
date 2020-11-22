@@ -108,7 +108,10 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
                         public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
                             GridNioServerClientConnection conn = ses.meta(GridNioServerClientConnection.SES_META_CONN);
 
-                            conn.onDisconnected(e);
+                            if (conn != null)
+                                conn.onDisconnected(e);
+                            else
+                                System.out.println("TODO: Why is this possible?");
                         }
 
                         @Override
