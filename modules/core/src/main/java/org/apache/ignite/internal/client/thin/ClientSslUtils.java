@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
 
@@ -65,8 +66,16 @@ public class ClientSslUtils {
         }
     };
 
-    /** Create SSL socket factory. */
-    private static SSLContext getSslContext(ClientConfiguration cfg) {
+    /**
+     * Gets SSL context for the given client configuration.
+     *
+     * @param cfg Configuration.
+     * @return {@link SSLContext} when SSL is enabled in the configuration; null otherwise.
+     */
+    public static SSLContext getSslContext(ClientConfiguration cfg) {
+        if (cfg.getSslMode() == SslMode.DISABLED)
+            return null;
+
         Factory<SSLContext> sslCtxFactory = cfg.getSslContextFactory();
 
         if (sslCtxFactory != null) {
