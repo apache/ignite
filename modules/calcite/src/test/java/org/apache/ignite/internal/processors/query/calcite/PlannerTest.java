@@ -2653,7 +2653,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 "Invalid plan:\n" + RelOptUtil.toString(phys),
                 "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner])\n" +
                     "  IgniteTableScan(table=[[PUBLIC, DEPT]], requiredColumns=[{0}])\n" +
-                    "  IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor3.DEPTNO, $t0)):INTEGER, 2)], requiredColumns=[{2}])\n",
+                    "  IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor1.DEPTNO, $t0)):INTEGER, 2)], requiredColumns=[{2}])\n",
                 RelOptUtil.toString(phys));
         }
     }
@@ -2698,7 +2698,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             .add("PUBLIC", publicSchema);
 
         String sql = "select * " +
-            "from t0 "  +
+            "from t0 " +
             "join t1 on t0.jid = t1.jid ";
 
         RelTraitDef<?>[] traitDefs = {

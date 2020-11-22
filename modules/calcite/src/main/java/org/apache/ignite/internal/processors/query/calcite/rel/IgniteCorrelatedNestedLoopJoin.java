@@ -171,8 +171,7 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
 
         corrIds.removeAll(variablesSet);
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)),
-            inTraits));
+        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
     }
 
     /** {@inheritDoc} */

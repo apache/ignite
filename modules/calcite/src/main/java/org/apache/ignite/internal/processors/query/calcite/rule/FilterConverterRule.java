@@ -55,7 +55,7 @@ public class FilterConverterRule extends AbstractIgniteConverterRule<LogicalFilt
         Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.getCondition());
 
         if (!corrIds.isEmpty()) {
-            inTraits = rel.getTraitSet().replace(RewindabilityTrait.REWINDABLE);
+            inTraits = input.getTraitSet().replace(RewindabilityTrait.REWINDABLE);
 
             traits = traits.replace(RewindabilityTrait.REWINDABLE).replace(CorrelationTrait.correlations(corrIds));
         }
