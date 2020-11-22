@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.client.thin;
 
 import org.apache.ignite.client.SslProtocol;
+import org.apache.ignite.configuration.ClientConfiguration;
 
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
@@ -44,26 +44,34 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class ClientSslUtils {
+    /** */
+    public static final char[] EMPTY_CHARS = new char[0];
+
     /** Trust manager ignoring all certificate checks. */
     private static final TrustManager ignoreErrorsTrustMgr = new X509TrustManager() {
+        /** */
         @Override public X509Certificate[] getAcceptedIssuers() {
             return null;
         }
 
+        /** */
         @Override public void checkServerTrusted(X509Certificate[] arg0, String arg1) {
+            // No-op.
         }
 
+        /** */
         @Override public void checkClientTrusted(X509Certificate[] arg0, String arg1) {
+            // No-op.
         }
     };
 
     /** Create SSL socket factory. */
-    private static SSLSocketFactory getSslSocketFactory(ClientChannelConfiguration cfg) {
+    private static SSLContext getSslContext(ClientConfiguration cfg) {
         Factory<SSLContext> sslCtxFactory = cfg.getSslContextFactory();
 
         if (sslCtxFactory != null) {
             try {
-                return sslCtxFactory.create().getSocketFactory();
+                return sslCtxFactory.create();
             }
             catch (Exception e) {
                 throw new ClientError("SSL Context Factory failed", e);
@@ -110,7 +118,7 @@ public class ClientSslUtils {
                 .allMatch(s -> s == null || s.isEmpty())
         ) {
             try {
-                return SSLContext.getDefault().getSocketFactory();
+                return SSLContext.getDefault();
             }
             catch (NoSuchAlgorithmException e) {
                 throw new ClientError("Default SSL context cryptographic algorithm is not available", e);
@@ -128,7 +136,7 @@ public class ClientSslUtils {
 
             sslCtx.init(keyManagers, trustManagers, null);
 
-            return sslCtx.getSocketFactory();
+            return sslCtx;
         }
         catch (NoSuchAlgorithmException e) {
             throw new ClientError("SSL context cryptographic algorithm is not available", e);
@@ -173,7 +181,7 @@ public class ClientSslUtils {
         Predicate<String> empty = s -> s == null || s.isEmpty();
 
         if (!empty.test(keyStore) && !empty.test(keyStoreType)) {
-            char[] pwd = (keyStorePwd == null) ? new char[0] : keyStorePwd.toCharArray();
+            char[] pwd = (keyStorePwd == null) ? EMPTY_CHARS : keyStorePwd.toCharArray();
 
             KeyStore store = loadKeyStore("Client", keyStore, keyStoreType, pwd);
 
@@ -216,7 +224,7 @@ public class ClientSslUtils {
         Predicate<String> empty = s -> s == null || s.isEmpty();
 
         if (!empty.test(trustStore) && !empty.test(trustStoreType)) {
-            char[] pwd = (trustStorePwd == null) ? new char[0] : trustStorePwd.toCharArray();
+            char[] pwd = (trustStorePwd == null) ? EMPTY_CHARS : trustStorePwd.toCharArray();
 
             KeyStore store = loadKeyStore("Trust", trustStore, trustStoreType, pwd);
 
