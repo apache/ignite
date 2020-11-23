@@ -2290,8 +2290,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
-
-            System.out.println("+++ " + planner.dump());
         }
 
         assertNotNull(relRoot);
@@ -2765,8 +2763,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             "join t1 on t0.jid = t1.jid";
 
         RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter");
-
-        System.out.println("+++\n" + RelOptUtil.toString(phys));
 
         assertNotNull(phys);
 
