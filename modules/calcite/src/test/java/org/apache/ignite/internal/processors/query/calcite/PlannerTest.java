@@ -1012,14 +1012,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .replace(IgniteDistributions.single())
                 .simplify();
 
-            try {
-                rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
-            }
-            catch (Exception e) {
-                System.out.println("+++ " + planner.dump());
-
-                throw e;
-            }
+            rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
         }
@@ -2655,7 +2648,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             assertNotNull(phys);
             assertEquals(
                 "Invalid plan:\n" + RelOptUtil.toString(phys),
-                "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner], corrVarSet=[[$cor1]])\n" +
+                "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner], correlationVariables=[[$cor1]])\n" +
                     "  IgniteTableScan(table=[[PUBLIC, DEPT]], requiredColumns=[{0}])\n" +
                     "  IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor1.DEPTNO, $t0)):INTEGER, 2)], requiredColumns=[{2}])\n",
                 RelOptUtil.toString(phys));

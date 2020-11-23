@@ -199,7 +199,10 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
     /** */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
-        if (RexUtils.hasCorrelation(getProjects()))
+        Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(getProjects());
+        Set<CorrelationId> traitCorrIds = TraitUtils.correlation(nodeTraits).correlationIds();
+
+        if (!traitCorrIds.containsAll(corrIds))
             return ImmutableList.of();
 
         return ImmutableList.of(Pair.of(nodeTraits,

@@ -137,12 +137,8 @@ public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
-
-        if (TraitUtils.correlation(nodeTraits).correlated())
-            return ImmutableList.of();
-
         return ImmutableList.of(Pair.of(nodeTraits,
-            Commons.transform(inTraits, t -> t.replace(CorrelationTrait.UNCORRELATED))));
+            Commons.transform(inTraits, t -> t.replace(TraitUtils.correlation(nodeTraits)))));
     }
 
     /** {@inheritDoc} */

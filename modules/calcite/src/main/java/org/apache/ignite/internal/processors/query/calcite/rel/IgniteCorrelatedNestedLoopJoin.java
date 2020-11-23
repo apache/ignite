@@ -146,13 +146,15 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
-        if (TraitUtils.correlation(nodeTraits).correlated())
-            return ImmutableList.of();
+        CorrelationTrait nodeCorr = TraitUtils.correlation(nodeTraits);
+
+        Set<CorrelationId> selfCorrIds = new HashSet<>(CorrelationTrait.correlations(variablesSet).correlationIds());
+        selfCorrIds.addAll(nodeCorr.correlationIds());
 
         return ImmutableList.of(Pair.of(nodeTraits,
             ImmutableList.of(
-                inTraits.get(0).replace(CorrelationTrait.UNCORRELATED),
-                inTraits.get(1).replace(CorrelationTrait.correlations(variablesSet))
+                inTraits.get(0).replace(nodeCorr),
+                inTraits.get(1).replace(CorrelationTrait.correlations(selfCorrIds))
             )
         ));
     }
@@ -182,6 +184,6 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
 
     /** */
     @Override public RelWriter explainTerms(RelWriter pw) {
-        return super.explainTerms(pw).item("corrVarSet", getVariablesSet());
+        return super.explainTerms(pw).item("correlationVariables", getVariablesSet());
     }
 }
