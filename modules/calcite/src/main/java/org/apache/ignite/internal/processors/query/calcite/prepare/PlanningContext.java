@@ -122,8 +122,6 @@ public final class PlanningContext implements Context {
 
         RelDataTypeSystem typeSys = connectionConfig().typeSystem(RelDataTypeSystem.class, cfg.getTypeSystem());
         typeFactory = new IgniteTypeFactory(typeSys);
-
-        this.rulesFilter = rulesFilter;
     }
 
     /**
@@ -312,7 +310,7 @@ public final class PlanningContext implements Context {
     /**
      * @param rulesFilter Rules filter.
      */
-    public void rulesFilter(@NotNull Function<RuleSet, RuleSet> rulesFilter) {
+    public void rulesFilter(Function<RuleSet, RuleSet> rulesFilter) {
         this.rulesFilter = rulesFilter;
     }
 
