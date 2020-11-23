@@ -20,7 +20,6 @@ This module contains PME free switch tests.
 import time
 
 from ducktape.mark import matrix
-from ducktape.mark.resource import cluster
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
@@ -28,7 +27,7 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.utils import ignite_versions
+from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST_2_7, V_2_8_0, IgniteVersion
 
@@ -61,7 +60,8 @@ class PmeFreeSwitchTest(IgniteTest):
 
         config = IgniteConfiguration(version=IgniteVersion(ignite_version), caches=caches, cluster_state="INACTIVE")
 
-        ignites = IgniteService(self.test_context, config, num_nodes=self.NUM_NODES)
+        num_nodes = len(self.test_context.cluster) - 2
+        ignites = IgniteService(self.test_context, config, num_nodes=num_nodes)
 
         ignites.start()
 
@@ -71,7 +71,7 @@ class PmeFreeSwitchTest(IgniteTest):
         ControlUtility(ignites, self.test_context).activate()
 
         client_config = config._replace(client_mode=True,
-                                        discovery_spi=from_ignite_cluster(ignites, slice(0, self.NUM_NODES - 1)))
+                                        discovery_spi=from_ignite_cluster(ignites, slice(0, num_nodes - 1)))
 
         long_tx_streamer = IgniteApplicationService(
             self.test_context,
@@ -93,7 +93,7 @@ class PmeFreeSwitchTest(IgniteTest):
 
         single_key_tx_streamer.start()
 
-        ignites.stop_node(ignites.nodes[self.NUM_NODES - 1])
+        ignites.stop_node(ignites.nodes[num_nodes - 1])
 
         if long_txs:
             long_tx_streamer.await_event("Node left topology", 60, from_the_beginning=True)
@@ -109,5 +109,6 @@ class PmeFreeSwitchTest(IgniteTest):
         data["Worst latency (ms)"] = single_key_tx_streamer.extract_result("WORST_LATENCY")
         data["Streamed txs"] = single_key_tx_streamer.extract_result("STREAMED")
         data["Measure duration (ms)"] = single_key_tx_streamer.extract_result("MEASURE_DURATION")
+        data["Server nodes"] = num_nodes
 
         return data
