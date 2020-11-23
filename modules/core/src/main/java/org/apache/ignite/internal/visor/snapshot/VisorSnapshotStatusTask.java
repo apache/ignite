@@ -17,37 +17,59 @@
 
 package org.apache.ignite.internal.visor.snapshot;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.ignite.compute.ComputeJobResult;
+
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
  * Task that collects nodes that have snapshot operation in progress.
  */
 @GridInternal
-public class VisorSnapshotStatusTask extends SnapshotStatusTask<String> {
-    /** */
+public class VisorSnapshotStatusTask extends VisorOneNodeTask<Void, String> {
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected String reduce0(List<ComputeJobResult> results) {
-        Set<Object> ids = results.stream()
-                .filter(ComputeJobResult::<Boolean>getData)
-                .map(j -> j.getNode().consistentId())
-                .collect(Collectors.toSet());
+    @Override protected VisorJob<Void, String> job(Void arg) {
+        return new VisorSnapshotStatusJob(arg, debug);
+    }
 
-        if (ids.isEmpty())
-            return "No snapshot operations.";
+    /** */
+    private static class VisorSnapshotStatusJob extends VisorJob<Void, String> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
 
-        StringBuilder sb = new StringBuilder("Snapshot operation in progress on nodes with Consistent ID:");
+        /**
+         * @param debug Flag indicating whether debug information should be printed into node log.
+         */
+        protected VisorSnapshotStatusJob(Void arg, boolean debug) {
+            super(arg, debug);
+        }
 
-        ids.stream()
-                .map(String::valueOf)
-                .forEach(s -> sb.append(IgniteUtils.nl()).append(s));
+        /** {@inheritDoc} */
+        @Override protected String run(Void arg) throws IgniteException {
+            Set<Object> ids = new SnapshotMXBeanImpl(ignite.context()).statusSnapshot().entrySet()
+                    .stream()
+                    .filter(Map.Entry::getValue)
+                    .map(Map.Entry::getKey).collect(Collectors.toSet());
 
-        return sb.toString();
+            if (ids.isEmpty())
+                return "No snapshot operations.";
+
+            StringBuilder sb = new StringBuilder("Snapshot operation in progress on nodes with Consistent ID:");
+
+            ids.stream()
+                    .map(String::valueOf)
+                    .forEach(s -> sb.append(IgniteUtils.nl()).append(s));
+
+            return sb.toString();
+        }
     }
 }

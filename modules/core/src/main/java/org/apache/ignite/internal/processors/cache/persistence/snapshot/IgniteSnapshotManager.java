@@ -105,8 +105,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.snapshot.SnapshotStatusTask;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -1469,9 +1470,41 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Get the status of a cluster snapshot operation. */
     @GridInternal
-    private static class StatusSnapshotTask extends SnapshotStatusTask<Map<Object, Boolean>> {
-        /** Serial version UID. */
+    private static class StatusSnapshotTask extends VisorMultiNodeTask<Void, Map<Object, Boolean>, Boolean> {
+        /** */
         private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override protected SnapshotStatusJob job(Void arg) {
+            return new SnapshotStatusJob(arg, debug);
+        }
+
+        /**  */
+        private static class SnapshotStatusJob extends VisorJob<Void, Boolean> {
+            /** */
+            private static final long serialVersionUID = 0L;
+
+            /**
+             * Create job without specified argument.
+             *
+             * @param arg Job argument.
+             * @param debug Flag indicating whether debug information should be printed into node log.
+             */
+            protected SnapshotStatusJob(@Nullable Void arg, boolean debug) {
+                super(arg, debug);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected Boolean run(@Nullable Void arg) {
+                return ignite.context().cache().context().snapshotMgr().isSnapshotCreating();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Collection<UUID> jobNodes(VisorTaskArgument<Void> arg) {
+            return ignite.context().discovery().aliveServerNodes().stream()
+                    .map(ClusterNode::id).collect(Collectors.toSet());
+        }
 
         @Override protected Map<Object, Boolean> reduce0(List<ComputeJobResult> results)
                 throws IgniteException {
