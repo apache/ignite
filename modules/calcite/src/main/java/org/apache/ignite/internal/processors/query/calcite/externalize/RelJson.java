@@ -269,6 +269,12 @@ class RelJson {
                 list.add(toJson(integer));
             return list;
         }
+        else if (value instanceof Set) {
+            List<Object> list = list();
+            for (Object o : (Set)value)
+                list.add(toJson(o));
+            return list;
+        }
         else if (value instanceof DistributionTrait)
             return toJson((DistributionTrait)value);
         else if (value instanceof AggregateCall)

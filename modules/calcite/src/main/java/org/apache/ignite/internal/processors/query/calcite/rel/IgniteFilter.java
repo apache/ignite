@@ -100,9 +100,6 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
-        if (!TraitUtils.rewindability(inTraits.get(0)).rewindable() && RexUtils.hasCorrelation(getCondition()))
-            return ImmutableList.of();
-
         return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.rewindability(inTraits.get(0))),
             inTraits));
     }

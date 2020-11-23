@@ -2266,6 +2266,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelRoot relRoot;
 
         try (IgnitePlanner planner = ctx.planner()) {
+            planner.setDisabledRules(ImmutableSet.of("CorrelatedNestedLoopJoin"));
+
             assertNotNull(planner);
 
             String qry = ctx.query();
@@ -2294,6 +2296,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
+
+            System.out.println("+++ " + planner.dump());
         }
 
         assertNotNull(relRoot);
@@ -2662,7 +2666,7 @@ public class PlannerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testTableSpoolTest() throws Exception {
+    public void tableSpool() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable t0 = new TestTable(
@@ -2751,140 +2755,6 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .simplify();
 
             planner.setDisabledRules(ImmutableSet.of("NestedLoopJoinConverter"));
-
-            RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
-
-            assertNotNull(phys);
-
-            System.out.println("+++ " + RelOptUtil.toString(phys));
-
-            AtomicInteger spoolCnt = new AtomicInteger();
-
-            phys.childrenAccept(
-                new RelVisitor() {
-                    @Override public void visit(RelNode node, int ordinal, RelNode parent) {
-                        if (node instanceof IgniteTableSpool)
-                            spoolCnt.incrementAndGet();
-
-                        super.visit(node, ordinal, parent);
-                    }
-                }
-            );
-
-            assertEquals(1, spoolCnt.get());
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDbg() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable t0 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("JID", f.createJavaType(Integer.class))
-                .add("JID0", f.createJavaType(Integer.class))
-                .add("VAL", f.createJavaType(String.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "T0", "hash");
-            }
-        };
-
-        TestTable t1 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("JID", f.createJavaType(Integer.class))
-                .add("JID1", f.createJavaType(Integer.class))
-                .add("VAL", f.createJavaType(String.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "T1", "hash");
-            }
-        };
-
-        TestTable t2 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("JID0", f.createJavaType(Integer.class))
-                .add("JID1", f.createJavaType(Integer.class))
-                .add("VAL", f.createJavaType(String.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "T2", "hash");
-            }
-        };
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("T0", t0);
-        publicSchema.addTable("T1", t1);
-        publicSchema.addTable("T2", t2);
-
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
-        String sql = "select * " +
-            "from t0 " +
-            "join t1 on t0.jid = t1.jid " +
-            "join t2 on t0.jid0 = t2.jid0 and t1.jid1 = t2.jid1";
-
-        RelTraitDef<?>[] traitDefs = {
-            DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE,
-            RewindabilityTraitDef.INSTANCE,
-            CorrelationTraitDef.INSTANCE
-        };
-
-        PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .traitDefs(traitDefs)
-                .build())
-            .logger(log)
-            .query(sql)
-            .topologyVersion(AffinityTopologyVersion.NONE)
-            .build();
-
-        RelRoot relRoot;
-
-        try (IgnitePlanner planner = ctx.planner()) {
-            assertNotNull(planner);
-
-            String qry = ctx.query();
-
-            assertNotNull(qry);
-
-            // Parse
-            SqlNode sqlNode = planner.parse(qry);
-
-            // Validate
-            sqlNode = planner.validate(sqlNode);
-
-            // Convert to Relational operators graph
-            relRoot = planner.rel(sqlNode);
-
-            RelNode rel = relRoot.rel;
-
-            assertNotNull(rel);
-
-            // Transformation chain
-            RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteConvention.INSTANCE)
-                .replace(IgniteDistributions.single())
-                .simplify();
-
-            planner.setDisabledRules(ImmutableSet.of("NestedLoopJoinConverter", "JoinCommuteRule"));
 
             RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 

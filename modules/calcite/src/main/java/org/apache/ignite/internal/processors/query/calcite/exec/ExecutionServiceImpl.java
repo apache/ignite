@@ -567,6 +567,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         IgniteRel igniteRel = optimize(sqlNode, planner);
 
+        System.out.println("+++ " + RelOptUtil.toString(igniteRel));
+
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
