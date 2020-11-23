@@ -26,6 +26,7 @@ import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.logging.StreamHandler;
+import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
@@ -430,7 +431,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
 
         logLsnrs = Arrays.asList(
             LogListener.matches("default1 - size before/after: 0MB/0MB").build(),
-            LogListener.matches("default2 - size before/after: 44.02MB/44.02MB").build(),
+            LogListener.matches(Pattern.compile("default2 - size before/after: (\\S+)/\\1")).build(),
             LogListener.matches("default3 - size before/after: 0MB/0MB").build()
         );
 
