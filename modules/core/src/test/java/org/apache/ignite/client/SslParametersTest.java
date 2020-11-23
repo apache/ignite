@@ -307,7 +307,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
         this.cipherSuites = F.isEmpty(cipherSuites) ? null : cipherSuites;
         this.protocols = F.isEmpty(protocols) ? null : protocols;
 
-        GridTestUtils.assertThrows(
+        GridTestUtils.assertThrowsAnyCause(
             null,
             new Callable<Object>() {
                 @Override public Object call() {
