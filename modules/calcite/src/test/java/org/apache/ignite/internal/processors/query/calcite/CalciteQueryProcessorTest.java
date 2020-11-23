@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.Arrays;
 import java.util.List;
 import com.google.common.collect.ImmutableMap;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -29,14 +30,13 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -45,20 +45,29 @@ import org.junit.Test;
 @WithSystemProperty(key = "calcite.debug", value = "false")
 public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     /** */
-    private IgniteEx ignite;
+    private static IgniteEx ignite;
 
-    @Before
-    public void setup() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
         startGrids(5);
 
         ignite = startClientGrid();
     }
 
-    @After
-    public void tearDown() throws Exception {
-        stopAllGrids();
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        for (Ignite ign : G.allGrids()) {
+            for (String cacheName : ign.cacheNames())
+                ign.destroyCache(cacheName);
+
+            CalciteQueryProcessor qryProc = (CalciteQueryProcessor)Commons.lookupComponent(
+                ((IgniteEx)ign).context(), QueryEngine.class);
+
+            qryProc.queryPlanCache().clear();
+        }
     }
 
+    /** */
     @Test
     public void unionAll() throws Exception {
         IgniteCache<Integer, Employer> employer1 = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
@@ -89,7 +98,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         employer2.put(2, new Employer("Roman", 15d));
         employer3.put(3, new Employer("Nikolay", 20d));
 
-        waitForReadyTopology(internalCache(employer1).context().topology(), new AffinityTopologyVersion(5, 4));
+        awaitPartitionMapExchange(true, true, null);
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
@@ -106,6 +115,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEquals(6, rows.size());
     }
 
+    /** */
     @Test
     public void union() throws Exception {
         IgniteCache<Integer, Employer> employer1 = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
@@ -136,7 +146,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         employer2.put(2, new Employer("Roman", 15d));
         employer3.put(3, new Employer("Nikolay", 20d));
 
-        waitForReadyTopology(internalCache(employer1).context().topology(), new AffinityTopologyVersion(5, 4));
+        awaitPartitionMapExchange(true, true, null);
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
@@ -153,6 +163,206 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEquals(3, rows.size());
     }
 
+    /** */
+    private void populateTables() throws InterruptedException {
+        IgniteCache<Integer, Employer> orders = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName("orders")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("orders")))
+            .setBackups(2)
+        );
+
+        IgniteCache<Integer, Employer> account = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName("account")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("account")))
+            .setBackups(1)
+        );
+
+        orders.put(1, new Employer("Igor", 10d));
+        orders.put(2, new Employer("Igor", 11d));
+        orders.put(3, new Employer("Igor", 12d));
+        orders.put(4, new Employer("Igor1", 13d));
+        orders.put(5, new Employer("Igor1", 13d));
+        orders.put(6, new Employer("Igor1", 13d));
+        orders.put(7, new Employer("Roman", 14d));
+
+        account.put(1, new Employer("Roman", 10d));
+        account.put(2, new Employer("Roman", 11d));
+        account.put(3, new Employer("Roman", 12d));
+        account.put(4, new Employer("Roman", 13d));
+        account.put(5, new Employer("Igor1", 13d));
+        account.put(6, new Employer("Igor1", 13d));
+
+        /*
+        select * from orders;
+        +----+-------+-------+
+        | ID | NAME  | SALARY|
+        +----+-------+-------+
+        |  1 | igor  |   10  |
+        |  2 | igor  |   11  |
+        |  3 | igor  |   12  |
+        |  4 | igor1 |   13  |
+        |  5 | igor1 |   13  |
+        |  6 | igor1 |   13  |
+        |  7 | roman |   14  |
+        +----+-------+-------+
+
+        select * from account;
+        +----+-------+-------+
+        | ID | NAME  | SALARY|
+        +----+-------+-------+
+        |  1 | Roman |   10  |
+        |  2 | Roman |   11  |
+        |  3 | Roman |   12  |
+        |  4 | Roman |   13  |
+        |  5 | igor1 |   13  |
+        |  6 | igor1 |   13  |
+        +----+-------+-------+
+         */
+
+        awaitPartitionMapExchange(true, true, null);
+    }
+
+    /** */
+    @Test
+    public void testEqConditionWithDistinctSubquery() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql(
+            "SELECT name FROM Orders WHERE salary = (SELECT DISTINCT(salary) from Account WHERE name='Igor1')");
+
+        assertEquals(3, rows.size());
+    }
+
+    /** */
+    @Test
+    public void testEqConditionWithAggregateSubqueryMax() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql(
+            "SELECT name FROM Orders WHERE salary = (SELECT MAX(salary) from Account WHERE name='Roman')");
+
+        assertEquals(3, rows.size());
+    }
+
+    /** */
+    @Test
+    public void testEqConditionWithAggregateSubqueryMin() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql(
+            "SELECT name FROM Orders WHERE salary = (SELECT MIN(salary) from Account WHERE name='Roman')");
+
+        assertEquals(1, rows.size());
+    }
+
+    /** */
+    @Test
+    public void testInConditionWithSubquery() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql(
+            "SELECT name FROM Orders WHERE name IN (SELECT name from Account)");
+
+        assertEquals(4, rows.size());
+    }
+
+    /** */
+    @Test
+    public void testDistinctQueryWithInConditionWithSubquery() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql(
+                "SELECT distinct(name) FROM Orders o WHERE name IN (" +
+                "   SELECT name" +
+                "   FROM Account)");
+
+        assertEquals(2, rows.size());
+    }
+
+
+    /** */
+    @Test
+    public void testUnion() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql(
+            "SELECT name FROM Orders UNION SELECT name from Account");
+
+        assertEquals(3, rows.size());
+    }
+
+    /** */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13727")
+    public void testUnionWithDistinct() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql(
+            "SELECT distinct(name) FROM Orders UNION SELECT name from Account");
+
+        assertEquals(3, rows.size());
+    }
+
+    /** */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13721")
+    public void testNotInConditionWithSubquery() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql(
+            "SELECT name FROM Orders WHERE name NOT IN (SELECT name from Account)");
+
+        assertEquals(3, rows.size());
+    }
+
+    /** */
+    @Test
+    public void testExistsConditionWithSubquery() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql(
+                "SELECT name FROM Orders o WHERE EXISTS (" +
+                "   SELECT 1" +
+                "   FROM Account a" +
+                "   WHERE o.name = a.name)");
+
+        assertEquals(4, rows.size());
+    }
+
+    /** */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13729")
+    public void testNotExistsConditionWithSubquery() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql(
+                "EXPLAIN PLAN FOR SELECT name FROM Orders o WHERE NOT EXISTS (" +
+                "   SELECT 1" +
+                "   FROM Account a" +
+                "   WHERE o.name = a.name)");
+
+        assertEquals(3, rows.size());
+
+        rows = sql(
+            "SELECT name FROM Orders o WHERE NOT EXISTS (" +
+                "   SELECT name" +
+                "   FROM Account a" +
+                "   WHERE o.name = a.name)");
+
+        assertEquals(3, rows.size());
+
+        rows = sql(
+                "SELECT distinct(name) FROM Orders o WHERE NOT EXISTS (" +
+                "   SELECT name" +
+                "   FROM Account a" +
+                "   WHERE o.name = a.name)");
+
+        assertEquals(1, rows.size());
+    }
+
+    /** */
     @Test
     public void aggregate() throws Exception {
         IgniteCache<Integer, Employer> employer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
@@ -162,13 +372,13 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .setBackups(2)
         );
 
-        waitForReadyTopology(internalCache(employer).context().topology(), new AffinityTopologyVersion(5, 2));
-
         employer.putAll(ImmutableMap.of(
             0, new Employer("Igor", 10d),
             1, new Employer("Roman", 15d),
             2, new Employer("Nikolay", 20d)
         ));
+
+        awaitPartitionMapExchange(true, true, null);
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
@@ -182,33 +392,30 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEquals(Arrays.asList("Roman", 15d), F.first(rows));
     }
 
+    /** */
     @Test
     public void query() throws Exception {
-        IgniteCache<Integer, Developer> developer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Developer>()
+        IgniteCache<Integer, Developer> developer = grid(1).createCache(new CacheConfiguration<Integer, Developer>()
             .setName("developer")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Developer.class)
             .setBackups(2)
         );
 
-        IgniteCache<Integer, Project> project = ignite.getOrCreateCache(new CacheConfiguration<Integer, Project>()
+        IgniteCache<Integer, Project> project = grid(1).createCache(new CacheConfiguration<Integer, Project>()
             .setName("project")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Project.class)
             .setBackups(2)
         );
 
-        waitForReadyTopology(internalCache(project).context().topology(), new AffinityTopologyVersion(5, 3));
+        project.put(0, new Project("Ignite"));
+        project.put(1, new Project("Calcite"));
 
-        project.putAll(ImmutableMap.of(
-            0, new Project("Ignite"),
-            1, new Project("Calcite")
-        ));
+        developer.put(0, new Developer("Igor", 1));
+        developer.put(1, new Developer("Roman", 0));
 
-        developer.putAll(ImmutableMap.of(
-            0, new Developer("Igor", 1),
-            1, new Developer("Roman", 0)
-        ));
+        awaitPartitionMapExchange(true, true, null);
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
@@ -220,33 +427,28 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEqualsCollections(Arrays.asList("Igor", 1, "Calcite"), F.first(query.get(0).getAll()));
     }
 
+    /** */
     @Test
     public void query2() throws Exception {
-        IgniteCache<Integer, Developer> developer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Developer>()
+        IgniteCache<Integer, Developer> developer = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Developer>()
             .setName("developer")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Developer.class)
             .setCacheMode(CacheMode.REPLICATED)
         );
 
-        IgniteCache<Integer, Project> project = ignite.getOrCreateCache(new CacheConfiguration<Integer, Project>()
+        IgniteCache<Integer, Project> project = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Project>()
             .setName("project")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Project.class)
             .setBackups(2)
         );
 
-        waitForReadyTopology(internalCache(project).context().topology(), new AffinityTopologyVersion(5, 3));
+        project.put(0, new Project("Ignite"));
+        project.put(1, new Project("Calcite"));
 
-        project.putAll(ImmutableMap.of(
-            0, new Project("Ignite"),
-            1, new Project("Calcite")
-        ));
-
-        developer.putAll(ImmutableMap.of(
-            0, new Developer("Igor", 1),
-            1, new Developer("Roman", 0)
-        ));
+        developer.put(0, new Developer("Igor", 1));
+        developer.put(1, new Developer("Roman", 0));
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
@@ -258,23 +460,22 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEqualsCollections(Arrays.asList("Igor", 1, "Calcite"), F.first(query.get(0).getAll()));
     }
 
+    /** */
     @Test
     public void queryMultiStatement() throws Exception {
-        IgniteCache<Integer, Developer> developer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Developer>()
+        IgniteCache<Integer, Developer> developer = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Developer>()
             .setName("developer")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Developer.class)
             .setBackups(2)
         );
 
-        IgniteCache<Integer, Project> project = ignite.getOrCreateCache(new CacheConfiguration<Integer, Project>()
+        IgniteCache<Integer, Project> project = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Project>()
             .setName("project")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Project.class)
             .setBackups(2)
         );
-
-        waitForReadyTopology(internalCache(project).context().topology(), new AffinityTopologyVersion(5, 3));
 
         project.putAll(ImmutableMap.of(
             0, new Project("Ignite"),
@@ -299,16 +500,15 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEqualsCollections(Arrays.asList("Roman", 0, "Ignite"), F.first(query.get(1).getAll()));
     }
 
+    /** */
     @Test
     public void testInsertPrimitiveKey() throws Exception {
-        IgniteCache<Integer, Developer> developer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Developer>()
+        IgniteCache<Integer, Developer> developer = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Developer>()
             .setName("developer")
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Developer.class)
             .setBackups(2)
         );
-
-        waitForReadyTopology(internalCache(developer).context().topology(), new AffinityTopologyVersion(5, 3));
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
@@ -337,6 +537,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEqualsCollections(Arrays.asList(0, "Igor", 1), row);
     }
 
+    /** */
     @Test
     public void testInsertUpdateDeleteNonPrimitiveKey() throws Exception {
         IgniteCache<Key, Developer> developer = ignite.getOrCreateCache(new CacheConfiguration<Key, Developer>()
@@ -346,7 +547,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .setBackups(2)
         );
 
-        waitForReadyTopology(internalCache(developer).context().topology(), new AffinityTopologyVersion(5, 2));
+        awaitPartitionMapExchange(true, true, null);
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
@@ -457,6 +658,15 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             query.get(0).getAll();
         }
         System.out.println("H2 duration = " + (System.currentTimeMillis() - start));
+    }
+
+    /** */
+    private List<List<?>> sql(String sql) {
+        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
+
+        List<FieldsQueryCursor<List<?>>> cursors = engine.query(null, "PUBLIC", sql);
+
+        return cursors.get(0).getAll();
     }
 
     /** */
