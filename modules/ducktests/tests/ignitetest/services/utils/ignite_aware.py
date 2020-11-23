@@ -74,7 +74,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         Awaits start finished.
         """
-        self.logger.info("Waiting for IgniteAware(s) to start...")
+        self.logger.info("Waiting for IgniteAware(s) to start ...")
 
         self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
 
@@ -101,15 +101,17 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         Awaits stop finished.
         """
-        self.logger.info("Waiting for IgniteAware(s) to stop...")
+        self.logger.info("Waiting for IgniteAware(s) to stop ...")
 
         for node in self.nodes:
             stopped = self.wait_node(node, timeout_sec=self.shutdown_timeout_sec)
-            assert stopped, "Node %s: did not stop within the specified timeout of %s seconds" % \
-                            (str(node.account), str(self.shutdown_timeout_sec))
+            assert stopped, "Node %s's worker thread did not stop in %d seconds" % \
+                            (str(node.account), self.shutdown_timeout_sec)
 
         for node in self.nodes:
-            assert self.alive(node), "Ignite node failed to stop."
+            wait_until(lambda: not self.alive(node), timeout_sec=self.shutdown_timeout_sec,
+                       err_msg="Node %s's remote processes failed to stop in %d seconds" %
+                               (str(node.account), self.shutdown_timeout_sec))
 
     def stop_node(self, node):
         pids = self.pids(node)
@@ -121,7 +123,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         Kills nodes.
         """
-        self.logger.info("Killing IgniteAware(s)...")
+        self.logger.info("Killing IgniteAware(s) ...")
 
         for node in self.nodes:
             pids = self.pids(node)
