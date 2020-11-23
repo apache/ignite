@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.thin.io;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.client.ClientConnectionException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -45,12 +46,11 @@ public interface ClientConnectionMultiplexer {
      * @param msgHnd Incoming message handler.
      * @param stateHnd Connection state handler.
      * @return Created connection.
-     * @throws IOException when connection can't be established.
-     * @throws IgniteCheckedException when handshake fails.
+     * @throws ClientConnectionException when connection can't be established.
      */
     ClientConnection open( // TODO: Make this method async? Review exceptions.
             InetSocketAddress addr,
             ClientMessageHandler msgHnd,
             ClientConnectionStateHandler stateHnd)
-            throws IOException, IgniteCheckedException;
+            throws ClientConnectionException;
 }

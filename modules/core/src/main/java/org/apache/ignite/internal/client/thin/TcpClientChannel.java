@@ -149,15 +149,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         timeout = cfg.getTimeout();
 
-        try {
-            sock = createSocket(cfg, connMgr);
-        }
-        catch (IOException e) {
-            throw handleIOError("addr=" + cfg.getAddress(), e);
-        } catch (IgniteCheckedException e) {
-            // TODO: ???
-            throw convertException(e);
-        }
+        sock = connMgr.open(cfg.getAddress(), this, this);
 
         handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
     }
@@ -481,12 +473,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         if (error != null)
             throw new IllegalArgumentException(error);
-    }
-
-    /** Create socket. */
-    private ClientConnection createSocket(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr)
-            throws IOException, IgniteCheckedException {
-        return connMgr.open(cfg.getAddress(), this, this);
     }
 
     /** Client handshake. */

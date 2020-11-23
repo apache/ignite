@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin.io.gridnioserver;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.client.thin.ClientSslUtils;
@@ -178,37 +179,40 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
     @Override public ClientConnection open(InetSocketAddress addr,
                                            ClientMessageHandler msgHnd,
                                            ClientConnectionStateHandler stateHnd)
-            throws IOException, IgniteCheckedException {
-        java.nio.channels.SocketChannel ch = java.nio.channels.SocketChannel.open();
-        Socket sock = ch.socket();
+            throws ClientConnectionException {
+        try {
+            java.nio.channels.SocketChannel ch = java.nio.channels.SocketChannel.open();
+            Socket sock = ch.socket();
 
-        // See GridClientNioTcpConnection.
-        // TODO: Pass timeout?
-        // TODO: why can't we pass addr directly? The logic on the following line is copied from old TcpClientChannel
-        InetSocketAddress addr2 = new InetSocketAddress(addr.getHostName(), addr.getPort());
-        sock.connect(addr2, Integer.MAX_VALUE);
+            // See GridClientNioTcpConnection.
+            // TODO: Pass timeout?
+            // TODO: why can't we pass addr directly? The logic on the following line is copied from old TcpClientChannel
+            InetSocketAddress addr2 = new InetSocketAddress(addr.getHostName(), addr.getPort());
+            sock.connect(addr2, Integer.MAX_VALUE);
 
-        Map<Integer, Object> meta = new HashMap<>();
+            Map<Integer, Object> meta = new HashMap<>();
 
-        GridNioFuture<?> sslHandshakeFut = null;
+            GridNioFuture<?> sslHandshakeFut = null;
 
-        if (sslCtx != null) {
-            sslHandshakeFut = new GridNioFutureImpl<>(null);
+            if (sslCtx != null) {
+                sslHandshakeFut = new GridNioFutureImpl<>(null);
 
-            meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
+                meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
+            }
+
+            // TODO: What does async param mean?
+            GridNioFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
+
+            // TODO: Should this method be async? Why is createSession async?
+            GridNioSession ses = sesFut.get();
+
+            // Wait for SSL handshake.
+            if (sslHandshakeFut != null)
+                sslHandshakeFut.get();
+
+            return new GridNioServerClientConnection(ses, msgHnd, stateHnd);
+        } catch (Exception e) {
+            throw new ClientConnectionException(e.getMessage(), e);
         }
-
-        // TODO: What does async param mean?
-        GridNioFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
-
-        // TODO: Should this method be async? Why is createSession async?
-        GridNioSession ses = sesFut.get();
-
-        // Wait for SSL handshake.
-        // TODO: Handle error from this future separately so that consumer code can understand SSL errors.
-        if (sslHandshakeFut != null)
-            sslHandshakeFut.get();
-
-        return new GridNioServerClientConnection(ses, msgHnd, stateHnd);
     }
 }
