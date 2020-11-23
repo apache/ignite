@@ -17,20 +17,9 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -45,20 +34,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
-import javax.cache.configuration.Factory;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientAuthorizationException;
@@ -66,7 +43,6 @@ import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.ClientReconnectedException;
-import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
@@ -124,6 +100,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         V1_0_0
     );
 
+    /** Preallocated empty bytes. */
+    public static final byte[] EMPTY_BYTES = new byte[0];
+
     /** Protocol context. */
     private volatile ProtocolContext protocolCtx;
 
@@ -179,6 +158,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             // TODO: ???
             throw convertException(e);
         }
+
+        handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
     }
 
     /** {@inheritDoc} */
@@ -584,7 +565,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             boolean success = res.readBoolean();
 
             if (success) {
-                byte[] features = new byte[0];
+                byte[] features = EMPTY_BYTES;
 
                 if (ProtocolContext.isFeatureSupported(proposedVer, BITMAP_FEATURES))
                     features = reader.readByteArray();
