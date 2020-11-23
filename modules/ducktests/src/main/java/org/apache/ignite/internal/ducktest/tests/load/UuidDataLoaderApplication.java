@@ -19,7 +19,6 @@ package org.apache.ignite.internal.ducktest.tests.load;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
@@ -38,8 +37,6 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
 
         markInitialized();
 
-        long start = System.currentTimeMillis();
-
         int threads = Runtime.getRuntime().availableProcessors() / 2;
 
         long iterThread = size / threads;
@@ -57,8 +54,6 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
             }).start();
 
         latch.await();
-
-        recordResult("DURATION", System.currentTimeMillis() - start);
 
         markFinished();
     }

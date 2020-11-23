@@ -159,7 +159,7 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec, IgnitePersistenceAware):
         self.jvm_opts.extend([
             "-DIGNITE_SUCCESS_FILE=" + self.PERSISTENT_ROOT + "/success_file",
             "-Dlog4j2.debug",
-            "-Dlog4j.configurationFile=" + self.PERSISTENT_ROOT + "/ignite-log4j.xml"
+            "-Dlog4j2.configurationFile=" + self.PERSISTENT_ROOT + "/ignite-log4j2.xml"
         ])
 
 
@@ -189,7 +189,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
         self.jvm_opts.extend([
             "-DIGNITE_SUCCESS_FILE=" + self.PERSISTENT_ROOT + "/success_file",
             "-Dlog4j2.debug",
-            "-Dlog4j.configurationFile=" + self.PERSISTENT_ROOT + "/ignite-log4j.xml",
+            "-Dlog4j2.configurationFile=" + self.PERSISTENT_ROOT + "/ignite-log4j2.xml",
             "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
             "-Xmx1G",
             "-ea",

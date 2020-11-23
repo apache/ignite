@@ -57,7 +57,7 @@ class IgnitePersistenceAware(PersistenceAware):
     WORK_DIR = os.path.join(PersistenceAware.PERSISTENT_ROOT, "work")
     SNAPSHOTS = os.path.join(WORK_DIR, "snapshots")
     CONFIG_FILE = os.path.join(PersistenceAware.PERSISTENT_ROOT, "ignite-config.xml")
-    LOG4J_CONFIG_FILE = os.path.join(PersistenceAware.PERSISTENT_ROOT, "ignite-log4j.xml")
+    LOG4J2_CONFIG_FILE = os.path.join(PersistenceAware.PERSISTENT_ROOT, "ignite-log4j2.xml")
 
     def __getattribute__(self, item):
         if item == 'logs':
@@ -73,4 +73,4 @@ class IgnitePersistenceAware(PersistenceAware):
         super().init_persistent(node)
 
         logger_config = IgniteLoggerConfigTemplate().render(logs_dir=self.LOGS_DIR)
-        node.account.create_file(self.LOG4J_CONFIG_FILE, logger_config)
+        node.account.create_file(self.LOG4J2_CONFIG_FILE, logger_config)
