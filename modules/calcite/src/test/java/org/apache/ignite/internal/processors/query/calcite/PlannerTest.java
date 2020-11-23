@@ -2655,7 +2655,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             assertNotNull(phys);
             assertEquals(
                 "Invalid plan:\n" + RelOptUtil.toString(phys),
-                "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner])\n" +
+                "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner], corrVarSet=[[$cor1]])\n" +
                     "  IgniteTableScan(table=[[PUBLIC, DEPT]], requiredColumns=[{0}])\n" +
                     "  IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor1.DEPTNO, $t0)):INTEGER, 2)], requiredColumns=[{2}])\n",
                 RelOptUtil.toString(phys));
@@ -2759,8 +2759,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             assertNotNull(phys);
-
-            System.out.println("+++ " + RelOptUtil.toString(phys));
 
             AtomicInteger spoolCnt = new AtomicInteger();
 
@@ -2919,8 +2917,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             throw new AssertionError();
         }
 
-        /** {@inheritDoc}
-         * @return*/
+        /** {@inheritDoc} */
         @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
             throw new AssertionError();
         }
@@ -3005,5 +3002,4 @@ public class PlannerTest extends GridCommonAbstractTest {
             return true;
         }
     }
-
 }

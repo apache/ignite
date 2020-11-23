@@ -385,18 +385,22 @@ public class RexUtils {
         return permutation(nodes, inputRowType, false);
     }
 
+    /** */
     public static List<RexNode> replaceLocalRefs(List<RexNode> nodes) {
         return LocalRefReplacer.INSTANCE.apply(nodes);
     }
 
+    /** */
     public static List<RexNode> replaceInputRefs(List<RexNode> nodes) {
         return InputRefReplacer.INSTANCE.apply(nodes);
     }
 
+    /** */
     public static RexNode replaceLocalRefs(RexNode node) {
         return LocalRefReplacer.INSTANCE.apply(node);
     }
 
+    /** */
     public static RexNode replaceInputRefs(RexNode node) {
         return InputRefReplacer.INSTANCE.apply(node);
     }
