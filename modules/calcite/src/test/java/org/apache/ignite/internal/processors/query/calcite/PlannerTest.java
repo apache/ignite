@@ -2884,7 +2884,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .replace(IgniteDistributions.single())
                 .simplify();
 
-            planner.setDisabledRules(ImmutableSet.of("NestedLoopJoinConverter"));
+            planner.setDisabledRules(ImmutableSet.of("NestedLoopJoinConverter", "JoinCommuteRule"));
 
             RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
