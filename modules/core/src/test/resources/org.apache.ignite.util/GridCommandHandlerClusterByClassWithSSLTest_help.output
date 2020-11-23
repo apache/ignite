@@ -177,10 +177,10 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
   Print list of available properties:
     control.(sh|bat) --property list
 
-  Get the property value
+  Get the property value:
     control.(sh|bat) --property get --name <property_name>
 
-  Set the property value
+  Set the property value:
     control.(sh|bat) --property set --name <property_name> --val <property_value>
 
   Print system view content:

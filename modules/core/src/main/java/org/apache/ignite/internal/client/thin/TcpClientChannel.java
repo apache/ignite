@@ -157,6 +157,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Executor for async operation listeners. */
     private final Executor asyncContinuationExecutor;
 
+    /** Send/receive timeout in milliseconds. */
+    private final int timeout;
+
     /** Constructor. */
     TcpClientChannel(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
@@ -164,6 +167,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         Executor cfgExec = cfg.getAsyncContinuationExecutor();
         asyncContinuationExecutor = cfgExec != null ? cfgExec : ForkJoinPool.commonPool();
+
+        timeout = cfg.getTimeout();
 
         try {
             sock = createSocket(cfg, connMgr);
@@ -174,8 +179,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             // TODO: ???
             throw convertException(e);
         }
-
-        handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
     }
 
     /** {@inheritDoc} */
@@ -295,6 +298,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     private <T> T receive(ClientRequestFuture pendingReq, Function<PayloadInputChannel, T> payloadReader)
         throws ClientException {
         try {
+            // TODO: timeout handling? Can it be handled by GridNioServer?
+            // byte[] payload = timeout > 0 ? pendingReq.get(timeout) : pendingReq.get();
             ByteBuffer payload = pendingReq.get();
 
             if (payload == null || payloadReader == null)
