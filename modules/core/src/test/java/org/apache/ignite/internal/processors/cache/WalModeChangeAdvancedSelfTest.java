@@ -43,6 +43,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
 
 /**
  * Concurrent and advanced tests for WAL state change.
@@ -153,6 +154,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13742")
     public void testMaintenanceIsSkippedIfWasFixedManuallyOnDowntime() throws Exception {
         IgniteEx srv = startGrid(config(SRV_1, false, false));
 
@@ -190,10 +192,18 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         cleanCacheDir(cacheToClean);
 
-        // Node should start successfully and not enter maintenance mode as MaintenanceRecord will be cleaned
+        // Node should start successfully and enter maintenance mode. MaintenanceRecord will be cleaned
         // automatically because corrupted PDS was deleted during downtime
         srv = startGrid(config(SRV_1, false, false));
-        assertFalse(srv.context().maintenanceRegistry().isMaintenanceMode());
+        assertTrue(srv.context().maintenanceRegistry().isMaintenanceMode());
+
+        try {
+            srv.context().maintenanceRegistry().actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
+
+            fail("Maintenance task is not completed yet for some reason.");
+        }
+        catch (Exception ignore) {
+        }
 
         stopAllGrids(false);
 

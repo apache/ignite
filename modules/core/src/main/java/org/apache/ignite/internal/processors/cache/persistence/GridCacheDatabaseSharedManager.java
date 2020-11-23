@@ -1096,10 +1096,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        checkpointManager.stop(cancel);
-
         if (defrgMgr != null)
             defrgMgr.cancel();
+
+        checkpointManager.stop(cancel);
 
         super.onKernalStop0(cancel);
 
@@ -1397,6 +1397,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture exchangeFut) {
+        if (defrgMgr != null)
+            return;
+
         rebuildIndexes(cctx.cacheContexts(), (cacheCtx) -> cacheCtx.startTopologyVersion().equals(exchangeFut.initialVersion()));
     }
 
