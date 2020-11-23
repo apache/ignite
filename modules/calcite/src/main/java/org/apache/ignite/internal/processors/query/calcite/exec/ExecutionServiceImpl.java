@@ -567,9 +567,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         IgniteRel igniteRel = optimize(sqlNode, planner);
 
-        System.out.println("+++ " + RelOptUtil.toString(igniteRel));
-        System.out.println("+++ " + planner.dump());
-
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
@@ -635,6 +632,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         // Validate
         explain = planner.validate(sql);
 
+        // Convert to Relational operators graph
         IgniteRel igniteRel = optimize(explain, planner);
 
         String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
