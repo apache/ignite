@@ -205,6 +205,7 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
         GridNioSession ses = sesFut.get();
 
         // Wait for SSL handshake.
+        // TODO: Handle error from this future separately so that consumer code can understand SSL errors.
         if (sslHandshakeFut != null)
             sslHandshakeFut.get();
 
