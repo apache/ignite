@@ -28,11 +28,27 @@ import java.util.function.Consumer;
  * Client connection multiplexer: manages multiple connections with a shared resource pool (worker threads, etc).
  */
 public interface ClientConnectionMultiplexer {
+    /**
+     * Initializes this instance.
+     */
     void start();
 
+    /**
+     * Stops this instance.
+     */
     void stop();
 
-    ClientConnection open(
+    /**
+     * Opens a new connection.
+     *
+     * @param addr Address.
+     * @param msgHnd Incoming message handler.
+     * @param stateHnd Connection state handler.
+     * @return Created connection.
+     * @throws IOException when connection can't be established.
+     * @throws IgniteCheckedException when handshake fails.
+     */
+    ClientConnection open( // TODO: Make this method async? Review exceptions.
             InetSocketAddress addr,
             ClientMessageHandler msgHnd,
             ClientConnectionStateHandler stateHnd)

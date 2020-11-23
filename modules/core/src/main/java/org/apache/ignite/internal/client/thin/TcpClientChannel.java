@@ -172,7 +172,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             throw handleIOError("addr=" + cfg.getAddress(), e);
         } catch (IgniteCheckedException e) {
             // TODO: ???
-            throw U.convertException(e);
+            throw convertException(e);
         }
 
         handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
@@ -498,26 +498,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     }
 
     /** Create socket. */
-    private ClientConnection createSocket(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr) throws IOException, IgniteCheckedException {
+    private ClientConnection createSocket(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr)
+            throws IOException, IgniteCheckedException {
         return connMgr.open(cfg.getAddress(), this, this);
-
-        // TODO: Move this config to multiplexer.
-//        Socket sock = cfg.getSslMode() == SslMode.REQUIRED ?
-//            new ClientSslSocketFactory(cfg).create() :
-//            new Socket(cfg.getAddress().getHostName(), cfg.getAddress().getPort());
-//
-//        sock.setTcpNoDelay(cfg.isTcpNoDelay());
-//
-//        if (cfg.getTimeout() > 0)
-//            sock.setSoTimeout(cfg.getTimeout());
-//
-//        if (cfg.getSendBufferSize() > 0)
-//            sock.setSendBufferSize(cfg.getSendBufferSize());
-//
-//        if (cfg.getReceiveBufferSize() > 0)
-//            sock.setReceiveBufferSize(cfg.getReceiveBufferSize());
-//
-//        return sock;
     }
 
     /** Client handshake. */
