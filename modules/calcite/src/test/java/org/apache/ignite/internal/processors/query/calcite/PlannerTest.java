@@ -2266,6 +2266,8 @@ public class PlannerTest extends GridCommonAbstractTest {
         RelRoot relRoot;
 
         try (IgnitePlanner planner = ctx.planner()) {
+            planner.setDisabledRules(ImmutableSet.of("CorrelatedNestedLoopJoin"));
+
             assertNotNull(planner);
 
             String qry = ctx.query();
@@ -2294,6 +2296,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
+
+            System.out.println("+++ " + planner.dump());
         }
 
         assertNotNull(relRoot);
@@ -2651,9 +2655,9 @@ public class PlannerTest extends GridCommonAbstractTest {
             assertNotNull(phys);
             assertEquals(
                 "Invalid plan:\n" + RelOptUtil.toString(phys),
-                "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner])\n" +
+                "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner], corrVarSet=[[$cor1]])\n" +
                     "  IgniteTableScan(table=[[PUBLIC, DEPT]], requiredColumns=[{0}])\n" +
-                    "  IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor3.DEPTNO, $t0)):INTEGER, 2)], requiredColumns=[{2}])\n",
+                    "  IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor1.DEPTNO, $t0)):INTEGER, 2)], requiredColumns=[{2}])\n",
                 RelOptUtil.toString(phys));
         }
     }
@@ -2662,7 +2666,7 @@ public class PlannerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testTableSpoolTest() throws Exception {
+    public void tableSpool() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable t0 = new TestTable(
@@ -2698,7 +2702,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             .add("PUBLIC", publicSchema);
 
         String sql = "select * " +
-            "from t0 "  +
+            "from t0 " +
             "join t1 on t0.jid = t1.jid ";
 
         RelTraitDef<?>[] traitDefs = {
@@ -2755,8 +2759,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             assertNotNull(phys);
-
-            System.out.println("+++ " + RelOptUtil.toString(phys));
 
             AtomicInteger spoolCnt = new AtomicInteger();
 
@@ -2915,8 +2917,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             throw new AssertionError();
         }
 
-        /** {@inheritDoc}
-         * @return*/
+        /** {@inheritDoc} */
         @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
             throw new AssertionError();
         }
@@ -3001,5 +3002,4 @@ public class PlannerTest extends GridCommonAbstractTest {
             return true;
         }
     }
-
 }

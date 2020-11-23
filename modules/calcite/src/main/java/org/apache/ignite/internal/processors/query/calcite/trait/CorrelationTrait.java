@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
-
-import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
@@ -64,7 +63,7 @@ public class CorrelationTrait implements RelTrait {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return correlated() ? "correlated: " + correlations : "uncorrelated";
+        return correlated() ? "correlated" + correlations : "uncorrelated";
     }
 
     /** {@inheritDoc} */
@@ -74,6 +73,9 @@ public class CorrelationTrait implements RelTrait {
 
     /** {@inheritDoc} */
     @Override public boolean satisfies(RelTrait trait) {
+        if (trait == this || this == UNCORRELATED)
+            return true;
+
         return equals(trait);
     }
 

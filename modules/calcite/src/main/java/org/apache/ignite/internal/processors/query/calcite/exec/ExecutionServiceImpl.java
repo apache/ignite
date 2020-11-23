@@ -632,6 +632,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         // Validate
         explain = planner.validate(sql);
 
+        // Convert to Relational operators graph
         IgniteRel igniteRel = optimize(explain, planner);
 
         String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);

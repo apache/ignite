@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Set;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -102,9 +100,6 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
-        if (!TraitUtils.rewindability(inTraits.get(0)).rewindable() && RexUtils.hasCorrelation(getCondition()))
-            return ImmutableList.of();
-
         return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.rewindability(inTraits.get(0))),
             inTraits));
     }
@@ -128,17 +123,11 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
         List<RelTraitSet> inTraits) {
         Set<CorrelationId> corrSet = RexUtils.extractCorrelationIds(getCondition());
 
-        if (corrSet.isEmpty() && TraitUtils.correlation(nodeTraits).correlated())
+        if (corrSet.isEmpty() || TraitUtils.correlation(nodeTraits).correlationIds().containsAll(corrSet))
             return ImmutableList.of(Pair.of(nodeTraits,
                 ImmutableList.of(inTraits.get(0).replace(TraitUtils.correlation(nodeTraits)))));
 
-        if (corrSet.isEmpty()
-            || RexUtils.extractCorrelationIds(getCondition()).containsAll(TraitUtils.correlation(nodeTraits).correlationIds())) {
-            return ImmutableList.of(Pair.of(nodeTraits,
-                ImmutableList.of(inTraits.get(0).replace(CorrelationTrait.UNCORRELATED))));
-        }
-        else
-            return ImmutableList.of();
+        return ImmutableList.of();
     }
 
     /** */
@@ -148,8 +137,7 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
 
         corrIds.addAll(TraitUtils.correlation(inTraits.get(0)).correlationIds());
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)),
-            inTraits));
+        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
     }
 
     /** {@inheritDoc} */
