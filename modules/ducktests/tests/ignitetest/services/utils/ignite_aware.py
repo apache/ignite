@@ -59,6 +59,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         self.spec = resolve_spec(self, context, config, **kwargs)
 
         self.disconnected_nodes = []
+        self.killed = False
 
     def start_async(self):
         """
@@ -94,8 +95,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         super().stop()
 
     def stop(self):
-        self.stop_async()
-        self.await_stopped()
+        if not self.killed:
+            self.stop_async()
+            self.await_stopped()
+        else:
+            self.logger.debug("Skipping node stop since it already killed.")
 
     def await_stopped(self):
         """
@@ -130,6 +134,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
             for pid in pids:
                 node.account.signal(pid, signal.SIGKILL, allow_fail=False)
+
+        for node in self.nodes:
+            wait_until(lambda: not self.alive(node), timeout_sec=self.shutdown_timeout_sec,
+                       err_msg="Node %s's remote processes failed to be killed in %d seconds" %
+                               (str(node.account), self.shutdown_timeout_sec))
+
+        self.killed = True
 
     def clean(self):
         self.__restore_iptables()

@@ -40,3 +40,13 @@ class IgniteTest(Test):
             so that only the difference between the results of consecutive calls is valid.
         """
         return monotonic()
+
+    def tearDown(self):
+        self.logger.debug("Killing all services to speed-up the tearing down.")
+
+        for service in self.test_context.services._services.values():
+            service.kill()
+
+        self.logger.debug("All services killed.")
+
+        super().tearDown()
