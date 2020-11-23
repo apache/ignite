@@ -115,6 +115,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
@@ -2659,7 +2660,7 @@ public class PlannerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void tableSpool() throws Exception {
+    public void tableSpoolDistributed() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable t0 = new TestTable(
@@ -2696,7 +2697,99 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         String sql = "select * " +
             "from t0 " +
-            "join t1 on t0.jid = t1.jid ";
+            "join t1 on t0.jid = t1.jid";
+
+        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter");
+
+        assertNotNull(phys);
+
+        AtomicInteger spoolCnt = new AtomicInteger();
+
+        phys.childrenAccept(
+            new RelVisitor() {
+                @Override public void visit(RelNode node, int ordinal, RelNode parent) {
+                    if (node instanceof IgniteTableSpool)
+                        spoolCnt.incrementAndGet();
+
+                    super.visit(node, ordinal, parent);
+                }
+            }
+        );
+
+        assertEquals(1, spoolCnt.get());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void tableSpoolBroadcastNotRewindable() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable t0 = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("JID", f.createJavaType(Integer.class))
+                .add("VAL", f.createJavaType(String.class))
+                .build(),
+            RewindabilityTrait.ONE_WAY) {
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        TestTable t1 = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("JID", f.createJavaType(Integer.class))
+                .add("VAL", f.createJavaType(String.class))
+                .build(),
+            RewindabilityTrait.ONE_WAY) {
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("T0", t0);
+        publicSchema.addTable("T1", t1);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "select * " +
+            "from t0 " +
+            "join t1 on t0.jid = t1.jid";
+
+        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter");
+
+        System.out.println("+++\n" + RelOptUtil.toString(phys));
+
+        assertNotNull(phys);
+
+        AtomicInteger spoolCnt = new AtomicInteger();
+
+        phys.childrenAccept(
+            new RelVisitor() {
+                @Override public void visit(RelNode node, int ordinal, RelNode parent) {
+                    if (node instanceof IgniteTableSpool)
+                        spoolCnt.incrementAndGet();
+
+                    super.visit(node, ordinal, parent);
+                }
+            }
+        );
+
+        assertEquals(1, spoolCnt.get());
+    }
+
+    /** */
+    private IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
@@ -2747,26 +2840,9 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .replace(IgniteDistributions.single())
                 .simplify();
 
-            planner.setDisabledRules(ImmutableSet.of("NestedLoopJoinConverter"));
+            planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
 
-            RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
-
-            assertNotNull(phys);
-
-            AtomicInteger spoolCnt = new AtomicInteger();
-
-            phys.childrenAccept(
-                new RelVisitor() {
-                    @Override public void visit(RelNode node, int ordinal, RelNode parent) {
-                        if (node instanceof IgniteTableSpool)
-                            spoolCnt.incrementAndGet();
-
-                        super.visit(node, ordinal, parent);
-                    }
-                }
-            );
-
-            assertEquals(1, spoolCnt.get());
+            return planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
         }
     }
 
@@ -2812,8 +2888,27 @@ public class PlannerTest extends GridCommonAbstractTest {
         private final Map<String, IgniteIndex> indexes = new HashMap<>();
 
         /** */
+        private final RewindabilityTrait rewindable;
+
+        /** */
+        private final double rowCnt;
+
+        /** */
         private TestTable(RelDataType type) {
+            this(type, RewindabilityTrait.REWINDABLE);
+        }
+
+
+        /** */
+        private TestTable(RelDataType type, RewindabilityTrait rewindable) {
+            this(type, rewindable, 100.0);
+        }
+
+        /** */
+        private TestTable(RelDataType type, RewindabilityTrait rewindable, double rowCnt) {
             protoType = RelDataTypeImpl.proto(type);
+            this.rewindable = rewindable;
+            this.rowCnt = rowCnt;
 
             addIndex(new IgniteIndex(null, "PK", null, this));
         }
@@ -2821,7 +2916,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public IgniteLogicalTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl) {
             RelTraitSet traitSet = cluster.traitSetOf(Convention.NONE)
-                .replaceIf(RewindabilityTraitDef.INSTANCE, () -> RewindabilityTrait.REWINDABLE)
+                .replaceIf(RewindabilityTraitDef.INSTANCE, () -> rewindable)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
             return IgniteLogicalTableScan.create(cluster, traitSet, relOptTbl, null, null, null);
@@ -2854,7 +2949,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             return new Statistic() {
                 /** {@inheritDoc */
                 @Override public Double getRowCount() {
-                    return 100.0;
+                    return rowCnt;
                 }
 
                 /** {@inheritDoc */

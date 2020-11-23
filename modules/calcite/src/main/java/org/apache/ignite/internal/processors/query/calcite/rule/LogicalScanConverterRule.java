@@ -55,7 +55,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
 
                 Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.condition());
                 if (!corrIds.isEmpty())
-                    traits = traits.replace(RewindabilityTrait.REWINDABLE).replace(CorrelationTrait.correlations(corrIds));
+                    traits = traits.replace(CorrelationTrait.correlations(corrIds));
 
                 return new IgniteTableScan(rel.getCluster(), traits,
                     rel.getTable(), rel.projects(), rel.condition(), rel.requiredColumns());
