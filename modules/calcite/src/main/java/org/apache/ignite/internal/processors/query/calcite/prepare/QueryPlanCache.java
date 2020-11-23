@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
-
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
@@ -32,4 +31,9 @@ public interface QueryPlanCache extends Service {
      * @return Query plan.
      */
     List<QueryPlan> queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory);
+
+    /**
+     * Clear cache.
+     */
+    void clear();
 }

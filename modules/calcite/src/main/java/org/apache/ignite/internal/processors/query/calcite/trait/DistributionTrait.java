@@ -137,7 +137,7 @@ public final class DistributionTrait implements IgniteDistribution {
         if (getType() == other.getType())
             return getType() != HASH_DISTRIBUTED
                 || (Objects.equals(keys, other.keys)
-                    && Objects.equals(function, other.function));
+                    && DistributionFunction.satisfy(function, other.function));
 
         if (other.getType() == RANDOM_DISTRIBUTED)
             return getType() == HASH_DISTRIBUTED;
