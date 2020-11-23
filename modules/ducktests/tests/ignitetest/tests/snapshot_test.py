@@ -52,10 +52,13 @@ class SnapshotTest(IgniteTest):
         ignite_config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
             data_storage=data_storage,
-            caches=[CacheConfiguration(name=self.CACHE_NAME, backups=2, indexed_types=['java.util.UUID', 'byte[]'])]
+            caches=[CacheConfiguration(name=self.CACHE_NAME, cache_mode='REPLICATED',
+                                       indexed_types=['java.util.UUID', 'byte[]'])]
         )
 
-        service = IgniteService(self.test_context, ignite_config, num_nodes=self.NUM_NODES - 1)
+        num_nodes = len(self.test_context.cluster)
+
+        service = IgniteService(self.test_context, ignite_config, num_nodes=num_nodes - 1)
         service.start()
 
         control_utility = ControlUtility(service, self.test_context)
