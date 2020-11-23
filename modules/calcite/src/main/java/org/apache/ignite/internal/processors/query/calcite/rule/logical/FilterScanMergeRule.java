@@ -18,12 +18,14 @@ package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.type.RelDataType;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Rule that pushes filter into the scan. This might be useful for index range scans.
@@ -57,6 +60,11 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
                 IgniteLogicalIndexScan scan,
                 RelTraitSet traits,
                 RexNode cond) {
+                Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(cond);
+
+                if (!F.isEmpty(corrIds))
+                    traits = traits.replace(CorrelationTrait.correlations(corrIds));
+
                 return IgniteLogicalIndexScan.create(cluster, traits, scan.getTable(), scan.indexName(),
                     scan.projects(), cond, scan.requiredColumns());
             }
@@ -71,6 +79,11 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
                 IgniteLogicalTableScan scan,
                 RelTraitSet traits,
                 RexNode cond) {
+                Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(cond);
+
+                if (!F.isEmpty(corrIds))
+                    traits = traits.replace(CorrelationTrait.correlations(corrIds));
+
                 return IgniteLogicalTableScan.create(cluster, traits, scan.getTable(), scan.projects(),
                     cond, scan.requiredColumns());
             }
