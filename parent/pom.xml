@@ -785,7 +785,6 @@
     <profiles>
         <profile>
             <id>checkstyle</id>
-
             <build>
                 <plugins>
                     <plugin>
@@ -797,7 +796,6 @@
                     </plugin>
                 </plugins>
             </build>
-
         </profile>
 
         <profile>
