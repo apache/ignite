@@ -32,15 +32,26 @@ public class ClientMessageDecoder {
     /** */
     private int msgSize;
 
+    /**
+     * Applies the next partial buffer.
+     *
+     * @param buf Buffer.
+     * @return Decoded message, or null when not yet complete.
+     */
     public byte[] apply(ByteBuffer buf) {
         boolean msgReady = read(buf);
 
         return msgReady ? data : null;
     }
 
+    /**
+     * Reads the buffer.
+     *
+     * @param buf Buffer.
+     * @return True when a complete message has been received; false otherwise.
+     */
+    @SuppressWarnings("DuplicatedCode") // A little duplication is better than a little dependency.
     private boolean read(ByteBuffer buf) {
-        // TODO: Review the logic
-        // Borrowed from org.apache.ignite.internal.processors.odbc.ClientMessage
         if (cnt < 0) {
             for (; cnt < 0 && buf.hasRemaining(); cnt++)
                 msgSize |= (buf.get() & 0xFF) << (8 * (4 + cnt));
