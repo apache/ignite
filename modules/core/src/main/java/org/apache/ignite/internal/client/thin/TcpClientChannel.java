@@ -472,6 +472,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         Map<String, String> userAttrs) throws ClientConnectionException {
         BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
 
+        // TODO: Use ByteBuffer
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
             ProtocolContext protocolCtx = protocolContextFromVersion(proposedVer);
 
@@ -574,7 +575,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     private void write(byte[] bytes, int len) throws ClientConnectionException {
         ByteBuffer buf = ByteBuffer.wrap(bytes, 0, len);
 
-        // TODO: handle errors (handleIOError).
         sock.sendAsync(buf);
     }
 
