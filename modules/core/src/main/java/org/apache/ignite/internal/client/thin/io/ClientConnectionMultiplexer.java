@@ -44,7 +44,7 @@ public interface ClientConnectionMultiplexer {
      * @return Created connection.
      * @throws ClientConnectionException when connection can't be established.
      */
-    ClientConnection open( // TODO: Make this method async? Review exceptions.
+    ClientConnection open(
             InetSocketAddress addr,
             ClientMessageHandler msgHnd,
             ClientConnectionStateHandler stateHnd)
