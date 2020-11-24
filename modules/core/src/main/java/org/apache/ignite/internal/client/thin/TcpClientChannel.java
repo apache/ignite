@@ -482,7 +482,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         handshakeReq(ver, user, pwd, userAttrs);
 
         try {
-            ByteBuffer res = fut.get(timeout);
+            ByteBuffer res = timeout > 0 ? fut.get(timeout) : fut.get();
             handshakeRes(res, ver, user, pwd, userAttrs);
         } catch (IgniteCheckedException e) {
             // TODO: unwrap cause
