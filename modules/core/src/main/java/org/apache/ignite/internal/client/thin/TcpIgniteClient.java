@@ -118,18 +118,23 @@ public class TcpIgniteClient implements IgniteClient {
 
         ch = new ReliableChannel(chFactory, cfg, binary);
 
-        ch.channelsInit();
+        try {
+            ch.channelsInit();
 
-        ch.addChannelFailListener(() -> metadataHandler.onReconnect());
+            ch.addChannelFailListener(() -> metadataHandler.onReconnect());
 
-        transactions = new TcpClientTransactions(ch, marsh,
-            new ClientTransactionConfiguration(cfg.getTransactionConfiguration()));
+            transactions = new TcpClientTransactions(ch, marsh,
+                    new ClientTransactionConfiguration(cfg.getTransactionConfiguration()));
 
-        cluster = new ClientClusterImpl(ch, marsh);
+            cluster = new ClientClusterImpl(ch, marsh);
 
-        compute = new ClientComputeImpl(ch, marsh, cluster.defaultClusterGroup());
+            compute = new ClientComputeImpl(ch, marsh, cluster.defaultClusterGroup());
 
-        services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup());
+            services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup());
+        } catch (Exception e) {
+            ch.close();
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
