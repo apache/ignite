@@ -15,25 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite.util;
 
-import java.util.List;
-import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.apache.calcite.rel.hint.Hintable;
 
-/**
- *
- */
-public interface QueryPlanCache extends Service {
-    /**
-     * @param ctx Context.
-     * @param key Cache key.
-     * @param factory Factory method to generate a plan on cache miss.
-     * @return Query plan.
-     */
-    List<QueryPlan> queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory);
+/** */
+public class HintUtils {
+    /** */
+    private HintUtils() {
+        // No-op.
+    }
 
-    /**
-     * Clear cache.
-     */
-    void clear();
+    /** */
+    public static Set<String> disabledRules(Hintable rel) {
+        if (rel.getHints().isEmpty())
+            return Collections.emptySet();
+
+        return rel.getHints().stream()
+            .filter(h -> "DISABLE_RULE".equals(h.hintName))
+            .flatMap(h -> h.listOptions.stream())
+            .collect(Collectors.toSet());
+    }
 }

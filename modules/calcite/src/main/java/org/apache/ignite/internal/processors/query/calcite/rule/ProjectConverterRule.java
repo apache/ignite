@@ -37,7 +37,7 @@ public class ProjectConverterRule extends AbstractIgniteConverterRule<LogicalPro
 
     /** */
     public ProjectConverterRule() {
-        super(LogicalProject.class);
+        super(LogicalProject.class, "ProjectConverterRule");
     }
 
     /** {@inheritDoc} */

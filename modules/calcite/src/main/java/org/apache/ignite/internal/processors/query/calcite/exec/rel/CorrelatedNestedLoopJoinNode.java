@@ -255,6 +255,8 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
     private void onRequest() {
         switch (state) {
             case IN_LOOP:
+            case FILLING_RIGHT:
+            case FILLING_LEFT:
                 break;
             case INITIAL:
                 assert waitingLeft == 0;
@@ -293,6 +295,11 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
                 });
 
                 break;
+
+            case END:
+                downstream().end();
+                break;
+
             default:
                 throw new AssertionError("Unexpected state:" + state);
         }
@@ -341,10 +348,11 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
         if (F.isEmpty(leftInBuf)) {
             waitingRight = -1;
+
             state = State.END;
 
-            requested = 0;
-            downstream().end();
+            if (requested > 0)
+                downstream().end();
         }
         else {
             prepareCorrelations();
@@ -353,6 +361,7 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
                 rightSource().rewind();
 
             state = State.FILLING_RIGHT;
+
             rightSource().request(waitingRight = rightInBufferSize);
         }
     }
@@ -374,6 +383,7 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
         assert state == State.IDLE;
 
         state = State.IN_LOOP;
+
         try {
             while (requested > 0 && rightIdx < rightInBuf.size()) {
                 if (leftIdx == leftInBuf.size())
@@ -388,6 +398,7 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
                     if (cond.test(row)) {
                         requested--;
+
                         downstream().push(row);
                     }
                 }
@@ -433,8 +444,8 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
                 state = State.END;
 
-                requested = 0;
-                downstream().end();
+                if (requested > 0)
+                    downstream().end();
 
                 return;
             }

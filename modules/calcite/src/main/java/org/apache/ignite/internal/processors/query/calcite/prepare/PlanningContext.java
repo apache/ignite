@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.Properties;
 import java.util.UUID;
-
+import java.util.function.Function;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
@@ -34,6 +34,7 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.tools.RuleSet;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -80,6 +81,9 @@ public final class PlanningContext implements Context {
 
     /** */
     private final IgniteTypeFactory typeFactory;
+
+    /** */
+    private Function<RuleSet, RuleSet> rulesFilter;
 
     /** */
     private IgnitePlanner planner;
@@ -295,6 +299,18 @@ public final class PlanningContext implements Context {
      */
     public static PlanningContext empty() {
         return EMPTY;
+    }
+
+    /** */
+    public RuleSet rules(RuleSet set) {
+        return rulesFilter != null ? rulesFilter.apply(set) : set;
+    }
+
+    /**
+     * @param rulesFilter Rules filter.
+     */
+    public void rulesFilter(Function<RuleSet, RuleSet> rulesFilter) {
+        this.rulesFilter = rulesFilter;
     }
 
     /**

@@ -17,16 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
-import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /**
  *
@@ -37,15 +40,19 @@ public class FilterConverterRule extends AbstractIgniteConverterRule<LogicalFilt
 
     /** */
     public FilterConverterRule() {
-        super(LogicalFilter.class);
+        super(LogicalFilter.class, "FilterConverterRule");
     }
 
     /** {@inheritDoc} */
     @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalFilter rel) {
         RelOptCluster cluster = rel.getCluster();
-        RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelNode input = convert(rel.getInput(), traits);
+        RelTraitSet traits = rel.getTraitSet().replace(IgniteConvention.INSTANCE);
 
-        return new IgniteFilter(cluster, traits, input, rel.getCondition());
+        Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.getCondition());
+
+        if (!corrIds.isEmpty())
+            traits = traits.replace(CorrelationTrait.correlations(corrIds));
+
+        return new IgniteFilter(cluster, traits, rel.getInput(), rel.getCondition());
     }
 }

@@ -132,12 +132,12 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
         return new IgniteIndexScan(sourceId, getCluster(), getTraitSet(), getTable(),
-            idxName, projects, condition, lowerCond, upperCond, requiredColunms);
+            idxName, projects, condition, lowerCond, upperCond, requiredColumns);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteIndexScan(sourceId, cluster, getTraitSet(), getTable(),
-            idxName, projects, condition, lowerCond, upperCond, requiredColunms);
+            idxName, projects, condition, lowerCond, upperCond, requiredColumns);
     }
 }

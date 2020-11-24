@@ -39,7 +39,9 @@ public abstract class DistributionFunction {
     private String name;
 
     /** */
-    private DistributionFunction(){}
+    private DistributionFunction() {
+        // No-op.
+    }
 
     /**
      * @return Distribution function type.
@@ -130,8 +132,20 @@ public abstract class DistributionFunction {
     }
 
     /** */
-    public static DistributionFunction affinity(int cacheId, Object key) {
-        return new AffinityDistribution(cacheId, key);
+    public static DistributionFunction affinity(int cacheId, Object identity) {
+        return new AffinityDistribution(cacheId, identity);
+    }
+
+    /** */
+    public static boolean satisfy(DistributionFunction f0, DistributionFunction f1) {
+        if (f0 == f1 || f0.name() == f1.name())
+            return true;
+
+        if (f0 instanceof AffinityDistribution && f1 instanceof AffinityDistribution &&
+            Objects.equals(((AffinityDistribution)f0).identity(), ((AffinityDistribution)f1).identity()))
+            return true;
+
+        return false;
     }
 
     /** */
@@ -245,15 +259,15 @@ public abstract class DistributionFunction {
         private final int cacheId;
 
         /** */
-        private final Object key;
+        private final Object identity;
 
         /**
          * @param cacheId Cache ID.
-         * @param key Affinity identity key.
+         * @param identity Affinity identity key.
          */
-        public AffinityDistribution(int cacheId, Object key) {
+        public AffinityDistribution(int cacheId, Object identity) {
             this.cacheId = cacheId;
-            this.key = key;
+            this.identity = identity;
         }
 
         /** {@inheritDoc} */
@@ -288,9 +302,14 @@ public abstract class DistributionFunction {
             return new Partitioned<>(assignments, affinity);
         }
 
+        /** */
+        public Object identity() {
+            return identity;
+        }
+
         /** {@inheritDoc} */
         @Override protected String name0() {
-            return "affinity[" + key + "]";
+            return "affinity[identity=" + identity + ", cacheId=" + cacheId + ']';
         }
     }
 }

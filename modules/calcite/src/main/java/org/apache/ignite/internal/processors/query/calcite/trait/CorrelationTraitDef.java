@@ -22,32 +22,32 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelNode;
 
 /** */
-public class RewindabilityTraitDef extends RelTraitDef<RewindabilityTrait> {
+public class CorrelationTraitDef extends RelTraitDef<CorrelationTrait> {
     /** */
-    public static final RewindabilityTraitDef INSTANCE = new RewindabilityTraitDef();
+    public static final CorrelationTraitDef INSTANCE = new CorrelationTraitDef();
 
     /** {@inheritDoc} */
-    @Override public Class<RewindabilityTrait> getTraitClass() {
-        return RewindabilityTrait.class;
+    @Override public Class<CorrelationTrait> getTraitClass() {
+        return CorrelationTrait.class;
     }
 
     /** {@inheritDoc} */
     @Override public String getSimpleName() {
-        return "rewindability";
+        return "correlation";
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode convert(RelOptPlanner planner, RelNode rel, RewindabilityTrait toTrait, boolean allowInfiniteCostConverters) {
-        return TraitUtils.convertRewindability(planner, toTrait, rel);
+    @Override public RelNode convert(RelOptPlanner planner, RelNode rel, CorrelationTrait toTrait, boolean allowInfiniteCostConverters) {
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean canConvert(RelOptPlanner planner, RewindabilityTrait fromTrait, RewindabilityTrait toTrait) {
-        return true;
+    @Override public boolean canConvert(RelOptPlanner planner, CorrelationTrait fromTrait, CorrelationTrait toTrait) {
+        return false;
     }
 
     /** {@inheritDoc} */
-    @Override public RewindabilityTrait getDefault() {
-        return RewindabilityTrait.ONE_WAY;
+    @Override public CorrelationTrait getDefault() {
+        return CorrelationTrait.UNCORRELATED;
     }
 }

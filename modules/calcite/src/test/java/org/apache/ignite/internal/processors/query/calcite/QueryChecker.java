@@ -116,7 +116,7 @@ public abstract class QueryChecker {
      */
     public static Matcher<String> containsProject(String schema, String tblName, int... requiredColunms) {
         Matcher<String> res = matches(".*Ignite(Table|Index)Scan\\(table=\\[\\[" + schema + ", " +
-            tblName + "\\]\\], " + ".*requiredColunms=\\[\\{" +
+            tblName + "\\]\\], " + ".*requiredColumns=\\[\\{" +
             Arrays.toString(requiredColunms)
                 .replaceAll("\\[", "")
                 .replaceAll("]", "") + "\\}\\].*");
@@ -133,7 +133,7 @@ public abstract class QueryChecker {
      */
     public static Matcher<String> containsOneProject(String schema, String tblName, int... requiredColunms) {
         return matchesOnce(".*Ignite(Table|Index)Scan\\(table=\\[\\[" + schema + ", " +
-            tblName + "\\]\\], " + ".*requiredColunms=\\[\\{" +
+            tblName + "\\]\\], " + ".*requiredColumns=\\[\\{" +
             Arrays.toString(requiredColunms)
                 .replaceAll("\\[", "")
                 .replaceAll("]", "") + "\\}\\].*");
@@ -286,7 +286,7 @@ public abstract class QueryChecker {
 
         if (!F.isEmpty(planMatchers)) {
             for (Matcher<String> matcher : planMatchers)
-                assertThat(actualPlan, matcher);
+                assertThat("Invalid plan:\n" + actualPlan, actualPlan, matcher);
         }
 
         if (exactPlan != null)
@@ -311,6 +311,7 @@ public abstract class QueryChecker {
         }
     }
 
+    /** */
     protected abstract QueryEngine getEngine();
 
     /**

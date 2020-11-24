@@ -181,4 +181,9 @@ public class Fragment {
         return root instanceof IgniteSender
             && ((IgniteSender)root).sourceDistribution().satisfies(IgniteDistributions.single());
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return rootSer;
+    }
 }
