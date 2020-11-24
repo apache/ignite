@@ -63,6 +63,9 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private final AtomicLongMetric lastCpDuration;
 
     /** */
+    private final AtomicLongMetric lastCpStart;
+
+    /** */
     private final AtomicLongMetric lastCpFsyncDuration;
 
     /** */
@@ -163,6 +166,9 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         lastCpDuration = mreg.longMetric("LastCheckpointDuration",
             "Duration of the last checkpoint in milliseconds.");
 
+        lastCpStart = mreg.longMetric("LastCheckpointStart",
+            "Start timestamp of the last checkpoint.");
+
         lastCpFsyncDuration = mreg.longMetric("LastCheckpointFsyncDuration",
             "Duration of the sync phase of the last checkpoint in milliseconds.");
 
@@ -248,6 +254,14 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             return 0;
 
         return lastCpDuration.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLastCheckpointStarted() {
+        if (!metricsEnabled)
+            return 0;
+
+        return lastCpStart.value();
     }
 
     /** {@inheritDoc} */
@@ -597,6 +611,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         long pagesWriteDuration,
         long fsyncDuration,
         long duration,
+        long start,
         long totalPages,
         long dataPages,
         long cowPages
@@ -607,6 +622,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             lastCpPagesWriteDuration.value(pagesWriteDuration);
             lastCpFsyncDuration.value(fsyncDuration);
             lastCpDuration.value(duration);
+            lastCpStart.value(start);
             lastCpTotalPages.value(totalPages);
             lastCpDataPages.value(dataPages);
             lastCpCowPages.value(cowPages);
