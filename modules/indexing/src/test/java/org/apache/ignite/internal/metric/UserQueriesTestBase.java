@@ -60,7 +60,7 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
     protected static final int MAPPER_IDX = 1;
 
     /** */
-    private static final AtomicInteger SQL_QUERY_EXECUTION_EVENT_COUNTER = new AtomicInteger();
+    private static final AtomicInteger SQL_QRY_EXEC_EVT_CNTR = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -76,7 +76,7 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
 
             assertNotNull(qe.text());
 
-            SQL_QUERY_EXECUTION_EVENT_COUNTER.incrementAndGet();
+            SQL_QRY_EXEC_EVT_CNTR.incrementAndGet();
 
             return true;
         };
@@ -157,7 +157,7 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
         Runnable act,
         int qryEvtCnt
     ) {
-        SQL_QUERY_EXECUTION_EVENT_COUNTER.set(0);
+        SQL_QRY_EXEC_EVT_CNTR.set(0);
 
         act.run();
 
@@ -174,7 +174,7 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
         });
 
         Assert.assertEquals("Unexpected records for SqlQueryExecutionEvent.",
-            qryEvtCnt, SQL_QUERY_EXECUTION_EVENT_COUNTER.get());
+            qryEvtCnt, SQL_QRY_EXEC_EVT_CNTR.get());
     }
 
     /**
