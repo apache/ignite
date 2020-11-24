@@ -1,3 +1,17 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 = Apache Ignite Documentation
 :toc:
 :toc-title:
@@ -54,6 +68,46 @@ $ docker run -v "$PWD:/srv/jekyll" -p 4000:4000 jekyll/jekyll:latest jekyll s
 
 Open `http://localhost:4000/docs[window=_blank]` in your browser.
 
+=== Troubleshooting
+
+Below are some issues you might hit during an installation of the Jekyll environment or while building the tutorials.
+Let us know if you come across a new and found a workaround.
+
+==== MacOS: Issues with FFI library during Jekyll installation
+
+You should see an error trace similar to this: https://github.com/ffi/ffi/issues/653
+
+Attempt to fix the problem by following this sequence of commands (typically it's the last command only):
+
+[source, text]
+----
+brew reinstall libffi
+export LDFLAGS="-L/usr/local/opt/libffi/lib"
+export CPPFLAGS="-I/usr/local/opt/libffi/include"
+export PKG_CONFIG_PATH="/usr/local/opt/libffi/lib/pkgconfig"
+gem install --user-install bundler jekyll
+----
+
+==== MacOS: jekyll-asciidoc gem is not installed by default
+
+Try to follow this procedure to fix the issue.
+
+* Comment out the `rm -rf $tmp_dir` at the very end of the `build.sh` script, so that the temp folder is not deleted after the execution.
+* Run `build.sh` (fails with `Could not find gem 'jekyll-asciidoc'...` error).
+* Go to `tmp/web_site` folder.
+* Run `bundle install`.
+* Revert the `build.sh` script and run it again.
+
+==== MacOS: can't build project due to inability to load openssl
+
+You should see an error like this:
+
+`LoadError: dlopen(/Users/dmagda/.rbenv/versions/2.6.2/lib/ruby/2.6.0/x86_64-darwin18/digest/sha1.bundle, 9): Library not loaded: /usr/local/opt/openssl/lib/libssl.1.0.0.dylib
+   Referenced from: /Users/dmagda/.rbenv/versions/2.6.2/lib/ruby/2.6.0/x86_64-darwin18/digest/sha1.bundle`
+
+Try to upgrade Ruby, rbenv to the latest version (2.7.1) and then reinstall Jekyll. Use the official instructions:
+https://jekyllrb.com/docs/installation/
+
 == How to Contribute
 
 If you want to contribute to the documentation, add or modify the relevant page in the `docs/_docs` directory.
@@ -71,6 +125,14 @@ The following sections explain specific asciidoc syntax that we use.
 
 The table of content is defined in the `_data/toc.yaml` file.
 If you want to add a new page, make sure to update the TOC.
+
+=== Changing an URL of an existing page
+
+If you rename an already published page or change the page's path in the `/_data/toc.yaml` file,
+you must configure a proper redirect from the old to the new URL in the following files of the Ignite website:
+https://github.com/apache/ignite-website/blob/master/.htaccess
+
+Reach out to documentation maintainers if you need any help with this.
 
 === Links to other sections in the docs
 All .adoc files are located in the "docs/_docs" directory.
@@ -134,6 +196,26 @@ tab:C++[unsupported]
 
 --
 ```
+
+=== Callouts
+
+Use the syntax below if you need to bring reader's attention to some details:
+
+[NOTE]
+====
+[discrete]
+=== Callout Title
+Callout Text
+====
+
+Change the callout type to `CAUTION` if you want to put out a warning:
+
+[CAUTION]
+====
+[discrete]
+=== Callout Title
+Callout Text
+====
 
 === Code Snippets
 

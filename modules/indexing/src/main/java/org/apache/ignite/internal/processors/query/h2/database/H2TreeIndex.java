@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.CacheException;
@@ -40,11 +41,13 @@ import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -164,6 +167,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
     /** IO statistics holder. */
     private final IoStatisticsHolderIndex stats;
 
+    /** If {code true} then this index is already marked as destroyed. */
+    private final AtomicBoolean destroyed = new AtomicBoolean();
+
     /**
      * @param cctx Cache context.
      * @param tbl Table.
@@ -236,7 +242,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param wrappedCols Index columns as is.
      * @param inlineSize Inline size.
      * @param segmentsCnt Count of tree segments.
-     * @param qryCtxRegistry Query context registry.
      * @throws IgniteCheckedException If failed.
      */
     public static H2TreeIndex createIndex(
@@ -250,7 +255,31 @@ public class H2TreeIndex extends H2TreeIndexBase {
         List<IndexColumn> wrappedCols,
         int inlineSize,
         int segmentsCnt,
-        QueryContextRegistry qryCtxRegistry,
+        IgniteLogger log
+    ) throws IgniteCheckedException {
+        return createIndex(cctx, rowCache, tbl, idxName, pk, affinityKey, unwrappedCols, wrappedCols, inlineSize,
+            segmentsCnt, cctx.dataRegion().pageMemory(),
+            cctx.offheap(),
+            PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
+            log
+        );
+    }
+
+    /** */
+    public static H2TreeIndex createIndex(
+        GridCacheContext<?, ?> cctx,
+        @Nullable H2RowCache rowCache,
+        GridH2Table tbl,
+        String idxName,
+        boolean pk,
+        boolean affinityKey,
+        List<IndexColumn> unwrappedCols,
+        List<IndexColumn> wrappedCols,
+        int inlineSize,
+        int segmentsCnt,
+        PageMemory pageMemory,
+        IgniteCacheOffheapManager offheap,
+        PageIoResolver pageIoRslvr,
         IgniteLogger log
     ) throws IgniteCheckedException {
         assert segmentsCnt > 0 : segmentsCnt;
@@ -270,10 +299,10 @@ public class H2TreeIndex extends H2TreeIndexBase {
         AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
         IoStatisticsHolderIndex stats = new IoStatisticsHolderIndex(
-            SORTED_INDEX,
-            cctx.name(),
-            idxName,
-            cctx.kernalContext().metric()
+                SORTED_INDEX,
+                cctx.name(),
+                idxName,
+                cctx.kernalContext().metric()
         );
 
         InlineIndexColumnFactory idxHelperFactory = new InlineIndexColumnFactory(tbl.getCompareMode());
@@ -282,7 +311,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             db.checkpointReadLock();
 
             try {
-                RootPage page = getMetaPage(cctx, treeName, i);
+                RootPage page = getMetaPage(offheap, cctx, treeName, i);
 
                 segments[i] = h2TreeFactory.create(
                     cctx,
@@ -291,12 +320,12 @@ public class H2TreeIndex extends H2TreeIndexBase {
                     idxName,
                     tbl.getName(),
                     tbl.cacheName(),
-                    cctx.offheap().reuseListForIndex(treeName),
+                    offheap.reuseListForIndex(treeName),
                     cctx.groupId(),
                     cctx.group().name(),
-                    cctx.dataRegion().pageMemory(),
+                    pageMemory,
                     cctx.shared().wal(),
-                    cctx.offheap().globalRemoveId(),
+                    offheap.globalRemoveId(),
                     page.pageId().pageId(),
                     page.isAllocated(),
                     unwrappedCols,
@@ -310,7 +339,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
                     log,
                     stats,
                     idxHelperFactory,
-                    inlineSize
+                    inlineSize,
+                    pageIoRslvr
                 );
             }
             finally {
@@ -536,57 +566,44 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public void destroy(boolean rmvIdx) {
-        destroy0(rmvIdx, false);
-    }
+        if (!markDestroyed())
+            return;
 
-    /** {@inheritDoc} */
-    @Override public void asyncDestroy(boolean rmvIdx) {
-        destroy0(rmvIdx, true);
-    }
-
-    /**
-     * Internal method for destroying index with async option.
-     *
-     * @param rmvIdx Flag remove.
-     * @param async Destroy asynchronously.
-     */
-    private void destroy0(boolean rmvIdx, boolean async) {
         try {
             if (cctx.affinityNode() && rmvIdx) {
-                assert cctx.shared().database().checkpointLockIsHeldByThread();
-
                 List<Long> rootPages = new ArrayList<>(segments.length);
                 List<H2Tree> trees = new ArrayList<>(segments.length);
 
-                for (int i = 0; i < segments.length; i++) {
-                    H2Tree tree = segments[i];
+                cctx.shared().database().checkpointReadLock();
 
-                    if (async) {
+                try {
+                    for (int i = 0; i < segments.length; i++) {
+                        H2Tree tree = segments[i];
+
                         tree.markDestroyed();
 
                         rootPages.add(tree.getMetaPageId());
                         trees.add(tree);
-                    }
-                    else
-                        tree.destroy();
 
-                    dropMetaPage(i);
+                        dropMetaPage(i);
+                    }
+                }
+                finally {
+                    cctx.shared().database().checkpointReadUnlock();
                 }
 
                 ctx.metric().remove(stats.metricRegistryName());
 
-                if (async) {
-                    DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTask(
-                        rootPages,
-                        trees,
-                        cctx.group().name(),
-                        cctx.cache().name(),
-                        table.getSchema().getName(),
-                        idxName
-                    );
+                DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTask(
+                    rootPages,
+                    trees,
+                    cctx.group().name(),
+                    cctx.cache().name(),
+                    table.getSchema().getName(),
+                    idxName
+                );
 
-                    cctx.kernalContext().durableBackgroundTasksProcessor().startDurableBackgroundTask(task, cctx.config());
-                }
+                cctx.kernalContext().durableBackgroundTasksProcessor().startDurableBackgroundTask(task, cctx.config());
             }
         }
         catch (IgniteCheckedException e) {
@@ -602,7 +619,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param segment Segment Id.
      * @return Snapshot for requested segment if there is one.
      */
-    private H2Tree treeForRead(int segment) {
+    public H2Tree treeForRead(int segment) {
         return segments[segment];
     }
 
@@ -636,9 +653,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @return RootPage for meta page.
      * @throws IgniteCheckedException If failed.
      */
-    private static RootPage getMetaPage(GridCacheContext<?, ?> cctx, String treeName, int segIdx)
+    private static RootPage getMetaPage(IgniteCacheOffheapManager offheap, GridCacheContext<?, ?> cctx, String treeName, int segIdx)
         throws IgniteCheckedException {
-        return cctx.offheap().rootPageForIndex(cctx.cacheId(), treeName, segIdx);
+        return offheap.rootPageForIndex(cctx.cacheId(), treeName, segIdx);
     }
 
     /**
@@ -988,6 +1005,15 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /**
+     * Marks this index as destroyed.
+     *
+     * @return {@code true} if mark was successfull, and {@code false} if index was already marked as destroyed.
+     */
+    private boolean markDestroyed() {
+        return destroyed.compareAndSet(false, true);
+    }
+
+    /**
      * Interface for {@link H2Tree} factory class.
      */
     public interface H2TreeFactory {
@@ -1018,7 +1044,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
             IgniteLogger log,
             IoStatisticsHolder stats,
             InlineIndexColumnFactory factory,
-            int configuredInlineSize
+            int configuredInlineSize,
+            PageIoResolver pageIoRslvr
         ) throws IgniteCheckedException;
     }
 }

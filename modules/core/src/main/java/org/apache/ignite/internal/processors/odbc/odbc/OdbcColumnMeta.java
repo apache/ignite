@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -128,7 +129,7 @@ public class OdbcColumnMeta {
         writer.writeString(tableName);
         writer.writeString(columnName);
 
-        byte typeId = BinaryUtils.typeByClass(dataType);
+        byte typeId = getTypeId(dataType);
 
         writer.writeByte(typeId);
 
@@ -136,6 +137,18 @@ public class OdbcColumnMeta {
             writer.writeInt(precision);
             writer.writeInt(scale);
         }
+    }
+
+    /**
+     * Get ODBC type ID for the type.
+     * @param dataType Data type class.
+     * @return Type ID.
+     */
+    private static byte getTypeId(Class<?> dataType) {
+        if (dataType.equals(java.sql.Date.class))
+            return GridBinaryMarshaller.DATE;
+
+        return BinaryUtils.typeByClass(dataType);
     }
 
     /** {@inheritDoc} */

@@ -45,7 +45,7 @@ namespace
             /** SQL data type. */
             DATA_TYPE,
 
-            /** Data source–dependent data type name. */
+            /** Data source-dependent data type name. */
             TYPE_NAME,
 
             /** Column size. */
@@ -75,7 +75,7 @@ namespace ignite
     {
         namespace query
         {
-            ColumnMetadataQuery::ColumnMetadataQuery(diagnostic::Diagnosable& diag, 
+            ColumnMetadataQuery::ColumnMetadataQuery(diagnostic::DiagnosableAdapter& diag,
                 Connection& connection, const std::string& schema,
                 const std::string& table, const std::string& column) :
                 Query(diag, QueryType::COLUMN_METADATA),
@@ -95,8 +95,8 @@ namespace ignite
 
                 columnsMeta.reserve(12);
 
-                const std::string sch("");
-                const std::string tbl("");
+                const std::string sch;
+                const std::string tbl;
 
                 columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_CAT",      IGNITE_TYPE_STRING));
                 columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_SCHEM",    IGNITE_TYPE_STRING));
@@ -135,9 +135,9 @@ namespace ignite
                 return result;
             }
 
-            const meta::ColumnMetaVector& ColumnMetadataQuery::GetMeta() const
+            const meta::ColumnMetaVector* ColumnMetadataQuery::GetMeta()
             {
-                return columnsMeta;
+                return &columnsMeta;
             }
 
             SqlResult::Type ColumnMetadataQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
@@ -311,7 +311,7 @@ namespace ignite
                 }
                 catch (const IgniteError& err)
                 {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+                    diag.AddStatusRecord(err.GetText());
 
                     return SqlResult::AI_ERROR;
                 }

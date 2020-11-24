@@ -1,3 +1,17 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 = Operational Commands
 
 
@@ -101,7 +115,7 @@ While streaming mode allows you to load data much faster than other data loading
 2. Due to streaming mode's asynchronous nature, you cannot know update counts for every statement executed; all JDBC/ODBC commands returning update counts will return 0.
 
 === Example
-As an example, you can use the sample world.sql file that is shipped with the latest Ignite distribution. It can be found in the `{IGNITE_HOME}/examples/sql/` directory. You can use the `run` command from link:sqlline[SQLLine, window=_blank], as shown below:
+As an example, you can use the sample world.sql file that is shipped with the latest Ignite distribution. It can be found in the `{IGNITE_HOME}/examples/sql/` directory. You can use the `run` command from tools/sqlline[SQLLine, window=_blank], as shown below:
 
 [source,shell]
 ----

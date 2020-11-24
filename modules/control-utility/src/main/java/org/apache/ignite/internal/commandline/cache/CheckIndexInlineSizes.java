@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.cache.check_indexes_inline_size.CheckIndexInlineSizesResult;
 import org.apache.ignite.internal.commandline.cache.check_indexes_inline_size.CheckIndexInlineSizesTask;
@@ -44,7 +45,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCa
 /**
  * Command for check secondary indexes inline size on the different nodes.
  */
-public class CheckIndexInlineSizes implements Command<Void> {
+public class CheckIndexInlineSizes extends AbstractCommand<Void> {
     /** Success message. */
     public static final String INDEXES_INLINE_SIZE_ARE_THE_SAME =
         "All secondary indexes have the same effective inline size on all cluster nodes.";

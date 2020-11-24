@@ -1,3 +1,17 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 = Network Configuration
 :javaFile: {javaCodeDir}/NetworkConfiguration.java
 :xmlFile: code-snippets/xml/network-configuration.xml
@@ -35,13 +49,26 @@ tab:C++[unsupported]
 The following table describes some most important properties of `TcpDiscoverySpi`.
 You can find the complete list of properties in the javadoc:org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi[] javadoc.
 
+[CAUTION]
+====
+You should initialize the `IgniteConfiguration.localHost` or `TcpDiscoverySpi.localAddress` parameter with the network
+interface that will be used for inter-node communication. By default, a node binds to and listens on all available IP
+addresses of an environment it's running on. It can prolong node failures detection if some of the node's addresses are
+not reachable from other cluster nodes.
+====
+
 [cols="1,2,1",opts="header"]
 |===
 |Property | Description| Default Value
-| `localAddress`| Local host IP address used for discovery. | By default, the node uses the first non-loopback address it finds. If there is no non-loopback address available, then `java.net.InetAddress.getLocalHost()` is used.
+| `localAddress`| Local host IP address used for discovery. If set, overrides the `IgniteConfiguration.localHost` setting. | By default, a node binds to all available network addresses. If there is a non-loopback address available, then java.net.InetAddress.getLocalHost() is used.
 | `localPort`  | The port that the node binds to. If set to a non-default value, other cluster nodes must know this port to be able to discover the node. | `47500`
 | `localPortRange`| If the `localPort` is busy, the node attempts to bind to the next port (incremented by 1) and continues this process until it finds a free port. The `localPortRange` property defines the number of ports the node will try (starting from `localPort`).
    | `100`
+| `soLinger`| Specifies a linger-on-close timeout of TCP sockets used by Discovery SPI. See Java `Socket.setSoLinger` API
+for details on how to adjust this setting. In Ignite, the timeout defaults to a non-negative value to prevent
+link:https://bugs.openjdk.java.net/browse/JDK-8219658[potential deadlocks with SSL connections, window=_blank] but,
+as a side effect, this can prolong the detection of cluster node failures. Alternatively, update your JRE version to the
+one with the SSL issue fixed and adjust this setting accordingly. | `0`
 | `reconnectCount` | The number of times the node tries to (re)establish connection to another node. |`10`
 | `networkTimeout` |  The maximum network timeout in milliseconds for network operations. |`5000`
 | `socketTimeout` |  The socket operations timeout. This timeout is used to limit connection time and write-to-socket time. |`5000`
@@ -96,7 +123,7 @@ You can find the list of all properties in the javadoc:org.apache.ignite.spi.com
 [cols="1,2,1",opts="header"]
 |===
 |Property | Description| Default Value
-| `localAddress` | The local address for the communication SPI to bind to. |
+| `localAddress` | The local address for the communication SPI to bind to. If set, overrides the `IgniteConfiguration.localHost` setting. |
 
 | `localPort` | The local port that the node uses for communication.  | `47100`
 

@@ -19,10 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.function.LongConsumer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.lang.IgniteOutClosure;
 
 /**
@@ -32,13 +31,13 @@ public interface FilePageStoreFactory {
     /**
      * Creates instance of PageStore based on given file.
      *
-     * @param type Data type, can be {@link PageIdAllocator#FLAG_IDX} or {@link PageIdAllocator#FLAG_DATA}.
+     * @param type Data type, can be {@link PageStore#TYPE_IDX} or {@link PageStore#TYPE_DATA}.
      * @param file File Page store file.
      * @param allocatedTracker metrics updater.
      * @return page store
      * @throws IgniteCheckedException if failed.
      */
-    default PageStore createPageStore(byte type, File file, LongAdderMetric allocatedTracker)
+    default PageStore createPageStore(byte type, File file, LongConsumer allocatedTracker)
         throws IgniteCheckedException {
         return createPageStore(type, file::toPath, allocatedTracker);
     }
@@ -46,12 +45,12 @@ public interface FilePageStoreFactory {
     /**
      * Creates instance of PageStore based on file path provider.
      *
-     * @param type Data type, can be {@link PageIdAllocator#FLAG_IDX} or {@link PageIdAllocator#FLAG_DATA}
+     * @param type Data type, can be {@link PageStore#TYPE_IDX} or {@link PageStore#TYPE_DATA}
      * @param pathProvider File Page store path provider.
      * @param allocatedTracker metrics updater
      * @return page store
      * @throws IgniteCheckedException if failed
      */
-    PageStore createPageStore(byte type, IgniteOutClosure<Path> pathProvider, LongAdderMetric allocatedTracker)
+    PageStore createPageStore(byte type, IgniteOutClosure<Path> pathProvider, LongConsumer allocatedTracker)
         throws IgniteCheckedException;
 }

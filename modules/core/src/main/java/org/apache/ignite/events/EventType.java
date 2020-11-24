@@ -924,6 +924,16 @@ public interface EventType {
     public static final int EVT_CLUSTER_SNAPSHOT_FAILED = 151;
 
     /**
+     * Built-in event type: query execution.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see SqlQueryExecutionEvent
+     */
+    public static final int EVT_SQL_QUERY_EXECUTION = 160;
+
+    /**
      * Built-in event type: node validation failed.
      * <br>
      * This event is triggered if a node join fails due to a node validation failure.
@@ -934,7 +944,7 @@ public interface EventType {
      * @see NodeValidationFailedEvent
      * @see GridComponent#validateNode
      */
-    public static final int EVT_NODE_VALIDATION_FAILED = 160;
+    public static final int EVT_NODE_VALIDATION_FAILED = 170;
 
     /**
      * All cluster snapshot events. This array can be directly passed into

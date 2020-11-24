@@ -92,6 +92,9 @@ public class CheckpointTimeoutLock {
      * @throws IgniteException If failed.
      */
     public void checkpointReadLock() {
+        if (checkpointReadWriteLock.isWriteLockHeldByCurrentThread())
+            return;
+
         long timeout = checkpointReadLockTimeout;
 
         long start = U.currentTimeMillis();

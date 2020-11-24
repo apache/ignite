@@ -1,3 +1,17 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 = SSL/TLS
 
 :javaFile: {javaCodeDir}/Security.java
@@ -17,6 +31,14 @@ This certificate must be trusted by all other server nodes.
 To enable SSL/TLS for cluster nodes, configure an `SSLContext` factory in the node configuration.
 You can use the `org.apache.ignite.ssl.SslContextFactory`, which is the default factory that uses a configurable keystore to initialize the SSL context.
 //You can also implement your own `SSLContext` factory.
+
+[CAUTION]
+====
+Ensure that your version of the JVM addresses
+link:https://bugs.openjdk.java.net/browse/JDK-8219658[the following issue, window=_blank] that can cause deadlocks
+in SSL connections. If your JVM is affected but can't be updated, then set
+the link:clustering/network-configuration[`TcpDiscoverySpi.soLinger`] parameter to a non-negative value.
+====
 
 Below is an example of `SslContextFactory` configuration:
 

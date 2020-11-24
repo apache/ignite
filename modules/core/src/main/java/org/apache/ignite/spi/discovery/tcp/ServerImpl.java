@@ -216,6 +216,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Maximal interval of connection check to next node in the ring. */
     private static final long MAX_CON_CHECK_INTERVAL = 500;
 
+    /** Minimal timeout to find connection to some next node in the ring while connection recovering. */
+    private static final long MIN_RECOVERY_TIMEOUT = 100;
+
     /** Interval of checking connection to next node in the ring. */
     private long connCheckInterval;
 
@@ -923,7 +926,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (!openedSock && reconCnt == 2)
                             break;
 
-                        if (timeoutHelper.checkFailureTimeoutReached(e))
+                        if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e))
                             break;
                         else if (!spi.failureDetectionTimeoutEnabled() && reconCnt == spi.getReconnectCount())
                             break;
@@ -1577,7 +1580,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     break;
                 }
 
-                if (timeoutHelper.checkFailureTimeoutReached(e))
+                if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e))
                     break;
 
                 if (!spi.failureDetectionTimeoutEnabled() && ++reconCnt == spi.getReconnectCount())
@@ -3478,8 +3481,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     while (true) {
                         if (sock == null) {
-                            if (timeoutHelper == null)
-                                timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
+                            // We re-create the helper here because it could be created earlier with wrong timeout on
+                            // message sending like IgniteConfiguration.failureDetectionTimeout. Here we are in the
+                            // state of conenction recovering and have to work with
+                            // TcpDiscoverSpi.getEffectiveConnectionRecoveryTimeout()
+                            if (timeoutHelper == null || sndState != null)
+                                timeoutHelper = serverOperationTimeoutHelper(sndState, -1);
 
                             boolean success = false;
 
@@ -3487,8 +3494,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             // Restore ring.
                             try {
-                                long tsNanos = System.nanoTime();
-
                                 sock = spi.openSocket(addr, timeoutHelper);
 
                                 out = spi.socketStream(sock);
@@ -3518,6 +3523,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 // We should take previousNodeAlive flag into account only if we received the response from the correct node.
                                 if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && sndState != null) {
+                                    sndState.checkTimeout();
+
                                     // Remote node checked connection to it's previous and got success.
                                     boolean previousNode = sndState.markLastFailedNodeAlive();
 
@@ -3625,13 +3632,20 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 onException("Failed to connect to next node [msg=" + msg + ", err=" + e + ']', e);
 
+                                // Fastens failure detection.
+                                if (sndState != null && sndState.checkTimeout()) {
+                                    segmentLocalNodeOnSendFail(failedNodes);
+
+                                    return; // Nothing to do here.
+                                }
+
                                 if (!openSock)
                                     break; // Don't retry if we can not establish connection.
 
                                 if (!spi.failureDetectionTimeoutEnabled() && ++reconCnt == spi.getReconnectCount())
                                     break;
 
-                                if (timeoutHelper.checkFailureTimeoutReached(e))
+                                if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e))
                                     break;
                                 else if (!spi.failureDetectionTimeoutEnabled() && (e instanceof
                                     SocketTimeoutException || X.hasCause(e, SocketTimeoutException.class))) {
@@ -3690,10 +3704,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                     addFailedNodes(pendingMsg, failedNodes);
 
-                                    if (timeoutHelper == null) {
-                                        timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true,
-                                            lastRingMsgSentTime);
-                                    }
+                                    if (timeoutHelper == null)
+                                        timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
 
                                     try {
                                         spi.writeToSocket(sock, out, pendingMsg, timeoutHelper.nextTimeoutChunk(
@@ -3737,7 +3749,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 long tsNanos = System.nanoTime();
 
                                 if (timeoutHelper == null)
-                                    timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true, lastRingMsgSentTime);
+                                    timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
 
                                 addFailedNodes(msg, failedNodes);
 
@@ -3804,7 +3816,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             onException("Failed to send message to next node [next=" + next.id() + ", msg=" + msg + ']',
                                 e);
 
-                            if (timeoutHelper.checkFailureTimeoutReached(e))
+                            if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e))
                                 break;
 
                             if (!spi.failureDetectionTimeoutEnabled()) {
@@ -3841,6 +3853,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!sent) {
                     if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
                         sndState = new CrossRingMessageSendState();
+                    else if (sndState != null && sndState.checkTimeout()) {
+                        segmentLocalNodeOnSendFail(failedNodes);
+
+                        return; // Nothing to do here.
+                    }
 
                     boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
 
@@ -3872,12 +3889,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             next = ring.nextNode(failedNodes);
                         }
-                    }
-
-                    if (sndState != null && sndState.isFailed()) {
-                        segmentLocalNodeOnSendFail(failedNodes);
-
-                        return; // Nothing to do here.
                     }
 
                     next = null;
@@ -6504,6 +6515,38 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
+    /**
+     * Creates proper timeout helper taking in account current send state and ring state.
+     *
+     * @param sndState Current connection recovering state. Ignored if {@code null}.
+     * @param lastOperationNanos Time of last related operation. Ignored if negative or 0.
+     * @return Timeout helper.
+     */
+    private IgniteSpiOperationTimeoutHelper serverOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState,
+        long lastOperationNanos) {
+        long absoluteThreshold = -1;
+
+        // Active send-state means we lost connection to next node and have to find another.
+        // We don't know how many nodes failed. May be several failed in a row. But we got only one
+        // connectionRecoveryTimeout to establish new connection to the ring. We can't spend this timeout wholly on one
+        // or two next nodes. We should slice it and try to travers as many as we can.
+        if (sndState != null) {
+            int nodesLeft = ring.serverNodes().size() - 1 - sndState.failedNodes;
+
+            assert nodesLeft > 0;
+
+            long now = System.nanoTime();
+
+            // In case of large cluster and small connectionRecoveryTimeout we have to provide reasonable minimal
+            // timeout per one of the next nodes. It should not appear too small like 1, 5 or 10ms.
+            long perNodeTimeout = Math.max((sndState.failTimeNanos - now) / nodesLeft, MIN_RECOVERY_TIMEOUT);
+
+            absoluteThreshold = Math.min(sndState.failTimeNanos, now + perNodeTimeout);
+        }
+
+        return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos, absoluteThreshold);
+    }
+
     /** Fixates time of last sent message. */
     private void updateLastSentMessageTime() {
         lastRingMsgSentTime = System.nanoTime();
@@ -8200,6 +8243,22 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
+         * Checks if message sending has completely failed due to the timeout. Sets {@code RingMessageSendState#FAILED}
+         * if the timeout is reached.
+         *
+         * @return {@code True} if passed timeout is reached. {@code False} otherwise.
+         */
+        boolean checkTimeout() {
+            if (System.nanoTime() >= failTimeNanos) {
+                state = RingMessageSendState.FAILED;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
          * Marks last failed node as alive.
          *
          * @return {@code False} if all failed nodes marked as alive or incorrect state.
@@ -8210,12 +8269,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (--failedNodes <= 0) {
                     failedNodes = 0;
-
-                    if (System.nanoTime() - failTimeNanos >= 0) {
-                        state = RingMessageSendState.FAILED;
-
-                        return false;
-                    }
 
                     state = RingMessageSendState.STARTING_POINT;
                 }

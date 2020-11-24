@@ -1,6 +1,20 @@
 ---
 published: false
 ---
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 = Generic Kubernetes Instruction
 :safe: unsafe
 :command: kubectl
@@ -58,7 +72,7 @@ Using these addresses, the new node discovers all cluster nodes.
 .service.yaml
 [source, yaml]
 ----
-include::{configDir}/service.yaml[]
+include::{configDir}/service.yaml[tag=config-block]
 ----
 
 Create the service:
@@ -82,7 +96,7 @@ A cluster role is used to grant access to pods. The following file is an example
 .cluster-role.yaml
 [source, yaml]
 ----
-include::{configDir}/cluster-role.yaml[]
+include::{configDir}/cluster-role.yaml[tag=config-block]
 ----
 
 Run the following command to create the role and a role binding:
@@ -113,7 +127,7 @@ The file will look like this:
 .node-configuration.xml
 [source, xml]
 ----
-include::{configDir}/stateless/node-configuration.xml[]
+include::{configDir}/stateless/node-configuration.xml[tag=config-block]
 ----
 
 tab:Configuration with persistence[]
@@ -127,7 +141,7 @@ The file look like this:
 .node-configuration.xml
 [source, xml]
 ----
-include::{configDir}/stateful/node-configuration.xml[]
+include::{configDir}/stateful/node-configuration.xml[tag=config-block]
 ----
 --
 
@@ -172,7 +186,7 @@ The deployment configuration file might look like as follows:
 .deployment.yaml
 [source, yaml,subs="attributes,specialchars"]
 ----
-include::{configDir}/stateless/deployment-template.yaml[]
+include::{configDir}/stateless/deployment-template.yaml[tag=config-block]
 ----
 
 Create a deployment by running the following command:
@@ -203,7 +217,7 @@ The StatefulSet configuration file might look like as follows:
 .statefulset.yaml
 [source,yaml,subs="attributes,specialchars"]
 ----
-include::{configDir}/stateful/statefulset-template.yaml[]
+include::{configDir}/stateful/statefulset-template.yaml[tag=config-block]
 ----
 
 Note the `spec.volumeClaimTemplates` section, which defines persistent volumes provisioned by a persistent volume provisioner.
@@ -259,7 +273,7 @@ $ {command} logs ignite-cluster-5b69557db6-lcglw -n ignite
 [14:34:01]   ^-- Specify JVM heap max size (add '-Xmx<size>[g|G|m|M|k|K]' to JVM options)
 [14:34:01]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
 [14:34:01]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
-[14:34:01] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:34:01] Refer to this page for more performance suggestions: https://ignite.apache.org/docs/latest/perf-and-troubleshooting/general-perf-tips
 [14:34:01]
 [14:34:01] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
 [14:34:01] Data Regions Configured:

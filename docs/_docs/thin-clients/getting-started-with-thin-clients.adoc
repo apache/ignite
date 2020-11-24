@@ -1,3 +1,17 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 = Thin Clients Overview
 
 == Overview
@@ -5,7 +19,7 @@ A thin client is a lightweight Ignite client that connects to the cluster via a 
 It does not become a part of the cluster topology, never holds any data, and is not used as a destination for compute grid calculations.
 What it does is simply establish a socket connection to a standard Ignite node and perform all operations through that node.
 
-Thin clients are based on the link:https://apacheignite.readme.io/docs/binary-client-protocol[binary client protocol], which makes it possible to support Ignite connectivity from any programming language.
+Thin clients are based on the link:binary-client-protocol/binary-client-protocol[binary client protocol], which makes it possible to support Ignite connectivity from any programming language.
 
 Ignite provides the following thin clients:
 
@@ -32,7 +46,7 @@ include::thin-client-comparison.csv[]
 
 === Client Connection Failover
 
-All thin clients (except for the .NET thin client) support a connection failover mechanism, whereby the client automatically switches to an available node in case of the current node or connection failure.
+All thin clients support a connection failover mechanism, whereby the client automatically switches to an available node in case of the current node or connection failure.
 For this mechanism to work, you need to provide a list of node addresses you want to use for failover purposes in the client configuration.
 Refer to the specific client documentation for more details.
 

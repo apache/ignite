@@ -91,6 +91,13 @@
             <keyConfiguration>
                 <cacheKeyConfiguration typeName='foo' affinityKeyFieldName='bar' />
             </keyConfiguration>
+            <nodeFilter type='Apache.Ignite.Core.Cluster.AttributeNodeFilter'>
+              <attributes>
+                <pair key='myNode' value='true' />
+                <pair key='foo' />
+                <pair key='baz'>null</pair>
+              </attributes>
+            </nodeFilter>
         </cacheConfiguration>
         <cacheConfiguration name='secondCache' />
     </cacheConfiguration>

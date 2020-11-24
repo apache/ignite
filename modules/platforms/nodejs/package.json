@@ -32,8 +32,9 @@
     "test:auth_example": "node ./spec/ExamplesExecutor.js AuthExample"
   },
   "devDependencies": {
-    "jasmine": "latest",
-    "jasmine-expect": "latest",
-    "jasmine-reporters": "latest"
+    "jasmine": "3.6.1",
+    "jasmine-expect": "4.0.0",
+    "jasmine-reporters": "2.1.1"
   }
 }
+
