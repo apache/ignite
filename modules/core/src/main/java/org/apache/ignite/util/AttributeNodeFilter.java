@@ -18,6 +18,7 @@
 package org.apache.ignite.util;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -42,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
  * attribute set to value {@code data}:
  * <pre name="code" class="xml">
  * &lt;property name=&quot;nodeFilter&quot;&gt;
- *     &lt;bean class=&quot;org.apache.ignite.util.ClusterAttributeNodeFilter&quot;&gt;
+ *     &lt;bean class=&quot;org.apache.ignite.util.AttributeNodeFilter&quot;&gt;
  *         &lt;constructor-arg value="group"/&gt;
  *         &lt;constructor-arg value="data"/&gt;
  *     &lt;/bean&gt;
@@ -51,7 +52,7 @@ import org.jetbrains.annotations.Nullable;
  * You can also specify multiple attributes for the filter:
  * <pre name="code" class="xml">
  * &lt;property name=&quot;nodeFilter&quot;&gt;
- *     &lt;bean class=&quot;org.apache.ignite.util.ClusterAttributeNodeFilter&quot;&gt;
+ *     &lt;bean class=&quot;org.apache.ignite.util.AttributeNodeFilter&quot;&gt;
  *         &lt;constructor-arg&gt;
  *             &lt;map&gt;
  *                 &lt;entry key=&quot;cpu-group&quot; value=&quot;high&quot;/&gt;
@@ -104,5 +105,14 @@ public class AttributeNodeFilter implements IgnitePredicate<ClusterNode> {
         }
 
         return true;
+    }
+
+    /**
+     * Gets attributes.
+     *
+     * @return Attributes collection.
+     */
+    public Map<String, Object> getAttrs() {
+        return new HashMap<>(attrs);
     }
 }

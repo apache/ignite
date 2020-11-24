@@ -18,6 +18,8 @@
 package org.apache.ignite.internal;
 
 import java.util.BitSet;
+import java.util.Collection;
+import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
@@ -106,6 +108,9 @@ public enum IgniteFeatures {
     /** Distributed change timeout for dump long operations. */
     DISTRIBUTED_CHANGE_LONG_OPERATIONS_DUMP_TIMEOUT(30),
 
+    /** New region for volatile data. */
+    VOLATILE_DATA_STRUCTURES_REGION(33),
+
     /** Check secondary indexes inline size on join/by control utility request. */
     CHECK_INDEX_INLINE_SIZES(36),
 
@@ -128,7 +133,10 @@ public enum IgniteFeatures {
     SPECIFIED_SEQ_PK_KEYS(45),
 
     /** Compatibility support for new fields which are configured split. */
-    SPLITTED_CACHE_CONFIGURATIONS_V2(46);
+    SPLITTED_CACHE_CONFIGURATIONS_V2(46),
+
+    /** Cache encryption key change. See {@link IgniteEncryption#changeCacheGroupKey(Collection)}. */
+    CACHE_GROUP_KEY_CHANGE(47);
 
     /**
      * Unique feature identifier.

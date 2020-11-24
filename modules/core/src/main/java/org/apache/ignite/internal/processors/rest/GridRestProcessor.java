@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.rest.handlers.cluster.GridClusterNa
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.memory.MemoryMetricsCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.probe.GridProbeCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.query.QueryCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler;
@@ -558,6 +559,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             addHandler(new GridBaselineCommandHandler(ctx));
             addHandler(new MemoryMetricsCommandHandler(ctx));
             addHandler(new NodeStateBeforeStartCommandHandler(ctx));
+            addHandler(new GridProbeCommandHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();

@@ -46,7 +46,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -54,7 +53,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.ClientCacheDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAssignmentFetchFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage;
@@ -581,30 +579,32 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     fetchFut);
 
                 GridDhtPartitionFullMap partMap;
-                ClientCacheDhtTopologyFuture topFut;
 
                 if (res != null) {
                     partMap = res.partitionMap();
 
                     assert partMap != null : res;
-
-                    topFut = new ClientCacheDhtTopologyFuture(topVer);
                 }
-                else {
+                else
                     partMap = new GridDhtPartitionFullMap(cctx.localNodeId(), cctx.localNode().order(), 1);
 
-                    topFut = new ClientCacheDhtTopologyFuture(topVer,
-                        new ClusterTopologyServerNotFoundException("All server nodes left grid."));
-                }
+                GridDhtPartitionsExchangeFuture exchFut = context().exchange().lastFinishedFuture();
 
-                grp.topology().updateTopologyVersion(topFut,
+                grp.topology().updateTopologyVersion(exchFut,
                     discoCache,
                     -1,
                     false);
 
-                grp.topology().update(topVer, partMap, null, Collections.emptySet(), null, null, null, null);
+                GridClientPartitionTopology clientTop = cctx.exchange().clearClientTopology(grp.groupId());
 
-                topFut.validate(grp, discoCache.allNodes());
+                Set<Integer> lostParts = clientTop == null ? null : clientTop.lostPartitions();
+
+                grp.topology().update(topVer, partMap, null, Collections.emptySet(), null, null, null, lostParts);
+
+                if (clientTop == null)
+                    grp.topology().detectLostPartitions(topVer, exchFut);
+
+                exchFut.validate(grp);
             }
             catch (IgniteCheckedException e) {
                 cctx.cache().closeCaches(startedCaches, false);

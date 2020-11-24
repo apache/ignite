@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -142,6 +143,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** */
     protected final MvccSnapshot mvccSnapshot;
 
+    /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
+    @GridToStringExclude
+    protected final IgniteUuid deploymentLdrId;
+
     /** Post processing closure. */
     private volatile BackupPostProcessingClosure postProcessingClos;
 
@@ -210,6 +215,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.recovery = recovery;
         this.topVer = topVer;
         this.mvccSnapshot = mvccSnapshot;
+        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         this.txLbl = txLbl;
 
@@ -760,7 +766,12 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     postProcessingClos.apply(val, ver);
 
                 if (!keepCacheObjects) {
-                    Object res = cctx.unwrapBinaryIfNeeded(val, !deserializeBinary);
+                    Object res = cctx.unwrapBinaryIfNeeded(
+                        val,
+                        !deserializeBinary,
+                        true,
+                        U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
+                    );
 
                     onDone(needVer ? new EntryGetResult(res, ver) : res);
                 }

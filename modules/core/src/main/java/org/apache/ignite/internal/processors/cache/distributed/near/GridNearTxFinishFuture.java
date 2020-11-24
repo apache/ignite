@@ -31,6 +31,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -58,11 +59,16 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
+import static java.util.Collections.emptySet;
+import static java.util.stream.Stream.concat;
+import static java.util.stream.Stream.of;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.MTC.support;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_FINISH;
+import static org.apache.ignite.transactions.TransactionState.COMMITTED;
+import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
@@ -72,6 +78,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     implements GridCacheFuture<IgniteInternalTx>, NearTxFinishFuture {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** All owners left grid message. */
+    public static final String ALL_PARTITION_OWNERS_LEFT_GRID_MSG =
+        "Failed to commit a transaction (all partition owners have left the grid, partition data has been lost)";
 
     /** Tracing span. */
     private Span span;
@@ -977,6 +987,19 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
         /** {@inheritDoc} */
         @Override boolean onNodeLeft(UUID nodeId, boolean discoThread) {
+            if (tx.state() == COMMITTING || tx.state() == COMMITTED) {
+                if (concat(of(m.primary().id()), tx.transactionNodes().getOrDefault(nodeId, emptySet()).stream())
+                    .noneMatch(uuid -> cctx.discovery().alive(uuid))) {
+                    onDone(new CacheInvalidStateException(ALL_PARTITION_OWNERS_LEFT_GRID_MSG +
+                        m.entries().stream().map(e -> " [cacheName=" + e.cached().context().name() +
+                            ", partition=" + e.key().partition() +
+                            (S.includeSensitive() ? ", key=" + e.key() : "") +
+                            "]").findFirst().orElse("")));
+
+                    return true;
+                }
+            }
+
             if (nodeId.equals(m.primary().id())) {
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("Near finish fut, mini future node left [txId=" + tx.nearXidVersion() +

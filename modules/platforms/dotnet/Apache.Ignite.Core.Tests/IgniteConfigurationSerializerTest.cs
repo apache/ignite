@@ -39,6 +39,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Ssl;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
@@ -158,6 +159,14 @@ namespace Apache.Ignite.Core.Tests
             var nearCfg = cacheCfg.NearConfiguration;
             Assert.IsNotNull(nearCfg);
             Assert.AreEqual(7, nearCfg.NearStartSize);
+
+            var nodeFilter = (AttributeNodeFilter)cacheCfg.NodeFilter;
+            Assert.IsNotNull(nodeFilter);
+            var attributes = nodeFilter.Attributes.ToList();
+            Assert.AreEqual(3, nodeFilter.Attributes.Count);
+            Assert.AreEqual(new KeyValuePair<string, object>("myNode", "true"), attributes[0]);
+            Assert.AreEqual(new KeyValuePair<string, object>("foo", null), attributes[1]);
+            Assert.AreEqual(new KeyValuePair<string, object>("baz", null), attributes[2]);
 
             var plc = nearCfg.EvictionPolicy as FifoEvictionPolicy;
             Assert.IsNotNull(plc);

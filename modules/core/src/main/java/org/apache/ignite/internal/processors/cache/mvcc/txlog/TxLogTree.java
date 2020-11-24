@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.mvcc.txlog;
 
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -61,6 +62,7 @@ public class TxLogTree extends BPlusTree<TxKey, TxRow> {
             reuseList,
             TxLogInnerIO.VERSIONS,
             TxLogLeafIO.VERSIONS,
+            PageIdAllocator.FLAG_IDX,
             failureProcessor,
             lockLsnr
         );

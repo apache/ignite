@@ -27,7 +27,10 @@ This utility can do the following commands:
       ACTIVE_READ_ONLY  - Activate cluster. Cache updates are denied.
 
   Print cluster baseline topology:
-    control.(sh|bat) --baseline
+    control.(sh|bat) --baseline [--verbose]
+
+    Parameters:
+      verbose  - Show the full list of node ips.
 
   Add nodes into baseline topology:
     control.(sh|bat) --baseline add consistentId1[,consistentId2,....,consistentIdN] [--yes]
@@ -174,10 +177,10 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
   Print list of available properties:
     control.(sh|bat) --property list
 
-  Get the property value
+  Get the property value:
     control.(sh|bat) --property get --name <property_name>
 
-  Set the property value
+  Set the property value:
     control.(sh|bat) --property set --name <property_name> --val <property_value>
 
   Print system view content:
@@ -193,6 +196,30 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
     Parameters:
       name     - Name of the metric which value should be printed. If name of the metric registry is specified, value of all its metrics will be printed.
       node_id  - ID of the node to get the metric values from. If not set, random node will be chosen.
+
+  Print information about potentially corrupted caches on local node:
+    control.(sh|bat) --persistence
+
+  The same information is printed when info subcommand is passed:
+    control.(sh|bat) --persistence info
+
+  Clean directories of caches with corrupted data files:
+    control.(sh|bat) --persistence clean corrupted
+
+  Clean directories of all caches:
+    control.(sh|bat) --persistence clean all
+
+  Clean directories of only given caches:
+    control.(sh|bat) --persistence clean caches cache1,cache2,cache3
+
+  Backup data files of corrupted caches only:
+    control.(sh|bat) --persistence backup corrupted
+
+  Backup data files of all caches:
+    control.(sh|bat) --persistence backup all
+
+  Backup data files of only given caches:
+    control.(sh|bat) --persistence backup caches cache1,cache2,cache3
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
