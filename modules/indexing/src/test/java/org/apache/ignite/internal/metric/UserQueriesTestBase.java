@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
