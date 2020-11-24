@@ -78,15 +78,13 @@ public class IndexRowImpl implements IndexSearchRow {
     }
 
     /** {@inheritDoc} */
-    // This method there due to BPlusTree work with the most wide interface.
     @Override public int getSearchKeysCount() {
-        throw new IllegalStateException();
+        return schema.getKeyDefinitions().length;
     }
 
     /** {@inheritDoc} */
-    // This method there due to BPlusTree work with the most wide interface.
     @Override public boolean isFullSchemaSearch() {
-        throw new IllegalStateException();
+        return true;
     }
 
     // TODO: MVCC

@@ -33,6 +33,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyImpl;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -182,7 +183,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             IndexKey key_left = left == null ? null : new IndexKeyImpl(left);
             IndexKey key_right = right == null ? null : new IndexKeyImpl(right);
 
-            GridCursor<IndexRow> cursor = queryIndex.find(key_left, key_right, qctx.segment(), qctx.filter());
+            GridCursor<IndexSearchRow> cursor = queryIndex.find(key_left, key_right, qctx.segment(), qctx.filter());
 
             GridCursor<H2Row> h2cursor = new IndexValueCursor<>(cursor, this::mapIndexRow);
 
@@ -285,7 +286,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         try {
             QueryContext qctx = H2Utils.context(ses);
 
-            GridCursor<IndexRow> cursor = queryIndex.findFirstOrLast(b, qctx.segment(), qctx.filter());
+            GridCursor<IndexSearchRow> cursor = queryIndex.findFirstOrLast(b, qctx.segment(), qctx.filter());
 
             return new H2Cursor(new IndexValueCursor<>(cursor, this::mapIndexRow));
         }

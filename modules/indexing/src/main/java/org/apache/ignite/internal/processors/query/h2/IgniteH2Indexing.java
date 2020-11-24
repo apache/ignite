@@ -124,8 +124,6 @@ import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtracto
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUpdateResultsIterator;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUpdateSingleEntryIterator;
@@ -136,7 +134,6 @@ import org.apache.ignite.internal.processors.query.h2.index.QueryIndexDefinition
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexSchema;
 import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexDefinition;
 import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexFactory;
-import org.apache.ignite.internal.processors.query.h2.index.client.ClientInlineIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
@@ -2455,31 +2452,32 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         PageLockListener lockLsnr = ctx.cache().context().diagnostic()
             .pageLockTracker().createPageLockTracker(grpName + "IndexTree##" + indexName);
 
-        BPlusTree<H2Row, H2Row> tree = new BPlusTree<H2Row, H2Row>(
-            indexName,
-            grpId,
-            grpName,
-            pageMemory,
-            ctx.cache().context().wal(),
-            removeId,
-            metaPageId,
-            reuseList,
-            H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled),
-            H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled),
-            PageIdAllocator.FLAG_IDX,
-            ctx.failure(),
-            lockLsnr
-        ) {
-            @Override protected int compare(BPlusIO io, long pageAddr, int idx, H2Row row) {
-                throw new AssertionError();
-            }
-
-            @Override public H2Row getRow(BPlusIO io, long pageAddr, int idx, Object x) {
-                throw new AssertionError();
-            }
-        };
-
-        tree.destroy();
+        // TODO
+//        BPlusTree<H2Row, H2Row> tree = new BPlusTree<H2Row, H2Row>(
+//            indexName,
+//            grpId,
+//            grpName,
+//            pageMemory,
+//            ctx.cache().context().wal(),
+//            removeId,
+//            metaPageId,
+//            reuseList,
+//            H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled),
+//            H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled),
+//            PageIdAllocator.FLAG_IDX,
+//            ctx.failure(),
+//            lockLsnr
+//        ) {
+//            @Override protected int compare(BPlusIO io, long pageAddr, int idx, H2Row row) {
+//                throw new AssertionError();
+//            }
+//
+//            @Override public H2Row getRow(BPlusIO io, long pageAddr, int idx, Object x) {
+//                throw new AssertionError();
+//            }
+//        };
+//
+//        tree.destroy();
     }
 
     /**

@@ -36,7 +36,7 @@ public class H2RowComparator implements IndexRowComparator {
     @Override public int compareKey(long pageAddr, int off, int maxSize, Object v, int curType)
         throws IgniteCheckedException {
 
-        if (curType == IndexKeyTypes.UNKNOWN.getType())
+        if (curType == IndexKeyTypes.UNKNOWN)
             return CANT_BE_COMPARE;
 
         int objType = InlineIndexKeyTypeRegistry.get(v.getClass()).type();

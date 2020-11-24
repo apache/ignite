@@ -35,7 +35,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.index.IgniteIndexing;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -57,8 +56,8 @@ import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;
-import static org.apache.ignite.internal.processors.query.h2.database.H2Tree.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
 /**
