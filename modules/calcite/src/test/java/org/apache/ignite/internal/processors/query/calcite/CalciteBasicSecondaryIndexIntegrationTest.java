@@ -121,9 +121,9 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     }
 
     @Test
-    public void testIndexMergeJoin() {
+    public void testMergeJoin() {
         assertQuery("" +
-            "SELECT d1.name, d2.name FROM Developer d1, Developer d2 WHERE d1.depId = d2.depId")
+            "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin') */ d1.name, d2.name FROM Developer d1, Developer d2 WHERE d1.depId = d2.depId")
             .matches(containsSubPlan("IgniteMergeJoin"))
             .returns("Bach", "Bach")
             .returns("Beethoven", "Beethoven")

@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.linq4j.Linq4j;
@@ -89,7 +90,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
@@ -118,7 +118,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
@@ -2305,7 +2304,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(plan);
 
-        assertEquals(3, plan.fragments().size());
+        assertEquals(2, plan.fragments().size());
     }
 
     /** */
@@ -2702,7 +2701,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
-            RewindabilityTraitDef.INSTANCE
+            RewindabilityTraitDef.INSTANCE,
+            CorrelationTraitDef.INSTANCE
         };
 
         PlanningContext ctx = PlanningContext.builder()
@@ -2805,7 +2805,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             "from t0 " +
             "join t1 on t0.jid = t1.jid";
 
-        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter");
+        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter", "MergeJoinConverter");
 
         assertNotNull(phys);
 
@@ -2870,7 +2870,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             "from t0 " +
             "join t1 on t0.jid = t1.jid";
 
-        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter");
+        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter", "MergeJoinConverter");
 
         assertNotNull(phys);
 
@@ -2939,7 +2939,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             assertNotNull(rel);
 
             // Transformation chain
-            RelTraitSet desired = rel.getCluster().traitSet()
+            RelTraitSet desired = rel.getTraitSet()
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
                 .simplify();
@@ -3002,7 +3002,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             this(type, RewindabilityTrait.REWINDABLE);
         }
 
-
         /** */
         private TestTable(RelDataType type, RewindabilityTrait rewindable) {
             this(type, rewindable, 100.0);
@@ -3014,7 +3013,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             this.rewindable = rewindable;
             this.rowCnt = rowCnt;
 
-            addIndex(new IgniteIndex(null, "PK", null, this));
+            addIndex(new IgniteIndex(RelCollations.of(), "PK", null, this));
         }
 
         /** {@inheritDoc} */
