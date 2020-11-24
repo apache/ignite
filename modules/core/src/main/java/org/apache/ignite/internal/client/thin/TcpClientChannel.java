@@ -32,8 +32,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
@@ -118,9 +116,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Request id. */
     private final AtomicLong reqId = new AtomicLong(1);
 
-    /** Send lock. */
-    private final Lock sndLock = new ReentrantLock(); // TODO: Remove
-
     /** Pending requests. */
     private final Map<Long, ClientRequestFuture> pendingReqs = new ConcurrentHashMap<>();
 
@@ -176,15 +171,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         if (closed.compareAndSet(false, true)) {
             U.closeQuiet(sock);
 
-            sndLock.lock(); // Lock here to prevent creation of new pending requests.
-
-            try {
-                for (ClientRequestFuture pendingReq : pendingReqs.values())
-                    pendingReq.onDone(new ClientConnectionException("Channel is closed", cause));
-            }
-            finally {
-                sndLock.unlock();
-            }
+            for (ClientRequestFuture pendingReq : pendingReqs.values())
+                pendingReq.onDone(new ClientConnectionException("Channel is closed", cause));
         }
     }
 
@@ -226,9 +214,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         throws ClientException {
         long id = reqId.getAndIncrement();
 
-        // Only one thread at a time can have access to write to the channel.
-        sndLock.lock(); // TODO: Remove
-
         try (PayloadOutputChannel payloadCh = new PayloadOutputChannel(this)) {
             if (closed())
                 throw new ClientConnectionException("Channel is closed");
@@ -257,9 +242,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             pendingReqs.remove(id);
 
             throw t;
-        }
-        finally {
-            sndLock.unlock();
         }
     }
 
