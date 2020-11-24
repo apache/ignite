@@ -60,7 +60,7 @@ import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
  *
  * @see EventType#EVT_SQL_QUERY_EXECUTION
  */
-public class SqlQueryExecutionEvent<K, V> extends EventAdapter {
+public class SqlQueryExecutionEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
