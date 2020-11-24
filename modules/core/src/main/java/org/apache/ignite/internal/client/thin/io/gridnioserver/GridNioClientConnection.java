@@ -26,6 +26,7 @@ import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Client connection.
@@ -63,21 +64,12 @@ class GridNioClientConnection implements ClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public CompletableFuture<Void> sendAsync(ByteBuffer msg) {
-        CompletableFuture<Void> res = new CompletableFuture<>();
-
+    @Override public void send(ByteBuffer msg) {
         try {
-            ses.sendNoFuture(msg, e -> {
-                if (e == null)
-                    res.complete(null);
-                else
-                    res.completeExceptionally(e);
-            });
+            ses.sendNoFuture(msg, null);
         } catch (IgniteCheckedException e) {
-            res.completeExceptionally(e);
+            throw U.convertException(e);
         }
-
-        return res;
     }
 
     /** {@inheritDoc} */

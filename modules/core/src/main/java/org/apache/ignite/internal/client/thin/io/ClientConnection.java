@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.client.thin.io;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Client connection: abstracts away sending and receiving messages.
  */
 public interface ClientConnection extends AutoCloseable {
-    CompletableFuture<Void> sendAsync(ByteBuffer msg); // TODO: What should we return from the future?
+    void send(ByteBuffer msg);
 
     @Override void close();
 }

@@ -233,7 +233,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             req.writeInt(0, req.position() - 4); // Actual size.
 
-            // TODO: Avoid lots of array copies, use single ByteBuffer
+            // arrayCopy is required, because buffer is pooled, and write is async.
             write(req.arrayCopy(), req.position());
 
             return fut;
@@ -472,7 +472,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         Map<String, String> userAttrs) throws ClientConnectionException {
         BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
 
-        // TODO: Use ByteBuffer
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
             ProtocolContext protocolCtx = protocolContextFromVersion(proposedVer);
 
@@ -502,7 +501,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             writer.out().writeInt(0, writer.out().position() - 4);// actual size
 
-            write(writer.array(), writer.out().position());
+            write(writer.out().arrayCopy(), writer.out().position());
         }
     }
 
@@ -572,10 +571,10 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     }
 
     /** Write bytes to the output stream. */
-    private void write(byte[] bytes, int len) throws ClientConnectionException {
+    private void write(byte[] bytes, int len) {
         ByteBuffer buf = ByteBuffer.wrap(bytes, 0, len);
 
-        sock.sendAsync(buf);
+        sock.send(buf);
     }
 
     /**
