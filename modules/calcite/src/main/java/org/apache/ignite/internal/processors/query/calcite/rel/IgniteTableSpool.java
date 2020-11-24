@@ -34,8 +34,7 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
  * Relational operator that returns the contents of a table.
  */
 public class IgniteTableSpool extends Spool implements IgniteRel {
-    /**
-     */
+    /** */
     public IgniteTableSpool(
         RelOptCluster cluster,
         RelTraitSet traits,

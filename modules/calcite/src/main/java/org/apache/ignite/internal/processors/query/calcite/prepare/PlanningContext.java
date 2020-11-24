@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.function.Function;
-
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;

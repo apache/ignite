@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;

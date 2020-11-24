@@ -108,6 +108,7 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements S
         return sourceId;
     }
 
+    /** */
     @Override protected RelWriter explainTerms0(RelWriter pw) {
         return super.explainTerms0(pw)
             .itemIf("sourceId", sourceId, sourceId != -1);
