@@ -574,7 +574,11 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     private void write(byte[] bytes, int len) {
         ByteBuffer buf = ByteBuffer.wrap(bytes, 0, len);
 
-        sock.send(buf);
+        try {
+            sock.send(buf);
+        } catch (IgniteCheckedException e) {
+            throw new ClientConnectionException(e.getMessage(), e);
+        }
     }
 
     /**

@@ -64,12 +64,8 @@ class GridNioClientConnection implements ClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public void send(ByteBuffer msg) {
-        try {
-            ses.sendNoFuture(msg, null);
-        } catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
+    @Override public void send(ByteBuffer msg) throws IgniteCheckedException {
+        ses.sendNoFuture(msg, null);
     }
 
     /** {@inheritDoc} */

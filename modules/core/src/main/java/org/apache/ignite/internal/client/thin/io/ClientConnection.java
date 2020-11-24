@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.thin.io;
 
+import org.apache.ignite.IgniteCheckedException;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -28,7 +30,7 @@ public interface ClientConnection extends AutoCloseable {
      *
      * @param msg Message buffer.
      */
-    void send(ByteBuffer msg);
+    void send(ByteBuffer msg) throws IgniteCheckedException;
 
     /**
      * Closes the connection.
