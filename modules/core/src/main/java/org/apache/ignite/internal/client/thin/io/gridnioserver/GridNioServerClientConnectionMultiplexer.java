@@ -159,6 +159,7 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
                     .idleTimeout(Long.MAX_VALUE)
                     .igniteInstanceName("thinClient")
                     .serverName(THREAD_PREFIX)
+                    .writeTimeout(cfg.getTimeout())
                     .build();
         } catch (IgniteCheckedException e) {
             throw new IgniteException(e);
