@@ -62,9 +62,6 @@ public class SqlQueryExecutionEvent<K, V> extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Query type. */
-    private final String qryType;
-
     /** Query text. */
     private final String text;
 
@@ -78,8 +75,6 @@ public class SqlQueryExecutionEvent<K, V> extends EventAdapter {
     /**
      * @param node Node where event was fired.
      * @param msg Event message.
-     * @param type Event type.
-     * @param qryType Query type.
      * @param text Query text.
      * @param args Query arguments.
      * @param subjId Security subject ID.
@@ -87,29 +82,15 @@ public class SqlQueryExecutionEvent<K, V> extends EventAdapter {
     public SqlQueryExecutionEvent(
         ClusterNode node,
         String msg,
-        int type,
-        String qryType,
         @Nullable String text,
         @Nullable Object[] args,
         @Nullable UUID subjId
     ) {
-        super(node, msg, type);
+        super(node, msg, EVT_SQL_QUERY_EXECUTION);
 
-        assert qryType != null;
-
-        this.qryType = qryType;
         this.text = text;
         this.args = args;
         this.subjId = subjId;
-    }
-
-    /**
-     * Gets query type.
-     *
-     * @return Query type. Can be {@code "SQL"}, {@code "SQL_FIELDS"}.
-     */
-    public String queryType() {
-        return qryType;
     }
 
     /**
@@ -152,3 +133,4 @@ public class SqlQueryExecutionEvent<K, V> extends EventAdapter {
             "tstamp", timestamp());
     }
 }
+
