@@ -81,7 +81,7 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
             return true;
         };
 
-        int[] evts = new int[]{EVT_SQL_QUERY_EXECUTION};
+        int[] evts = new int[] {EVT_SQL_QUERY_EXECUTION};
 
         cfg.setIncludeEventTypes(evts);
         cfg.setLocalEventListeners(Collections.singletonMap(lsnr, evts));
