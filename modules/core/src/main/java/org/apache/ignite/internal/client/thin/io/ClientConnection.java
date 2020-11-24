@@ -23,7 +23,15 @@ import java.nio.ByteBuffer;
  * Client connection: abstracts away sending and receiving messages.
  */
 public interface ClientConnection extends AutoCloseable {
+    /**
+     * Sends a message.
+     *
+     * @param msg Message buffer.
+     */
     void send(ByteBuffer msg);
 
+    /**
+     * Closes the connection.
+     */
     @Override void close();
 }
