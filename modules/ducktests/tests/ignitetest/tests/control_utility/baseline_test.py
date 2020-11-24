@@ -17,7 +17,6 @@
 This module contains manipulating baseline test through control utility.
 """
 
-from ducktape.mark.resource import cluster
 from ducktape.utils.util import wait_until
 
 from ignitetest.services.ignite import IgniteService
@@ -25,7 +24,7 @@ from ignitetest.services.utils.control_utility import ControlUtility, ControlUti
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.utils import version_if, ignite_versions
+from ignitetest.utils import version_if, ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST_2_8, IgniteVersion, V_2_8_0
 

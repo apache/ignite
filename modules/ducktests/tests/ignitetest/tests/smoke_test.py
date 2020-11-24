@@ -17,15 +17,13 @@
 This module contains smoke tests that checks that services work
 """
 
-from ducktape.mark.resource import cluster
-
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.spark import SparkService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.zk.zookeeper import ZookeeperService
-from ignitetest.utils import ignite_versions
+from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 

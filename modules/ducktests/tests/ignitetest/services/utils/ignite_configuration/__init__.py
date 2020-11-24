@@ -40,6 +40,7 @@ class IgniteConfiguration(NamedTuple):
     properties: str = None
     data_storage: DataStorageConfiguration = None
     caches: list = []
+    local_host: str = None
 
 
 class IgniteClientConfiguration(IgniteConfiguration):

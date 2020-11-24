@@ -19,7 +19,6 @@ This module contains Cellular Affinity tests.
 from enum import IntEnum
 
 from ducktape.mark import matrix
-from ducktape.mark.resource import cluster
 from jinja2 import Template
 
 from ignitetest.services.ignite import IgniteService
@@ -27,11 +26,13 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteClientConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.utils import ignite_versions, version_if
+from ignitetest.utils import ignite_versions, version_if, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST_2_8
+from ignitetest.utils.enum import constructible
 
 
+@constructible
 class StopType(IntEnum):
     """
     Node stop method type.
@@ -149,12 +150,14 @@ class CellularAffinity(IgniteTest):
             streamer.await_event("WARMUP_FINISHED", 180, from_the_beginning=True)
 
         # node left with prepared txs.
-        if stop_type is StopType.SIGTERM:
-            failed_loader.stop_async()
-        elif stop_type is StopType.SIGKILL:
-            failed_loader.stop(clean_shutdown=False)
-        elif stop_type is StopType.DISCONNECT:
-            failed_loader.drop_network()
+        # pylint: disable=no-member
+        with StopType.construct_from(stop_type) as s_type:
+            if s_type is StopType.SIGTERM:
+                failed_loader.stop_async()
+            elif s_type is StopType.SIGKILL:
+                failed_loader.stop(clean_shutdown=False)
+            elif s_type is StopType.DISCONNECT:
+                failed_loader.drop_network()
 
         for streamer in streamers:
             streamer.await_event("Node left topology\\|Node FAILED", 60, from_the_beginning=True)
