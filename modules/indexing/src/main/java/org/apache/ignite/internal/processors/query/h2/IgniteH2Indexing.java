@@ -152,7 +152,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryReq
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -1562,10 +1561,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         );
 
         if (ctx.event().isRecordable(EVT_SQL_QUERY_EXECUTION)) {
-            SecurityContext secCtx = ctx.security().securityContext();
-
-            UUID subjId = secCtx == null ? null : secCtx.subject() == null ? null : secCtx.subject().id();
-
             ctx.event().record(new SqlQueryExecutionEvent<>(
                 ctx.discovery().localNode(),
                 GridCacheQueryType.SQL_FIELDS.name() + " query execution.",
@@ -1573,7 +1568,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 GridCacheQueryType.SQL_FIELDS.name(),
                 qryDesc.sql(),
                 qryParams.arguments(),
-                subjId));
+                ctx.security().enabled() ? ctx.security().securityContext().subject().id() : null));
         }
 
         return res;
