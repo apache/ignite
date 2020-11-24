@@ -17,17 +17,33 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
+import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.util.typedef.F;
 
-/** */
+/**
+ * Correlation trait is created by node that creates and sets correlation variables {@link RelNode#getVariablesSet()}}
+ * (e.g. {@link IgniteCorrelatedNestedLoopJoin}) and pass through this trait to input that uses correlation variable(s).
+ *
+ * The correlation trait is used to prevent the insertion of nodes that cannot preserve correlation in
+ * the correlated data stream. e.g. these nodes are IgniteExchange, IgniteTableSpool, etc.
+ *
+ * Let's describe more details:
+ * IgniteExchange: current implementation is not rewindable and not send values of the correlation variables to
+ * Senders.
+ * (see {@link ExecutionContext#getCorrelated(int)})
+ * TableSpool: stores the input data stream and rewind it many times So. it cannot be depends on the value of the
+ * correlation variables.
+ */
 public class CorrelationTrait implements RelTrait {
     /** */
     public static final CorrelationTrait UNCORRELATED = canonize(new CorrelationTrait(Collections.emptyList()));
