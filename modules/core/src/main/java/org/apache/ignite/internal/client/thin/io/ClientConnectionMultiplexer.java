@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.client.thin.io;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.client.ClientConnectionException;
-
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.util.function.Consumer;
+
+import org.apache.ignite.client.ClientConnectionException;
 
 /**
  * Client connection multiplexer: manages multiple connections with a shared resource pool (worker threads, etc).

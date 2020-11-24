@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.thin.io;
 
 import java.nio.ByteBuffer;
-import java.util.function.Function;
 
 /**
  * Decodes thin client messages from partial buffers.

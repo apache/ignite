@@ -17,6 +17,16 @@
 
 package org.apache.ignite.internal.client.thin.io.gridnioserver;
 
+import javax.net.ssl.SSLContext;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -40,16 +50,6 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.jetbrains.annotations.Nullable;
-
-import javax.net.ssl.SSLContext;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Client connection multiplexer based on {@link org.apache.ignite.internal.util.nio.GridNioServer}.

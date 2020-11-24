@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.client.thin.io.gridnioserver;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.thin.io.ClientConnection;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 class GridNioServerClientConnection implements ClientConnection {
     /** */

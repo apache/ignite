@@ -19,7 +19,6 @@ package org.apache.ignite.internal.client.thin.io;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 /**
  * Client connection: abstracts away sending and receiving messages.
