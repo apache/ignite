@@ -30,9 +30,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
-import org.apache.ignite.ml.inference.JSONReadable;
 import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -44,7 +44,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * ANN model to predict labels in multi-class classification task.
  */
-public final class ANNClassificationModel extends NNClassificationModel implements JSONWritable, JSONReadable, DeployableObject {
+public final class ANNClassificationModel extends NNClassificationModel implements JSONWritable, DeployableObject {
     /** */
     private static final long serialVersionUID = -127312378991350345L;
 
@@ -66,7 +66,7 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
     }
 
     /** */
-    public ANNClassificationModel() {
+    private ANNClassificationModel() {
     }
 
     /** */
@@ -223,9 +223,8 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
         return Collections.emptyList();
     }
 
-    @Override
-    public ANNClassificationModel fromJSON(Path path) {
-        ObjectMapper mapper = new ObjectMapper();
+    public static ANNClassificationModel fromJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         ANNClassificationModel mdl;
         try {
             mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), ANNClassificationModel.class);

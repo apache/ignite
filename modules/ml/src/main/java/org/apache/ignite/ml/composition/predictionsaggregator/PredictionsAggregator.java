@@ -20,8 +20,6 @@ package org.apache.ignite.ml.composition.predictionsaggregator;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
-import org.apache.ignite.ml.tree.DecisionTreeLeafNode;
 
 /**
  * Predictions aggregator interface.

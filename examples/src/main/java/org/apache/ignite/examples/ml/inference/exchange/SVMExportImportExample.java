@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.inference;
+package org.apache.ignite.examples.ml.inference.exchange;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -47,7 +47,7 @@ import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
  * <p>
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
-public class SVMBinaryClassificationExportImportExample {
+public class SVMExportImportExample {
     /**
      * Run example.
      */
@@ -56,9 +56,10 @@ public class SVMBinaryClassificationExportImportExample {
         System.out.println(">>> SVM Binary classification model over cached dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            System.out.println(">>> Ignite grid started.");
+            System.out.println("\n>>> Ignite grid started.");
 
             IgniteCache<Integer, Vector> dataCache = null;
+            Path jsonMdlPath = null;
             try {
                 dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
@@ -69,30 +70,40 @@ public class SVMBinaryClassificationExportImportExample {
 
                 SVMLinearClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-                Path jsonMdlPath = Paths.get("C:\\ignite\\svm.json");
-                mdl.toJSON(jsonMdlPath); // TODO: write to the root in tmp directory
+                System.out.println("\n>>> Exported SVM model: " + mdl);
 
-                System.out.println(">>> SVM model " + mdl);
-
-                double accuracy = Evaluator.evaluate(dataCache,
-                    mdl, vectorizer, MetricName.ACCURACY
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    vectorizer,
+                    MetricName.ACCURACY
                 );
 
-                System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Accuracy for exported SVM model: " + accuracy);
 
-                SVMLinearClassificationModel jsonMdl = new SVMLinearClassificationModel().fromJSON(jsonMdlPath);
+                jsonMdlPath = Files.createTempFile(null, null);
+                mdl.toJSON(jsonMdlPath);
 
-                accuracy = Evaluator.evaluate(dataCache,
-                    jsonMdl, vectorizer, MetricName.ACCURACY
+                SVMLinearClassificationModel modelImportedFromJSON = SVMLinearClassificationModel.fromJSON(jsonMdlPath);
+
+                System.out.println("\n>>> Imported SVM model: " + modelImportedFromJSON);
+
+                accuracy = Evaluator.evaluate(
+                    dataCache,
+                    modelImportedFromJSON,
+                    vectorizer,
+                    MetricName.ACCURACY
                 );
 
-                System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Accuracy for imported SVM model: " + accuracy);
 
-                System.out.println(">>> SVM Binary classification model over cache based dataset usage example completed.");
+                System.out.println("\n>>> SVM Binary classification model over cache based dataset usage example completed.");
             }
             finally {
                 if (dataCache != null)
                     dataCache.destroy();
+                if (jsonMdlPath != null)
+                    Files.deleteIfExists(jsonMdlPath);
             }
         }
         finally {

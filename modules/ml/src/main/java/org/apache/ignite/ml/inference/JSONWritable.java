@@ -21,10 +21,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 public interface JSONWritable {
     default void toJSON(Path path) {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
         try {
             File file = new File(path.toAbsolutePath().toString());

@@ -27,7 +27,6 @@ import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.inference.JSONModel;
-import org.apache.ignite.ml.inference.JSONReadable;
 import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -36,7 +35,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * Logistic regression (logit model) is a generalized linear model used for binomial regression.
  */
 public final class LogisticRegressionModel implements IgniteModel<Vector, Double>, Exportable<LogisticRegressionModel>,
-    JSONWritable, JSONReadable {
+    JSONWritable {
     /** */
     private static final long serialVersionUID = -133984600091550776L;
 
@@ -53,7 +52,7 @@ public final class LogisticRegressionModel implements IgniteModel<Vector, Double
     private double threshold = 0.5;
 
     /** */
-    public LogisticRegressionModel() {
+    private LogisticRegressionModel() {
     }
 
     /** */
@@ -216,8 +215,7 @@ public final class LogisticRegressionModel implements IgniteModel<Vector, Double
         return toString();
     }
 
-    @Override
-    public LogisticRegressionModel fromJSON(Path path) {
+    public static LogisticRegressionModel fromJSON(Path path) {
             ObjectMapper mapper = new ObjectMapper();
 
             LogisticRegressionJSONExportModel logisticRegressionJSONExportModel;

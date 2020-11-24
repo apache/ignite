@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
-import org.apache.ignite.ml.inference.JSONReadable;
 import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -19,7 +18,7 @@ import java.util.List;
 /**
  * GDB model.
  */
-public final class GDBModel extends ModelsComposition<DecisionTreeModel> implements JSONReadable, JSONWritable {
+public final class GDBModel extends ModelsComposition<DecisionTreeModel> implements JSONWritable {
     /** Serial version uid. */
     private static final long serialVersionUID = 3476661240155508004L;
 
@@ -41,7 +40,7 @@ public final class GDBModel extends ModelsComposition<DecisionTreeModel> impleme
         this.internalToExternalLblMapping = internalToExternalLblMapping;
     }
 
-    public GDBModel() {
+    private GDBModel() {
     }
 
     public GDBModel withLblMapping(IgniteFunction<Double, Double> internalToExternalLblMapping) {
@@ -58,7 +57,7 @@ public final class GDBModel extends ModelsComposition<DecisionTreeModel> impleme
         }
     }
 
-    @Override public GDBModel fromJSON(Path path) {
+    public static GDBModel fromJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper();
 
         GDBModel mdl;

@@ -26,7 +26,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
-import org.apache.ignite.ml.inference.JSONReadable;
 import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.stat.DistributionMixture;
@@ -40,7 +39,7 @@ import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
  * #likelihood(Vector)}).
  */
 public class GmmModel extends DistributionMixture<MultivariateGaussianDistribution> implements IgniteModel<Vector, Double>,
-    JSONReadable, JSONWritable, DeployableObject {
+    JSONWritable, DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -4484174539118240037L;
 
@@ -55,7 +54,7 @@ public class GmmModel extends DistributionMixture<MultivariateGaussianDistributi
     }
 
     /** */
-    public GmmModel() {
+    private GmmModel() {
     }
 
     /** {@inheritDoc} */
@@ -69,8 +68,7 @@ public class GmmModel extends DistributionMixture<MultivariateGaussianDistributi
         return Collections.emptyList();
     }
 
-    @Override
-    public GmmModel fromJSON(Path path) {
+    public static GmmModel fromJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper();
         GmmModel mdl;
         try {

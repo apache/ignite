@@ -22,14 +22,13 @@ import java.io.IOException;
 import java.nio.file.Path;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.inference.JSONReadable;
 import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Base class for decision tree models.
  */
-public class DecisionTreeModel implements IgniteModel<Vector, Double>, JSONWritable, JSONReadable {
+public class DecisionTreeModel implements IgniteModel<Vector, Double>, JSONWritable {
     /** Root node. */
     private DecisionTreeNode rootNode;
 
@@ -43,7 +42,7 @@ public class DecisionTreeModel implements IgniteModel<Vector, Double>, JSONWrita
     }
 
     /** */
-    public DecisionTreeModel() {
+    private DecisionTreeModel() {
 
     }
 
@@ -67,8 +66,7 @@ public class DecisionTreeModel implements IgniteModel<Vector, Double>, JSONWrita
         return DecisionTreeTrainer.printTree(rootNode, pretty);
     }
 
-    /** {@inheritDoc} */
-    @Override public DecisionTreeModel fromJSON(Path path) {
+    public static DecisionTreeModel fromJSON(Path path) {
             ObjectMapper mapper = new ObjectMapper();
             DecisionTreeModel mdl;
             try {

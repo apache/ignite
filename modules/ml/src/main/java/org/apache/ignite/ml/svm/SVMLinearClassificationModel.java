@@ -27,7 +27,6 @@ import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.inference.JSONModel;
-import org.apache.ignite.ml.inference.JSONReadable;
 import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -36,7 +35,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * Base class for SVM linear classification model.
  */
 public final class SVMLinearClassificationModel implements IgniteModel<Vector, Double>, Exportable<SVMLinearClassificationModel>,
-    JSONWritable, JSONReadable {
+    JSONWritable {
     /** */
     private static final long serialVersionUID = -996984622291440226L;
 
@@ -204,8 +203,7 @@ public final class SVMLinearClassificationModel implements IgniteModel<Vector, D
         return toString();
     }
 
-    /** {@inheritDoc} */
-    @Override public SVMLinearClassificationModel fromJSON(Path path) {
+    public static SVMLinearClassificationModel fromJSON(Path path) {
             ObjectMapper mapper = new ObjectMapper();
 
             SVMLinearClassificationJSONExportModel exportModel;
@@ -231,7 +229,6 @@ public final class SVMLinearClassificationModel implements IgniteModel<Vector, D
                 exportModel.isKeepingRawLabels = isKeepingRawLabels;
                 exportModel.threshold = threshold;
                 exportModel.weights = weights.asArray();
-                exportModel.versionName = "2.9.0-SNAPSHOT";
 
                 File file = new File(path.toAbsolutePath().toString());
                 mapper.writeValue(file, exportModel);

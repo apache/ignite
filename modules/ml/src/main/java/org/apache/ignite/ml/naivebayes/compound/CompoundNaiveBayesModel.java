@@ -30,7 +30,6 @@ import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
-import org.apache.ignite.ml.inference.JSONReadable;
 import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -42,7 +41,7 @@ import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
  * DiscreteNaiveBayesModel}.
  */
 public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel>,
-    JSONWritable, JSONReadable, DeployableObject {
+    JSONWritable, DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -5045925321135798960L;
 
@@ -64,6 +63,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     /** Feature ids which should be skipped in Discrete model. */
     private Collection<Integer> discreteFeatureIdsToSkip = Collections.emptyList();
 
+    /** */
     public CompoundNaiveBayesModel() {
     }
 
@@ -187,8 +187,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return Arrays.asList(discreteModel, gaussianModel);
     }
 
-    @Override
-    public CompoundNaiveBayesModel fromJSON(Path path) {
+    public static CompoundNaiveBayesModel fromJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper();
         CompoundNaiveBayesModel mdl;
         try {

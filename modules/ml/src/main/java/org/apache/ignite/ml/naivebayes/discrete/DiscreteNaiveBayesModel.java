@@ -26,7 +26,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
-import org.apache.ignite.ml.inference.JSONReadable;
 import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.BayesModel;
@@ -37,7 +36,7 @@ import org.apache.ignite.ml.naivebayes.BayesModel;
  * probability probability of class {@code p(x|C_k)}. Returns the number of the most possible class.
  */
 public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesModel, Vector, Double>,
-    JSONWritable, JSONReadable, DeployableObject {
+    JSONWritable, DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -127386523291350345L;
 
@@ -162,8 +161,7 @@ public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesMod
         return Collections.emptyList();
     }
 
-    @Override
-    public DiscreteNaiveBayesModel fromJSON(Path path) {
+    public static DiscreteNaiveBayesModel fromJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper();
         DiscreteNaiveBayesModel mdl;
         try {

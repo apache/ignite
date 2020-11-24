@@ -26,7 +26,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
-import org.apache.ignite.ml.inference.JSONReadable;
 import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.BayesModel;
@@ -36,7 +35,7 @@ import org.apache.ignite.ml.naivebayes.BayesModel;
  * p(C_k,y) = p(C_k)*p(y_1,C_k) *...*p(y_n,C_k) / p(y)}. Return the number of the most possible class.
  */
 public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesModel, Vector, Double>,
-    JSONWritable, JSONReadable, DeployableObject {
+    JSONWritable, DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -127386523291350345L;
 
@@ -144,8 +143,7 @@ public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesMod
         return Collections.emptyList();
     }
 
-    @Override
-    public GaussianNaiveBayesModel fromJSON(Path path) {
+    public static GaussianNaiveBayesModel fromJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper();
         GaussianNaiveBayesModel mdl;
         try {

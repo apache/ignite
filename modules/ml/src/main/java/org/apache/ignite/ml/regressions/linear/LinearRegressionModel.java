@@ -26,7 +26,6 @@ import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.inference.JSONModel;
-import org.apache.ignite.ml.inference.JSONReadable;
 import org.apache.ignite.ml.inference.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -36,7 +35,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * Y = weights * X + intercept.
  */
 public final class LinearRegressionModel implements IgniteModel<Vector, Double>, Exportable<LinearRegressionModel>,
-    JSONWritable, JSONReadable {
+    JSONWritable {
     /** */
     private static final long serialVersionUID = -105984600091550226L;
 
@@ -53,7 +52,7 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
     }
 
     /** */
-    public LinearRegressionModel() {
+    private LinearRegressionModel() {
     }
 
     /** */
@@ -144,8 +143,7 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
         return toString();
     }
 
-    @Override
-    public LinearRegressionModel fromJSON(Path path) {
+    public static LinearRegressionModel fromJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper();
 
         LinearRegressionModelJSONExportModel linearRegressionJSONExportModel;
@@ -161,6 +159,7 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public void toJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper();
 
@@ -168,7 +167,6 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
                 LinearRegressionModelJSONExportModel exportModel = new LinearRegressionModelJSONExportModel();
                 exportModel.intercept = intercept;
                 exportModel.weights = weights.asArray();
-                exportModel.versionName = "2.9.0-SNAPSHOT";
 
                 File file = new File(path.toAbsolutePath().toString());
                 mapper.writeValue(file, exportModel);
@@ -188,6 +186,7 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
          */
         public double intercept;
 
+        /** */
         public LinearRegressionModel convert() {
             LinearRegressionModel linRegMdl = new LinearRegressionModel();
             linRegMdl.withWeights(VectorUtils.of(weights));

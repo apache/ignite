@@ -72,7 +72,7 @@ public class WeightedMinkowskiDistanceTest {
   /** */
   @Test
   public void testWeightedMinkowski() {
-    DistanceMeasure distanceMeasure = new WeightedMinkowskiDistance(testData.p, testData.weight);
+    DistanceMeasure distanceMeasure = new WeightedMinkowskiDistance(testData.p, testData.weights);
 
     assertEquals(testData.expRes,
         distanceMeasure.compute(testData.vectorA, testData.vectorB), PRECISION);
@@ -87,15 +87,15 @@ public class WeightedMinkowskiDistanceTest {
 
     public final Integer p;
 
-    public final Vector weight;
+    public final double[] weights;
 
     public final Double expRes;
 
-    private TestData(double[] vectorA, double[] vectorB, Integer p, double[] weight, double expRes) {
+    private TestData(double[] vectorA, double[] vectorB, Integer p, double[] weights, double expRes) {
       this.vectorA = new DenseVector(vectorA);
       this.vectorB = new DenseVector(vectorB);
       this.p = p;
-      this.weight = new DenseVector(weight);
+      this.weights = weights;
       this.expRes = expRes;
     }
 
@@ -104,7 +104,7 @@ public class WeightedMinkowskiDistanceTest {
           Arrays.toString(vectorA.asArray()),
           Arrays.toString(vectorB.asArray()),
           p,
-          Arrays.toString(weight.asArray()),
+          Arrays.toString(weights),
           expRes
       );
     }
