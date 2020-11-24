@@ -66,15 +66,8 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        IgnitePredicate<Event> lsnr = evt -> {
-            assert evt instanceof SqlQueryExecutionEvent;
-
-            if (log.isInfoEnabled())
-                log.info(">>> EVENT: " + evt);
-
-            SqlQueryExecutionEvent qe = (SqlQueryExecutionEvent)evt;
-
-            assertNotNull(qe.text());
+        IgnitePredicate<SqlQueryExecutionEvent> lsnr = evt -> {
+            assertNotNull(evt.text());
 
             SQL_QRY_EXEC_EVT_CNTR.incrementAndGet();
 
