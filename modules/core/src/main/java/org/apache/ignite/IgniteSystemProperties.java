@@ -1951,8 +1951,13 @@ public final class IgniteSystemProperties {
 
     /**
      * Defragmentation region size percentage of configured region size.
+     * This percentage will be calculated from largest configured region size and then proportionally subtracted
+     * from all configured regions.
      */
-    @SystemProperty(value = "Defragmentation region size percentage of configured region size", type = Integer.class,
+    @SystemProperty(value = "Defragmentation region size percentage of configured region size. " +
+        "This percentage will be calculated from largest configured region size and then proportionally subtracted " +
+        "from all configured regions.",
+        type = Integer.class,
         defaults = "" + DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE)
     public static final String IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE =
         "IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE";
