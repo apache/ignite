@@ -41,6 +41,7 @@ class IgniteTest(Test):
         """
         return monotonic()
 
+    # pylint: disable=W0212
     def tearDown(self):
         self.logger.debug("Killing all services to speed-up the tearing down.")
 
