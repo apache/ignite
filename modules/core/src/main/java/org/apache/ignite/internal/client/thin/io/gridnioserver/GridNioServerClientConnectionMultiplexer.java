@@ -177,14 +177,9 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
             throws ClientConnectionException {
         try {
             java.nio.channels.SocketChannel ch = java.nio.channels.SocketChannel.open();
-            Socket sock = ch.socket();
-
-            // TODO: why can't we pass addr directly? The logic on the following line is copied from old TcpClientChannel
-            InetSocketAddress addr2 = new InetSocketAddress(addr.getHostName(), addr.getPort());
-            sock.connect(addr2, Integer.MAX_VALUE);
+            ch.socket().connect(new InetSocketAddress(addr.getHostName(), addr.getPort()), Integer.MAX_VALUE);
 
             Map<Integer, Object> meta = new HashMap<>();
-
             GridNioFuture<?> sslHandshakeFut = null;
 
             if (sslCtx != null) {
@@ -193,13 +188,8 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
                 meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
             }
 
-            // TODO: What does async param mean?
-            GridNioFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
+            GridNioSession ses = srv.createSession(ch, meta, false, null).get();
 
-            // TODO: Should this method be async? Why is createSession async?
-            GridNioSession ses = sesFut.get();
-
-            // Wait for SSL handshake.
             if (sslHandshakeFut != null)
                 sslHandshakeFut.get();
 
