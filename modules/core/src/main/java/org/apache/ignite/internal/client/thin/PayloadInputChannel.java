@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-
 import java.nio.ByteBuffer;
+
+import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 
 /**
  * Thin client payload input channel.

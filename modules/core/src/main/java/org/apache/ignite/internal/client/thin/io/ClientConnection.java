@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.client.thin.io;
 
-import org.apache.ignite.IgniteCheckedException;
-
 import java.nio.ByteBuffer;
+
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Client connection: abstracts away sending and receiving messages.
