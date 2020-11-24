@@ -118,7 +118,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
@@ -2810,17 +2809,12 @@ public class PlannerTest extends GridCommonAbstractTest {
             AtomicInteger limit = new AtomicInteger();
             AtomicBoolean sort = new AtomicBoolean();
 
-            phys.childrenAccept(
-                new RelVisitor() {
-                    @Override public void visit(RelNode node, int ordinal, RelNode parent) {
-                        if (node instanceof IgniteLimit)
-                            limit.incrementAndGet();
+            relTreeVisit(phys, (node, ordinal, parent) -> {
+                    if (node instanceof IgniteLimit)
+                        limit.incrementAndGet();
 
-                        if (node instanceof IgniteSort)
-                            sort.set(true);
-
-                        super.visit(node, ordinal, parent);
-                    }
+                    if (node instanceof IgniteSort)
+                        sort.set(true);
                 }
             );
 
@@ -2838,23 +2832,48 @@ public class PlannerTest extends GridCommonAbstractTest {
             AtomicInteger limit = new AtomicInteger();
             AtomicBoolean sort = new AtomicBoolean();
 
-            phys.childrenAccept(
-                new RelVisitor() {
-                    @Override public void visit(RelNode node, int ordinal, RelNode parent) {
-                        if (node instanceof IgniteLimit)
-                            limit.incrementAndGet();
+            relTreeVisit(phys, (node, ordinal, parent) -> {
+                    if (node instanceof IgniteLimit)
+                        limit.incrementAndGet();
 
-                        if (node instanceof IgniteSort)
-                            sort.set(true);
-
-                        super.visit(node, ordinal, parent);
-                    }
+                    if (node instanceof IgniteSort)
+                        sort.set(true);
                 }
             );
 
             assertEquals("Invalid plan: \n" + RelOptUtil.toString(phys), 1, limit.get());
             assertFalse("Invalid plan: \n" + RelOptUtil.toString(phys), sort.get());
         }
+    }
+
+    /** */
+    interface TestVisitor {
+        public void visit(RelNode node, int ordinal, RelNode parent);
+    }
+
+    /** */
+    private static class TestRelVisitor extends RelVisitor {
+        /** */
+        final TestVisitor v;
+
+        /** */
+        TestRelVisitor(TestVisitor v) {
+            this.v = v;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visit(RelNode node, int ordinal, RelNode parent) {
+            v.visit(node, ordinal, parent);
+
+            super.visit(node, ordinal, parent);
+        }
+    }
+
+    /** */
+    protected static void relTreeVisit(RelNode n, TestVisitor v) {
+        v.visit(n, -1, null);
+
+        n.childrenAccept(new TestRelVisitor(v));
     }
 
     /** */
@@ -2969,7 +2988,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             this(type, RewindabilityTrait.REWINDABLE);
         }
 
-
         /** */
         private TestTable(RelDataType type, RewindabilityTrait rewindable) {
             this(type, rewindable, 100.0);
@@ -3071,8 +3089,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean rolledUpColumnValidInsideAgg(String column, SqlCall call, SqlNode parent,
-                                                              CalciteConnectionConfig config) {
+        @Override public boolean rolledUpColumnValidInsideAgg(
+            String column,
+            SqlCall call,
+            SqlNode parent,
+            CalciteConnectionConfig config
+        ) {
             throw new AssertionError();
         }
 
