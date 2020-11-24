@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.jetbrains.annotations.Nullable;
 
@@ -68,8 +69,7 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
     private final SSLContext sslCtx;
 
     public GridNioServerClientConnectionMultiplexer(ClientConfiguration cfg) {
-        // TODO: null logger?
-        IgniteLogger gridLog = new JavaLogger(false);
+        IgniteLogger gridLog = new NullLogger();
 
         ClientMessageDecoder decoder = new ClientMessageDecoder();
 
