@@ -18,10 +18,7 @@
 package org.apache.ignite.internal.client.thin.io.gridnioserver;
 
 import javax.net.ssl.SSLContext;
-import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
@@ -37,13 +34,11 @@ import org.apache.ignite.internal.client.thin.ClientSslUtils;
 import org.apache.ignite.internal.client.thin.io.ClientConnection;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
-import org.apache.ignite.internal.client.thin.io.ClientMessageDecoder;
 import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
-import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -54,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Client connection multiplexer based on {@link org.apache.ignite.internal.util.nio.GridNioServer}.
  */
-public class GridNioServerClientConnectionMultiplexer implements ClientConnectionMultiplexer {
+public class GridNioClientConnectionMultiplexer implements ClientConnectionMultiplexer {
     /** Worker thread prefix. */
     private static final String THREAD_PREFIX = "thin-client-channel";
 
@@ -67,29 +62,12 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
     /** */
     private final SSLContext sslCtx;
 
-    public GridNioServerClientConnectionMultiplexer(ClientConfiguration cfg) {
+    public GridNioClientConnectionMultiplexer(ClientConfiguration cfg) {
         IgniteLogger gridLog = new NullLogger();
-
-        ClientMessageDecoder decoder = new ClientMessageDecoder();
 
         GridNioFilter[] filters;
 
-        GridNioFilter codecFilter = new GridNioCodecFilter(new GridNioParser() {
-            @Override
-            public @Nullable Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
-                byte[] bytes = decoder.apply(buf);
-
-                if (bytes == null)
-                    return null; // Message is not yet completely received.
-
-                return ByteBuffer.wrap(bytes).order(ByteOrder.nativeOrder());
-            }
-
-            @Override
-            public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
-                return (ByteBuffer)msg;
-            }
-        }, gridLog, false);
+        GridNioFilter codecFilter = new GridNioCodecFilter(new GridNioClientParser(), gridLog, false);
 
         sslCtx = ClientSslUtils.getSslContext(cfg);
 
@@ -109,7 +87,7 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
                         }
 
                         @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-                            GridNioServerClientConnection conn = ses.meta(GridNioServerClientConnection.SES_META_CONN);
+                            GridNioClientConnection conn = ses.meta(GridNioClientConnection.SES_META_CONN);
 
                             // Conn can be null when connection fails during initialization in open method.
                             if (conn != null)
@@ -123,7 +101,7 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
 
                         @Override
                         public void onMessage(GridNioSession ses, ByteBuffer msg) {
-                            GridNioServerClientConnection conn = ses.meta(GridNioServerClientConnection.SES_META_CONN);
+                            GridNioClientConnection conn = ses.meta(GridNioClientConnection.SES_META_CONN);
 
                             conn.onMessage(msg);
                         }
@@ -193,7 +171,7 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
             if (sslHandshakeFut != null)
                 sslHandshakeFut.get();
 
-            return new GridNioServerClientConnection(ses, msgHnd, stateHnd);
+            return new GridNioClientConnection(ses, msgHnd, stateHnd);
         } catch (Exception e) {
             throw new ClientConnectionException(e.getMessage(), e);
         }

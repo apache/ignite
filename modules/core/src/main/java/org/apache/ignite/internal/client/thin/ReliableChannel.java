@@ -51,7 +51,7 @@ import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
-import org.apache.ignite.internal.client.thin.io.gridnioserver.GridNioServerClientConnectionMultiplexer;
+import org.apache.ignite.internal.client.thin.io.gridnioserver.GridNioClientConnectionMultiplexer;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -138,7 +138,7 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
         affinityCtx = new ClientCacheAffinityContext(binary);
 
-        connMgr = new GridNioServerClientConnectionMultiplexer(clientCfg);
+        connMgr = new GridNioClientConnectionMultiplexer(clientCfg);
         connMgr.start(); // TODO: Move to channelsInit?
     }
 

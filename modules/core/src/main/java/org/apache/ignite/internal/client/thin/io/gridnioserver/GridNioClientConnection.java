@@ -27,7 +27,7 @@ import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 
-class GridNioServerClientConnection implements ClientConnection {
+class GridNioClientConnection implements ClientConnection {
     /** */
     static final int SES_META_CONN = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -45,9 +45,9 @@ class GridNioServerClientConnection implements ClientConnection {
      *
      * @param ses Session.
      */
-    public GridNioServerClientConnection(GridNioSession ses,
-                                         ClientMessageHandler msgHnd,
-                                         ClientConnectionStateHandler stateHnd) {
+    public GridNioClientConnection(GridNioSession ses,
+                                   ClientMessageHandler msgHnd,
+                                   ClientConnectionStateHandler stateHnd) {
         assert ses != null;
         assert msgHnd != null;
         assert stateHnd != null;
