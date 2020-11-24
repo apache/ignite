@@ -136,7 +136,6 @@ import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexDe
 import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
@@ -479,7 +478,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         else {
             ClientIndexDefinition d = new ClientIndexDefinition(
-                tbl.cacheContext(), name, schema, inlineSize);
+                cacheInfo.name(), name, schema, inlineSize);
 
             // TODO: InlineIndexFactory should be static field?
             org.apache.ignite.cache.query.index.Index index =

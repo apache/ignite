@@ -112,7 +112,7 @@ public class IgniteIndexing implements IndexingSpi {
     /** {@inheritDoc} */
     @Override public Index createIndex(IndexFactory factory, IndexDefinition definition) {
         Index idx = factory.createIndex(definition);
-        String cacheName = definition.getContext().cache().name();
+        String cacheName = definition.getCacheName();
 
         if (!cacheToIdx.containsKey(cacheName))
             cacheToIdx.put(cacheName, new ConcurrentHashMap<>());

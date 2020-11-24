@@ -1,10 +1,7 @@
 package org.apache.ignite.internal.processors.query.h2.index.client;
 
 import org.apache.ignite.cache.query.index.IndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexSchema;
 
 /** */
@@ -16,17 +13,16 @@ public class ClientIndexDefinition implements IndexDefinition {
     private final int cfgInlineSize;
 
     /** */
-    private final GridCacheContext ctx;
-
-    /** */
     private final String idxName;
 
     /** */
-    public ClientIndexDefinition(GridCacheContext ctx, String idxName,
-        QueryIndexSchema schema, int cfgInlineSize) {
-        this.schema = schema;
-        this.ctx = ctx;
+    private final String cacheName;
+
+    /** */
+    public ClientIndexDefinition(String cacheName, String idxName, QueryIndexSchema schema, int cfgInlineSize) {
+        this.cacheName = cacheName;
         this.idxName = idxName;
+        this.schema = schema;
         this.cfgInlineSize = cfgInlineSize;
     }
 
@@ -40,13 +36,18 @@ public class ClientIndexDefinition implements IndexDefinition {
         return schema;
     }
 
-    /** {@inheritDoc} */
+    /** For non-affinity node GridCacheContext is null. */
     @Override public GridCacheContext getContext() {
-        return ctx;
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public String getIdxName() {
         return idxName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getCacheName() {
+        return cacheName;
     }
 }

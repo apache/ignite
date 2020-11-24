@@ -12,9 +12,12 @@ public class ClientIndexFactory implements IndexFactory {
     @Override public Index createIndex(IndexDefinition definition) {
         ClientIndexDefinition def = (ClientIndexDefinition) definition;
 
+        int maxInlineSize = def.getContext() != null ? def.getContext().config().getSqlIndexMaxInlineSize() : -1;
+
         return new ClientInlineIndex(
+            def.getIdxName(),
             def.getSchema().getInlineKeys(),
             def.getCfgInlineSize(),
-            def.getContext().config().getSqlIndexMaxInlineSize());
+            maxInlineSize);
     }
 }

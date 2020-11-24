@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.query.index;
 
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Basic interface for index description.
@@ -26,10 +27,15 @@ public interface IndexDefinition {
     /**
      * @return Cache context.
      */
-    public GridCacheContext getContext();
+    public @Nullable GridCacheContext getContext();
 
     /**
      * @return Index name.
      */
     public String getIdxName();
+
+    /**
+     * @return Cache name.
+     */
+    public String getCacheName();
 }

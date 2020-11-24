@@ -79,7 +79,7 @@ public class H2RowComparator implements IndexRowComparator {
         if (right instanceof IndexSearchRowImpl)
             rtype = DataType.getTypeFromClass(robject.getClass());
         else
-            rtype = right.getSchema().getInlineKeys()[idx].getInlineType().type();
+            rtype = right.getSchema().getKeyDefinitions()[idx].getIdxType();
 
         if (lobject == null)
             return CANT_BE_COMPARE;

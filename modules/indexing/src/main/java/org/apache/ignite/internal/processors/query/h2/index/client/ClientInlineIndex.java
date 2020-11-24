@@ -22,9 +22,13 @@ public class ClientInlineIndex implements InlineIndex {
     /** */
     private final int inlineSize;
 
+    /** Index name. */
+    private final String name;
+
     /** */
-    public ClientInlineIndex(IndexKeyDefinition[] keyDefs, int cfgInlineSize, int maxInlineSize) {
+    public ClientInlineIndex(String idxName, IndexKeyDefinition[] keyDefs, int cfgInlineSize, int maxInlineSize) {
         inlineSize = InlineIndexTree.computeInlineSize(keyDefs, cfgInlineSize, maxInlineSize);
+        name = idxName;
     }
 
     /** {@inheritDoc} */
@@ -81,7 +85,7 @@ public class ClientInlineIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        throw unsupported();
+        return name;
     }
 
     /** {@inheritDoc} */
@@ -106,7 +110,15 @@ public class ClientInlineIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public <T extends Index> T unwrap(Class<T> clazz) {
-        throw unsupported();
+        if (clazz == null)
+            return null;
+
+        if (clazz.isAssignableFrom(getClass()))
+            return clazz.cast(this);
+
+        throw new IllegalArgumentException(
+            String.format("Cannot unwrap [%s] to [%s]", getClass().getName(), clazz.getName())
+        );
     }
 
     /** {@inheritDoc} */

@@ -65,6 +65,11 @@ public class SortedIndexDefinition implements IndexDefinition {
         return idxName;
     }
 
+    /** {@inheritDoc} */
+    @Override public String getCacheName() {
+        return ctx.name();
+    }
+
     /** */
     public String getTreeName() {
         return idxName;
