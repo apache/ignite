@@ -51,6 +51,8 @@ class GridNioClientListener implements GridNioServerListener<ByteBuffer> {
     @Override public void onMessage(GridNioSession ses, ByteBuffer msg) {
         GridNioClientConnection conn = ses.meta(GridNioClientConnection.SES_META_CONN);
 
+        assert conn != null : "Session must have an associated connection";
+
         conn.onMessage(msg);
     }
 
@@ -66,7 +68,6 @@ class GridNioClientListener implements GridNioServerListener<ByteBuffer> {
 
     /** {@inheritDoc} */
     @Override public void onFailure(FailureType failureType, Throwable failure) {
-        // TODO: ???
-        System.out.println(">>> FAIL: TODO");
+        // No-op.
     }
 }

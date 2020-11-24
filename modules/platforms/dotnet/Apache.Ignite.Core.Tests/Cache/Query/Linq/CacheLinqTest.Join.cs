@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             var persons = GetPersonCache().AsCacheQueryable();
 
             var res = persons.Join(organizations, person => person.Value.OrganizationId + 3, org => org.Value.Id + 3,
-                    (person, org) => new { Person = person.Value, Org = org.Value })
+                    (person, org) => new {Person = person.Value, Org = org.Value})
                 .Where(x => x.Org.Name == "Org_1")
                 .ToList();
 
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             // Test full projection (selects pair of ICacheEntry)
             var res2 = persons.Join(organizations, person => person.Value.OrganizationId - 1, org => org.Value.Id - 1,
-                    (person, org) => new { Person = person, Org = org })
+                    (person, org) => new {Person = person, Org = org})
                 .Where(x => x.Org.Value.Name.ToLower() == "org_0")
                 .ToList();
 
@@ -76,10 +76,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             var multiKey =
                 from person in persons
                 join org in organizations on
-                new { OrgId = person.Value.OrganizationId, person.Key } equals
-                new { OrgId = org.Value.Id, Key = org.Key - 1000 }
+                    new {OrgId = person.Value.OrganizationId, person.Key} equals
+                    new {OrgId = org.Value.Id, Key = org.Key - 1000}
                 where person.Key == 1
-                select new { PersonName = person.Value.Name, OrgName = org.Value.Name };
+                select new {PersonName = person.Value.Name, OrgName = org.Value.Name};
 
             Assert.AreEqual(" Person_1  ", multiKey.Single().PersonName);
         }
@@ -94,9 +94,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             var persons = GetPersonCache().AsCacheQueryable();
 
             var multiKey = persons.Where(p => p.Key == 1).Join(organizations,
-                p => new { OrgId = p.Value.OrganizationId, p.Key },
-                o => new { OrgId = o.Value.Id, Key = o.Key - 1000 },
-                (p, o) => new { PersonName = p.Value.Name, OrgName = o.Value.Name });
+                p => new {OrgId = p.Value.OrganizationId, p.Key},
+                o => new {OrgId = o.Value.Id, Key = o.Key - 1000},
+                (p, o) => new {PersonName = p.Value.Name, OrgName = o.Value.Name});
 
             Assert.AreEqual(" Person_1  ", multiKey.Single().PersonName);
         }
@@ -143,9 +143,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             var roles = GetRoleCache().AsCacheQueryable();
 
             var res = roles.Join(persons, role => role.Key.Foo, person => person.Key,
-                    (role, person) => new { person, role })
+                    (role, person) => new {person, role})
                 .Join(organizations, pr => pr.person.Value.OrganizationId, org => org.Value.Id,
-                    (pr, org) => new { org, pr.person, pr.role }).ToArray();
+                    (pr, org) => new {org, pr.person, pr.role}).ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
         }
@@ -161,9 +161,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             var roles = GetRoleCache().AsCacheQueryable().Where(x => x.Key.Foo >= 0);
 
             var res = roles.Join(persons, role => role.Key.Foo, person => person.Key,
-                    (role, person) => new { person, role })
+                    (role, person) => new {person, role})
                 .Join(organizations, pr => pr.person.Value.OrganizationId, org => org.Value.Id,
-                    (pr, org) => new { org, pr.person, pr.role }).ToArray();
+                    (pr, org) => new {org, pr.person, pr.role}).ToArray();
 
             Assert.AreEqual(2, res.Length);
         }
@@ -392,5 +392,43 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             Assert.AreEqual(PersonCount, qry.ToArray().Distinct().Count());
         }
+
+        [Test]
+        public void TestJoinSo()
+        {
+            var persons = GetPersonCache().AsCacheQueryable();
+            var orgs = GetOrgCache().AsCacheQueryable();
+
+            var qry = persons.Join(
+                    orgs.Where(o => o.Key > 10),
+                    p => p.Value.OrganizationId,
+                    o => o.Key,
+                    (p, o) => new {p, o})
+                .GroupBy(x => x.o.Value.Name)
+                .Select(g => new {Org = g.Key, AgeSum = g.Max(x => x.p.Value.Age)});
+
+            var sql = qry.ToCacheQueryable().GetFieldsQuery().Sql;
+            Console.WriteLine(sql);
+
+            var res = qry.ToArray();
+            Console.WriteLine(res.Length);
+        }
+
+        [Test]
+        public void TestJoinSo2()
+        {
+            var persons = GetPersonCache().AsCacheQueryable();
+            var orgs = GetOrgCache().AsCacheQueryable();
+
+            var query = persons
+                .Join(orgs.Where(o => o.Key > 10), p => p.Value.OrganizationId, o => o.Key, (p, o) => new {p, o})
+                .GroupBy(x => x.o.Value.Name)
+                .Select(g => new {Org = g.Key, AgeSum = g.Max(x => x.p.Value.Age)});
+
+            var sql = query.ToCacheQueryable().GetFieldsQuery().Sql;
+
+            Console.WriteLine(sql);
+        }
     }
 }
+
