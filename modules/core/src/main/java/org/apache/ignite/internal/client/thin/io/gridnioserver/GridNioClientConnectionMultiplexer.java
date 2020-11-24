@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.client.thin.io.gridnioserver;
 
-import javax.net.ssl.SSLContext;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
+import javax.net.ssl.SSLContext;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;

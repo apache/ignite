@@ -17,17 +17,6 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import org.apache.ignite.client.SslMode;
-import org.apache.ignite.client.SslProtocol;
-import org.apache.ignite.configuration.ClientConfiguration;
-
-import javax.cache.configuration.Factory;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -43,6 +32,17 @@ import java.security.cert.X509Certificate;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+
+import org.apache.ignite.client.SslMode;
+import org.apache.ignite.client.SslProtocol;
+import org.apache.ignite.configuration.ClientConfiguration;
 
 public class ClientSslUtils {
     /** */
