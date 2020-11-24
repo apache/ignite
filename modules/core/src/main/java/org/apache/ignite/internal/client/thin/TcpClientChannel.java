@@ -382,15 +382,11 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         if (status == 0) {
             if (msgSize > hdrSize)
-                // TODO: Is buf.position correct here?
                 res = buf;
         }
-        else if (status == ClientStatus.SECURITY_VIOLATION) {
-            // TODO ?
-            // dataInput.spinRead(msgSize - hdrSize); // Read message to the end.
-
+        else if (status == ClientStatus.SECURITY_VIOLATION)
             err = new ClientAuthorizationException();
-        } else {
+        else {
             String errMsg = ClientUtils.createBinaryReader(null, dataInput).readString();
 
             err = new ClientServerError(errMsg, status, resId);
