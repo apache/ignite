@@ -1551,15 +1551,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     public void testClientQueryExecutedEvents() throws Exception {
         CountDownLatch execLatch = new CountDownLatch(9);
 
-        IgnitePredicate<Event> lsnr = evt -> {
-            assert evt instanceof SqlQueryExecutionEvent;
-
-            if (log.isInfoEnabled())
-                log.info(">>> EVENT: " + evt);
-
-            SqlQueryExecutionEvent qe = (SqlQueryExecutionEvent)evt;
-
-            assertNotNull(qe.text());
+        IgnitePredicate<SqlQueryExecutionEvent> lsnr = evt -> {
+            assertNotNull(evt.text());
 
             execLatch.countDown();
 
