@@ -97,7 +97,7 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
      * @param incrementedMetrics array of metrics to check.
      */
     protected void assertMetricsIncrementedOnlyOnReducer(Runnable act, String... incrementedMetrics) {
-        assertMetricsIncrementedOnlyOnReducerBySeveralQueries(act, 1, incrementedMetrics);
+        assertMetricsIncrementedOnlyOnReducer(act, 1, incrementedMetrics);
     }
 
     /**
@@ -107,7 +107,7 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
      * @param qryCnt Amount of queries.
      * @param incrementedMetrics array of metrics to check.
      */
-    protected void assertMetricsIncrementedOnlyOnReducerBySeveralQueries(
+    protected void assertMetricsIncrementedOnlyOnReducer(
         Runnable act,
         int qryCnt,
         String... incrementedMetrics
