@@ -485,7 +485,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             ByteBuffer res = timeout > 0 ? fut.get(timeout) : fut.get();
             handshakeRes(res, ver, user, pwd, userAttrs);
         } catch (IgniteCheckedException e) {
-            throw convertException(e);
+            throw new ClientConnectionException(e.getMessage(), e);
         }
     }
 
