@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.client.thin.ClientSslUtils;
 import org.apache.ignite.internal.client.thin.io.ClientConnection;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
@@ -40,11 +39,9 @@ import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioServer;
-import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.logger.NullLogger;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Client connection multiplexer based on {@link org.apache.ignite.internal.util.nio.GridNioServer}.
@@ -81,57 +78,16 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         try {
             srv = GridNioServer.<ByteBuffer>builder()
                     .port(CLIENT_MODE_PORT)
-                    .listener(new GridNioServerListener<ByteBuffer>() {
-                        @Override public void onConnected(GridNioSession ses) {
-                            // No-op.
-                        }
-
-                        @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-                            GridNioClientConnection conn = ses.meta(GridNioClientConnection.SES_META_CONN);
-
-                            // Conn can be null when connection fails during initialization in open method.
-                            if (conn != null)
-                                conn.onDisconnected(e);
-                        }
-
-                        @Override
-                        public void onMessageSent(GridNioSession ses, ByteBuffer msg) {
-
-                        }
-
-                        @Override
-                        public void onMessage(GridNioSession ses, ByteBuffer msg) {
-                            GridNioClientConnection conn = ses.meta(GridNioClientConnection.SES_META_CONN);
-
-                            conn.onMessage(msg);
-                        }
-
-                        @Override
-                        public void onSessionWriteTimeout(GridNioSession ses) {
-
-                        }
-
-                        @Override
-                        public void onSessionIdleTimeout(GridNioSession ses) {
-
-                        }
-
-                        @Override
-                        public void onFailure(FailureType failureType, Throwable failure) {
-                            // TODO: ???
-                            System.out.println("Fail");
-                        }
-                    })
+                    .listener(new GridNioClientListener())
                     .filters(filters)
                     .logger(gridLog)
                     // TODO: Review settings below
-                    .selectorCount(1) // TODO: Get from settings
+                    .selectorCount(1) // TODO: Do we need a setting? Run a benchmark.
                     .byteOrder(ByteOrder.nativeOrder())
                     .directBuffer(true)
                     .directMode(false)
                     .igniteInstanceName("thinClient")
                     .serverName(THREAD_PREFIX)
-                    .writeTimeout(cfg.getTimeout() > 0 ? cfg.getTimeout() : -1)
                     .build();
         } catch (IgniteCheckedException e) {
             throw new IgniteException(e);

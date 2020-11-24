@@ -25,7 +25,10 @@ import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
 
-public class GridNioClientParser implements GridNioParser {
+/**
+ * Client message parser.
+ */
+class GridNioClientParser implements GridNioParser {
     /** */
     private final ClientMessageDecoder decoder = new ClientMessageDecoder();
 
