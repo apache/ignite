@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.io.PrintWriter;
 import java.io.Reader;
+import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Set;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
@@ -28,6 +31,7 @@ import org.apache.calcite.plan.RelOptCostFactory;
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
@@ -36,6 +40,7 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
@@ -53,6 +58,7 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.Program;
+import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -127,7 +133,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
         programs = frameworkCfg.getPrograms();
         parserCfg = frameworkCfg.getParserConfig();
-        sqlToRelConverterCfg = frameworkCfg.getSqlToRelConverterConfig();
+        sqlToRelConverterCfg = frameworkCfg.getSqlToRelConverterConfig()
+            .withHintStrategyTable(HintStrategyTable.builder()
+                .hintStrategy("DISABLE_RULE", (hint, rel) -> true)
+                .build());
         validatorCfg = frameworkCfg.getSqlValidatorConfig();
         convertletTbl = frameworkCfg.getConvertletTable();
         rexExecutor = frameworkCfg.getExecutor();
@@ -269,6 +278,15 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** */
+    public String dump() {
+        StringWriter w = new StringWriter();
+
+        ((VolcanoPlanner)planner).dump(new PrintWriter(w));
+
+        return w.toString();
+    }
+
+    /** */
     private SqlValidator validator() {
         if (validator == null)
             validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg);
@@ -327,6 +345,30 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private SqlToRelConverter sqlToRelConverter(SqlValidator validator, CalciteCatalogReader reader,
         SqlToRelConverter.Config config) {
         return new SqlToRelConverter(this, validator, reader, cluster(), convertletTbl, config);
+    }
+
+    /** */
+    public void setDisabledRules(Set<String> disabledRuleNames) {
+        ctx.rulesFilter(rulesSet -> {
+            List<RelOptRule> newSet = new ArrayList<>();
+
+            for (RelOptRule r : rulesSet) {
+                if (!disabledRuleNames.contains(shortRuleName(r.toString())))
+                    newSet.add(r);
+            }
+
+            return RuleSets.ofList(newSet);
+        });
+    }
+
+    /** */
+    private static String shortRuleName(String ruleDesc) {
+        int pos = ruleDesc.indexOf('(');
+
+        if (pos == -1)
+            return ruleDesc;
+
+        return ruleDesc.substring(0, pos);
     }
 
     /** */

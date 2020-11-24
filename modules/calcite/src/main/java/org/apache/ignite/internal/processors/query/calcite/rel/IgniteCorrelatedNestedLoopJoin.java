@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import com.google.common.collect.ImmutableList;
@@ -28,12 +29,14 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -85,6 +88,7 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
         return visitor.visit(this);
     }
 
+    /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // We preserve left edge collation only if batch size == 1
         if (variablesSet.size() == 1)
@@ -108,6 +112,7 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
             ImmutableList.of(left, right.replace(RewindabilityTrait.REWINDABLE))));
     }
 
+    /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // We preserve left edge collation only if batch size == 1
         if (variablesSet.size() == 1)
@@ -138,7 +143,46 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
     }
 
     /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        CorrelationTrait nodeCorr = TraitUtils.correlation(nodeTraits);
+
+        Set<CorrelationId> selfCorrIds = new HashSet<>(CorrelationTrait.correlations(variablesSet).correlationIds());
+        selfCorrIds.addAll(nodeCorr.correlationIds());
+
+        return ImmutableList.of(Pair.of(nodeTraits,
+            ImmutableList.of(
+                inTraits.get(0).replace(nodeCorr),
+                inTraits.get(1).replace(CorrelationTrait.correlations(selfCorrIds))
+            )
+        ));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        Set<CorrelationId> rightCorrIds = TraitUtils.correlation(inTraits.get(1)).correlationIds();
+
+        if (!rightCorrIds.containsAll(variablesSet))
+            return ImmutableList.of();
+
+        Set<CorrelationId> corrIds = new HashSet<>(rightCorrIds);
+
+        // Left + right
+        corrIds.addAll(TraitUtils.correlation(inTraits.get(0)).correlationIds());
+
+        corrIds.removeAll(variablesSet);
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteCorrelatedNestedLoopJoin(cluster, getTraitSet(), inputs.get(0), inputs.get(1), getCondition(), getVariablesSet(), getJoinType());
+    }
+
+    /** */
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        return super.explainTerms(pw).item("correlationVariables", getVariablesSet());
     }
 }

@@ -38,6 +38,7 @@ import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
@@ -99,12 +100,14 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationRes
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -463,7 +466,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
             DistributionTraitDef.INSTANCE,
-            RewindabilityTraitDef.INSTANCE
+            RewindabilityTraitDef.INSTANCE,
+            CorrelationTraitDef.INSTANCE,
         };
 
         return PlanningContext.builder()
@@ -591,21 +595,32 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private IgniteRel optimize(SqlNode sqlNode, IgnitePlanner planner) {
-        // Convert to Relational operators graph
-        RelRoot root = planner.rel(sqlNode);
+        try {
+            // Convert to Relational operators graph
+            RelRoot root = planner.rel(sqlNode);
 
-        RelNode rel = root.project();
+            RelNode rel = root.project();
 
-        // Transformation chain
-        rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
+            if (rel instanceof Hintable)
+                planner.setDisabledRules(HintUtils.disabledRules((Hintable)rel));
 
-        RelTraitSet desired = rel.getCluster().traitSet()
-            .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteDistributions.single())
-            .replace(root.collation == null ? RelCollations.EMPTY : root.collation)
-            .simplify();
+            // Transformation chain
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 
-        return planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+            RelTraitSet desired = rel.getCluster().traitSet()
+                .replace(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single())
+                .replace(root.collation == null ? RelCollations.EMPTY : root.collation)
+                .simplify();
+
+            return planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+        }
+        catch (Throwable ex) {
+            log.error("Unexpected error at query optimizer.", ex);
+            log.error(planner.dump());
+
+            throw ex;
+        }
     }
 
     /** */

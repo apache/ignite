@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.Set;
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -26,32 +29,40 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /** */
 public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTableScan> extends AbstractIgniteConverterRule<T> {
     /** Instance. */
     public static final LogicalScanConverterRule<IgniteLogicalIndexScan> INDEX_SCAN =
-        new LogicalScanConverterRule<IgniteLogicalIndexScan>(IgniteLogicalIndexScan.class) {
+        new LogicalScanConverterRule<IgniteLogicalIndexScan>(IgniteLogicalIndexScan.class, "LogicalTableScanConverterRule") {
             /** {@inheritDoc} */
             @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, IgniteLogicalIndexScan rel) {
                 return new IgniteIndexScan(rel.getCluster(), rel.getTraitSet().replace(IgniteConvention.INSTANCE),
                     rel.getTable(), rel.indexName(), rel.projects(), rel.condition(), rel.lowerCondition(),
-                    rel.upperCondition(), rel.requiredColunms());
+                    rel.upperCondition(), rel.requiredColumns());
             }
         };
 
     /** Instance. */
     public static final LogicalScanConverterRule<IgniteLogicalTableScan> TABLE_SCAN =
-        new LogicalScanConverterRule<IgniteLogicalTableScan>(IgniteLogicalTableScan.class) {
+        new LogicalScanConverterRule<IgniteLogicalTableScan>(IgniteLogicalTableScan.class, "LogicalIndexScanConverterRule") {
             /** {@inheritDoc} */
             @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, IgniteLogicalTableScan rel) {
-                return new IgniteTableScan(rel.getCluster(), rel.getTraitSet().replace(IgniteConvention.INSTANCE),
-                    rel.getTable(), rel.projects(), rel.condition(), rel.requiredColunms());
+                RelTraitSet traits = rel.getTraitSet().replace(IgniteConvention.INSTANCE);
+
+                Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.condition());
+                if (!corrIds.isEmpty())
+                    traits = traits.replace(CorrelationTrait.correlations(corrIds));
+
+                return new IgniteTableScan(rel.getCluster(), traits,
+                    rel.getTable(), rel.projects(), rel.condition(), rel.requiredColumns());
             }
         };
 
     /** */
-    private LogicalScanConverterRule(Class<T> clazz) {
-        super(clazz);
+    private LogicalScanConverterRule(Class<T> clazz, String descPrefix) {
+        super(clazz, descPrefix);
     }
 }
