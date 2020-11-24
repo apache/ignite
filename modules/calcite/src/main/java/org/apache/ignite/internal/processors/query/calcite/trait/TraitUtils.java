@@ -46,6 +46,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
@@ -163,6 +164,9 @@ public class TraitUtils {
 
         RelTraitSet traits = rel.getTraitSet()
             .replace(toTrait);
+
+        if (!collation(rel).isDefault())
+            return new IgniteIndexSpool(rel.getCluster(), traits, rel);
 
         return new IgniteTableSpool(rel.getCluster(), traits, rel);
     }

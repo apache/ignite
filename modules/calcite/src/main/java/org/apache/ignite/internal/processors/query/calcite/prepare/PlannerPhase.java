@@ -41,6 +41,7 @@ import org.apache.calcite.tools.RuleSets;
 import org.apache.ignite.internal.processors.query.calcite.rule.AggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.CorrelatedNestedLoopJoinRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.FilterSpoolMergeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.NestedLoopJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
@@ -156,7 +157,9 @@ public enum PlannerPhase {
                     FilterConverterRule.INSTANCE,
                     TableModifyConverterRule.INSTANCE,
                     UnionConverterRule.INSTANCE,
-                    SortConverterRule.INSTANCE
+                    SortConverterRule.INSTANCE,
+
+                    FilterSpoolMergeRule.INSTANCE
                 )
             );
         }

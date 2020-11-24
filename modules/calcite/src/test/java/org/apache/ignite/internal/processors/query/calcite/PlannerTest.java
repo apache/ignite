@@ -43,6 +43,7 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
@@ -58,6 +59,7 @@ import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -115,7 +117,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
@@ -2782,6 +2783,58 @@ public class PlannerTest extends GridCommonAbstractTest {
         assertEquals(1, spoolCnt.get());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void indexSpool() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable t0 = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("JID", f.createJavaType(Integer.class))
+                .add("VAL", f.createJavaType(String.class))
+                .build()) {
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.affinity(0, "T0", "hash");
+            }
+        }
+        .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t0_jid_idx");
+
+        TestTable t1 = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("JID", f.createJavaType(Integer.class))
+                .add("VAL", f.createJavaType(String.class))
+                .build()) {
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.affinity(0, "T1", "hash");
+            }
+        }
+        .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid_idx");
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("T0", t0);
+        publicSchema.addTable("T1", t1);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "select * " +
+            "from t0 " +
+            "join t1 on t0.jid = t1.jid";
+
+        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter");
+
+        assertNotNull(phys);
+
+        System.out.println("+++" + RelOptUtil.toString(phys));
+    }
+
     /** */
     private IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
         SchemaPlus schema = createRootSchema(false)
@@ -2921,7 +2974,9 @@ public class PlannerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
             RelTraitSet traitSet = cluster.traitSetOf(Convention.NONE)
-                .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
+                .replaceIf(DistributionTraitDef.INSTANCE, this::distribution)
+                .replaceIf(RewindabilityTraitDef.INSTANCE, () -> rewindable)
+                .replaceIf(RelCollationTraitDef.INSTANCE, getIndex(idxName)::collation);
 
             return IgniteLogicalIndexScan.create(cluster, traitSet, relOptTbl, idxName, null, null, null);
         }
@@ -3024,6 +3079,13 @@ public class PlannerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void addIndex(IgniteIndex idxTbl) {
             indexes.put(idxTbl.name(), idxTbl);
+        }
+
+        /** */
+        public TestTable addIndex(RelCollation collation, String name) {
+            indexes.put(name, new IgniteIndex(collation, name, null, this));
+
+            return this;
         }
 
         /** {@inheritDoc} */
