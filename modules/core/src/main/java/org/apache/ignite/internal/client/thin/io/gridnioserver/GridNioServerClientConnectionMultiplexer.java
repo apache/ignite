@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.logger.java.JavaLogger;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -103,15 +102,13 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
 
         try {
             srv = GridNioServer.<ByteBuffer>builder()
-                    .address(InetAddress.getLoopbackAddress()) // TODO: Remove?
                     .port(CLIENT_MODE_PORT)
                     .listener(new GridNioServerListener<ByteBuffer>() {
                         @Override public void onConnected(GridNioSession ses) {
                             // No-op.
                         }
 
-                        @Override
-                        public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
+                        @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
                             GridNioServerClientConnection conn = ses.meta(GridNioServerClientConnection.SES_META_CONN);
 
                             // Conn can be null when connection fails during initialization in open method.
@@ -143,23 +140,20 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
 
                         @Override
                         public void onFailure(FailureType failureType, Throwable failure) {
+                            // TODO: ???
                             System.out.println("Fail");
                         }
                     })
                     .filters(filters)
                     .logger(gridLog)
-                    .selectorCount(1) // TODO: Get from settings
                     // TODO: Review settings below
-                    .sendQueueLimit(1024)
+                    .selectorCount(1) // TODO: Get from settings
                     .byteOrder(ByteOrder.nativeOrder())
                     .directBuffer(true)
                     .directMode(false)
-                    .socketReceiveBufferSize(0)
-                    .socketSendBufferSize(0)
-                    .idleTimeout(Long.MAX_VALUE)
                     .igniteInstanceName("thinClient")
                     .serverName(THREAD_PREFIX)
-                    .writeTimeout(cfg.getTimeout())
+                    .writeTimeout(cfg.getTimeout() > 0 ? cfg.getTimeout() : -1)
                     .build();
         } catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -185,8 +179,6 @@ public class GridNioServerClientConnectionMultiplexer implements ClientConnectio
             java.nio.channels.SocketChannel ch = java.nio.channels.SocketChannel.open();
             Socket sock = ch.socket();
 
-            // See GridClientNioTcpConnection.
-            // TODO: Pass timeout?
             // TODO: why can't we pass addr directly? The logic on the following line is copied from old TcpClientChannel
             InetSocketAddress addr2 = new InetSocketAddress(addr.getHostName(), addr.getPort());
             sock.connect(addr2, Integer.MAX_VALUE);
