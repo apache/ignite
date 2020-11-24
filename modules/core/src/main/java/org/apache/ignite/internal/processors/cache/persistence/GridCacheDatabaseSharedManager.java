@@ -252,7 +252,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final String throttlingPolicyOverride = IgniteSystemProperties.getString(
         IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED);
 
-    /** Defragmentation region size percentage of configured one. */
+    /** Defragmentation regions size percentage of configured ones. */
     private final int defragmentationRegionSizePercentageOfConfiguredSize =
         getInteger(IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE, DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE);
 
@@ -581,12 +581,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             regionConfs.addAll(Arrays.asList(dataConf.getDataRegionConfigurations()));
 
         long totalDefrRegionSize = 0;
+        long totalRegionsSize = 0;
+
+        for (DataRegionConfiguration regionCfg : regionConfs) {
+            totalDefrRegionSize = Math.max(
+                totalDefrRegionSize,
+                (long)(regionCfg.getMaxSize() * 0.01 * defragmentationRegionSizePercentageOfConfiguredSize)
+            );
+
+            totalRegionsSize += regionCfg.getMaxSize();
+        }
+
+        double shrinkPercentage = 1d * (totalRegionsSize - totalDefrRegionSize) / totalRegionsSize;
 
         for (DataRegionConfiguration region : regionConfs) {
-            long newSize = (long)(region.getMaxSize() / 100.0 * defragmentationRegionSizePercentageOfConfiguredSize);
+            long newSize = (long)(region.getMaxSize() * shrinkPercentage);
             long newInitSize = Math.min(region.getInitialSize(), newSize);
-
-            totalDefrRegionSize += region.getMaxSize() - newSize;
 
             log.info("Region size was reassigned by defragmentation reason: " +
                 "region = '" + region.getName() + "', " +
