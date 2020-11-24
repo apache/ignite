@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.client.thin.io.gridnioserver;
 
+import java.nio.ByteBuffer;
+
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
-
-import java.nio.ByteBuffer;
 
 /**
  * Client event listener.
