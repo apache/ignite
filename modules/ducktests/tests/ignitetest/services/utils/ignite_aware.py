@@ -25,6 +25,7 @@ from abc import abstractmethod, ABCMeta
 from datetime import datetime
 from threading import Thread
 
+from ducktape.cluster.remoteaccount import LogMonitor
 from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
 
@@ -210,10 +211,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         :param backoff_sec: Number of seconds to back off between each failure to meet the condition
                 before checking again.
         """
-        with node.account.monitor_log(self.STDOUT_STDERR_CAPTURE) as monitor:
-            if from_the_beginning:
-                monitor.offset = 0
-
+        with LogMonitor(self, self.STDOUT_STDERR_CAPTURE, 0) if from_the_beginning else node.account.monitor_log(
+                self.STDOUT_STDERR_CAPTURE) as monitor:
             monitor.wait_until(evt_message, timeout_sec=timeout_sec, backoff_sec=backoff_sec,
                                err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
                                                                                                timeout_sec))
