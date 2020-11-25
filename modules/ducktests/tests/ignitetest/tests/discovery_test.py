@@ -277,7 +277,8 @@ def start_zookeeper(test_context, num_nodes, test_config):
     Start zookeeper cluster.
     """
     zk_settings = ZookeeperSettings(min_session_timeout=test_config.failure_detection_timeout,
-                                    tick_time=test_config.failure_detection_timeout // 3)
+                                    max_session_timeout=test_config.failure_detection_timeout,
+                                    tick_time=test_config.failure_detection_timeout // 2)
 
     zk_quorum = ZookeeperService(test_context, num_nodes, settings=zk_settings)
     zk_quorum.start()
@@ -293,7 +294,7 @@ def start_servers(test_context, num_nodes, ignite_config, modules=None):
                             jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"])
 
     start = monotonic()
-    servers.start()
+    servers.start(timeout_sec=90)
     return servers, round(monotonic() - start, 1)
 
 
