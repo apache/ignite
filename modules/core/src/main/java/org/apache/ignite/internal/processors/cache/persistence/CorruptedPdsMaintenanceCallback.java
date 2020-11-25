@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
 import org.jetbrains.annotations.NotNull;
@@ -68,14 +67,14 @@ public class CorruptedPdsMaintenanceCallback implements MaintenanceWorkflowCallb
     }
 
     /** {@inheritDoc} */
-    @Override public List<MaintenanceAction> allActions() {
+    @Override public List<MaintenanceAction<?>> allActions() {
         return Arrays.asList(
             new CleanCacheStoresMaintenanceAction(workDir, cacheStoreDirs.toArray(new String[0])),
             new CheckCorruptedCacheStoresCleanAction(workDir, cacheStoreDirs.toArray(new String[0])));
     }
 
     /** {@inheritDoc} */
-    @Override public MaintenanceAction automaticAction() {
+    @Override public MaintenanceAction<?> automaticAction() {
         return null;
     }
 }

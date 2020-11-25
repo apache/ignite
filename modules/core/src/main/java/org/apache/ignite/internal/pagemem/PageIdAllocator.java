@@ -19,15 +19,31 @@ package org.apache.ignite.internal.pagemem;
 
 import org.apache.ignite.IgniteCheckedException;
 
+import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+
 /**
  * Allocates page ID's.
  */
 public interface PageIdAllocator {
-    /** */
+    /**
+     * Flag for Data page.
+     * Also used by partition meta and tracking pages.
+     * This type doesn't use Page ID rotation mechanizm.
+     */
     public static final byte FLAG_DATA = 1;
 
-    /** */
+    /**
+     * Flag for index page.
+     * Also used by internal structure in inmemory caches.
+     * This type uses Page ID rotation mechanizm.
+     */
     public static final byte FLAG_IDX = 2;
+
+    /**
+     * Flag for internal structure page.
+     * This type uses Page ID rotation mechanizm.
+     */
+    public static final byte FLAG_AUX = 4;
 
     /** Max partition ID that can be used by affinity. */
     public static final int MAX_PARTITION_ID = 65500;
@@ -40,6 +56,9 @@ public interface PageIdAllocator {
 
     /** Special partition reserved for metastore space. */
     public static final int METASTORE_PARTITION = 0x1;
+
+    /** Cache group meta page id. */
+    public static final long META_PAGE_ID = pageId(INDEX_PARTITION, FLAG_IDX, 0);
 
     /**
      * Allocates a page from the space for the given partition ID and the given flags.
