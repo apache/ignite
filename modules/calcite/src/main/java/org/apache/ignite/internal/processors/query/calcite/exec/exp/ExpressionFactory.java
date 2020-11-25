@@ -93,6 +93,12 @@ public interface ExpressionFactory<Row> {
      */
     Supplier<Row> rowSource(List<RexNode> values);
 
+
+    /**
+     * Executes expression.
+     */
+    <T> Supplier<T> execute(RexNode node);
+
     /**
      * Creates {@link Scalar}, a code-generated expressions evaluator.
      *

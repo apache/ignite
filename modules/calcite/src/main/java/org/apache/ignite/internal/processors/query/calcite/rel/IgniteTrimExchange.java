@@ -58,6 +58,7 @@ public class IgniteTrimExchange extends Exchange implements SourceAwareIgniteRel
         this.sourceId = sourceId;
     }
 
+    /** */
     public IgniteTrimExchange(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
         sourceId = ((Number)input.get("sourceId")).longValue();

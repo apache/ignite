@@ -39,7 +39,6 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public class IgniteLogicalIndexScan extends AbstractIndexScan {
-
     /** Creates a IgniteLogicalIndexScan. */
     public static IgniteLogicalIndexScan create(
         RelOptCluster cluster,

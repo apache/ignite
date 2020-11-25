@@ -17,35 +17,61 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalSort;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 
 /**
  * Converter rule for sort operator.
  */
-public class SortConverterRule extends AbstractIgniteConverterRule<LogicalSort> {
+public class SortConverterRule extends RelRule<SortConverterRule.Config> {
     /** */
-    public static final RelOptRule INSTANCE = new SortConverterRule();
+    public static final RelOptRule INSTANCE =
+        SortConverterRule.Config.DEFAULT
+            .as(SortConverterRule.Config.class).toRule();
 
-    /** */
-    public SortConverterRule() {
-        super(LogicalSort.class, "SortConverterRule");
+    /** Creates a LimitConverterRule. */
+    protected SortConverterRule(SortConverterRule.Config config) {
+        super(config);
+    }
+
+    /** Rule configuration. */
+    public interface Config extends RelRule.Config {
+        SortConverterRule.Config DEFAULT = EMPTY
+            .withOperandSupplier(b ->
+                b.operand(LogicalSort.class).anyInputs())
+            .as(SortConverterRule.Config.class);
+
+        /** {@inheritDoc} */
+        @Override default SortConverterRule toRule() {
+            return new SortConverterRule(this);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalSort rel) {
-        RelOptCluster cluster = rel.getCluster();
-        RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(rel.getCollation());
+    @Override public void onMatch(RelOptRuleCall call) {
+        final Sort sort = call.rel(0);
+        RelOptCluster cluster = sort.getCluster();
+        RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(sort.getCollation());
         RelTraitSet inTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelNode input = convert(rel.getInput(), inTraits);
+        RelNode input = convert(sort.getInput(), inTraits);
 
-        return new IgniteSort(cluster, outTraits, input, rel.getCollation(), rel.offset, rel.fetch);
+        if (sort.fetch != null || sort.offset != null) {
+            RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(sort.getCollation());
+
+            call.transformTo(new IgniteLimit(cluster, traits, convert(sort.getInput(), traits), sort.offset,
+                sort.fetch));
+
+            return;
+        }
+
+        call.transformTo(new IgniteSort(cluster, outTraits, input, sort.getCollation()));
     }
 }

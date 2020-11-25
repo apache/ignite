@@ -201,6 +201,11 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** {@inheritDoc} */
+    @Override public <T> Supplier<T> execute(RexNode node) {
+        return new ValueImpl<T>(scalar(node, null), ctx.rowHandler().factory(typeFactory.getJavaClass(node.getType())));
+    }
+
+    /** {@inheritDoc} */
     @Override public Iterable<Row> values(List<RexLiteral> values, RelDataType rowType) {
         RowHandler<Row> handler = ctx.rowHandler();
         RowFactory<Row> factory = handler.factory(typeFactory, rowType);
@@ -377,6 +382,29 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             scalar.execute(ctx, null, res);
 
             return res;
+        }
+    }
+
+    /** */
+    private class ValueImpl<T> implements Supplier<T> {
+        /** */
+        private final Scalar scalar;
+
+        /** */
+        private final RowFactory<Row> factory;
+
+        /** */
+        private ValueImpl(Scalar scalar, RowFactory<Row> factory) {
+            this.scalar = scalar;
+            this.factory = factory;
+        }
+
+        /** {@inheritDoc} */
+        @Override public T get() {
+            Row res = factory.create();
+            scalar.execute(ctx, null, res);
+
+            return (T)ctx.rowHandler().get(0, res);
         }
     }
 
