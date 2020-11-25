@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.thin;
 
+import java.util.stream.IntStream;
+
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
@@ -34,8 +33,6 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
-
-import java.util.stream.IntStream;
 
 /**
  * Base class for thin client benchmarks.
@@ -62,7 +59,7 @@ public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
     protected Ignite node;
 
     /** Target cache. */
-    protected IgniteCache cache;
+    protected ClientCache cache;
 
     /** Thin client. */
     protected IgniteClient client;
@@ -75,11 +72,8 @@ public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
     public void setup() {
         System.out.println();
         System.out.println("--------------------");
-
         System.out.println("IGNITE BENCHMARK INFO: ");
-
         System.out.println("\tdata nodes:                 " + intProperty(PROP_DATA_NODES, DFLT_DATA_NODES));
-
         System.out.println("--------------------");
         System.out.println();
 
@@ -92,10 +86,9 @@ public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
         for (int i = 1; i < nodesCnt; i++)
             Ignition.start(configuration("node" + i));
 
-        cache = node.cache(DEFAULT_CACHE_NAME);
-
         String[] addrs = IntStream.range(10800, nodesCnt).mapToObj(p -> "127.0.0.1" + p).toArray(String[]::new);
         client = Ignition.startClient(new ClientConfiguration().setAddresses(addrs));
+        cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -114,30 +107,10 @@ public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
      * @return Configuration.
      */
     protected IgniteConfiguration configuration(String igniteInstanceName) {
-        IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setIgniteInstanceName(igniteInstanceName);
-
-        cfg.setLocalHost("127.0.0.1");
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-        cfg.setDiscoverySpi(discoSpi);
-
-        cfg.setCacheConfiguration(cacheConfiguration());
-
-        return cfg;
-    }
-
-    /**
-     * Create cache configuration.
-     *
-     * @return Cache configuration.
-     */
-    protected CacheConfiguration cacheConfiguration() {
-        return new CacheConfiguration()
-                .setName(DEFAULT_CACHE_NAME)
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setRebalanceMode(CacheRebalanceMode.SYNC);
+        return new IgniteConfiguration()
+                .setIgniteInstanceName(igniteInstanceName)
+                .setLocalHost("127.0.0.1")
+                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
     }
 }
