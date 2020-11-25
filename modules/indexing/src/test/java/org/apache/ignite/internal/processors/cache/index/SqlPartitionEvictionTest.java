@@ -17,13 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -48,6 +43,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 
 /** */
 @RunWith(Parameterized.class)
@@ -89,7 +92,9 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
             );
     }
 
-    /** */
+    /**
+     *  Number of partition backups
+     */
     @Parameterized.Parameter
     public int backupsCount;
 
@@ -113,6 +118,7 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         latch = new CountDownLatch(1);
 
@@ -126,9 +132,13 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
+    /**
+     * Tests sql query result after eviction partitions
+     */
     @Test
     public void testSqlConsistencyOnEviction() throws Exception {
         IgniteEx ig = null;
+
         int idx = 0;
         while (idx <= backupsCount)
             ig = ignitionStart(idx++);
@@ -139,7 +149,7 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        U.await(latch);
+        U.await(latch, 10, SECONDS);
 
         for (Ignite g: G.allGrids())
             assertEquals(NUM_ENTITIES, query(g, "SELECT * FROM " + POI_TABLE_NAME).size());
