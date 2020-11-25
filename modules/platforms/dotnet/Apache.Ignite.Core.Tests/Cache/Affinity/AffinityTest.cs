@@ -116,8 +116,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestAffinityKeyMappedWithQueryEntitySpringXml()
         {
-            TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-0"), "cache1");
-            TestAffinityKeyMappedWithQueryEntity0(Ignition.GetIgnite("grid-1"), "cache1");
+            foreach (var ignite in Ignition.GetAll())
+            {
+                TestAffinityKeyMappedWithQueryEntity0(ignite, "cache1");
+            }
         }
 
         /// <summary>
