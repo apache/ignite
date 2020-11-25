@@ -9,7 +9,7 @@ public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark 
     /**
      * Cache put benchmark.
      */
-    // @Benchmark
+    @Benchmark
     public void put() {
         int key = ThreadLocalRandom.current().nextInt(CNT);
 
