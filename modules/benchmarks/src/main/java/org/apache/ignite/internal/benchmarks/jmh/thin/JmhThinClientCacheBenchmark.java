@@ -37,6 +37,7 @@ public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark 
      */
     public static void main(String[] args) throws Exception {
         // TODO: Benchmark hangs when GridNioServer.selectorCount > 1
+        // See GridNioClientConnectionMultiplexer constructor
         System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "0");
 
         JmhThinClientCacheBenchmark b = new JmhThinClientCacheBenchmark();
