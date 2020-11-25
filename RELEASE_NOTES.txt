@@ -2,6 +2,63 @@ Apache Ignite Release Notes
 ===========================
 
 
+Apache Ignite In-Memory Computing Platform 2.9.1
+-----------------------------------------------------------
+
+Ignite Core:
+* Added support to graceful shutdown for ZookeeperDiscoverySpi
+* Added System view for binary metadata
+* Added System view for metastorage items
+* Added RebalancingPartitionsTotal metrics
+* Improved checkpoint concurrent behaviour
+* Fixed critical system error when unregister a JMX bean
+* Fixed IgniteCache#isClosed() returns false on server node even if the cache had been closed before
+* Fixed inability to eagerly remove expired cache entries
+* Fixed partial index rebuild issue in case indexed cache contains different datatypes
+* Fixed local metastorage system view error if unmarshallable values present
+* Fixed deadlock between grid-timeout-worker and a thread opening a communication connection
+* Fixed deadlock in IgniteServiceProcessor
+* Fixed issue when rebalance future might hang in no final state though all partitions are owned
+* Fixed issue when scan query fails with an assertion error: Unexpected row key
+* Fixed issue with archiving and enabled wal compaction setting on server restart
+* Fixed NPE during Cassandra Store initialization with PRIMITIVE strategy
+* Fixed synchronization problems when different classloaders are used for deployment of same class
+* Fixed exception on SQL caches when client reconnect
+* Fixed deadlock on multiple cache delete
+* Fixed NPE in IgniteServiceProcessor when destroying a cache
+* Fixed issue when DurableBackgroundTask can abandon incomplete task
+* Fixed issue related to cache interceptor deserialization on client nodes
+* Fixed issue when control.sh doesn't start if JMX port was set
+* Fixed issue when ZookeeperDiscoverySpiMBeanImpl#getCoordinator can return invalid node as coordinator
+* Fixed issue when valid blocking section in GridNioWorker and GridNioClientWorker leads to false positive blocking thread detection
+* Fixed several logging issues
+* Fixed issue when exchange worker, waiting for new task from queue, considered as blocked
+* Fixed incorrect topology snapshot logger output about coordinator change
+* Fixed slowdown during node initialization
+* Fixed incorrect usage of Class.isAssignableFrom in SystemViewLocal and SystemViewMBean classes
+* Removed unnecessary dependency to curator-client from and improved ZookeeperDiscoverySpi
+* Removed unnecessary failure trace in IgnitionEx
+
+Java thin-client:
+* Fixed issue when thin client connect/disconnect during topology update may lead to partition divergence in ignite-sys-cache
+* Fixed issue when thin client silently closes channel after inactivity
+* Fixed unsupported protocol version exception when getting cache configuration from Java thin client
+
+JDBC:
+* Fixed thin driver reports incorrect property names
+* Updated JDBC metadata to match actual capabilities
+
+Ignite .NET:
+* Improved slow Enum serialization
+* Fixed issue when deserializing IBinaryObject containing an IBinaryObject field fails
+* Fixed issue TransactionImpl finalizer can crash the process
+* Fixed child processes become zombies when persistence is used with direct-io on Linux
+
+Ignite C++:
+* Fixed issue when odbc-example loses values if run with 1 additional node
+* Added Windows support to CMake build system
+
+
 Apache Ignite In-Memory Computing Platform 2.9
 -----------------------------------------------------------
 
