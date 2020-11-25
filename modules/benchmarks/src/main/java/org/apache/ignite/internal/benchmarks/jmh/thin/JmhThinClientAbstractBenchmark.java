@@ -43,10 +43,10 @@ public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
     protected static final String PROP_DATA_NODES = "ignite.jmh.thin.dataNodes";
 
     /** Default amount of nodes. */
-    protected static final int DFLT_DATA_NODES = 3;
+    protected static final int DFLT_DATA_NODES = 4;
 
     /** Items count. */
-    protected static final int CNT = 100000;
+    protected static final int CNT = 10000;
 
     /** Cache value. */
     protected static final byte[] PAYLOAD = new byte[1000];
