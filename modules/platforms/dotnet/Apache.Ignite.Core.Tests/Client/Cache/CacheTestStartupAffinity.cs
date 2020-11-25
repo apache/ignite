@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System.Threading;
     using NUnit.Framework;
 
     /// <summary>
@@ -36,7 +37,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 using (var igniteClient = Ignition.Start(clientCfg))
                 {
                     var cache1 = igniteSrv.GetOrCreateCache<int, string>("cache1");
-                    igniteClient.GetAffinity("cache1");
+
+                    // Uncomment to fix the NPE
+                    // igniteClient.GetCache<int, string>(cache1.Name);
+
+                    igniteClient.GetAffinity(cache1.Name);
                 }
             }
         }
