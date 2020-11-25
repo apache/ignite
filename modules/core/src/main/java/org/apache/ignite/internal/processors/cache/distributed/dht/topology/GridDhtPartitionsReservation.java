@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Reservation mechanism for multiple partitions allowing to do a reservation in one operation.
@@ -284,8 +285,9 @@ public class GridDhtPartitionsReservation implements GridReservable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "[cache=" + cctx.name() +
-            ", partitions=" + Arrays.toString(parts.get()) +
-            ", topology=" + topVer;
+        return S.toString(null,
+            "cache", cctx.name(), false,
+            "partitions", Arrays.toString(parts.get()), false,
+            "topology", topVer.toString(), false);
     }
 }
