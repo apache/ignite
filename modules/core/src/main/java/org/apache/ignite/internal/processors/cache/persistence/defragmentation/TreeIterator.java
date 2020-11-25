@@ -52,7 +52,7 @@ public class TreeIterator {
         long pageId,
         PageAccessor<T> accessor
     ) throws IgniteCheckedException {
-        assert access != null;
+        assert access == PageAccessType.ACCESS_READ || access == PageAccessType.ACCESS_WRITE;
         long page = pageMemory.acquirePage(grpId, pageId);
 
         try {
