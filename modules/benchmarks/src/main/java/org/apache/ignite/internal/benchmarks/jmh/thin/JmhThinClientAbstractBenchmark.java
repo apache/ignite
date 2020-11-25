@@ -93,7 +93,11 @@ public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
                 .mapToObj(p -> "127.0.0.1:" + p)
                 .toArray(String[]::new);
 
-        client = Ignition.startClient(new ClientConfiguration().setAddresses(addrs));
+        ClientConfiguration cfg = new ClientConfiguration()
+                .setAddresses(addrs)
+                .setPartitionAwarenessEnabled(true);
+
+        client = Ignition.startClient(cfg);
 
         cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 

@@ -82,6 +82,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                     .filters(filters)
                     .logger(gridLog)
                     // TODO: Review settings below
+                    // TODO: Buffer sizes from settings - check them
                     .selectorCount(1) // TODO: Do we need a setting? Run a benchmark.
                     .byteOrder(ByteOrder.nativeOrder())
                     .directBuffer(true)
