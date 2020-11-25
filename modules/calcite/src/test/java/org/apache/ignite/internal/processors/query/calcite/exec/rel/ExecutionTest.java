@@ -980,6 +980,71 @@ public class ExecutionTest extends AbstractExecutionTest {
         }
     }
 
+    /** */
+    @Test
+    public void testMergeJoin() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
+
+        int[] leftSizes = {1, 99, 100, 101, 512, 513, 2000};
+        int[] rightSizes = {1, 99, 100, 101, 512, 513, 2000};
+
+        for (int leftSize : leftSizes) {
+            for (int rightSize : rightSizes) {
+                log.info("Check: leftSize=" + leftSize + ", rightSize=" + rightSize);
+
+                ScanNode<Object[]> left = new ScanNode<>(ctx, rowType, new TestTable(leftSize, rowType));
+                ScanNode<Object[]> right = new ScanNode<>(ctx, rowType, new TestTable(rightSize, rowType));
+
+                RelDataType joinRowType = TypeUtils.createRowType(
+                    tf,
+                    int.class, String.class, int.class,
+                    int.class, String.class, int.class);
+
+                MergeJoinNode<Object[]> join = MergeJoinNode.create(
+                    ctx,
+                    joinRowType,
+                    null,
+                    null,
+                    INNER,
+                    (r1, r2) -> {
+                        Object o1 = r1[0];
+                        Object o2 = r2[0];
+
+                        if (o1 == null || o2 == null) {
+                            if (o1 != null)
+                                return 1;
+                            else if (o2 != null)
+                                return -1;
+                            else
+                                return 0;
+                        }
+
+                        return Integer.compare((Integer)o1, (Integer)o2);
+                    }
+                );
+
+                join.register(Arrays.asList(left, right));
+
+                RootNode<Object[]> root = new RootNode<>(ctx, joinRowType);
+                root.register(join);
+
+                int cnt = 0;
+                while (root.hasNext()) {
+                    root.next();
+
+                    cnt++;
+                }
+
+                assertEquals(
+                    "Invalid result size. [left=" + leftSize + ", right=" + rightSize + ", results=" + cnt,
+                    Math.min(leftSize, rightSize),
+                    cnt);
+            }
+        }
+    }
+
     /**
      *
      */
