@@ -4,9 +4,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark {
     /**
@@ -36,22 +33,13 @@ public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark 
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        final String simpleClsName = JmhThinClientCacheBenchmark.class.getSimpleName();
-        final int threads = 4;
-
-        final String output = simpleClsName +
-                "-" + threads + "-threads";
-
-        final Options opt = new OptionsBuilder()
-                .threads(threads)
-                .include(simpleClsName)
-                .output(output + ".jmh.log")
-                .jvmArgs(
-                        "-Xms1g",
-                        "-Xmx1g",
-                        "-XX:+UnlockCommercialFeatures",
-                        JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 4)).build();
-
-        new Runner(opt).run();
+        JmhIdeBenchmarkRunner.create()
+                .forks(1)
+                .threads(4)
+                .warmupIterations(30)
+                .measurementIterations(30)
+                .benchmarks(JmhThinClientCacheBenchmark.class.getSimpleName())
+                .jvmArguments("-Xms4g", "-Xmx4g")
+                .run();
     }
 }
