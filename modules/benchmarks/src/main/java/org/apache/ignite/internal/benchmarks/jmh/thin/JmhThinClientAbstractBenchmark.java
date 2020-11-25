@@ -110,7 +110,8 @@ public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
      *
      */
     @TearDown
-    public void tearDown() {
+    public void tearDown() throws Exception {
+        client.close();
         Ignition.stopAll(true);
     }
 

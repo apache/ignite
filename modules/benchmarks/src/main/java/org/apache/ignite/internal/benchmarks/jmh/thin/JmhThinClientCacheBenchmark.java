@@ -41,8 +41,8 @@ public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark 
         JmhIdeBenchmarkRunner.create()
                 .forks(1)
                 .threads(4)
-                .warmupIterations(30)
-                .measurementIterations(30)
+                .warmupIterations(5)
+                .measurementIterations(10)
                 .benchmarks(JmhThinClientCacheBenchmark.class.getSimpleName())
                 .jvmArguments("-Xms4g", "-Xmx4g")
                 .run();
