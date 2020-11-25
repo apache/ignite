@@ -46,7 +46,7 @@ public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
     protected static final int DFLT_DATA_NODES = 4;
 
     /** Items count. */
-    protected static final int CNT = 10000;
+    protected static final int CNT = 1000;
 
     /** Cache value. */
     protected static final byte[] PAYLOAD = new byte[1000];
@@ -88,13 +88,21 @@ public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
         for (int i = 1; i < nodesCnt; i++)
             Ignition.start(configuration("node" + i));
 
-        String[] addrs = IntStream.range(10800, 10800 + CNT).mapToObj(p -> "127.0.0.1" + p).toArray(String[]::new);
+        String[] addrs = IntStream
+                .range(10800, 10800 + nodesCnt)
+                .mapToObj(p -> "127.0.0.1:" + p)
+                .toArray(String[]::new);
+
         client = Ignition.startClient(new ClientConfiguration().setAddresses(addrs));
 
         cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
+        System.out.println("Loading test data...");
+
         for (int i = 0; i < CNT; i++)
             cache.put(i, PAYLOAD);
+
+        System.out.println("Test data loaded: " + CNT);
     }
 
     /**

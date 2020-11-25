@@ -33,6 +33,11 @@ public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark 
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
+//        JmhThinClientCacheBenchmark b = new JmhThinClientCacheBenchmark();
+//        b.setup();
+//        b.put();
+//        b.get();
+//        b.tearDown();
         JmhIdeBenchmarkRunner.create()
                 .forks(1)
                 .threads(4)
