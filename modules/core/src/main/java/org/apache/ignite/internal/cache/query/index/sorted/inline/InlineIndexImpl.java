@@ -192,8 +192,6 @@ public class InlineIndexImpl implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public void onUpdate(@Nullable CacheDataRow oldRow, @Nullable CacheDataRow newRow) throws IgniteCheckedException {
-        assert !(oldRow == null && newRow == null);
-
         try {
             ThreadLocalSchemaHolder.setSchema(def.getSchema());
 
@@ -231,12 +229,16 @@ public class InlineIndexImpl implements InlineIndex {
         try {
             ThreadLocalSchemaHolder.setSchema(def.getSchema());
 
-            return segments[segment].put(new IndexRowImpl(def.getSchema(), row)).getCacheDataRow();
+            IndexRow oldRow = segments[segment].put(new IndexRowImpl(def.getSchema(), row));
+
+            if (oldRow != null)
+                return oldRow.getCacheDataRow();
+
+            return null;
 
         } finally {
             ThreadLocalSchemaHolder.cleanSchema();
         }
-
     }
 
     /** {@inheritDoc} */

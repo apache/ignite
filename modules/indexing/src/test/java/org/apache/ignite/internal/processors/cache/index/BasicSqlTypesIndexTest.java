@@ -149,9 +149,9 @@ public class BasicSqlTypesIndexTest extends AbstractIndexingCommonTest {
         String idxTypeStr = "DECIMAL(20,3)";
         Class<BigDecimal> idxCls = BigDecimal.class;
 
-//        createPopulateAndVerify(idxTypeStr, idxCls, BigDecimal::compareTo, PK, "BACKUPS=1");
-//        createPopulateAndVerify(idxTypeStr, idxCls, BigDecimal::compareTo, PK, "BACKUPS=1,AFFINITY_KEY=idxVal");
-//        createPopulateAndVerify(idxTypeStr, idxCls, BigDecimal::compareTo, SECONDARY_DESC, "BACKUPS=1");
+        createPopulateAndVerify(idxTypeStr, idxCls, BigDecimal::compareTo, PK, "BACKUPS=1");
+        createPopulateAndVerify(idxTypeStr, idxCls, BigDecimal::compareTo, PK, "BACKUPS=1,AFFINITY_KEY=idxVal");
+        createPopulateAndVerify(idxTypeStr, idxCls, BigDecimal::compareTo, SECONDARY_DESC, "BACKUPS=1");
         createPopulateAndVerify(idxTypeStr, idxCls, BigDecimal::compareTo, SECONDARY_ASC, "BACKUPS=1");
     }
 

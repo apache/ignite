@@ -42,6 +42,8 @@ public abstract class AbstractLeafIO extends BPlusLeafIO<IndexSearchRow> impleme
 
     /** {@inheritDoc} */
     @Override public void storeByOffset(long pageAddr, int off, IndexSearchRow row) {
+        assert row.getLink() != 0;
+
         PageUtils.putLong(pageAddr, off, row.getLink());
     }
 
@@ -63,7 +65,7 @@ public abstract class AbstractLeafIO extends BPlusLeafIO<IndexSearchRow> impleme
 
     /** {@inheritDoc} */
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexSearchRow> srcIo, long srcPageAddr, int srcIdx) {
-        long link = getLink(srcPageAddr, srcIdx);
+        long link = ((InlineIO) srcIo).getLink(srcPageAddr, srcIdx);
 
         PageUtils.putLong(dstPageAddr, offset(dstIdx), link);
     }

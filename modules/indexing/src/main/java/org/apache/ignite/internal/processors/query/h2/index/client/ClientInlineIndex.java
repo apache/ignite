@@ -123,7 +123,7 @@ public class ClientInlineIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public void destroy(boolean softDelete) {
-        throw unsupported();
+        // No-op.
     }
 
     /**

@@ -48,6 +48,7 @@ public class H2RowComparator implements IndexRowComparator {
         // H2 supports comparison between different types after casting them to single type.
         if (type != objType && type == curType) {
             Value va = DataType.convertToValue(ThreadLocalSessionHolder.getSession(), v, type);
+            va = va.convertTo(type);
 
             // TODO: is there other way to invoke inline comparation?
             int c = ((NullableInlineIndexKeyType) t).compare0(pageAddr, off, va.getObject());

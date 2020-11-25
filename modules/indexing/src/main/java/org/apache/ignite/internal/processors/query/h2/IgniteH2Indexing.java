@@ -474,7 +474,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             InlineIndex queryIndex = index.unwrap(InlineIndex.class);
 
-            return new H2TreeIndex(queryIndex, tbl, unwrappedCols.toArray(new IndexColumn[0]), false);
+            return new H2TreeIndex(queryIndex, tbl, unwrappedCols.toArray(new IndexColumn[0]), pk);
         }
         else {
             ClientIndexDefinition d = new ClientIndexDefinition(
@@ -486,7 +486,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             InlineIndex idx = index.unwrap(InlineIndex.class);
 
-            IndexType idxType = IndexType.createNonUnique(false, false, false);
+            IndexType idxType = pk ? IndexType.createPrimaryKey(false, false) :
+                IndexType.createNonUnique(false, false, false);
 
             return new H2TreeClientIndex(idx, tbl, name, unwrappedCols.toArray(new IndexColumn[0]), idxType);
         }

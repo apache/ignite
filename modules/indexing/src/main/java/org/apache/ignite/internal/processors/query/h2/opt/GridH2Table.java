@@ -707,12 +707,8 @@ public class GridH2Table extends TableBase {
         if (idx instanceof GridH2IndexBase) {
             GridH2IndexBase h2idx = (GridH2IndexBase) idx;
 
-            String cacheName = h2idx.getTable().cacheContext().name();
-
-            // TODO: use context.indexing() GridManagerIndexing, that proxy to Indexing SPI
-            // Destroy underlying Ignite index
-            cacheContext().kernalContext().config().getIndexingSpi()
-                .removeIndex(cacheName, idx.getName(), false);
+            // Destroy underlying Ignite index.
+            desc.indexing().kernalContext().indexing().removeIndex(cacheName(), idx.getName(), false);
 
             // Call it too, if H2 index stores some state.
             h2idx.destroy(rmIndex);

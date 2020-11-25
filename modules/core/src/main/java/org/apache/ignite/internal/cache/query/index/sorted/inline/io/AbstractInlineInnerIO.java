@@ -30,21 +30,20 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInne
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
-
 /**
  * Inner page to store index rows with inlined keys.
  */
 public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexSearchRow> implements InlineIO {
-     /**
-      * Amount of bytes to store inlined index keys.
-      *
-      * We do not store schema there:
-      * 1. IOs are shared between multiple indexes with the same inlineSize.
-      * 2. For backward compatibility, to restore index from PDS.
-      */
+    /**
+     * Amount of bytes to store inlined index keys.
+     *
+     * We do not store schema there:
+     * 1. IOs are shared between multiple indexes with the same inlineSize.
+     * 2. For backward compatibility, to restore index from PDS.
+     */
     private final int inlineSize;
 
-     /**
+    /**
      * @param type Page type.
      * @param ver Page format version.
      * @param inlineSize size of calculated inline keys.

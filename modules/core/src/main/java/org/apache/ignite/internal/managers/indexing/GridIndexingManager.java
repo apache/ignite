@@ -113,6 +113,17 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     }
 
     /**
+     * Deletes specified index.
+     *
+     * @param cacheName Cache name.
+     * @param idxName Index name.
+     * @param softDelete Soft delete flag.
+     */
+    public void removeIndex(String cacheName, String idxName, boolean softDelete) {
+        getSpi().removeIndex(cacheName, idxName, softDelete);
+    }
+
+    /**
      * Remove cache row from index.
      *
      * @param cacheName Cache name.
