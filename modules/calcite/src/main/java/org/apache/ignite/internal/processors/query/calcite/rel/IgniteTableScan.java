@@ -108,6 +108,7 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements S
         return sourceId;
     }
 
+    /** */
     @Override protected RelWriter explainTerms0(RelWriter pw) {
         return super.explainTerms0(pw)
             .itemIf("sourceId", sourceId, sourceId != -1);
@@ -120,11 +121,11 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements S
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
-        return new IgniteTableScan(sourceId, getCluster(), getTraitSet(), getTable(), projects, condition, requiredColunms);
+        return new IgniteTableScan(sourceId, getCluster(), getTraitSet(), getTable(), projects, condition, requiredColumns);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteTableScan(sourceId, cluster, getTraitSet(), getTable(), projects, condition, requiredColunms);
+        return new IgniteTableScan(sourceId, cluster, getTraitSet(), getTable(), projects, condition, requiredColumns);
     }
 }

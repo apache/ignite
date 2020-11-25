@@ -42,7 +42,7 @@ public class TableModifyConverterRule extends AbstractIgniteConverterRule<Logica
      * Creates a ConverterRule.
      */
     public TableModifyConverterRule() {
-        super(LogicalTableModify.class);
+        super(LogicalTableModify.class, "TableModifyConverterRule");
     }
 
     /** {@inheritDoc} */

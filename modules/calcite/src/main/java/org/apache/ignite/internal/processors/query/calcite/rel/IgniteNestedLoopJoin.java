@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -31,6 +33,9 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
@@ -83,6 +88,29 @@ public class IgniteNestedLoopJoin extends AbstractIgniteNestedLoopJoin {
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        return ImmutableList.of(Pair.of(nodeTraits,
+            ImmutableList.of(
+                inTraits.get(0).replace(TraitUtils.correlation(nodeTraits)),
+                inTraits.get(1).replace(TraitUtils.correlation(nodeTraits))
+            )
+        ));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        // left correlations
+        Set<CorrelationId> corrIds = new HashSet<>(TraitUtils.correlation(inTraits.get(0)).correlationIds());
+        // right correlations
+        corrIds.addAll(TraitUtils.correlation(inTraits.get(1)).correlationIds());
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)),
+            inTraits));
     }
 
     /** {@inheritDoc} */

@@ -81,82 +81,86 @@ public enum PlannerPhase {
     OPTIMIZATION("Main optimization phase") {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
-            return RuleSets.ofList(
-                FilterMergeRule.Config.DEFAULT
-                    .withOperandFor(LogicalFilter.class).toRule(),
+            return ctx.rules(
+                RuleSets.ofList(
+                    FilterMergeRule.Config.DEFAULT
+                        .withOperandFor(LogicalFilter.class).toRule(),
 
-                JoinPushThroughJoinRule.Config.LEFT
-                    .withOperandFor(LogicalJoin.class).toRule(),
+                    JoinPushThroughJoinRule.Config.LEFT
+                        .withOperandFor(LogicalJoin.class).toRule(),
 
-                JoinPushThroughJoinRule.Config.RIGHT
-                    .withOperandFor(LogicalJoin.class).toRule(),
+                    JoinPushThroughJoinRule.Config.RIGHT
+                        .withOperandFor(LogicalJoin.class).toRule(),
 
-                JoinPushExpressionsRule.Config.DEFAULT
-                    .withOperandFor(LogicalJoin.class).toRule(),
+                    JoinPushExpressionsRule.Config.DEFAULT
+                        .withOperandFor(LogicalJoin.class).toRule(),
 
-                JoinConditionPushRule.Config.DEFAULT
-                    .withOperandSupplier(b -> b.operand(LogicalJoin.class)
-                        .anyInputs()).toRule(),
-
-                FilterIntoJoinRule.Config.DEFAULT
-                    .withOperandSupplier(b0 ->
-                        b0.operand(LogicalFilter.class).oneInput(b1 ->
-                            b1.operand(LogicalJoin.class).anyInputs())).toRule(),
-
-                FilterProjectTransposeRule.Config.DEFAULT
-                    .withOperandFor(LogicalFilter.class, f -> true, LogicalProject.class, p -> true).toRule(),
-
-                ProjectFilterTransposeRule.Config.DEFAULT
-                    .withOperandFor(LogicalProject.class, LogicalFilter.class).toRule(),
-
-                ProjectMergeRule.Config.DEFAULT
-                    .withOperandFor(LogicalProject.class).toRule(),
-
-                ProjectRemoveRule.Config.DEFAULT
-                    .withOperandSupplier(b ->
-                        b.operand(LogicalProject.class)
-                            .predicate(ProjectRemoveRule::isTrivial)
+                    JoinConditionPushRule.Config.DEFAULT
+                        .withOperandSupplier(b -> b.operand(LogicalJoin.class)
                             .anyInputs()).toRule(),
 
-                AggregateMergeRule.Config.DEFAULT
-                    .withOperandSupplier(b0 ->
-                        b0.operand(LogicalAggregate.class)
-                            .oneInput(b1 ->
-                                b1.operand(LogicalAggregate.class)
-                                    .predicate(Aggregate::isSimple)
-                                    .anyInputs())).toRule(),
+                    FilterIntoJoinRule.Config.DEFAULT
+                        .withOperandSupplier(b0 ->
+                            b0.operand(LogicalFilter.class).oneInput(b1 ->
+                                b1.operand(LogicalJoin.class).anyInputs())).toRule(),
 
-                SortRemoveRule.Config.DEFAULT
-                    .withOperandSupplier(b ->
-                        b.operand(LogicalSort.class)
-                            .anyInputs()).toRule(),
+                    FilterProjectTransposeRule.Config.DEFAULT
+                        .withOperandFor(LogicalFilter.class, f -> true, LogicalProject.class, p -> true).toRule(),
 
-                CoreRules.UNION_MERGE,
-                CoreRules.UNION_REMOVE,
-                CoreRules.JOIN_COMMUTE,
-                CoreRules.AGGREGATE_REMOVE,
-                CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
+                    ProjectFilterTransposeRule.Config.DEFAULT
+                        .withOperandFor(LogicalProject.class, LogicalFilter.class).toRule(),
 
-                ExposeIndexRule.INSTANCE,
-                ProjectScanMergeRule.TABLE_SCAN,
-                ProjectScanMergeRule.INDEX_SCAN,
-                FilterScanMergeRule.TABLE_SCAN,
-                FilterScanMergeRule.INDEX_SCAN,
+                    ProjectMergeRule.Config.DEFAULT
+                        .withOperandFor(LogicalProject.class).toRule(),
 
-                LogicalOrToUnionRule.INSTANCE,
-                CorrelatedNestedLoopJoinRule.INSTANCE,
+                    ProjectRemoveRule.Config.DEFAULT
+                        .withOperandSupplier(b ->
+                            b.operand(LogicalProject.class)
+                                .predicate(ProjectRemoveRule::isTrivial)
+                                .anyInputs()).toRule(),
 
-                ValuesConverterRule.INSTANCE,
-                LogicalScanConverterRule.INDEX_SCAN,
-                LogicalScanConverterRule.TABLE_SCAN,
-                AggregateConverterRule.INSTANCE,
-                MergeJoinConverterRule.INSTANCE,
-                NestedLoopJoinConverterRule.INSTANCE,
-                ProjectConverterRule.INSTANCE,
-                FilterConverterRule.INSTANCE,
-                TableModifyConverterRule.INSTANCE,
-                UnionConverterRule.INSTANCE,
-                SortConverterRule.INSTANCE);
+                    AggregateMergeRule.Config.DEFAULT
+                        .withOperandSupplier(b0 ->
+                            b0.operand(LogicalAggregate.class)
+                                .oneInput(b1 ->
+                                    b1.operand(LogicalAggregate.class)
+                                        .predicate(Aggregate::isSimple)
+                                        .anyInputs())).toRule(),
+
+                    SortRemoveRule.Config.DEFAULT
+                        .withOperandSupplier(b ->
+                            b.operand(LogicalSort.class)
+                                .anyInputs()).toRule(),
+
+                    CoreRules.UNION_MERGE,
+                    CoreRules.UNION_REMOVE,
+                    CoreRules.JOIN_COMMUTE,
+                    CoreRules.AGGREGATE_REMOVE,
+                    CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
+
+                    ExposeIndexRule.INSTANCE,
+
+                    ProjectScanMergeRule.TABLE_SCAN,
+                    ProjectScanMergeRule.INDEX_SCAN,
+                    FilterScanMergeRule.TABLE_SCAN,
+                    FilterScanMergeRule.INDEX_SCAN,
+
+                    LogicalOrToUnionRule.INSTANCE,
+                    CorrelatedNestedLoopJoinRule.INSTANCE,
+
+                    ValuesConverterRule.INSTANCE,
+                    LogicalScanConverterRule.INDEX_SCAN,
+                    LogicalScanConverterRule.TABLE_SCAN,
+                    AggregateConverterRule.INSTANCE,
+                    MergeJoinConverterRule.INSTANCE,
+                    NestedLoopJoinConverterRule.INSTANCE,
+                    ProjectConverterRule.INSTANCE,
+                    FilterConverterRule.INSTANCE,
+                    TableModifyConverterRule.INSTANCE,
+                    UnionConverterRule.INSTANCE,
+                    SortConverterRule.INSTANCE
+                )
+            );
         }
 
         /** {@inheritDoc} */

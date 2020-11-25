@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -27,6 +25,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -51,6 +52,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
@@ -273,10 +275,21 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
         }
 
         if (!res.isEmpty())
-            return res;
+            return ImmutableList.of();
 
         return ImmutableList.of(Pair.of(nodeTraits.replace(single()),
             ImmutableList.of(left.replace(single()), right.replace(single()))));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        // left correlations
+        Set<CorrelationId> corrIds = new HashSet<>(TraitUtils.correlation(inTraits.get(0)).correlationIds());
+        // right correlations
+        corrIds.addAll(TraitUtils.correlation(inTraits.get(1)).correlationIds());
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
     }
 
     /** {@inheritDoc} */
@@ -469,6 +482,17 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
 
         return ImmutableList.of(Pair.of(nodeTraits.replace(single()),
             ImmutableList.of(left.replace(single()), right.replace(single()))));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        return ImmutableList.of(Pair.of(nodeTraits,
+            ImmutableList.of(
+                inTraits.get(0).replace(TraitUtils.correlation(nodeTraits)),
+                inTraits.get(1).replace(TraitUtils.correlation(nodeTraits))
+            )
+        ));
     }
 
     /** {@inheritDoc} */

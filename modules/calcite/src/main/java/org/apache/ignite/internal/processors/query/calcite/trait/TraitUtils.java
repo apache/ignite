@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -68,8 +70,10 @@ public class TraitUtils {
         RelOptPlanner planner = rel.getCluster().getPlanner();
         RelTraitSet fromTraits = rel.getTraitSet();
         int size = Math.min(fromTraits.size(), toTraits.size());
+
         if (!fromTraits.satisfies(toTraits)) {
             RelNode old = null;
+
             for (int i = 0; rel != null && i < size; i++) {
                 RelTrait fromTrait = rel.getTraitSet().getTrait(i);
                 RelTrait toTrait = toTraits.getTrait(i);
@@ -77,10 +81,11 @@ public class TraitUtils {
                 if (fromTrait.satisfies(toTrait))
                     continue;
 
-                if (old != null)
+                if (old != null && old != rel)
                     rel = planner.register(rel, old);
 
                 old = rel;
+
                 rel = convertTrait(planner, fromTrait, toTrait, rel);
 
                 assert rel == null || rel.getTraitSet().getTrait(i).satisfies(toTrait);
@@ -133,9 +138,20 @@ public class TraitUtils {
         RelTraitSet traits = rel.getTraitSet().replace(toTrait);
         if (fromTrait.getType() == BROADCAST_DISTRIBUTED && toTrait.getType() == HASH_DISTRIBUTED)
             return new IgniteTrimExchange(rel.getCluster(), traits, rel, toTrait);
-        else
-            return new IgniteExchange(rel.getCluster(),
-                traits.replace(RewindabilityTrait.ONE_WAY), RelOptRule.convert(rel, any()), toTrait);
+        else {
+            return new IgniteExchange(
+                rel.getCluster(),
+                traits
+                    .replace(RewindabilityTrait.ONE_WAY)
+                    .replace(CorrelationTrait.UNCORRELATED),
+                RelOptRule.convert(
+                    rel,
+                    rel.getTraitSet()
+                        .replace(any())
+                        .replace(CorrelationTrait.UNCORRELATED)
+                ),
+                toTrait);
+        }
     }
 
     /** */
@@ -146,9 +162,13 @@ public class TraitUtils {
         if (fromTrait.satisfies(toTrait))
             return rel;
 
-        return null; // TODO IndexSpool
+        RelTraitSet traits = rel.getTraitSet()
+            .replace(toTrait);
+
+        return new IgniteTableSpool(rel.getCluster(), traits, rel);
     }
 
+    /** */
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Nullable private static RelNode convertOther(RelOptPlanner planner, RelTraitDef converter,
         RelTrait toTrait, RelNode rel) {
@@ -205,6 +225,18 @@ public class TraitUtils {
     /** */
     public static RewindabilityTrait rewindability(RelTraitSet traits) {
         return traits.getTrait(RewindabilityTraitDef.INSTANCE);
+    }
+
+    /** */
+    public static CorrelationTrait correlation(RelNode rel) {
+        return rel instanceof IgniteRel
+            ? ((IgniteRel)rel).correlation()
+            : correlation(rel.getTraitSet());
+    }
+
+    /** */
+    public static CorrelationTrait correlation(RelTraitSet traits) {
+        return traits.getTrait(CorrelationTraitDef.INSTANCE);
     }
 
     /** */
@@ -344,6 +376,7 @@ public class TraitUtils {
             .propagate(rel::passThroughCollation)
             .propagate(rel::passThroughDistribution)
             .propagate(rel::passThroughRewindability)
+            .propagate(rel::passThroughCorrelation)
             .nodes(rel::createNode);
 
         if (nodes.isEmpty())
@@ -369,6 +402,7 @@ public class TraitUtils {
             .propagate(rel::deriveCollation)
             .propagate(rel::deriveDistribution)
             .propagate(rel::deriveRewindability)
+            .propagate(rel::deriveCorrelation)
             .nodes(rel::createNode);
     }
 

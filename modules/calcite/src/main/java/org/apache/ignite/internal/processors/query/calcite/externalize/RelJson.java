@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -268,6 +269,12 @@ class RelJson {
             for (Integer integer : (ImmutableBitSet)value)
                 list.add(toJson(integer));
             return list;
+        }
+        else if (value instanceof Set) {
+            Set<Object> set = set();
+            for (Object o : (Set)value)
+                set.add(toJson(o));
+            return set;
         }
         else if (value instanceof DistributionTrait)
             return toJson((DistributionTrait)value);
@@ -531,6 +538,11 @@ class RelJson {
     /** */
     <T> List<T> list() {
         return new ArrayList<>();
+    }
+
+    /** */
+    <T> Set<T> set() {
+        return new LinkedHashSet<>();
     }
 
     /** */

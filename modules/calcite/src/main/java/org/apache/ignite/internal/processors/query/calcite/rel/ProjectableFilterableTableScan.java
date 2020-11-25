@@ -57,8 +57,8 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
     /** Projects. */
     protected final List<RexNode> projects;
 
-    /** Participating colunms. */
-    protected final ImmutableBitSet requiredColunms;
+    /** Participating columns. */
+    protected final ImmutableBitSet requiredColumns;
 
     /** */
     protected ProjectableFilterableTableScan(
@@ -68,13 +68,13 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         RelOptTable table,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable ImmutableBitSet reqColunms
+        @Nullable ImmutableBitSet reqColumns
     ) {
         super(cluster, traitSet, hints, table);
 
         projects = proj;
         condition = cond;
-        requiredColunms = reqColunms;
+        requiredColumns = reqColumns;
     }
 
     /** */
@@ -82,7 +82,7 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         super(input);
         condition = input.getExpression("filters");
         projects = input.get("projects") == null ? null : input.getExpressionList("projects");
-        requiredColunms = input.get("requiredColunms") == null ? null : input.getBitSet("requiredColunms");
+        requiredColumns = input.get("requiredColumns") == null ? null : input.getBitSet("requiredColumns");
     }
 
     /** @return Projections. */
@@ -95,9 +95,9 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         return condition;
     }
 
-    /** @return Participating colunms. */
-    public ImmutableBitSet requiredColunms() {
-        return requiredColunms;
+    /** @return Participating columns. */
+    public ImmutableBitSet requiredColumns() {
+        return requiredColumns;
     }
 
     /** {@inheritDoc} */
@@ -117,7 +117,7 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         return pw
             .itemIf("filters", condition, condition != null)
             .itemIf("projects", projects, projects != null)
-            .itemIf("requiredColunms", requiredColunms, requiredColunms != null);
+            .itemIf("requiredColumns", requiredColumns, requiredColumns != null);
     }
 
     /** {@inheritDoc} */
@@ -140,12 +140,12 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         if (projects != null)
             return RexUtil.createStructType(Commons.typeFactory(getCluster()), projects);
         else
-            return table.unwrap(IgniteTable.class).getRowType(Commons.typeFactory(getCluster()), requiredColunms);
+            return table.unwrap(IgniteTable.class).getRowType(Commons.typeFactory(getCluster()), requiredColumns);
     }
 
     /** */
     public boolean simple() {
-        return condition == null && projects == null && requiredColunms == null;
+        return condition == null && projects == null && requiredColumns == null;
     }
 
     /** */
@@ -157,7 +157,7 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         IgniteTable tbl = getTable().unwrap(IgniteTable.class);
 
         Mappings.TargetMapping mapping = RexUtils.invercePermutation(projects,
-            tbl.getRowType(typeFactory, requiredColunms), true);
+            tbl.getRowType(typeFactory, requiredColumns), true);
 
         RexShuttle shuttle = new RexShuttle() {
             @Override public RexNode visitLocalRef(RexLocalRef ref) {

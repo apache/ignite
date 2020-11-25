@@ -48,7 +48,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
         return joinRowCount(mq, rel);
     }
 
-    /** {@inheritDoc} */
+    /** */
     public Double getRowCount(IgniteCorrelatedNestedLoopJoin rel, RelMetadataQuery mq) {
         if (!rel.getJoinType().projectsRight()) {
             // Create a RexNode representing the selectivity of the

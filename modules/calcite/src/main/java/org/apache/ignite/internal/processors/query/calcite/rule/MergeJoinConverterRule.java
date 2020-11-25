@@ -43,7 +43,7 @@ public class MergeJoinConverterRule extends AbstractIgniteConverterRule<LogicalJ
      * Creates a converter.
      */
     public MergeJoinConverterRule() {
-        super(LogicalJoin.class, "MergeJoinConverterRule");
+        super(LogicalJoin.class, "MergeJoinConverter");
     }
 
     /** {@inheritDoc} */
