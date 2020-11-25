@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -75,6 +76,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 
 import static java.util.stream.StreamSupport.stream;
@@ -343,64 +345,76 @@ public class CachePartitionDefragmentationManager {
                             );
 
                             if (skipAlreadyDefragmentedPartition(workDir, grpId, partId, log)) {
-                                partCtx.createMappingPageStore();
+                                partCtx.createPageStore(
+                                    () -> defragmentedPartMappingFile(workDir, partId).toPath(),
+                                    partCtx.mappingPagesAllocated,
+                                    partCtx.mappingPageMemory
+                                );
 
                                 linkMapByPart.put(partId, partCtx.createLinkMapTree(false));
 
                                 continue;
                             }
 
-                            partCtx.createMappingPageStore();
+                            partCtx.createPageStore(
+                                () -> defragmentedPartMappingFile(workDir, partId).toPath(),
+                                partCtx.mappingPagesAllocated,
+                                partCtx.mappingPageMemory
+                            );
 
                             linkMapByPart.put(partId, partCtx.createLinkMapTree(true));
 
                             checkCancellation();
 
-                            partCtx.createPartPageStore();
+                            partCtx.createPageStore(
+                                () -> defragmentedPartTmpFile(workDir, partId).toPath(),
+                                partCtx.partPagesAllocated,
+                                partCtx.partPageMemory
+                            );
 
                             copyPartitionData(partCtx, treeIter, busyLock);
 
-                            //TODO Move inside of defragmentSinglePartition.
                             IgniteInClosure<IgniteInternalFuture<?>> cpLsnr = fut -> {
-                                if (fut.error() == null) {
-                                    PageStore oldPageStore = null;
+                                if (fut.error() != null)
+                                    return;
 
-                                    try {
-                                        oldPageStore = filePageStoreMgr.getStore(grpId, partId);
-                                    }
-                                    catch (IgniteCheckedException ignore) {
-                                    }
+                                PageStore oldPageStore = null;
 
-                                    assert oldPageStore != null;
+                                try {
+                                    oldPageStore = filePageStoreMgr.getStore(grpId, partId);
+                                }
+                                catch (IgniteCheckedException ignore) {
+                                }
 
-                                    if (log.isDebugEnabled()) {
-                                        log.debug(S.toString(
-                                            "Partition defragmented",
-                                            "grpId", grpId, false,
-                                            "partId", partId, false,
-                                            "oldPages", oldPageStore.pages(), false,
-                                            "newPages", partCtx.partPagesAllocated.get() + 1, false,
-                                            "mappingPages", partCtx.mappingPagesAllocated.get() + 1, false,
-                                            "pageSize", pageSize, false,
-                                            "partFile", defragmentedPartFile(workDir, partId).getName(), false,
-                                            "workDir", workDir, false
-                                        ));
-                                    }
+                                assert oldPageStore != null;
 
-                                    oldPageMem.invalidate(grpId, partId);
+                                if (log.isDebugEnabled()) {
+                                    log.debug(S.toString(
+                                        "Partition defragmented",
+                                        "grpId", grpId, false,
+                                        "partId", partId, false,
+                                        "oldPages", oldPageStore.pages(), false,
+                                        "newPages", partCtx.partPagesAllocated.get() + 1, false,
+                                        "mappingPages", partCtx.mappingPagesAllocated.get() + 1, false,
+                                        "pageSize", pageSize, false,
+                                        "partFile", defragmentedPartFile(workDir, partId).getName(), false,
+                                        "workDir", workDir, false
+                                    ));
+                                }
 
-                                    partCtx.partPageMemory.invalidate(grpId, partId);
+                                oldPageMem.invalidate(grpId, partId);
 
-                                    DefragmentationPageReadWriteManager pageMgr = (DefragmentationPageReadWriteManager)partCtx.partPageMemory.pageManager();
+                                partCtx.partPageMemory.invalidate(grpId, partId);
 
-                                    pageMgr.pageStoreMap().removePageStore(grpId, partId); // Yes, it'll be invalid in a second.
+                                DefragmentationPageReadWriteManager pageMgr = (DefragmentationPageReadWriteManager)partCtx.partPageMemory.pageManager();
 
-                                    try {
-                                        renameTempPartitionFile(workDir, partId);
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        throw new IgniteException(e);
-                                    }
+                                pageMgr.pageStoreMap().removePageStore(grpId, partId); // Yes, it'll be invalid in a second.
+
+                                try {
+                                    renameTempPartitionFile(workDir, partId);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    throw new IgniteException(e);
                                 }
                             };
 
@@ -881,15 +895,15 @@ public class CachePartitionDefragmentationManager {
         }
 
         /** */
-        public PageStore createPartPageStore() throws IgniteCheckedException {
+        public PageStore createPageStore(IgniteOutClosure<Path> pathProvider, AtomicLong pagesAllocated, PageMemoryEx pageMemory) throws IgniteCheckedException {
             PageStore partPageStore;
 
             defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadLock();
             try {
                 partPageStore = pageStoreFactory.createPageStore(
                     FLAG_DATA,
-                    () -> defragmentedPartTmpFile(workDir, partId).toPath(),
-                    partPagesAllocated::addAndGet
+                    pathProvider,
+                    pagesAllocated::addAndGet
                 );
             }
             finally {
@@ -898,7 +912,7 @@ public class CachePartitionDefragmentationManager {
 
             partPageStore.sync();
 
-            DefragmentationPageReadWriteManager pageMgr = (DefragmentationPageReadWriteManager)partPageMemory.pageManager();
+            DefragmentationPageReadWriteManager pageMgr = (DefragmentationPageReadWriteManager)pageMemory.pageManager();
 
             pageMgr.pageStoreMap().addPageStore(grpId, partId, partPageStore);
 
@@ -906,35 +920,9 @@ public class CachePartitionDefragmentationManager {
         }
 
         /** */
-        public PageStore createMappingPageStore() throws IgniteCheckedException {
-            PageStore mappingPageStore;
-
-            defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadLock();
-            try {
-                mappingPageStore = pageStoreFactory.createPageStore(
-                    FLAG_DATA,
-                    () -> defragmentedPartMappingFile(workDir, partId).toPath(),
-                    mappingPagesAllocated::addAndGet
-                );
-            }
-            finally {
-                defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
-            }
-
-            mappingPageStore.sync();
-
-            DefragmentationPageReadWriteManager partMgr = (DefragmentationPageReadWriteManager)mappingPageMemory.pageManager();
-
-            partMgr.pageStoreMap().addPageStore(grpId, partId, mappingPageStore);
-
-            return mappingPageStore;
-        }
-
-        /** */
         public LinkMap createLinkMapTree(boolean initNew) throws IgniteCheckedException {
             defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadLock();
 
-            //TODO Store link in meta page and remove META_PAGE_IDX constant?
             try {
                 long mappingMetaPageId = initNew
                     ? mappingPageMemory.allocatePage(grpId, partId, FLAG_DATA)

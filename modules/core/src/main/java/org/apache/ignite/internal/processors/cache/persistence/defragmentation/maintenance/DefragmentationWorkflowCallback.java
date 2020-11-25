@@ -63,7 +63,7 @@ public class DefragmentationWorkflowCallback implements MaintenanceWorkflowCallb
 
     /** {@inheritDoc} */
     @Override public @NotNull List<MaintenanceAction<?>> allActions() {
-        return Collections.singletonList(new StopDefragmentationAction(defrgMgr));
+        return Collections.singletonList(automaticAction());
     }
 
     /** {@inheritDoc} */
