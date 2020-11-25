@@ -42,19 +42,16 @@ public class IgniteSort extends Sort implements IgniteRel {
      * @param traits Trait set.
      * @param child Input node.
      * @param collation Collation.
-     * @param offset Offset.
-     * @param fetch Limit.
      */
     public IgniteSort(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode child,
-        RelCollation collation,
-        RexNode offset,
-        RexNode fetch) {
-        super(cluster, traits, child, collation, offset, fetch);
+        RelCollation collation) {
+        super(cluster, traits, child, collation);
     }
 
+    /** */
     public IgniteSort(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
     }
@@ -65,8 +62,11 @@ public class IgniteSort extends Sort implements IgniteRel {
         RelNode newInput,
         RelCollation newCollation,
         RexNode offset,
-        RexNode fetch) {
-        return new IgniteSort(getCluster(), traitSet, newInput,newCollation, offset, fetch);
+        RexNode fetch
+    ) {
+        assert offset == null && fetch == null;
+
+        return new IgniteSort(getCluster(), traitSet, newInput, newCollation);
     }
 
     /** {@inheritDoc} */
@@ -101,6 +101,6 @@ public class IgniteSort extends Sort implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteSort(cluster, getTraitSet(), sole(inputs), collation, offset, fetch);
+        return new IgniteSort(cluster, getTraitSet(), sole(inputs), collation);
     }
 }
