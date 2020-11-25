@@ -27,6 +27,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rex.RexNode;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
@@ -35,6 +36,18 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
  * and allow to lookup rows by specified keys.
  */
 public class IgniteIndexSpool extends Spool implements IgniteRel {
+    /** */
+    protected List<RexNode> lowerCond;
+
+    /** */
+    protected List<RexNode> upperCond;
+
+    /** */
+    protected List<RexNode> lowerBound;
+
+    /** */
+    protected List<RexNode> upperBound;
+
     /** */
     public IgniteIndexSpool(
         RelOptCluster cluster,
