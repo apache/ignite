@@ -38,6 +38,8 @@ public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark 
 //        b.put();
 //        b.get();
 //        b.tearDown();
+
+        // TODO: Benchmark hangs when GridNioServer.selectorCount > 1
         JmhIdeBenchmarkRunner.create()
                 .forks(1)
                 .threads(4)
