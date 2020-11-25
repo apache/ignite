@@ -18,6 +18,7 @@ This module contains basic ignite test.
 """
 from time import monotonic
 
+from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.tests.test import Test
 
 
@@ -46,7 +47,10 @@ class IgniteTest(Test):
         self.logger.debug("Killing all services to speed-up the tearing down.")
 
         for service in self.test_context.services._services.values():
-            service.kill()
+            try:
+                service.kill()
+            except RemoteCommandError:
+                pass  # Process may be already self-killed on segmentation.
 
         self.logger.debug("All services killed.")
 
