@@ -22,6 +22,8 @@ import os.path
 from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
 
+from ignitetest.services.utils.log_utils import monitor_log
+
 
 class ZookeeperSettings:
     """
@@ -102,8 +104,7 @@ class ZookeeperService(Service):
         :param node:  Zookeeper service node.
         :param timeout: Wait timeout.
         """
-        with node.account.monitor_log(self.LOG_FILE) as monitor:
-            monitor.offset = 0
+        with monitor_log(node, self.LOG_FILE, from_the_beginning=True) as monitor:
             monitor.wait_until(
                 "LEADER ELECTION TOOK",
                 timeout_sec=timeout,
@@ -150,3 +151,9 @@ class ZookeeperService(Service):
                              (self.__class__.__name__, node.account))
         node.account.kill_process("zookeeper", clean_shutdown=False, allow_fail=True)
         node.account.ssh("rm -rf %s %s %s" % (self.CONFIG_ROOT, self.DATA_DIR, self.LOG_FILE), allow_fail=False)
+
+    def kill(self):
+        """
+        Kills the service.
+        """
+        self.stop()

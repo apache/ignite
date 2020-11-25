@@ -23,7 +23,6 @@ import signal
 from datetime import datetime
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
-from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
@@ -36,43 +35,10 @@ class IgniteService(IgniteAwareService):
     HEAP_DUMP_FILE = os.path.join(IgniteAwareService.PERSISTENT_ROOT, "ignite-heap.bin")
 
     # pylint: disable=R0913
-    def __init__(self, context, config, num_nodes, jvm_opts=None, modules=None):
-        super().__init__(context, config, num_nodes, modules=modules, jvm_opts=jvm_opts)
-
-    # pylint: disable=W0221
-    def start(self, timeout_sec=180):
-        super().start()
-
-        self.logger.info("Waiting for Ignite(s) to start...")
-
-        for node in self.nodes:
-            self.await_node_started(node, timeout_sec)
-
-    def await_node_started(self, node, timeout_sec):
-        """
-        Await topology ready event on node start.
-        :param node: Node to wait
-        :param timeout_sec: Number of seconds to wait event.
-        """
-        self.await_event_on_node("Topology snapshot", node, timeout_sec, from_the_beginning=True)
-
-        if len(self.pids(node)) == 0:
-            raise Exception("No process ids recorded on node %s" % node.account.hostname)
-
-    # pylint: disable=W0221
-    def stop_node(self, node, clean_shutdown=True, timeout_sec=60):
-        pids = self.pids(node)
-        sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
-
-        for pid in pids:
-            node.account.signal(pid, sig, allow_fail=False)
-
-        try:
-            wait_until(lambda: len(self.pids(node)) == 0, timeout_sec=timeout_sec,
-                       err_msg="Ignite node failed to stop in %d seconds" % timeout_sec)
-        except Exception:
-            self.thread_dump(node)
-            raise
+    def __init__(self, context, config, num_nodes, jvm_opts=None, startup_timeout_sec=60, shutdown_timeout_sec=10,
+                 modules=None):
+        super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
+                         jvm_opts=jvm_opts)
 
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
