@@ -30,8 +30,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_VALIDATION_FAILED;
  *
  * @see EventType#EVT_NODE_VALIDATION_FAILED
  * @see GridComponent#validateNode
- * @see ServerImpl.RingMessageWorker#processJoinRequestMessage
- * @see ZookeeperDiscoveryImpl#validateJoiningNode
  */
 public class NodeValidationFailedEvent extends EventAdapter {
     /** */
