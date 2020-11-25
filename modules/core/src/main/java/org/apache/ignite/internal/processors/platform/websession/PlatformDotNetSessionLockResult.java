@@ -43,6 +43,13 @@ public class PlatformDotNetSessionLockResult implements Binarylizable {
     private long lockId;
 
     /**
+     * Empty constructor for reflection needs.
+     */
+    public PlatformDotNetSessionLockResult() {
+        // No-op.
+    }
+
+    /**
      * Constructor.
      *
      * @param success Success flag.
