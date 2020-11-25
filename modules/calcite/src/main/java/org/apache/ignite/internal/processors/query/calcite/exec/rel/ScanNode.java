@@ -52,7 +52,7 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) {
-        assert rowsCnt > 0 && requested == 0;
+        assert rowsCnt > 0 && requested == 0 : "rowsCnt=" + rowsCnt + ", requested=" + requested;
 
         try {
             checkState();

@@ -73,7 +73,6 @@ public interface Node<Row> extends AutoCloseable {
      */
     void request(int rowsCnt);
 
-
     /**
      * Rewinds upstream.
      */
