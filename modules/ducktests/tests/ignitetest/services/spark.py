@@ -158,3 +158,9 @@ class SparkService(BackgroundThreadService, PersistenceAware):
             userID=node.account.user,
             instance=1,
             host=node.account.hostname)
+
+    def kill(self):
+        """
+        Kills the service.
+        """
+        self.stop()
