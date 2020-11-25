@@ -21,7 +21,9 @@ import os.path
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.services.background_thread import BackgroundThreadService
+
 from ignitetest.services.utils.ignite_persistence import PersistenceAware
+from ignitetest.services.utils.log_utils import monitor_log
 
 
 class SparkService(BackgroundThreadService, PersistenceAware):
@@ -91,7 +93,7 @@ class SparkService(BackgroundThreadService, PersistenceAware):
         self.logger.debug("Monitoring - %s" % log_file)
 
         timeout_sec = 30
-        with node.account.monitor_log(log_file) as monitor:
+        with monitor_log(node, log_file) as monitor:
             node.account.ssh(cmd)
             monitor.wait_until(log_msg, timeout_sec=timeout_sec, backoff_sec=5,
                                err_msg="Spark doesn't start at %d seconds" % timeout_sec)
