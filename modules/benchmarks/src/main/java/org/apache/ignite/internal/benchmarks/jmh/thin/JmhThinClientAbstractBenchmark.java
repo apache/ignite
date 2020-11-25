@@ -88,7 +88,7 @@ public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
         for (int i = 1; i < nodesCnt; i++)
             Ignition.start(configuration("node" + i));
 
-        String[] addrs = IntStream.range(10800, nodesCnt).mapToObj(p -> "127.0.0.1" + p).toArray(String[]::new);
+        String[] addrs = IntStream.range(10800, 10800 + CNT).mapToObj(p -> "127.0.0.1" + p).toArray(String[]::new);
         client = Ignition.startClient(new ClientConfiguration().setAddresses(addrs));
 
         cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
