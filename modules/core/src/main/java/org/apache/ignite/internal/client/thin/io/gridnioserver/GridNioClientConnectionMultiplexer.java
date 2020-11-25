@@ -89,6 +89,11 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                     .directMode(false)
                     .igniteInstanceName("thinClient")
                     .serverName(THREAD_PREFIX)
+                    .idleTimeout(Long.MAX_VALUE)
+                    .socketReceiveBufferSize(0)
+                    .socketSendBufferSize(0)
+                    .sendQueueLimit(1024)
+                    .tcpNoDelay(true)
                     .build();
         } catch (IgniteCheckedException e) {
             throw new IgniteException(e);

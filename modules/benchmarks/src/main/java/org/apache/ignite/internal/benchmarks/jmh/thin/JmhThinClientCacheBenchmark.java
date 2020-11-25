@@ -5,8 +5,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.apache.commons.math3.stat.inference.TestUtils;
-import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
 
 public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark {
@@ -27,10 +25,7 @@ public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark 
     public Object get() {
         int key = ThreadLocalRandom.current().nextInt(CNT);
 
-        System.out.println(key);
-        byte[] res = cache.get(key);
-        System.out.println(key + "-DONE");
-        return res;
+        return cache.get(key);
     }
 
     /**
@@ -50,10 +45,11 @@ public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark 
 
         ArrayList<ForkJoinTask> tasks = new ArrayList<>();
         for (int i =0; i < 4; i++) {
+            int finalI = i;
             ForkJoinTask<?> task = ForkJoinPool.commonPool().submit(() -> {
-                for (int j = 0; j < 10000; j++) {
+                for (int j = 0; j < 1000; j++) {
+                    System.out.println(">> " + finalI + " - " + j);
                     b.get();
-                    b.put();
                 }
             });
 
@@ -62,6 +58,7 @@ public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark 
 
         for (ForkJoinTask t: tasks) {
             t.join();
+            System.out.println("JOINED");
         }
 
         b.tearDown();
