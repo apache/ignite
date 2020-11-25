@@ -143,7 +143,6 @@
     <Compile Include="Impl\Binary\MultidimensionalArrayHolder.cs" />
     <Compile Include="Impl\Binary\MultidimensionalArraySerializer.cs" />
     <Compile Include="Impl\Binary\OptimizedMarshallerObject.cs" />
-    <Compile Include="Impl\Client\Cache\CacheFlags.cs" />
     <Compile Include="Impl\Client\Cache\ClientCacheConfigurationSerializer.cs" />
     <Compile Include="Impl\Client\Cache\Query\ClientFieldsQueryCursor.cs" />
     <Compile Include="Impl\Client\Cache\Query\ClientQueryCursor.cs" />
