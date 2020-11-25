@@ -37,7 +37,6 @@ import org.openjdk.jmh.annotations.TearDown;
 /**
  * Base class for thin client benchmarks.
  */
-@SuppressWarnings("rawtypes")
 @State(Scope.Benchmark)
 public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
     /** Property: nodes count. */
@@ -49,6 +48,9 @@ public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
     /** Items count. */
     protected static final int CNT = 100000;
 
+    /** Cache value. */
+    protected static final byte[] PAYLOAD = new byte[1000];
+
     /** IP finder shared across nodes. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -59,7 +61,7 @@ public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
     protected Ignite node;
 
     /** Target cache. */
-    protected ClientCache cache;
+    protected ClientCache<Integer, byte[]> cache;
 
     /** Thin client. */
     protected IgniteClient client;
@@ -88,7 +90,11 @@ public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
 
         String[] addrs = IntStream.range(10800, nodesCnt).mapToObj(p -> "127.0.0.1" + p).toArray(String[]::new);
         client = Ignition.startClient(new ClientConfiguration().setAddresses(addrs));
+
         cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < CNT; i++)
+            cache.put(i, PAYLOAD);
     }
 
     /**
