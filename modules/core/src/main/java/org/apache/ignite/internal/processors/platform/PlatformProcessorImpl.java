@@ -637,7 +637,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             }
 
             case OP_GET_AFFINITY: {
-                return new PlatformAffinity(platformCtx, ctx, reader.readString());
+                return new PlatformAffinity(platformCtx, reader.readString());
             }
 
             case OP_GET_DATA_STREAMER: {
