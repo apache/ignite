@@ -37,28 +37,28 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
 
         markInitialized();
 
-        int threads = Runtime.getRuntime().availableProcessors() / 2;
+//        int threads = Runtime.getRuntime().availableProcessors() / 2;
 
-        long iterThread = size / threads;
+//        long iterThread = size / threads;
 
-        CountDownLatch latch = new CountDownLatch(threads);
+//        CountDownLatch latch = new CountDownLatch(threads);
 
         long start = System.currentTimeMillis();
 
-        for (int i = 0; i < threads; i++)
-            new Thread(() -> {
+//        for (int i = 0; i < threads; i++)
+//            new Thread(() -> {
                 try (IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
-                    for (long j = 0L; j <= iterThread; j++)
+                    for (long j = 0L; j <= size; j++)
                         dataStreamer.addData(UUID.randomUUID(), new byte[dataSize]);
                 }
 
-                latch.countDown();
-            }).start();
+//                latch.countDown();
+//            }).start();
 
-        latch.await();
+//        latch.await();
 
         recordResult("DURATION", System.currentTimeMillis() - start);
-        recordResult("THREADS", threads);
+        recordResult("THREADS", 1);
 
         markFinished();
     }
