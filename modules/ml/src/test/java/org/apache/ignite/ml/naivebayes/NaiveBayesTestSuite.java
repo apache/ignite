@@ -29,6 +29,9 @@ import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesTrainerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
+/**
+ *
+ */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     GaussianNaiveBayesModelTest.class,

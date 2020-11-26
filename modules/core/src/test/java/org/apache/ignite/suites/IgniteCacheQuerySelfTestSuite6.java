@@ -64,5 +64,5 @@ import org.junit.runners.Suite;
     CacheContinuousQueryRandomOperationsTest.class,
     CacheContinuousQueryFilterDeploymentFailedTest.class
 })
-public class CoreIgniteCacheQuerySelfTestSuite6 {
+public class IgniteCacheQuerySelfTestSuite6 {
 }

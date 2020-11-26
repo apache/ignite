@@ -28,7 +28,6 @@ import org.junit.runners.Suite;
     SecurityTest.class,
     FunctionalQueryTest.class,
     IgniteBinaryQueryTest.class,
-    CoreClientTestSuite.class
 })
 public class ClientTestSuite {
     // No-op.

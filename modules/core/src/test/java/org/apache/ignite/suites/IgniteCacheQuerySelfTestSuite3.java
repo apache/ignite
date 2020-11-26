@@ -77,5 +77,5 @@ import org.junit.runners.Suite;
     CacheContinuousQueryCounterReplicatedAtomicTest.class,
     CacheContinuousQueryCounterReplicatedTxTest.class
 })
-public class CoreIgniteCacheQuerySelfTestSuite3 {
+public class IgniteCacheQuerySelfTestSuite3 {
 }

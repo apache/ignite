@@ -73,5 +73,5 @@ import org.junit.runners.Suite;
     IgniteCacheBinaryObjectsScanWithEventsSelfTest.class,
     SystemViewSelfTest.class
 })
-public class CoreIgniteBinaryCacheQueryTestSuite {
+public class IgniteBinaryCacheQueryTestSuite {
 }

@@ -15,24 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.suites;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxMultiNodeSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxMultiNodeBasicTest;
-import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentUpdatesTest;
-import org.apache.ignite.internal.processors.cache.query.ScanQueryOffheapExpiryPolicySelfTest;
+import org.apache.ignite.p2p.ClassLoadingProblemExceptionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for cache queries.
+ *
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    ScanQueryOffheapExpiryPolicySelfTest.class,
-    GridCachePartitionedTxMultiNodeSelfTest.class,
-    GridCacheReplicatedTxMultiNodeBasicTest.class,
-    ScanQueryConcurrentUpdatesTest.class
+    ClassLoadingProblemExceptionTest.class
 })
-public class CoreIgniteBinaryCacheQueryTestSuite2 {
+public class IgniteUriDeploymentTestSuite {
 }

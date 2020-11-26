@@ -47,5 +47,5 @@ import org.junit.runners.Suite;
     CacheContinuousQueryOperationP2PTest.class,
     CacheContinuousQueryLongP2PTest.class,
 })
-public class CoreZookeeperDiscoverySpiTestSuite3 {
+public class ZookeeperDiscoverySpiTestSuite3 {
 }

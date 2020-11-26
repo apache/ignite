@@ -15,24 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.zk;
+package org.apache.ignite.suites;
 
-import org.apache.ignite.testsuites.CoreZookeeperDiscoverySpiTestSuite3;
-import org.junit.BeforeClass;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxMultiNodeSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxMultiNodeBasicTest;
+import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentUpdatesTest;
+import org.apache.ignite.internal.processors.cache.query.ScanQueryOffheapExpiryPolicySelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Regular Ignite tests executed with {@link ZookeeperDiscoverySpi}.
+ * Test suite for cache queries.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    CoreZookeeperDiscoverySpiTestSuite3.class
+    ScanQueryOffheapExpiryPolicySelfTest.class,
+    GridCachePartitionedTxMultiNodeSelfTest.class,
+    GridCacheReplicatedTxMultiNodeBasicTest.class,
+    ScanQueryConcurrentUpdatesTest.class
 })
-public class ZookeeperDiscoverySpiTestSuite3 {
-    /** */
-    @BeforeClass
-    public static void init() throws Exception {
-        ZookeeperDiscoverySpiTestConfigurator.initTestSuite();
-    }
+public class IgniteBinaryCacheQueryTestSuite2 {
 }

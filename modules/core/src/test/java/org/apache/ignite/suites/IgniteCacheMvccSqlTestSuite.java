@@ -31,12 +31,12 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 /** */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    CoreIgniteCacheMvccSqlTestSuite.MvccPartitionedPrimaryNodeFailureRecoveryTest.class,
-    CoreIgniteCacheMvccSqlTestSuite.MvccPartitionedTwoBackupsPrimaryNodeFailureRecoveryTest.class,
-    CoreIgniteCacheMvccSqlTestSuite.MvccColocatedTxPessimisticOriginatingNodeFailureRecoveryTest.class,
-    CoreIgniteCacheMvccSqlTestSuite.MvccReplicatedTxPessimisticOriginatingNodeFailureRecoveryTest.class
+    IgniteCacheMvccSqlTestSuite.MvccPartitionedPrimaryNodeFailureRecoveryTest.class,
+    IgniteCacheMvccSqlTestSuite.MvccPartitionedTwoBackupsPrimaryNodeFailureRecoveryTest.class,
+    IgniteCacheMvccSqlTestSuite.MvccColocatedTxPessimisticOriginatingNodeFailureRecoveryTest.class,
+    IgniteCacheMvccSqlTestSuite.MvccReplicatedTxPessimisticOriginatingNodeFailureRecoveryTest.class
 })
-public class CoreIgniteCacheMvccSqlTestSuite {
+public class IgniteCacheMvccSqlTestSuite {
     /** */
     public static class MvccPartitionedPrimaryNodeFailureRecoveryTest
         extends IgniteCachePartitionedNearDisabledPrimaryNodeFailureRecoveryTest {

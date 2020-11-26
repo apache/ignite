@@ -94,9 +94,7 @@ import org.junit.runners.Suite;
 
     GridSpringCacheManagerMultiJvmSelfTest.class,
 
-    ClusterStateXmlPropertiesTest.class,
-
-    CoreIgniteSpringTestSuite.class
+    ClusterStateXmlPropertiesTest.class
 })
 public class IgniteSpringTestSuite {
 }

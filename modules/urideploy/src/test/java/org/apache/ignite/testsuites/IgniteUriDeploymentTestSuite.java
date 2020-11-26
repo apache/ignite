@@ -59,9 +59,7 @@ import org.junit.runners.Suite;
     IgniteToolsSelfTestSuite.class,
 
     GridTaskUriDeploymentDeadlockSelfTest.class,
-    GridP2PDisabledSelfTest.class,
-
-    CoreIgniteUriDeploymentTestSuite.class
+    GridP2PDisabledSelfTest.class
 })
 public class IgniteUriDeploymentTestSuite {
 }

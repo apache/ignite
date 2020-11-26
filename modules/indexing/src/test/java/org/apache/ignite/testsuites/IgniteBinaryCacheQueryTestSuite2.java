@@ -81,7 +81,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.RetryCauseMessageS
 import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubquerySelfTest;
 import org.apache.ignite.internal.processors.query.timeout.DefaultQueryTimeoutTestSuite;
 import org.apache.ignite.sqltests.SqlDataTypesCoverageTests;
-import org.apache.ignite.suites.CoreIgniteBinaryCacheQueryTestSuite2;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -188,9 +187,7 @@ import org.junit.runners.Suite;
 
     SqlQueriesTopologyMappingTest.class,
 
-    IgniteCacheQueryReservationOnUnstableTopologyTest.class,
-
-    CoreIgniteBinaryCacheQueryTestSuite2.class
+    IgniteCacheQueryReservationOnUnstableTopologyTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite2 {
 }

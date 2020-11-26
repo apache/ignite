@@ -20,6 +20,9 @@ package org.apache.ignite.tests;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
+/**
+ * Suite contains serializers tests.
+ */
 @RunWith(Suite.class)
 @Suite.SuiteClasses(KryoSerializerTest.class)
 public class SerializerSuite {

@@ -28,7 +28,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Suite;
 
-/** Checks that all test classes are part of any suite. */
+/**
+ * Checks that all test classes are part of any suite.
+ */
 public class CheckAllTestsInSuites {
     /** List of test classes. Input of the test. */
     static Iterable<Class<?>> testClasses;

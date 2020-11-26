@@ -50,5 +50,5 @@ import org.junit.runners.Suite;
     CacheContinuousQueryAsyncFailoverTxSelfTest.class,
     CacheContinuousQueryAsyncFailoverMvccTxSelfTest.class
 })
-public class CoreIgniteCacheQuerySelfTestSuite4 {
+public class IgniteCacheQuerySelfTestSuite4 {
 }

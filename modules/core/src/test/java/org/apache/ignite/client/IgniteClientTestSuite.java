@@ -61,6 +61,6 @@ import org.junit.runners.Suite;
     ReliableChannelTest.class,
     IgniteClientFailuresTest.class
 })
-public class CoreClientTestSuite {
+public class IgniteClientTestSuite {
     // No-op.
 }

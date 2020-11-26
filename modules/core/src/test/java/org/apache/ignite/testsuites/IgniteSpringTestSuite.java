@@ -17,16 +17,19 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.suites.CoreIgniteCacheQuerySelfTestSuite3;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtMultiBackupTest;
+import org.apache.ignite.startup.cmdline.GridCommandLineLoaderTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for cache queries.
+ * Spring tests.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    CoreIgniteCacheQuerySelfTestSuite3.class
+    GridCommandLineLoaderTest.class,
+
+    GridCacheDhtMultiBackupTest.class
 })
-public class IgniteCacheQuerySelfTestSuite3 {
+public class IgniteSpringTestSuite {
 }

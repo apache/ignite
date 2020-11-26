@@ -91,5 +91,5 @@ import org.junit.runners.Suite;
 
     IgniteSequentialNodeCrashRecoveryTest.class
 })
-public class CoreIgnitePdsWithIndexingCoreTestSuite {
+public class IgnitePdsWithIndexingCoreTestSuite {
 }

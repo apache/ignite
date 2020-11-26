@@ -19,7 +19,6 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGroupsWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryWithCompactionTest;
-import org.apache.ignite.suites.CoreIgnitePdsWithIndexingCoreTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -30,8 +29,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     IgniteWalRecoveryTest.class,
     IgniteWalRecoveryWithCompactionTest.class,
-    IgniteCacheGroupsWithRestartsTest.class,
-    CoreIgnitePdsWithIndexingCoreTestSuite.class
+    IgniteCacheGroupsWithRestartsTest.class
 })
 public class IgnitePdsWithIndexingCoreTestSuite {
 }
