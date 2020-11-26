@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.ducktest.tests.load;
 
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
@@ -28,7 +27,7 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  */
 public class UuidDataLoaderApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
-    @Override public void run(JsonNode jNode) throws InterruptedException {
+    @Override public void run(JsonNode jNode) {
         String cacheName = jNode.get("cacheName").asText();
 
         long size = jNode.get("size").asLong();
@@ -37,28 +36,10 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
 
         markInitialized();
 
-//        int threads = Runtime.getRuntime().availableProcessors() / 2;
-
-//        long iterThread = size / threads;
-
-//        CountDownLatch latch = new CountDownLatch(threads);
-
-        long start = System.currentTimeMillis();
-
-//        for (int i = 0; i < threads; i++)
-//            new Thread(() -> {
-                try (IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
-                    for (long j = 0L; j <= size; j++)
-                        dataStreamer.addData(UUID.randomUUID(), new byte[dataSize]);
-                }
-
-//                latch.countDown();
-//            }).start();
-
-//        latch.await();
-
-        recordResult("DURATION", System.currentTimeMillis() - start);
-        recordResult("THREADS", 1);
+        try (IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
+            for (long j = 0L; j <= size; j++)
+                dataStreamer.addData(UUID.randomUUID(), new byte[dataSize]);
+        }
 
         markFinished();
     }
