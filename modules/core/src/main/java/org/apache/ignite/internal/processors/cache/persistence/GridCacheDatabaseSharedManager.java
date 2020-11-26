@@ -239,7 +239,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public static final int DFLT_PDS_WAL_REBALANCE_THRESHOLD = 500;
 
     /** @see IgniteSystemProperties#IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE */
-    public static final int DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE = 40;
+    public static final int DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE = 60;
 
     /** */
     private final int walRebalanceThreshold =
