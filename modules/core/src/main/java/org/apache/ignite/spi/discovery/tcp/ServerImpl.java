@@ -216,10 +216,10 @@ class ServerImpl extends TcpDiscoveryImpl {
     private static final long MAX_CON_CHECK_INTERVAL = 500;
 
     /** Interval of checking connection to next node in the ring. */
-    private long pingInterval;
+    private long connCheckInterval;
 
     /** Fundamental value for connection checking actions. */
-    private long connCheckDuration;
+    private long connCheckTick;
 
     /** */
     private IgniteThreadPoolExecutor utilityPool;
@@ -380,7 +380,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public long connectionCheckInterval() {
-        return pingInterval;
+        return connCheckInterval;
     }
 
     /** {@inheritDoc} */
@@ -393,11 +393,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         lastRingMsgSentTime = 0;
 
-        connCheckDuration = effectiveExchangeTimeout() / 3;
+        // Foundumental timeout value for actions related to connection check.
+        connCheckTick = effectiveExchangeTimeout() / 3;
 
         // Since we take in account time of last sent message, the interval should be quite short to give enough piece
         // of failure detection timeout as send-and-acknowledge timeout of the message to send.
-        pingInterval = Math.min(connCheckDuration, MAX_CON_CHECK_INTERVAL);
+        connCheckInterval = Math.min(connCheckTick, MAX_CON_CHECK_INTERVAL);
 
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
@@ -3317,7 +3318,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (locNode == null)
                 return;
 
-            pingNextNode();
+            checkConnection();
 
             sendMetricsUpdateMessage();
 
@@ -6505,8 +6506,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * Check connection to next node in the ring.
          */
-        private void pingNextNode() {
-            long elapsed = (lastRingMsgSentTime + U.millisToNanos(pingInterval)) - System.nanoTime();
+        private void checkConnection() {
+            long elapsed = (lastRingMsgSentTime + U.millisToNanos(connCheckInterval)) - System.nanoTime();
 
             if (elapsed > 0)
                 return;
@@ -6530,11 +6531,15 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private IgniteSpiOperationTimeoutHelper serverOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState,
         long lastOperationNanos) {
+        long absoluteThreshold = -1;
+
         // Active send-state means we lost connection to next node and have to find another. We don't know how many
         // nodes failed. May be several failed in a row. But we got only one connectionRecoveryTimeout to establish new
         // connection. We should travers rest of the cluster with sliced timeout for each node.
-        return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos, sndState == null ? -1 :
-            Math.min(sndState.failTimeNanos, System.nanoTime() + U.millisToNanos(connCheckDuration)));
+        if (sndState != null)
+            absoluteThreshold = Math.min(sndState.failTimeNanos, System.nanoTime() + U.millisToNanos(connCheckTick));
+
+        return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos, absoluteThreshold);
     }
 
     /** Fixates time of last sent message. */
@@ -6896,12 +6901,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 if (log.isDebugEnabled()) {
                                     log.debug("Remote node requests topology change. Checking connection to " +
-                                        "previous [" + previous + "] with timeout " + (int)connCheckDuration / 2);
+                                        "previous [" + previous + "] with timeout " + (int)connCheckTick / 2);
                                 }
 
-                                // Connection recoverty to next node has timeout {@code connectionCheckTimeout}.
+                                // The connection recovery connection to one node is {@code connCheckDuration}.
                                 // We need to suppose network delays. So we use half of this time.
-                                liveAddr = checkConnection(new ArrayList<>(nodeAddrs), (int)connCheckDuration / 2);
+                                liveAddr = checkConnection(new ArrayList<>(nodeAddrs), (int)connCheckTick / 2);
 
                                 if (log.isInfoEnabled()) {
                                     log.info("Connection check to previous node done: [liveAddr=" + liveAddr
@@ -6922,7 +6927,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 ", checkPreviousNodeId=" + req.checkPreviousNodeId() +
                                 ", actualPreviousNode=" + previous +
                                 ", lastMessageReceivedTime=" + rcvdTime + ", now=" + now +
-                                ", connCheckInterval=" + pingInterval + ']');
+                                ", connCheckInterval=" + connCheckInterval + ']');
                         }
                     }
 
