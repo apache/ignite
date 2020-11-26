@@ -78,7 +78,7 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
     /** */
     public IgniteMergeJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,
         RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
-        super(cluster, traitSet, left, right, condition, variablesSet, joinType);
+        super(cluster, traitSet, ImmutableList.of(), left, right, condition, variablesSet, joinType);
     }
 
     /** */
