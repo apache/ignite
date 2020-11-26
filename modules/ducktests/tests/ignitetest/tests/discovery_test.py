@@ -79,7 +79,7 @@ class DiscoveryTest(IgniteTest):
 
     WARMUP_DATA_AMOUNT = 10_000
 
-    FAILURE_TIMEOUT = 500
+    FAILURE_TIMEOUT = 700
 
     def __init__(self, test_context):
         super().__init__(test_context=test_context)
@@ -277,7 +277,6 @@ def start_zookeeper(test_context, num_nodes, test_config):
     Start zookeeper cluster.
     """
     zk_settings = ZookeeperSettings(min_session_timeout=test_config.failure_detection_timeout,
-                                    max_session_timeout=test_config.failure_detection_timeout,
                                     tick_time=test_config.failure_detection_timeout // 2)
 
     zk_quorum = ZookeeperService(test_context, num_nodes, settings=zk_settings)
@@ -294,7 +293,7 @@ def start_servers(test_context, num_nodes, ignite_config, modules=None):
                             jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"])
 
     start = monotonic()
-    servers.start(timeout_sec=90)
+    servers.start(timeout_sec=100)
     return servers, round(monotonic() - start, 1)
 
 
