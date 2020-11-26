@@ -59,6 +59,11 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
     /** */
     private final SSLContext sslCtx;
 
+    /**
+     * Constructor.
+     *
+     * @param cfg Client config.
+     */
     public GridNioClientConnectionMultiplexer(ClientConfiguration cfg) {
         IgniteLogger gridLog = new NullLogger();
 

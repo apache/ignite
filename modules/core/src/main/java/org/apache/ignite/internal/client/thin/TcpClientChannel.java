@@ -373,7 +373,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         else
             status = dataInput.readInt();
 
-        //int hdrSize = (int)(dataInput.totalBytesRead() - bytesReadOnStartMsg);
         int hdrSize = dataInput.position();
         int msgSize = buf.limit();
 
@@ -571,7 +570,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     }
 
     /** Write bytes to the output stream. */
-    private void write(byte[] bytes, int len) {
+    private void write(byte[] bytes, int len) throws ClientConnectionException {
         ByteBuffer buf = ByteBuffer.wrap(bytes, 0, len);
 
         try {
