@@ -34,15 +34,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [TestFixtureSetUp]
         public void StartGrids()
         {
-            for (int i = 0; i < 3; i++)
+            for (var i = 0; i < 3; i++)
             {
-                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-                {
-                    SpringConfigUrl = Path.Combine("Config", "native-client-test-cache-affinity.xml"),
-                    IgniteInstanceName = "grid-" + i
-                };
-
-                Ignition.Start(cfg);
+                Ignition.Start(GetConfig(i, client: i == 2));
             }
         }
 
@@ -72,6 +66,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         }
 
         /// <summary>
+        /// Tests that affinity can be retrieved from client node right after the cache has been started on server node.
+        /// </summary>
+        [Test]
+        public void TestAffinityRetrievalForNewCache()
+        {
+            var server = Ignition.GetIgnite("grid-0");
+            var client = Ignition.GetIgnite("grid-2");
+
+            var serverCache = server.CreateCache<int, int>(TestUtils.TestName);
+            var clientAff = client.GetAffinity(serverCache.Name);
+
+            Assert.IsNotNull(clientAff);
+        }
+
+        /// <summary>
         /// Test affinity with binary flag.
         /// </summary>
         [Test]
@@ -79,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             IIgnite g = Ignition.GetIgnite("grid-0");
 
-            ICacheAffinity aff = g.GetAffinity("default");  
+            ICacheAffinity aff = g.GetAffinity("default");
 
             IBinaryObject affKey = g.GetBinary().ToBinary<IBinaryObject>(new AffinityTestKey(0, 1));
 
@@ -92,6 +101,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
                 Assert.AreEqual(node.Id, aff.MapKeyToNode(otherAffKey).Id);
             }
+        }
+
+        /// <summary>
+        /// Gets Ignite config.
+        /// </summary>
+        private static IgniteConfiguration GetConfig(int idx, bool client = false)
+        {
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = Path.Combine("Config", "native-client-test-cache-affinity.xml"),
+                IgniteInstanceName = "grid-" + idx,
+                ClientMode = client
+            };
         }
 
         /// <summary>
