@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     internal class CacheAffinityManager : PlatformTargetAdapter
     {
         /** */
-        private const int OpIsAssignmentValid = 16;
+        private const int OpIsAssignmentValid = 1;
 
         /// <summary>
         /// Initializes a new instance of <see cref="CacheAffinityManager"/> class.
