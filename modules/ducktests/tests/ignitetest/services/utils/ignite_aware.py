@@ -17,6 +17,7 @@
 This module contains the base class to build services aware of Ignite.
 """
 import os
+import signal
 import socket
 import sys
 import time
@@ -31,6 +32,7 @@ from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
+from ignitetest.services.utils.log_utils import monitor_log
 
 
 class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metaclass=ABCMeta):
@@ -41,7 +43,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
     NETFILTER_STORE_PATH = os.path.join(IgnitePersistenceAware.TEMP_DIR, "iptables.bak")
 
     # pylint: disable=R0913
-    def __init__(self, context, config, num_nodes, **kwargs):
+    def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, **kwargs):
         """
         **kwargs are params that passed to IgniteSpec
         """
@@ -52,19 +54,94 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         self.log_level = "DEBUG"
 
         self.config = config
+        self.startup_timeout_sec = startup_timeout_sec
+        self.shutdown_timeout_sec = shutdown_timeout_sec
 
         self.spec = resolve_spec(self, context, config, **kwargs)
 
         self.disconnected_nodes = []
+        self.killed = False
+
+    def start_async(self):
+        """
+        Starts in async way.
+        """
+        super().start()
+
+    def start(self):
+        self.start_async()
+        self.await_started()
+
+    def await_started(self):
+        """
+        Awaits start finished.
+        """
+        self.logger.info("Waiting for IgniteAware(s) to start ...")
+
+        self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
 
     def start_node(self, node):
         self.init_persistent(node)
 
         super().start_node(node)
 
-        wait_until(lambda: len(self.pids(node)) > 0, timeout_sec=10)
+        wait_until(lambda: self.alive(node), timeout_sec=10)
 
         ignite_jmx_mixin(node, self.pids(node))
+
+    def stop_async(self):
+        """
+        Stop in async way.
+        """
+        super().stop()
+
+    def stop(self):
+        if not self.killed:
+            self.stop_async()
+            self.await_stopped()
+        else:
+            self.logger.debug("Skipping node stop since it already killed.")
+
+    def await_stopped(self):
+        """
+        Awaits stop finished.
+        """
+        self.logger.info("Waiting for IgniteAware(s) to stop ...")
+
+        for node in self.nodes:
+            stopped = self.wait_node(node, timeout_sec=self.shutdown_timeout_sec)
+            assert stopped, "Node %s's worker thread did not stop in %d seconds" % \
+                            (str(node.account), self.shutdown_timeout_sec)
+
+        for node in self.nodes:
+            wait_until(lambda: not self.alive(node), timeout_sec=self.shutdown_timeout_sec,
+                       err_msg="Node %s's remote processes failed to stop in %d seconds" %
+                               (str(node.account), self.shutdown_timeout_sec))
+
+    def stop_node(self, node):
+        pids = self.pids(node)
+
+        for pid in pids:
+            node.account.signal(pid, signal.SIGTERM, allow_fail=False)
+
+    def kill(self):
+        """
+        Kills nodes.
+        """
+        self.logger.info("Killing IgniteAware(s) ...")
+
+        for node in self.nodes:
+            pids = self.pids(node)
+
+            for pid in pids:
+                node.account.signal(pid, signal.SIGKILL, allow_fail=False)
+
+        for node in self.nodes:
+            wait_until(lambda: not self.alive(node), timeout_sec=self.shutdown_timeout_sec,
+                       err_msg="Node %s's remote processes failed to be killed in %d seconds" %
+                               (str(node.account), self.shutdown_timeout_sec))
+
+        self.killed = True
 
     def clean(self):
         self.__restore_iptables()
@@ -134,10 +211,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         :param backoff_sec: Number of seconds to back off between each failure to meet the condition
                 before checking again.
         """
-        with node.account.monitor_log(self.STDOUT_STDERR_CAPTURE) as monitor:
-            if from_the_beginning:
-                monitor.offset = 0
-
+        with monitor_log(node, self.STDOUT_STDERR_CAPTURE, from_the_beginning) as monitor:
             monitor.wait_until(evt_message, timeout_sec=timeout_sec, backoff_sec=backoff_sec,
                                err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
                                                                                                timeout_sec))

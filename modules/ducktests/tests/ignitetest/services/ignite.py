@@ -36,8 +36,10 @@ class IgniteService(IgniteAwareService):
     HEAP_DUMP_FILE = os.path.join(IgniteAwareService.PERSISTENT_ROOT, "ignite-heap.bin")
 
     # pylint: disable=R0913
-    def __init__(self, context, config, num_nodes, jvm_opts=None, modules=None):
-        super().__init__(context, config, num_nodes, modules=modules, jvm_opts=jvm_opts)
+    def __init__(self, context, config, num_nodes, jvm_opts=None, startup_timeout_sec=60, shutdown_timeout_sec=10,
+                 modules=None):
+        super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
+                         jvm_opts=jvm_opts)
 
     # pylint: disable=W0221
     def start(self, timeout_sec=180):

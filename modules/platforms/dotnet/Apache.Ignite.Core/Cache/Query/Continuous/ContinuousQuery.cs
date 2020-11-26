@@ -166,6 +166,17 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// Defaults to <c>false</c>.
         /// </summary>
         public bool Local { get; set; }
+        
+        /// <summary>
+        /// Gets or sets a value indicating whether to notify about <see cref="CacheEntryEventType.Expired"/> events.
+        /// <para />
+        /// If <c>true</c>, then the remote listener will get notifications about expired cache entries.
+        /// Otherwise, only <see cref="CacheEntryEventType.Created"/>, <see cref="CacheEntryEventType.Updated"/>, and
+        /// <see cref="CacheEntryEventType.Removed"/> events will be passed to the listener.
+        /// <para />
+        /// Defaults to <c>false</c>.
+        /// </summary>
+        public bool IncludeExpired { get; set; }
 
         /// <summary>
         /// Validate continuous query state.

@@ -18,6 +18,7 @@ This module contains PME free switch tests.
 """
 
 import time
+from enum import IntEnum
 
 from ducktape.mark import matrix
 
@@ -28,22 +29,34 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils import ignite_versions, cluster
+from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST_2_7, V_2_8_0, IgniteVersion
 
 
+@constructible
+class LoadType(IntEnum):
+    """
+    Load type.
+    """
+    NONE = 0
+    EXTRA_CACHES = 1
+    LONG_TXS = 2
+
+
 # pylint: disable=W0223
+# pylint: disable=no-member
 class PmeFreeSwitchTest(IgniteTest):
     """
     Tests PME free switch scenarios.
     """
     NUM_NODES = 9
-    CACHES_AMOUNT = 100
+    EXTRA_CACHES_AMOUNT = 100
 
     @cluster(num_nodes=NUM_NODES + 2)
     @ignite_versions(str(DEV_BRANCH), str(LATEST_2_7))
-    @matrix(long_txs=[False, True])
-    def test(self, ignite_version, long_txs):
+    @matrix(load_type=[LoadType.NONE, LoadType.EXTRA_CACHES, LoadType.LONG_TXS])
+    def test(self, ignite_version, load_type):
         """
         Tests PME-free switch scenario (node stop).
         """
@@ -51,16 +64,21 @@ class PmeFreeSwitchTest(IgniteTest):
 
         caches = [CacheConfiguration(name='test-cache', backups=2, atomicity_mode='TRANSACTIONAL')]
 
+        l_type = LoadType.construct_from(load_type)
+
         # Checking PME (before 2.8) vs PME-free (2.8+) switch duration, but
         # focusing on switch duration (which depends on caches amount) when long_txs is false and
         # on waiting for previously started txs before the switch (which depends on txs duration) when long_txs of true.
-        if not long_txs:
-            for idx in range(1, self.CACHES_AMOUNT):
+        if l_type is LoadType.EXTRA_CACHES:
+            for idx in range(1, self.EXTRA_CACHES_AMOUNT):
                 caches.append(CacheConfiguration(name="cache-%d" % idx, backups=2, atomicity_mode='TRANSACTIONAL'))
 
         config = IgniteConfiguration(version=IgniteVersion(ignite_version), caches=caches, cluster_state="INACTIVE")
 
         num_nodes = len(self.test_context.cluster) - 2
+
+        self.test_context.logger.info("Nodes amount calculated as %d." % num_nodes)
+
         ignites = IgniteService(self.test_context, config, num_nodes=num_nodes)
 
         ignites.start()
@@ -78,9 +96,9 @@ class PmeFreeSwitchTest(IgniteTest):
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test.LongTxStreamerApplication",
             params={"cacheName": "test-cache"},
-            timeout_sec=180)
+            startup_timeout_sec=180)
 
-        if long_txs:
+        if l_type is LoadType.LONG_TXS:
             long_tx_streamer.start()
 
         single_key_tx_streamer = IgniteApplicationService(
@@ -89,18 +107,20 @@ class PmeFreeSwitchTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.pme_free_switch_test."
                             "SingleKeyTxStreamerApplication",
             params={"cacheName": "test-cache", "warmup": 1000},
-            timeout_sec=180)
+            startup_timeout_sec=180)
 
         single_key_tx_streamer.start()
 
         ignites.stop_node(ignites.nodes[num_nodes - 1])
 
-        if long_txs:
-            long_tx_streamer.await_event("Node left topology", 60, from_the_beginning=True)
+        single_key_tx_streamer.await_event("Node left topology", 60, from_the_beginning=True)
 
+        if l_type is LoadType.LONG_TXS:
             time.sleep(30)  # keeping txs alive for 30 seconds.
 
-            long_tx_streamer.stop()
+            long_tx_streamer.stop_async()
+
+            single_key_tx_streamer.await_event("Node left topology", 60, from_the_beginning=True)
 
         single_key_tx_streamer.await_event("APPLICATION_STREAMED", 60)  # waiting for streaming continuation.
 

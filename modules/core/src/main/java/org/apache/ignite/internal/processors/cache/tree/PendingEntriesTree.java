@@ -43,6 +43,7 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
      * @param initNew Initialize new index.
+     * @param pageFlag Default flag value for allocated pages.
      * @throws IgniteCheckedException If failed.
      */
     public PendingEntriesTree(
@@ -52,7 +53,8 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
         long metaPageId,
         ReuseList reuseList,
         boolean initNew,
-        PageLockListener lockLsnr
+        PageLockListener lockLsnr,
+        byte pageFlag
     ) throws IgniteCheckedException {
         super(
             name,
@@ -65,6 +67,7 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
             reuseList,
             grp.sharedGroup() ? CacheIdAwarePendingEntryInnerIO.VERSIONS : PendingEntryInnerIO.VERSIONS,
             grp.sharedGroup() ? CacheIdAwarePendingEntryLeafIO.VERSIONS : PendingEntryLeafIO.VERSIONS,
+            pageFlag,
             grp.shared().kernalContext().failure(),
             lockLsnr
         );

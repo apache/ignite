@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
@@ -921,6 +922,29 @@ public interface EventType {
      * @see IgniteSnapshot#cancelSnapshot(String)
      */
     public static final int EVT_CLUSTER_SNAPSHOT_FAILED = 151;
+
+    /**
+     * Built-in event type: query execution.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see SqlQueryExecutionEvent
+     */
+    public static final int EVT_SQL_QUERY_EXECUTION = 160;
+
+    /**
+     * Built-in event type: node validation failed.
+     * <br>
+     * This event is triggered if a node join fails due to a node validation failure.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see NodeValidationFailedEvent
+     * @see GridComponent#validateNode
+     */
+    public static final int EVT_NODE_VALIDATION_FAILED = 170;
 
     /**
      * All cluster snapshot events. This array can be directly passed into

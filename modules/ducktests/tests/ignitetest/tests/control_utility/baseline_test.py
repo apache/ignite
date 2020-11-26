@@ -199,8 +199,8 @@ class BaselineTests(IgniteTest):
         if join_cluster:
             config._replace(discovery_spi=from_ignite_cluster(join_cluster))
 
-        servers = IgniteService(self.test_context, config=config, num_nodes=num_nodes)
+        servers = IgniteService(self.test_context, config=config, num_nodes=num_nodes, startup_timeout_sec=timeout_sec)
 
-        servers.start(timeout_sec=timeout_sec)
+        servers.start()
 
         return servers

@@ -103,6 +103,8 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_7_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.AUTHORIZATION;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.BITMAP_FEATURES;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.PARTITION_AWARENESS;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
 
 /**
  * Implements {@link ClientChannel} over TCP.
@@ -168,6 +170,9 @@ class TcpClientChannel implements ClientChannel {
     /** Receiver thread (processes incoming messages). */
     private Thread receiverThread;
 
+    /** Send/receive timeout in milliseconds. */
+    private final int timeout;
+
     /** Constructor. */
     TcpClientChannel(ClientChannelConfiguration cfg)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
@@ -176,17 +181,23 @@ class TcpClientChannel implements ClientChannel {
         Executor cfgExec = cfg.getAsyncContinuationExecutor();
         asyncContinuationExecutor = cfgExec != null ? cfgExec : ForkJoinPool.commonPool();
 
+        timeout = cfg.getTimeout();
+
         try {
             sock = createSocket(cfg);
 
             out = sock.getOutputStream();
             dataInput = new ByteCountingDataInput(sock.getInputStream());
+
+            handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
+
+            // Disable timeout on socket after handshake, instead, get future result with timeout in "receive" method.
+            if (timeout > 0)
+                sock.setSoTimeout(0);
         }
         catch (IOException e) {
             throw handleIOError("addr=" + cfg.getAddress(), e);
         }
-
-        handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
     }
 
     /** {@inheritDoc} */
@@ -303,7 +314,7 @@ class TcpClientChannel implements ClientChannel {
     private <T> T receive(ClientRequestFuture pendingReq, Function<PayloadInputChannel, T> payloadReader)
         throws ClientException {
         try {
-            byte[] payload = pendingReq.get();
+            byte[] payload = timeout > 0 ? pendingReq.get(timeout) : pendingReq.get();
 
             if (payload == null || payloadReader == null)
                 return null;
@@ -922,7 +933,7 @@ class TcpClientChannel implements ClientChannel {
 
             String keyStoreType = or.apply(
                 cfg.getSslClientCertificateKeyStoreType(),
-                or.apply(System.getProperty("javax.net.ssl.keyStoreType"), "JKS")
+                or.apply(System.getProperty("javax.net.ssl.keyStoreType"), DFLT_STORE_TYPE)
             );
 
             String keyStorePwd = or.apply(
@@ -937,7 +948,7 @@ class TcpClientChannel implements ClientChannel {
 
             String trustStoreType = or.apply(
                 cfg.getSslTrustCertificateKeyStoreType(),
-                or.apply(System.getProperty("javax.net.ssl.trustStoreType"), "JKS")
+                or.apply(System.getProperty("javax.net.ssl.trustStoreType"), DFLT_STORE_TYPE)
             );
 
             String trustStorePwd = or.apply(
@@ -945,7 +956,7 @@ class TcpClientChannel implements ClientChannel {
                 System.getProperty("javax.net.ssl.trustStorePassword")
             );
 
-            String algorithm = or.apply(cfg.getSslKeyAlgorithm(), "SunX509");
+            String algorithm = or.apply(cfg.getSslKeyAlgorithm(), DFLT_KEY_ALGORITHM);
 
             String proto = toString(cfg.getSslProtocol());
 
