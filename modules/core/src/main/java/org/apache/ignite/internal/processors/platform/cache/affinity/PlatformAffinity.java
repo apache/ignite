@@ -121,6 +121,9 @@ public class PlatformAffinity extends PlatformAbstractTarget {
         if (aff == null)
             throw new IgniteCheckedException("Cache with the given name doesn't exist: " + name);
 
+        // TODO: This fails when cache does not exist yet on the client node,
+        // and this is needed solely for PlatformCache needs.
+        // So we should move this to a separate class.
         this.affMgr = this.platformCtx.kernalContext().cache().context().cacheContext(GridCacheUtils.cacheId(name))
                 .affinity();
 
