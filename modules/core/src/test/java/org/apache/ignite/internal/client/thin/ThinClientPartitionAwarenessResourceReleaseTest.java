@@ -46,7 +46,7 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
 
         assertFalse(channels[0].isClosed());
         assertFalse(channels[1].isClosed());
-        assertEquals(1, threadsCount(THREAD_PREFIX)); // TODO: Configure different number of worker threads
+        assertEquals(1, threadsCount(THREAD_PREFIX));
 
         client.close();
 
