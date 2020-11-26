@@ -81,18 +81,15 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                     .listener(new GridNioClientListener())
                     .filters(filters)
                     .logger(gridLog)
-                    // TODO: Review settings below
-                    // TODO: Buffer sizes from settings - check them
-                    .selectorCount(1) // TODO: Do we need a setting? Run a benchmark.
+                    .selectorCount(1) // Using more selectors does not seem to improve performance.
                     .byteOrder(ByteOrder.nativeOrder())
                     .directBuffer(true)
                     .directMode(false)
                     .igniteInstanceName("thinClient")
                     .serverName(THREAD_PREFIX)
                     .idleTimeout(Long.MAX_VALUE)
-                    .socketReceiveBufferSize(0)
-                    .socketSendBufferSize(0)
-                    .sendQueueLimit(1024)
+                    .socketReceiveBufferSize(cfg.getReceiveBufferSize())
+                    .socketSendBufferSize(cfg.getSendBufferSize())
                     .tcpNoDelay(true)
                     .build();
         } catch (IgniteCheckedException e) {
