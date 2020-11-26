@@ -23,6 +23,7 @@ import java.nio.ByteOrder;
 import org.apache.ignite.internal.client.thin.io.ClientMessageDecoder;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -30,10 +31,18 @@ import org.jetbrains.annotations.Nullable;
  */
 class GridNioClientParser implements GridNioParser {
     /** */
-    private final ClientMessageDecoder decoder = new ClientMessageDecoder();
+    private static final int SES_META_DECODER = GridNioSessionMetaKey.nextUniqueKey();
 
     /** {@inheritDoc} */
     @Override public @Nullable Object decode(GridNioSession ses, ByteBuffer buf) {
+        ClientMessageDecoder decoder = ses.meta(SES_META_DECODER);
+
+        if (decoder == null) {
+            decoder = new ClientMessageDecoder();
+
+            ses.addMeta(SES_META_DECODER, decoder);
+        }
+
         byte[] bytes = decoder.apply(buf);
 
         if (bytes == null)
