@@ -275,7 +275,7 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
         }
 
         if (!res.isEmpty())
-            return ImmutableList.of();
+            return ImmutableList.copyOf(res);
 
         return ImmutableList.of(Pair.of(nodeTraits.replace(single()),
             ImmutableList.of(left.replace(single()), right.replace(single()))));
