@@ -588,6 +588,13 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
         return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }
 
+    /**
+     * Returns the longest possible prefix of {@code seq} that could be form from provided {@code elems}.
+     *
+     * @param seq Sequence.
+     * @param elems Elems.
+     * @return The longest possible prefix of {@code seq}.
+     */
     private static <T> List<T> maxPrefix(List<T> seq, Collection<T> elems) {
         List<T> res = new ArrayList<>();
 
@@ -603,6 +610,14 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
         return res;
     }
 
+    /**
+     * Checks if there is a such permutation of all {@code elems} that is prefix of
+     * provided {@code seq}.
+     *
+     * @param seq Sequence.
+     * @param elems Elems.
+     * @return {@code true} if there is a permutation of all {@code elems} that is prefix of {@code seq}.
+     */
     private static <T> boolean isPrefix(List<T> seq, Collection<T> elems) {
         Set<T> elems0 = new HashSet<>(elems);
 
