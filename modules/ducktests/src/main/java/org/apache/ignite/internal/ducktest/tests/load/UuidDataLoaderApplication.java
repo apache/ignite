@@ -43,6 +43,8 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
 
         CountDownLatch latch = new CountDownLatch(threads);
 
+        long start = System.currentTimeMillis();
+
         for (int i = 0; i < threads; i++)
             new Thread(() -> {
                 try (IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
@@ -54,6 +56,9 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
             }).start();
 
         latch.await();
+
+        recordResult("DURATION", System.currentTimeMillis() - start);
+        recordResult("THREADS", threads);
 
         markFinished();
     }

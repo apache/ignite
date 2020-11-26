@@ -76,7 +76,7 @@ class SnapshotTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.load.UuidDataLoaderApplication",
             params={
                 "cacheName": self.CACHE_NAME,
-                "size": 100 * 1024,
+                "size": 512 * 1024,
                 "dataSize": 1024
             },
             startup_timeout_sec=180,
