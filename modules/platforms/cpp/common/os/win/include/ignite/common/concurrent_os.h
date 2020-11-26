@@ -413,6 +413,14 @@ namespace ignite
                 }
 
                 /**
+                 * Destructor.
+                 */
+                ~ThreadLocalInstance()
+                {
+                    Remove();
+                }
+
+                /**
                  * Get value.
                  *
                  * @return Value.

@@ -65,7 +65,10 @@ namespace ignite
                     /**
                      * Destructor.
                      */
-                    ~TransactionProxy() {};
+                    ~TransactionProxy()
+                    {
+                        // No-op.
+                    };
 
                     /**
                      * Commit the transaction.
