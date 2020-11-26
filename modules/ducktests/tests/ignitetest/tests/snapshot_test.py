@@ -58,7 +58,7 @@ class SnapshotTest(IgniteTest):
 
         num_nodes = len(self.test_context.cluster)
 
-        service = IgniteService(self.test_context, ignite_config, num_nodes=num_nodes - 1)
+        service = IgniteService(self.test_context, ignite_config, num_nodes=num_nodes - 1, startup_timeout_sec=180)
         service.start()
 
         control_utility = ControlUtility(service, self.test_context)
@@ -76,10 +76,11 @@ class SnapshotTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.load.UuidDataLoaderApplication",
             params={
                 "cacheName": self.CACHE_NAME,
-                "size": 512 * 1024,
+                "size": 100 * 1024,
                 "dataSize": 1024
             },
-            timeout_sec=180
+            startup_timeout_sec=180,
+            shutdown_timeout_sec=300
         )
 
         loader.run()

@@ -23,7 +23,6 @@ import signal
 from datetime import datetime
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
-from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
@@ -40,30 +39,6 @@ class IgniteService(IgniteAwareService):
                  modules=None):
         super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
                          jvm_opts=jvm_opts)
-
-    # pylint: disable=W0221
-    def start(self, timeout_sec=180):
-        super().start()
-
-        self.logger.info("Waiting for Ignite(s) to start...")
-
-        for node in self.nodes:
-            self.await_node_started(node, timeout_sec)
-
-    # pylint: disable=W0221
-    def stop_node(self, node, clean_shutdown=True, timeout_sec=60):
-        pids = self.pids(node)
-        sig = signal.SIGTERM if clean_shutdown else signal.SIGKILL
-
-        for pid in pids:
-            node.account.signal(pid, sig, allow_fail=False)
-
-        try:
-            wait_until(lambda: len(self.pids(node)) == 0, timeout_sec=timeout_sec,
-                       err_msg="Ignite node failed to stop in %d seconds" % timeout_sec)
-        except Exception:
-            self.thread_dump(node)
-            raise
 
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)

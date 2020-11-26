@@ -45,9 +45,6 @@ class IgniteApplicationService(IgniteAwareService):
         self.java_class_name = java_class_name
         self.params = params
 
-    def wait(self, timeout_sec=600):
-        self.await_stopped(timeout_sec)
-
     def await_started(self):
         super().await_started()
 
