@@ -5,6 +5,13 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
 
+/**
+ * Thin client cache benchmark.
+ *
+ * Benchmark                         Mode  Cnt      Score      Error  Units
+ * JmhThinClientCacheBenchmark.get  thrpt   10  92501.557 ± 1380.384  ops/s
+ * JmhThinClientCacheBenchmark.put  thrpt   10  82907.446 ± 7572.537  ops/s
+ */
 public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark {
     /**
      * Cache put benchmark.
