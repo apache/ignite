@@ -41,7 +41,7 @@ public class PlatformAffinityManager extends PlatformAbstractTarget {
      *
      * @param platformCtx Context.
      */
-    protected PlatformAffinityManager(PlatformContext platformCtx, int cacheId) {
+    public PlatformAffinityManager(PlatformContext platformCtx, int cacheId) {
         super(platformCtx);
 
         GridCacheContext<Object, Object> ctx = platformCtx.kernalContext().cache().context().cacheContext(cacheId);
