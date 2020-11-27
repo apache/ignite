@@ -78,10 +78,10 @@ public class OsConfigurationSuggestions {
 
             if ((value = readVmParam(SWAPPINESS)) != null) {
                 try {
-                    double maxSwappiness = 10.0;
+                    int maxSwappiness = 10;
 
-                    if (Float.parseFloat(value) > maxSwappiness)
-                        suggestions.add(String.format("Reduce pages swapping ratio (set vm.%s=%f or less)", SWAPPINESS,
+                    if (Integer.parseInt(value) > maxSwappiness)
+                        suggestions.add(String.format("Reduce pages swapping ratio (set vm.%s=%d or less)", SWAPPINESS,
                                                       maxSwappiness));
                 }
                 catch (NumberFormatException ignored) {
