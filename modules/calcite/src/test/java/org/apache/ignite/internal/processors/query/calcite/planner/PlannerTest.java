@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,40 +27,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
 import com.google.common.collect.ImmutableSet;
-import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeImpl;
-import org.apache.calcite.rel.type.RelProtoDataType;
-import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.Statistic;
-import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -75,7 +54,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
-import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
@@ -93,33 +71,22 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
@@ -2635,128 +2602,6 @@ public class PlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void tableSpoolDistributed() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable t0 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("JID", f.createJavaType(Integer.class))
-                .add("VAL", f.createJavaType(String.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "T0", "hash");
-            }
-        };
-
-        TestTable t1 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("JID", f.createJavaType(Integer.class))
-                .add("VAL", f.createJavaType(String.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "T1", "hash");
-            }
-        };
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("T0", t0);
-        publicSchema.addTable("T1", t1);
-
-        String sql = "select * " +
-            "from t0 " +
-            "join t1 on t0.jid = t1.jid";
-
-        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter");
-
-        assertNotNull(phys);
-
-        AtomicInteger spoolCnt = new AtomicInteger();
-
-        phys.childrenAccept(
-            new RelVisitor() {
-                @Override public void visit(RelNode node, int ordinal, RelNode parent) {
-                    if (node instanceof IgniteTableSpool)
-                        spoolCnt.incrementAndGet();
-
-                    super.visit(node, ordinal, parent);
-                }
-            }
-        );
-
-        assertEquals(1, spoolCnt.get());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void tableSpoolBroadcastNotRewindable() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable t0 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("JID", f.createJavaType(Integer.class))
-                .add("VAL", f.createJavaType(String.class))
-                .build(),
-            RewindabilityTrait.ONE_WAY) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        TestTable t1 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("JID", f.createJavaType(Integer.class))
-                .add("VAL", f.createJavaType(String.class))
-                .build(),
-            RewindabilityTrait.ONE_WAY) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("T0", t0);
-        publicSchema.addTable("T1", t1);
-
-        String sql = "select * " +
-            "from t0 " +
-            "join t1 on t0.jid = t1.jid";
-
-        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter");
-
-        assertNotNull(phys);
-
-        AtomicInteger spoolCnt = new AtomicInteger();
-
-        phys.childrenAccept(
-            new RelVisitor() {
-                @Override public void visit(RelNode node, int ordinal, RelNode parent) {
-                    if (node instanceof IgniteTableSpool)
-                        spoolCnt.incrementAndGet();
-
-                    super.visit(node, ordinal, parent);
-                }
-            }
-        );
-
-        assertEquals(1, spoolCnt.get());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testLimit() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
@@ -2819,57 +2664,5 @@ public class PlannerTest extends AbstractPlannerTest {
             assertEquals("Invalid plan: \n" + RelOptUtil.toString(phys), 1, limit.get());
             assertFalse("Invalid plan: \n" + RelOptUtil.toString(phys), sort.get());
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void indexSpool() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable t0 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("JID", f.createJavaType(Integer.class))
-                .add("VAL", f.createJavaType(String.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "T0", "hash");
-            }
-        }
-            .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t0_jid_idx");
-
-        TestTable t1 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("JID", f.createJavaType(Integer.class))
-                .add("VAL", f.createJavaType(String.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "T1", "hash");
-            }
-        }
-            .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid_idx");
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("T0", t0);
-        publicSchema.addTable("T1", t1);
-
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
-        String sql = "select * " +
-            "from t0 " +
-            "join t1 on t0.jid = t1.jid";
-
-        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter");
-
-        assertNotNull(phys);
-
-        System.out.println("+++" + RelOptUtil.toString(phys));
     }
 }

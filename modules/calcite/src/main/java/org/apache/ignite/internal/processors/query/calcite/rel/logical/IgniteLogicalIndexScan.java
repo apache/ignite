@@ -57,8 +57,6 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         if (requiredColunms != null) {
             Mappings.TargetMapping targetMapping = Commons.mapping(requiredColunms,
                 tbl.getRowType(typeFactory).getFieldCount());
-            if (collation == null)
-                System.out.println();
             collation = collation.apply(targetMapping);
             if (proj != null)
                 collation = TraitUtils.projectCollation(collation, proj, rowType);

@@ -239,11 +239,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
-        ImmutableBitSet requiredColunms = rel.requiredColumns();
+        ImmutableBitSet requiredColumns = rel.requiredColumns();
         List<RexNode> lowerCond = rel.lowerBound();
         List<RexNode> upperCond = rel.upperBound();
 
-        RelDataType rowType = tbl.getRowType(typeFactory, requiredColunms);
+        RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
         Supplier<Row> lower = lowerCond == null ? null : expressionFactory.rowSource(lowerCond);
@@ -254,7 +254,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         CollocationGroup group = ctx.group(rel.sourceId());
 
-        Iterable<Row> rowsIter = idx.scan(ctx, group, filters, lower, upper, prj, requiredColunms);
+        Iterable<Row> rowsIter = idx.scan(ctx, group, filters, lower, upper, prj, requiredColumns);
 
         return new ScanNode<>(ctx, rowType, rowsIter);
     }

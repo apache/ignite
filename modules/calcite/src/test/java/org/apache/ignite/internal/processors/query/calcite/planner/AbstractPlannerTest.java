@@ -38,7 +38,9 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.RelRoot;
@@ -74,6 +76,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -97,7 +100,7 @@ import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryPr
  *
  */
 //@WithSystemProperty(key = "calcite.debug", value = "true")
-@SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
+@SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened", "unchecked"})
 public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     /** */
     protected List<UUID> nodes;
@@ -158,6 +161,39 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public static <T extends RelNode> T findFirstNode(RelNode plan, Predicate<RelNode> pred) {
+        return F.first(findNodes(plan, pred));
+    }
+
+    /** */
+    public static <T extends RelNode> List<T> findNodes(RelNode plan, Predicate<RelNode> pred) {
+        List<T> ret = new ArrayList<>();
+
+        plan.childrenAccept(
+            new RelVisitor() {
+                @Override public void visit(RelNode node, int ordinal, RelNode parent) {
+                    if (pred.test(node))
+                        ret.add((T)node);
+
+                    super.visit(node, ordinal, parent);
+                }
+            }
+        );
+
+        return ret;
+    }
+
+    /** */
+    public static <T extends RelNode> Predicate<RelNode> byClass(Class<T> cls) {
+        return node -> cls.isInstance(node);
+    }
+
+    /** */
+    public static <T extends RelNode> Predicate<RelNode> byClass(Class<T> cls, Predicate<RelNode> pred) {
+        return node -> cls.isInstance(node) && pred.test(node);
+    }
+
+    /** */
     protected IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
@@ -209,11 +245,64 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
+                .replace(CorrelationTrait.UNCORRELATED)
                 .simplify();
 
             planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
 
             return planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+        }
+    }
+
+    /** */
+    protected RelNode originalLogicalTree(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        RelTraitDef<?>[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE,
+            RewindabilityTraitDef.INSTANCE,
+            CorrelationTraitDef.INSTANCE
+        };
+
+        PlanningContext ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        RelRoot relRoot;
+
+        try (IgnitePlanner planner = ctx.planner()) {
+            assertNotNull(planner);
+
+            String qry = ctx.query();
+
+            assertNotNull(qry);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(qry);
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            relRoot = planner.rel(sqlNode);
+
+            RelNode rel = relRoot.rel;
+
+            assertNotNull(rel);
+
+            return rel;
         }
     }
 
@@ -280,7 +369,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             this.rewindable = rewindable;
             this.rowCnt = rowCnt;
 
-            addIndex(new IgniteIndex(null, "PK", null, this));
+            addIndex(new IgniteIndex(RelCollations.of(new RelFieldCollation(0)), "PK", null, this));
         }
 
         /** {@inheritDoc} */

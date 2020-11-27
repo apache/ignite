@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /** */
 public class CorrelatedNestedLoopJoinRule extends ConverterRule {
@@ -79,6 +80,11 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
         final RelOptCluster cluster = rel.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final RelBuilder relBuilder = relBuilderFactory.create(rel.getCluster(), null);
+
+
+        for (RexNode c : rel.analyzeCondition().nonEquiConditions) {
+            System.out.println("+++ " + c);
+        }
 
         final Set<CorrelationId> correlationIds = new HashSet<>();
         final ArrayList<RexNode> corrVar = new ArrayList<>();
