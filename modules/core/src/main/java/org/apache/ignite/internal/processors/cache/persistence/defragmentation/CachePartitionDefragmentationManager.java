@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -234,8 +233,6 @@ public class CachePartitionDefragmentationManager {
 
                     GridCacheOffheapManager offheap = (GridCacheOffheapManager)oldGrpCtx.offheap();
 
-                    GridSpinBusyLock busyLock = offheap.busyLock();
-
                     List<CacheDataStore> oldCacheDataStores = stream(offheap.cacheDataStores().spliterator(), false)
                         .filter(store -> {
                             try {
@@ -372,7 +369,7 @@ public class CachePartitionDefragmentationManager {
                                 partCtx.partPageMemory
                             );
 
-                            copyPartitionData(partCtx, treeIter, busyLock);
+                            copyPartitionData(partCtx, treeIter, offheap);
 
                             IgniteInClosure<IgniteInternalFuture<?>> cpLsnr = fut -> {
                                 if (fut.error() != null)
@@ -410,12 +407,7 @@ public class CachePartitionDefragmentationManager {
 
                                 pageMgr.pageStoreMap().removePageStore(grpId, partId); // Yes, it'll be invalid in a second.
 
-                                try {
-                                    renameTempPartitionFile(workDir, partId);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    throw new IgniteException(e);
-                                }
+                                renameTempPartitionFile(workDir, partId);
                             };
 
                             GridFutureAdapter<?> cpFut = defragmentationCheckpoint
@@ -457,17 +449,11 @@ public class CachePartitionDefragmentationManager {
 
                             pageMgr.pageStoreMap().clear(grpId);
 
-                            try {
-                                renameTempIndexFile(workDir);
+                            renameTempIndexFile(workDir);
 
-                                writeDefragmentationCompletionMarker(filePageStoreMgr.getPageStoreFileIoFactory(), workDir, log);
+                            writeDefragmentationCompletionMarker(filePageStoreMgr.getPageStoreFileIoFactory(), workDir, log);
 
-                                batchRenameDefragmentedCacheGroupPartitions(workDir, log);
-                            }
-                            catch (IgniteCheckedException e) {
-                                throw new IgniteException(e);
-                            }
-
+                            batchRenameDefragmentedCacheGroupPartitions(workDir, log);
                             return null;
                         });
                     }
@@ -598,14 +584,15 @@ public class CachePartitionDefragmentationManager {
      *
      * @param partCtx
      * @param treeIter
+     * @param offheap
      * @throws IgniteCheckedException If failed.
      */
     private void copyPartitionData(
         PartitionContext partCtx,
         TreeIterator treeIter,
-        GridSpinBusyLock busyLock
+        GridCacheOffheapManager offheap
     ) throws IgniteCheckedException {
-        partCtx.createNewCacheDataStore(busyLock);
+        partCtx.createNewCacheDataStore(offheap);
 
         CacheDataTree tree = partCtx.oldCacheDataStore.tree();
 
@@ -806,9 +793,7 @@ public class CachePartitionDefragmentationManager {
 
         CheckpointTimeoutLock cpLock = defragmentationCheckpoint.checkpointTimeoutLock();
 
-        Runnable cancellationChecker = this::checkCancellation;
-
-        idx.defragmentator().defragment(
+        idx.defragment(
             grpCtx,
             newCtx,
             (PageMemoryEx)partDataRegion.pageMemory(),
@@ -941,12 +926,11 @@ public class CachePartitionDefragmentationManager {
         }
 
         /** */
-        public void createNewCacheDataStore(GridSpinBusyLock busyLock) {
-            GridCacheDataStore newCacheDataStore = new GridCacheDataStore(
+        public void createNewCacheDataStore(GridCacheOffheapManager offheap) {
+            GridCacheDataStore newCacheDataStore = offheap.createGridCacheDataStore(
                 newGrpCtx,
                 partId,
                 true,
-                busyLock,
                 log
             );
 

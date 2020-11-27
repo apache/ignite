@@ -1357,8 +1357,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** */
-    public GridSpinBusyLock busyLock() {
-        return busyLock;
+    public GridCacheDataStore createGridCacheDataStore(
+        CacheGroupContext grpCtx,
+        int partId,
+        boolean exists,
+        IgniteLogger log
+    ) {
+        return new GridCacheDataStore(
+            grpCtx,
+            partId,
+            true,
+            busyLock,
+            log
+        );
     }
 
     /**

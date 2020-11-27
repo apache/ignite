@@ -68,7 +68,7 @@ public class SqlQueryExecutionEvent extends EventAdapter {
     private final String text;
 
     /** Query arguments. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private final Object[] args;
 
     /** Security subject ID. */
