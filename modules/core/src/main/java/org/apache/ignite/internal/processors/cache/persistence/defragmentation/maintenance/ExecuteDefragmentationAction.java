@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.defragmentation.
 
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
 import org.apache.ignite.maintenance.MaintenanceAction;
@@ -52,7 +53,7 @@ class ExecuteDefragmentationAction implements MaintenanceAction<Boolean> {
         try {
             defrgMgr.executeDefragmentation();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException | IgniteException e) {
             log.error("Defragmentation is failed", e);
 
             return false;
