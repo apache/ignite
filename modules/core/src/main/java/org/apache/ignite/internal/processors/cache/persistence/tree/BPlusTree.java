@@ -1116,9 +1116,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
         }
         catch (RuntimeException | AssertionError e) {
-            if (e.getCause() instanceof SQLException)
-                throw e;
-
             long[] pageIds = pages(
                 lower == null || cursor == null || cursor.getCursor == null,
                 () -> new long[]{cursor.getCursor.pageId}
