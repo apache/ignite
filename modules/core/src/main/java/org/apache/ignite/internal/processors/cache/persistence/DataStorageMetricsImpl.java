@@ -191,10 +191,10 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             "Total duration of checkpoints since the start of the node in milliseconds.");
 
         storageSize = mreg.longMetric("StorageSize",
-            "Storage space allocated, in bytes.");
+            "Amount of space occupied by cache data on disk in bytes.");
 
         sparseStorageSize = mreg.longMetric("SparseStorageSize",
-            "Storage space allocated adjusted for possible sparsity, in bytes.");
+            "Amount of space occupied by cache data on disk adjusted for possible sparsity in bytes.");
 
         mreg.register("WalArchiveSegments",
             this::getWalArchiveSegments,
