@@ -6899,6 +6899,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
                                 Collection<InetSocketAddress> nodeAddrs = spi.getNodeAddresses(previous, false);
 
+                                // The connection recovery connection to one node is connCheckTick.
+                                // We need to suppose network delays. So we use half of this time.
                                 int backwardCheckTimeout = (int)(connCheckTick / 2);
 
                                 if (log.isDebugEnabled()) {
@@ -6906,8 +6908,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         "previous [" + previous + "] with timeout " + backwardCheckTimeout);
                                 }
 
-                                // The connection recovery connection to one node is connCheckTick.
-                                // We need to suppose network delays. So we use half of this time.
                                 liveAddr = checkConnection(new ArrayList<>(nodeAddrs), backwardCheckTimeout);
 
                                 if (log.isInfoEnabled()) {
