@@ -186,7 +186,7 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
      */
     public FragmentMapping fragmentMapping(IgniteIndexScan rel, RelMetadataQuery mq) {
         return FragmentMapping.create(rel.sourceId(),
-            rel.getTable().unwrap(IgniteTable.class).colocationGroup(Commons.context(rel)));
+            rel.getTable().unwrap(IgniteTable.class).collocationGroup(Commons.context(rel)));
     }
 
     /**
@@ -194,7 +194,7 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
      */
     public FragmentMapping fragmentMapping(IgniteTableScan rel, RelMetadataQuery mq) {
         return FragmentMapping.create(rel.sourceId(),
-            rel.getTable().unwrap(IgniteTable.class).colocationGroup(Commons.context(rel)));
+            rel.getTable().unwrap(IgniteTable.class).collocationGroup(Commons.context(rel)));
     }
 
     /**

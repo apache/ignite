@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite;
+package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -133,34 +133,7 @@ import static org.apache.ignite.internal.processors.query.calcite.externalize.Re
  */
 //@WithSystemProperty(key = "calcite.debug", value = "true")
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
-public class PlannerTest extends GridCommonAbstractTest {
-    /** */
-    private List<UUID> nodes;
-
-    /** */
-    private List<QueryTaskExecutorImpl> executors;
-
-    /** */
-    private volatile Throwable lastE;
-
-    /** */
-    @Before
-    public void setup() {
-        nodes = new ArrayList<>(4);
-
-        for (int i = 0; i < 4; i++)
-            nodes.add(UUID.randomUUID());
-    }
-
-    /** */
-    @After
-    public void tearDown() throws Throwable {
-        if (!F.isEmpty(executors))
-            executors.forEach(QueryTaskExecutorImpl::tearDown);
-
-        if (lastE != null)
-            throw lastE;
-    }
+public class PlannerTest extends AbstractPlannerTest {
 
     /**
      * @throws Exception If failed.
@@ -406,7 +379,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -428,7 +401,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -450,7 +423,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -550,7 +523,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -572,7 +545,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -594,7 +567,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -694,7 +667,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -805,7 +778,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 };
             }
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -845,7 +818,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 };
             }
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -1038,7 +1011,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -1059,7 +1032,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -1185,7 +1158,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 );
             }
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 1));
             }
 
@@ -1213,7 +1186,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 );
             }
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 1));
             }
 
@@ -1478,7 +1451,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 return checkRes0;
             }
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 1));
             }
 
@@ -1711,7 +1684,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 0,1,2,3));
             }
 
@@ -1726,7 +1699,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 0,1,2,3));
             }
 
@@ -1831,7 +1804,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 0));
             }
 
@@ -1846,7 +1819,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 1,2),
                     select(nodes, 2,3),
@@ -1954,7 +1927,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 1,2,3));
             }
 
@@ -1969,7 +1942,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0),
                     select(nodes, 1),
@@ -2078,7 +2051,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 0));
             }
 
@@ -2093,7 +2066,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 1),
                     select(nodes, 2),
@@ -2200,7 +2173,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 2));
             }
 
@@ -2215,7 +2188,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 0,1));
             }
 
@@ -2898,352 +2871,5 @@ public class PlannerTest extends GridCommonAbstractTest {
         assertNotNull(phys);
 
         System.out.println("+++" + RelOptUtil.toString(phys));
-    }
-
-    /** */
-    interface TestVisitor {
-        public void visit(RelNode node, int ordinal, RelNode parent);
-    }
-
-    /** */
-    private static class TestRelVisitor extends RelVisitor {
-        /** */
-        final TestVisitor v;
-
-        /** */
-        TestRelVisitor(TestVisitor v) {
-            this.v = v;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void visit(RelNode node, int ordinal, RelNode parent) {
-            v.visit(node, ordinal, parent);
-
-            super.visit(node, ordinal, parent);
-        }
-    }
-
-    /** */
-    protected static void relTreeVisit(RelNode n, TestVisitor v) {
-        v.visit(n, -1, null);
-
-        n.childrenAccept(new TestRelVisitor(v));
-    }
-
-    /** */
-    private IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
-        RelTraitDef<?>[] traitDefs = {
-            DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE,
-            RelCollationTraitDef.INSTANCE,
-            RewindabilityTraitDef.INSTANCE,
-            CorrelationTraitDef.INSTANCE
-        };
-
-        PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .traitDefs(traitDefs)
-                .build())
-            .logger(log)
-            .query(sql)
-            .topologyVersion(AffinityTopologyVersion.NONE)
-            .build();
-
-        RelRoot relRoot;
-
-        try (IgnitePlanner planner = ctx.planner()) {
-            assertNotNull(planner);
-
-            String qry = ctx.query();
-
-            assertNotNull(qry);
-
-            // Parse
-            SqlNode sqlNode = planner.parse(qry);
-
-            // Validate
-            sqlNode = planner.validate(sqlNode);
-
-            // Convert to Relational operators graph
-            relRoot = planner.rel(sqlNode);
-
-            RelNode rel = relRoot.rel;
-
-            assertNotNull(rel);
-
-            // Transformation chain
-            RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteConvention.INSTANCE)
-                .replace(IgniteDistributions.single())
-                .simplify();
-
-            planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
-
-            return planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
-        }
-    }
-
-    /** */
-    private List<UUID> intermediateMapping(@NotNull AffinityTopologyVersion topVer, boolean single, @Nullable Predicate<ClusterNode> filter) {
-        return single ? select(nodes, 0) : select(nodes, 0, 1, 2, 3);
-    }
-
-    /** */
-    private static <T> List<T> select(List<T> src, int... idxs) {
-        ArrayList<T> res = new ArrayList<>(idxs.length);
-
-        for (int idx : idxs)
-            res.add(src.get(idx));
-
-        return res;
-    }
-
-    /** */
-    private <Row> Row row(ExecutionContext<Row> ctx, ImmutableBitSet requiredColunms, Object... fields) {
-        Type[] types = new Type[fields.length];
-        for (int i = 0; i < fields.length; i++)
-            types[i] = fields[i] == null ? Object.class : fields[i].getClass();
-
-        if (requiredColunms == null) {
-            for (int i = 0; i < fields.length; i++)
-                types[i] = fields[i] == null ? Object.class : fields[i].getClass();
-        }
-        else {
-            for (int i = 0, j = requiredColunms.nextSetBit(0); j != -1; j = requiredColunms.nextSetBit(j + 1), i++)
-                types[i] = fields[i] == null ? Object.class : fields[i].getClass();
-        }
-
-        return ctx.rowHandler().factory(types).create(fields);
-    }
-
-    /** */
-    private abstract static class TestTable implements IgniteTable {
-        /** */
-        private final RelProtoDataType protoType;
-
-        /** */
-        private final Map<String, IgniteIndex> indexes = new HashMap<>();
-
-        /** */
-        private final RewindabilityTrait rewindable;
-
-        /** */
-        private final double rowCnt;
-
-        /** */
-        private TestTable(RelDataType type) {
-            this(type, RewindabilityTrait.REWINDABLE);
-        }
-
-        /** */
-        private TestTable(RelDataType type, RewindabilityTrait rewindable) {
-            this(type, rewindable, 100.0);
-        }
-
-        /** */
-        private TestTable(RelDataType type, RewindabilityTrait rewindable, double rowCnt) {
-            protoType = RelDataTypeImpl.proto(type);
-            this.rewindable = rewindable;
-            this.rowCnt = rowCnt;
-
-            addIndex(new IgniteIndex(null, "PK", null, this));
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteLogicalTableScan toRel(RelOptCluster cluster, RelOptTable relOptTbl) {
-            RelTraitSet traitSet = cluster.traitSetOf(Convention.NONE)
-                .replaceIf(RewindabilityTraitDef.INSTANCE, () -> rewindable)
-                .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
-
-            return IgniteLogicalTableScan.create(cluster, traitSet, relOptTbl, null, null, null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName) {
-            RelTraitSet traitSet = cluster.traitSetOf(Convention.NONE)
-                .replaceIf(DistributionTraitDef.INSTANCE, this::distribution)
-                .replaceIf(RewindabilityTraitDef.INSTANCE, () -> rewindable)
-                .replaceIf(RelCollationTraitDef.INSTANCE, getIndex(idxName)::collation);
-
-            return IgniteLogicalIndexScan.create(cluster, traitSet, relOptTbl, idxName, null, null, null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet bitSet) {
-            RelDataType rowType = protoType.apply(typeFactory);
-
-            if (bitSet != null) {
-                RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(typeFactory);
-                for (int i = bitSet.nextSetBit(0); i != -1; i = bitSet.nextSetBit(i + 1))
-                    b.add(rowType.getFieldList().get(i));
-                rowType = b.build();
-            }
-
-            return rowType;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Statistic getStatistic() {
-            return new Statistic() {
-                /** {@inheritDoc */
-                @Override public Double getRowCount() {
-                    return rowCnt;
-                }
-
-                /** {@inheritDoc */
-                @Override public boolean isKey(ImmutableBitSet cols) {
-                    return false;
-                }
-
-                /** {@inheritDoc */
-                @Override public List<ImmutableBitSet> getKeys() {
-                    throw new AssertionError();
-                }
-
-                /** {@inheritDoc */
-                @Override public List<RelReferentialConstraint> getReferentialConstraints() {
-                    throw new AssertionError();
-                }
-
-                /** {@inheritDoc */
-                @Override public List<RelCollation> getCollations() {
-                    return Collections.emptyList();
-                }
-
-                /** {@inheritDoc */
-                @Override public RelDistribution getDistribution() {
-                    throw new AssertionError();
-                }
-            };
-        }
-
-        /** {@inheritDoc} */
-        @Override public <Row> Iterable<Row> scan(
-            ExecutionContext<Row> execCtx,
-            CollocationGroup group, Predicate<Row> filter,
-            Function<Row, Row> transformer,
-            ImmutableBitSet bitSet
-        ) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Schema.TableType getJdbcTableType() {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isRolledUp(String col) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean rolledUpColumnValidInsideAgg(
-            String column,
-            SqlCall call,
-            SqlNode parent,
-            CalciteConnectionConfig config
-        ) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteDistribution distribution() {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public TableDescriptor descriptor() {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, IgniteIndex> indexes() {
-            return Collections.unmodifiableMap(indexes);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void addIndex(IgniteIndex idxTbl) {
-            indexes.put(idxTbl.name(), idxTbl);
-        }
-
-        /** */
-        public TestTable addIndex(RelCollation collation, String name) {
-            indexes.put(name, new IgniteIndex(collation, name, null, this));
-
-            return this;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteIndex getIndex(String idxName) {
-            return indexes.get(idxName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void removeIndex(String idxName) {
-            throw new AssertionError();
-        }
-    }
-
-    /** */
-    private static class TestMessageServiceImpl extends MessageServiceImpl {
-        /** */
-        private final TestIoManager mgr;
-
-        /** */
-        private TestMessageServiceImpl(GridTestKernalContext kernal, TestIoManager mgr) {
-            super(kernal);
-            this.mgr = mgr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void send(UUID nodeId, CalciteMessage msg) {
-            mgr.send(localNodeId(), nodeId, msg);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean alive(UUID nodeId) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void prepareMarshal(Message msg) {
-            // No-op;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void prepareUnmarshal(Message msg) {
-            // No-op;
-        }
-    }
-
-    /** */
-    private class TestFailureProcessor extends FailureProcessor {
-        /** */
-        private TestFailureProcessor(GridTestKernalContext kernal) {
-            super(kernal);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean process(FailureContext failureCtx) {
-            Throwable ex = failureContext().error();
-            log().error(ex.getMessage(), ex);
-
-            lastE = ex;
-
-            return true;
-        }
     }
 }
