@@ -718,7 +718,7 @@ public class CachePartitionDefragmentationManager {
 
         CheckpointTimeoutLock cpLock = defragmentationCheckpoint.checkpointTimeoutLock();
 
-        idx.defragmentator().defragment(
+        idx.defragment(
             grpCtx,
             newCtx,
             (PageMemoryEx)partDataRegion.pageMemory(),
