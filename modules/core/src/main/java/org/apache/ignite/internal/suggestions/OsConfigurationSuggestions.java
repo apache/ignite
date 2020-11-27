@@ -61,11 +61,11 @@ public class OsConfigurationSuggestions {
         List<String> suggestions = new ArrayList<>();
 
         if (U.isRedHat()) {
-            String value;
-            String expected = "500";
+            String val;
+            String exp = "500";
 
-            boolean dwcParamFlag = (value = readVmParam(DIRTY_WRITEBACK_CENTISECS)) != null && !value.equals(expected);
-            boolean decParamFlag = (value = readVmParam(DIRTY_EXPIRE_CENTISECS)) != null && !value.equals(expected);
+            boolean dwcParamFlag = (val = readVmParam(DIRTY_WRITEBACK_CENTISECS)) != null && !val.equals(exp);
+            boolean decParamFlag = (val = readVmParam(DIRTY_EXPIRE_CENTISECS)) != null && !val.equals(exp);
 
             if (dwcParamFlag || decParamFlag)
                 suggestions.add(String.format("Speed up flushing of dirty pages by OS " +
@@ -74,13 +74,13 @@ public class OsConfigurationSuggestions {
                     (dwcParamFlag && decParamFlag ? " and " : ""),
                     (decParamFlag ? "vm." + DIRTY_EXPIRE_CENTISECS : ""),
                     (dwcParamFlag && decParamFlag ? "s" : ""),
-                    expected));
+                    exp));
 
-            if ((value = readVmParam(SWAPPINESS)) != null) {
+            if ((val = readVmParam(SWAPPINESS)) != null) {
                 try {
                     int maxSwappiness = 10;
 
-                    if (Integer.parseInt(value) > maxSwappiness)
+                    if (Integer.parseInt(val) > maxSwappiness)
                         suggestions.add(String.format("Reduce pages swapping ratio (set vm.%s=%d or less)", SWAPPINESS,
                                                       maxSwappiness));
                 }
@@ -89,13 +89,13 @@ public class OsConfigurationSuggestions {
                 }
             }
 
-            if ((value = readVmParam(ZONE_RECLAIM_MODE)) != null && !value.equals(expected = "0"))
+            if ((val = readVmParam(ZONE_RECLAIM_MODE)) != null && !val.equals(exp = "0"))
                 suggestions.add(String.format("Disable NUMA memory reclaim (set vm.%s=%s)", ZONE_RECLAIM_MODE,
-                    expected));
+                    exp));
 
-            if ((value = readVmParam(EXTRA_FREE_KBYTES)) != null && !value.equals(expected = "1240000"))
+            if ((val = readVmParam(EXTRA_FREE_KBYTES)) != null && !val.equals(exp = "1240000"))
                 suggestions.add(String.format("Avoid direct reclaim and page allocation failures (set vm.%s=%s)",
-                    EXTRA_FREE_KBYTES, expected));
+                    EXTRA_FREE_KBYTES, exp));
         }
 
         return suggestions;
