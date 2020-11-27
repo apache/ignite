@@ -126,25 +126,28 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         MetricRegistry mreg = mmgr.registry(DATASTORAGE_METRIC_PREFIX);
 
         walLoggingRate = mreg.hitRateMetric("WalLoggingRate",
-            "Average number of WAL records per second written during the last time interval.",
+            "Average number of WAL records written per second. " +
+                "The rate is calculated over the configured time interval.",
             rateTimeInterval,
             subInts);
 
         walWritingRate = mreg.hitRateMetric(
             "WalWritingRate",
-            "Average number of bytes per second written during the last time interval.",
+            "Average number of bytes written to WAL per second. " +
+                "The rate is calculated over the configured time interval.",
             rateTimeInterval,
             subInts);
 
         walFsyncTimeDuration = mreg.hitRateMetric(
-            "WalFsyncTimeDuration",
-            "Total duration of fsync",
+            "WalFsyncDuration",
+            "Total time operations spent in the fsync phase writing WAL records to the disk " +
+                "since the start of the node in milliseconds.",
             rateTimeInterval,
             subInts);
 
         walFsyncTimeNum = mreg.hitRateMetric(
-            "WalFsyncTimeNum",
-            "Total count of fsync",
+            "WalFsyncNum",
+            "Total number of fsync invocations for writing WAL records to the disk since the start of the node.",
             rateTimeInterval,
             subInts);
 
@@ -155,37 +158,37 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             subInts);
 
         lastCpLockWaitDuration = mreg.longMetric("LastCheckpointLockWaitDuration",
-            "Duration of the checkpoint lock wait in milliseconds.");
+            "Duration of the checkpoint lock wait phase of the last completed checkpoint in milliseconds.");
 
         lastCpMarkDuration = mreg.longMetric("LastCheckpointMarkDuration",
-            "Duration of the checkpoint lock wait in milliseconds.");
+            "Duration of the mark phase of the last completed checkpoint in milliseconds.");
 
         lastCpPagesWriteDuration = mreg.longMetric("LastCheckpointPagesWriteDuration",
-            "Duration of the checkpoint pages write in milliseconds.");
+            "Duration of the checkpoint pages write phase of the last completed checkpoint in milliseconds.");
 
         lastCpDuration = mreg.longMetric("LastCheckpointDuration",
-            "Duration of the last checkpoint in milliseconds.");
+            "Duration of the last completed checkpoint in milliseconds.");
 
         lastCpStart = mreg.longMetric("LastCheckpointStart",
-            "Start timestamp of the last checkpoint.");
+            "Start timestamp of the last completed checkpoint.");
 
         lastCpFsyncDuration = mreg.longMetric("LastCheckpointFsyncDuration",
-            "Duration of the sync phase of the last checkpoint in milliseconds.");
+            "Duration of the fsync phase of the last completed checkpoint in milliseconds.");
 
         lastCpTotalPages = mreg.longMetric("LastCheckpointTotalPagesNumber",
-            "Total number of pages written during the last checkpoint.");
+            "Total number of pages written during the last competed checkpoint.");
 
         lastCpDataPages = mreg.longMetric("LastCheckpointDataPagesNumber",
-            "Total number of data pages written during the last checkpoint.");
+            "Total number of data pages written during the last completed checkpoint.");
 
         lastCpCowPages = mreg.longMetric("LastCheckpointCopiedOnWritePagesNumber",
-            "Number of pages copied to a temporary checkpoint buffer during the last checkpoint.");
+            "Number of pages copied to a temporary checkpoint buffer during the last completed checkpoint.");
 
         lastWalSegmentRollOverTime = mreg.longMetric("WalLastRollOverTime",
-            "Time of the last WAL segment rollover.");
+            "Time of the last WAL segment rollover in milliseconds.");
 
         totalCheckpointTime = mreg.longMetric("CheckpointTotalTime",
-            "Total duration of checkpoint");
+            "Total duration of checkpoints since the start of the node in milliseconds.");
 
         storageSize = mreg.longMetric("StorageSize",
             "Storage space allocated, in bytes.");
@@ -199,7 +202,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
         mreg.register("WalTotalSize",
             this::getWalTotalSize,
-            "Total size in bytes for storage wal files.");
+            "Total size of WAL files in bytes.");
     }
 
     /** {@inheritDoc} */
