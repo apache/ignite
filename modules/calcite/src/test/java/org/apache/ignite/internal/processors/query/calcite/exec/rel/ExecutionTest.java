@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.rel.RelCollations;
@@ -35,6 +36,7 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -44,6 +46,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregat
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
@@ -51,6 +54,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static org.apache.calcite.rel.core.JoinRelType.ANTI;
 import static org.apache.calcite.rel.core.JoinRelType.FULL;
 import static org.apache.calcite.rel.core.JoinRelType.INNER;
@@ -973,7 +978,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
                     assertEquals(
                         "Invalid result size. [left=" + leftSize + ", right=" + rightSize + ", results=" + cnt,
-                        Math.min(leftSize, rightSize),
+                        min(leftSize, rightSize),
                         cnt);
                 }
             }
@@ -982,16 +987,17 @@ public class ExecutionTest extends AbstractExecutionTest {
 
     /** */
     @Test
-    public void testMergeJoin() {
+    public void testMergeJoin() throws IgniteCheckedException {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
 
-        int[] leftSizes = {1, 99, 100, 101, 512, 513, 2000};
-        int[] rightSizes = {1, 99, 100, 101, 512, 513, 2000};
+        int inBufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
 
-        for (int leftSize : leftSizes) {
-            for (int rightSize : rightSizes) {
+        int[] sizes = {1, max(inBufSize / 3, 1), max(inBufSize / 2, 1), max(inBufSize - 1, 1), inBufSize, inBufSize + 1, 2 * inBufSize - 1, 2 * inBufSize, 2 * inBufSize + 1};
+
+        for (int leftSize : sizes) {
+            for (int rightSize : sizes) {
                 log.info("Check: leftSize=" + leftSize + ", rightSize=" + rightSize);
 
                 ScanNode<Object[]> left = new ScanNode<>(ctx, rowType, new TestTable(leftSize, rowType));
@@ -1039,7 +1045,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
                 assertEquals(
                     "Invalid result size. [left=" + leftSize + ", right=" + rightSize + ", results=" + cnt,
-                    Math.min(leftSize, rightSize),
+                    min(leftSize, rightSize),
                     cnt);
             }
         }
@@ -1106,7 +1112,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
                     assertEquals(
                         "Invalid result size. [left=" + leftSize + ", right=" + rightSize + ", results=" + cnt,
-                        Math.min(leftSize, rightSize),
+                        min(leftSize, rightSize),
                         cnt);
                 }
             }
