@@ -793,6 +793,8 @@ public class CachePartitionDefragmentationManager {
 
         CheckpointTimeoutLock cpLock = defragmentationCheckpoint.checkpointTimeoutLock();
 
+        Runnable cancellationChecker = this::checkCancellation;
+
         idx.defragment(
             grpCtx,
             newCtx,

@@ -99,6 +99,7 @@ public class IndexingDefragmentation {
      * @param partPageMem Partition page memory.
      * @param mappingByPartition Mapping page memory.
      * @param cpLock Defragmentation checkpoint read lock.
+     * @param cancellationChecker Cancellation checker.
      * @param log Log.
      *
      * @throws IgniteCheckedException If failed.
