@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
+    using org.apache.ignite.platform;
 
     /// <summary>
     /// Java service proxy interface.
@@ -162,6 +163,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         IBinaryObject testBinaryObject(IBinaryObject x);
+
+        /** */
+        Address testAddress(Address addr);
 
         /** */
         void sleep(long delayMs);

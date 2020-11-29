@@ -41,6 +41,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Calendar.JANUARY;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Task that deploys a Java service.
@@ -80,6 +81,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
+            ignite.binary().type(Address.class);
+
             ignite.services().deployNodeSingleton(serviceName, new PlatformTestService());
 
             return null;
@@ -412,6 +415,20 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
                 return null;
 
             return o.toBuilder().setField("field", 15).build();
+        }
+
+        /** */
+        public Address testAddress(Address addr) {
+            if (addr == null)
+                return null;
+
+            assertEquals("000", addr.getZip());
+            assertEquals("Moscow", addr.getAddr());
+
+            addr.setZip("127000");
+            addr.setAddr("Moscow Akademika Koroleva 12");
+
+            return addr;
         }
 
         /** */
