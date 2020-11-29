@@ -81,8 +81,6 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
-            ignite.binary().type(Address.class);
-
             ignite.services().deployNodeSingleton(serviceName, new PlatformTestService());
 
             return null;
