@@ -142,7 +142,8 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
                         break;
                     }
                     catch (ClassNotFoundException e) {
-                        err = e;
+                        if (err == null)
+                            err = e;
                     }
                 }
 
