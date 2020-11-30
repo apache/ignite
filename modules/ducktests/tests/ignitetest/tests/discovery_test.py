@@ -293,7 +293,7 @@ def start_servers(test_context, num_nodes, ignite_config, modules=None):
                             jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"])
 
     start = monotonic()
-    servers.start(timeout_sec=100)
+    servers.start()
     return servers, round(monotonic() - start, 1)
 
 
