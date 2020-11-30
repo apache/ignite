@@ -127,7 +127,8 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
 
             case OP_GET_TYPE: {
                 int typeId = reader.readInt();
-                ClassNotFoundException clsNotFoundEx = null;
+
+                ClassNotFoundException err = null;
 
                 for (byte platformId : new byte[] {DOTNET_ID, JAVA_ID}) {
                     try {
@@ -136,17 +137,17 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
 
                         writer.writeString(typeName);
 
-                        clsNotFoundEx = null;
+                        err = null;
 
                         break;
                     }
                     catch (ClassNotFoundException e) {
-                        clsNotFoundEx = e;
+                        err = e;
                     }
                 }
 
-                if (clsNotFoundEx != null)
-                    throw new BinaryObjectException(clsNotFoundEx);
+                if (err != null)
+                    throw new BinaryObjectException(err);
 
                 break;
             }

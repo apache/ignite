@@ -369,29 +369,28 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
-        String clsName = null;
-        ClassNotFoundException clsNotFoundEx = null;
+        String clsName;
 
-        for (byte platformId : new byte[]{JAVA_ID, DOTNET_ID}) {
+        ClassNotFoundException err = null;
+
+        for (byte platformId : new byte[] {JAVA_ID, DOTNET_ID}) {
             try {
                 clsName = getClassName(platformId, typeId);
-            } catch (ClassNotFoundException ex) {
-                clsNotFoundEx = ex;
+            }
+            catch (ClassNotFoundException e) {
+                err = e;
+
+                continue;
             }
 
-            if (clsName != null) {
-                clsNotFoundEx = null;
-                break;
-            }
+            if (clsName != null)
+                return U.forName(clsName, ldr, clsFilter);
         }
 
-        if (clsNotFoundEx != null)
-            throw clsNotFoundEx;
+        if (err != null)
+            throw err;
 
-        if (clsName == null)
-            throw new ClassNotFoundException("Unknown type ID: " + typeId);
-
-        return U.forName(clsName, ldr, clsFilter);
+        throw new ClassNotFoundException("Unknown type ID: " + typeId);
     }
 
     /** {@inheritDoc} */
