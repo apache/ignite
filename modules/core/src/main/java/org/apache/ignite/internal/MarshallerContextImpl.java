@@ -382,7 +382,7 @@ public class MarshallerContextImpl implements MarshallerContext {
             }
             catch (ClassNotFoundException e) {
                 if (err == null)
-                    throw e;
+                    err = e;
 
                 continue;
             }
