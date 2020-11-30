@@ -627,7 +627,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
 
     /**
      * Checks both rows are the same. <p/>
-     * Primarly used to verify both search rows are the same and we can apply
+     * Primarily used to verify both search rows are the same and we can apply
      * the single row lookup optimization.
      *
      * @param r1 The first row.
