@@ -376,15 +376,16 @@ public class MarshallerContextImpl implements MarshallerContext {
         for (byte platformId : new byte[] {JAVA_ID, DOTNET_ID}) {
             try {
                 clsName = getClassName(platformId, typeId);
+
+                if (clsName != null)
+                    return U.forName(clsName, ldr, clsFilter);
             }
             catch (ClassNotFoundException e) {
-                err = e;
+                if (err == null)
+                    throw e;
 
                 continue;
             }
-
-            if (clsName != null)
-                return U.forName(clsName, ldr, clsFilter);
         }
 
         if (err != null)
