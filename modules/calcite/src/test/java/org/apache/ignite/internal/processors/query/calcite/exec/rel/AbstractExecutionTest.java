@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -53,6 +54,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 
@@ -77,6 +80,22 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
 
     /** */
     protected int nodesCnt = 3;
+
+    /** */
+    @Parameterized.Parameters(name = "Execution direction = {0}")
+    public static List<Object[]> parameters() {
+        ArrayList<Object[]> params = new ArrayList<>();
+
+        params.add(new Object[]{true});
+        params.add(new Object[]{false});
+        params.add(new Object[]{null});
+
+        return params;
+    }
+
+    /** Execution direction. */
+    @Parameterized.Parameter
+    public static Boolean execDir;
 
     /** */
     @Before
@@ -141,13 +160,11 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             GridTestUtils.runAsync(() -> {
                 while (!stop.get()) {
                     synchronized (tasks) {
-                        T2<Runnable, Integer> r = tasks.pollLast();
-                        while (r != null) {
-                            T2<Runnable, Integer> r0 = r;
+                        while (!tasks.isEmpty()) {
+                            T2<Runnable, Integer> r = execDir != null ? (execDir ? tasks.pollLast() : tasks.pollFirst()) :
+                                ThreadLocalRandom.current().nextBoolean() ? tasks.pollLast() : tasks.pollFirst();
 
-                            exec.execute(() -> super.execute(r0.getKey(), r0.getValue()));
-
-                            r = tasks.pollLast();
+                            exec.execute(() -> super.execute(r.getKey(), r.getValue()));
                         }
                     }
 

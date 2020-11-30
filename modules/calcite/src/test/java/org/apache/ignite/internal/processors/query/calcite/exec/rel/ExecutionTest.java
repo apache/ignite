@@ -50,6 +50,8 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.calcite.rel.core.JoinRelType.ANTI;
 import static org.apache.calcite.rel.core.JoinRelType.FULL;
@@ -66,6 +68,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.rel.Aggre
  */
 @SuppressWarnings("TypeMayBeWeakened")
 @WithSystemProperty(key = "calcite.debug", value = "true")
+@RunWith(Parameterized.class)
 public class ExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
