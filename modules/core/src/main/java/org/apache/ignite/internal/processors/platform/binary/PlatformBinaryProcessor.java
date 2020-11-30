@@ -22,11 +22,13 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+
+import static org.apache.ignite.internal.MarshallerPlatformIds.DOTNET_ID;
+import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
 /**
  * Platform binary processor.
@@ -78,7 +80,7 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
                 String typeName = reader.readString();
 
                 return platformContext().kernalContext().marshallerContext()
-                    .registerClassName(MarshallerPlatformIds.DOTNET_ID, typeId, typeName, false)
+                    .registerClassName(DOTNET_ID, typeId, typeName, false)
                     ? TRUE : FALSE;
             }
         }
@@ -125,16 +127,26 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
 
             case OP_GET_TYPE: {
                 int typeId = reader.readInt();
+                ClassNotFoundException clsNotFoundEx = null;
 
-                try {
-                    String typeName = platformContext().kernalContext().marshallerContext()
-                        .getClassName(MarshallerPlatformIds.DOTNET_ID, typeId);
+                for (byte platformId : new byte[] {DOTNET_ID, JAVA_ID}) {
+                    try {
+                        String typeName = platformContext().kernalContext().marshallerContext()
+                            .getClassName(platformId, typeId);
 
-                    writer.writeString(typeName);
+                        writer.writeString(typeName);
+
+                        clsNotFoundEx = null;
+
+                        break;
+                    }
+                    catch (ClassNotFoundException e) {
+                        clsNotFoundEx = e;
+                    }
                 }
-                catch (ClassNotFoundException e) {
-                    throw new BinaryObjectException(e);
-                }
+
+                if (clsNotFoundEx != null)
+                    throw new BinaryObjectException(clsNotFoundEx);
 
                 break;
             }

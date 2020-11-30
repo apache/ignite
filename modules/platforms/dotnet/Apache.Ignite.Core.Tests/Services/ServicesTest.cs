@@ -30,7 +30,6 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
-    using org.apache.ignite.platform;
 
     /// <summary>
     /// Services tests.
@@ -957,13 +956,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(new[] {11, 12, 13}, binSvc.testBinaryObjectArray(binArr)
                 .Select(x => x.GetField<int>("Field")));
 
-            Assert.IsNull(svc.testAddress(null));
-
-            Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
-
-            Assert.AreEqual("127000", addr.Zip);
-            Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
-
             Services.Cancel(javaSvcName);
         }
 
@@ -1046,13 +1038,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(guid, svc.testNullUUID(guid));
             Assert.IsNull(svc.testNullUUID(null));
             Assert.AreEqual(guid, svc.testArray(new Guid?[] { guid })[0]);
-
-            Assert.IsNull(svc.testAddress(null));
-
-            Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
-
-            Assert.AreEqual("127000", addr.Zip);
-            Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
         }
 
         /// <summary>

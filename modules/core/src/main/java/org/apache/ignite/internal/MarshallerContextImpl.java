@@ -59,6 +59,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.MarshallerPlatformIds.DOTNET_ID;
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 import static org.apache.ignite.internal.MarshallerPlatformIds.otherPlatforms;
 import static org.apache.ignite.internal.MarshallerPlatformIds.platformName;
@@ -368,7 +369,24 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
-        String clsName = getClassName(JAVA_ID, typeId);
+        String clsName = null;
+        ClassNotFoundException clsNotFoundEx = null;
+
+        for (byte platformId : new byte[]{JAVA_ID, DOTNET_ID}) {
+            try {
+                clsName = getClassName(platformId, typeId);
+            } catch (ClassNotFoundException ex) {
+                clsNotFoundEx = ex;
+            }
+
+            if (clsName != null) {
+                clsNotFoundEx = null;
+                break;
+            }
+        }
+
+        if (clsNotFoundEx != null)
+            throw clsNotFoundEx;
 
         if (clsName == null)
             throw new ClassNotFoundException("Unknown type ID: " + typeId);
@@ -442,22 +460,21 @@ public class MarshallerContextImpl implements MarshallerContext {
                     for (byte otherPlatformId : otherPlatforms(platformId)) {
                         try {
                             clsName = getClassName(otherPlatformId, typeId, true);
-                        } catch (ClassNotFoundException ignored) {
+                        }
+                        catch (ClassNotFoundException ignored) {
                             continue;
                         }
 
                         String otherPlatformName = platformName(otherPlatformId);
 
-                        throw new ClassNotFoundException(
-                                "Failed to resolve " + otherPlatformName + " class '" + clsName
+                        throw new ClassNotFoundException("Failed to resolve " + otherPlatformName + " class '" + clsName
                                         + "' in " + platformName
                                         + " [platformId=" + platformId
                                         + ", typeId=" + typeId + "].");
                     }
                 }
 
-                throw new ClassNotFoundException(
-                        "Failed to resolve class name [" +
+                throw new ClassNotFoundException("Failed to resolve class name [" +
                                 "platformId=" + platformId
                                 + ", platform=" + platformName
                                 + ", typeId=" + typeId + "]");

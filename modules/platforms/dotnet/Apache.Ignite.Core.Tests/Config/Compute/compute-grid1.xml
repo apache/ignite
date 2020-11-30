@@ -78,9 +78,6 @@
                             <property name="typeName" value="org.apache.ignite.platform.PlatformComputeJavaBinarizable"/>
                         </bean>
                         <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
-                            <property name="typeName" value="org.apache.ignite.platform.Address"/>
-                        </bean>
-                        <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
                             <property name="typeName" value="org.apache.ignite.platform.PlatformComputeEnum" />
                             <property name="enum" value="true" />
                         </bean>
