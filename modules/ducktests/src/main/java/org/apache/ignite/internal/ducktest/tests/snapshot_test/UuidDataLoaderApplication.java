@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.ducktest.tests.load;
+package org.apache.ignite.internal.ducktest.tests.snapshot_test;
 
 import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;

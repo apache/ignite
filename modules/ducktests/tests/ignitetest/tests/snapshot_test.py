@@ -52,6 +52,7 @@ class SnapshotTest(IgniteTest):
         ignite_config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
             data_storage=data_storage,
+            metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi',
             caches=[CacheConfiguration(name=self.CACHE_NAME, cache_mode='REPLICATED',
                                        indexed_types=['java.util.UUID', 'byte[]'])]
         )
@@ -73,7 +74,7 @@ class SnapshotTest(IgniteTest):
         loader = IgniteApplicationService(
             self.test_context,
             client_config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.load.UuidDataLoaderApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.snapshot_test.UuidDataLoaderApplication",
             params={
                 "cacheName": self.CACHE_NAME,
                 "size": 512 * 1024,

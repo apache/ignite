@@ -30,8 +30,8 @@ class PersistenceAware:
     PERSISTENT_ROOT = "/mnt/service"
     TEMP_DIR = os.path.join(PERSISTENT_ROOT, "tmp")
     LOGS_DIR = os.path.join(PERSISTENT_ROOT, "logs")
-    STDOUT_STDERR_CAPTURE = os.path.join(LOGS_DIR, "console.log")
-    CONSOLE_ALL_CAPTURE = os.path.join(LOGS_DIR, "console_all.log")
+    CONSOLE_LOG = os.path.join(LOGS_DIR, "console.log")
+    CONSOLE_ALL_LOG = os.path.join(LOGS_DIR, "console_all.log")
 
     logs = {
         "ignite_logs": {
@@ -45,9 +45,7 @@ class PersistenceAware:
         Init persistent directory.
         :param node: Service node.
         """
-        node.account.mkdirs(self.PERSISTENT_ROOT)
-        node.account.mkdirs(self.TEMP_DIR)
-        node.account.mkdirs(self.LOGS_DIR)
+        node.account.mkdirs(f'{self.PERSISTENT_ROOT} {self.TEMP_DIR} {self.LOGS_DIR}')
 
 
 class IgnitePersistenceAware(PersistenceAware):

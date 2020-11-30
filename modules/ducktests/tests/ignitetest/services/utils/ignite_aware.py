@@ -220,7 +220,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         :param backoff_sec: Number of seconds to back off between each failure to meet the condition
                 before checking again.
         """
-        with monitor_log(node, self.STDOUT_STDERR_CAPTURE, from_the_beginning) as monitor:
+        with monitor_log(node, self.CONSOLE_LOG, from_the_beginning) as monitor:
             monitor.wait_until(evt_message, timeout_sec=timeout_sec, backoff_sec=backoff_sec,
                                err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
                                                                                                timeout_sec))

@@ -107,8 +107,8 @@ class IgniteNodeSpec(IgniteSpec, IgnitePersistenceAware):
                self.path.script("ignite.sh"),
                self._jvm_opts(),
                self.CONFIG_FILE,
-               self.STDOUT_STDERR_CAPTURE,
-               self.CONSOLE_ALL_CAPTURE)
+               self.CONSOLE_LOG,
+               self.CONSOLE_ALL_LOG)
 
         return cmd
 
@@ -131,8 +131,8 @@ class IgniteApplicationSpec(IgniteSpec, IgnitePersistenceAware):
                self.path.script("ignite.sh"),
                self._jvm_opts(),
                self._app_args(),
-               self.STDOUT_STDERR_CAPTURE,
-               self.CONSOLE_ALL_CAPTURE)
+               self.CONSOLE_LOG,
+               self.CONSOLE_ALL_LOG)
 
         return cmd
 

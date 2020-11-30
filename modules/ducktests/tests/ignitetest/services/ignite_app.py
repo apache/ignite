@@ -102,7 +102,7 @@ class IgniteApplicationService(IgniteAwareService):
 
         for node in self.nodes:
             output = node.account.ssh_capture(
-                "grep '%s' %s" % (name + "->", self.STDOUT_STDERR_CAPTURE), allow_fail=False)
+                "grep '%s' %s" % (name + "->", self.CONSOLE_LOG), allow_fail=False)
             for line in output:
                 res.append(re.search("%s(.*)%s" % (name + "->", "<-"), line).group(1))
 

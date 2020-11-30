@@ -40,9 +40,9 @@
         <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
         <property name="systemWorkerBlockedTimeout" value="{{ config.sys_worker_blocked_timeout }}"/>
 
-        {% if config.version >= '2.8.0' %}
+        {% if config.metric_exporter %}
             <property name="metricExporterSpi">
-                <bean class="org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"/>
+                <bean class="{{ config.metric_exporter }}"/>
             </property>
         {% endif %}
 
