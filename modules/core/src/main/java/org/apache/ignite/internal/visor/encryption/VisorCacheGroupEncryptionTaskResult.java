@@ -20,7 +20,7 @@ package org.apache.ignite.internal.visor.encryption;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
@@ -63,18 +63,12 @@ public class VisorCacheGroupEncryptionTaskResult<T> extends IgniteDataTransferOb
 
     /** @return Per node job result. */
     public Map<UUID, T> results() {
-        if (results == null)
-            results = new HashMap<>();
-
-        return results;
+        return results == null ? Collections.emptyMap() : results;
     }
 
     /** @return Per node execution problems. */
     public Map<UUID, IgniteException> exceptions() {
-        if (exceptions == null)
-            exceptions = new HashMap<>();
-
-        return exceptions;
+        return exceptions == null ? Collections.emptyMap() : exceptions;
     }
 
     /** {@inheritDoc} */

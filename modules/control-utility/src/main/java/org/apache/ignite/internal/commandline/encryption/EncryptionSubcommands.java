@@ -48,7 +48,7 @@ public enum EncryptionSubcommands {
     REENCRYPTION_RESUME("resume_reencryption", new CacheGroupEncryptionCommand.ResumeReencryption()),
 
     /** Subcommand to view/change cache group re-encryption rate limit. */
-    REENCRYPTION_RATE("reencryption_rate", new ReencryptionRateCommand());
+    REENCRYPTION_RATE("reencryption_rate_limit", new ReencryptionRateCommand());
 
     /** Subcommand name. */
     private final String name;

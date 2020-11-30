@@ -60,17 +60,16 @@ public class ReencryptionRateCommand extends AbstractCommand<VisorReencryptionRa
                 clientCfg
             );
 
-            boolean read = taskArg.rate() == null;
-
             Map<UUID, IgniteException> exceptions = res.exceptions();
 
             for (Map.Entry<UUID, IgniteException> entry : exceptions.entrySet()) {
                 log.info(INDENT + "Node " + entry.getKey() + ":");
-                log.info(String.format("%sfailed to %s re-encryption rate: %s.",
-                    DOUBLE_INDENT, (read ? "get" : "limit"), entry.getValue().getMessage()));
+                log.info(DOUBLE_INDENT +
+                    "failed to get/set re-encryption rate limit: " + entry.getValue().getMessage());
             }
 
             Map<UUID, Double> results = res.results();
+            boolean read = taskArg.rate() == null;
 
             for (Map.Entry<UUID, Double> entry : results.entrySet()) {
                 log.info(INDENT + "Node " + entry.getKey() + ":");

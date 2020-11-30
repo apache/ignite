@@ -87,7 +87,7 @@ This utility can do the following commands:
     control.(sh|bat) --encryption resume_reencryption cacheGroupName
 
   View/change re-encryption rate limit:
-    control.(sh|bat) --encryption reencryption_rate [--limit limit]
+    control.(sh|bat) --encryption reencryption_rate_limit [--limit limit]
 
     Parameters:
       limit  - Decimal value to change re-encryption rate limit (MB/s).
