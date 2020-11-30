@@ -92,13 +92,13 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Number of partition backups
+     * Number of partition backups.
      */
     @Parameterized.Parameter
     public int backupsCount;
 
     /**
-     * For awaiting of eviction start
+     * For awaiting of eviction start.
      */
     private static final CountDownLatch LATCH = new CountDownLatch(1);
 
@@ -121,7 +121,7 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests sql query result after eviction partitions
+     * Tests sql query result after eviction partitions.
      */
     @Test
     public void testSqlConsistencyOnEviction() throws Exception {
