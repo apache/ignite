@@ -42,59 +42,7 @@ public class TreeIterator {
         pageBuf = ByteBuffer.allocateDirect(pageSize);
     }
 
-    // Performance impact of constant closures allocation is not clear. So this method should be avoided in massive
-    // operations like tree leaves access.
     /** */
-    public static <T> T access(
-        PageAccessType access,
-        PageMemoryEx pageMemory,
-        int grpId,
-        long pageId,
-        PageAccessor<T> accessor
-    ) throws IgniteCheckedException {
-        assert access == PageAccessType.ACCESS_READ || access == PageAccessType.ACCESS_WRITE;
-        long page = pageMemory.acquirePage(grpId, pageId);
-
-        try {
-            long pageAddr = access == PageAccessType.ACCESS_READ
-                    ? pageMemory.readLock(grpId, pageId, page)
-                    : pageMemory.writeLock(grpId, pageId, page);
-
-            try {
-                return accessor.access(pageAddr);
-            }
-            finally {
-                if (access == PageAccessType.ACCESS_READ)
-                    pageMemory.readUnlock(grpId, pageId, page);
-                else
-                    pageMemory.writeUnlock(grpId, pageId, page, null, true);
-            }
-        }
-        finally {
-            pageMemory.releasePage(grpId, pageId, page);
-        }
-    }
-
-    /** */
-    @SuppressWarnings("PublicInnerClass")
-    public enum PageAccessType {
-        /** Read access. */
-        ACCESS_READ,
-
-        /** Write access. */
-        ACCESS_WRITE;
-    }
-
-    /** */
-    @SuppressWarnings("PublicInnerClass")
-    @FunctionalInterface
-    public interface PageAccessor<T> {
-        /** */
-        public T access(long pageAddr) throws IgniteCheckedException;
-    }
-
-    /** */
-    // TODO Prefetch future pages?
     public <L, T extends L> void iterate(
         BPlusTree<L, T> tree,
         PageMemoryEx pageMemory,
@@ -140,10 +88,22 @@ public class TreeIterator {
 
     /** */
     private long findFirstLeafId(int grpId, long metaPageId, PageMemoryEx partPageMemory) throws IgniteCheckedException {
-        return access(PageAccessType.ACCESS_READ, partPageMemory, grpId, metaPageId, metaPageAddr -> {
-            BPlusMetaIO metaIO = PageIO.getPageIO(metaPageAddr);
+        long metaPage = partPageMemory.acquirePage(grpId, metaPageId);
 
-            return metaIO.getFirstPageId(metaPageAddr, 0);
-        });
+        try {
+            long metaPageAddr = partPageMemory.readLock(grpId, metaPageId, metaPage);
+
+            try {
+                BPlusMetaIO metaIO = PageIO.getPageIO(metaPageAddr);
+
+                return metaIO.getFirstPageId(metaPageAddr, 0);
+            }
+            finally {
+                partPageMemory.readUnlock(grpId, metaPageId, metaPage);
+            }
+        }
+        finally {
+            partPageMemory.releasePage(grpId, metaPageId, metaPage);
+        }
     }
 }

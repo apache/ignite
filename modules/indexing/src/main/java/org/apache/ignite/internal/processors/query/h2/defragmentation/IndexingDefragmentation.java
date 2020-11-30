@@ -160,7 +160,6 @@ public class IndexingDefragmentation {
                     return wrap((BPlusIO)io);
                 };
 
-                //TODO Create new proper GridCacheContext for it?
                 H2TreeIndex newIdx = H2TreeIndex.createIndex(
                     cctx,
                     null,

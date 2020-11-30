@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -503,7 +502,6 @@ public interface GridQueryIndexing {
      * @param mappingByPart Mapping page memory.
      * @param cpLock Defragmentation checkpoint read lock.
      * @param cancellationChecker Cancellation checker.
-     * @param log Log.
      *
      * @throws IgniteCheckedException If failed.
      */
@@ -513,7 +511,6 @@ public interface GridQueryIndexing {
         PageMemoryEx partPageMem,
         IntMap<LinkMap> mappingByPart,
         CheckpointTimeoutLock cpLock,
-        Runnable cancellationChecker,
-        IgniteLogger log
+        Runnable cancellationChecker
     ) throws IgniteCheckedException;
 }

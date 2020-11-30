@@ -247,7 +247,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
 
-        return new GridCacheDataStore(grp, p, exists, busyLock, log);
+        return createGridCacheDataStore(grp, p, exists, log);
     }
 
     /** {@inheritDoc} */
@@ -1366,7 +1366,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         return new GridCacheDataStore(
             grpCtx,
             partId,
-            true,
+            exists,
             busyLock,
             log
         );
