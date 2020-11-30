@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -44,13 +49,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /** */
 @RunWith(Parameterized.class)
@@ -93,7 +92,7 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
     }
 
     /**
-     *  Number of partition backups
+     * Number of partition backups
      */
     @Parameterized.Parameter
     public int backupsCount;
