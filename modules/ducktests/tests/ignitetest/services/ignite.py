@@ -103,7 +103,7 @@ def get_event_time(service, log_node, log_pattern, from_the_beginning=True, time
                                 backoff_sec=0.3)
 
     _, stdout, _ = log_node.account.ssh_client.exec_command(
-        "grep '%s' %s" % (log_pattern, IgniteAwareService.CONSOLE_LOG))
+        "grep '%s' %s" % (log_pattern, IgniteAwareService.STDOUT_STDERR_CAPTURE))
 
     return datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
                              "[%Y-%m-%dT%H:%M:%S,%f]")

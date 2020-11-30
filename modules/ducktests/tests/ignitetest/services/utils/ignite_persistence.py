@@ -30,8 +30,8 @@ class PersistenceAware:
     PERSISTENT_ROOT = "/mnt/service"
     TEMP_DIR = os.path.join(PERSISTENT_ROOT, "tmp")
     LOGS_DIR = os.path.join(PERSISTENT_ROOT, "logs")
-    CONSOLE_LOG = os.path.join(LOGS_DIR, "console.log")
-    CONSOLE_ALL_LOG = os.path.join(LOGS_DIR, "console_all.log")
+    STDOUT_STDERR_CAPTURE = os.path.join(LOGS_DIR, "console.log")
+    STDOUT_STDERR_ALL = os.path.join(LOGS_DIR, "console_all.log")
 
     logs = {
         "ignite_logs": {
