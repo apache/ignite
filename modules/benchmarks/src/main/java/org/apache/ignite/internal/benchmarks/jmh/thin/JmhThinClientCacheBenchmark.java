@@ -18,16 +18,22 @@
 package org.apache.ignite.internal.benchmarks.jmh.thin;
 
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Mode;
 
 /**
  * Thin client cache benchmark.
  *
+ * Results on i7-9700K, Ubuntu 20.04.1, JDK 1.8.0_275:
  * Benchmark                         Mode  Cnt      Score      Error  Units
  * JmhThinClientCacheBenchmark.get  thrpt   10  92501.557 ± 1380.384  ops/s
  * JmhThinClientCacheBenchmark.put  thrpt   10  82907.446 ± 7572.537  ops/s
+ *
+ * JmhThinClientCacheBenchmark.get  avgt    10  41.505 ± 1.018        us/op
+ * JmhThinClientCacheBenchmark.put  avgt    10  44.623 ± 0.779        us/op
  */
 public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark {
     /**
@@ -57,11 +63,19 @@ public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark 
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        JmhIdeBenchmarkRunner.create()
+        JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
                 .forks(1)
                 .threads(4)
                 .benchmarks(JmhThinClientCacheBenchmark.class.getSimpleName())
-                .jvmArguments("-Xms4g", "-Xmx4g")
+                .jvmArguments("-Xms4g", "-Xmx4g");
+
+        runner
+                .benchmarkModes(Mode.Throughput)
+                .run();
+
+        runner
+                .benchmarkModes(Mode.AverageTime)
+                .outputTimeUnit(TimeUnit.MICROSECONDS)
                 .run();
     }
 }
