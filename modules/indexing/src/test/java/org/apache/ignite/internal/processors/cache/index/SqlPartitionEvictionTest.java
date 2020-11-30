@@ -120,6 +120,13 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids(true);
+
+        super.afterTest();
+    }
+
     /**
      * Tests sql query result after eviction partitions.
      */
