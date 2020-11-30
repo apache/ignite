@@ -1838,6 +1838,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private volatile long nextStoreCleanTimeNanos;
 
         /** */
+        private GridQueryRowCacheCleaner rowCacheCleaner;
+
+        /**
+         * Mutex used to synchronise publication of initialized delegate link and actions that should change
+         * the delegate's state, so the delegate will not be in obsolete state.
+         */
+        private final Object delegatePublicationMux = new Object();
+
+        /** */
         private PartitionMetaStorage<SimpleDataRow> partStorage;
 
         /** */
@@ -2130,7 +2139,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         pageMem.releasePage(grpId, partMetaId, partMetaPage);
                     }
 
-                    delegate = delegate0;
+                    synchronized (delegatePublicationMux) {
+                        delegate0.setRowCacheCleaner(rowCacheCleaner);
+
+                        delegate = delegate0;
+                    }
                 }
                 catch (Throwable ex) {
                     U.error(log, "Unhandled exception during page store initialization. All further operations will " +
@@ -2532,6 +2545,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
             try {
+                synchronized (delegatePublicationMux) {
+                    this.rowCacheCleaner = rowCacheCleaner;
+                }
+
                 CacheDataStore delegate0 = init0(true);
 
                 if (delegate0 != null)

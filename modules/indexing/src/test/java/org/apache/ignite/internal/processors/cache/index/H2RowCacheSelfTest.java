@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -24,6 +26,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import javax.cache.Cache;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -31,7 +34,11 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
@@ -39,10 +46,13 @@ import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Tests H2RowCacheRegistry.
  */
+@RunWith(Parameterized.class)
 @SuppressWarnings({"unchecked", "ConstantConditions"})
 public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
     /** Keys count. */
@@ -51,16 +61,43 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
     /** Random generator. */
     private static final Random RND = new Random(System.currentTimeMillis());
 
+    /** */
+    @Parameterized.Parameters(name = "persistenceEnabled={0}")
+    public static Collection<Object[]> testParams() {
+        return Arrays.asList(new Object[]{true}, new Object[]{false});
+    }
+
+    /** */
+    @Parameterized.Parameter
+    public boolean persistenceEnabled;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGrid();
+        cleanPersistenceDir();
+
+        Ignite ignite = startGrid();
+
+        if (persistenceEnabled)
+            ignite.cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
+        cleanPersistenceDir();
+
         super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setPersistenceEnabled(persistenceEnabled)
+                )
+            );
     }
 
     /**
