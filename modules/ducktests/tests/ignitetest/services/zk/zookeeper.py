@@ -88,7 +88,17 @@ class ZookeeperService(Service):
         log_config_file = self.render('log4j.properties.j2')
         node.account.create_file(self.LOG_CONFIG_FILE, log_config_file)
 
-        start_cmd = "nohup java -cp %s/*:%s org.apache.zookeeper.server.quorum.QuorumPeerMain %s >/dev/null 2>&1 &" % \
+        # " -XX:+UseConcMarkSweepGC" \
+        # " -XX:CMSParallelRemarkEnabled" \
+        # " -XX:+CMSClassUnloadingEnabled" \
+        # " -XX:+UseCMSInitiatingOccupancyOnly" \
+        # " -XX:+UseCMSInitiatingOccupancyFraction=70" \
+        # " -XX:+ScavengeBeforeFullGC" \
+        # " -XX:+CMSScavengeBeforeRemark" \
+        # " -server -Xmx512M -Xms512M" \
+
+        start_cmd = "nohup java" \
+                    " -cp %s/*:%s org.apache.zookeeper.server.quorum.QuorumPeerMain%s >/dev/null 2>&1 &" % \
                     (self.ZK_LIB_DIR, self.CONFIG_ROOT, self.CONFIG_FILE)
 
         node.account.ssh(start_cmd)
