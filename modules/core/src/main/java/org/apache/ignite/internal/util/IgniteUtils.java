@@ -139,7 +139,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
@@ -242,7 +241,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -362,9 +360,6 @@ public abstract class IgniteUtils {
 
     /** Default user version. */
     public static final String DFLT_USER_VERSION = "0";
-
-    /** Lock hold message. */
-    public static final String LOCK_HOLD_MESSAGE = "ReadLock held the lock more than ";
 
     /** Cache for {@link GridPeerDeployAware} fields to speed up reflection. */
     private static final ConcurrentMap<String, IgniteBiTuple<Class<?>, Collection<Field>>> p2pFields =
@@ -11526,180 +11521,6 @@ public abstract class IgniteUtils {
                 throw e;
             }
         };
-    }
-
-    /** */
-    public static class ReentrantReadWriteLockTracer extends ReentrantReadWriteLock {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Read lock. */
-        private final ReadLockTracer readLock;
-
-        /** Write lock. */
-        private final WriteLockTracer writeLock;
-
-        /** Lock print threshold. */
-        private long readLockThreshold;
-
-        /** */
-        private IgniteLogger log;
-
-        /**
-         * @param delegate RWLock delegate.
-         * @param log Ignite logger.
-         * @param readLockThreshold ReadLock threshold timeout.
-         *
-         */
-        public ReentrantReadWriteLockTracer(ReentrantReadWriteLock delegate, IgniteLogger log, long readLockThreshold) {
-            this.log = log;
-
-            readLock = new ReadLockTracer(delegate, log, readLockThreshold);
-
-            writeLock = new WriteLockTracer(delegate);
-
-            this.readLockThreshold = readLockThreshold;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ReadLock readLock() {
-            return readLock;
-        }
-
-        /** {@inheritDoc} */
-        @Override public WriteLock writeLock() {
-            return writeLock;
-        }
-
-        /** */
-        public long lockWaitThreshold() {
-            return readLockThreshold;
-        }
-    }
-
-    /** */
-    private static class ReadLockTracer extends ReentrantReadWriteLock.ReadLock {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Delegate. */
-        private final ReentrantReadWriteLock.ReadLock delegate;
-
-        /** */
-        private static final ThreadLocal<T2<Integer, Long>> READ_LOCK_HOLDER_TS =
-            ThreadLocal.withInitial(() -> new T2<>(0, 0L));
-
-        /** */
-        private IgniteLogger log;
-
-        /** */
-        private long readLockThreshold;
-
-        /** */
-        public ReadLockTracer(ReentrantReadWriteLock lock, IgniteLogger log, long readLockThreshold) {
-            super(lock);
-
-            delegate = lock.readLock();
-
-            this.log = log;
-
-            this.readLockThreshold = readLockThreshold;
-        }
-
-        /** */
-        private void inc() {
-            T2<Integer, Long> val = READ_LOCK_HOLDER_TS.get();
-
-            int cntr = val.get1();
-
-            if (cntr == 0)
-                val.set2(U.currentTimeMillis());
-
-            val.set1(++cntr);
-
-            READ_LOCK_HOLDER_TS.set(val);
-        }
-
-        /** */
-        private void dec() {
-            T2<Integer, Long> val = READ_LOCK_HOLDER_TS.get();
-
-            int cntr = val.get1();
-
-            if (--cntr == 0) {
-                long timeout = U.currentTimeMillis() - val.get2();
-
-                if (timeout > readLockThreshold) {
-                    GridStringBuilder sb = new GridStringBuilder();
-
-                    sb.a(LOCK_HOLD_MESSAGE + timeout + " ms." + nl());
-
-                    U.printStackTrace(Thread.currentThread().getId(), sb);
-
-                    U.warn(log, sb.toString());
-                }
-            }
-
-            val.set1(cntr);
-
-            READ_LOCK_HOLDER_TS.set(val);
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-        @Override public void lock() {
-            delegate.lock();
-
-            inc();
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-        @Override public void lockInterruptibly() throws InterruptedException {
-            delegate.lockInterruptibly();
-
-            inc();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean tryLock() {
-            if (delegate.tryLock()) {
-                inc();
-
-                return true;
-            }
-            else
-                return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean tryLock(long time, @NotNull TimeUnit unit) throws InterruptedException {
-            if (delegate.tryLock(time, unit)) {
-                inc();
-
-                return true;
-            }
-            else
-                return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void unlock() {
-            delegate.unlock();
-
-            dec();
-        }
-    }
-
-    /** */
-    private static class WriteLockTracer extends ReentrantReadWriteLock.WriteLock {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        public WriteLockTracer(ReentrantReadWriteLock lock) {
-            super(lock);
-        }
     }
 
     /**
