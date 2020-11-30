@@ -146,7 +146,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         super.validateSelect(select, targetRowType);
     }
 
-
     /**
      * @param n Node to check limit.
      * @param nodeName Node name.
