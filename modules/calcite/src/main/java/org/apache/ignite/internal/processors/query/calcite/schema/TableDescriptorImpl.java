@@ -463,7 +463,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** {@inheritDoc} */
-    @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+    @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
         if (!cctx.gate().enterIfNotStopped())
             throw U.convertException(new CacheStoppedException(cctx.name()));
 

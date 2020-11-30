@@ -58,8 +58,8 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
                     .build()) {
 
                 @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.broadcast();
-//                    return IgniteDistributions.affinity(0, "T0", "hash");
+//                    return IgniteDistributions.broadcast();
+                    return IgniteDistributions.affinity(0, "T0", "hash");
                 }
             }
                 .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t0_jid_idx")
@@ -75,8 +75,8 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
                     .build()) {
 
                 @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.broadcast();
-//                    return IgniteDistributions.affinity(0, "T1", "hash");
+//                    return IgniteDistributions.broadcast();
+                    return IgniteDistributions.affinity(0, "T1", "hash");
                 }
             }
                 .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid_idx")
@@ -84,7 +84,7 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
 
         String sql = "select * " +
             "from t0 " +
-            "join t1 on t0.id / 2 = t1.id - 1";
+            "join t1 on t0.id > t1.id and t0.jid < t1.jid";
 
         RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter");
 

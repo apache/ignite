@@ -58,7 +58,7 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @param ctx Planning context.
      * @return Nodes mapping.
      */
-    CollocationGroup colocationGroup(PlanningContext ctx);
+    CollocationGroup collocationGroup(PlanningContext ctx);
 
     /** {@inheritDoc} */
     @Override default RelDataType apply(RelDataTypeFactory factory) {
