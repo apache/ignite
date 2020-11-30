@@ -285,6 +285,7 @@
     <Compile Include="Plugin\TestIgnitePluginConfiguration.cs" />
     <Compile Include="Plugin\TestIgnitePluginException.cs" />
     <Compile Include="Plugin\TestIgnitePluginProvider.cs" />
+    <Compile Include="Services\Address.cs" />
     <Compile Include="Services\IJavaService.cs" />
     <Compile Include="Ssl\SslConfigurationTest.cs" />
     <Compile Include="TaskExtensions.cs" />
