@@ -39,7 +39,7 @@ import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
-import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DISCO_METRICS;
+import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
