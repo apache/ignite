@@ -80,8 +80,17 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
 
-    def start_node(self, node):
-        self.init_persistent(node)
+    # pylint: disable=W0221
+    def start_node(self, node, init_persistent=True):
+        """
+        Start node.
+        :param node: Ignite service node.
+        :param init_persistent: If False, initialize persistent directory will be skipped.
+        """
+        if init_persistent:
+            self.init_persistent(node)
+        else:
+            self.logger.debug(f'{self.who_am_i(node)}: skip initialize persistent directory')
 
         super().start_node(node)
 
@@ -359,7 +368,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         self.stop()
 
         for node in self.nodes:
-            super().start_node(node)
+            self.start_node(node, init_persistent=False)
 
         self.logger.info("Waiting for Ignite(s) to start...")
 
