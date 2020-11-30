@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
