@@ -65,12 +65,14 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -89,6 +91,7 @@ import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBusyLock;
+import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -175,6 +178,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Snapshot metrics prefix. */
     public static final String SNAPSHOT_METRICS = "snapshot";
+
+    /** Empty array of cache rows for partition page store. */
+    private static final CacheDataRow[] EMPTY_ROWS = {};
 
     /** Prefix for snapshot threads. */
     private static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
@@ -1076,6 +1082,38 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
         catch (IOException e) {
             throw new IgniteException(e);
+        }
+    }
+
+    /** */
+    private static class SerialPageStoreIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
+        /** */
+        private final PageStore store;
+
+        /** */
+        int currPageIdx = -1;
+
+        /** */
+        CacheDataRow[] rows = EMPTY_ROWS;
+
+        /** */
+        int currPageRow = -1;
+
+        /**
+         * @param store Store to iterate over.
+         */
+        public SerialPageStoreIterator(PageStore store) {
+            this.store = store;
+        }
+
+        /** {@inheritDoc */
+        @Override protected CacheDataRow onNext() throws IgniteCheckedException {
+            return null;
+        }
+
+        /** {@inheritDoc */
+        @Override protected boolean onHasNext() throws IgniteCheckedException {
+            return false;
         }
     }
 
