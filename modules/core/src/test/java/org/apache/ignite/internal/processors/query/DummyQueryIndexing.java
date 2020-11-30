@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -346,8 +345,7 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         CacheGroupContext newCtx,
         PageMemoryEx partPageMem,
         IntMap<LinkMap> mappingByPart,
-        CheckpointTimeoutLock cpLock,
-        IgniteLogger log
+        CheckpointTimeoutLock cpLock
     ) throws IgniteCheckedException {
         // No-op.
     }

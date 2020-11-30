@@ -3201,8 +3201,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         CacheGroupContext newCtx,
         PageMemoryEx partPageMem,
         IntMap<LinkMap> mappingByPart,
-        CheckpointTimeoutLock cpLock,
-        IgniteLogger log
+        CheckpointTimeoutLock cpLock
     ) throws IgniteCheckedException {
         defragmentation.defragment(grpCtx, newCtx, partPageMem, mappingByPart, cpLock, log);
     }
