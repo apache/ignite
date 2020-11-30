@@ -17,10 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import com.google.common.collect.ImmutableMap;
@@ -38,7 +45,9 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageServic
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -85,7 +94,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             GridTestKernalContext kernal = newContext();
 
             QueryTaskExecutorImpl taskExecutor = new QueryTaskExecutorImpl(kernal);
-            taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
+            taskExecutor.stripedThreadPoolExecutor(new IgniteRandomStripedThreadPoolExecutor(
                 kernal.config().getQueryThreadPoolSize(),
                 kernal.igniteInstanceName(),
                 "calciteQry",
@@ -111,6 +120,61 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             exchangeSvc.init();
 
             exchangeServices.put(uuid, exchangeSvc);
+        }
+    }
+
+    /** Task reordering executor. */
+    private static class IgniteRandomStripedThreadPoolExecutor extends IgniteStripedThreadPoolExecutor {
+        /** */
+        final Deque<T2<Runnable, Integer>> tasks = new ArrayDeque<>();
+
+        /** Internal stop flag. */
+        AtomicBoolean stop = new AtomicBoolean();
+
+        /** Inner execution service. */
+        ExecutorService exec = Executors.newWorkStealingPool();
+
+        /** {@inheritDoc} */
+        public IgniteRandomStripedThreadPoolExecutor(int concurrentLvl, String igniteInstanceName, String threadNamePrefix, Thread.UncaughtExceptionHandler eHnd, boolean allowCoreThreadTimeOut, long keepAliveTime) {
+            super(concurrentLvl, igniteInstanceName, threadNamePrefix, eHnd, allowCoreThreadTimeOut, keepAliveTime);
+
+            GridTestUtils.runAsync(() -> {
+                while (!stop.get()) {
+                    synchronized (tasks) {
+                        T2<Runnable, Integer> r = tasks.pollLast();
+                        while (r != null) {
+                            T2<Runnable, Integer> r0 = r;
+
+                            exec.execute(() -> super.execute(r0.getKey(), r0.getValue()));
+
+                            r = tasks.pollLast();
+                        }
+                    }
+
+                    LockSupport.parkNanos(ThreadLocalRandom.current().nextLong(1_000, 10_000));
+                }
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(Runnable task, int idx) {
+            synchronized (tasks) {
+                tasks.add(new T2<>(task, idx));
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void shutdown() {
+            stop.set(true);
+
+            super.shutdown();
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<Runnable> shutdownNow() {
+            stop.set(true);
+
+            return super.shutdownNow();
         }
     }
 

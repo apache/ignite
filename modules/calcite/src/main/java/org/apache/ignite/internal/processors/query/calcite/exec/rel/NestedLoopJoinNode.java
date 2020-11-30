@@ -513,7 +513,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
                 }
             }
 
-            if (waitingLeft == NOT_WAITING && requested > 0 && !rightNotMatchedIndexes.isEmpty()) {
+            if (waitingLeft == NOT_WAITING && requested > 0 && (rightNotMatchedIndexes != null && !rightNotMatchedIndexes.isEmpty())) {
                 assert lastPushedInd >= 0;
 
                 inLoop = true;
@@ -657,7 +657,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
                 }
             }
 
-            if (waitingLeft == NOT_WAITING && requested > 0 && !rightNotMatchedIndexes.isEmpty()) {
+            if (waitingLeft == NOT_WAITING && requested > 0 && (rightNotMatchedIndexes != null && !rightNotMatchedIndexes.isEmpty())) {
                 assert lastPushedInd >= 0;
 
                 inLoop = true;
