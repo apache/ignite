@@ -138,6 +138,8 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
                     if (res.get1() != null) {
                         writer.writeString(res.get1());
 
+                        err = null;
+
                         break;
                     }
                     else if (err == null)
