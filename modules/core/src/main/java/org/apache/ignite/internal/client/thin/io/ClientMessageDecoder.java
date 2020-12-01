@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 
 /**
  * Decodes thin client messages from partial buffers.
-  */
+ */
 public class ClientMessageDecoder {
     /** */
     private byte[] data;
