@@ -48,7 +48,8 @@ class GridNioClientParser implements GridNioParser {
         if (bytes == null)
             return null; // Message is not yet completely received.
 
-        return ByteBuffer.wrap(bytes).order(ByteOrder.nativeOrder());
+        // Thin client protocol is little-endian. ByteBuffer will handle conversion as necessary on big-endian systems.
+        return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
     }
 
     /** {@inheritDoc} */
