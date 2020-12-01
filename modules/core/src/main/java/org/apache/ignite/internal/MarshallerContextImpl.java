@@ -398,25 +398,7 @@ public class MarshallerContextImpl implements MarshallerContext {
             byte platformId,
             int typeId
     ) throws ClassNotFoundException, IgniteCheckedException {
-        return getClassName(platformId, typeId, false);
-    }
-
-    /**
-     * Gets class name for provided (platformId, typeId) pair.
-     *
-     * @param platformId id of a platform the class was registered for.
-     * @param typeId Type ID.
-     * @param skipOtherPlatforms Whether to skip other platforms check (recursion guard).
-     * @return Class name
-     * @throws ClassNotFoundException If class was not found.
-     * @throws IgniteCheckedException In case of any other error.
-     */
-    private String getClassName(
-            byte platformId,
-            int typeId,
-            boolean skipOtherPlatforms
-    ) throws ClassNotFoundException, IgniteCheckedException {
-        T2<String, String> res = getClassNameUnthrowable(platformId, typeId, skipOtherPlatforms);
+        T2<String, String> res = getClassNameUnthrowable(platformId, typeId, false);
 
         if (res.get1() == null)
             throw new ClassNotFoundException(res.get2());
