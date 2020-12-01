@@ -614,6 +614,9 @@ public class CachePartitionDefragmentationManager {
         CacheDataTree tree = partCtx.oldCacheDataStore.tree();
 
         CacheDataTree newTree = partCtx.newCacheDataStore.tree();
+
+        newTree.enableDefragmentationOptimizations();
+
         PendingEntriesTree newPendingTree = partCtx.newCacheDataStore.pendingTree();
         AbstractFreeList<CacheDataRow> freeList = partCtx.newCacheDataStore.getCacheStoreFreeList();
 

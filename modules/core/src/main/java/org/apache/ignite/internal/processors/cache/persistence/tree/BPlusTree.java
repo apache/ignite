@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoRes
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.InsertLast;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
@@ -92,6 +91,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlus
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Result.NOT_FOUND;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Result.RETRY;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Result.RETRY_ROOT;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Result.TRY_REBALANCE_BEFORE_SPLIT;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver.DEFAULT_PAGE_IO_RESOLVER;
 
 /**
@@ -150,6 +150,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** Failure processor. */
     private final FailureProcessor failureProcessor;
+
+    /** Flag for enabling defragmentation-specific optimizations - for single-threaded append-only tree creation. */
+    private boolean defragmentationOptsEnabled;
 
     /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
@@ -443,6 +446,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 return RETRY;
 
             int cnt = io.getCount(pageAddr);
+
+            // Split rebalance can be tried only if it's allowed, page is full and it's not root.
+            if (p.splitRebalanceAllowed && cnt == io.getMaxCount(pageAddr, pageSize()) && lvl != getRootLevel())
+                return TRY_REBALANCE_BEFORE_SPLIT;
+
             int idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, p.row, 0);
 
             if (idx >= 0) // We do not support concurrent put of the same key.
@@ -879,6 +887,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     public final String getName() {
         return name;
+    }
+
+    /** Enable defragmentation optimizations. */
+    public void enableDefragmentationOptimizations() {
+        assert canGetRowFromInner;
+
+        defragmentationOptsEnabled = true;
     }
 
     /**
@@ -2414,7 +2429,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             for (;;) { // Go down with retries.
                 p.init();
 
-                Result res = putDown(p, p.rootId, 0L, p.rootLvl);
+                Result res = putDown(p, p.rootId, 0L, p.rootLvl, defragmentationOptsEnabled);
 
                 switch (res) {
                     case RETRY:
@@ -2761,14 +2776,21 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param pageId Page ID.
      * @param fwdId Expected forward page ID.
      * @param lvl Level.
+     * @param splitRebalanceAllowed Allows rebalancing instead of splits. Optimization for defragmentation.
+     *      Can't be used concurrently.
      * @return Result code.
      * @throws IgniteCheckedException If failed.
+     *
+     * @see Put#tryRebalance(long, long)
      */
-    private Result putDown(final Put p, final long pageId, final long fwdId, final int lvl)
+    private Result putDown(final Put p, final long pageId, final long fwdId, int lvl, boolean splitRebalanceAllowed)
         throws IgniteCheckedException {
         assert lvl >= 0 : lvl;
 
         final long page = acquirePage(pageId);
+
+        // We'll try to try rebalancing if we can first.
+        boolean tryRebalance = splitRebalanceAllowed;
 
         try {
             for (;;) {
@@ -2790,7 +2812,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         res = p.tryReplaceInner(pageId, page, fwdId, lvl);
 
                         if (res != RETRY) // Go down recursively.
-                            res = putDown(p, p.pageId, p.fwdId, lvl - 1);
+                            res = putDown(p, p.pageId, p.fwdId, lvl - 1, tryRebalance);
+
+                        if (res == TRY_REBALANCE_BEFORE_SPLIT) {
+                            assert tryRebalance;
+
+                            // Here we had an attempt to split child page while it's allowed to rebalance data to
+                            // its left sibling. We attempt that and split only if we couldn't rebalance anything.
+                            tryRebalance = false;
+
+                            p.tryRebalance(pageId, page);
+
+                            continue;
+                        }
 
                         if (res == RETRY_ROOT || p.isFinished())
                             return res;
@@ -2808,6 +2842,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     case NOT_FOUND: // Do insert.
                         assert lvl == p.btmLvl : "must insert at the bottom level";
                         assert p.needReplaceInner == FALSE : p.needReplaceInner + " " + lvl;
+
+                        // Explicitly set this flag before every insert. It's reused for every level.
+                        p.splitRebalanceAllowed = splitRebalanceAllowed;
 
                         return p.tryInsert(pageId, page, fwdId, lvl);
 
@@ -3585,6 +3622,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         final boolean needOld;
 
         /**
+         * @see #tryRebalance(long, long)
+         */
+        boolean splitRebalanceAllowed;
+
+        /**
          * @param row Row.
          * @param needOld {@code True} If need return old value.
          */
@@ -3889,6 +3931,165 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             //non null tailId means that lock on tail page still hold and we can't fail with exception.
             if (tailId == NULL_PAGE_ID)
                 super.checkLockRetry();
+        }
+
+        /**
+         * This method implements insertion optimization that allows better page utilization for defragmentation
+         * process. It exploits the knowledge that all insertions during defragmentation are sequential and ordered,
+         * meaning that we only insert into the tail and there are no concurrency limitations. Another thing is that
+         * WAL is disabled, so there's no need to write physical delta records, keep that in mind.
+         *
+         * Method is called in current configuration:
+         *       [ * | * | * ]
+         *              /    \
+         * [ * | * | * ]     [ * | * | * | * | * | * ]
+         *
+         * where right page is "full", meaning that its items count matches its capacity. Insertion of new entry must be
+         * performed for the right page, so is is a split candidate. The goal is to move some data from "right" page to
+         * the "left" page if there's enough space in there. This way split can be avoided. Good result would look like
+         * this:
+         *               [ * | * | * ]
+         *                      /    \
+         * [ * | * | * | * | * ]     [ * | * | * | * ]
+         *
+         * It's important to note that "right" page must be the rightmost child of "parent" page.
+         *
+         * Left page is considered "full" if it's 85% full.
+         *
+         * Balancing methods differ for inner nodes and for leaver, please refer to implementation to see exact details.
+         *
+         * @param parentPageId Parent page id.
+         * @param parentPage Parent page address as returned by {@link #acquirePage(long)}.
+         * @throws IgniteCheckedException If something went wrong.
+         *
+         * @see Result#TRY_REBALANCE_BEFORE_SPLIT
+         */
+        public void tryRebalance(long parentPageId, long parentPage) throws IgniteCheckedException {
+            // Pessimistic read lock would take too much code. Given that current tree is not updated concurrently,
+            // write lock is just as fast. This applies to all pages locked by current methods.
+            long parentPageAddr = writeLock(parentPageId, parentPage);
+
+            // We only read at first. Flag will be set to true if we modify something.
+            boolean dirty = false;
+
+            try {
+                // Parent is always an inner node.
+                BPlusInnerIO<L> parentIo = (BPlusInnerIO<L>)io(parentPageAddr);
+
+                int parentCnt = parentIo.getCount(parentPageAddr);
+
+                // Checking invariant that we always insert into the rightmost page.
+                assert pageId == parentIo.getRight(parentPageAddr, parentCnt - 1);
+
+                long leftPageId = parentIo.getLeft(parentPageAddr, parentCnt - 1);
+
+                long leftPage = acquirePage(leftPageId);
+
+                try {
+                    long leftPageAddr = writeLock(leftPageId, leftPage);
+
+                    try {
+                        BPlusIO<L> childIo = io(leftPageAddr);
+
+                        int leftCnt = childIo.getCount(leftPageAddr);
+
+                        // Here's calculation of 85% threshold for left page.
+                        int leftThreshold = (int)(childIo.getMaxCount(leftPageAddr, pageSize()) * 0.85);
+
+                        // Don't rebalance if left page already has enough data.
+                        if (leftCnt == leftThreshold)
+                            return;
+
+                        // There's a 100% guarantee that we'll change pages content in the following code.
+                        dirty = true;
+
+                        long rightPage = acquirePage(pageId);
+
+                        try {
+                            long rightPageAddr = writeLock(pageId, rightPage);
+
+                            int rightCnt = childIo.getCount(rightPageAddr);
+
+                            try {
+                                // Leaves are a spacial case for a simple reason: they partially hold the same data as
+                                // their parent nodes.
+                                //
+                                //   [ * | * | B ]                                [ * | * | C ]
+                                //          /    \                     ->                /    \
+                                // [ A | B ]      [ C | D | E | F ]         [ A | B | C ]     [ D | E | F ]
+                                if (childIo.isLeaf()) {
+                                    // The amount of entries to move from right node to the left.
+                                    int cpCnt = leftThreshold - leftCnt;
+
+                                    // Copy to left.
+                                    childIo.copyItems(rightPageAddr, leftPageAddr, 0, leftCnt, cpCnt, false);
+                                    childIo.setCount(leftPageAddr, leftThreshold);
+
+                                    // New entries count for the right page.
+                                    int newRightPageCnt = rightCnt - cpCnt;
+
+                                    // Delete from right.
+                                    childIo.copyItems(rightPageAddr, rightPageAddr, cpCnt, 0, newRightPageCnt, false);
+                                    childIo.setCount(rightPageAddr, newRightPageCnt);
+
+                                    // Parent entry is updated to be the same as the rightmost entry in left page.
+                                    // Entries count is not changed. Index for replace is known and fixed.
+                                    parentIo.store(parentPageAddr, parentCnt - 1, childIo, leftPageAddr, leftThreshold - 1);
+                                }
+                                // Inner nodes guarantee that parent and child don't share same data entries so
+                                // balancing is a bit different. There are also links to child pages that must be
+                                // properly handled.
+                                //
+                                //    [ * | * | C ]                                [ * | * | D ]
+                                //           /    \                     ->                /    \
+                                //  [ A | B ]      [ D | E | F | G ]         [ A | B | C ]      [ E | F | G ]
+                                //  /   |   \      /   |   |   |   \         /   |   |   \      /   |   |   \
+                                // a    b    c    d    e   f   g    h       a    b   c    d    e    f   g    h
+                                else {
+                                    // First of all, we append parent entry to the left page. It's in valid position,
+                                    // but lacks its right child. This child must be equal to the left child of "right"
+                                    // node, which is very convenient for the following data copying.
+                                    childIo.store(leftPageAddr, leftCnt, parentIo, parentPageAddr, parentCnt - 1);
+
+                                    // The amount of entries to move from right node to the left.
+                                    int cpCnt = leftThreshold - leftCnt - 1;
+
+                                    // Copy to left. Left link is copied so there are no gaps in child links.
+                                    childIo.copyItems(rightPageAddr, leftPageAddr, 0, leftCnt + 1, cpCnt, true);
+                                    childIo.setCount(leftPageAddr, leftThreshold);
+
+                                    // Store the required entry to the parent. Now right page has valid entries and
+                                    // child links if we skip firts "cpCnt" antries and links, already copies to other
+                                    // pages.
+                                    parentIo.store(parentPageAddr, parentCnt - 1, childIo, rightPageAddr, cpCnt);
+
+                                    // New entries count for the right page.
+                                    int newRightPageCnt = rightCnt - cpCnt - 1;
+
+                                    // Shift entries in right pages. Left link must be preserver, it's already valid.
+                                    childIo.copyItems(rightPageAddr, rightPageAddr, cpCnt + 1, 0, newRightPageCnt, true);
+                                    childIo.setCount(rightPageAddr, newRightPageCnt);
+                                }
+                            }
+                            finally {
+                                writeUnlock(pageId, rightPage, rightPageAddr, null, dirty);
+                            }
+                        }
+                        finally {
+                            releasePage(pageId, rightPage);
+                        }
+                    }
+                    finally {
+                        writeUnlock(leftPageId, leftPage, leftPageAddr, null, dirty);
+                    }
+                }
+                finally {
+                    releasePage(leftPageId, leftPage);
+                }
+            }
+            finally {
+                writeUnlock(parentPageId, parentPage, parentPageAddr, null, dirty);
+            }
         }
     }
 
@@ -5299,7 +5500,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         throws IgniteCheckedException {
         assert row != null;
 
-        if (row instanceof InsertLast)
+        if (defragmentationOptsEnabled)
             return -cnt - 1;
 
         int high = cnt - 1;
@@ -5965,7 +6166,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         RETRY,
 
         /** */
-        RETRY_ROOT
+        RETRY_ROOT,
+
+        /**
+         * @see BPlusTree.Put#tryRebalance(long, long)
+         */
+        TRY_REBALANCE_BEFORE_SPLIT;
     }
 
     /**
