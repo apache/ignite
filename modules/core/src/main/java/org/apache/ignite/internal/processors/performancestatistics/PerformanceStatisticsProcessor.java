@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.util.ArrayList;
+import java.util.EventListener;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,6 +33,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -58,6 +61,9 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
     /** Synchronization mutex for start/stop collecting performance statistics operations. */
     private final Object mux = new Object();
+
+    /** Performance statistics state listeners. */
+    private final ArrayList<PerformanceStatisticsStateListener> lsnrs = new ArrayList<>();
 
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
@@ -91,6 +97,24 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                 }
             }
         });
+
+        registerStateListener(() -> {
+            if (U.isLocalNodeCoordinator(ctx.discovery()))
+                ctx.cache().cacheDescriptors().values().forEach(desc -> cacheStart(desc.cacheId(), desc.cacheName()));
+        });
+    }
+
+    /** Registers state listener. */
+    public void registerStateListener(PerformanceStatisticsStateListener lsnr) {
+        lsnrs.add(lsnr);
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param name Cache name.
+     */
+    public void cacheStart(int cacheId, String name) {
+        write(writer -> writer.cacheStart(cacheId, name));
     }
 
     /**
@@ -228,6 +252,8 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                 writer.start();
             }
 
+            lsnrs.forEach(PerformanceStatisticsStateListener::onStarted);
+
             log.info("Performance statistics writer started.");
         }
         catch (Exception e) {
@@ -257,5 +283,11 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
         if (writer != null)
             c.accept(writer);
+    }
+
+    /** Performance statistics state listener. */
+    public interface PerformanceStatisticsStateListener extends EventListener {
+        /** This method is called whenever the performance statistics collecting is started. */
+        public void onStarted();
     }
 }

@@ -47,6 +47,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.file.Files.walkFileTree;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
@@ -54,6 +55,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheOperation;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheStartRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
@@ -356,6 +358,45 @@ public class FilePerformanceStatisticsReader {
 
             for (PerformanceStatisticsHandler handler : curHnd)
                 handler.job(nodeId, sesId, queuedTime, startTime, duration, timedOut);
+
+            return true;
+        }
+        else if (opType == CACHE_START) {
+            if (buf.remaining() < 1)
+                return false;
+
+            boolean cached = buf.get() != 0;
+
+            String cacheName;
+            int hash = 0;
+
+            if (cached) {
+                if (buf.remaining() < 4)
+                    return false;
+
+                hash = buf.getInt();
+
+                cacheName = knownStrs.get(hash);
+
+                if (buf.remaining() < cacheStartRecordSize(0, true) - 1 - 4)
+                    return false;
+            }
+            else {
+                if (buf.remaining() < 4)
+                    return false;
+
+                int nameLen = buf.getInt();
+
+                if (buf.remaining() < cacheStartRecordSize(nameLen, false) - 1 - 4)
+                    return false;
+
+                cacheName = readString(buf, nameLen);
+            }
+
+            int cacheId = buf.getInt();
+
+            for (PerformanceStatisticsHandler handler : curHnd)
+                handler.cacheStart(nodeId, cacheId, cacheName);
 
             return true;
         }

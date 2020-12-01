@@ -32,6 +32,7 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FILE_MAX_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SIZE;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheStartRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -72,7 +73,10 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
     @Test
     @WithSystemProperty(key = IGNITE_PERF_STAT_FILE_MAX_SIZE, value = "" + TEST_FILE_MAX_SIZE)
     public void testFileMaxSize() throws Exception {
-        long expOpsCnt = TEST_FILE_MAX_SIZE / (/*typeOp*/1 + OperationType.cacheRecordSize());
+        long initLen = srv.context().cache().cacheDescriptors().values().stream().mapToInt(
+            desc -> 1 + cacheStartRecordSize(desc.cacheName().getBytes().length, false)).sum();
+
+        long expOpsCnt = (TEST_FILE_MAX_SIZE - initLen) / (/*typeOp*/1 + OperationType.cacheRecordSize());
 
         startCollectStatistics();
 
@@ -90,7 +94,7 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
 
         assertEquals(expOpsCnt, opsCnt.get());
 
-        long expLen = opsCnt.get() * (/*typeOp*/1 + OperationType.cacheRecordSize());
+        long expLen = initLen + opsCnt.get() * (/*typeOp*/1 + OperationType.cacheRecordSize());
 
         List<File> files = statisticsFiles();
 
@@ -107,7 +111,10 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
     @Test
     @WithSystemProperty(key = IGNITE_PERF_STAT_FLUSH_SIZE, value = "" + TEST_FLUSH_SIZE)
     public void testFlushSize() throws Exception {
-        long opsCnt = TEST_FLUSH_SIZE / (/*typeOp*/1 + OperationType.cacheRecordSize());
+        long initLen = srv.context().cache().cacheDescriptors().values().stream().mapToInt(
+            desc -> 1 + cacheStartRecordSize(desc.cacheName().getBytes().length, false)).sum();
+
+        long opsCnt = (TEST_FLUSH_SIZE - initLen) / (/*typeOp*/1 + OperationType.cacheRecordSize());
 
         startCollectStatistics();
 
@@ -153,7 +160,7 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
         for (int i = 0; i < tasksCnt; i++) {
             String taskName = "TestTask-" + i;
 
-            if (i < TEST_CACHED_STRINGS_THRESHOLD - 1) {
+            if (i < TEST_CACHED_STRINGS_THRESHOLD - 1 - srv.context().cache().cacheDescriptors().values().size()) {
                 expLen += taskRecordSize(taskName.getBytes().length, false) + jobRecordSize() +
                     (taskRecordSize(0, true) + jobRecordSize()) * (executions - 1);
             }
@@ -181,6 +188,10 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
         });
 
         assertEquals(tasksCnt * executions, tasks.get());
+
+        // Started caches.
+        expLen += srv.context().cache().cacheDescriptors().values().stream().mapToInt(
+            desc -> 1 + cacheStartRecordSize(desc.cacheName().getBytes().length, false)).sum();
 
         List<File> files = statisticsFiles();
 

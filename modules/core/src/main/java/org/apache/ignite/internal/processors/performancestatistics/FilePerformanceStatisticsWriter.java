@@ -50,6 +50,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_S
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FILE_MAX_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SIZE;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
@@ -57,6 +58,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheStartRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
@@ -184,6 +186,19 @@ public class FilePerformanceStatisticsWriter {
         knownStrs.clear();
 
         started = false;
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param name Cache name.
+     */
+    public void cacheStart(int cacheId, String name) {
+        boolean cached = cacheIfPossible(name);
+
+        doWrite(CACHE_START, cacheStartRecordSize(cached ? 0 : name.getBytes().length, cached), buf -> {
+            writeString(buf, name, cached);
+            buf.putInt(cacheId);
+        });
     }
 
     /**

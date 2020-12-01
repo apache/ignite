@@ -139,6 +139,11 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     /** Test performance statistics handler. */
     public class TestHandler implements PerformanceStatisticsHandler {
         /** {@inheritDoc} */
+        @Override public void cacheStart(UUID nodeId, int cacheId, String name) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime,
             long duration) {
             // No-op.

@@ -192,7 +192,6 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -2294,6 +2293,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         grp.onCacheStarted(cacheCtx);
 
         onKernalStart(cache);
+
+        if (ctx.performanceStatistics().enabled() && U.isLocalNodeCoordinator(ctx.discovery()))
+            ctx.performanceStatistics().cacheStart(cacheCtx.cacheId(), cfg.getName());
     }
 
     /**
