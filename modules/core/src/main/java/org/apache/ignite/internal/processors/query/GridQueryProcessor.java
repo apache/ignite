@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -58,6 +59,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -130,6 +132,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.newSetFromMap;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
@@ -232,6 +235,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Cache name - value typeId pairs for which type mismatch message was logged. */
     private final Set<Long> missedCacheTypes = ConcurrentHashMap.newKeySet();
 
+    /** Experimental calcite query engine. */
+    private QueryEngine experimentalQueryEngine;
+
+    /** h2 redirection stub. */
+    static final Set<Pattern> h2RedirectionReqs = new HashSet<Pattern>() {{
+        add(Pattern.compile("\\s*create\\s*table", CASE_INSENSITIVE));
+        add(Pattern.compile("\\s*drop\\s*table", CASE_INSENSITIVE));
+        add(Pattern.compile("\\s*alter\\s*table", CASE_INSENSITIVE));
+    }};
+
     /**
      * @param ctx Kernal context.
      */
@@ -261,6 +274,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     U.warn(log, "Unsupported IO message: " + msg);
             }
         };
+
+        for (GridComponent cmp : ctx.components()) {
+            if (!(cmp instanceof QueryEngine))
+                continue;
+
+            experimentalQueryEngine = (QueryEngine) cmp;
+
+            break;
+        }
     }
 
     /** {@inheritDoc} */
