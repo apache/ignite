@@ -81,10 +81,10 @@ public class ConnectToStartingNodeTest extends AbstractThinClientTest {
 
             // Server accept connection after discovery SPI started.
             assertTrue(GridTestUtils.waitForCondition(futStartClient::isDone, 500L));
-        } finally {
+        }
+        finally {
             if (futStartClient.isDone())
                 futStartClient.get().close();
         }
-
     }
 }

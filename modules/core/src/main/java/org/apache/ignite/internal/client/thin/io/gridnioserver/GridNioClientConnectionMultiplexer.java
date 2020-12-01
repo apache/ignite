@@ -76,9 +76,9 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         if (sslCtx != null) {
             GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog);
             sslFilter.directMode(false);
-            filters = new GridNioFilter[]{codecFilter, sslFilter};
+            filters = new GridNioFilter[] {codecFilter, sslFilter};
         } else
-            filters = new GridNioFilter[]{codecFilter};
+            filters = new GridNioFilter[] {codecFilter};
 
         try {
             srv = GridNioServer.<ByteBuffer>builder()
@@ -97,7 +97,8 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                     .socketSendBufferSize(cfg.getSendBufferSize())
                     .tcpNoDelay(true)
                     .build();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }
@@ -136,7 +137,8 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                 sslHandshakeFut.get();
 
             return new GridNioClientConnection(ses, msgHnd, stateHnd);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new ClientConnectionException(e.getMessage(), e);
         }
     }

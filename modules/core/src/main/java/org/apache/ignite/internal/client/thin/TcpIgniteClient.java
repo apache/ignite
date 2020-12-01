@@ -130,7 +130,8 @@ public class TcpIgniteClient implements IgniteClient {
             compute = new ClientComputeImpl(ch, marsh, cluster.defaultClusterGroup());
 
             services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup());
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             ch.close();
             throw e;
         }
