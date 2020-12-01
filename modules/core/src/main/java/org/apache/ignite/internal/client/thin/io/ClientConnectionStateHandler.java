@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface ClientConnectionStateHandler {
     /**
-     * Handles connection loss
+     * Handles connection loss.
      * @param e Exception that caused the disconnect, can be null.
      */
     void onDisconnected(@Nullable Exception e);

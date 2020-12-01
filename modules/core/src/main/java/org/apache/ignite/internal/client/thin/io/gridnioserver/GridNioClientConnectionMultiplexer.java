@@ -77,7 +77,8 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
             GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog);
             sslFilter.directMode(false);
             filters = new GridNioFilter[] {codecFilter, sslFilter};
-        } else
+        }
+        else
             filters = new GridNioFilter[] {codecFilter};
 
         try {
