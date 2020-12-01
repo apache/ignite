@@ -38,6 +38,7 @@ import static org.apache.ignite.ml.common.TrainerTest.twoLinearlySeparableClasse
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 /**
  * Tests for {@link CrossValidation}.
  */

@@ -219,16 +219,18 @@ public final class KMeansModel implements ClusterizationModel<Vector, Integer>, 
         /** Distance measure. */
         public DistanceMeasure distanceMeasure;
 
-        public KMeansJSONExportModel(Long timestamp, String uid, String modelClass){
+        /** */
+        public KMeansJSONExportModel(Long timestamp, String uid, String modelClass) {
             super(timestamp, uid, modelClass);
         }
 
+        /** */
         @JsonCreator
         public KMeansJSONExportModel() {
         }
 
-        @Override
-        public KMeansModel convert() {
+        /** {@inheritDoc} */
+        @Override public KMeansModel convert() {
             KMeansModel mdl = new KMeansModel();
             Vector[] centers = new DenseVector[mdlCenters.size()];
             for (int i = 0; i < mdlCenters.size(); i++) {

@@ -46,7 +46,6 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.util.ModelTrace;
 
-
 /**
  * ANN model to predict labels in multi-class classification task.
  */
