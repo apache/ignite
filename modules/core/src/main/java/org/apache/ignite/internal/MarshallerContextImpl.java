@@ -468,18 +468,18 @@ public class MarshallerContextImpl implements MarshallerContext {
                         String otherPlatformName = platformName(otherPlatformId);
 
                         return new T2<>(null,
-                            "Failed to resolve " + otherPlatformName + " class '" + res.get1()
-                                + "' in " + platformName
-                                + " [platformId=" + platformId
-                                + ", typeId=" + typeId + "].");
+                                "Failed to resolve " + otherPlatformName + " class '" + res.get1()
+                                    + "' in " + platformName
+                                    + " [platformId=" + platformId
+                                    + ", typeId=" + typeId + "].");
                     }
                 }
 
                 return new T2<>(null,
-                    "Failed to resolve class name [" +
-                        "platformId=" + platformId
-                        + ", platform=" + platformName
-                        + ", typeId=" + typeId + "]");
+                        "Failed to resolve class name [" +
+                            "platformId=" + platformId
+                            + ", platform=" + platformName
+                            + ", typeId=" + typeId + "]");
             }
         }
 
