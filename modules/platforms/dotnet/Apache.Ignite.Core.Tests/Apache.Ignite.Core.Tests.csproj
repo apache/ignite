@@ -398,6 +398,7 @@
     <Compile Include="Services\ServicesTestAsync.cs" />
     <Compile Include="Services\ServiceProxyTest.cs" />
     <Compile Include="Services\ServicesAsyncWrapper.cs" />
+    <Compile Include="Services\ServiceTypeAutoResolveTest.cs" />
     <Compile Include="TestRunner.cs" />
     <Compile Include="TestUtils.cs" />
     <Compile Include="TestUtilsJni.cs" />
