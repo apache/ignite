@@ -26,6 +26,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.util.typedef.T2;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.DOTNET_ID;
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
@@ -128,23 +129,19 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
             case OP_GET_TYPE: {
                 int typeId = reader.readInt();
 
-                ClassNotFoundException err = null;
+                String err = null;
 
                 for (byte platformId : new byte[] {DOTNET_ID, JAVA_ID}) {
-                    try {
-                        String typeName = platformContext().kernalContext().marshallerContext()
-                            .getClassName(platformId, typeId);
+                    T2<String, String> res = platformContext().kernalContext().marshallerContext()
+                        .getClassNameUnthrowable(platformId, typeId, false);
 
-                        writer.writeString(typeName);
-
-                        err = null;
+                    if (res.get1() != null) {
+                        writer.writeString(res.get1());
 
                         break;
                     }
-                    catch (ClassNotFoundException e) {
-                        if (err == null)
-                            err = e;
-                    }
+                    else if (err == null)
+                        err = res.get2();
                 }
 
                 if (err != null)

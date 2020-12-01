@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTranspo
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -369,24 +370,25 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
-        String clsName;
-
-        ClassNotFoundException err = null;
+        String err = null;
 
         for (byte platformId : new byte[] {DOTNET_ID, JAVA_ID}) {
-            try {
-                clsName = getClassName(platformId, typeId);
+            T2<String, String> res = getClassNameUnthrowable(platformId, typeId, false);
 
-                if (clsName != null)
-                    return U.forName(clsName, ldr, clsFilter);
+            if (res.get1() != null) {
+                try {
+                    return U.forName(res.get1(), ldr, clsFilter);
+                }
+                catch (ClassNotFoundException e) {
+                    err = e.getMessage();
+                }
             }
-            catch (ClassNotFoundException e) {
-                err = e;
-            }
+            else
+                err = res.get2();
         }
 
         if (err != null)
-            throw err;
+            throw new ClassNotFoundException(err);
 
         throw new ClassNotFoundException("Unknown type ID: " + typeId);
     }
@@ -410,10 +412,31 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @throws IgniteCheckedException In case of any other error.
      */
     private String getClassName(
-            byte platformId,
-            int typeId,
-            boolean skipOtherPlatforms
+        byte platformId,
+        int typeId,
+        boolean skipOtherPlatforms
     ) throws ClassNotFoundException, IgniteCheckedException {
+        T2<String, String> res = getClassNameUnthrowable(platformId, typeId, skipOtherPlatforms);
+
+        if (res.get1() == null)
+            throw new ClassNotFoundException(res.get2());
+
+        return res.get1();
+    }
+
+    /**
+     * Gets T2(class name, error message) for provided (platformId, typeId) pair.
+     *
+     * @param platformId id of a platform the class was registered for.
+     * @param typeId Type ID.
+     * @param skipOtherPlatforms Whether to skip other platforms check (recursion guard).
+     * @return Tuple. First is class name, second is error message.
+     */
+    public T2<String, String> getClassNameUnthrowable(
+        byte platformId,
+        int typeId,
+        boolean skipOtherPlatforms
+    ) throws IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
         MappedName mappedName = cache.get(typeId);
@@ -441,13 +464,12 @@ public class MarshallerContextImpl implements MarshallerContext {
                     clsName = mappedName.className();
 
                 if (clsName == null)
-                    throw new ClassNotFoundException(
-                            "Requesting mapping from grid failed for [platformId="
-                                    + platformId
-                                    + ", typeId="
-                                    + typeId + "]");
+                    return new T2<>(null, "Requesting mapping from grid failed for [platformId="
+                        + platformId
+                        + ", typeId="
+                        + typeId + "]");
 
-                return clsName;
+                return new T2<>(clsName, null);
             }
             else {
                 String platformName = platformName(platformId);
@@ -455,31 +477,28 @@ public class MarshallerContextImpl implements MarshallerContext {
                 if (!skipOtherPlatforms) {
                     // Look for this class in other platforms to provide a better error message.
                     for (byte otherPlatformId : otherPlatforms(platformId)) {
-                        try {
-                            clsName = getClassName(otherPlatformId, typeId, true);
-                        } catch (ClassNotFoundException ignored) {
-                            continue;
-                        }
+                        T2<String, String> res = getClassNameUnthrowable(otherPlatformId, typeId, true);
+
+                        if (res.get1() == null)
+                            break;
 
                         String otherPlatformName = platformName(otherPlatformId);
 
-                        throw new ClassNotFoundException(
-                                "Failed to resolve " + otherPlatformName + " class '" + clsName
-                                        + "' in " + platformName
-                                        + " [platformId=" + platformId
-                                        + ", typeId=" + typeId + "].");
+                        return new T2<>(null, "Failed to resolve " + otherPlatformName + " class '" + res.get1()
+                            + "' in " + platformName
+                            + " [platformId=" + platformId
+                            + ", typeId=" + typeId + "].");
                     }
                 }
 
-                throw new ClassNotFoundException(
-                        "Failed to resolve class name [" +
-                                "platformId=" + platformId
-                                + ", platform=" + platformName
-                                + ", typeId=" + typeId + "]");
+                return new T2<>(null, "Failed to resolve class name [" +
+                    "platformId=" + platformId
+                    + ", platform=" + platformName
+                    + ", typeId=" + typeId + "]");
             }
         }
 
-        return clsName;
+        return new T2<>(clsName, null);
     }
 
     /** {@inheritDoc} */
