@@ -373,7 +373,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         String err = null;
 
         for (byte platformId : new byte[] {DOTNET_ID, JAVA_ID}) {
-            T2<String, String> res = getClassNameUnthrowable(platformId, typeId, false);
+            T2<String, String> res = getClassName(platformId, typeId, false);
 
             if (res.get1() != null) {
                 try {
@@ -398,7 +398,7 @@ public class MarshallerContextImpl implements MarshallerContext {
             byte platformId,
             int typeId
     ) throws ClassNotFoundException, IgniteCheckedException {
-        T2<String, String> res = getClassNameUnthrowable(platformId, typeId, false);
+        T2<String, String> res = getClassName(platformId, typeId, false);
 
         if (res.get1() == null)
             throw new ClassNotFoundException(res.get2());
@@ -414,7 +414,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param skipOtherPlatforms Whether to skip other platforms check (recursion guard).
      * @return Tuple. First is class name, second is error message.
      */
-    public T2<String, String> getClassNameUnthrowable(
+    public T2<String, String> getClassName(
         byte platformId,
         int typeId,
         boolean skipOtherPlatforms
@@ -459,7 +459,7 @@ public class MarshallerContextImpl implements MarshallerContext {
                 if (!skipOtherPlatforms) {
                     // Look for this class in other platforms to provide a better error message.
                     for (byte otherPlatformId : otherPlatforms(platformId)) {
-                        T2<String, String> res = getClassNameUnthrowable(otherPlatformId, typeId, true);
+                        T2<String, String> res = getClassName(otherPlatformId, typeId, true);
 
                         if (res.get1() == null)
                             break;

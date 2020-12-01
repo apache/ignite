@@ -133,7 +133,7 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
 
                 for (byte platformId : new byte[] {DOTNET_ID, JAVA_ID}) {
                     T2<String, String> res = platformContext().kernalContext().marshallerContext()
-                        .getClassNameUnthrowable(platformId, typeId, false);
+                        .getClassName(platformId, typeId, false);
 
                     if (res.get1() != null) {
                         writer.writeString(res.get1());
