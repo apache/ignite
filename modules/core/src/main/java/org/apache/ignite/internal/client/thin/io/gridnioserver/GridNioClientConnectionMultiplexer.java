@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin.io.gridnioserver;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
 import javax.net.ssl.SSLContext;
@@ -120,7 +121,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                                            ClientConnectionStateHandler stateHnd)
             throws ClientConnectionException {
         try {
-            java.nio.channels.SocketChannel ch = java.nio.channels.SocketChannel.open();
+            SocketChannel ch = SocketChannel.open();
             ch.socket().connect(new InetSocketAddress(addr.getHostName(), addr.getPort()), Integer.MAX_VALUE);
 
             Map<Integer, Object> meta = new HashMap<>();
