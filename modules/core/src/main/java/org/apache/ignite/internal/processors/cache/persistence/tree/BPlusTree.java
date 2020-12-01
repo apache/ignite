@@ -2789,7 +2789,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         final long page = acquirePage(pageId);
 
-        // We'll try to try rebalancing if we can first.
+        // We'll try rebalancing if we can first.
         boolean tryRebalance = splitRebalanceAllowed;
 
         try {
