@@ -62,6 +62,9 @@ class CellularAffinity(IgniteTest):
     NODES_PER_CELL = 3
     ZOOKEPER_CLUSTER_SIZE = 3
 
+    FAILURE_DETECTION_TIMEOUT = 500
+    ZOOKEPER_SESSION_TIMEOUT = FAILURE_DETECTION_TIMEOUT
+
     ATTRIBUTE = "CELL"
 
     CACHE_NAME = "test-cache"
@@ -159,7 +162,9 @@ class CellularAffinity(IgniteTest):
         d_type = DiscoreryType.construct_from(discovery_type)
 
         if d_type is DiscoreryType.ZooKeeper:
-            zk_settings = ZookeeperSettings()
+            zk_settings = ZookeeperSettings(min_session_timeout=self.ZOOKEPER_SESSION_TIMEOUT,
+                                            max_session_timeout=self.ZOOKEPER_SESSION_TIMEOUT,
+                                            tick_time=self.ZOOKEPER_SESSION_TIMEOUT // 3)
             zk_quorum = ZookeeperService(self.test_context, self.ZOOKEPER_CLUSTER_SIZE, settings=zk_settings)
             zk_quorum.start()
 
@@ -267,6 +272,7 @@ class CellularAffinity(IgniteTest):
         prepared_tx_streamer = IgniteApplicationService(  # last server node at the cell.
             self.test_context,
             IgniteConfiguration(version=IgniteVersion(version), properties=self.properties(),
+                                failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT,
                                 discovery_spi=from_ignite_cluster(nodes) if discovery_spi is None else discovery_spi),
             java_class_name="org.apache.ignite.internal.ducktest.tests.cellular_affinity_test."
                             "CellularPreparedTxStreamer",
@@ -289,6 +295,7 @@ class CellularAffinity(IgniteTest):
             self.test_context,
             IgniteConfiguration(version=IgniteVersion(version), properties=self.properties(),
                                 cluster_state="INACTIVE",
+                                failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT,
                                 discovery_spi=TcpDiscoverySpi() if discovery_spi is None else discovery_spi),
             num_nodes=nodes_cnt, modules=modules, jvm_opts=jvm_opts, startup_timeout_sec=180)
 
