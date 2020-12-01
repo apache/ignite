@@ -38,7 +38,7 @@ import org.openjdk.jmh.annotations.TearDown;
  * Base class for thin client benchmarks.
  */
 @State(Scope.Benchmark)
-public class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
+public abstract class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmark {
     /** Property: nodes count. */
     protected static final String PROP_DATA_NODES = "ignite.jmh.thin.dataNodes";
 
