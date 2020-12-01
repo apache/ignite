@@ -27,6 +27,7 @@ import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessDiscov
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessResourceReleaseTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessStableTopologyTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessUnstableTopologyTest;
+import org.apache.ignite.internal.client.thin.TimeoutTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -60,7 +61,8 @@ import org.junit.runners.Suite;
     ThinClientPartitionAwarenessResourceReleaseTest.class,
     ThinClientPartitionAwarenessDiscoveryTest.class,
     ReliableChannelTest.class,
-    CacheAsyncTest.class
+    CacheAsyncTest.class,
+    TimeoutTest.class
 })
 public class ClientTestSuite {
     // No-op.

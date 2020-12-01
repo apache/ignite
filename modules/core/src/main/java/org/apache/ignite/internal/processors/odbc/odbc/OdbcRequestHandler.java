@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -69,6 +71,7 @@ import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException
 
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_COLS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_PARAMS;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_RESULTSET;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_TBLS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.MORE_RESULTS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_CLOSE;
@@ -254,6 +257,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 case META_PARAMS:
                     return getParamsMeta((OdbcQueryGetParamsMetaRequest)req);
 
+                case META_RESULTSET:
+                    return getResultMeta((OdbcQueryGetResultsetMetaRequest)req);
+
                 case MORE_RESULTS:
                     return moreResults((OdbcQueryMoreResultsRequest)req);
             }
@@ -411,7 +417,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             if (set == null)
                 fieldsMeta = new ArrayList<>();
             else {
-                fieldsMeta = results.currentResultSet().fieldsMeta();
+                fieldsMeta = set.fieldsMeta();
 
                 if (log.isDebugEnabled()) {
                     for (OdbcColumnMeta meta : fieldsMeta)
@@ -747,7 +753,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /**
-     * {@link OdbcQueryGetParamsMetaRequest} command handler.
+     * {@link OdbcQueryGetQueryMetaRequest} command handler.
+     * Returns metadata for the parameters to be set.
      *
      * @param req Get params metadata request.
      * @return Response.
@@ -775,6 +782,34 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         }
         catch (Exception e) {
             U.error(log, "Failed to get params metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * {@link OdbcQueryGetQueryMetaRequest} command handler.
+     * Returns metadata for a columns of the result set.
+     *
+     * @param req Get resultset metadata request.
+     * @return Response.
+     */
+    private ClientListenerResponse getResultMeta(OdbcQueryGetResultsetMetaRequest req) {
+        try {
+            String sql = OdbcEscapeUtils.parse(req.query());
+            String schema = OdbcUtils.prepareSchema(req.schema());
+
+            SqlFieldsQueryEx qry = makeQuery(schema, sql);
+
+            List<GridQueryFieldMetadata> columns = ctx.query().getIndexing().resultMetaData(schema, qry);
+            Collection<OdbcColumnMeta> meta = OdbcUtils.convertMetadata(columns, ver);
+
+            OdbcQueryGetResultsetMetaResult res = new OdbcQueryGetResultsetMetaResult(meta);
+
+            return new OdbcResponse(res);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get resultset metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
             return exceptionToResult(e);
         }

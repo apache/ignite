@@ -39,7 +39,7 @@ class ZkRuntimeState {
     final boolean reconnect;
 
     /** */
-    ZookeeperClient zkClient;
+    volatile ZookeeperClient zkClient;
 
     /** */
     long internalOrder;

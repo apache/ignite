@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,24 +15,28 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client.Cache
-{
-    using System;
+package org.apache.ignite.internal.processors.odbc.odbc;
 
-    /// <summary>
-    /// Cache operation flags.
-    /// </summary>
-    [Flags]
-    internal enum CacheFlags : byte
-    {
-        /// <summary>
-        /// No flags.
-        /// </summary>
-        None = 0x00,
+import java.util.Collection;
 
-        /// <summary>
-        /// Keep binary.
-        /// </summary>
-        KeepBinary = 0x01
+/**
+ * SQL listener query resultset metadata result.
+ */
+public class OdbcQueryGetResultsetMetaResult {
+    /** Resultset columns metadata. */
+    private final Collection<OdbcColumnMeta> columnsMetadata;
+
+    /**
+     * @param columnsMetadata Columns metadata.
+     */
+    public OdbcQueryGetResultsetMetaResult(Collection<OdbcColumnMeta> columnsMetadata) {
+        this.columnsMetadata = columnsMetadata;
+    }
+
+    /**
+     * @return Columns metadata.
+     */
+    public Collection<OdbcColumnMeta> columnsMetadata() {
+        return columnsMetadata;
     }
 }
