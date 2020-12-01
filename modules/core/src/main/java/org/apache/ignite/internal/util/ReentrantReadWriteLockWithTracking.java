@@ -285,7 +285,7 @@ public class ReentrantReadWriteLockWithTracking implements ReadWriteLock {
         /** Delegate instance. */
         private final ReentrantReadWriteLock delegate;
 
-        /** {@inheritDoc} */
+        /** */
         protected ReadLock(ReentrantReadWriteLock lock) {
             delegate = lock;
         }
