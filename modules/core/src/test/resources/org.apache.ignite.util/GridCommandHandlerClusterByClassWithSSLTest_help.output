@@ -87,10 +87,10 @@ This utility can do the following commands:
     control.(sh|bat) --encryption resume_reencryption cacheGroupName
 
   View/change re-encryption rate limit:
-    control.(sh|bat) --encryption reencryption_rate_limit [--limit limit]
+    control.(sh|bat) --encryption reencryption_rate_limit [new_limit]
 
     Parameters:
-      limit  - Decimal value to change re-encryption rate limit (MB/s).
+      new_limit  - Decimal value to change re-encryption rate limit (MB/s).
 
   Kill compute task by session id:
     control.(sh|bat) --kill COMPUTE session_id
