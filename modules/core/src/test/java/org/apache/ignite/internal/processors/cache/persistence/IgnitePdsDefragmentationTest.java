@@ -430,9 +430,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         // This call can't be moved inside of "catch" block because interruption can actually be silent.
         Thread.interrupted();
 
-        assertTrue(GridTestUtils.waitForCondition(errOccurred::get, 3_000L));
+        assertTrue(GridTestUtils.waitForCondition(errOccurred::get, 10_000L));
 
-        assertTrue(GridTestUtils.waitForCondition(() -> G.allGrids().isEmpty(), 3_000L));
+        assertTrue(GridTestUtils.waitForCondition(() -> G.allGrids().isEmpty(), 10_000L));
 
         c.accept(workDir);
 

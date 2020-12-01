@@ -84,14 +84,6 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DEFRAGMENTATION_MAPPING_REGION_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DEFRAGMENTATION_PART_REGION_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.CP_LOCK;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.INSERT_ROW;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.ITERATE;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.METADATA;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.READ_ROW;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.STORE_MAP;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.STORE_PENDING;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.PartStages.STORE_PK;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.batchRenameDefragmentedCacheGroupPartitions;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexTmpFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
@@ -564,19 +556,6 @@ public class CachePartitionDefragmentationManager {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
-    /** */
-    public enum PartStages {
-        START,
-        CP_LOCK,
-        ITERATE,
-        READ_ROW,
-        INSERT_ROW,
-        STORE_MAP,
-        STORE_PK,
-        STORE_PENDING,
-        METADATA
-    }
-
     /**
      * Defragmentate partition.
      *
@@ -596,10 +575,7 @@ public class CachePartitionDefragmentationManager {
 
         long cpLockThreshold = 150L;
 
-        TimeTracker<PartStages> tracker = new TimeTracker<>(PartStages.class);
-
         defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadLock();
-        tracker.complete(CP_LOCK);
 
         try {
             AtomicLong lastCpLockTs = new AtomicLong(System.currentTimeMillis());
@@ -608,22 +584,16 @@ public class CachePartitionDefragmentationManager {
             treeIter.iterate(tree, partCtx.cachePageMemory, (tree0, io, pageAddr, idx) -> {
                 checkCancellation();
 
-                tracker.complete(ITERATE);
-
                 if (System.currentTimeMillis() - lastCpLockTs.get() >= cpLockThreshold) {
                     defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
 
                     defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadLock();
-
-                    tracker.complete(CP_LOCK);
 
                     lastCpLockTs.set(System.currentTimeMillis());
                 }
 
                 AbstractDataLeafIO leafIo = (AbstractDataLeafIO)io;
                 CacheDataRow row = tree.getRow(io, pageAddr, idx);
-
-                tracker.complete(READ_ROW);
 
                 int cacheId = row.cacheId();
 
@@ -640,22 +610,14 @@ public class CachePartitionDefragmentationManager {
                 if (row instanceof DataRow)
                     ((DataRow)row).cacheId(cacheId);
 
-                tracker.complete(INSERT_ROW);
-
                 newTree.putx(row);
 
                 long newLink = row.link();
 
-                tracker.complete(STORE_MAP);
-
                 partCtx.linkMap.put(leafIo.getLink(pageAddr, idx), newLink);
-
-                tracker.complete(STORE_PK);
 
                 if (row.expireTime() != 0)
                     newPendingTree.putx(new PendingRow(cacheId, row.expireTime(), newLink));
-
-                tracker.complete(STORE_PENDING);
 
                 entriesProcessed.incrementAndGet();
 
@@ -668,23 +630,12 @@ public class CachePartitionDefragmentationManager {
 
             defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadLock();
 
-            tracker.complete(CP_LOCK);
-
             freeList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
 
             copyCacheMetadata(partCtx);
-
-            tracker.complete(METADATA);
         }
         finally {
             defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug(
-                "Partition defragmentation timings for cache group " + partCtx.grpId +
-                " and partition " + partCtx.partId + ": " + tracker.toString()
-            );
         }
     }
 
