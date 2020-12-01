@@ -34,7 +34,6 @@ import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.inference.json.JSONModel;
 import org.apache.ignite.ml.inference.json.JSONWritable;
-import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;

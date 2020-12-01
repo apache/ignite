@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import static org.apache.ignite.ml.inference.json.JacksonHelper.readAndValidateBasicJsonModelProperties;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,6 +33,7 @@ import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.inference.json.JSONModel;
 import org.apache.ignite.ml.inference.json.JSONModelMixIn;
 import org.apache.ignite.ml.inference.json.JSONWritable;
+import org.apache.ignite.ml.inference.json.JacksonHelper;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.BayesModel;
 
@@ -195,7 +195,7 @@ public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesMod
 
         DiscreteNaiveBayesModel mdl;
         try {
-            readAndValidateBasicJsonModelProperties(path, mapper, DiscreteNaiveBayesModel.class.getSimpleName());
+            JacksonHelper.readAndValidateBasicJsonModelProperties(path, mapper, DiscreteNaiveBayesModel.class.getSimpleName());
             mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), DiscreteNaiveBayesModel.class);
             return mdl;
         } catch (IOException e) {

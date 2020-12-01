@@ -69,8 +69,7 @@ public class MinkowskiDistance implements DistanceMeasure {
         return Objects.hash(p);
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return "MinkowskiDistance{" +
             "p=" + p +
             '}';

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.composition;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 

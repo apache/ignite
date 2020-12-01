@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import static org.apache.ignite.ml.inference.json.JacksonHelper.readAndValidateBasicJsonModelProperties;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -34,6 +33,7 @@ import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggrega
 import org.apache.ignite.ml.inference.json.JSONModel;
 import org.apache.ignite.ml.inference.json.JSONModelMixIn;
 import org.apache.ignite.ml.inference.json.JSONWritable;
+import org.apache.ignite.ml.inference.json.JacksonHelper;
 import org.apache.ignite.ml.tree.randomforest.data.RandomForestTreeModel;
 
 /**
@@ -95,7 +95,7 @@ public class RandomForestModel extends ModelsComposition<RandomForestTreeModel> 
 
         RandomForestModel mdl;
         try {
-            readAndValidateBasicJsonModelProperties(path, mapper, RandomForestModel.class.getSimpleName());
+            JacksonHelper.readAndValidateBasicJsonModelProperties(path, mapper, RandomForestModel.class.getSimpleName());
             mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), RandomForestModel.class);
             return mdl;
         } catch (IOException e) {

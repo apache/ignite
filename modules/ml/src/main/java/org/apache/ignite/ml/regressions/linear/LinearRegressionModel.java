@@ -194,7 +194,7 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
         public double intercept;
 
         /** */
-        public LinearRegressionModelJSONExportModel(Long timestamp, String uid, String modelClass){
+        public LinearRegressionModelJSONExportModel(Long timestamp, String uid, String modelClass) {
             super(timestamp, uid, modelClass);
         }
 

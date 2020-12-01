@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.UUID;
-import static org.apache.ignite.ml.inference.json.JacksonHelper.readAndValidateBasicJsonModelProperties;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -30,6 +29,7 @@ import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.inference.json.JSONModel;
 import org.apache.ignite.ml.inference.json.JSONModelMixIn;
 import org.apache.ignite.ml.inference.json.JSONWritable;
+import org.apache.ignite.ml.inference.json.JacksonHelper;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
@@ -100,7 +100,7 @@ public class DecisionTreeModel implements IgniteModel<Vector, Double>, JSONWrita
 
         DecisionTreeModel mdl;
         try {
-            readAndValidateBasicJsonModelProperties(path, mapper, DecisionTreeModel.class.getSimpleName());
+            JacksonHelper.readAndValidateBasicJsonModelProperties(path, mapper, DecisionTreeModel.class.getSimpleName());
             mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), DecisionTreeModel.class);
             return mdl;
         } catch (IOException e) {

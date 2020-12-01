@@ -32,7 +32,7 @@ public class JacksonHelper {
         String uid = jsonAsMap.get("uid").toString();
         String modelClass = jsonAsMap.get("modelClass").toString();
 
-        if(!modelClass.equals(className)) {
+        if (!modelClass.equals(className)) {
             throw new IllegalArgumentException("You are trying to load " + modelClass + " model to " + className);
         }
     }

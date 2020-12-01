@@ -278,7 +278,7 @@ public final class LogisticRegressionModel implements IgniteModel<Vector, Double
         public double threshold = 0.5;
 
         /** */
-        public LogisticRegressionJSONExportModel(Long timestamp, String uid, String modelClass){
+        public LogisticRegressionJSONExportModel(Long timestamp, String uid, String modelClass) {
             super(timestamp, uid, modelClass);
         }
 

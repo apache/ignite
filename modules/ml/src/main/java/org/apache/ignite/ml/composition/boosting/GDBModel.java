@@ -17,6 +17,11 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,16 +33,11 @@ import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPrediction
 import org.apache.ignite.ml.inference.json.JSONModel;
 import org.apache.ignite.ml.inference.json.JSONModelMixIn;
 import org.apache.ignite.ml.inference.json.JSONWritable;
+import org.apache.ignite.ml.inference.json.JacksonHelper;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.tree.DecisionTreeModel;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.UUID;
-import static org.apache.ignite.ml.inference.json.JacksonHelper.readAndValidateBasicJsonModelProperties;
 
 /**
  * GDB model.
@@ -74,7 +74,7 @@ public final class GDBModel extends ModelsComposition<DecisionTreeModel> impleme
 
     /** {@inheritDoc} */
     @Override public Double predict(Vector features) {
-        if(internalToExternalLblMapping == null) {
+        if (internalToExternalLblMapping == null) {
             throw new IllegalArgumentException("The mapping should not be empty. Initialize it with apropriate function. ");
         } else {
             return internalToExternalLblMapping.apply(super.predict(features));
@@ -108,7 +108,7 @@ public final class GDBModel extends ModelsComposition<DecisionTreeModel> impleme
 
         GDBModel mdl;
         try {
-            readAndValidateBasicJsonModelProperties(path, mapper, GDBModel.class.getSimpleName());
+            JacksonHelper.readAndValidateBasicJsonModelProperties(path, mapper, GDBModel.class.getSimpleName());
             mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), GDBModel.class);
             return mdl;
         } catch (IOException e) {

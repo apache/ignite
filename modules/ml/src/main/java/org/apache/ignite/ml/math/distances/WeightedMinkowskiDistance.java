@@ -89,8 +89,7 @@ public class WeightedMinkowskiDistance implements DistanceMeasure {
     return getClass().hashCode();
   }
 
-  @Override
-  public String toString() {
+  @Override public String toString() {
     return "WeightedMinkowskiDistance{" +
         "p=" + p +
         ", weights=" + Arrays.toString(weights) +

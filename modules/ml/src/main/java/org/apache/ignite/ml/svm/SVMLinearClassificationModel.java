@@ -265,12 +265,16 @@ public final class SVMLinearClassificationModel implements IgniteModel<Vector, D
          */
         public double threshold = 0.5;
 
-        /** */
-        public SVMLinearClassificationJSONExportModel(Long timestamp, String uid, String modelClass){
+        /**
+         *
+         */
+        public SVMLinearClassificationJSONExportModel(Long timestamp, String uid, String modelClass) {
             super(timestamp, uid, modelClass);
         }
 
-        /** */
+        /**
+         *
+         */
         @JsonCreator
         public SVMLinearClassificationJSONExportModel() {
         }

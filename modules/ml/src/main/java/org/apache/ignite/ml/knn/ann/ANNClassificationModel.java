@@ -45,7 +45,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.util.ModelTrace;
-import org.jetbrains.annotations.NotNull;
+
 
 /**
  * ANN model to predict labels in multi-class classification task.
@@ -113,7 +113,7 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
      * @param distanceIdxPairs The distance map.
      * @return K-nearest neighbors.
      */
-    @NotNull private LabeledVector[] getKClosestVectors(
+    private LabeledVector[] getKClosestVectors(
         TreeMap<Double, Set<Integer>> distanceIdxPairs) {
         LabeledVector[] res;
 
@@ -148,7 +148,7 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
      * @return Key - distanceMeasure from given features before features with idx stored in value. Value is presented
      * with Set because there can be a few vectors with the same distance.
      */
-    @NotNull private TreeMap<Double, Set<Integer>> getDistances(Vector v) {
+    private TreeMap<Double, Set<Integer>> getDistances(Vector v) {
         TreeMap<Double, Set<Integer>> distanceIdxPairs = new TreeMap<>();
 
         for (int i = 0; i < candidates.rowSize(); i++) {
@@ -292,7 +292,7 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
         public ANNClassificationTrainer.CentroidStat centroindsStat;
 
         /** */
-        public ANNJSONExportModel(Long timestamp, String uid, String modelClass){
+        public ANNJSONExportModel(Long timestamp, String uid, String modelClass) {
             super(timestamp, uid, modelClass);
         }
 
@@ -303,12 +303,13 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
 
         /** {@inheritDoc} */
         @Override public ANNClassificationModel convert() {
-            if(candidateFeatures == null || candidateFeatures.isEmpty())
+            if (candidateFeatures == null || candidateFeatures.isEmpty())
                 throw new IllegalArgumentException("Loaded list of candidates is empty. It should be not empty.");
+
             double[] firstRow = candidateFeatures.get(0);
             LabeledVectorSet<LabeledVector> candidatesForANN = new LabeledVectorSet<>(candidateFeatures.size(), firstRow.length);
-            LabeledVector<Double> [] data = new LabeledVector[candidateFeatures.size()];
-            for(int i = 0; i < candidateFeatures.size(); i++) {
+            LabeledVector<Double>[] data = new LabeledVector[candidateFeatures.size()];
+            for (int i = 0; i < candidateFeatures.size(); i++) {
                 data[i] = new LabeledVector(VectorUtils.of(candidateFeatures.get(i)), candidateLabels[i]);
             }
             candidatesForANN.setData(data);

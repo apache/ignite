@@ -19,7 +19,6 @@ package org.apache.ignite.ml.tree;
 
 import java.util.Map;
 import java.util.NavigableMap;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Presenting decision tree data in plain manner (For example: from one parquet row filled with NodeData in Spark DT model).
@@ -47,8 +46,7 @@ public class NodeData {
     public boolean isLeafNode;
 
     /**{@inheritDoc}*/
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return "NodeData{" +
                 "id=" + id +
                 ", prediction=" + prediction +
@@ -89,5 +87,4 @@ public class NodeData {
         }
         return mdl;
     }
-
 }
