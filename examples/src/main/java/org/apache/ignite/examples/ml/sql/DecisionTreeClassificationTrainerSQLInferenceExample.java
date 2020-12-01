@@ -31,7 +31,6 @@ import org.apache.ignite.ml.sql.SQLFunctions;
 import org.apache.ignite.ml.sql.SqlDatasetBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeModel;
-import org.apache.ignite.ml.tree.DecisionTreeModel;
 
 import static org.apache.ignite.examples.ml.sql.DecisionTreeClassificationTrainerSQLTableExample.loadTitanicDatasets;
 
