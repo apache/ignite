@@ -23,12 +23,13 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.inference.JSONModel;
-import org.apache.ignite.ml.inference.JSONWritable;
+import org.apache.ignite.ml.inference.json.JSONModel;
+import org.apache.ignite.ml.inference.json.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
@@ -216,6 +217,7 @@ public final class LogisticRegressionModel implements IgniteModel<Vector, Double
         return toString();
     }
 
+    /** Loads KMeansModel from JSON file. */
     public static LogisticRegressionModel fromJSON(Path path) {
             ObjectMapper mapper = new ObjectMapper();
 
@@ -231,11 +233,15 @@ public final class LogisticRegressionModel implements IgniteModel<Vector, Double
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public void toJSON(Path path) {
             ObjectMapper mapper = new ObjectMapper();
 
             try {
-                LogisticRegressionJSONExportModel exportModel = new LogisticRegressionJSONExportModel();
+                LogisticRegressionJSONExportModel exportModel = new LogisticRegressionJSONExportModel(
+                    System.currentTimeMillis(),
+                    "logReg_" + UUID.randomUUID().toString(),
+                    LogisticRegressionModel.class.getSimpleName());
                 exportModel.intercept = intercept;
                 exportModel.isKeepingRawLabels = isKeepingRawLabels;
                 exportModel.threshold = threshold;
@@ -249,33 +255,40 @@ public final class LogisticRegressionModel implements IgniteModel<Vector, Double
 
     }
 
-    private static class LogisticRegressionJSONExportModel extends JSONModel {
+    /** */
+    public static class LogisticRegressionJSONExportModel extends JSONModel {
         /**
          * Multiplier of the objects's vector required to make prediction.
          */
-        private double[] weights;
+        public double[] weights;
 
         /**
          * Intercept of the linear regression model.
          */
-        private double intercept;
+        public double intercept;
 
         /**
          * Output label format. 0 and 1 for false value and raw sigmoid regression value otherwise.
          */
-        private boolean isKeepingRawLabels;
+        public boolean isKeepingRawLabels;
 
         /**
          * Threshold to assign '1' label to the observation if raw value more than this threshold.
          */
-        private double threshold = 0.5;
+        public double threshold = 0.5;
 
-        public LogisticRegressionJSONExportModel() {
-            super(System.currentTimeMillis(), "logReg_" + UUID.randomUUID().toString(), "LogisticRegressionModel");
+        /** */
+        public LogisticRegressionJSONExportModel(Long timestamp, String uid, String modelClass){
+            super(timestamp, uid, modelClass);
         }
 
-        @Override
-        public String toString() {
+        /** */
+        @JsonCreator
+        public LogisticRegressionJSONExportModel() {
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
             return "LogisticRegressionJSONExportModel{" +
                     "weights=" + Arrays.toString(weights) +
                     ", intercept=" + intercept +
@@ -284,8 +297,8 @@ public final class LogisticRegressionModel implements IgniteModel<Vector, Double
                     '}';
         }
 
-        @Override
-        public LogisticRegressionModel convert() {
+        /** {@inheritDoc} */
+        @Override public LogisticRegressionModel convert() {
             LogisticRegressionModel logRegMdl = new LogisticRegressionModel();
             logRegMdl.withWeights(VectorUtils.of(weights));
             logRegMdl.withIntercept(intercept);

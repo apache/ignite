@@ -15,23 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference;
+package org.apache.ignite.ml.inference.json;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 
-public interface JSONWritable {
-    default void toJSON(Path path) {
-        ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+public class JacksonHelper {
+    public static void readAndValidateBasicJsonModelProperties(Path path, ObjectMapper mapper, String className) throws IOException {
+        Map jsonAsMap = mapper.readValue(new File(path.toAbsolutePath().toString()), LinkedHashMap.class);
+        String formatVersion = jsonAsMap.get("formatVersion").toString();
+        Long timestamp = (Long) jsonAsMap.get("timestamp");
+        String uid = jsonAsMap.get("uid").toString();
+        String modelClass = jsonAsMap.get("modelClass").toString();
 
-        try {
-            File file = new File(path.toAbsolutePath().toString());
-            mapper.writeValue(file, this);
-        } catch (IOException e) {
-            e.printStackTrace();
+        if(!modelClass.equals(className)) {
+            throw new IllegalArgumentException("You are trying to load " + modelClass + " model to " + className);
         }
     }
 }

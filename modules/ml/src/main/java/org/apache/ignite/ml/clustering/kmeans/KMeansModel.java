@@ -26,13 +26,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
-import org.apache.ignite.ml.inference.JSONModel;
-import org.apache.ignite.ml.inference.JSONWritable;
+import org.apache.ignite.ml.inference.json.JSONModel;
+import org.apache.ignite.ml.inference.json.JSONWritable;
+import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
@@ -172,6 +174,7 @@ public final class KMeansModel implements ClusterizationModel<Vector, Integer>, 
         return Collections.singletonList(distanceMeasure);
     }
 
+    /** Loads KMeansModel from JSON file. */
     public static KMeansModel fromJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
@@ -193,7 +196,7 @@ public final class KMeansModel implements ClusterizationModel<Vector, Integer>, 
             ObjectMapper mapper = new ObjectMapper();
 
             try {
-                KMeansJSONExportModel exportModel = new KMeansJSONExportModel();
+                KMeansJSONExportModel exportModel = new KMeansJSONExportModel(System.currentTimeMillis(), "ann_" + UUID.randomUUID().toString(), KMeansModel.class.getSimpleName());
                 List<double[]> listOfCenters = new ArrayList<>();
                 for (int i = 0; i < centers.length; i++) {
                     listOfCenters.add(centers[i].asArray());
@@ -207,18 +210,22 @@ public final class KMeansModel implements ClusterizationModel<Vector, Integer>, 
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
     }
 
-    private static class KMeansJSONExportModel extends JSONModel {
+    /** */
+    public static class KMeansJSONExportModel extends JSONModel {
         /** Centers of clusters. */
         public List<double[]> mdlCenters;
 
         /** Distance measure. */
         public DistanceMeasure distanceMeasure;
 
+        public KMeansJSONExportModel(Long timestamp, String uid, String modelClass){
+            super(timestamp, uid, modelClass);
+        }
+
+        @JsonCreator
         public KMeansJSONExportModel() {
-            super(System.currentTimeMillis(), "kmeans_" + UUID.randomUUID().toString(), "KMeansModel");
         }
 
         @Override

@@ -22,11 +22,18 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
+import static org.apache.ignite.ml.inference.json.JacksonHelper.readAndValidateBasicJsonModelProperties;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
-import org.apache.ignite.ml.inference.JSONWritable;
+import org.apache.ignite.ml.inference.json.JSONModel;
+import org.apache.ignite.ml.inference.json.JSONModelMixIn;
+import org.apache.ignite.ml.inference.json.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.BayesModel;
 
@@ -143,12 +150,35 @@ public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesMod
         return Collections.emptyList();
     }
 
+    /** {@inheritDoc} */
+    @Override public void toJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        mapper.addMixIn(GaussianNaiveBayesModel.class, JSONModelMixIn.class);
+
+        ObjectWriter writer = mapper
+            .writerFor(GaussianNaiveBayesModel.class)
+            .withAttribute("formatVersion", JSONModel.JSON_MODEL_FORMAT_VERSION)
+            .withAttribute("timestamp", System.currentTimeMillis())
+            .withAttribute("uid", "dt_" + UUID.randomUUID().toString())
+            .withAttribute("modelClass", GaussianNaiveBayesModel.class.getSimpleName());
+
+        try {
+            File file = new File(path.toAbsolutePath().toString());
+            writer.writeValue(file, this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** Loads GaussianNaiveBayesModel from JSON file. */
     public static GaussianNaiveBayesModel fromJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
         GaussianNaiveBayesModel mdl;
         try {
+            readAndValidateBasicJsonModelProperties(path, mapper, GaussianNaiveBayesModel.class.getSimpleName());
             mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), GaussianNaiveBayesModel.class);
-
             return mdl;
         } catch (IOException e) {
             e.printStackTrace();

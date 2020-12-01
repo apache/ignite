@@ -20,6 +20,7 @@ package org.apache.ignite.ml.knn.ann;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,14 +29,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
-import org.apache.ignite.ml.inference.JSONWritable;
+import org.apache.ignite.ml.inference.json.JSONModel;
+import org.apache.ignite.ml.inference.json.JSONWritable;
 import org.apache.ignite.ml.knn.NNClassificationModel;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.util.ModelTrace;
@@ -223,16 +229,96 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
         return Collections.emptyList();
     }
 
+    /** Loads ANNClassificationModel from JSON file. */
     public static ANNClassificationModel fromJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        ANNClassificationModel mdl;
-        try {
-            mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), ANNClassificationModel.class);
 
-            return mdl;
+        ANNJSONExportModel exportModel;
+        try {
+            exportModel = mapper
+                .readValue(new File(path.toAbsolutePath().toString()), ANNJSONExportModel.class);
+
+            return exportModel.convert();
         } catch (IOException e) {
             e.printStackTrace();
         }
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void toJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+
+        try {
+            ANNJSONExportModel exportModel = new ANNJSONExportModel(System.currentTimeMillis(), "ann_" + UUID.randomUUID().toString(), ANNClassificationModel.class.getSimpleName());
+            List<double[]> listOfCandidates = new ArrayList<>();
+            ProbableLabel[] labels = new ProbableLabel[candidates.rowSize()];
+            for (int i = 0; i < candidates.rowSize(); i++) {
+                labels[i] = (ProbableLabel) candidates.getRow(i).getLb();
+                listOfCandidates.add(candidates.features(i).asArray());
+            }
+
+            exportModel.candidateFeatures = listOfCandidates;
+            exportModel.distanceMeasure = distanceMeasure;
+            exportModel.k = k;
+            exportModel.weighted = weighted;
+            exportModel.candidateLabels = labels;
+            exportModel.centroindsStat = centroindsStat;
+
+            File file = new File(path.toAbsolutePath().toString());
+            mapper.writeValue(file, exportModel);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** */
+    public static class ANNJSONExportModel extends JSONModel {
+        /** Centers of clusters. */
+        public List<double[]> candidateFeatures;
+
+        public ProbableLabel[] candidateLabels;
+
+        /** Distance measure. */
+        public DistanceMeasure distanceMeasure;
+
+        /** Amount of nearest neighbors. */
+        public int k;
+
+        /** kNN strategy. */
+        public boolean weighted;
+
+        /** Centroid statistics. */
+        public ANNClassificationTrainer.CentroidStat centroindsStat;
+
+        /** */
+        public ANNJSONExportModel(Long timestamp, String uid, String modelClass){
+            super(timestamp, uid, modelClass);
+        }
+
+        /** */
+        @JsonCreator
+        public ANNJSONExportModel() {
+        }
+
+        /** {@inheritDoc} */
+        @Override public ANNClassificationModel convert() {
+            if(candidateFeatures == null || candidateFeatures.isEmpty())
+                throw new IllegalArgumentException("Loaded list of candidates is empty. It should be not empty.");
+            double[] firstRow = candidateFeatures.get(0);
+            LabeledVectorSet<LabeledVector> candidatesForANN = new LabeledVectorSet<>(candidateFeatures.size(), firstRow.length);
+            LabeledVector<Double> [] data = new LabeledVector[candidateFeatures.size()];
+            for(int i = 0; i < candidateFeatures.size(); i++) {
+                data[i] = new LabeledVector(VectorUtils.of(candidateFeatures.get(i)), candidateLabels[i]);
+            }
+            candidatesForANN.setData(data);
+
+            ANNClassificationModel mdl = new ANNClassificationModel(candidatesForANN, centroindsStat);
+
+            mdl.withDistanceMeasure(distanceMeasure);
+            mdl.withK(k);
+            mdl.withWeighted(weighted);
+            return mdl;
+        }
     }
 }

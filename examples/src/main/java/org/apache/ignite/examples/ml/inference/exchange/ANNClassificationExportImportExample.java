@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.inference.exchange.notworking;
+package org.apache.ignite.examples.ml.inference.exchange;
 
 import javax.cache.Cache;
 import java.io.IOException;

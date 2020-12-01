@@ -22,12 +22,13 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.inference.JSONModel;
-import org.apache.ignite.ml.inference.JSONWritable;
+import org.apache.ignite.ml.inference.json.JSONModel;
+import org.apache.ignite.ml.inference.json.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
@@ -165,7 +166,11 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
     @Override public void toJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper();
             try {
-                LinearRegressionModelJSONExportModel exportModel = new LinearRegressionModelJSONExportModel();
+                LinearRegressionModelJSONExportModel exportModel = new LinearRegressionModelJSONExportModel(
+                    System.currentTimeMillis(),
+                    "linreg_" + UUID.randomUUID().toString(),
+                    LinearRegressionModel.class.getSimpleName()
+                );
                 exportModel.intercept = intercept;
                 exportModel.weights = weights.asArray();
 
@@ -176,19 +181,26 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
             }
     }
 
-    private static class LinearRegressionModelJSONExportModel extends JSONModel {
+    /**  */
+    public static class LinearRegressionModelJSONExportModel extends JSONModel {
         /**
          * Multiplier of the objects's vector required to make prediction.
          */
-        private double[] weights;
+        public double[] weights;
 
         /**
          * Intercept of the linear regression model.
          */
-        private double intercept;
+        public double intercept;
 
+        /** */
+        public LinearRegressionModelJSONExportModel(Long timestamp, String uid, String modelClass){
+            super(timestamp, uid, modelClass);
+        }
+
+        /** */
+        @JsonCreator
         public LinearRegressionModelJSONExportModel() {
-            super(System.currentTimeMillis(), "linreg_" + UUID.randomUUID().toString(), "LinearRegressionModel");
         }
 
         /** {@inheritDoc} */

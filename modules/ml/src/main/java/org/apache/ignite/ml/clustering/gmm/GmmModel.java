@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
-import org.apache.ignite.ml.inference.JSONWritable;
+import org.apache.ignite.ml.inference.json.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.stat.DistributionMixture;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;

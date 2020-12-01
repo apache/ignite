@@ -15,28 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.ann;
+package org.apache.ignite.ml.inference.json;
 
-import java.util.TreeMap;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
-/**
- * The special class for fuzzy labels presenting the probability distribution
- * over the class labels.
- */
-public class ProbableLabel {
-    /** Key is label, value is probability to be this class */
-    public TreeMap<Double, Double> clsLbls;
+public interface JSONWritable {
+    default void toJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
-    public ProbableLabel() {
-    }
-
-    /**
-     * The key is class label,
-     * the value is the probability to be an item of this class.
-     *
-     * @param clsLbls Class labels.
-     */
-    public ProbableLabel(TreeMap<Double, Double> clsLbls) {
-        this.clsLbls = clsLbls;
+        try {
+            File file = new File(path.toAbsolutePath().toString());
+            mapper.writeValue(file, this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

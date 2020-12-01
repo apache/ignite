@@ -15,28 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.ann;
+package org.apache.ignite.ml.inference.json;
 
-import java.util.TreeMap;
+import com.fasterxml.jackson.databind.annotation.JsonAppend;
 
-/**
- * The special class for fuzzy labels presenting the probability distribution
- * over the class labels.
- */
-public class ProbableLabel {
-    /** Key is label, value is probability to be this class */
-    public TreeMap<Double, Double> clsLbls;
-
-    public ProbableLabel() {
+/** Just a mixin class to add a few configuration properties. */
+@JsonAppend(
+    attrs = {
+        @JsonAppend.Attr(value = "formatVersion"),
+        @JsonAppend.Attr(value = "timestamp"),
+        @JsonAppend.Attr(value = "uid"),
+        @JsonAppend.Attr(value = "modelClass")
     }
-
-    /**
-     * The key is class label,
-     * the value is the probability to be an item of this class.
-     *
-     * @param clsLbls Class labels.
-     */
-    public ProbableLabel(TreeMap<Double, Double> clsLbls) {
-        this.clsLbls = clsLbls;
-    }
-}
+)
+public class JSONModelMixIn { }
