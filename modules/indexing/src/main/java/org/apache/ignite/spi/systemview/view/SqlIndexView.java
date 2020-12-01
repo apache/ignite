@@ -18,14 +18,8 @@
 package org.apache.ignite.spi.systemview.view;
 
 import org.apache.ignite.internal.managers.systemview.walker.Order;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
-import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2ProxyIndex;
+import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex;
-import org.h2.index.Index;
 
 /**
  * Sql index representation for a {@link SystemView}.
@@ -35,103 +29,130 @@ public class SqlIndexView {
     private final GridH2Table tbl;
 
     /** Index. */
-    private final Index idx;
-
-    /** Index type. */
-    private final H2IndexType type;
+    private final IndexInformation idx;
 
     /** */
-    public SqlIndexView(GridH2Table tbl, Index idx) {
+    public SqlIndexView(GridH2Table tbl, IndexInformation idx) {
         this.tbl = tbl;
         this.idx = idx;
-        this.type = type(idx);
     }
 
-    /** @return Cache id. */
+    /**
+     * Returns cache group ID.
+     *
+     * @return Cache group ID.
+     */
+    @Order()
+    public int cacheGroupId() {
+        return tbl.cacheInfo().groupId();
+    }
+
+    /**
+     * Returns Cache group name.
+     *
+     * @return Cache group name.
+     */
+    @Order(1)
+    public String cacheGroupName() {
+        return tbl.cacheInfo().groupName();
+    }
+
+    /**
+     * Returns cache ID.
+     * @return Cache ID.
+     */
+    @Order(2)
     public int cacheId() {
         return tbl.cacheId();
     }
 
-    /** @return Cache name. */
-    @Order(5)
+    /**
+     * Returns cache name.
+     *
+     * @return Cache name.
+     */
+    @Order(3)
     public String cacheName() {
         return tbl.cacheName();
     }
 
-    /** @return Schema name. */
-    @Order(3)
+    /**
+     *  Returns schema name.
+     *
+     * @return Schema name.
+     */
+    @Order(4)
     public String schemaName() {
         return tbl.getSchema().getName();
     }
 
-    /** @return Table name. */
-    @Order(4)
+    /**
+     * Returns table name.
+     *
+     * @return Table name.
+     */
+    @Order(5)
     public String tableName() {
         return tbl.identifier().table();
     }
 
-    /** @return Index name. */
-    @Order()
+    /**
+     * Returns index name.
+     *
+     * @return Index name.
+     */
+    @Order(6)
     public String indexName() {
-        return idx.getName();
-    }
-
-    /** @return Index type. */
-    @Order(1)
-    public H2IndexType indexType() {
-        return type;
-    }
-
-    /** @return Indexed columns. */
-    @Order(2)
-    public String columns() {
-        switch (type) {
-            case HASH:
-            case BTREE:
-                return H2Utils.indexColumnsSql(H2Utils.unwrapKeyColumns(tbl, idx.getIndexColumns()));
-
-            case SPATIAL:
-                return H2Utils.indexColumnsSql(idx.getIndexColumns());
-
-            case SCAN:
-                return null;
-
-            default:
-                return "???";
-        }
-    }
-
-    /** @return {@code True} if primary key index, {@code false} otherwise. */
-    public boolean isPk() {
-        return idx.getIndexType().isPrimaryKey();
-    }
-
-    /** @return {@code True} if unique index, {@code false} otherwise. */
-    public boolean isUnique() {
-        return idx.getIndexType().isUnique();
-    }
-
-    /** @return Inline size. */
-    public int inlineSize() {
-        return idx instanceof H2TreeIndexBase ? ((H2TreeIndexBase)idx).inlineSize() : 0;
+        return idx.name();
     }
 
     /**
-     * @param idx Inde.
+     * Returns index type.
+     *
      * @return Index type.
      */
-    private static H2IndexType type(Index idx) {
-        if (idx instanceof H2TreeIndexBase) {
-            return H2IndexType.BTREE;
-        } else if (idx instanceof H2PkHashIndex)
-            return H2IndexType.HASH;
-        else if (idx instanceof H2TableScanIndex)
-            return H2IndexType.SCAN;
-        else if (idx instanceof GridH2ProxyIndex)
-            return type(((GridH2ProxyIndex)idx).underlyingIndex());
-        else if (idx.getIndexType().isSpatial())
-            return H2IndexType.SPATIAL;
+    @Order(7)
+    public String indexType() {
+        return idx.type();
+    }
 
-        return null;
+    /**
+     * Returns all columns on which index is built.
+     *
+     * @return Coma separated indexed columns.
+     */
+    @Order(8)
+    public String columns() {
+        return idx.keySql();
+    }
+
+    /**
+     * Returns boolean value which indicates whether this index is for primary key or not.
+     *
+     * @return {@code True} if primary key index, {@code false} otherwise.
+     */
+    @Order(9)
+    public boolean isPk() {
+        return idx.pk();
+    }
+
+    /**
+     * Returns boolean value which indicates whether this index is unique or not.
+     *
+     * @return {@code True} if unique index, {@code false} otherwise.
+     */
+    @Order(10)
+    public boolean isUnique() {
+        return idx.unique();
+    }
+
+    /**
+     * Returns inline size in bytes.
+     *
+     * @return Inline size.
+     */
+    @Order(11)
+    public Integer inlineSize() {
+        return idx.inlineSize();
     }
 }

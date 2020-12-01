@@ -161,6 +161,91 @@ BOOST_AUTO_TEST_CASE(TestGetTypeInfoAllTypes)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 }
 
+BOOST_AUTO_TEST_CASE(TestDateTypeColumnAttributeCurdate)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR req[] = "select CURDATE()";
+    SQLExecDirect(stmt, req, SQL_NTS);
+
+    SQLLEN intVal = 0;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_DESC_TYPE, 0, 0, 0, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, SQL_TYPE_DATE);
+}
+
+BOOST_AUTO_TEST_CASE(TestDateTypeColumnAttributeLiteral)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR req[] = "select DATE '2020-10-25'";
+    SQLExecDirect(stmt, req, SQL_NTS);
+
+    SQLLEN intVal = 0;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_DESC_TYPE, 0, 0, 0, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, SQL_TYPE_DATE);
+}
+
+BOOST_AUTO_TEST_CASE(TestDateTypeColumnAttributeField)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR req[] = "select CAST (dateField as DATE) from TestType";
+    SQLExecDirect(stmt, req, SQL_NTS);
+
+    SQLLEN intVal = 0;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_DESC_TYPE, 0, 0, 0, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, SQL_TYPE_DATE);
+}
+
+BOOST_AUTO_TEST_CASE(TestTimeTypeColumnAttributeLiteral)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR req[] = "select TIME '12:42:13'";
+    SQLExecDirect(stmt, req, SQL_NTS);
+
+    SQLLEN intVal = 0;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_DESC_TYPE, 0, 0, 0, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, SQL_TYPE_TIME);
+}
+
+BOOST_AUTO_TEST_CASE(TestTimeTypeColumnAttributeField)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR req[] = "select timeField from TestType";
+    SQLExecDirect(stmt, req, SQL_NTS);
+
+    SQLLEN intVal = 0;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_DESC_TYPE, 0, 0, 0, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, SQL_TYPE_TIME);
+}
+
 BOOST_AUTO_TEST_CASE(TestColAttributesColumnLength)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
@@ -211,6 +296,101 @@ BOOST_AUTO_TEST_CASE(TestColAttributesColumnScale)
     SQLSMALLINT strLen;
 
     SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_COLUMN_SCALE, strBuf, sizeof(strBuf), &strLen, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+}
+
+BOOST_AUTO_TEST_CASE(TestColAttributesColumnLengthPrepare)
+{
+    StartAdditionalNode("Node2");
+
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    InsertTestStrings(1);
+
+    SQLCHAR req[] = "select strField from TestType";
+    SQLPrepare(stmt, req, SQL_NTS);
+
+    SQLLEN intVal;
+    SQLCHAR strBuf[1024];
+    SQLSMALLINT strLen;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_COLUMN_LENGTH, strBuf, sizeof(strBuf), &strLen, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, 60);
+
+    ret = SQLExecute(stmt);
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    ret = SQLColAttribute(stmt, 1, SQL_COLUMN_LENGTH, strBuf, sizeof(strBuf), &strLen, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, 60);
+}
+
+BOOST_AUTO_TEST_CASE(TestColAttributesColumnPresicionPrepare)
+{
+    StartAdditionalNode("Node2");
+
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    InsertTestStrings(1);
+
+    SQLCHAR req[] = "select strField from TestType";
+    SQLPrepare(stmt, req, SQL_NTS);
+
+    SQLLEN intVal;
+    SQLCHAR strBuf[1024];
+    SQLSMALLINT strLen;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_COLUMN_PRECISION, strBuf, sizeof(strBuf), &strLen, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, 60);
+
+    ret = SQLExecute(stmt);
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    ret = SQLColAttribute(stmt, 1, SQL_COLUMN_PRECISION, strBuf, sizeof(strBuf), &strLen, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, 60);
+}
+
+BOOST_AUTO_TEST_CASE(TestColAttributesColumnScalePrepare)
+{
+    StartAdditionalNode("Node2");
+
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    InsertTestStrings(1);
+
+    SQLCHAR req[] = "select strField from TestType";
+    SQLPrepare(stmt, req, SQL_NTS);
+
+    SQLLEN intVal;
+    SQLCHAR strBuf[1024];
+    SQLSMALLINT strLen;
+
+    SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_COLUMN_SCALE, strBuf, sizeof(strBuf), &strLen, &intVal);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecute(stmt);
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    ret = SQLColAttribute(stmt, 1, SQL_COLUMN_SCALE, strBuf, sizeof(strBuf), &strLen, &intVal);
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -455,6 +635,39 @@ BOOST_AUTO_TEST_CASE(TestDdlColumnsMetaEscaped)
     ret = SQLFetch(stmt);
 
     BOOST_REQUIRE_EQUAL(ret, SQL_NO_DATA);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLNumResultColsAfterSQLPrepare)
+{
+    StartAdditionalNode("Node2");
+
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=PUBLIC");
+
+    SQLRETURN ret = ExecQuery("create table TestSqlPrepare(id int primary key, test1 varchar, test2 long, test3 varchar)");
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    ret = SQLFreeStmt(stmt, SQL_CLOSE);
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    ret = PrepareQuery("select * from PUBLIC.TestSqlPrepare");
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLSMALLINT columnCount = 0;
+
+    ret = SQLNumResultCols(stmt, &columnCount);
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    BOOST_CHECK_EQUAL(columnCount, 4);
+
+    ret = SQLExecute(stmt);
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    columnCount = 0;
+
+    ret = SQLNumResultCols(stmt, &columnCount);
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    BOOST_CHECK_EQUAL(columnCount, 4);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

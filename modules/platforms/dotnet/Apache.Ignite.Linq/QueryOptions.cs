@@ -19,6 +19,7 @@ namespace Apache.Ignite.Linq
 {
     using System;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
 
@@ -30,16 +31,20 @@ namespace Apache.Ignite.Linq
         /// <summary> Default page size. </summary>
         public const int DefaultPageSize = SqlFieldsQuery.DefaultPageSize;
 
+        /// <summary> Default value for <see cref="UpdateBatchSize"/>. </summary>
+        public const int DefaultUpdateBatchSize = SqlFieldsQuery.DefaultUpdateBatchSize;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryOptions"/> class.
         /// </summary>
         public QueryOptions()
         {
             PageSize = DefaultPageSize;
+            UpdateBatchSize = DefaultUpdateBatchSize;
         }
 
         /// <summary>
-        /// Local flag. When set query will be executed only on local node, so only local 
+        /// Local flag. When set query will be executed only on local node, so only local
         /// entries will be returned as query result.
         /// <para />
         /// Defaults to <c>false</c>.
@@ -53,7 +58,7 @@ namespace Apache.Ignite.Linq
         public int PageSize { get; set; }
 
         /// <summary>
-        /// Gets or sets the name of the table. 
+        /// Gets or sets the name of the table.
         /// <para />
         /// Table name is equal to short class name of a cache value.
         /// When a cache has only one type of values, or only one <see cref="QueryEntity" /> defined,
@@ -124,5 +129,20 @@ namespace Apache.Ignite.Linq
         /// consumption at the cost of moderate performance hit.
         /// </summary>
         public bool Lazy { get; set; }
+
+        /// <summary>
+        /// Gets or sets partitions for the query.
+        /// <para />
+        /// The query will be executed only on nodes which are primary for specified partitions.
+        /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
+        public int[] Partitions { get; set; }
+
+        /// <summary>
+        /// Gets or sets batch size for update queries.
+        /// <para />
+        /// Default is 1 (<see cref="DefaultUpdateBatchSize"/>.
+        /// </summary>
+        public int UpdateBatchSize { get; set; }
     }
 }
