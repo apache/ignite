@@ -295,7 +295,7 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
      */
     @Test
     @WithSystemProperty(key = IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS, value = "true")
-    public void test0() {
+    public void testWriteLockedByCurrentThread() {
         ReentrantReadWriteLockWithTracking wrapped = new ReentrantReadWriteLockWithTracking(log, 1_000);
 
         wrapped.writeLock().lock();
