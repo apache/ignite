@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
-import static org.apache.ignite.ml.tree.NodeData.buildDecisionTreeModel;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -63,6 +62,8 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.ml.tree.NodeData.buildDecisionTreeModel;
 
 /** Parser of Spark models. */
 public class SparkModelParser {
