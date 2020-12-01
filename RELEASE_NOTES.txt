@@ -36,6 +36,8 @@ Ignite Core:
 * Fixed incorrect topology snapshot logger output about coordinator change
 * Fixed slowdown during node initialization
 * Fixed incorrect usage of Class.isAssignableFrom in SystemViewLocal and SystemViewMBean classes
+* Fixed several concurrent metrics issues
+* Fixed issue related to incorrect work of predicates (< and >) in where clause with compound primary key
 * Removed unnecessary dependency to curator-client from and improved ZookeeperDiscoverySpi
 * Removed unnecessary failure trace in IgnitionEx
 
@@ -55,8 +57,8 @@ Ignite .NET:
 * Fixed child processes become zombies when persistence is used with direct-io on Linux
 
 Ignite C++:
-* Fixed issue when odbc-example loses values if run with 1 additional node
 * Added Windows support to CMake build system
+* Fixed issue when odbc-example loses values if run with 1 additional node
 
 
 Apache Ignite In-Memory Computing Platform 2.9
