@@ -3956,7 +3956,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          *
          * Left page is considered "full" if it's 85% full.
          *
-         * Balancing methods differ for inner nodes and for leaver, please refer to implementation to see exact details.
+         * Balancing methods differ for inner nodes and for leaves, please refer to implementation to see exact details.
          *
          * @param parentPageId Parent page id.
          * @param parentPage Parent page address as returned by {@link #acquirePage(long)}.
@@ -3966,7 +3966,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         public void tryRebalance(long parentPageId, long parentPage) throws IgniteCheckedException {
             // Pessimistic read lock would take too much code. Given that current tree is not updated concurrently,
-            // write lock is just as fast. This applies to all pages locked by current methods.
+            // write lock is just as fast. This applies to all pages locked by current method.
             long parentPageAddr = writeLock(parentPageId, parentPage);
 
             // We only read at first. Flag will be set to true if we modify something.
@@ -3997,7 +3997,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         int leftThreshold = (int)(childIo.getMaxCount(leftPageAddr, pageSize()) * 0.85);
 
                         // Don't rebalance if left page already has enough data.
-                        if (leftCnt == leftThreshold)
+                        if (leftCnt >= leftThreshold)
                             return;
 
                         // There's a 100% guarantee that we'll change pages content in the following code.
@@ -4010,6 +4010,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                             int rightCnt = childIo.getCount(rightPageAddr);
 
+                            // Checking that right page is actually full.
                             assert rightCnt == childIo.getMaxCount(rightPageAddr, pageSize());
 
                             try {
