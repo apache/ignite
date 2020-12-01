@@ -290,10 +290,11 @@ def start_servers(test_context, num_nodes, ignite_config, modules=None):
     """
     servers = IgniteService(test_context, config=ignite_config, num_nodes=num_nodes, modules=modules,
                             # mute spam in log.
-                            jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"])
+                            jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"],
+                            startup_timeout_sec=100)
 
     start = monotonic()
-    servers.start(timeout_sec=100)
+    servers.start()
     return servers, round(monotonic() - start, 1)
 
 
