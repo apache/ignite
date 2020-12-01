@@ -17,16 +17,11 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
-import org.apache.ignite.ml.inference.json.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.stat.DistributionMixture;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
@@ -39,7 +34,7 @@ import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
  * #likelihood(Vector)}).
  */
 public class GmmModel extends DistributionMixture<MultivariateGaussianDistribution> implements IgniteModel<Vector, Double>,
-    JSONWritable, DeployableObject {
+    DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -4484174539118240037L;
 
@@ -54,7 +49,7 @@ public class GmmModel extends DistributionMixture<MultivariateGaussianDistributi
     }
 
     /** */
-    private GmmModel() {
+    public GmmModel() {
     }
 
     /** {@inheritDoc} */
@@ -66,18 +61,5 @@ public class GmmModel extends DistributionMixture<MultivariateGaussianDistributi
     @JsonIgnore
     @Override public List<Object> getDependencies() {
         return Collections.emptyList();
-    }
-
-    public static GmmModel fromJSON(Path path) {
-        ObjectMapper mapper = new ObjectMapper();
-        GmmModel mdl;
-        try {
-            mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), GmmModel.class);
-
-            return mdl;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 }
