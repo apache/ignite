@@ -60,7 +60,6 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.MarshallerPlatformIds.DOTNET_ID;
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 import static org.apache.ignite.internal.MarshallerPlatformIds.otherPlatforms;
 import static org.apache.ignite.internal.MarshallerPlatformIds.platformName;
@@ -370,27 +369,12 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
-        String err = null;
+        String clsName = getClassName(JAVA_ID, typeId);
 
-        for (byte platformId : new byte[] {DOTNET_ID, JAVA_ID}) {
-            T2<String, String> res = getClassName(platformId, typeId, false);
+        if (clsName == null)
+            throw new ClassNotFoundException("Unknown type ID: " + typeId);
 
-            if (res.get1() != null) {
-                try {
-                    return U.forName(res.get1(), ldr, clsFilter);
-                }
-                catch (ClassNotFoundException e) {
-                    err = e.getMessage();
-                }
-            }
-            else
-                err = res.get2();
-        }
-
-        if (err != null)
-            throw new ClassNotFoundException(err);
-
-        throw new ClassNotFoundException("Unknown type ID: " + typeId);
+        return U.forName(clsName, ldr, clsFilter);
     }
 
     /** {@inheritDoc} */
@@ -415,9 +399,9 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @return Tuple. First is class name, second is error message.
      */
     public T2<String, String> getClassName(
-        byte platformId,
-        int typeId,
-        boolean skipOtherPlatforms
+            byte platformId,
+            int typeId,
+            boolean skipOtherPlatforms
     ) throws IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
