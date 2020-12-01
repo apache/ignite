@@ -446,10 +446,11 @@ public class MarshallerContextImpl implements MarshallerContext {
                     clsName = mappedName.className();
 
                 if (clsName == null)
-                    return new T2<>(null, "Requesting mapping from grid failed for [platformId="
-                        + platformId
-                        + ", typeId="
-                        + typeId + "]");
+                    return new T2<>(null,
+                        "Requesting mapping from grid failed for [platformId="
+                            + platformId
+                            + ", typeId="
+                            + typeId + "]");
 
                 return new T2<>(clsName, null);
             }
@@ -466,17 +467,19 @@ public class MarshallerContextImpl implements MarshallerContext {
 
                         String otherPlatformName = platformName(otherPlatformId);
 
-                        return new T2<>(null, "Failed to resolve " + otherPlatformName + " class '" + res.get1()
-                            + "' in " + platformName
-                            + " [platformId=" + platformId
-                            + ", typeId=" + typeId + "].");
+                        return new T2<>(null,
+                            "Failed to resolve " + otherPlatformName + " class '" + res.get1()
+                                + "' in " + platformName
+                                + " [platformId=" + platformId
+                                + ", typeId=" + typeId + "].");
                     }
                 }
 
-                return new T2<>(null, "Failed to resolve class name [" +
-                    "platformId=" + platformId
-                    + ", platform=" + platformName
-                    + ", typeId=" + typeId + "]");
+                return new T2<>(null,
+                    "Failed to resolve class name [" +
+                        "platformId=" + platformId
+                        + ", platform=" + platformName
+                        + ", typeId=" + typeId + "]");
             }
         }
 
