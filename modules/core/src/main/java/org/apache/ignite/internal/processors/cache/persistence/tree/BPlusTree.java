@@ -4010,6 +4010,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                             int rightCnt = childIo.getCount(rightPageAddr);
 
+                            assert rightCnt == childIo.getMaxCount(rightPageAddr, pageSize());
+
                             try {
                                 // Leaves are a spacial case for a simple reason: they partially hold the same data as
                                 // their parent nodes.
