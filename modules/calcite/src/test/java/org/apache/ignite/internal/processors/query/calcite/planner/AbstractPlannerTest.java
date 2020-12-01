@@ -368,7 +368,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             this.rewindable = rewindable;
             this.rowCnt = rowCnt;
 
-            addIndex(new IgniteIndex(RelCollations.of(0), "PK", null, this));
+            addIndex(new IgniteIndex(RelCollations.of(), "PK", null, this));
         }
 
         /** {@inheritDoc} */

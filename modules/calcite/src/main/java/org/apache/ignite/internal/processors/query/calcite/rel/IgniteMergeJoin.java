@@ -134,7 +134,7 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
             Map<Integer, Integer> leftToRight = joinInfo.pairs().stream()
                 .collect(Collectors.toMap(p -> p.source, p -> p.target));
 
-            newRightCollation = newLeftCollation.stream().map(leftToRight::get).collect(Collectors.toList());
+            newRightCollation = newLeftCollation.subList(0, leftToRight.size()).stream().map(leftToRight::get).collect(Collectors.toList());
         }
         else if (isPrefix(rightCollation.getKeys(), joinInfo.rightKeys)) { // preserve right collation
             newRightCollation = new ArrayList<>(rightCollation.getKeys());
@@ -142,7 +142,7 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
             Map<Integer, Integer> rightToLeft = joinInfo.pairs().stream()
                 .collect(Collectors.toMap(p -> p.target, p -> p.source));
 
-            newLeftCollation = newRightCollation.stream().map(rightToLeft::get).collect(Collectors.toList());
+            newLeftCollation = newRightCollation.subList(0, rightToLeft.size()).stream().map(rightToLeft::get).collect(Collectors.toList());
         }
         else { // generate new collations
             // TODO: generate permutations when there will be multitraits
