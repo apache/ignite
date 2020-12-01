@@ -46,7 +46,7 @@ class ConfigTemplate:
         kwargs.update(self.default_params)
         unfiltered = self.template.render(**kwargs)
 
-        res = '\n'.join(list(filter(lambda line: re.search(r'\w', line), unfiltered.split('\n'))))
+        res = '\n'.join(list(filter(lambda line: re.search(r'\S', line), unfiltered.split('\n'))))
 
         return res
 
