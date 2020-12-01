@@ -33,6 +33,7 @@ from ignitetest.services.utils.ignite_configuration.cache import CacheConfigurat
 from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster, \
     TcpDiscoverySpi
 from ignitetest.services.utils.time_utils import epoch_mills
+from ignitetest.services.utils.jvm_utils import jvm_settings
 from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
 from ignitetest.utils import ignite_versions, version_if, cluster
 from ignitetest.utils.ignite_test import IgniteTest
@@ -79,7 +80,7 @@ class DiscoveryTest(IgniteTest):
 
     WARMUP_DATA_AMOUNT = 10_000
 
-    FAILURE_TIMEOUT = 1000
+    FAILURE_TIMEOUT = 700
 
     def __init__(self, test_context):
         super().__init__(test_context=test_context)
@@ -87,10 +88,10 @@ class DiscoveryTest(IgniteTest):
         self.netfilter_store_path = None
 
     @cluster(num_nodes=MAX_CONTAINERS)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @ignite_versions(str(LATEST), str(DEV_BRANCH))
     @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[FAILURE_TIMEOUT],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def _test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
+    def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
         """
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
         """
@@ -101,10 +102,10 @@ class DiscoveryTest(IgniteTest):
         return self._perform_node_fail_scenario(test_config)
 
     @cluster(num_nodes=MAX_CONTAINERS)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @ignite_versions(str(LATEST), str(DEV_BRANCH))
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
             failure_detection_timeout=[FAILURE_TIMEOUT])
-    def _test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, failure_detection_timeout):
+    def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, failure_detection_timeout):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
         """
@@ -116,10 +117,10 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @ignite_versions(str(LATEST), str(DEV_BRANCH))
     @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[FAILURE_TIMEOUT],
             load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def _test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
+    def test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
         """
         Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
         """
@@ -131,7 +132,7 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
-    @ignite_versions(str(DEV_BRANCH))
+    @ignite_versions(str(LATEST), str(DEV_BRANCH))
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
             failure_detection_timeout=[FAILURE_TIMEOUT])
     def test_2_nodes_fail_sequential_zk(self, ignite_version, load_type, failure_detection_timeout):
@@ -177,10 +178,14 @@ class DiscoveryTest(IgniteTest):
             )]
         )
 
+        jvm_opts_str = jvm_settings(gc_dump_path=os.path.join(IgniteService.PERSISTENT_ROOT, "ignite_gc.log"),
+                                    oom_path=os.path.join(IgniteService.PERSISTENT_ROOT, "ignite_out_of_mem.hprof"),
+                                    generic_params="-server -da")
+
         # Start Ignite nodes in count less than max_nodes_in_use. One node is erequired for the loader. Some nodes might
         # be needed for ZooKeeper.
         servers, start_servers_sec = start_servers(
-            self.test_context, max_containers - DiscoveryTest.ZOOKEEPER_NODES - 1, ignite_config, modules)
+            self.test_context, max_containers - DiscoveryTest.ZOOKEEPER_NODES - 1, ignite_config, modules, jvm_opts_str)
 
         results['Ignite cluster start time (s)'] = start_servers_sec
 
@@ -199,7 +204,7 @@ class DiscoveryTest(IgniteTest):
                       "targetNodes": tran_nodes,
                       "transactional": bool(tran_nodes)}
 
-            start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
+            start_load_app(self.test_context, load_config, params, modules, jvm_opts_str)
 
         results.update(self._simulate_and_detect_failure(servers, failed_nodes,
                                                          test_config.failure_detection_timeout * 4))
@@ -284,20 +289,20 @@ def start_zookeeper(test_context, num_nodes, test_config):
     return zk_quorum
 
 
-def start_servers(test_context, num_nodes, ignite_config, modules=None):
+def start_servers(test_context, num_nodes, ignite_config, modules=None, jvm_opts_str=""):
     """
     Start ignite servers.
     """
     servers = IgniteService(test_context, config=ignite_config, num_nodes=num_nodes, modules=modules,
-                            # mute spam in log.
-                            jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"])
+                            startup_timeout_sec=40, shutdown_timeout_sec=10,
+                            jvm_opts=(jvm_opts_str + " -DIGNITE_DUMP_THREADS_ON_FAILURE=false").split())
 
     start = monotonic()
     servers.start()
     return servers, round(monotonic() - start, 1)
 
 
-def start_load_app(test_context, ignite_config, params, modules=None):
+def start_load_app(test_context, ignite_config, params, modules=None, jvm_opts_str=""):
     """
     Start loader application.
     """
@@ -306,8 +311,9 @@ def start_load_app(test_context, ignite_config, params, modules=None):
         config=ignite_config,
         java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
         modules=modules,
+        startup_timeout_sec=90,
         # mute spam in log.
-        jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"],
+        jvm_opts=(jvm_opts_str + " -DIGNITE_DUMP_THREADS_ON_FAILURE=false").split(),
         params=params).start()
 
 

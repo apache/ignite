@@ -21,9 +21,8 @@ import os.path
 
 from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
-
 from ignitetest.services.utils.log_utils import monitor_log
-
+from ignitetest.services.utils.jvm_utils import jvm_settings
 
 class ZookeeperSettings:
     """
@@ -75,7 +74,7 @@ class ZookeeperService(Service):
     def start_node(self, node):
         idx = self.idx(node)
 
-        self.logger.info("Starting Zookeeper node %d on %s", idx, node.account.hostname)
+        self.logger.info("Starting ZooKeeper node %d on %s", idx, node.account.hostname)
 
         node.account.ssh("mkdir -p %s" % self.DATA_DIR)
         node.account.ssh("mkdir -p %s" % self.CONFIG_ROOT)
@@ -83,23 +82,17 @@ class ZookeeperService(Service):
 
         config_file = self.render('zookeeper.properties.j2', settings=self.settings)
         node.account.create_file(self.CONFIG_FILE, config_file)
-        self.logger.info("ZK config %s", config_file)
+        self.logger.info("ZooKeeper config %s", config_file)
 
         log_config_file = self.render('log4j.properties.j2')
         node.account.create_file(self.LOG_CONFIG_FILE, log_config_file)
 
-        # " -XX:+UseConcMarkSweepGC" \
-        # " -XX:CMSParallelRemarkEnabled" \
-        # " -XX:+CMSClassUnloadingEnabled" \
-        # " -XX:+UseCMSInitiatingOccupancyOnly" \
-        # " -XX:+UseCMSInitiatingOccupancyFraction=70" \
-        # " -XX:+ScavengeBeforeFullGC" \
-        # " -XX:+CMSScavengeBeforeRemark" \
-        # " -server -Xmx512M -Xms512M" \
+        jvm_params = jvm_settings(gc_dump_path=os.path.join(self.PERSISTENT_ROOT, "gc.log"),
+                                  oom_path=os.path.join(self.PERSISTENT_ROOT, "'out_of_mem_`date`.hprof'"))
 
-        start_cmd = "nohup java" \
-                    " -cp %s/*:%s org.apache.zookeeper.server.quorum.QuorumPeerMain%s >/dev/null 2>&1 &" % \
-                    (self.ZK_LIB_DIR, self.CONFIG_ROOT, self.CONFIG_FILE)
+        start_cmd = "nohup java %s -cp %s/*:%s " \
+                    "org.apache.zookeeper.server.quorum.QuorumPeerMain %s >/dev/null 2>&1 &" % \
+                    (jvm_params, self.ZK_LIB_DIR, self.CONFIG_ROOT, self.CONFIG_FILE)
 
         node.account.ssh(start_cmd)
 
