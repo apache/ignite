@@ -21,16 +21,19 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalJoin;
@@ -45,7 +48,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
-import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class CorrelatedNestedLoopJoinRule extends ConverterRule {
@@ -74,17 +77,20 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean matches(RelOptRuleCall call) {
+        LogicalJoin logicalJoin = call.rel(0);
+
+        return !F.isEmpty(logicalJoin.analyzeCondition().pairs()) && logicalJoin.analyzeCondition().isEqui();
+    }
+
+    /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        Join rel = call.rel(0);
-        final int leftFieldCount = rel.getLeft().getRowType().getFieldCount();
-        final RelOptCluster cluster = rel.getCluster();
+        Join logicalJoin = call.rel(0);
+        final int leftFieldCount = logicalJoin.getLeft().getRowType().getFieldCount();
+        final RelOptCluster cluster = logicalJoin.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
-        final RelBuilder relBuilder = relBuilderFactory.create(rel.getCluster(), null);
-
-
-        for (RexNode c : rel.analyzeCondition().nonEquiConditions) {
-            System.out.println("+++ " + c);
-        }
+        final RelBuilder relBuilder = relBuilderFactory.create(logicalJoin.getCluster(), null);
+        final JoinInfo joinInfo = logicalJoin.analyzeCondition();
 
         final Set<CorrelationId> correlationIds = new HashSet<>();
         final ArrayList<RexNode> corrVar = new ArrayList<>();
@@ -92,11 +98,11 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
         for (int i = 0; i < batchSize; i++) {
             CorrelationId correlationId = cluster.createCorrel();
             correlationIds.add(correlationId);
-            corrVar.add(rexBuilder.makeCorrel(rel.getLeft().getRowType(), correlationId));
+            corrVar.add(rexBuilder.makeCorrel(logicalJoin.getLeft().getRowType(), correlationId));
         }
 
         // Generate first condition
-        final RexNode condition = rel.getCondition().accept(new RexShuttle() {
+        final RexNode condition = logicalJoin.getCondition().accept(new RexShuttle() {
             @Override public RexNode visitInputRef(RexInputRef input) {
                 int field = input.getIndex();
                 if (field >= leftFieldCount)
@@ -120,8 +126,8 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
             conditionList.add(condition2);
         }
 
-        RelTraitSet filterInTraits = rel.getRight().getTraitSet();
-        RelNode filterInput = convert(rel.getRight(), filterInTraits);
+        RelTraitSet filterInTraits = logicalJoin.getRight().getTraitSet();
+        RelNode filterInput = convert(logicalJoin.getRight(), filterInTraits);
 
         // Push a filter with batchSize disjunctions
         relBuilder.push(filterInput).filter(relBuilder.or(conditionList));
@@ -130,19 +136,20 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
         CorrelationTrait corrTrait = CorrelationTrait.correlations(correlationIds);
         right = right.copy(right.getTraitSet().replace(corrTrait), right.getInputs());
 
-        JoinRelType joinType = rel.getJoinType();
+        JoinRelType joinType = logicalJoin.getJoinType();
 
         RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
 
         RelTraitSet rightInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
+            .replace(RelCollations.of(joinInfo.rightKeys))
             .replace(RewindabilityTrait.REWINDABLE)
             .replace(corrTrait);
 
-        RelNode left = convert(rel.getLeft(), leftInTraits);
+        RelNode left = convert(logicalJoin.getLeft(), leftInTraits);
         right = convert(right, rightInTraits);
 
-        call.transformTo(new IgniteCorrelatedNestedLoopJoin(cluster, outTraits, left, right, rel.getCondition(), correlationIds, joinType));
+        call.transformTo(new IgniteCorrelatedNestedLoopJoin(cluster, outTraits, left, right, logicalJoin.getCondition(), correlationIds, joinType));
     }
 
     /** */

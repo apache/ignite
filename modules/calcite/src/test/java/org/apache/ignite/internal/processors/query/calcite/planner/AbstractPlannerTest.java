@@ -40,7 +40,6 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
-import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.RelRoot;
@@ -242,7 +241,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             assertNotNull(rel);
 
             // Transformation chain
-            RelTraitSet desired = rel.getCluster().traitSet()
+            RelTraitSet desired = rel.getTraitSet()
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
                 .replace(CorrelationTrait.UNCORRELATED)
@@ -369,7 +368,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             this.rewindable = rewindable;
             this.rowCnt = rowCnt;
 
-            addIndex(new IgniteIndex(RelCollations.of(new RelFieldCollation(0)), "PK", null, this));
+            addIndex(new IgniteIndex(RelCollations.of(0), "PK", null, this));
         }
 
         /** {@inheritDoc} */

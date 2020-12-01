@@ -205,9 +205,9 @@ public class TableSpoolTest extends AbstractPlannerTest {
 
         String sql = "select * " +
             "from t0 " +
-            "join t1 on t0.jid = t1.jid";
+            "join t1 on t0.id = t1.id";
 
-        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter");
+        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter", "MergeJoinConverter");
 
         assertNotNull(phys);
 

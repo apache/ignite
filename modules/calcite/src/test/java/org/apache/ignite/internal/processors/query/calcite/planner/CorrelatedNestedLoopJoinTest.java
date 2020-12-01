@@ -17,16 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import java.util.List;
-
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -58,8 +53,8 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
                     .build()) {
 
                 @Override public IgniteDistribution distribution() {
-//                    return IgniteDistributions.broadcast();
-                    return IgniteDistributions.affinity(0, "T0", "hash");
+                    return IgniteDistributions.broadcast();
+//                    return IgniteDistributions.affinity(0, "T0", "hash");
                 }
             }
                 .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t0_jid_idx")
@@ -75,8 +70,8 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
                     .build()) {
 
                 @Override public IgniteDistribution distribution() {
-//                    return IgniteDistributions.broadcast();
-                    return IgniteDistributions.affinity(0, "T1", "hash");
+                    return IgniteDistributions.broadcast();
+//                    return IgniteDistributions.affinity(0, "T1", "hash");
                 }
             }
                 .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid_idx")
@@ -84,9 +79,9 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
 
         String sql = "select * " +
             "from t0 " +
-            "join t1 on t0.id > t1.id and t0.jid < t1.jid";
+            "join t1 on t0.id = t1.jid";
 
-        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter");
+        RelNode phys = physicalPlan(sql, publicSchema);
 
         assertNotNull(phys);
 
