@@ -150,7 +150,7 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
     public interface Config extends ConverterRule.Config {
         /** */
         Config DEFAULT = ConverterRule.Config.INSTANCE
-            .withDescription("CorrelatedNestedLoopJoinRule")
+            .withDescription("CorrelatedNestedLoopJoin")
             .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
             .as(Config.class)
             .withConversion(LogicalJoin.class, Convention.NONE, IgniteConvention.INSTANCE)

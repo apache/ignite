@@ -30,6 +30,7 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,6 +46,63 @@ public class IgniteMdRowCount extends RelMdRowCount {
     /** {@inheritDoc} */
     @Override public Double getRowCount(Join rel, RelMetadataQuery mq) {
         return joinRowCount(mq, rel);
+    }
+
+    /** */
+    public Double getRowCount(IgniteCorrelatedNestedLoopJoin rel, RelMetadataQuery mq) {
+        if (!rel.getJoinType().projectsRight()) {
+            // Create a RexNode representing the selectivity of the
+            // semijoin filter and pass it to getSelectivity
+            RexNode semiJoinSelectivity =
+                RelMdUtil.makeSemiJoinSelectivityRexNode(mq, rel);
+
+            return multiply(mq.getSelectivity(rel.getLeft(), semiJoinSelectivity),
+                mq.getRowCount(rel.getLeft()));
+        }
+
+        // Row count estimates of 0 will be rounded up to 1.
+        // So, use maxRowCount where the product is very small.
+        final Double left = mq.getRowCount(rel.getLeft());
+        final Double right = mq.getRowCount(rel.getRight());
+
+        if (left == null || right == null)
+            return null;
+
+        if (left <= 1D || right <= 1D) {
+            Double max = mq.getMaxRowCount(rel);
+            if (max != null && max <= 1D)
+                return max;
+        }
+
+        JoinInfo joinInfo = rel.analyzeCondition();
+
+        ImmutableIntList leftKeys = joinInfo.leftKeys;
+        ImmutableIntList rightKeys = joinInfo.rightKeys;
+
+        if (F.isEmpty(leftKeys) || F.isEmpty(rightKeys)) {
+            if (F.isEmpty(leftKeys))
+                return left * right;
+            else
+                return left * right * mq.getSelectivity(rel, rel.getCondition());
+        }
+
+        double leftDistinct = Util.first(
+            mq.getDistinctRowCount(rel.getLeft(), ImmutableBitSet.of(leftKeys), null), left);
+
+        double leftCardinality = leftDistinct / left;
+
+        double rowsCount = left * right / leftCardinality;
+
+        JoinRelType type = rel.getJoinType();
+
+        if (type == JoinRelType.LEFT)
+            rowsCount += left;
+        else if (type == JoinRelType.RIGHT)
+            rowsCount += right;
+        else if (type == JoinRelType.FULL)
+            rowsCount += left + right;
+
+        return rowsCount;
     }
 
     /** */
@@ -68,9 +126,9 @@ public class IgniteMdRowCount extends RelMdRowCount {
             return null;
 
         if (left <= 1D || right <= 1D) {
-          Double max = mq.getMaxRowCount(rel);
-          if (max != null && max <= 1D)
-              return max;
+            Double max = mq.getMaxRowCount(rel);
+            if (max != null && max <= 1D)
+                return max;
         }
 
         JoinInfo joinInfo = rel.analyzeCondition();

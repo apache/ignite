@@ -36,6 +36,8 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
@@ -2246,7 +2248,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        assertEquals(3, plan.fragments().size());
+        assertEquals(2, plan.fragments().size());
     }
 
     /** */
@@ -2598,6 +2600,111 @@ public class PlannerTest extends AbstractPlannerTest {
         }
     }
 
+    /** */
+    @Test
+    public void testMergeJoin() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable emp = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("DEPTNO", f.createJavaType(Integer.class))
+                .build()) {
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        emp.addIndex(new IgniteIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "emp_idx", null, emp));
+
+        TestTable dept = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("DEPTNO", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .build()) {
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        dept.addIndex(new IgniteIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "dep_idx", null, dept));
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("EMP", emp);
+        publicSchema.addTable("DEPT", dept);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "select * from dept d join emp e on d.deptno = e.deptno and e.name = d.name order by e.name, d.deptno";
+
+        RelNode phys = physicalPlan(sql, publicSchema);
+
+        assertNotNull(phys);
+        assertEquals("" +
+                "IgniteMergeJoin(condition=[AND(=($0, $4), =($3, $1))], joinType=[inner])\n" +
+                "  IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[dep_idx])\n" +
+                "  IgniteIndexScan(table=[[PUBLIC, EMP]], index=[emp_idx])\n",
+            RelOptUtil.toString(phys));
+    }
+
+    /** */
+    @Test
+    public void testMergeJoinIsNotAppliedForNonEquiJoin() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable emp = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("DEPTNO", f.createJavaType(Integer.class))
+                .build()) {
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        emp.addIndex(new IgniteIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "emp_idx", null, emp));
+
+        TestTable dept = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("DEPTNO", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .build()) {
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        dept.addIndex(new IgniteIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "dep_idx", null, dept));
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("EMP", emp);
+        publicSchema.addTable("DEPT", dept);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "select * from dept d join emp e on d.deptno = e.deptno and e.name >= d.name order by e.name, d.deptno";
+
+        RelNode phys = physicalPlan(sql, publicSchema);
+
+        assertNotNull(phys);
+        assertEquals("" +
+                "IgniteSort(sort0=[$3], sort1=[$0], dir0=[ASC], dir1=[ASC])\n" +
+                "  IgniteNestedLoopJoin(condition=[AND(=($0, $4), >=($3, $1))], joinType=[inner])\n" +
+                "    IgniteTableScan(table=[[PUBLIC, DEPT]])\n" +
+                "    IgniteTableScan(table=[[PUBLIC, EMP]])\n",
+            RelOptUtil.toString(phys));
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -2662,7 +2769,7 @@ public class PlannerTest extends AbstractPlannerTest {
             );
 
             assertEquals("Invalid plan: \n" + RelOptUtil.toString(phys), 1, limit.get());
-            assertFalse("Invalid plan: \n" + RelOptUtil.toString(phys), sort.get());
+            assertTrue("Invalid plan: \n" + RelOptUtil.toString(phys), sort.get());
         }
     }
 }

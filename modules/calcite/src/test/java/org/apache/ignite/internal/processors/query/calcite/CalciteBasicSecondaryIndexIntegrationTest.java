@@ -120,6 +120,20 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .check();
     }
 
+    @Test
+    public void testMergeJoin() {
+        assertQuery("" +
+            "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin') */ d1.name, d2.name FROM Developer d1, Developer d2 WHERE d1.depId = d2.depId")
+            .matches(containsSubPlan("IgniteMergeJoin"))
+            .returns("Bach", "Bach")
+            .returns("Beethoven", "Beethoven")
+            .returns("Beethoven", "Strauss")
+            .returns("Mozart", "Mozart")
+            .returns("Strauss", "Strauss")
+            .returns("Strauss", "Beethoven")
+            .check();
+    }
+
     // ===== No filter =====
 
     /** */

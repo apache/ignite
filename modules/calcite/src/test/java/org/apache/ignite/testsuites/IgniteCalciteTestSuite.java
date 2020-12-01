@@ -28,6 +28,8 @@ import org.apache.ignite.internal.processors.query.calcite.TableSpoolTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ExecutionTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.MergeJoinExecutionTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJoinExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
@@ -43,6 +45,8 @@ import org.junit.runners.Suite;
     OrToUnionRuleTest.class,
     ProjectScanMergeRuleTest.class,
     ExecutionTest.class,
+    MergeJoinExecutionTest.class,
+    NestedLoopJoinExecutionTest.class,
     ClosableIteratorsHolderTest.class,
     ContinuousExecutionTest.class,
     CalciteQueryProcessorTest.class,
