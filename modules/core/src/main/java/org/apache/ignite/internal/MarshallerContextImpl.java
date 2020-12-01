@@ -462,7 +462,7 @@ public class MarshallerContextImpl implements MarshallerContext {
                         T2<String, String> res = getClassName(otherPlatformId, typeId, true);
 
                         if (res.get1() == null)
-                            break;
+                            continue;
 
                         String otherPlatformName = platformName(otherPlatformId);
 
