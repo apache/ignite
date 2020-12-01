@@ -197,7 +197,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             ClientRequestFuture fut = send(op, payloadWriter);
 
             return receiveAsync(fut, payloadReader);
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             CompletableFuture<T> fut = new CompletableFuture<>();
             fut.completeExceptionally(t);
 
@@ -285,7 +286,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                     T res = payloadReader.apply(new PayloadInputChannel(this, payload));
                     fut.complete(res);
                 }
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 fut.completeExceptionally(convertException(t));
             }
         }));
@@ -461,7 +463,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         try {
             ByteBuffer res = timeout > 0 ? fut.get(timeout) : fut.get();
             handshakeRes(res, ver, user, pwd, userAttrs);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new ClientConnectionException(e.getMessage(), e);
         }
     }
@@ -575,7 +578,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         try {
             sock.send(buf);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new ClientConnectionException(e.getMessage(), e);
         }
     }
