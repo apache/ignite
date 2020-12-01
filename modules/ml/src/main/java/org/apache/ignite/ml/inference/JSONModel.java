@@ -1,15 +1,18 @@
 package org.apache.ignite.ml.inference;
 
-public class JSONModel {
-    public String applicationName = "Apache Ignite";
+import org.apache.ignite.ml.IgniteModel;
 
-    public String versionName = "2.10.0";
+public abstract class JSONModel {
+    protected String igniteVersion = "2.10.0";
+    protected Long timestamp;
+    protected String uid;
+    protected String modelClass;
 
-    @Override
-    public String toString() {
-        return "JSONModel{" +
-                "applicationName='" + applicationName + '\'' +
-                ", versionName='" + versionName + '\'' +
-                '}';
+    public abstract IgniteModel convert();
+
+    protected JSONModel(Long timestamp, String uid, String modelClass) {
+        this.timestamp = timestamp;
+        this.uid = uid;
+        this.modelClass = modelClass;
     }
 }

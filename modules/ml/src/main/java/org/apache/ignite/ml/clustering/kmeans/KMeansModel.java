@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -216,6 +217,11 @@ public final class KMeansModel implements ClusterizationModel<Vector, Integer>, 
         /** Distance measure. */
         public DistanceMeasure distanceMeasure;
 
+        public KMeansJSONExportModel() {
+            super(System.currentTimeMillis(), "kmeans_" + UUID.randomUUID().toString(), "KMeansModel");
+        }
+
+        @Override
         public KMeansModel convert() {
             KMeansModel mdl = new KMeansModel();
             Vector[] centers = new DenseVector[mdlCenters.size()];

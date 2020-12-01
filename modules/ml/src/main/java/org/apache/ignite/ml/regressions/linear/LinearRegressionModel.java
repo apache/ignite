@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
@@ -143,6 +144,7 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
         return toString();
     }
 
+    /** Loads LinearRegressionModel from JSON file. */
     public static LinearRegressionModel fromJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper();
 
@@ -162,7 +164,6 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
     /** {@inheritDoc} */
     @Override public void toJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper();
-
             try {
                 LinearRegressionModelJSONExportModel exportModel = new LinearRegressionModelJSONExportModel();
                 exportModel.intercept = intercept;
@@ -179,15 +180,19 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
         /**
          * Multiplier of the objects's vector required to make prediction.
          */
-        public double[] weights;
+        private double[] weights;
 
         /**
          * Intercept of the linear regression model.
          */
-        public double intercept;
+        private double intercept;
 
-        /** */
-        public LinearRegressionModel convert() {
+        public LinearRegressionModelJSONExportModel() {
+            super(System.currentTimeMillis(), "linreg_" + UUID.randomUUID().toString(), "LinearRegressionModel");
+        }
+
+        /** {@inheritDoc} */
+        @Override public LinearRegressionModel convert() {
             LinearRegressionModel linRegMdl = new LinearRegressionModel();
             linRegMdl.withWeights(VectorUtils.of(weights));
             linRegMdl.withIntercept(intercept);

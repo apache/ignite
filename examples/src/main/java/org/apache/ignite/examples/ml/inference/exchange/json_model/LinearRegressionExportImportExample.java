@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.inference.exchange;
+package org.apache.ignite.examples.ml.inference.exchange.json_model;
 
 import java.io.IOException;
 import java.nio.file.Files;

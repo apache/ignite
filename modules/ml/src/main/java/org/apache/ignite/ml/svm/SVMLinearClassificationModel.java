@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
@@ -242,22 +243,26 @@ public final class SVMLinearClassificationModel implements IgniteModel<Vector, D
         /**
          * Multiplier of the objects's vector required to make prediction.
          */
-        public double[] weights;
+        private double[] weights;
 
         /**
          * Intercept of the linear regression model.
          */
-        public double intercept;
+        private double intercept;
 
         /**
          * Output label format. 0 and 1 for false value and raw sigmoid regression value otherwise.
          */
-        public boolean isKeepingRawLabels;
+        private boolean isKeepingRawLabels;
 
         /**
          * Threshold to assign '1' label to the observation if raw value more than this threshold.
          */
-        public double threshold = 0.5;
+        private double threshold = 0.5;
+
+        public SVMLinearClassificationJSONExportModel() {
+            super(System.currentTimeMillis(), "svm_" + UUID.randomUUID().toString(), "SVMLinearClassificationModel");
+        }
 
         @Override
         public String toString() {
@@ -269,6 +274,7 @@ public final class SVMLinearClassificationModel implements IgniteModel<Vector, D
                     '}';
         }
 
+        @Override
         public SVMLinearClassificationModel convert() {
             SVMLinearClassificationModel mdl = new SVMLinearClassificationModel();
             mdl.withWeights(VectorUtils.of(weights));
