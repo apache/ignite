@@ -412,9 +412,9 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @throws IgniteCheckedException In case of any other error.
      */
     private String getClassName(
-        byte platformId,
-        int typeId,
-        boolean skipOtherPlatforms
+            byte platformId,
+            int typeId,
+            boolean skipOtherPlatforms
     ) throws ClassNotFoundException, IgniteCheckedException {
         T2<String, String> res = getClassNameUnthrowable(platformId, typeId, skipOtherPlatforms);
 
