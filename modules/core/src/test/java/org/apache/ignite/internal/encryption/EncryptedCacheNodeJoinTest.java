@@ -262,7 +262,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
      * @param activateBeforeJoin {@code True} to activate the server before joining the client node.
      * @param newCfg {@code True} to configure cache on the last joined node. {@code False} to configure on all nodes.
      */
-    public void checkNodeJoinWithStaticCacheConfig(
+    private void checkNodeJoinWithStaticCacheConfig(
         boolean client,
         boolean activateBeforeJoin,
         boolean newCfg
