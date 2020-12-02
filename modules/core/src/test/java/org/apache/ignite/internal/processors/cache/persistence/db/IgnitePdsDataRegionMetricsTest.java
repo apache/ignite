@@ -89,6 +89,13 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
                     .setMaxSize(MAX_REGION_SIZE)
                     .setPersistenceEnabled(true)
                     .setMetricsEnabled(true))
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration()
+                    .setName("EmptyRegion")
+                    .setInitialSize(INIT_REGION_SIZE)
+                    .setMaxSize(MAX_REGION_SIZE)
+                    .setPersistenceEnabled(true)
+                    .setMetricsEnabled(true))
             .setCheckpointFrequency(1000);
 
         cfg.setDataStorageConfiguration(memCfg);
