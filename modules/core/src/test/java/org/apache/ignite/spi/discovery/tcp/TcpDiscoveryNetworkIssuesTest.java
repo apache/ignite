@@ -21,7 +21,9 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -211,16 +213,31 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
      * Ensures sequential failure of two nodes has no additional issues.
      */
     @Test
-    public void testFailTwoNodes() throws Exception {
+    public void testSequentialFailTwoNodes() throws Exception {
+        simulateFailureOfTwoNodes(true);
+    }
+
+    /**
+     * Ensures sequential failure of two nodes has no additional issues.
+     */
+    @Test
+    public void testNotSequentialFailTwoNodes() throws Exception {
+        simulateFailureOfTwoNodes(false);
+    }
+
+    /** */
+    private void simulateFailureOfTwoNodes(boolean sequentionally) throws Exception {
         failureDetectionTimeout = 1000;
 
-        startGrids(5);
+        int gridCnt = 7;
+
+        startGrids(gridCnt);
 
         awaitPartitionMapExchange();
 
         final CountDownLatch failLatch = new CountDownLatch(2);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < gridCnt; i++) {
             ignite(i).events().localListen(evt -> {
                 failLatch.countDown();
 
@@ -236,20 +253,28 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             }, EVT_NODE_SEGMENTED);
         }
 
-        processNetworkThreads(ignite(2), t -> t.suspend());
-        processNetworkThreads(ignite(3), t -> t.suspend());
+        Set<Integer> failedNodes = new HashSet<>();
+
+        failedNodes.add(2);
+
+        if (sequentionally)
+            failedNodes.add(3);
+        else
+            failedNodes.add(4);
+
+        failedNodes.forEach(idx -> processNetworkThreads(ignite(idx), Thread::suspend));
 
         try {
             failLatch.await(10, TimeUnit.SECONDS);
         }
         finally {
-            processNetworkThreads(ignite(2), t -> t.resume());
-            processNetworkThreads(ignite(3), t -> t.resume());
+            failedNodes.forEach(idx -> processNetworkThreads(ignite(idx), Thread::resume));
         }
 
-        assertFalse(segmentedNodes.contains(0));
-        assertFalse(segmentedNodes.contains(1));
-        assertFalse(segmentedNodes.contains(4));
+        for (int i = 0; i < gridCnt; i++) {
+            if (!failedNodes.contains(i))
+                assertFalse(segmentedNodes.contains(i));
+        }
     }
 
     /**
