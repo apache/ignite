@@ -294,7 +294,6 @@ def start_servers(test_context, num_nodes, ignite_config, modules=None, jvm_opts
     Start ignite servers.
     """
     servers = IgniteService(test_context, config=ignite_config, num_nodes=num_nodes, modules=modules,
-                            startup_timeout_sec=40, shutdown_timeout_sec=10,
                             # mute spam in log.
                             jvm_opts=(jvm_opts_str + " -DIGNITE_DUMP_THREADS_ON_FAILURE=false").split())
 
@@ -312,7 +311,6 @@ def start_load_app(test_context, ignite_config, params, modules=None, jvm_opts_s
         config=ignite_config,
         java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
         modules=modules,
-        startup_timeout_sec=90,
         # mute spam in log.
         jvm_opts=(jvm_opts_str + " -DIGNITE_DUMP_THREADS_ON_FAILURE=false").split(),
         params=params).start()
