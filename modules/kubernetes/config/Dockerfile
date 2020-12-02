@@ -18,14 +18,17 @@
 # Use Java 8 image as default one.
 FROM openjdk:8
 
+# Set Apache Ignite configuration file name.
+ARG IGNITE_CFG_XML="example-kube.xml"
+
 # Set Apache Ignite version.
-ENV IGNITE_VERSION 2.0.0-SNAPSHOT
+ARG IGNITE_VERSION="2.0.0"
 
 # Set IGNITE_HOME variable.
 ENV IGNITE_HOME /opt/ignite/apache-ignite-${IGNITE_VERSION}-bin
 
 # Setting a path to an Apache Ignite configuration file. Used by run.sh script below.
-ENV CONFIG_URI ${IGNITE_HOME}/config/example-kube.xml
+ENV CONFIG_URI ${IGNITE_HOME}/config/$IGNITE_CFG_XML
 
 # Make sure kubernetes lib is copied to 'libs' folder.
 ENV OPTION_LIBS ignite-kubernetes
@@ -51,7 +54,10 @@ COPY ./run.sh $IGNITE_HOME/
 RUN chmod +x $IGNITE_HOME/run.sh
 
 # Copying the configuration.
-COPY ./example-kube.xml $IGNITE_HOME/config
+COPY ./$IGNITE_CFG_XML $IGNITE_HOME/config
+
+# Copying external libraries to Ignite classpath.
+COPY *.jar $IGNITE_HOME/libs
 
 # Starting an Apache Ignite node.
 CMD $IGNITE_HOME/run.sh

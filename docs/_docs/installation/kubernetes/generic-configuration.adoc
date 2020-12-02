@@ -146,7 +146,7 @@ include::{configDir}/stateful/node-configuration.xml[tag=config-block]
 --
 
 
-The `namespace` and `serviceName` properties of the IP finder must be the same as specified in the <<Creating Service,service configuration>>.
+The `namespace` and `serviceName` properties of the IP finder configuration must be the same as specified in the <<Creating Service,service configuration>>.
 Add other properties as required for your use case.
 
 To create the ConfigMap, run the following command in the directory with the `node-configuration.xml` file.
@@ -386,6 +386,18 @@ Note that we use the external IP address (LoadBalancer Ingress) of the service.
 [source, java]
 ----
 include::{javaFile}[tags=connectThinClient, indent=0]
+----
+
+Thin client supports partition awareness feature that may speed up operations. If the feature enabled a thin client stores a map of Ignite nodes to cache partitions.
+So in moment of a request client knows which node stores a required partition and send the request directly to the node.
+If client is connected to Kubertenes cluster through Ingress it makes impossible to build such a map. Instead, one should configure a client with KubernetesConnectionConfiguration.
+In this case client is able to connect to every pod in a cluster.
+
+Note that client configuration must be in sync with Ignite node configuration.
+
+[source, java]
+----
+include::{javaFile}[tags=connectThinClientWithKubernetesConfiguration, indent=0]
 ----
 
 === Connecting to REST API
