@@ -60,6 +60,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.MarshallerPlatformIds.DOTNET_ID;
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 import static org.apache.ignite.internal.MarshallerPlatformIds.otherPlatforms;
 import static org.apache.ignite.internal.MarshallerPlatformIds.platformName;
@@ -369,12 +370,27 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
-        String clsName = getClassName(JAVA_ID, typeId);
+        String err = null;
 
-        if (clsName == null)
-            throw new ClassNotFoundException("Unknown type ID: " + typeId);
+        for (byte platformId : new byte[] {JAVA_ID, DOTNET_ID}) {
+            T2<String, String> res = getClassName(platformId, typeId, false);
 
-        return U.forName(clsName, ldr, clsFilter);
+            if (res.get1() != null) {
+                try {
+                    return U.forName(res.get1(), ldr, clsFilter);
+                }
+                catch (ClassNotFoundException e) {
+                    err = e.getMessage();
+                }
+            }
+            else if (err == null)
+                err = res.get2();
+        }
+
+        if (err != null)
+            throw new ClassNotFoundException(err);
+
+        throw new ClassNotFoundException("Unknown type ID: " + typeId);
     }
 
     /** {@inheritDoc} */
