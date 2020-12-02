@@ -25,10 +25,13 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  */
 public final class WeightedPredictionsAggregator implements PredictionsAggregator {
     /** Weights for predictions. */
-    private final double[] weights;
+    private double[] weights;
 
     /** Bias. */
-    private final double bias;
+    private double bias;
+
+    public WeightedPredictionsAggregator() {
+    }
 
     /**
      * Constructs WeightedPredictionsAggregator instance.

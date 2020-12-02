@@ -20,6 +20,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
@@ -28,6 +30,21 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
  * This class is based on the corresponding class from Apache Common Math lib. Interface for distance measures of
  * n-dimensional vectors.
  */
+@JsonTypeInfo( use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes(
+    {
+        @JsonSubTypes.Type(value = BrayCurtisDistance.class, name = "BrayCurtisDistance"),
+        @JsonSubTypes.Type(value = CanberraDistance.class, name = "CanberraDistance"),
+        @JsonSubTypes.Type(value = ChebyshevDistance.class, name = "ChebyshevDistance"),
+        @JsonSubTypes.Type(value = CosineSimilarity.class, name = "CosineSimilarity"),
+        @JsonSubTypes.Type(value = EuclideanDistance.class, name = "EuclideanDistance"),
+        @JsonSubTypes.Type(value = HammingDistance.class, name = "HammingDistance"),
+        @JsonSubTypes.Type(value = JaccardIndex.class, name = "JaccardIndex"),
+        @JsonSubTypes.Type(value = JensenShannonDistance.class, name = "JensenShannonDistance"),
+        @JsonSubTypes.Type(value = ManhattanDistance.class, name = "ManhattanDistance"),
+        @JsonSubTypes.Type(value = MinkowskiDistance.class, name = "MinkowskiDistance"),
+        @JsonSubTypes.Type(value = WeightedMinkowskiDistance.class, name = "WeightedMinkowskiDistance"),
+    })
 public interface DistanceMeasure extends Externalizable {
     /**
      * Compute the distance between two n-dimensional vectors.
