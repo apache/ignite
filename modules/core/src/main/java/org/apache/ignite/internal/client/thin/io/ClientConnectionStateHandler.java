@@ -15,22 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin;
+package org.apache.ignite.internal.client.thin.io;
 
-import java.nio.ByteBuffer;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Server to client notification listener.
+ * Handles thin client connection state.
  */
-interface NotificationListener {
+public interface ClientConnectionStateHandler {
     /**
-     * Accept notification.
-     *
-     * @param ch Client channel which was notified.
-     * @param op Client operation.
-     * @param rsrcId Resource id.
-     * @param payload Notification payload or {@code null} if there is no payload.
-     * @param err Error.
+     * Handles connection loss.
+     * @param e Exception that caused the disconnect, can be null.
      */
-    public void acceptNotification(ClientChannel ch, ClientOperation op, long rsrcId, ByteBuffer payload, Exception err);
+    void onDisconnected(@Nullable Exception e);
 }
