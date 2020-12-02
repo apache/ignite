@@ -1916,7 +1916,7 @@ public class ClusterCachesInfo {
                     return encClientCaches.stream().collect(Collectors.joining(", ",
                         "Joining node has encrypted caches which are not presented on the cluster, " +
                             "encrypted caches configured on client node cannot be started when such node joins " +
-                            "the cluster, these caches can be started manually (dynamically) after node is joined " +
+                            "the cluster, these caches can be started manually (dynamically) after node joined" +
                             "[caches=", "]"));
                 }
             }
