@@ -39,6 +39,9 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteState;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -48,12 +51,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.maintenance.MaintenanceFileStore;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -201,6 +204,19 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         startGrid(0);
 
         waitForDefragmentation(0);
+
+        assertEquals(ClusterState.INACTIVE, grid(0).context().state().clusterState().state());
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> {
+                grid(0).cluster().state(ClusterState.ACTIVE);
+
+                return null;
+            },
+            IgniteCheckedException.class,
+            "Failed to activate cluster (node is in maintenance mode)"
+        );
 
         long[] newPartLen = partitionSizes(workDir);
 
@@ -396,6 +412,29 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         File workDir = resolveCacheWorkDir(ig);
 
+        //Defragmentation should fail when node starts.
+        startAndAwaitNodeFail(workDir);
+
+        c.accept(workDir);
+
+        startGrid(0); // Fails here VERY rarely. WTF?
+
+        waitForDefragmentation(0);
+
+        stopGrid(0);
+
+        // Everything must be completed.
+        startGrid(0).cluster().state(ClusterState.ACTIVE);
+
+        validateCache(grid(0).cache(DEFAULT_CACHE_NAME));
+
+        validateLeftovers(workDir);
+    }
+
+    /**
+     * @throws IgniteInterruptedCheckedException If fail.
+     */
+    private void startAndAwaitNodeFail(File workDir) throws IgniteInterruptedCheckedException {
         String errMsg = "Failed to create defragmentation completion marker.";
 
         AtomicBoolean errOccurred = new AtomicBoolean();
@@ -418,36 +457,32 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             return cfg;
         };
 
+        AtomicBoolean nodeStopped = new AtomicBoolean();
+        IgnitionListener nodeStopListener = (name, state) -> {
+            if (name.equals(getTestIgniteInstanceName(0)) && state == IgniteState.STOPPED_ON_FAILURE)
+                nodeStopped.set(true);
+        };
+
+        Ignition.addListener(nodeStopListener);
         try {
-            startGrid(0, cfgOp);
+            try {
+                startGrid(0, cfgOp);
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+
+            // Failed node can leave interrupted status of the thread that needs to be cleared,
+            // otherwise following "wait" wouldn't work.
+            // This call can't be moved inside of "catch" block because interruption can actually be silent.
+            Thread.interrupted();
+
+            assertTrue(GridTestUtils.waitForCondition(errOccurred::get, 3_000L));
+            assertTrue(GridTestUtils.waitForCondition(nodeStopped::get, 3_000L));
         }
-        catch (Exception ignore) {
-            // No-op.
+        finally {
+            Ignition.removeListener(nodeStopListener);
         }
-
-        // Failed node can leave interrupted status of the thread that needs to be cleared,
-        // otherwise following "wait" wouldn't work.
-        // This call can't be moved inside of "catch" block because interruption can actually be silent.
-        Thread.interrupted();
-
-        assertTrue(GridTestUtils.waitForCondition(errOccurred::get, 10_000L));
-
-        assertTrue(GridTestUtils.waitForCondition(() -> G.allGrids().isEmpty(), 10_000L));
-
-        c.accept(workDir);
-
-        startGrid(0); // Fails here VERY rarely. WTF?
-
-        waitForDefragmentation(0);
-
-        stopGrid(0);
-
-        // Everything must be completed.
-        startGrid(0).cluster().state(ClusterState.ACTIVE);
-
-        validateCache(grid(0).cache(DEFAULT_CACHE_NAME));
-
-        validateLeftovers(workDir);
     }
 
     /** */
