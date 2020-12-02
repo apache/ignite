@@ -41,7 +41,7 @@ import org.apache.ignite.ml.tree.leaf.DecisionTreeLeafBuilder;
  *
  * @param <T> Type of impurity measure.
  */
-public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends SingleLabelDatasetTrainer<DecisionTreeNode> {
+public abstract class DecisionTreeTrainer<T extends ImpurityMeasure<T>> extends SingleLabelDatasetTrainer<DecisionTreeModel> {
     /** Max tree deep. */
     int maxDeep;
 
@@ -65,8 +65,8 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends SingleL
      * @param compressor Impurity function compressor.
      * @param decisionTreeLeafBuilder Decision tree leaf builder.
      */
-    DecisionTree(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor,
-        DecisionTreeLeafBuilder decisionTreeLeafBuilder) {
+    DecisionTreeTrainer(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor,
+                        DecisionTreeLeafBuilder decisionTreeLeafBuilder) {
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
         this.compressor = compressor;
@@ -108,7 +108,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends SingleL
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> DecisionTreeNode fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> DecisionTreeModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> preprocessor) {
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             envBuilder,
@@ -124,13 +124,13 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends SingleL
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isUpdateable(DecisionTreeNode mdl) {
+    @Override public boolean isUpdateable(DecisionTreeModel mdl) {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public DecisionTree<T> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
-        return (DecisionTree<T>)super.withEnvironmentBuilder(envBuilder);
+    @Override public DecisionTreeTrainer<T> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (DecisionTreeTrainer<T>)super.withEnvironmentBuilder(envBuilder);
     }
 
     /**
@@ -143,7 +143,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends SingleL
      * @param <V> Type of a value in {@code upstream} data.
      * @return New model based on new dataset.
      */
-    @Override protected <K, V> DecisionTreeNode updateModel(DecisionTreeNode mdl,
+    @Override protected <K, V> DecisionTreeModel updateModel(DecisionTreeModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> preprocessor) {
 
@@ -151,8 +151,8 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends SingleL
     }
 
     /** */
-    public <K, V> DecisionTreeNode fit(Dataset<EmptyContext, DecisionTreeData> dataset) {
-        return split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset));
+    public <K, V> DecisionTreeModel fit(Dataset<EmptyContext, DecisionTreeData> dataset) {
+        return new DecisionTreeModel(split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset)));
     }
 
     /**

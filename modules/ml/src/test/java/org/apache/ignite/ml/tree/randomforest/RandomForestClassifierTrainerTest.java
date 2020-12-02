@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
-import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
@@ -56,12 +55,12 @@ public class RandomForestClassifierTrainerTest extends TrainerTest {
         ArrayList<FeatureMeta> meta = new ArrayList<>();
         for (int i = 0; i < 4; i++)
             meta.add(new FeatureMeta("", i, false));
-        DatasetTrainer<ModelsComposition, Double> trainer = new RandomForestClassifierTrainer(meta)
+        DatasetTrainer<RandomForestModel, Double> trainer = new RandomForestClassifierTrainer(meta)
             .withAmountOfTrees(5)
             .withFeaturesCountSelectionStrgy(x -> 2)
             .withEnvironmentBuilder(TestUtils.testEnvBuilder());
 
-        ModelsComposition mdl = trainer.fit(sample, parts, new LabeledDummyVectorizer<>());
+        RandomForestModel mdl = trainer.fit(sample, parts, new LabeledDummyVectorizer<>());
 
         assertTrue(mdl.getPredictionsAggregator() instanceof OnMajorityPredictionsAggregator);
         assertEquals(5, mdl.getModels().size());
@@ -84,14 +83,14 @@ public class RandomForestClassifierTrainerTest extends TrainerTest {
         ArrayList<FeatureMeta> meta = new ArrayList<>();
         for (int i = 0; i < 4; i++)
             meta.add(new FeatureMeta("", i, false));
-        DatasetTrainer<ModelsComposition, Double> trainer = new RandomForestClassifierTrainer(meta)
+        DatasetTrainer<RandomForestModel, Double> trainer = new RandomForestClassifierTrainer(meta)
             .withAmountOfTrees(100)
             .withFeaturesCountSelectionStrgy(x -> 2)
             .withEnvironmentBuilder(TestUtils.testEnvBuilder());
 
-        ModelsComposition originalMdl = trainer.fit(sample, parts, new LabeledDummyVectorizer<>());
-        ModelsComposition updatedOnSameDS = trainer.update(originalMdl, sample, parts, new LabeledDummyVectorizer<>());
-        ModelsComposition updatedOnEmptyDS = trainer.update(originalMdl, new HashMap<Integer, LabeledVector<Double>>(), parts, new LabeledDummyVectorizer<>());
+        RandomForestModel originalMdl = trainer.fit(sample, parts, new LabeledDummyVectorizer<>());
+        RandomForestModel updatedOnSameDS = trainer.update(originalMdl, sample, parts, new LabeledDummyVectorizer<>());
+        RandomForestModel updatedOnEmptyDS = trainer.update(originalMdl, new HashMap<Integer, LabeledVector<Double>>(), parts, new LabeledDummyVectorizer<>());
 
         Vector v = VectorUtils.of(5, 0.5, 0.05, 0.005);
         assertEquals(originalMdl.predict(v), updatedOnSameDS.predict(v), 0.01);

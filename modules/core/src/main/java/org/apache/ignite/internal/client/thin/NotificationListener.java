@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.nio.ByteBuffer;
+
 /**
  * Server to client notification listener.
  */
@@ -30,5 +32,5 @@ interface NotificationListener {
      * @param payload Notification payload or {@code null} if there is no payload.
      * @param err Error.
      */
-    public void acceptNotification(ClientChannel ch, ClientOperation op, long rsrcId, byte[] payload, Exception err);
+    public void acceptNotification(ClientChannel ch, ClientOperation op, long rsrcId, ByteBuffer payload, Exception err);
 }
