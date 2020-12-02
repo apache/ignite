@@ -88,7 +88,7 @@ public class IgniteTrimExchange extends Exchange implements SourceAwareIgniteRel
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rowCount = mq.getRowCount(this);
-        return planner.getCostFactory().makeCost(rowCount, rowCount, 0);
+        return planner.getCostFactory().makeCost(rowCount, rowCount, 0).multiplyBy(0.01);
     }
 
     /** {@inheritDoc} */

@@ -53,8 +53,8 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
                     .build()) {
 
                 @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.broadcast();
-//                    return IgniteDistributions.affinity(0, "T0", "hash");
+//                    return IgniteDistributions.broadcast();
+                    return IgniteDistributions.affinity(0, "T0", "hash");
                 }
             }
                 .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t0_jid_idx")
@@ -70,8 +70,8 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
                     .build()) {
 
                 @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.broadcast();
-//                    return IgniteDistributions.affinity(0, "T1", "hash");
+//                    return IgniteDistributions.broadcast();
+                    return IgniteDistributions.affinity(0, "T1", "hash");
                 }
             }
                 .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid_idx")
@@ -79,9 +79,11 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
 
         String sql = "select * " +
             "from t0 " +
-            "join t1 on t0.id = t1.jid";
+            "join t1 on t0.jid = t1.jid";
 
-        RelNode phys = physicalPlan(sql, publicSchema);
+        RelNode phys = physicalPlan(sql, publicSchema, "MergeJoinConverter", "NestedLoopJoinConverter");
+//        RelNode phys = physicalPlan(sql, publicSchema, "MergeJoinConverter");
+//        RelNode phys = physicalPlan(sql, publicSchema);
 
         assertNotNull(phys);
 

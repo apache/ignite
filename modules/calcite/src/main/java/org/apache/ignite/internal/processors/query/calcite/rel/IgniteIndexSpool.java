@@ -95,7 +95,7 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         // TODO: add memory usage to cost
-        double rowCount = mq.getRowCount(this) / 2;
+        double rowCount = mq.getRowCount(this);
         rowCount = RelMdUtil.addEpsilon(rowCount);
         return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }

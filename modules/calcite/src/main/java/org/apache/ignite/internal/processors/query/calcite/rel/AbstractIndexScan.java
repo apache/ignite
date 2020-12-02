@@ -117,7 +117,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
             RelDataType rowType = getTable().getRowType();
             Mappings.TargetMapping mapping = null;
             if (requiredColumns() != null)
-                mapping = Commons.inverceMapping(requiredColumns(), rowType.getFieldCount());
+                mapping = Commons.inverseMapping(requiredColumns(), rowType.getFieldCount());
             lowerBound = RexUtils.asBound(getCluster(), lowerCond, rowType, mapping);
         }
 
@@ -139,7 +139,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
             RelDataType rowType = getTable().getRowType();
             Mappings.TargetMapping mapping = null;
             if (requiredColumns() != null)
-                mapping = Commons.inverceMapping(requiredColumns(), rowType.getFieldCount());
+                mapping = Commons.inverseMapping(requiredColumns(), rowType.getFieldCount());
             upperBound = RexUtils.asBound(getCluster(), upperCond, rowType, mapping);
         }
 

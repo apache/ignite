@@ -17,16 +17,22 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -40,6 +46,10 @@ import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrai
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+
+import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.createCollation;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.isPrefix;
 
 /**
  * Relational expression that combines two relational expressions according to
@@ -90,14 +100,27 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+        RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
+        RelCollation leftCollation = TraitUtils.collation(left), rightCollation = TraitUtils.collation(right);
+
+        if (!isPrefix(rightCollation.getKeys(), joinInfo.rightKeys))
+            return ImmutableList.of();
+
         // We preserve left edge collation only if batch size == 1
         if (variablesSet.size() == 1)
-            return super.deriveCollation(nodeTraits, inputTraits);
+            nodeTraits.replace(leftCollation);
+        else
+            nodeTraits.replace(RelCollations.EMPTY);
 
-        RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(RelCollations.EMPTY))));
+        return ImmutableList.of(
+            Pair.of(
+                nodeTraits.replace(leftCollation),
+                ImmutableList.of(
+                    left,
+                    right.replace(rightCollation)
+                )
+            )
+        );
     }
 
     /** {@inheritDoc} */
@@ -114,14 +137,29 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // We preserve left edge collation only if batch size == 1
-        if (variablesSet.size() == 1)
-            return super.passThroughCollation(nodeTraits, inputTraits);
-
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(RelCollations.EMPTY))));
+        right = right.replace(RelCollations.of(joinInfo.rightKeys));
+        // Requires collation from right input (need index lookup by correlated variables)
+
+        // We preserve left edge collation only if batch size == 1
+        if (variablesSet.size() == 1) {
+            RelCollation collation = TraitUtils.collation(nodeTraits);
+
+            if (collation.equals(RelCollations.EMPTY))
+                return ImmutableList.of(Pair.of(nodeTraits,
+                    ImmutableList.of(left.replace(RelCollations.EMPTY), right)));
+
+            if (!projectsLeft(collation))
+                collation = RelCollations.EMPTY;
+
+            return ImmutableList.of(Pair.of(nodeTraits.replace(collation),
+                ImmutableList.of(left.replace(collation), right)));
+        }
+        else {
+            return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
+                ImmutableList.of(left.replace(RelCollations.EMPTY), right)));
+        }
     }
 
     /** {@inheritDoc} */
@@ -139,7 +177,37 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         // Give it some penalty
-        return super.computeSelfCost(planner, mq).multiplyBy(5);
+
+        double mult;
+
+        switch (distribution().function().type()) {
+            case SINGLETON:
+                mult = 10;
+
+                break;
+
+            case HASH_DISTRIBUTED:
+                mult = 0.2d;
+
+                break;
+
+            case BROADCAST_DISTRIBUTED:
+                mult = 10d;
+
+                break;
+
+            case RANGE_DISTRIBUTED:
+            case ROUND_ROBIN_DISTRIBUTED:
+            case ANY:
+            default:
+                mult = Double.MAX_VALUE;
+//                assert false : "Invalid target distribution: " + distribution();
+
+                break;
+        }
+
+        System.out.println("+++ CNL self: " + super.computeSelfCost(planner, mq).multiplyBy(2).multiplyBy(mult) + " " + toString());
+        return super.computeSelfCost(planner, mq).multiplyBy(2).multiplyBy(mult);
     }
 
     /** {@inheritDoc} */
@@ -179,6 +247,11 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteCorrelatedNestedLoopJoin(cluster, getTraitSet(), inputs.get(0), inputs.get(1), getCondition(), getVariablesSet(), getJoinType());
+    }
+
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits) {
+        return super.passThroughDistribution(nodeTraits, inputTraits);
     }
 
     /** */

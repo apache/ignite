@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +36,9 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -325,10 +329,69 @@ public final class Commons {
     }
 
     /** */
-    public static Mappings.TargetMapping inverceMapping(ImmutableBitSet bitSet, int sourceSize) {
+    public static Mappings.TargetMapping inverseMapping(ImmutableBitSet bitSet, int sourceSize) {
         Mapping mapping = Mappings.create(MappingType.INVERSE_FUNCTION, sourceSize, bitSet.cardinality());
         for (Ord<Integer> ord : Ord.zip(bitSet))
             mapping.set(ord.e, ord.i);
         return mapping;
+    }
+
+    /**
+     * Returns the longest possible prefix of {@code seq} that could be form from provided {@code elems}.
+     *
+     * @param seq Sequence.
+     * @param elems Elems.
+     * @return The longest possible prefix of {@code seq}.
+     */
+    public static <T> List<T> maxPrefix(List<T> seq, Collection<T> elems) {
+        List<T> res = new ArrayList<>();
+
+        Set<T> elems0 = new HashSet<>(elems);
+
+        for (T e : seq) {
+            if (!elems0.remove(e))
+                break;
+
+            res.add(e);
+        }
+
+        return res;
+    }
+
+    /**
+     * Checks if there is a such permutation of all {@code elems} that is prefix of
+     * provided {@code seq}.
+     *
+     * @param seq Sequence.
+     * @param elems Elems.
+     * @return {@code true} if there is a permutation of all {@code elems} that is prefix of {@code seq}.
+     */
+    public static <T> boolean isPrefix(List<T> seq, Collection<T> elems) {
+        Set<T> elems0 = new HashSet<>(elems);
+
+        if (seq.size() < elems0.size())
+            return false;
+
+        for (T e : seq) {
+            if (!elems0.remove(e))
+                return false;
+
+            if (elems0.isEmpty())
+                break;
+        }
+
+        return true;
+    }
+
+    /**
+     * Creates collations from provided keys.
+     *
+     * @param keys The keys to create collation from.
+     * @return New collation.
+     */
+    public static RelCollation createCollation(List<Integer> keys) {
+        return RelCollations.of(
+            keys.stream().map(RelFieldCollation::new).collect(Collectors.toList())
+        );
     }
 }

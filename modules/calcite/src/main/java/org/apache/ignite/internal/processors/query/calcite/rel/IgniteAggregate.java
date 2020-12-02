@@ -124,7 +124,7 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
                 ImmutableIntList keys = distribution.getKeys();
 
                 if (isSimple(this) && groupSet.cardinality() == keys.size()) {
-                    Mappings.TargetMapping mapping = Commons.inverceMapping(
+                    Mappings.TargetMapping mapping = Commons.inverseMapping(
                         groupSet, getInput().getRowType().getFieldCount());
 
                     List<Integer> srcKeys = new ArrayList<>(keys.size());
@@ -206,7 +206,7 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
                     ImmutableIntList keys = distribution.getKeys();
 
                     if (groupSet.cardinality() == keys.size()) {
-                        Mappings.TargetMapping mapping = Commons.inverceMapping(
+                        Mappings.TargetMapping mapping = Commons.inverseMapping(
                             groupSet, getInput().getRowType().getFieldCount());
 
                         IgniteDistribution outDistr = distribution.apply(mapping);

@@ -249,7 +249,11 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
             planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
 
-            return planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+            IgniteRel res = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+
+            System.out.println("+++\n" + planner.dump());
+
+            return res;
         }
     }
 

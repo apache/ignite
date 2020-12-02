@@ -141,7 +141,8 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
         RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
 
-        RelTraitSet rightInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
+        RelTraitSet rightInTraits = right.getTraitSet()
+            .replace(IgniteConvention.INSTANCE)
             .replace(RelCollations.of(joinInfo.rightKeys))
             .replace(RewindabilityTrait.REWINDABLE)
             .replace(corrTrait);

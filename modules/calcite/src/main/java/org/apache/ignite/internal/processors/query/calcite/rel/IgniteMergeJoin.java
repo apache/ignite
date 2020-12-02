@@ -72,6 +72,9 @@ import static org.apache.calcite.util.NumberUtil.multiply;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.broadcast;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.hash;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.createCollation;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.isPrefix;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
 
 /** */
 public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
@@ -585,65 +588,8 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
         if (type == BROADCAST_DISTRIBUTED || type == SINGLETON)
             rowCount = RelMdUtil.addEpsilon(rowCount);
 
+        System.out.println("+++ MJ self: " + planner.getCostFactory().makeCost(rowCount, 0, 0));
+
         return planner.getCostFactory().makeCost(rowCount, 0, 0);
-    }
-
-    /**
-     * Returns the longest possible prefix of {@code seq} that could be form from provided {@code elems}.
-     *
-     * @param seq Sequence.
-     * @param elems Elems.
-     * @return The longest possible prefix of {@code seq}.
-     */
-    private static <T> List<T> maxPrefix(List<T> seq, Collection<T> elems) {
-        List<T> res = new ArrayList<>();
-
-        Set<T> elems0 = new HashSet<>(elems);
-
-        for (T e : seq) {
-            if (!elems0.remove(e))
-                break;
-
-            res.add(e);
-        }
-
-        return res;
-    }
-
-    /**
-     * Checks if there is a such permutation of all {@code elems} that is prefix of
-     * provided {@code seq}.
-     *
-     * @param seq Sequence.
-     * @param elems Elems.
-     * @return {@code true} if there is a permutation of all {@code elems} that is prefix of {@code seq}.
-     */
-    private static <T> boolean isPrefix(List<T> seq, Collection<T> elems) {
-        Set<T> elems0 = new HashSet<>(elems);
-
-        if (seq.size() < elems0.size())
-            return false;
-
-        for (T e : seq) {
-            if (!elems0.remove(e))
-                return false;
-
-            if (elems0.isEmpty())
-                break;
-        }
-
-        return true;
-    }
-
-    /**
-     * Creates collations from provided keys.
-     *
-     * @param keys The keys to create collation from.
-     * @return New collation.
-     */
-    private static RelCollation createCollation(List<Integer> keys) {
-        return RelCollations.of(
-            keys.stream().map(RelFieldCollation::new).collect(Collectors.toList())
-        );
     }
 }
