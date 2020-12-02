@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.service;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
@@ -40,9 +38,6 @@ public class ServiceDescriptorImpl implements ServiceDescriptor {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Kernel context. */
-    private final transient GridKernalContext ctx;
-
     /** Configuration. */
     @GridToStringInclude
     private final GridServiceDeployment dep;
@@ -51,14 +46,10 @@ public class ServiceDescriptorImpl implements ServiceDescriptor {
     @GridToStringInclude
     private Map<UUID, Integer> top;
 
-    /** Service class. */
-    private transient volatile Class<? extends Service> srvcCls;
-
     /**
      * @param dep Deployment.
      */
-    public ServiceDescriptorImpl(GridKernalContext ctx, GridServiceDeployment dep) {
-        this.ctx = ctx;
+    public ServiceDescriptorImpl(GridServiceDeployment dep) {
         this.dep = dep;
     }
 
@@ -72,28 +63,12 @@ public class ServiceDescriptorImpl implements ServiceDescriptor {
         ServiceConfiguration cfg = dep.configuration();
 
         if (cfg instanceof LazyServiceConfiguration) {
-            if (srvcCls != null)
-                return srvcCls;
-
             String clsName = ((LazyServiceConfiguration)cfg).serviceClassName();
 
             try {
-                srvcCls = (Class<? extends Service>)Class.forName(clsName);
-
-                return srvcCls;
+                return (Class<? extends Service>)Class.forName(clsName);
             }
             catch (ClassNotFoundException e) {
-                if (ctx != null) {
-                    GridDeployment srvcDep = ctx.deploy().getDeployment(clsName);
-
-                    if (srvcDep != null) {
-                        srvcCls = (Class<? extends Service>)srvcDep.deployedClass(clsName);
-
-                        if (srvcCls != null)
-                            return srvcCls;
-                    }
-                }
-
                 throw new IgniteException("Failed to find service class: " + clsName, e);
             }
         }

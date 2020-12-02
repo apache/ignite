@@ -40,7 +40,7 @@ public class ServiceInfo implements ServiceDescriptor {
     private static final long serialVersionUID = 0L;
 
     /** Context. */
-    private final transient GridKernalContext ctx;
+    private transient volatile GridKernalContext ctx;
 
     /** Origin node ID. */
     private final UUID originNodeId;
@@ -66,8 +66,8 @@ public class ServiceInfo implements ServiceDescriptor {
      * @param srvcId Service id.
      * @param cfg Service configuration.
      */
-    public ServiceInfo(GridKernalContext ctx, @NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg) {
-        this(ctx, originNodeId, srvcId, cfg, false);
+    public ServiceInfo(@NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg) {
+        this(originNodeId, srvcId, cfg, false);
     }
 
     /**
@@ -76,13 +76,21 @@ public class ServiceInfo implements ServiceDescriptor {
      * @param cfg Service configuration.
      * @param staticCfg Statically configured flag.
      */
-    public ServiceInfo(@NotNull GridKernalContext ctx, @NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg,
+    public ServiceInfo(@NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg,
         boolean staticCfg) {
-        this.ctx = ctx;
         this.originNodeId = originNodeId;
         this.srvcId = srvcId;
         this.cfg = cfg;
         this.staticCfg = staticCfg;
+    }
+
+    /**
+     * Sets kernal context.
+     *
+     * @param ctx Context.
+     */
+    public void context(GridKernalContext ctx) {
+        this.ctx = ctx;
     }
 
     /**

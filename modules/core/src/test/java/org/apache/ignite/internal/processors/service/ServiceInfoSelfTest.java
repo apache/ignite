@@ -50,7 +50,7 @@ public class ServiceInfoSelfTest {
     private ServiceConfiguration cfg = configuration();
 
     /** Subject under test. */
-    private ServiceInfo sut = new ServiceInfo(new GridTestKernalContext(new GridTestLog4jLogger()), nodeId, srvcId, cfg);
+    private ServiceInfo sut = new ServiceInfo(nodeId, srvcId, cfg);
 
     /**
      * Tests {@link ServiceInfo#configuration()}.

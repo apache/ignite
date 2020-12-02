@@ -42,6 +42,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -64,6 +65,12 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
         cfg.setDeploymentSpi(new LocalDeploymentSpi());
 
         return cfg;
+    }
+
+    /** */
+    @BeforeClass
+    public static void check() {
+        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
     }
 
     /** */
@@ -91,9 +98,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
         try {
             Ignite ignite = startGrid(0);
 
-            final DeploymentSpi depSpi = ignite.configuration().getDeploymentSpi();
-
-            depSpi.register(clsLdr, srvc.getClass());
+            ignite.configuration().getDeploymentSpi().register(clsLdr, cls);
 
             ignite.services().deployClusterSingleton(SERVICE_NAME, srvc);
 
@@ -102,6 +107,17 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
             assertSame(cls, srvcCls);
 
             assertEquals(1, ignite.services().serviceProxy(SERVICE_NAME, MyRenewService.class, false)
+                .version());
+
+            Ignite ignite1 = startGrid(1);
+
+            ignite1.configuration().getDeploymentSpi().register(clsLdr, cls);
+
+            srvcCls = serviceClass(ignite1, SERVICE_NAME);
+
+            assertSame(cls, srvcCls);
+
+            assertEquals(1, ignite1.services().serviceProxy(SERVICE_NAME, MyRenewService.class, false)
                 .version());
         }
         finally {
@@ -133,9 +149,6 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     private void serviceHotRedeploymentTest(ToIntFunction<Ignite> srvcFunc) throws Exception {
-        Assume.assumeTrue("Hot redeployment supported only by event driven service processor",
-            isEventDrivenServiceProcessorEnabled());
-
         URLClassLoader clsLdr = prepareClassLoader(1);
         Class<?> cls = clsLdr.loadClass("MyRenewServiceImpl");
 

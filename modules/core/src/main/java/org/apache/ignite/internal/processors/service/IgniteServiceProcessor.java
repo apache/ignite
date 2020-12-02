@@ -349,8 +349,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         ServiceProcessorCommonDiscoveryData clusterData = (ServiceProcessorCommonDiscoveryData)data.commonData();
 
-        for (ServiceInfo desc : clusterData.registeredServices())
+        for (ServiceInfo desc : clusterData.registeredServices()) {
+            desc.context(ctx);
+
             registeredServices.put(desc.serviceId(), desc);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1556,8 +1559,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 }
             }
 
-            for (ServiceConfiguration srvcCfg : prepCfgs.cfgs)
-                staticServicesInfo.add(new ServiceInfo(ctx, ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true));
+            for (ServiceConfiguration srvcCfg : prepCfgs.cfgs) {
+                ServiceInfo serviceInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
+
+                serviceInfo.context(ctx);
+
+                staticServicesInfo.add(serviceInfo);
+            }
         }
 
         return staticServicesInfo;
@@ -1613,7 +1621,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                                 "affinity cache is not found, cfg=" + cfg);
                         }
                         else {
-                            ServiceInfo desc = new ServiceInfo(ctx, snd.id(), reqSrvcId, cfg);
+                            ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
+
+                            desc.context(ctx);
 
                             registeredServices.put(reqSrvcId, desc);
 
