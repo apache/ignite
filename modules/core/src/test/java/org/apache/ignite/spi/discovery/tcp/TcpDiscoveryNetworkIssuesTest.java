@@ -21,7 +21,11 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
@@ -206,6 +210,74 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Ensures sequential failure of two nodes has no additional issues.
+     */
+    @Test
+    public void testSequentialFailTwoNodes() throws Exception {
+        simulateFailureOfTwoNodes(true);
+    }
+
+    /**
+     * Ensures sequential failure of two nodes has no additional issues.
+     */
+    @Test
+    public void testNotSequentialFailTwoNodes() throws Exception {
+        simulateFailureOfTwoNodes(false);
+    }
+
+    /** */
+    private void simulateFailureOfTwoNodes(boolean sequentionally) throws Exception {
+        failureDetectionTimeout = 1000;
+
+        int gridCnt = 7;
+
+        startGrids(gridCnt);
+
+        awaitPartitionMapExchange();
+
+        final CountDownLatch failLatch = new CountDownLatch(2);
+
+        for (int i = 0; i < gridCnt; i++) {
+            ignite(i).events().localListen(evt -> {
+                failLatch.countDown();
+
+                return true;
+            }, EVT_NODE_FAILED);
+
+            int nodeIdx = i;
+
+            ignite(i).events().localListen(evt -> {
+                segmentedNodes.add(nodeIdx);
+
+                return true;
+            }, EVT_NODE_SEGMENTED);
+        }
+
+        Set<Integer> failedNodes = new HashSet<>();
+
+        failedNodes.add(2);
+
+        if (sequentionally)
+            failedNodes.add(3);
+        else
+            failedNodes.add(4);
+
+        failedNodes.forEach(idx -> processNetworkThreads(ignite(idx), Thread::suspend));
+
+        try {
+            failLatch.await(10, TimeUnit.SECONDS);
+        }
+        finally {
+            failedNodes.forEach(idx -> processNetworkThreads(ignite(idx), Thread::resume));
+        }
+
+        for (int i = 0; i < gridCnt; i++) {
+            if (!failedNodes.contains(i))
+                assertFalse(segmentedNodes.contains(i));
+        }
+    }
+
+    /**
      * @param ig Ignite instance to get failedNodes collection from.
      */
     private Map getFailedNodesCollection(IgniteEx ig) {
@@ -244,9 +316,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         CommunicationSpi<?> comm = ignite.configuration().getCommunicationSpi();
 
-        GridNioServer<?> nioServerWrapper = U.field(comm, "nioSrvr");
+        GridNioServer<?> gridNioServer = U.field(comm, "nioSrvr");
 
-        for (GridWorker worker : nioServerWrapper.workers())
+        for (GridWorker worker : gridNioServer.workers())
             proc.accept(worker.runner());
     }
 }
