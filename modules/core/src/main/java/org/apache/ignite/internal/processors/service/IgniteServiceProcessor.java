@@ -349,11 +349,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         ServiceProcessorCommonDiscoveryData clusterData = (ServiceProcessorCommonDiscoveryData)data.commonData();
 
-        for (ServiceInfo desc : clusterData.registeredServices()) {
-            desc.context(ctx);
-
-            registeredServices.put(desc.serviceId(), desc);
-        }
+        for (ServiceInfo desc : clusterData.registeredServices())
+            registerService(desc);
     }
 
     /** {@inheritDoc} */
@@ -386,7 +383,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             oldDesc = lookupInRegisteredServices(desc.name());
 
             if (oldDesc == null) {
-                registeredServices.put(desc.serviceId(), desc);
+                registerService(desc);
 
                 continue;
             }
@@ -1623,9 +1620,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                         else {
                             ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
 
-                            desc.context(ctx);
-
-                            registeredServices.put(reqSrvcId, desc);
+                            registerService(desc);
 
                             toDeploy.put(reqSrvcId, desc);
                         }
@@ -1677,6 +1672,15 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             msg.servicesDeploymentActions(depActions);
         }
+    }
+
+    /**
+     * @param desc Service descriptor.
+     */
+    private void registerService(ServiceInfo desc) {
+        desc.context(ctx);
+
+        registeredServices.put(desc.serviceId(), desc);
     }
 
     /**
