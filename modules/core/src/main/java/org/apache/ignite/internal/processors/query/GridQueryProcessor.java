@@ -115,6 +115,7 @@ import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -239,11 +240,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private QueryEngine experimentalQueryEngine;
 
     /** h2 redirection stub. */
-    static final Set<Pattern> h2RedirectionReqs = new HashSet<Pattern>() {{
-        add(Pattern.compile("\\s*create\\s*table", CASE_INSENSITIVE));
-        add(Pattern.compile("\\s*drop\\s*table", CASE_INSENSITIVE));
-        add(Pattern.compile("\\s*alter\\s*table", CASE_INSENSITIVE));
-    }};
+    public static final Pattern H2_REDIRECTION_RULES =
+        Pattern.compile("\\s*(create\\s*table|drop\\s*table|alter\\s*table)", CASE_INSENSITIVE);
 
     /**
      * @param ctx Kernal context.
@@ -2783,6 +2781,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (qry.isLocal() && ctx.clientNode() && (cctx == null || cctx.config().getCacheMode() != CacheMode.LOCAL))
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
+
+        if (experimentalQueryEngine != null) {
+            if (!H2_REDIRECTION_RULES.matcher(qry.getSql()).find())
+                return experimentalQueryEngine.query(QueryContext.of(qry), qry.getSchema(), qry.getSql(), X.EMPTY_OBJECT_ARRAY);
+        }
 
         return executeQuerySafe(cctx, () -> {
             assert idx != null;

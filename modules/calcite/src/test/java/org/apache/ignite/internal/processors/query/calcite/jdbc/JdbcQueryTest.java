@@ -46,24 +46,6 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     /** Statement. */
     private Statement stmt;
 
-    /**
-     * @throws SQLException If failed.
-     */
-    @Test
-    public void testSimpleQuery() throws Exception {
-        stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
-
-        grid(0).context().cache().context().exchange().affinityReadyFuture(new AffinityTopologyVersion(3, 2)).get(10_000, TimeUnit.MILLISECONDS);
-
-        stmt.executeUpdate("INSERT INTO Person VALUES (10, 'Name')");
-        try (ResultSet rs = stmt.executeQuery("select p.*, (1+1) as synthetic from Person p")) {
-            assertTrue(rs.next());
-            assertEquals(10, rs.getInt(1));
-            assertEquals("Name", rs.getString(2));
-            assertEquals(2, rs.getInt(3));
-        }
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrids(nodesCnt);
@@ -87,5 +69,29 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
         assert stmt.isClosed();
         assert conn.isClosed();
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testSimpleQuery() throws Exception {
+        stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
+
+        grid(0).context().cache().context().exchange().affinityReadyFuture(new AffinityTopologyVersion(3, 2)).get(10_000, TimeUnit.MILLISECONDS);
+
+        stmt.executeUpdate("INSERT INTO Person VALUES (10, 'Name')");
+        try (ResultSet rs = stmt.executeQuery("select p.*, (1+1) as synthetic from Person p")) {
+            assertTrue(rs.next());
+            assertEquals(10, rs.getInt(1));
+            assertEquals("Name", rs.getString(2));
+            assertEquals(2, rs.getInt(3));
+        }
+
+        stmt.execute("alter table Person add column age int");
+
+        stmt.execute("drop table Person");
+
+        stmt.close();
     }
 }
