@@ -22,8 +22,10 @@ JVM_PARAMS_GC_CMS_SIMPLE = "-XX:+UseConcMarkSweepGC -XX:+CMSParallelRemarkEnable
 JVM_PARAMS_GC_CMS = "%s -XX:+ScavengeBeforeFullGC -XX:+CMSScavengeBeforeRemark -XX:+CMSClassUnloadingEnabled " \
                     "-XX:+UseCMSInitiatingOccupancyOnly -XX:CMSInitiatingOccupancyFraction=70" % \
                     JVM_PARAMS_GC_CMS_SIMPLE
+JVM_PARAMS_GC_CMS = ""
 
-JVM_PARAMS_GENERIC = "-server -XX:+AggressiveOpts"
+# JVM_PARAMS_GENERIC = "-server"
+JVM_PARAMS_GENERIC = "-server"
 
 
 def jvm_settings(heap_size="768M", gc_settings=JVM_PARAMS_GC_CMS, generic_params=JVM_PARAMS_GENERIC, gc_dump_path=None,
@@ -36,4 +38,5 @@ def jvm_settings(heap_size="768M", gc_settings=JVM_PARAMS_GC_CMS, generic_params
     out_of_mem_dump = "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=" + oom_path \
         if oom_path else ""
 
-    return f"-Xmx{heap_size} -Xms{heap_size} {gc_settings} {gc_dump} {out_of_mem_dump} {generic_params}".strip()
+    # return f"-Xmx{heap_size} -Xms{heap_size} {gc_settings} {gc_dump} {out_of_mem_dump} {generic_params}".strip()
+    return f"-Xmx{heap_size} -Xms{heap_size} {gc_settings} {gc_dump} {out_of_mem_dump}".strip()

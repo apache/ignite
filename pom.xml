@@ -102,6 +102,7 @@
                 <module>modules/hibernate-5.3</module>
                 <module>modules/schedule</module>
                 <module>modules/yardstick</module>
+                <module>modules/zookeeper</module>
             </modules>
         </profile>
 

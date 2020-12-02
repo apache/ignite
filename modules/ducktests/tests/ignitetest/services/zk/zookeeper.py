@@ -31,6 +31,7 @@ class ZookeeperSettings:
     def __init__(self, **kwargs):
         self.tick_time = kwargs.get('tick_time', 1000)
         self.min_session_timeout = kwargs.get('min_session_timeout', 2000)
+        self.max_session_timeout = kwargs.get('max_session_timeout', 2000)
         self.init_limit = kwargs.get('init_limit', 10)
         self.sync_limit = kwargs.get('sync_limit', 5)
         self.client_port = kwargs.get('client_port', 2181)
