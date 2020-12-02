@@ -34,7 +34,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.sql.SqlDatasetBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.tree.DecisionTreeModel;
 
 /**
  * Example of using distributed {@link DecisionTreeClassificationTrainer} on a data stored in SQL table.
@@ -101,7 +101,7 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
                 System.out.println(">>> Perform training...");
-                DecisionTreeNode mdl = trainer.fit(
+                DecisionTreeModel mdl = trainer.fit(
                     new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIC_TRAIN"),
                     new BinaryObjectVectorizer<>("pclass", "age", "sibsp", "parch", "fare")
                         .withFeature("sex", BinaryObjectVectorizer.Mapping.create().map("male", 1.0).defaultValue(0.0))

@@ -106,8 +106,8 @@
         <lucene.version>7.4.0</lucene.version>
         <lz4.version>1.5.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
-        <maven.checkstyle.plugin.version>3.0.0</maven.checkstyle.plugin.version>
-        <checkstyle.puppycrawl.version>8.21</checkstyle.puppycrawl.version>
+        <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
+        <checkstyle.puppycrawl.version>8.37</checkstyle.puppycrawl.version>
         <mockito.version>3.4.6</mockito.version>
         <mysql.connector.version>8.0.13</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
@@ -125,12 +125,9 @@
         <snappy.version>1.1.7.2</snappy.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
         <spark.version>2.3.0</spark.version>
-        <spring.data.version>1.13.23.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
-        <spring.version>4.3.26.RELEASE</spring.version><!-- don't forget to update spring-data version -->
-        <spring.data-2.0.version>2.0.13.RELEASE</spring.data-2.0.version> <!-- don't forget to update spring-5.0 version -->
-        <spring-5.0.version>5.0.16.RELEASE</spring-5.0.version><!-- don't forget to update spring-data-2.0 version -->
-        <spring.data-2.2.version>2.2.3.RELEASE</spring.data-2.2.version> <!-- don't forget to update spring-5.2 version -->
-        <spring-5.2.version>5.2.3.RELEASE</spring-5.2.version><!-- don't forget to update spring-data-2.2 version -->
+        <spring.version>4.3.26.RELEASE</spring.version>
+        <spring-5.0.version>5.0.16.RELEASE</spring-5.0.version>
+        <spring-5.2.version>5.2.3.RELEASE</spring-5.2.version>
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <storm.version>1.1.1</storm.version>
         <tomcat.version>9.0.10</tomcat.version>
@@ -146,6 +143,7 @@
         <!--Spark 2.4 version support -->
         <spark24.hadoop.version>2.6.5</spark24.hadoop.version>
         <spark24.version>2.4.4</spark24.version>
+        <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
 
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
@@ -228,6 +226,35 @@
     <build>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>${maven.checkstyle.plugin.version}</version>
+                    <configuration>
+                        <skip>true</skip>
+                        <sourceDirectories>
+                            <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                            <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+                        </sourceDirectories>
+                        <consoleOutput>true</consoleOutput>
+                        <logViolationsToConsole>true</logViolationsToConsole>
+                        <failsOnError>true</failsOnError>
+                        <failOnViolation>true</failOnViolation>
+                        <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
+                        <configLocation>../checkstyle/checkstyle.xml</configLocation>
+                        <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
+                        <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                        <excludes>**/generated/**/*</excludes>
+                    </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>com.puppycrawl.tools</groupId>
+                            <artifactId>checkstyle</artifactId>
+                            <version>${checkstyle.puppycrawl.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+
                 <plugin>
                     <groupId>net.alchim31.maven</groupId>
                     <artifactId>scala-maven-plugin</artifactId>
@@ -432,18 +459,6 @@
                             <group>
                                 <title>OSGi integration</title>
                                 <packages>org.apache.ignite.osgi*</packages>
-                            </group>
-                            <group>
-                                <title>SpringData integration</title>
-                                <packages>org.apache.ignite.springdata.repository*</packages>
-                            </group>
-                            <group>
-                                <title>SpringData 2.0 integration</title>
-                                <packages>org.apache.ignite.springdata20.repository*</packages>
-                            </group>
-                            <group>
-                                <title>Spring Data 2.2 Integration</title>
-                                <packages>org.apache.ignite.springdata22.repository*</packages>
                             </group>
                             <group>
                                 <title>Storm integration</title>
@@ -750,6 +765,20 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>style</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>validate</phase>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -761,39 +790,9 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-checkstyle-plugin</artifactId>
-                        <version>${maven.checkstyle.plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <id>style</id>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                                <phase>compile</phase>
-                                <configuration>
-                                    <consoleOutput>true</consoleOutput>
-                                    <logViolationsToConsole>true</logViolationsToConsole>
-                                    <failsOnError>true</failsOnError>
-                                    <failOnViolation>true</failOnViolation>
-                                    <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
-                                    <configLocation>../checkstyle/checkstyle.xml</configLocation>
-                                    <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
-                                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                                    <excludes>**/generated/**/*</excludes>
-                                </configuration>
-                            </execution>
-                        </executions>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.apache.ignite</groupId>
-                                <artifactId>ignite-tools</artifactId>
-                                <version>${project.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>com.puppycrawl.tools</groupId>
-                                <artifactId>checkstyle</artifactId>
-                                <version>${checkstyle.puppycrawl.version}</version>
-                            </dependency>
-                        </dependencies>
+                        <configuration>
+                            <skip>false</skip>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
@@ -808,7 +807,7 @@
                         <artifactId>apache-rat-plugin</artifactId>
                         <version>0.12</version>
                         <configuration>
-                            <addDefaultLicenseMatchers>false</addDefaultLicenseMatchers>
+                            <addDefaultLicenseMatchers>true</addDefaultLicenseMatchers>
                             <licenses>
                                 <license implementation="org.apache.rat.analysis.license.FullTextMatchingLicense">
                                     <licenseFamilyCategory>IAL20</licenseFamilyCategory>
@@ -873,14 +872,6 @@
                                         <exclude>**/keystore/ca/*.txt.attr</exclude><!--auto generated files-->
                                         <exclude>**/keystore/ca/*serial</exclude><!--auto generated files-->
                                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
-                                        <!-- spring data 2.X modules, borrowed code from spring-jpa 5.2.0, Apache 2.0 licenses -->
-                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/QueryUtils.java</exclude>
-                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/EmptyDeclaredQuery.java</exclude>
-                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/ExpressionBasedStringQuery.java</exclude>
-                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/spel/SpelEvaluator.java</exclude>
-                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/spel/SpelQueryContext.java</exclude>
-                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/DeclaredQuery.java</exclude>
-                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/StringQuery.java</exclude>
                                         <!--special excludes-->
                                         <exclude>.travis.yml</exclude>
                                         <exclude>.github/PULL_REQUEST_TEMPLATE.md</exclude>
@@ -991,6 +982,14 @@
                                         <exclude>modules/platforms/python/requirements/**/*.txt</exclude><!--plain text can not be commented-->
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
+                                        <!-- Ignite Documentation-->
+                                        <exclude>docs/_site/**</exclude>
+                                        <exclude>docs/assets/images/**</exclude>
+                                        <exclude>docs/Gemfile.lock</exclude>
+                                        <exclude>docs/.jekyll-cache/**</exclude>
+                                        <exclude>docs/_docs/images/**</exclude>
+                                        <exclude>docs/Gemfile</exclude>
+                                        <exclude>docs/assets/js/anchor.min.js</exclude><!-- Distributed under the MIT license. The original license header is badly formatted. -->
                                     </excludes>
                                 </configuration>
                             </execution>

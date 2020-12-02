@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline.encryption;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
@@ -37,7 +38,7 @@ import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcom
  *
  * @see EncryptionSubcommand
  */
-public class EncryptionCommand implements Command<Object> {
+public class EncryptionCommand extends AbstractCommand<Object> {
     /** Subcommand. */
     EncryptionSubcommand cmd;
 
@@ -50,13 +51,17 @@ public class EncryptionCommand implements Command<Object> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            return executeTaskByNameOnNode(
+            String res = executeTaskByNameOnNode(
                 client,
                 taskName,
                 taskArgs,
                 null,
                 clientCfg
             );
+
+            logger.info(res);
+
+            return res;
         }
         catch (Throwable e) {
             logger.severe("Failed to perform operation.");

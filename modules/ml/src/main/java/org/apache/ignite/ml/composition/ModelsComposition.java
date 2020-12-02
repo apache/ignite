@@ -19,6 +19,8 @@ package org.apache.ignite.ml.composition;
 
 import java.util.Collections;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
@@ -30,17 +32,17 @@ import org.apache.ignite.ml.util.ModelTrace;
 /**
  * Model consisting of several models and prediction aggregation strategy.
  */
-public class ModelsComposition implements IgniteModel<Vector, Double>, Exportable<ModelsCompositionFormat>,
+public class ModelsComposition<M extends IgniteModel<Vector, Double>> implements IgniteModel<Vector, Double>, Exportable<ModelsCompositionFormat>,
     DeployableObject {
     /**
      * Predictions aggregator.
      */
-    private final PredictionsAggregator predictionsAggregator;
+    protected PredictionsAggregator predictionsAggregator;
 
     /**
      * Models.
      */
-    private final List<IgniteModel<Vector, Double>> models;
+    protected List<M> models;
 
     /**
      * Constructs a new instance of composition of models.
@@ -48,9 +50,12 @@ public class ModelsComposition implements IgniteModel<Vector, Double>, Exportabl
      * @param models Basic models.
      * @param predictionsAggregator Predictions aggregator.
      */
-    public ModelsComposition(List<? extends IgniteModel<Vector, Double>> models, PredictionsAggregator predictionsAggregator) {
+    public ModelsComposition(List<M> models, PredictionsAggregator predictionsAggregator) {
         this.predictionsAggregator = predictionsAggregator;
         this.models = Collections.unmodifiableList(models);
+    }
+
+    public ModelsComposition() {
     }
 
     /**
@@ -78,7 +83,7 @@ public class ModelsComposition implements IgniteModel<Vector, Double>, Exportabl
     /**
      * Returns containing models.
      */
-    public List<IgniteModel<Vector, Double>> getModels() {
+    public List<M> getModels() {
         return models;
     }
 
@@ -102,6 +107,7 @@ public class ModelsComposition implements IgniteModel<Vector, Double>, Exportabl
     }
 
     /** {@inheritDoc} */
+    @JsonIgnore
     @Override public List<Object> getDependencies() {
         return Collections.singletonList(predictionsAggregator);
     }

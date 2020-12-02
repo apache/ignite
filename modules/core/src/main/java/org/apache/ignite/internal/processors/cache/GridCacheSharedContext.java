@@ -760,7 +760,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Write ahead log manager.
      */
-    public IgniteWriteAheadLogManager wal() {
+    @Nullable public IgniteWriteAheadLogManager wal() {
         return walMgr;
     }
 

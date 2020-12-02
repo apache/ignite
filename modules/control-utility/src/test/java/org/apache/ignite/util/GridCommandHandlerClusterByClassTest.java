@@ -128,7 +128,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     protected static final String ERROR_STACK_TRACE_PREFIX = "Error stack trace:";
 
     /**
-     * Very basic tests for running the command in different enviroment which other command are running in.
+     * Very basic tests for running the command in different environment which other command are running in.
      */
     @Test
     public void testFindAndDeleteGarbage() {
@@ -891,15 +891,18 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         corruptDataEntry(storedSysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("sq" + parts / 2,
             "default-ds-group"), false, true);
 
-        CacheGroupContext memorySysCacheCtx = ignite.context().cache().cacheGroup(CU.cacheId("default-volatile-ds-group"));
+        CacheGroupContext memoryVolatileCacheCtx = ignite.context().cache().cacheGroup(CU.cacheId(
+            "default-volatile-ds-group@volatileDsMemPlc"));
 
-        assertNotNull(memorySysCacheCtx);
+        assertNotNull(memoryVolatileCacheCtx);
+        assertEquals("volatileDsMemPlc", memoryVolatileCacheCtx.dataRegion().config().getName());
+        assertEquals(false, memoryVolatileCacheCtx.dataRegion().config().isPersistenceEnabled());
 
-        corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s0",
-            "default-volatile-ds-group"), true, false);
+        corruptDataEntry(memoryVolatileCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s0",
+            "default-volatile-ds-group@volatileDsMemPlc"), true, false);
 
-        corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s" + parts / 2,
-            "default-volatile-ds-group"), false, true);
+        corruptDataEntry(memoryVolatileCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s" + parts / 2,
+            "default-volatile-ds-group@volatileDsMemPlc"), false, true);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cache-filter", "SYSTEM"));
 
@@ -910,7 +913,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
             U.log(log, dumpWithConflicts);
 
-            assertContains(log, dumpWithConflicts, "found 4 conflict partitions: [counterConflicts=2, " +
+            // Non-persistent caches do not have counter conflicts
+            assertContains(log, dumpWithConflicts, "found 3 conflict partitions: [counterConflicts=1, " +
                 "hashConflicts=2]");
         }
         else
@@ -1599,15 +1603,14 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         cmdArgs.put(TRACING_CONFIGURATION, Collections.singletonList("get_all"));
 
         String warning = String.format(
-            "For use experimental command add %s=true to JVM_OPTS in %s",
-            IGNITE_ENABLE_EXPERIMENTAL_COMMAND,
+            "To use experimental command add --enable-experimental parameter for %s",
             UTILITY_NAME
         );
 
         stream(CommandList.values()).filter(cmd -> cmd.command().experimental())
             .peek(cmd -> assertTrue("Not contains " + cmd, cmdArgs.containsKey(cmd)))
             .forEach(cmd -> cmdArgs.get(cmd).forEach(cmdArg -> {
-                assertEquals(EXIT_CODE_OK, execute(cmd.text(), cmdArg));
+                assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(cmd.text(), cmdArg));
 
                 assertContains(log, testOut.toString(), warning);
             }));

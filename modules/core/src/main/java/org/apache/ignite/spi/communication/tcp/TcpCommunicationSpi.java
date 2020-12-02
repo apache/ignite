@@ -42,9 +42,11 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -336,6 +338,9 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** Received messages by node consistent id metric description. */
     public static final String RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_DESC =
         "Total number of messages received by current node from the given node";
+
+    /** Client nodes might have port {@code 0} if they have no server socket opened. */
+    public static final Integer DISABLED_CLIENT_PORT = 0;
 
     /** Connect gate. */
     private final ConnectGateway connectGate = new ConnectGateway();
@@ -673,7 +678,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         else
             connPlc = new FirstConnectionPolicy();
 
-        this.srvLsnr = new InboundConnectionHandler(
+        this.srvLsnr = resolve(ignite, new InboundConnectionHandler(
             log,
             cfg,
             nodeGetter,
@@ -699,12 +704,11 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                         lsnr.onDisconnected(nodeId);
                 }
             }
-        );
+        ));
 
-        GridTimeoutProcessor timeoutProcessor = ignite instanceof IgniteKernal ?
-            ((IgniteKernal)ignite).context().timeout() : null;
+        GridTimeoutProcessor timeoutProcessor = ignite instanceof IgniteKernal ? ((IgniteKernal)ignite).context().timeout() : null;
 
-        this.nioSrvWrapper = new GridNioServerWrapper(
+        this.nioSrvWrapper = resolve(ignite, new GridNioServerWrapper(
             log,
             cfg,
             timeoutProcessor,
@@ -737,11 +741,11 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                         ((CommunicationListenerEx<Message>)lsnr).onChannelOpened(rmtNodeId, initMsg, channel);
                 }
             }
-        );
+        ));
 
         this.srvLsnr.setNioSrvWrapper(nioSrvWrapper);
 
-        this.clientPool = new ConnectionClientPool(
+        this.clientPool = resolve(ignite, new ConnectionClientPool(
             cfg,
             attributeNames,
             log,
@@ -754,9 +758,10 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             timeoutProcessor,
             stateProvider,
             nioSrvWrapper
-        );
+        ));
 
-        srvLsnr.setClientPool(clientPool);
+        this.srvLsnr.setClientPool(clientPool);
+
         nioSrvWrapper.clientPool(clientPool);
 
         discoLsnr = new CommunicationDiscoveryEventListener(clientPool, metricsLsnr);
@@ -777,7 +782,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             throw new IgniteSpiException("Failed to initialize TCP server: " + cfg.localHost(), e);
         }
 
-        boolean forceClientToSrvConnections = forceClientToServerConnections();
+        boolean forceClientToSrvConnections = forceClientToServerConnections() || cfg.localPort() == -1;
 
         if (cfg.usePairedConnections() && forceClientToSrvConnections) {
             throw new IgniteSpiException("Node using paired connections " +
@@ -926,7 +931,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
     /** {@inheritDoc} } */
     @Override public void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
-        spiCtx.registerPort(cfg.boundTcpPort(), IgnitePortProtocol.TCP);
+        if (cfg.boundTcpPort() > 0)
+            spiCtx.registerPort(cfg.boundTcpPort(), IgnitePortProtocol.TCP);
 
         // SPI can start without shmem port.
         if (cfg.boundTcpShmemPort() > 0)
@@ -1066,6 +1072,13 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     }
 
     /**
+     * Checks {@link Ignite} implementation type and calls {@link GridResourceProcessor#resolve(Object)} or returns original.
+     */
+    private <T> T resolve(Ignite ignite, T instance) {
+        return ignite instanceof IgniteKernal ? ((IgniteKernal)ignite).context().resource().resolve(instance) : instance;
+    }
+
+    /**
      * Checks that node has specified attribute and prints warning if it does not.
      *
      * @param node Node to check.
@@ -1156,8 +1169,10 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
             int connIdx;
 
-            if (msg instanceof TcpConnectionIndexAwareMessage) {
-                int msgConnIdx = ((TcpConnectionIndexAwareMessage)msg).connectionIndex();
+            Message connIdxMsg = msg instanceof GridIoMessage ? ((GridIoMessage)msg).message() : msg;
+
+            if (connIdxMsg instanceof TcpConnectionIndexAwareMessage) {
+                int msgConnIdx = ((TcpConnectionIndexAwareMessage)connIdxMsg).connectionIndex();
 
                 connIdx = msgConnIdx == UNDEFINED_CONNECTION_INDEX ? connPlc.connectionIndex() : msgConnIdx;
             }

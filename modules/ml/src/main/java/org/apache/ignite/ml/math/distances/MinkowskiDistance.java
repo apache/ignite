@@ -17,6 +17,8 @@
 package org.apache.ignite.ml.math.distances;
 
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -35,8 +37,14 @@ public class MinkowskiDistance implements DistanceMeasure {
     private final double p;
 
     /** @param p norm */
-    public MinkowskiDistance(double p) {
+    @JsonCreator
+    public MinkowskiDistance(@JsonProperty("p")double p) {
         this.p = p;
+    }
+
+    /** Returns p-norm. */
+    public double getP() {
+        return p;
     }
 
     /** {@inheritDoc} */
@@ -59,5 +67,11 @@ public class MinkowskiDistance implements DistanceMeasure {
 
     @Override public int hashCode() {
         return Objects.hash(p);
+    }
+
+    @Override public String toString() {
+        return "MinkowskiDistance{" +
+            "p=" + p +
+            '}';
     }
 }

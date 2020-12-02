@@ -81,9 +81,11 @@ import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.resource.DependencyResolver;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
@@ -114,7 +116,6 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
-import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
@@ -155,6 +156,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELET
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TEST_ENV;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -280,6 +282,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");
         System.setProperty(IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT, "1000");
         System.setProperty(IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP, "false");
+        System.setProperty(IGNITE_TEST_ENV, "true");
 
         S.setIncludeSensitiveSupplier(() -> getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true));
 
@@ -965,6 +968,25 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * Starts new grid with given index and overriding {@link DependencyResolver}.
+     *
+     * @param idx Index of the grid to start.
+     * @param rslvr Dependency provider.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startGrid(int idx, DependencyResolver rslvr) throws Exception {
+        IgnitionEx.dependencyResolver(rslvr);
+
+        try {
+            return startGrid(getTestIgniteInstanceName(idx));
+        }
+        finally {
+            IgnitionEx.dependencyResolver(null);
+        }
+    }
+
+    /**
      * Starts new grid with given index.
      *
      * @param idx Index of the grid to start.
@@ -1033,6 +1055,25 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected IgniteEx startClientGrid(int idx) throws Exception {
         return startClientGrid(getTestIgniteInstanceName(idx));
+    }
+
+    /**
+     * Starts new client grid with given index.
+     *
+     * @param idx Index of the grid to start.
+     * @param rslvr Dependency provider.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(int idx, DependencyResolver rslvr) throws Exception {
+        IgnitionEx.dependencyResolver(rslvr);
+
+        try {
+            return startClientGrid(getTestIgniteInstanceName(idx));
+        }
+        finally {
+            IgnitionEx.dependencyResolver(null);
+        }
     }
 
     /**

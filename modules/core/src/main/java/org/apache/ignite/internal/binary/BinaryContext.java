@@ -585,6 +585,18 @@ public class BinaryContext {
     }
 
     /**
+     * Registers binary type locally.
+     *
+     * @param binaryType Binary type to register.
+     * @param failIfUnregistered Whether to fail when not registered.
+     * @param platformId Platform ID (see {@link org.apache.ignite.internal.MarshallerPlatformIds}).
+     */
+    public void registerClassLocally(BinaryType binaryType, boolean failIfUnregistered, byte platformId) {
+        metaHnd.addMetaLocally(binaryType.typeId(), binaryType, failIfUnregistered);
+        registerUserClassName(binaryType.typeId(), binaryType.typeName(), failIfUnregistered, true, platformId);
+    }
+
+    /**
      * @param cls Class.
      * @return A descriptor for the given class. If the class hasn't been registered yet, then a new descriptor will be
      * created, but its {@link BinaryClassDescriptor#registered()} will be {@code false}.
@@ -677,9 +689,25 @@ public class BinaryContext {
         Class cls;
 
         try {
-            cls = marshCtx.getClass(typeId, ldr);
+            if (GridBinaryMarshaller.USE_CACHE.get()) {
+                cls = marshCtx.getClass(typeId, ldr);
 
-            desc = descByCls.get(cls);
+                desc = descByCls.get(cls);
+            }
+            else {
+                String clsName = marshCtx.getClassName(JAVA_ID, typeId);
+
+                if (clsName == null)
+                    throw new ClassNotFoundException("Unknown type ID: " + typeId);
+
+                cls = U.forName(clsName, ldr, null);
+
+                desc = descByCls.get(cls);
+
+                if (desc == null)
+                    return createNoneCacheClassDescriptor(cls);
+            }
+
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
@@ -707,6 +735,39 @@ public class BinaryContext {
     }
 
     /**
+     * Creates descriptor without registration.
+     *
+     * @param cls Class.
+     * @return Binary class descriptor.
+     */
+    @NotNull private BinaryClassDescriptor createNoneCacheClassDescriptor(Class cls) {
+        String clsName = cls.getName();
+
+        BinaryInternalMapper mapper = userTypeMapper(clsName);
+
+        int typeId = mapper.typeId(clsName);
+
+        String typeName = mapper.typeName(clsName);
+
+        BinarySerializer serializer = serializerForClass(cls);
+
+        String affFieldName = affinityFieldName(cls);
+
+        return new BinaryClassDescriptor(this,
+            cls,
+            true,
+            typeId,
+            typeName,
+            affFieldName,
+            mapper,
+            serializer,
+            true,
+            true,
+            false
+        );
+    }
+
+    /**
      * Attempts registration of the provided {@link BinaryClassDescriptor} in the cluster.
      *
      * @param desc Class descriptor to register.
@@ -724,11 +785,14 @@ public class BinaryContext {
         else {
             BinaryClassDescriptor regDesc = desc.makeRegistered();
 
-            BinaryClassDescriptor old = descByCls.putIfAbsent(desc.describedClass(), regDesc);
+            if (GridBinaryMarshaller.USE_CACHE.get()) {
+                BinaryClassDescriptor old = descByCls.putIfAbsent(desc.describedClass(), regDesc);
 
-            return old != null
-                ? old
-                : regDesc;
+                if (old != null)
+                    return old;
+            }
+
+            return regDesc;
         }
     }
 
@@ -752,7 +816,7 @@ public class BinaryContext {
 
         int typeId = desc.typeId();
 
-        boolean registered = registerUserClassName(typeId, cls.getName(), false, onlyLocReg);
+        boolean registered = registerUserClassName(typeId, cls.getName(), false, onlyLocReg, JAVA_ID);
 
         if (registered) {
             BinaryClassDescriptor regDesc = desc.makeRegistered();
@@ -1122,17 +1186,24 @@ public class BinaryContext {
      * @param failIfUnregistered If {@code true} then throw {@link UnregisteredBinaryTypeException} with {@link
      * org.apache.ignite.internal.processors.marshaller.MappingExchangeResult} future instead of synchronously awaiting
      * for its completion.
+     * @param onlyLocReg Whether to register only on the current node.
+     * @param platformId Platform ID (see {@link org.apache.ignite.internal.MarshallerPlatformIds}).
      * @return {@code True} if the mapping was registered successfully.
      */
-    public boolean registerUserClassName(int typeId, String clsName, boolean failIfUnregistered, boolean onlyLocReg) {
+    public boolean registerUserClassName(
+            int typeId,
+            String clsName,
+            boolean failIfUnregistered,
+            boolean onlyLocReg,
+            byte platformId) {
         IgniteCheckedException e = null;
 
         boolean res = false;
 
         try {
             res = onlyLocReg
-                ? marshCtx.registerClassNameLocally(JAVA_ID, typeId, clsName)
-                : marshCtx.registerClassName(JAVA_ID, typeId, clsName, failIfUnregistered);
+                ? marshCtx.registerClassNameLocally(platformId, typeId, clsName)
+                : marshCtx.registerClassName(platformId, typeId, clsName, failIfUnregistered);
         }
         catch (DuplicateTypeIdException dupEx) {
             // Ignore if trying to register mapped type name of the already registered class name and vise versa

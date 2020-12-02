@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
@@ -130,6 +131,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** */
     private final CacheObjectContext coCtx;
+
+    /** Primary key fields. */
+    private Set<String> pkFields;
 
     /**
      * Constructor.
@@ -577,6 +581,16 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException {
+        if (F.isEmpty(validateProps) && F.isEmpty(idxs))
+            return;
+
+        validateProps(key, val);
+
+        validateIndexes(key, val);
+    }
+
+    /** Validate properties. */
+    private void validateProps(Object key, Object val) throws IgniteCheckedException {
         if (F.isEmpty(validateProps))
             return;
 
@@ -656,6 +670,62 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         }
     }
 
+    /** Validate indexed values. */
+    private void validateIndexes(Object key, Object val) throws IgniteCheckedException {
+        if (F.isEmpty(idxs))
+            return;
+
+        for (QueryIndexDescriptorImpl idx : idxs.values()) {
+            for (String idxField : idx.fields()) {
+                GridQueryProperty prop = props.get(idxField);
+
+                Object propVal;
+                Class<?> propType;
+
+                if (F.eq(idxField, keyFieldAlias()) || F.eq(idxField, KEY_FIELD_NAME)) {
+                    propVal = key instanceof KeyCacheObject ? ((CacheObject) key).value(coCtx, true) : key;
+
+                    propType = propVal == null ? null : propVal.getClass();
+                }
+                else if (F.eq(idxField, valueFieldAlias()) || F.eq(idxField, VAL_FIELD_NAME)) {
+                    propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
+
+                    propType = propVal == null ? null : propVal.getClass();
+                }
+                else {
+                    propVal = prop.value(key, val);
+
+                    propType = prop.type();
+                }
+
+                if (propVal == null)
+                    continue;
+
+                if (!(propVal instanceof BinaryObject)) {
+                    if (!U.box(propType).isAssignableFrom(U.box(propVal.getClass()))) {
+                        // Some reference type arrays end up being converted to Object[]
+                        if (!(propType.isArray() && Object[].class == propVal.getClass() &&
+                            Arrays.stream((Object[]) propVal).
+                                noneMatch(x -> x != null && !U.box(propType.getComponentType()).isAssignableFrom(U.box(x.getClass())))))
+                        {
+                            throw new IgniteSQLException("Type for a column '" + idxField +
+                                "' is not compatible with index definition. Expected '" +
+                                propType.getSimpleName() + "', actual type '" +
+                                propVal.getClass().getSimpleName() + "'");
+                        }
+                    }
+                }
+                else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
+                    ((BinaryObject)propVal).type().typeId()) {
+                    throw new IgniteSQLException("Type for a column '" + idxField +
+                        "' is not compatible with index definition. Expected '" +
+                        propType.getSimpleName() + "', actual type '" +
+                        ((BinaryObject)propVal).type().typeName() + "'");
+                }
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void setDefaults(Object key, Object val) throws IgniteCheckedException {
@@ -667,5 +737,15 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             prop.setValue(key, val, prop.defaultValue());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> primaryKeyFields() {
+        return pkFields == null ? Collections.emptySet() : pkFields;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void primaryKeyFields(Set<String> keys) {
+        pkFields = keys;
     }
 }

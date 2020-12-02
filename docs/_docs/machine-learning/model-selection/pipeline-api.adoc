@@ -1,0 +1,125 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Pipelines API
+
+Apache Ignite ML standardizes APIs for machine learning algorithms to make it easier to combine multiple algorithms into a single pipeline, or workflow. This section covers the key concepts introduced by the Pipelines API, where the pipeline concept is mostly inspired by the scikit-learn and Apache Spark projects.
+
+* **Preprocessor Model **- This is an algorithm which can transform one DataSet into another DataSet.
+
+* **Preprocessor Trainer**- This is an algorithm which can be fit on a DataSet to produce a PreprocessorModel.
+
+* **Pipeline **-  A Pipeline chains multiple Trainers and Preprocessors together to specify an ML workflow.
+
+* **Parameter **- All ML Trainers and Preprocessor Trainers now share a common API for specifying parameters.
+
+CAUTION: The Pipeline API is experimental and could be changed in the next releases.
+
+
+The Pipeline could replace the pieces of code with .fit() method calls as in the next examples:
+
+
+[tabs]
+--
+tab:Without Pipeline API[]
+
+[source, java]
+----
+final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 3, 4, 5, 6, 8, 10).labeled(1);
+
+TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
+  .split(0.75);
+
+Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
+  .fit(ignite,
+       dataCache,
+       vectorizer
+      );
+
+Preprocessor<Integer, Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Vector>()
+  .fit(ignite,
+       dataCache,
+       imputingPreprocessor
+      );
+
+Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Vector>()
+  .withP(1)
+  .fit(ignite,
+       dataCache,
+       minMaxScalerPreprocessor
+      );
+
+// Tune hyper-parameters with K-fold Cross-Validation on the split training set.
+
+DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
+
+CrossValidation<DecisionTreeModel, Integer, Vector> scoreCalculator = new CrossValidation<>();
+
+ParamGrid paramGrid = new ParamGrid()
+  .addHyperParam("maxDeep", trainerCV::withMaxDeep, new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 10.0})
+  .addHyperParam("minImpurityDecrease", trainerCV::withMinImpurityDecrease, new Double[] {0.0, 0.25, 0.5});
+
+scoreCalculator
+  .withIgnite(ignite)
+  .withUpstreamCache(dataCache)
+  .withTrainer(trainerCV)
+  .withMetric(MetricName.ACCURACY)
+  .withFilter(split.getTrainFilter())
+  .isRunningOnPipeline(false)
+  .withPreprocessor(normalizationPreprocessor)
+  .withAmountOfFolds(3)
+  .withParamGrid(paramGrid);
+
+CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParameters();
+----
+
+tab:With Pipeline API[]
+
+[source, java]
+----
+final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 4, 5, 6, 8).labeled(1);
+
+TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
+  .split(0.75);
+
+DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
+
+Pipeline<Integer, Vector, Integer, Double> pipeline = new Pipeline<Integer, Vector, Integer, Double>()
+  .addVectorizer(vectorizer)
+  .addPreprocessingTrainer(new ImputerTrainer<Integer, Vector>())
+  .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Vector>())
+  .addTrainer(trainer);
+
+CrossValidation<DecisionTreeModel, Integer, Vector> scoreCalculator = new CrossValidation<>();
+
+ParamGrid paramGrid = new ParamGrid()
+  .addHyperParam("maxDeep", trainer::withMaxDeep, new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 10.0})
+  .addHyperParam("minImpurityDecrease", trainer::withMinImpurityDecrease, new Double[] {0.0, 0.25, 0.5});
+
+scoreCalculator
+  .withIgnite(ignite)
+  .withUpstreamCache(dataCache)
+  .withPipeline(pipeline)
+  .withMetric(MetricName.ACCURACY)
+  .withFilter(split.getTrainFilter())
+  .withAmountOfFolds(3)
+  .withParamGrid(paramGrid);
+
+
+CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParameters();
+----
+--
+
+The full code could be found in the https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/ml/tutorial/Step_8_CV_with_Param_Grid_and_pipeline.java[Titanic tutorial].
+

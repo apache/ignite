@@ -19,11 +19,11 @@ project(ignite-odbc-tests)
 
 set(TARGET ${PROJECT_NAME})
 
-find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread system regex)
-
 if (WIN32)
     set(Boost_USE_STATIC_LIBS ON)
 endif()
+
+find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread system regex)
 
 find_package(ODBC REQUIRED)
 
@@ -65,6 +65,8 @@ set(SOURCES src/teamcity/teamcity_boost.cpp
         src/authentication_test.cpp
         src/sql_parsing_test.cpp
         src/streaming_test.cpp
+        src/cursor_binding_test.cpp
+        src/test_server.cpp
         ../odbc/src/log.cpp
         ../odbc/src/cursor.cpp
         ../odbc/src/diagnostic/diagnostic_record.cpp
