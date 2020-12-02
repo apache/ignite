@@ -214,6 +214,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Interval of checking connection to next node in the ring. */
     private long connCheckInterval;
 
+    /** Fundamental value for connection checking actions. */
+    private long connCheckTick;
+
     /** */
     private IgniteThreadPoolExecutor utilityPool;
 
@@ -385,9 +388,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         lastRingMsgSentTime = 0;
 
+        // Foundumental timeout value for actions related to connection check.
+        connCheckTick = effectiveExchangeTimeout() / 3;
+
         // Since we take in account time of last sent message, the interval should be quite short to give enough piece
         // of failure detection timeout as send-and-acknowledge timeout of the message to send.
-        connCheckInterval = Math.min(effectiveExchangeTimeout() / 4, MAX_CON_CHECK_INTERVAL);
+        connCheckInterval = Math.min(connCheckTick, MAX_CON_CHECK_INTERVAL);
 
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
@@ -3508,11 +3514,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (changeTop)
                                     hndMsg.changeTopology(ring.previousNodeOf(next).id());
 
-                                if (log.isDebugEnabled())
-                                    log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState + ']');
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState +
+                                        "] with timeout " + timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                                }
 
                                 spi.writeToSocket(sock, out, hndMsg,
                                     timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Reading handshake response with timeout " +
+                                        timeoutHelper.nextTimeoutChunk(ackTimeout0));
+                                }
 
                                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null,
                                     timeoutHelper.nextTimeoutChunk(ackTimeout0));
@@ -6524,6 +6537,26 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
+    /**
+     * Creates proper timeout helper taking in account current send state and ring state.
+     *
+     * @param sndState Current connection recovering state. Ignored if {@code null}.
+     * @param lastOperationNanos Time of last related operation. Ignored if negative or 0.
+     * @return Timeout helper.
+     */
+    private IgniteSpiOperationTimeoutHelper serverOperationTimeoutHelper(@Nullable CrossRingMessageSendState sndState,
+        long lastOperationNanos) {
+        long absoluteThreshold = -1;
+
+        // Active send-state means we lost connection to next node and have to find another. We don't know how many
+        // nodes failed. May be several failed in a row. But we got only one connectionRecoveryTimeout to establish new
+        // connection. We should travers rest of the cluster with sliced timeout for each node.
+        if (sndState != null)
+            absoluteThreshold = Math.min(sndState.failTimeNanos, System.nanoTime() + U.millisToNanos(connCheckTick));
+
+        return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos, absoluteThreshold);
+    }
+
     /** Fixates time of last sent message. */
     private void updateLastSentMessageTime() {
         lastRingMsgSentTime = System.nanoTime();
@@ -6885,13 +6918,22 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
                                 Collection<InetSocketAddress> nodeAddrs = spi.getNodeAddresses(previous, false);
 
-                                liveAddr = checkConnection(new ArrayList<>(nodeAddrs),
-                                    (int)U.nanosToMillis(timeThreshold - now));
+                                // The connection recovery connection to one node is connCheckTick.
+                                // We need to suppose network delays. So we use half of this time.
+                                int backwardCheckTimeout = (int)(connCheckTick / 2);
 
-                                if (log.isInfoEnabled())
-                                    log.info("Connection check done [liveAddr=" + liveAddr
-                                        + ", previousNode=" + previous + ", addressesToCheck=" + nodeAddrs
-                                        + ", connectingNodeId=" + nodeId + ']');
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Remote node requests topology change. Checking connection to " +
+                                        "previous [" + previous + "] with timeout " + backwardCheckTimeout);
+                                }
+
+                                liveAddr = checkConnection(new ArrayList<>(nodeAddrs), backwardCheckTimeout);
+
+                                if (log.isInfoEnabled()) {
+                                    log.info("Connection check to previous node done: [liveAddr=" + liveAddr
+                                        + ", previousNode=" + U.toShortString(previous) + ", addressesToCheck=" +
+                                        nodeAddrs + ", connectingNodeId=" + nodeId + ']');
+                                }
                             }
 
                             // If local node was able to connect to previous, confirm that it's alive.
@@ -6908,6 +6950,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 ", lastMessageReceivedTime=" + rcvdTime + ", now=" + now +
                                 ", connCheckInterval=" + connCheckInterval + ']');
                         }
+                    }
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("Sending handshake response [" + res + "] with timeout " +
+                            spi.getEffectiveSocketTimeout(srvSock) + " to " + rmtAddr + ":" + sock.getPort());
                     }
 
                     spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(srvSock));
