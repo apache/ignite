@@ -65,6 +65,8 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -84,8 +86,12 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
+import org.apache.ignite.internal.processors.cache.tree.DataRow;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -136,6 +142,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
+import static org.apache.ignite.internal.util.GridArrays.clearTail;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
@@ -1091,6 +1099,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private final PageStore store;
 
         /** */
+        private final int partId;
+
+        /** */
+        private final ByteBuffer locBuff;
+
+        /** */
+        private final int pages;
+
+        /** */
         int currPageIdx = -1;
 
         /** */
@@ -1102,8 +1119,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /**
          * @param store Store to iterate over.
          */
-        public SerialPageStoreIterator(PageStore store) {
+        public SerialPageStoreIterator(PageStore store, int partId) {
             this.store = store;
+            this.partId = partId;
+
+            pages = store.pages();
+            locBuff = ByteBuffer.allocateDirect(store.getPageSize())
+                .order(ByteOrder.nativeOrder());
+
         }
 
         /** {@inheritDoc */
@@ -1113,6 +1136,59 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc */
         @Override protected boolean onHasNext() throws IgniteCheckedException {
+            long startPageId = PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, 0);
+
+            for (;;) {
+                long pageId = startPageId + currPageIdx;
+                boolean skipVer = CacheDataRowStore.getSkipVersion();
+
+                boolean success = store.read(pageId, locBuff, true);
+
+                assert success : pageId;
+
+                // Here we should also exclude fragmented pages that don't contain the head of the entry.
+                if (PageIO.getType(locBuff) != T_DATA)
+                    continue; // Not a data page.
+
+                DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(locBuff));
+
+                int rowsCnt = io.getRowsCount(locBuff);
+
+                if (rowsCnt == 0)
+                    continue; // Empty page.
+
+                if (rowsCnt > rows.length)
+                    rows = new CacheDataRow[rowsCnt];
+                else
+                    clearTail(rows, rowsCnt);
+
+                int r = 0;
+
+                for (int i = 0; i < rowsCnt; i++) {
+                    DataRow row = new DataRow();
+
+                    row.initFromDataPage(
+                        io,
+                        pageAddr,
+                        i,
+                        grp,
+                        shared,
+                        pageMem,
+                        rowData,
+                        skipVer
+                    );
+
+                    rows[r++] = row;
+                }
+
+                if (r == 0)
+                    continue; // No rows fetched in this page.
+
+                currPageIdx = 0;
+
+                return true;
+            }
+
             return false;
         }
     }

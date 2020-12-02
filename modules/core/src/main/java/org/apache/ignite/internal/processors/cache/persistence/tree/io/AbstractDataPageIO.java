@@ -260,6 +260,14 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
     }
 
     /**
+     * @param buff Page buffer.
+     * @return Direct count.
+     */
+    public int getRowsCount(ByteBuffer buff) {
+        return buff.get(DIRECT_CNT_OFF) & 0xFF;
+    }
+
+    /**
      * @param pageAddr Page address.
      * @param c Closure.
      * @param <T> Closure return type.
