@@ -380,7 +380,8 @@ public class MarshallerContextImpl implements MarshallerContext {
                     return U.forName(res.get1(), ldr, clsFilter);
                 }
                 catch (ClassNotFoundException e) {
-                    err = e.getMessage();
+                    if (err == null)
+                        err = e.getMessage();
                 }
             }
             else if (err == null)
