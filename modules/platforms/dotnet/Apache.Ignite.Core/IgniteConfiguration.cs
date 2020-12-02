@@ -338,6 +338,7 @@ namespace Apache.Ignite.Core
             writer.WriteIntNullable(_mvccVacuumThreadCnt);
             writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
             writer.WriteIntNullable(_sqlQueryHistorySize);
+            writer.WriteBooleanNullable(JavaPeerClassLoadingEnabled);
 
             if (SqlSchemas == null)
                 writer.WriteInt(0);
@@ -742,6 +743,7 @@ namespace Apache.Ignite.Core
             _mvccVacuumThreadCnt = r.ReadIntNullable();
             _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
             _sqlQueryHistorySize = r.ReadIntNullable();
+            JavaPeerClassLoadingEnabled = r.ReadBooleanNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
@@ -1712,5 +1714,19 @@ namespace Apache.Ignite.Core
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<ExecutorConfiguration> ExecutorConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether peer class loading is enabled for <b>Java</b> side.
+        /// <para/>
+        /// <b>Important!</b> Do not mix this property with <see cref="PeerAssemblyLoadingMode"/>.
+        /// <para/>
+        /// When peer class loading is enabled and task is not deployed on local node,
+        /// local node will try to load classes from the node that initiated task execution.
+        /// <para />
+        /// Default is <c>false</c>.
+        /// <para />
+        /// </summary>
+        [DefaultValue(false)]
+        public bool? JavaPeerClassLoadingEnabled { get; set; }
     }
 }
