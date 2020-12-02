@@ -15,22 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin;
+package org.apache.ignite.internal.client.thin.io;
 
 import java.nio.ByteBuffer;
 
 /**
- * Server to client notification listener.
+ * Handles thin client responses and server -> client notifications.
  */
-interface NotificationListener {
+public interface ClientMessageHandler {
     /**
-     * Accept notification.
-     *
-     * @param ch Client channel which was notified.
-     * @param op Client operation.
-     * @param rsrcId Resource id.
-     * @param payload Notification payload or {@code null} if there is no payload.
-     * @param err Error.
+     * Handles messages from the server.
+     * @param buf Buffer.
      */
-    public void acceptNotification(ClientChannel ch, ClientOperation op, long rsrcId, ByteBuffer payload, Exception err);
+    void onMessage(ByteBuffer buf);
 }

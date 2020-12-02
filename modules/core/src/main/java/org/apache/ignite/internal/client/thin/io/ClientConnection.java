@@ -15,22 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin;
+package org.apache.ignite.internal.client.thin.io;
 
 import java.nio.ByteBuffer;
 
+import org.apache.ignite.IgniteCheckedException;
+
 /**
- * Server to client notification listener.
+ * Client connection: abstracts away sending and receiving messages.
  */
-interface NotificationListener {
+public interface ClientConnection extends AutoCloseable {
     /**
-     * Accept notification.
+     * Sends a message.
      *
-     * @param ch Client channel which was notified.
-     * @param op Client operation.
-     * @param rsrcId Resource id.
-     * @param payload Notification payload or {@code null} if there is no payload.
-     * @param err Error.
+     * @param msg Message buffer.
      */
-    public void acceptNotification(ClientChannel ch, ClientOperation op, long rsrcId, ByteBuffer payload, Exception err);
+    void send(ByteBuffer msg) throws IgniteCheckedException;
+
+    /**
+     * Closes the connection.
+     */
+    @Override void close();
 }
