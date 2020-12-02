@@ -1513,7 +1513,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             // First node start, method onGridDataReceived(DiscoveryDataBag.GridDiscoveryData) has not been called.
             ArrayList<ServiceInfo> staticServicesInfo = staticallyConfiguredServices(false);
 
-            staticServicesInfo.forEach(desc -> registeredServices.put(desc.serviceId(), desc));
+            staticServicesInfo.forEach(this::registerService);
         }
 
         ServiceDeploymentActions depActions = null;
