@@ -221,6 +221,20 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
             log.info(String.format("%sre-encryption of the cache group \"%s\" has %sbeen suspended.",
                 DOUBLE_INDENT, grpName, (success ? "" : "already ")));
         }
+
+        /** {@inheritDoc} */
+        @Override protected void printResults(
+            VisorCacheGroupEncryptionTaskResult<Boolean> res,
+            String grpName,
+            Logger log
+        ) {
+            super.printResults(res, grpName, log);
+
+            log.info("");
+            log.info("Note: the re-encryption suspend status is not persisted, re-encryption will be started " +
+                "automatically after the node is restarted.");
+            log.info("");
+        }
     }
 
     /** Subcommand to resume re-encryption of the cache group. */

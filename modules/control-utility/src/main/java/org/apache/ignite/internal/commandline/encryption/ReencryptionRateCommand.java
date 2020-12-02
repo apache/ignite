@@ -82,6 +82,14 @@ public class ReencryptionRateCommand extends AbstractCommand<VisorReencryptionRa
                 }
             }
 
+            if (read)
+                return null;
+
+            log.info("");
+            log.info("Note: the changed value of the re-encryption rate limit is not persisted. " +
+                "When the node is restarted, the value will be set from the configuration.");
+            log.info("");
+
             return null;
         }
         catch (Throwable e) {
