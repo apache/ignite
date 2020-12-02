@@ -1049,6 +1049,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
     ) {
+        if (ctx.maintenanceRegistry().isMaintenanceMode()) {
+            return new GridFinishedFuture<>(
+                new IgniteCheckedException("Failed to " + prettyStr(state) + " (node is in maintenance mode).")
+            );
+        }
+
         BaselineTopology blt = (compatibilityMode && !forceChangeBaselineTopology) ?
             null :
             calculateNewBaselineTopology(state, baselineNodes, forceChangeBaselineTopology);
