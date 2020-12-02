@@ -44,7 +44,7 @@ public class TreeNode implements IgniteModel<Vector, Double> {
     }
 
     /** Id. */
-    private final NodeId id;
+    private NodeId id;
 
     /** Feature id. */
     private int featureId;
@@ -79,6 +79,9 @@ public class TreeNode implements IgniteModel<Vector, Double> {
         this.type = Type.UNKNOWN;
         this.impurity = Double.POSITIVE_INFINITY;
         this.depth = 1;
+    }
+
+    public TreeNode() {
     }
 
     /** {@inheritDoc} */
@@ -125,8 +128,8 @@ public class TreeNode implements IgniteModel<Vector, Double> {
         assert type == Type.UNKNOWN;
 
         toLeaf(val);
-        left = new TreeNode(2 * id.nodeId(), id.treeId());
-        right = new TreeNode(2 * id.nodeId() + 1, id.treeId());
+        left = new TreeNode(2 * id.getNodeId(), id.getTreeId());
+        right = new TreeNode(2 * id.getNodeId() + 1, id.getTreeId());
         this.type = Type.CONDITIONAL;
         this.featureId = featureId;
 
