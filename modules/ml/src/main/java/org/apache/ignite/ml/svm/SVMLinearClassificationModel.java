@@ -244,16 +244,16 @@ public final class SVMLinearClassificationModel implements IgniteModel<Vector, D
     }
 
     /** */
-    private static class SVMLinearClassificationJSONExportModel extends JSONModel {
+    public static class SVMLinearClassificationJSONExportModel extends JSONModel {
         /**
          * Multiplier of the objects's vector required to make prediction.
          */
-        private double[] weights;
+        public double[] weights;
 
         /**
          * Intercept of the linear regression model.
          */
-        private double intercept;
+        public double intercept;
 
         /**
          * Output label format. 0 and 1 for false value and raw sigmoid regression value otherwise.
