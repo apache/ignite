@@ -4062,7 +4062,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                                     childIo.setCount(leftPageAddr, leftThreshold);
 
                                     // Store the required entry to the parent. Now right page has valid entries and
-                                    // child links if we skip firts "cpCnt" antries and links, already copies to other
+                                    // child links if we skip firts "cpCnt" entries and links, already copies to other
                                     // pages.
                                     parentIo.store(parentPageAddr, parentCnt - 1, childIo, rightPageAddr, cpCnt);
 
