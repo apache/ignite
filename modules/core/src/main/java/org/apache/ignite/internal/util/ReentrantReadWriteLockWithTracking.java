@@ -18,14 +18,11 @@
 package org.apache.ignite.internal.util;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
@@ -42,10 +39,10 @@ public class ReentrantReadWriteLockWithTracking implements ReadWriteLock {
     private final ReentrantReadWriteLock delegate = new ReentrantReadWriteLock();
 
     /** Read lock holder. */
-    private ReentrantReadWriteLockWithTracking.ReadLock readLock;
+    private ReentrantReadWriteLock.ReadLock readLock;
 
     /** Write lock holder. */
-    private ReentrantReadWriteLockWithTracking.WriteLock writeLock = new ReentrantReadWriteLockWithTracking.WriteLock(delegate);
+    private ReentrantReadWriteLock.WriteLock writeLock = new ReentrantReadWriteLock.WriteLock(delegate) {};
 
     /**
      * ReentrantRWLock wrapper, provides additional trace info on {@link ReadLockWithTracking#unlock()} method, if someone
@@ -62,16 +59,16 @@ public class ReentrantReadWriteLockWithTracking implements ReadWriteLock {
 
     /** Delegator implementation. */
     public ReentrantReadWriteLockWithTracking() {
-        readLock = new ReentrantReadWriteLockWithTracking.ReadLock(delegate);
+        readLock = new ReentrantReadWriteLock.ReadLock(delegate) {};
     }
 
     /** {@inheritDoc} */
-    @Override public ReentrantReadWriteLockWithTracking.ReadLock readLock() {
+    @Override public ReentrantReadWriteLock.ReadLock readLock() {
         return readLock;
     }
 
     /** {@inheritDoc} */
-    @Override public ReentrantReadWriteLockWithTracking.WriteLock writeLock() {
+    @Override public ReentrantReadWriteLock.WriteLock writeLock() {
         return writeLock;
     }
 
@@ -112,68 +109,8 @@ public class ReentrantReadWriteLockWithTracking implements ReadWriteLock {
         return delegate.getReadLockCount();
     }
 
-    /** */
-    public static class WriteLock implements Lock {
-        /** Delegate instance. */
-        private final ReentrantReadWriteLock delegate;
-
-        /** */
-        public WriteLock(ReentrantReadWriteLock lock) {
-            delegate = lock;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-        @Override public void lock() {
-            delegate.writeLock().lock();
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-        @Override public void lockInterruptibly() throws InterruptedException {
-            delegate.writeLock().lockInterruptibly();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean tryLock() {
-            return delegate.writeLock().tryLock();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean tryLock(long time, @NotNull TimeUnit unit) throws InterruptedException {
-            return delegate.writeLock().tryLock(time, unit);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void unlock() {
-            delegate.writeLock().unlock();
-        }
-
-        /** {@inheritDoc} */
-        @NotNull @Override public Condition newCondition() {
-            return delegate.writeLock().newCondition();
-        }
-
-        /**
-         * Queries if this write lock is held by the current thread.
-         * Identical in effect to {@link
-         * ReentrantReadWriteLock#isWriteLockedByCurrentThread}.
-         *
-         * @return {@code true} if the current thread holds this lock and
-         *         {@code false} otherwise
-         */
-        public boolean isHeldByCurrentThread() {
-            return delegate.writeLock().isHeldByCurrentThread();
-        }
-    }
-
     /** Tracks long rlock holders. */
-    public static class ReadLockWithTracking extends ReadLock {
-        /**
-         * Delegate instance.
-         */
-        private final ReentrantReadWriteLock delegate;
-
+    public static class ReadLockWithTracking extends ReentrantReadWriteLock.ReadLock {
         /** */
         private static final ThreadLocal<T2<Integer, Long>> READ_LOCK_HOLDER_TS =
             ThreadLocal.withInitial(() -> new T2<>(0, 0L));
@@ -187,8 +124,6 @@ public class ReentrantReadWriteLockWithTracking implements ReadWriteLock {
         /** */
         protected ReadLockWithTracking(ReentrantReadWriteLock lock, @Nullable IgniteLogger log, long readLockThreshold) {
             super(lock);
-
-            delegate = lock;
 
             this.log = log;
 
@@ -235,24 +170,22 @@ public class ReentrantReadWriteLockWithTracking implements ReadWriteLock {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
         @Override public void lock() {
-            delegate.readLock().lock();
+            super.lock();
 
             inc();
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
         @Override public void lockInterruptibly() throws InterruptedException {
-            delegate.readLock().lockInterruptibly();
+            super.lockInterruptibly();
 
             inc();
         }
 
         /** {@inheritDoc} */
         @Override public boolean tryLock() {
-            if (delegate.readLock().tryLock()) {
+            if (super.tryLock()) {
                 inc();
 
                 return true;
@@ -263,7 +196,7 @@ public class ReentrantReadWriteLockWithTracking implements ReadWriteLock {
 
         /** {@inheritDoc} */
         @Override public boolean tryLock(long timeout, TimeUnit unit) throws InterruptedException {
-            if (delegate.readLock().tryLock(timeout, unit)) {
+            if (super.tryLock(timeout, unit)) {
                 inc();
 
                 return true;
@@ -274,57 +207,9 @@ public class ReentrantReadWriteLockWithTracking implements ReadWriteLock {
 
         /** {@inheritDoc} */
         @Override public void unlock() {
-            delegate.readLock().unlock();
+            super.unlock();
 
             dec();
-        }
-    }
-
-    /** Default implementation. */
-    public static class ReadLock implements Lock {
-        /** Delegate instance. */
-        private final ReentrantReadWriteLock delegate;
-
-        /** */
-        protected ReadLock(ReentrantReadWriteLock lock) {
-            delegate = lock;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-        @Override public void lock() {
-            delegate.readLock().lock();
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-        @Override public void lockInterruptibly() throws InterruptedException {
-            delegate.readLock().lockInterruptibly();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean tryLock() {
-            return delegate.readLock().tryLock();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean tryLock(long timeout, TimeUnit unit) throws InterruptedException {
-            return delegate.readLock().tryLock(timeout, unit);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void unlock() {
-            delegate.readLock().unlock();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Condition newCondition() {
-            return delegate.readLock().newCondition();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return delegate.readLock().toString();
         }
     }
 }
