@@ -247,7 +247,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
 
-        return new GridCacheDataStore(grp, p, exists, busyLock, log);
+        return createGridCacheDataStore(grp, p, exists, log);
     }
 
     /** {@inheritDoc} */
@@ -1371,8 +1371,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** */
-    public GridSpinBusyLock busyLock() {
-        return busyLock;
+    public GridCacheDataStore createGridCacheDataStore(
+        CacheGroupContext grpCtx,
+        int partId,
+        boolean exists,
+        IgniteLogger log
+    ) {
+        return new GridCacheDataStore(
+            grpCtx,
+            partId,
+            exists,
+            busyLock,
+            log
+        );
     }
 
     /**
