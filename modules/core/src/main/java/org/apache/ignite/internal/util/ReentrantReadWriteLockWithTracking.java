@@ -112,6 +112,9 @@ public class ReentrantReadWriteLockWithTracking implements ReadWriteLock {
     /** Tracks long rlock holders. */
     public static class ReadLockWithTracking extends ReentrantReadWriteLock.ReadLock {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private static final ThreadLocal<T2<Integer, Long>> READ_LOCK_HOLDER_TS =
             ThreadLocal.withInitial(() -> new T2<>(0, 0L));
 
