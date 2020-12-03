@@ -1721,10 +1721,12 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets a value indicating whether peer class loading is enabled for <b>Java</b> side.
         /// <para/>
-        /// <b>Important!</b> Do not mix this property with <see cref="PeerAssemblyLoadingMode"/>.
-        /// <para/>
         /// When peer class loading is enabled and task is not deployed on local node,
         /// local node will try to load classes from the node that initiated task execution.
+        /// <para/>
+        /// <b>Important!</b>
+        /// <see cref="PeerAssemblyLoadingMode"/>
+        /// and peer class loading in Java are two distinct and independent features.
         /// <para />
         /// </summary>
         public bool JavaPeerClassLoadingEnabled 
