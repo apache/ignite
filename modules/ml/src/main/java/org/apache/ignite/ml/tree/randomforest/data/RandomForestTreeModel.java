@@ -27,12 +27,12 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Tree root class.
  */
-public class TreeRoot implements IgniteModel<Vector, Double> {
+public class RandomForestTreeModel implements IgniteModel<Vector, Double> {
     /** Serial version uid. */
     private static final long serialVersionUID = 531797299171329057L;
 
     /** Root node. */
-    private TreeNode node;
+    private TreeNode rootNode;
 
     /** Used features. */
     private Set<Integer> usedFeatures;
@@ -43,14 +43,17 @@ public class TreeRoot implements IgniteModel<Vector, Double> {
      * @param root Root.
      * @param usedFeatures Used features.
      */
-    public TreeRoot(TreeNode root, Set<Integer> usedFeatures) {
-        this.node = root;
+    public RandomForestTreeModel(TreeNode root, Set<Integer> usedFeatures) {
+        this.rootNode = root;
         this.usedFeatures = usedFeatures;
+    }
+
+    public RandomForestTreeModel() {
     }
 
     /** {@inheritDoc} */
     @Override public Double predict(Vector vector) {
-        return node.predict(vector);
+        return rootNode.predict(vector);
     }
 
     /** */
@@ -60,15 +63,15 @@ public class TreeRoot implements IgniteModel<Vector, Double> {
 
     /** */
     public TreeNode getRootNode() {
-        return node;
+        return rootNode;
     }
 
     /**
      * @return All leafs in tree.
      */
-    public List<TreeNode> getLeafs() {
+    public List<TreeNode> leafs() {
         List<TreeNode> res = new ArrayList<>();
-        getLeafs(node, res);
+        leafs(rootNode, res);
         return res;
     }
 
@@ -76,12 +79,12 @@ public class TreeRoot implements IgniteModel<Vector, Double> {
      * @param root Root.
      * @param res Result list.
      */
-    private void getLeafs(TreeNode root, List<TreeNode> res) {
+    private void leafs(TreeNode root, List<TreeNode> res) {
         if (root.getType() == TreeNode.Type.LEAF)
             res.add(root);
         else {
-            getLeafs(root.getLeft(), res);
-            getLeafs(root.getRight(), res);
+            leafs(root.getLeft(), res);
+            leafs(root.getRight(), res);
         }
     }
 

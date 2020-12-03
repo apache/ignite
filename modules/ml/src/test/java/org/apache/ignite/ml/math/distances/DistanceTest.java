@@ -43,7 +43,7 @@ public class DistanceTest {
         new BrayCurtisDistance(),
         new CanberraDistance(),
         new JensenShannonDistance(),
-        new WeightedMinkowskiDistance(4, new DenseVector(new double[]{1, 1, 1})),
+        new WeightedMinkowskiDistance(4, new double[]{1, 1, 1}),
         new MinkowskiDistance(Math.random()));
 
     /** */
@@ -197,9 +197,9 @@ public class DistanceTest {
         double precistion = 0.01;
         int p = 2;
         double expRes = 5.0;
-        Vector v = new DenseVector(new double[]{2, 3, 4});
+        double[] weights = new double[]{2, 3, 4};
 
-        DistanceMeasure distanceMeasure = new WeightedMinkowskiDistance(p, v);
+        DistanceMeasure distanceMeasure = new WeightedMinkowskiDistance(p, weights);
 
         assertEquals(expRes, distanceMeasure.compute(v1, data2), precistion);
         assertEquals(expRes, distanceMeasure.compute(v1, v2), precistion);

@@ -221,8 +221,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
         return maintenanceMode;
     }
 
-    /** {@inheritDoc}
-     * @return*/
+    /** {@inheritDoc} */
     @Override public boolean unregisterMaintenanceTask(String maintenanceTaskName) {
         if (inMemoryMode)
             return false;

@@ -154,7 +154,6 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13742")
     public void testMaintenanceIsSkippedIfWasFixedManuallyOnDowntime() throws Exception {
         IgniteEx srv = startGrid(config(SRV_1, false, false));
 
