@@ -190,7 +190,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
      */
     private void proceedWithMaintenance() {
         for (Map.Entry<String, MaintenanceWorkflowCallback> cbE : workflowCallbacks.entrySet()) {
-            MaintenanceAction mntcAct = cbE.getValue().automaticAction();
+            MaintenanceAction<?> mntcAct = cbE.getValue().automaticAction();
 
             if (mntcAct != null) {
                 try {
