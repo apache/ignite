@@ -26,12 +26,12 @@ import org.apache.ignite.examples.model.Address;
 import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfiguration;
 
 /**
- * Demonstrates how to use Ignite thin client within Kubernetes cluster using KubernetesConnectionConfiguration.
+ * Demonstrates how to use Ignite thin client within the Kubernetes cluster using KubernetesConnectionConfiguration.
  * <p>
  * Prerequisites:
  * <ul>
- * <li>Running Ignite kubernetes cluster. Check modules/kubernetes/DEVNOTES.md for example how to run a cluster locally.</li>
- * <li>Thin client application should be run within the cluster to have access to Ignite nodes pods.</li>
+ * <li>Running Ignite Kubernetes cluster. Check modules/kubernetes/DEVNOTES.md for example how to run a cluster locally.</li>
+ * <li>A thin client application should be run within the cluster to have access to Ignite nodes pods.</li>
  * <li>KubernetesConnectionConfiguration must be in sync with the Ignite nodes configuration.</li>
  * </ul>
  * </p>
