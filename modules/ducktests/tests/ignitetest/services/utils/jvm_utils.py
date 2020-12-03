@@ -17,18 +17,22 @@
 This module contains JVM utilities.
 """
 
-JVM_PARAMS_GC_CMS_SIMPLE = "-XX:+UseConcMarkSweepGC -XX:+CMSParallelRemarkEnabled"
+JVM_PARAMS_GC_CMS = "-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSIncrementalMode " \
+                    "-XX:ConcGCThreads=$(((`nproc`/4)>1?(`nproc`/4):1)) " \
+                    "-XX:ParallelGCThreads=$(((`nproc`*3/4)>1?(`nproc`*3/4):1)) " \
+                    "-XX:CMSInitiatingOccupancyFraction=70 -XX:+UseCMSInitiatingOccupancyOnly " \
+                    "-XX:+CMSParallelRemarkEnabled -XX:+CMSClassUnloadingEnabled"
 
-JVM_PARAMS_GC_CMS = "%s -XX:+ScavengeBeforeFullGC -XX:+CMSScavengeBeforeRemark -XX:+CMSClassUnloadingEnabled " \
-                    "-XX:+UseCMSInitiatingOccupancyOnly -XX:CMSInitiatingOccupancyFraction=70" % \
-                    JVM_PARAMS_GC_CMS_SIMPLE
-JVM_PARAMS_GC_CMS = ""
+JVM_PARAMS_GC_G1 = "-XX:+UseG1GC -XX:MaxGCPauseMillis=50 " \
+                   "-XX:ConcGCThreads=$(((`nproc`/3)>1?(`nproc`/3):1)) " \
+                   "-XX:ParallelGCThreads=$(((`nproc`*3/4)>1?(`nproc`*3/4):1)) "
 
-# JVM_PARAMS_GENERIC = "-server"
-JVM_PARAMS_GENERIC = "-server"
+JVM_PARAMS_GENERIC = "-server -da -XX:+DisableExplicitGC -XX:+AggressiveOpts -XX:+AlwaysPreTouch " \
+                     "-XX:+ParallelRefProcEnabled -XX:+DoEscapeAnalysis " \
+                     "-XX:+OptimizeStringConcat -XX:+UseStringDeduplication"
 
 
-def jvm_settings(heap_size="768M", gc_settings=JVM_PARAMS_GC_CMS, generic_params=JVM_PARAMS_GENERIC, gc_dump_path=None,
+def jvm_settings(heap_size="768M", gc_settings=JVM_PARAMS_GC_G1, generic_params=JVM_PARAMS_GENERIC, gc_dump_path=None,
                  oom_path=None):
     """Provides settings string for JVM process."""
     gc_dump = "-XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=32M " \
@@ -38,5 +42,4 @@ def jvm_settings(heap_size="768M", gc_settings=JVM_PARAMS_GC_CMS, generic_params
     out_of_mem_dump = "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=" + oom_path \
         if oom_path else ""
 
-    # return f"-Xmx{heap_size} -Xms{heap_size} {gc_settings} {gc_dump} {out_of_mem_dump} {generic_params}".strip()
-    return f"-Xmx{heap_size} -Xms{heap_size} {gc_settings} {gc_dump} {out_of_mem_dump}".strip()
+    return f"-Xmx{heap_size} -Xms{heap_size} {gc_settings} {gc_dump} {out_of_mem_dump} {generic_params}".strip()
