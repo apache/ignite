@@ -15,36 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
+package org.apache.ignite.internal.client.thin.io;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import org.jetbrains.annotations.Nullable;
 
-/** */
-public class CacheDefragmentationContext {
-    /** */
-
-    /** */
-    private final Set<Integer> cacheGroupsForDefragmentation;
-
+/**
+ * Handles thin client connection state.
+ */
+public interface ClientConnectionStateHandler {
     /**
-     * @param cacheGroupsForDefragmentation Cache group ids for defragmentation.
+     * Handles connection loss.
+     * @param e Exception that caused the disconnect, can be null.
      */
-    public CacheDefragmentationContext(
-        List<Integer> cacheGroupsForDefragmentation
-    ) {
-
-        this.cacheGroupsForDefragmentation = new HashSet<>(cacheGroupsForDefragmentation);
-    }
-
-    /** */
-    public Set<Integer> cacheGroupsForDefragmentation() {
-        return cacheGroupsForDefragmentation;
-    }
-
-    /** */
-    public void onCacheGroupDefragmented(int grpId) {
-        // Invalidate page stores.
-    }
+    void onDisconnected(@Nullable Exception e);
 }

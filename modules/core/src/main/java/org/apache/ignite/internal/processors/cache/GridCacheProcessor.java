@@ -3107,7 +3107,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!cachesInfo.isMergeConfigSupports(node))
             return null;
 
-        String validationRes = cachesInfo.validateJoiningNodeData(discoData);
+        String validationRes = cachesInfo.validateJoiningNodeData(discoData, node.isClient());
 
         if (validationRes != null)
             return new IgniteNodeValidationResult(node.id(), validationRes, validationRes);
