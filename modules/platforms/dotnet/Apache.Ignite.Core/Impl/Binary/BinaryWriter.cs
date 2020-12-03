@@ -1019,7 +1019,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Write object array.
         /// </summary>
         /// <param name="val">Object array.</param>
-        public void WriteArrayInternal(Array val)
+        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
+        public void WriteArrayInternal(Array val, bool registerSameJavaType = false)
         {
             if (val == null)
                 WriteNullRawField();
@@ -1029,7 +1030,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return;
 
                 _stream.WriteByte(BinaryTypeId.Array);
-                BinaryUtils.WriteArray(val, this);
+                BinaryUtils.WriteArray(val, this, registerSameJavaType: registerSameJavaType);
             }
         }
 
@@ -1051,6 +1052,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Collection.</param>
         public void WriteCollection(ICollection val)
         {
+            WriteCollection(val, false);
+        }
+
+        /// <summary>
+        /// Write collection.
+        /// </summary>
+        /// <param name="val">Collection.</param>
+        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
+        public void WriteCollection(ICollection val, bool registerSameJavaType = false)
+        {
             if (val == null)
                 WriteNullField();
             else
@@ -1059,7 +1070,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return;
 
                 WriteByte(BinaryTypeId.Collection);
-                BinaryUtils.WriteCollection(val, this);
+                BinaryUtils.WriteCollection(val, this, registerSameJavaType: registerSameJavaType);
             }
         }
 
@@ -1188,7 +1199,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))
                     return;
 
-                handler.Write(this, obj);
+                handler.Write(this, obj, registerSameJavaType);
 
                 return;
             }

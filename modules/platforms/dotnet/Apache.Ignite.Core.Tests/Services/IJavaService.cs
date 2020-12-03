@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
     using org.apache.ignite.platform;
@@ -166,6 +167,12 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         Address testAddress(Address addr);
+
+        /** */
+        Employee[] testEmployees(Employee[] emps);
+
+        /** */
+        ICollection testDepartments(ICollection deps);
 
         /** */
         void sleep(long delayMs);

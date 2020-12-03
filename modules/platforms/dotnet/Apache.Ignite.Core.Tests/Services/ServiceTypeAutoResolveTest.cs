@@ -18,7 +18,10 @@
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using NUnit.Framework;
     using org.apache.ignite.platform;
 
@@ -70,13 +73,13 @@ namespace Apache.Ignite.Core.Tests.Services
                     StopGrids(); // clean events for other tests
             }
         }
-        
+
         /// <summary>
         /// Tests Java service invocation with dynamic proxy.
         /// Address type should be resolved implicitly.
         /// </summary>
         [Test]
-        public void TestTypeAutoResolvingDynamicProxy() 
+        public void TestCallJavaServiceDynamicProxy() 
         {
             // Deploy Java service
             var javaSvcName = TestUtils.DeployJavaService(_grid1);
@@ -88,6 +91,20 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual("127000", addr.Zip);
             Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
+            
+            Assert.IsNull(svc.testEmployees(null));
+
+            Employee[] emps = svc.testEmployees(new[]
+            {
+                new Employee { Fio = "Sarah Connor", Salary = 1 }, 
+                new Employee { Fio = "John Connor", Salary = 2 }
+            });
+            
+            Assert.NotNull(emps);
+            Assert.AreEqual(1, emps.Length);
+            
+            Assert.AreEqual("Kyle Reese", emps[0].Fio);
+            Assert.AreEqual(3, emps[0].Salary);
         }
 
         /// <summary>
@@ -108,6 +125,30 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual("127000", addr.Zip);
             Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
+            
+            Assert.IsNull(svc.testEmployees(null));
+
+            Employee[] emps = svc.testEmployees(new[]
+            {
+                new Employee { Fio = "Sarah Connor", Salary = 1 }, 
+                new Employee { Fio = "John Connor", Salary = 2 }
+            });
+            
+            Assert.NotNull(emps);
+            Assert.AreEqual(1, emps.Length);
+            
+            Assert.AreEqual("Kyle Reese", emps[0].Fio);
+            Assert.AreEqual(3, emps[0].Salary);
+
+            Assert.IsNull(svc.testDepartments(null));
+
+            var arr  = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToArray();
+
+            ICollection deps = svc.testDepartments(arr);
+
+            Assert.NotNull(deps);
+            Assert.AreEqual(1, deps.Count);
+            Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
 
             _grid1.GetServices().Cancel(javaSvcName);
         }

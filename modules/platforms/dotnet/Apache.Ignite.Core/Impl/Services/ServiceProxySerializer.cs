@@ -263,10 +263,10 @@ namespace Apache.Ignite.Core.Impl.Services
                 return null;
 
             if (type.IsArray)
-                return (writer, o) => writer.WriteArrayInternal((Array) o);
+                return (writer, o) => writer.WriteArrayInternal((Array) o, true);
 
             if (arg is ICollection)
-                return (writer, o) => writer.WriteCollection((ICollection) o);
+                return (writer, o) => writer.WriteCollection((ICollection) o, true);
 
             if (arg is DateTime)
                 return (writer, o) => writer.WriteTimestamp((DateTime) o);

@@ -21,6 +21,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -428,6 +429,51 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
             return addr;
         }
+
+        /** */
+        public Employee[] testEmployees(Employee[] emps) {
+            if (emps == null)
+                return null;
+
+            assertEquals(2, emps.length);
+
+            assertEquals("Sarah Connor", emps[0].getFio());
+            assertEquals(1, emps[0].getSalary());
+
+            assertEquals("John Connor", emps[1].getFio());
+            assertEquals(2, emps[1].getSalary());
+
+            Employee kyle = new Employee();
+
+            kyle.setFio("Kyle Reese");
+            kyle.setSalary(3);
+
+            return new Employee[] { kyle };
+        }
+
+        /** */
+        public Collection testDepartments(Collection deps) {
+            if (deps == null)
+                return null;
+
+            assertEquals(2, deps.size());
+
+            Iterator<Department> iter = deps.iterator();
+
+            assertEquals("HR", iter.next().getName());
+            assertEquals("IT", iter.next().getName());
+
+            Collection<Department> res = new ArrayList<>();
+
+            Department d = new Department();
+
+            d.setName("Executive");
+
+            res.add(d);
+
+            return res;
+        }
+
 
         /** */
         public void sleep(long delayMs) {
