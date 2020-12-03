@@ -34,12 +34,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.communication.CommunicationSpi;
-import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -316,9 +316,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         CommunicationSpi<?> comm = ignite.configuration().getCommunicationSpi();
 
-        GridNioServerWrapper nioServerWrapper = U.field(comm, "nioSrvWrapper");
+        GridNioServer<?> nioServerWrapper = U.field(comm, "nioSrvr");
 
-        for (GridWorker worker : nioServerWrapper.nio().workers())
+        for (GridWorker worker : nioServerWrapper.workers())
             proc.accept(worker.runner());
     }
 }
