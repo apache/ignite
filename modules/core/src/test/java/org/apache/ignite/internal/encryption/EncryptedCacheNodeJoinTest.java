@@ -284,7 +284,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         if (client && newCfg) {
             String expErrMsg = "Joining node has encrypted caches which are not presented on the cluster, " +
                 "encrypted caches configured on client node cannot be started when such node joins " +
-                "the cluster, these caches can be started manually (dynamically) after node is joined " +
+                "the cluster, these caches can be started manually (dynamically) after node joined" +
                 "[caches=" + cacheName() + ']';
 
             GridTestUtils.assertThrowsAnyCause(log, () -> startClientGrid(CLIENT), IgniteSpiException.class, expErrMsg);
