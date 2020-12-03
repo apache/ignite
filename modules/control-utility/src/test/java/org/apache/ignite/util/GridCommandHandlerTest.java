@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -2226,7 +2227,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testDiagnosticPageLocksTracker() throws Exception {
-        Ignite ignite = startGrids(4);
+        Ignite ignite = startGrid(0, (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setConsistentId("node0/dump"));
+        startGrid(1, (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setConsistentId("node1/dump"));
+        startGrid(2, (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setConsistentId("node2/dump"));
+        startGrid(3, (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setConsistentId("node3/dump"));
 
         Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
