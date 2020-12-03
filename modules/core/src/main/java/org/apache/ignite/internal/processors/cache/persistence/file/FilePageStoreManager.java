@@ -1090,7 +1090,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return The full cache directory name.
      */
     public static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
-        return isSharedGroup ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
+        cacheOrGroupName = cacheOrGroupName.replace("/", Integer.toHexString('/'));
+        cacheOrGroupName = cacheOrGroupName.replace("\0", Integer.toHexString('\0'));
+
+        return isSharedGroup
+            ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
             : CACHE_DIR_PREFIX + cacheOrGroupName;
     }
 
