@@ -61,7 +61,7 @@ class DiscoveryTestConfig(NamedTuple):
     load_type: ClusterLoad = ClusterLoad.NONE
     sequential_failure: bool = False
     with_zk: bool = False
-    failure_detection_timeout: int = 1000
+    failure_detection_timeout: int = 3000
 
 
 # pylint: disable=W0223, no-member
@@ -80,7 +80,7 @@ class DiscoveryTest(IgniteTest):
 
     WARMUP_DATA_AMOUNT = 10_000
 
-    FAILURE_TIMEOUT_RING = 300
+    FAILURE_TIMEOUT_RING = 350
 
     FAILURE_TIMEOUT_ZK = 600
 
@@ -91,9 +91,9 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[FAILURE_TIMEOUT_RING],
-            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def _test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
+    @matrix(nodes_to_kill=[2], failure_detection_timeout=[FAILURE_TIMEOUT_RING],
+            load_type=[ClusterLoad.NONE, ClusterLoad.TRANSACTIONAL])
+    def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
         """
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
         """
@@ -105,9 +105,9 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
+    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.TRANSACTIONAL],
             failure_detection_timeout=[FAILURE_TIMEOUT_RING])
-    def _test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, failure_detection_timeout):
+    def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, failure_detection_timeout):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
         """
@@ -120,11 +120,11 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=MAX_CONTAINERS)
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH))
-    # @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[FAILURE_TIMEOUT_RING],
-    @matrix(nodes_to_kill=[2], failure_detection_timeout=[FAILURE_TIMEOUT_RING],
+    # @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[FAILURE_TIMEOUT_ZK],
+    @matrix(nodes_to_kill=[2], failure_detection_timeout=[FAILURE_TIMEOUT_ZK],
             # load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-            load_type=[ClusterLoad.ATOMIC])
-    def test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
+            load_type=[ClusterLoad.NONE, ClusterLoad.TRANSACTIONAL])
+    def _test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
         """
         Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
         """
@@ -138,9 +138,9 @@ class DiscoveryTest(IgniteTest):
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH))
     # @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
-    @matrix(load_type=[ClusterLoad.ATOMIC],
+    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.TRANSACTIONAL],
             failure_detection_timeout=[FAILURE_TIMEOUT_ZK])
-    def test_2_nodes_fail_sequential_zk(self, ignite_version, load_type, failure_detection_timeout):
+    def _test_2_nodes_fail_sequential_zk(self, ignite_version, load_type, failure_detection_timeout):
         """
         Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
         """
@@ -199,7 +199,7 @@ class DiscoveryTest(IgniteTest):
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
                 ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
 
-            tran_nodes = [node_id(n) for n in failed_nodes] \
+            tran_nodes = [read_node_id(n) for n in failed_nodes] \
                 if test_config.load_type == ClusterLoad.TRANSACTIONAL else None
 
             params = {"cacheName": "test-cache",
@@ -210,19 +210,23 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, load_config, params, modules, jvm_opts_str)
 
+        # Al least 3 sec to detect node failure. The calculated timeout is failure_detection_timeout * 4 in seconds.
         results.update(self._simulate_and_detect_failure(servers, failed_nodes,
-                                                         test_config.failure_detection_timeout * 4))
+                                                         max(3.0, 0.004 * test_config.failure_detection_timeout)))
 
         return results
 
-    def _simulate_and_detect_failure(self, servers, failed_nodes, timeout):
+    def _simulate_and_detect_failure(self, servers, failed_nodes, timeout_sec):
         """
         Perform node failure scenario
         """
-        for node in failed_nodes:
-            self.logger.info("Simulating failure of node '%s'" % node.name)
+        ids_to_wait = []
 
-        ids_to_wait = [node_id(n) for n in failed_nodes]
+        for node in failed_nodes:
+            ids_to_wait.append(read_node_id(node))
+
+            self.logger.info("Simulating failure of node '%s' (ID: %s). Timeout: %.2f sec" %
+                             (node.name, ids_to_wait[-1], timeout_sec))
 
         _, first_terminated = servers.drop_network(failed_nodes)
 
@@ -235,7 +239,7 @@ class DiscoveryTest(IgniteTest):
         for survivor in [n for n in servers.nodes if n not in failed_nodes]:
             for failed_id in ids_to_wait:
                 logged_timestamps.append(get_event_time(servers, survivor, node_failed_event_pattern(failed_id),
-                                                        timeout=start + timeout - monotonic()))
+                                                        timeout=start + timeout_sec - monotonic()))
 
             self._check_failed_number(failed_nodes, survivor)
 
@@ -252,17 +256,18 @@ class DiscoveryTest(IgniteTest):
 
     def _check_failed_number(self, failed_nodes, survived_node):
         """Ensures number of failed nodes is correct."""
-        cmd = "grep '%s' %s | wc -l" % (node_failed_event_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE)
+        failed_cnt = int(exec_command(survived_node, "grep '%s' %s | wc -l" %
+                                      (node_failed_event_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE)))
 
-        failed_cnt = int(str(survived_node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding()))
+        # Cache survivor id, do not read each time.
+        surv_id = read_node_id(survived_node)
 
         if failed_cnt != len(failed_nodes):
-            failed = str(survived_node.account.ssh_client.exec_command(
-                "grep '%s' %s" % (node_failed_event_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE))[1].read(),
-                         sys.getdefaultencoding())
+            failed = exec_command(survived_node, "grep '%s' %s" % (node_failed_event_pattern(),
+                                                                   IgniteAwareService.STDOUT_STDERR_CAPTURE))
 
-            self.logger.warn("Node '%s' (%s) has detected the following failures:%s%s" % (
-                survived_node.name, node_id(survived_node), os.linesep, failed))
+            self.logger.warn("Node '%s' (%s) has detected the following failures:%s%s" %
+                             (survived_node.name, surv_id, os.linesep, failed))
 
             raise AssertionError(
                 "Wrong number of failed nodes: %d. Expected: %d. Check the logs." % (failed_cnt, len(failed_nodes)))
@@ -273,7 +278,7 @@ class DiscoveryTest(IgniteTest):
             for node in [srv_node for srv_node in service.nodes if srv_node not in failed_nodes]:
                 cmd = "grep -i '%s' %s | wc -l" % ("local node segmented", IgniteAwareService.STDOUT_STDERR_CAPTURE)
 
-                failed = str(node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding())
+                failed = exec_command(node, cmd)
 
                 if int(failed) > 0:
                     raise AssertionError(
@@ -287,7 +292,7 @@ def start_zookeeper(test_context, num_nodes, test_config):
     zk_settings = ZookeeperSettings(min_session_timeout=test_config.failure_detection_timeout,
                                     max_session_timeout=test_config.failure_detection_timeout,
                                     init_limit=20, sync_limit=20,
-                                    tick_time=test_config.failure_detection_timeout // 10)
+                                    tick_time=test_config.failure_detection_timeout // 4)
 
     zk_quorum = ZookeeperService(test_context, num_nodes, settings=zk_settings)
     zk_quorum.start()
@@ -340,11 +345,17 @@ def choose_node_to_kill(servers, nodes_to_kill, sequential):
     return to_kill
 
 
-def order(node):
-    """Return discovery order of the node."""
-    return node.discovery_info().order
+def exec_command(node, cmd):
+    """Executes the command passed on the given node and returns result as string."""
+    return str(node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding())
 
 
-def node_id(node):
-    """Return node id."""
-    return node.discovery_info().node_id
+def read_node_id(node):
+    """
+    Returns node id from its log if started.
+    This is a remote call. Reuse its results if possible.
+    """
+    regexp = "^>>> Local node \\[ID=([^,]+),.+$"
+    cmd = "grep -E '%s' %s | sed -r 's/%s/\\1/'" % (regexp, IgniteService.STDOUT_STDERR_CAPTURE, regexp)
+
+    return exec_command(node, cmd).strip().lower()

@@ -88,8 +88,7 @@ class ZookeeperService(Service):
         log_config_file = self.render('log4j.properties.j2')
         node.account.create_file(self.LOG_CONFIG_FILE, log_config_file)
 
-        jvm_params = jvm_settings(gc_settings="", generic_params="",
-                                  gc_dump_path=os.path.join(self.PERSISTENT_ROOT, "gc.log"),
+        jvm_params = jvm_settings(gc_dump_path=os.path.join(self.PERSISTENT_ROOT, "gc.log"),
                                   oom_path=os.path.join(self.PERSISTENT_ROOT, "'out_of_mem_`date`.hprof'"))
 
         start_cmd = "nohup java %s -cp %s/*:%s " \

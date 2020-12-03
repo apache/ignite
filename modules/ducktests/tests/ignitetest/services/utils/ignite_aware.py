@@ -213,7 +213,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         with monitor_log(node, self.STDOUT_STDERR_CAPTURE, from_the_beginning) as monitor:
             monitor.wait_until(evt_message, timeout_sec=timeout_sec, backoff_sec=backoff_sec,
-                               err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
+                               err_msg="Event [%s] was not triggered on '%s' in %.1f seconds" % (evt_message, node.name,
                                                                                                timeout_sec))
 
     def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=5):
@@ -283,7 +283,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
             nodes = self.nodes
 
         for node in nodes:
-            self.logger.info("Disconnecting " + node.account.hostname + ".")
+            self.logger.info("Dropping ignite network on '" + node.account.hostname + "' ...")
 
         self.__backup_iptables(nodes)
 
@@ -298,12 +298,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         cmd = f"sudo iptables -I %s 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"
 
-        for node in nodes:
-            self.logger.debug("Activating netfilter on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
-
         return self.exec_on_nodes_async(nodes,
                                         lambda n: (n.account.ssh_client.exec_command(cmd % "INPUT"),
-                                                   n.account.ssh_client.exec_command(cmd % "OUTPUT")))
+                                                   n.account.ssh_client.exec_command(cmd % "OUTPUT"),
+                                                   self.logger.debug("Activated netfilter on '%s': %s" %
+                                                                     (n.name, self.__dump_netfilter_settings(n)))
+                                                   )
+                                        )
 
     def __backup_iptables(self, nodes):
         # Store current network filter settings.
