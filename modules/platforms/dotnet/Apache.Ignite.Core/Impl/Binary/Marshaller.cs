@@ -438,7 +438,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets descriptor for type.
         /// </summary>
         /// <param name="type">Type.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platform.</param>
+        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
         /// <returns>
         /// Descriptor.
         /// </returns>
@@ -556,7 +556,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="desc">Existing descriptor.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platform.</param>
+        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
         private BinaryFullTypeDescriptor RegisterType(Type type, BinaryFullTypeDescriptor desc, bool registerSameJavaType = false)
         {
             Debug.Assert(type != null);

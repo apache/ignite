@@ -1152,7 +1152,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Write object.
         /// </summary>
         /// <param name="obj">Object.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platform.</param>
+        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
         public void Write<T>(T obj, bool registerSameJavaType = false)
         {
             // Handle special case for null.

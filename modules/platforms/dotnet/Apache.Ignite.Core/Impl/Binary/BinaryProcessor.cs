@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <param name="typeName">The type name.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platform.</param>
+        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
         /// <returns>True if registration succeeded; otherwise, false.</returns>
         public bool RegisterType(int id, string typeName, bool registerSameJavaType = false)
         {
