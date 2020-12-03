@@ -93,6 +93,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.Checkpoint
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DEFRAGMENTATION_MAPPING_REGION_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DEFRAGMENTATION_PART_REGION_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.batchRenameDefragmentedCacheGroupPartitions;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexTmpFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartMappingFile;
@@ -450,7 +451,21 @@ public class CachePartitionDefragmentationManager {
                             .futureFor(CheckpointState.FINISHED);
                     }
 
+                    PageStore oldIdxPageStore = filePageStoreMgr.getStore(grpId, INDEX_PARTITION);
+
                     idxDfrgFut = idxDfrgFut.chain(fut -> {
+                        if (log.isDebugEnabled()) {
+                            log.debug(S.toString(
+                                "Index partition defragmented",
+                                "grpId", grpId, false,
+                                "oldPages", oldIdxPageStore.pages(), false,
+                                "newPages", idxAllocationTracker.get() + 1, false,
+                                "pageSize", pageSize, false,
+                                "partFile", defragmentedIndexFile(workDir).getName(), false,
+                                "workDir", workDir, false
+                            ));
+                        }
+
                         oldPageMem.invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
 
                         PageMemoryEx partPageMem = (PageMemoryEx)partDataRegion.pageMemory();
@@ -475,8 +490,6 @@ public class CachePartitionDefragmentationManager {
 
                         return null;
                     });
-
-                    PageStore oldIdxPageStore = filePageStoreMgr.getStore(grpId, INDEX_PARTITION);
 
                     status.onIndexDefragmented(
                         oldGrpCtx,
