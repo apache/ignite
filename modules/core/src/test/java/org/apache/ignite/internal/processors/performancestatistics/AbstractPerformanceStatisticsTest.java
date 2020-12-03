@@ -97,7 +97,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     }
 
     /** Wait for statistics started/stopped in the cluster. */
-    protected static void waitForStatisticsEnabled(boolean performanceStatsEnabled) throws Exception {
+    public static void waitForStatisticsEnabled(boolean performanceStatsEnabled) throws Exception {
         assertTrue(waitForCondition(() -> {
             List<Ignite> grids = G.allGrids();
 
