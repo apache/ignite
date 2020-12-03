@@ -162,9 +162,7 @@ class CellularAffinity(IgniteTest):
         d_type = DiscoreryType.construct_from(discovery_type)
 
         if d_type is DiscoreryType.ZooKeeper:
-            zk_settings = ZookeeperSettings(min_session_timeout=self.ZOOKEPER_SESSION_TIMEOUT,
-                                            max_session_timeout=self.ZOOKEPER_SESSION_TIMEOUT,
-                                            tick_time=self.ZOOKEPER_SESSION_TIMEOUT // 3)
+            zk_settings = ZookeeperSettings(min_session_timeout=self.ZOOKEPER_SESSION_TIMEOUT)
             zk_quorum = ZookeeperService(self.test_context, self.ZOOKEPER_CLUSTER_SIZE, settings=zk_settings)
             zk_quorum.start()
 
