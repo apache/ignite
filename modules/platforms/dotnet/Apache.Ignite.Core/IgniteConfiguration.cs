@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core
         private bool? _isDaemon;
 
         /** */
-        private bool? _clientMode;
+        private bool? _javaPeerClassLoadingEnabled;
 
         /** */
         private TimeSpan? _failureDetectionTimeout;
@@ -217,6 +217,9 @@ namespace Apache.Ignite.Core
 
         /** SQL query history size. */
         private int? _sqlQueryHistorySize;
+
+        /** */
+        private bool? _clientMode;
 
         /// <summary>
         /// Default network retry count.
@@ -338,7 +341,7 @@ namespace Apache.Ignite.Core
             writer.WriteIntNullable(_mvccVacuumThreadCnt);
             writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
             writer.WriteIntNullable(_sqlQueryHistorySize);
-            writer.WriteBooleanNullable(JavaPeerClassLoadingEnabled);
+            writer.WriteBooleanNullable(_javaPeerClassLoadingEnabled);
 
             if (SqlSchemas == null)
                 writer.WriteInt(0);
@@ -743,7 +746,7 @@ namespace Apache.Ignite.Core
             _mvccVacuumThreadCnt = r.ReadIntNullable();
             _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
             _sqlQueryHistorySize = r.ReadIntNullable();
-            JavaPeerClassLoadingEnabled = r.ReadBooleanNullable();
+            _javaPeerClassLoadingEnabled = r.ReadBooleanNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
@@ -1723,10 +1726,11 @@ namespace Apache.Ignite.Core
         /// When peer class loading is enabled and task is not deployed on local node,
         /// local node will try to load classes from the node that initiated task execution.
         /// <para />
-        /// Default is <c>false</c>.
-        /// <para />
         /// </summary>
-        [DefaultValue(false)]
-        public bool? JavaPeerClassLoadingEnabled { get; set; }
+        public bool JavaPeerClassLoadingEnabled 
+        {
+            get { return _javaPeerClassLoadingEnabled ?? default(bool); }
+            set { _javaPeerClassLoadingEnabled = value; }
+        }
     }
 }
