@@ -304,7 +304,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Simulates network failure on certain node.
+     * Simulates network failure on certain node
      */
     private void processNetworkThreads(Ignite ignite, Consumer<Thread> proc) {
         DiscoverySpi disco = ignite.configuration().getDiscoverySpi();
