@@ -501,7 +501,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        if (dataBag.isJoiningNodeClient())
+        if (ctx.clientNode())
             return;
 
         Set<Integer> grpIds = grpKeys.groupIds();
