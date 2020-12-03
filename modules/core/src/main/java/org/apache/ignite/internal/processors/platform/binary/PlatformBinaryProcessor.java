@@ -22,14 +22,11 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.util.typedef.T2;
-
-import static org.apache.ignite.internal.MarshallerPlatformIds.DOTNET_ID;
-import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
 /**
  * Platform binary processor.
@@ -79,10 +76,19 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
             case OP_REGISTER_TYPE: {
                 int typeId = reader.readInt();
                 String typeName = reader.readString();
+                boolean registerSameJavaType = reader.readBoolean();
 
-                return platformContext().kernalContext().marshallerContext()
-                    .registerClassName(DOTNET_ID, typeId, typeName, false)
+                int res = platformContext().kernalContext().marshallerContext()
+                    .registerClassName(MarshallerPlatformIds.DOTNET_ID, typeId, typeName, false)
                     ? TRUE : FALSE;
+
+                if (registerSameJavaType && res == TRUE) {
+                    res = platformContext().kernalContext().marshallerContext()
+                        .registerClassName(MarshallerPlatformIds.JAVA_ID, typeId, typeName, false)
+                        ? TRUE : FALSE;
+                }
+
+                return res;
             }
         }
 
@@ -129,25 +135,15 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
             case OP_GET_TYPE: {
                 int typeId = reader.readInt();
 
-                String err = null;
+                try {
+                    String typeName = platformContext().kernalContext().marshallerContext()
+                        .getClassName(MarshallerPlatformIds.DOTNET_ID, typeId);
 
-                for (byte platformId : new byte[] {DOTNET_ID, JAVA_ID}) {
-                    T2<String, String> res = platformContext().kernalContext().marshallerContext()
-                        .getClassName(platformId, typeId, false);
-
-                    if (res.get1() != null) {
-                        writer.writeString(res.get1());
-
-                        err = null;
-
-                        break;
-                    }
-                    else if (err == null)
-                        err = res.get2();
+                    writer.writeString(typeName);
                 }
-
-                if (err != null)
-                    throw new BinaryObjectException(err);
+                catch (ClassNotFoundException e) {
+                    throw new BinaryObjectException(e);
+                }
 
                 break;
             }

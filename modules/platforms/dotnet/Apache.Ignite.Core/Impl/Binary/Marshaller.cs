@@ -438,16 +438,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets descriptor for type.
         /// </summary>
         /// <param name="type">Type.</param>
+        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platform.</param>
         /// <returns>
         /// Descriptor.
         /// </returns>
-        public IBinaryTypeDescriptor GetDescriptor(Type type)
+        public IBinaryTypeDescriptor GetDescriptor(Type type, bool registerSameJavaType = false)
         {
             BinaryFullTypeDescriptor desc;
 
             if (!_typeToDesc.TryGetValue(type, out desc) || !desc.IsRegistered)
             {
-                desc = RegisterType(type, desc);
+                desc = RegisterType(type, desc, registerSameJavaType);
             }
 
             return desc;
@@ -555,14 +556,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="desc">Existing descriptor.</param>
-        private BinaryFullTypeDescriptor RegisterType(Type type, BinaryFullTypeDescriptor desc)
+        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platform.</param>
+        private BinaryFullTypeDescriptor RegisterType(Type type, BinaryFullTypeDescriptor desc, bool registerSameJavaType = false)
         {
             Debug.Assert(type != null);
 
             var typeName = GetTypeName(type);
             var typeId = GetTypeId(typeName, _cfg.IdMapper);
 
-            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName);
+            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName, registerSameJavaType);
 
             return AddUserType(type, typeId, typeName, registered, desc);
         }

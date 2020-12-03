@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTranspo
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -60,7 +59,6 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.MarshallerPlatformIds.DOTNET_ID;
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 import static org.apache.ignite.internal.MarshallerPlatformIds.otherPlatforms;
 import static org.apache.ignite.internal.MarshallerPlatformIds.platformName;
@@ -370,28 +368,12 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
-        String err = null;
+        String clsName = getClassName(JAVA_ID, typeId);
 
-        for (byte platformId : new byte[] {JAVA_ID, DOTNET_ID}) {
-            T2<String, String> res = getClassName(platformId, typeId, false);
+        if (clsName == null)
+            throw new ClassNotFoundException("Unknown type ID: " + typeId);
 
-            if (res.get1() != null) {
-                try {
-                    return U.forName(res.get1(), ldr, clsFilter);
-                }
-                catch (ClassNotFoundException e) {
-                    if (err == null)
-                        err = e.getMessage();
-                }
-            }
-            else if (err == null)
-                err = res.get2();
-        }
-
-        if (err != null)
-            throw new ClassNotFoundException(err);
-
-        throw new ClassNotFoundException("Unknown type ID: " + typeId);
+        return U.forName(clsName, ldr, clsFilter);
     }
 
     /** {@inheritDoc} */
@@ -399,27 +381,24 @@ public class MarshallerContextImpl implements MarshallerContext {
             byte platformId,
             int typeId
     ) throws ClassNotFoundException, IgniteCheckedException {
-        T2<String, String> res = getClassName(platformId, typeId, false);
-
-        if (res.get1() == null)
-            throw new ClassNotFoundException(res.get2());
-
-        return res.get1();
+        return getClassName(platformId, typeId, false);
     }
 
     /**
-     * Gets T2(class name, error message) for provided (platformId, typeId) pair.
+     * Gets class name for provided (platformId, typeId) pair.
      *
      * @param platformId id of a platform the class was registered for.
      * @param typeId Type ID.
      * @param skipOtherPlatforms Whether to skip other platforms check (recursion guard).
-     * @return Tuple. First is class name, second is error message.
+     * @return Class name
+     * @throws ClassNotFoundException If class was not found.
+     * @throws IgniteCheckedException In case of any other error.
      */
-    public T2<String, String> getClassName(
+    private String getClassName(
             byte platformId,
             int typeId,
             boolean skipOtherPlatforms
-    ) throws IgniteCheckedException {
+    ) throws ClassNotFoundException, IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
         MappedName mappedName = cache.get(typeId);
@@ -447,13 +426,13 @@ public class MarshallerContextImpl implements MarshallerContext {
                     clsName = mappedName.className();
 
                 if (clsName == null)
-                    return new T2<>(null,
+                    throw new ClassNotFoundException(
                             "Requesting mapping from grid failed for [platformId="
                                     + platformId
                                     + ", typeId="
                                     + typeId + "]");
 
-                return new T2<>(clsName, null);
+                return clsName;
             }
             else {
                 String platformName = platformName(platformId);
@@ -461,22 +440,23 @@ public class MarshallerContextImpl implements MarshallerContext {
                 if (!skipOtherPlatforms) {
                     // Look for this class in other platforms to provide a better error message.
                     for (byte otherPlatformId : otherPlatforms(platformId)) {
-                        T2<String, String> res = getClassName(otherPlatformId, typeId, true);
-
-                        if (res.get1() == null)
+                        try {
+                            clsName = getClassName(otherPlatformId, typeId, true);
+                        } catch (ClassNotFoundException ignored) {
                             continue;
+                        }
 
                         String otherPlatformName = platformName(otherPlatformId);
 
-                        return new T2<>(null,
-                                "Failed to resolve " + otherPlatformName + " class '" + res.get1()
+                        throw new ClassNotFoundException(
+                                "Failed to resolve " + otherPlatformName + " class '" + clsName
                                         + "' in " + platformName
                                         + " [platformId=" + platformId
                                         + ", typeId=" + typeId + "].");
                     }
                 }
 
-                return new T2<>(null,
+                throw new ClassNotFoundException(
                         "Failed to resolve class name [" +
                                 "platformId=" + platformId
                                 + ", platform=" + platformName
@@ -484,7 +464,7 @@ public class MarshallerContextImpl implements MarshallerContext {
             }
         }
 
-        return new T2<>(clsName, null);
+        return clsName;
     }
 
     /** {@inheritDoc} */

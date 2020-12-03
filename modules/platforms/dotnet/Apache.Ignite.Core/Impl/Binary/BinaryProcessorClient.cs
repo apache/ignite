@@ -28,6 +28,9 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class BinaryProcessorClient : IBinaryProcessor
     {
+        /** Java platform id. See org.apache.ignite.internal.MarshallerPlatformIds in Java. */
+        private const byte JavaPlatformId = 0;
+
         /** Type registry platform id. See org.apache.ignite.internal.MarshallerPlatformIds in Java. */
         private const byte DotNetPlatformId = 1;
 
@@ -73,14 +76,26 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public bool RegisterType(int id, string typeName)
+        public bool RegisterType(int id, string typeName, bool registerSameJavaType = false)
         {
-            return _socket.DoOutInOp(ClientOp.BinaryTypeNamePut, ctx =>
+            var res = _socket.DoOutInOp(ClientOp.BinaryTypeNamePut, ctx =>
             {
                 ctx.Stream.WriteByte(DotNetPlatformId);
                 ctx.Stream.WriteInt(id);
                 ctx.Writer.WriteString(typeName);
             }, ctx => ctx.Stream.ReadBool());
+
+            if (registerSameJavaType && res)
+            {
+                res = _socket.DoOutInOp(ClientOp.BinaryTypeNamePut, ctx =>
+                {
+                    ctx.Stream.WriteByte(JavaPlatformId);
+                    ctx.Stream.WriteInt(id);
+                    ctx.Writer.WriteString(typeName);
+                }, ctx => ctx.Stream.ReadBool());
+            }
+
+            return res;
         }
 
         /** <inheritdoc /> */

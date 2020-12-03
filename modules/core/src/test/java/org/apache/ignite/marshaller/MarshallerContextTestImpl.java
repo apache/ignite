@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 
@@ -87,13 +86,12 @@ public class MarshallerContextTestImpl extends MarshallerContextImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public T2<String, String> getClassName(
+    @Override public String getClassName(
             byte platformId,
-            int typeId,
-            boolean skipOtherPlatforms
-    ) throws IgniteCheckedException {
+            int typeId
+    ) throws ClassNotFoundException, IgniteCheckedException {
         String clsName = map.get(typeId);
 
-        return (clsName == null) ? super.getClassName(platformId, typeId, skipOtherPlatforms) : new T2<>(clsName, null);
+        return (clsName == null) ? super.getClassName(platformId, typeId) : clsName;
     }
 }

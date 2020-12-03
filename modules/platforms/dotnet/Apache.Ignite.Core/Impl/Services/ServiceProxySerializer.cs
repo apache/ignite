@@ -225,7 +225,7 @@ namespace Apache.Ignite.Core.Impl.Services
             }
             else
             {
-                writer.WriteObjectDetached(arg);
+                writer.WriteObjectDetached(arg, true);
             }
         }
 

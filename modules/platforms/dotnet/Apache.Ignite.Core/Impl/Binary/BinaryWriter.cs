@@ -1152,7 +1152,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Write object.
         /// </summary>
         /// <param name="obj">Object.</param>
-        public void Write<T>(T obj)
+        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platform.</param>
+        public void Write<T>(T obj, bool registerSameJavaType = false)
         {
             // Handle special case for null.
             // ReSharper disable once CompareNonConstrainedGenericWithNull
@@ -1209,7 +1210,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             // Suppose that we faced normal object and perform descriptor lookup.
-            var desc = _marsh.GetDescriptor(type);
+            var desc = _marsh.GetDescriptor(type, registerSameJavaType);
 
             // Writing normal object.
             var pos = _stream.Position;
@@ -1460,11 +1461,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Perform action with detached semantics.
         /// </summary>
-        internal void WriteObjectDetached<T>(T o)
+        internal void WriteObjectDetached<T>(T o, bool registerSameJavaType = false)
         {
             if (_detaching)
             {
-                Write(o);
+                Write(o, registerSameJavaType);
             }
             else
             {
@@ -1475,7 +1476,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 try
                 {
-                    Write(o);
+                    Write(o, registerSameJavaType);
                 }
                 finally
                 {
