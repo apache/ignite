@@ -1210,6 +1210,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(mntcProcessor);
 
             if (mntcProcessor.isMaintenanceMode()) {
+                if (log.isInfoEnabled()) {
+                    log.info(
+                        "Node is being started in maintenance mode. " +
+                        "Starting IsolatedDiscoverySpi instead of configured discovery SPI."
+                    );
+                }
+
+                cfg.setClusterStateOnStart(ClusterState.INACTIVE);
+
+                if (log.isInfoEnabled())
+                    log.info("Overriding 'clusterStateOnStart' configuration to 'INACTIVE'.");
+
                 ctx.config().setDiscoverySpi(new IsolatedDiscoverySpi());
 
                 discoMgr = new GridDiscoveryManager(ctx);
