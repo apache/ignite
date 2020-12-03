@@ -42,15 +42,15 @@ public class IgnitePdsExoticCacheNamesTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Before
-    public void setup() throws Exception {
+    public void setUp() throws Exception {
         cleanPersistenceDir();
     }
 
-    /** {@inheritDoc} */
+    /** */
     @After
-    public void teardoown() throws Exception {
+    public void tearDown() throws Exception {
         stopAllGrids();
 
         cleanPersistenceDir();
