@@ -719,6 +719,8 @@ public class PlatformConfigurationUtils {
             cfg.setSystemWorkerBlockedTimeout(in.readLong());
         if (in.readBoolean())
             cfg.setSqlQueryHistorySize(in.readInt());
+        if (in.readBoolean())
+            cfg.setPeerClassLoadingEnabled(in.readBoolean());
 
         int sqlSchemasCnt = in.readInt();
 
@@ -1323,6 +1325,8 @@ public class PlatformConfigurationUtils {
         }
         w.writeBoolean(true);
         w.writeInt(cfg.getSqlQueryHistorySize());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isPeerClassLoadingEnabled());
 
         if (cfg.getSqlSchemas() == null)
             w.writeInt(0);
