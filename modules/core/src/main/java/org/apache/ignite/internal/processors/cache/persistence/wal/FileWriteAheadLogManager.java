@@ -1039,20 +1039,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public int truncate(WALPointer low, WALPointer high) {
+    @Override public int truncate(@Nullable WALPointer high) {
         if (high == null)
             return 0;
 
-        // File pointer bound: older entries will be deleted from archive
-
-        FileDescriptor[] descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
+        FileDescriptor[] descs = walArchiveFiles();
 
         int deleted = 0;
 
         for (FileDescriptor desc : descs) {
-            if (low != null && desc.idx < low.index())
-                continue;
-
             // Do not delete reserved or locked segment and any segment after it.
             if (segmentReservedOrLocked(desc.idx))
                 return deleted;
@@ -1634,7 +1629,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Files from archive WAL directory.
+     * Files from {@link #walArchiveDir}.
+     *
+     * @return Raw or compressed WAL segments from archive.
      */
     private FileDescriptor[] walArchiveFiles() {
         return scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
