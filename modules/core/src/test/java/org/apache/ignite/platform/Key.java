@@ -15,17 +15,20 @@
  * limitations under the License.
  */
 
-namespace org.apache.ignite.platform
-{
-    /// <summary>
-    /// A class is a clone of Java class Employee with the same namespace.
-    /// </summary>
-    public class Employee
-    {
-        /** */
-        public string Fio { get; set; }
+package org.apache.ignite.platform;
 
-        /** */
-        public long Salary { get; set; }
+/** Test key object. */
+public class Key {
+    /** */
+    private long id;
+
+    /** */
+    public Key(long id) {
+        this.id = id;
+    }
+
+    /** */
+    public long getId() {
+        return id;
     }
 }

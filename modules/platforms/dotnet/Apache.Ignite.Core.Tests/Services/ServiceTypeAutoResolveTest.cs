@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /// <summary>
         /// Tests Java service invocation with dynamic proxy.
-        /// Address type should be resolved implicitly.
+        /// Types should be resolved implicitly.
         /// </summary>
         [Test]
         public void TestCallJavaServiceDynamicProxy() 
@@ -85,31 +85,12 @@ namespace Apache.Ignite.Core.Tests.Services
             var javaSvcName = TestUtils.DeployJavaService(_grid1);
             var svc = _grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
 
-            Assert.IsNull(svc.testAddress(null));
-
-            Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
-
-            Assert.AreEqual("127000", addr.Zip);
-            Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
-            
-            Assert.IsNull(svc.testEmployees(null));
-
-            Employee[] emps = svc.testEmployees(new[]
-            {
-                new Employee { Fio = "Sarah Connor", Salary = 1 }, 
-                new Employee { Fio = "John Connor", Salary = 2 }
-            });
-            
-            Assert.NotNull(emps);
-            Assert.AreEqual(1, emps.Length);
-            
-            Assert.AreEqual("Kyle Reese", emps[0].Fio);
-            Assert.AreEqual(3, emps[0].Salary);
+            doTestService(new JavaServiceDynamicProxy(svc));
         }
 
         /// <summary>
         /// Tests Java service invocation.
-        /// Address type should be resolved implicitly.
+        /// Types should be resolved implicitly.
         /// </summary>
         [Test]
         public void TestCallJavaService()
@@ -118,28 +99,9 @@ namespace Apache.Ignite.Core.Tests.Services
             var javaSvcName = TestUtils.DeployJavaService(_grid1);
             
             var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
-            
-            Assert.IsNull(svc.testAddress(null));
 
-            Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
-
-            Assert.AreEqual("127000", addr.Zip);
-            Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
+            doTestService(svc);
             
-            Assert.IsNull(svc.testEmployees(null));
-
-            Employee[] emps = svc.testEmployees(new[]
-            {
-                new Employee { Fio = "Sarah Connor", Salary = 1 }, 
-                new Employee { Fio = "John Connor", Salary = 2 }
-            });
-            
-            Assert.NotNull(emps);
-            Assert.AreEqual(1, emps.Length);
-            
-            Assert.AreEqual("Kyle Reese", emps[0].Fio);
-            Assert.AreEqual(3, emps[0].Salary);
-
             Assert.IsNull(svc.testDepartments(null));
 
             var arr  = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToArray();
@@ -151,6 +113,50 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
 
             _grid1.GetServices().Cancel(javaSvcName);
+        }
+
+        /// <summary>
+        /// Tests java service instance.
+        /// </summary>
+        private void doTestService(IJavaService svc)
+        {
+            /*
+            Assert.IsNull(svc.testAddress(null));
+
+            Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
+
+            Assert.AreEqual("127000", addr.Zip);
+            Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
+            
+            Assert.IsNull(svc.testEmployees(null));
+
+            Employee[] emps = svc.testEmployees(new[]
+            {
+                new Employee { Fio = "Sarah Connor", Salary = 1 }, 
+                new Employee { Fio = "John Connor", Salary = 2 }
+            });
+            
+            Assert.NotNull(emps);
+            Assert.AreEqual(1, emps.Length);
+            
+            Assert.AreEqual("Kyle Reese", emps[0].Fio);
+            Assert.AreEqual(3, emps[0].Salary);
+
+            //Assert.AreEqual(CardSuits.Diamond, svc.testCards(CardSuits.Club));
+            */            
+            Assert.IsNull(svc.testMap(null));
+            
+            var map = new Dictionary<Key, Value>();
+
+            map.Add(new Key() {Id = 1}, new Value() {Val = "value1"});
+            map.Add(new Key() {Id = 2}, new Value() {Val = "value2"});
+
+            var res = svc.testMap(map);
+
+            Assert.NotNull(res);
+            Assert.AreEqual(1, res.Count);
+            
+            Assert.AreEqual("value3", res[new Key() {Id = 3}]);
         }
 
         /// <summary>

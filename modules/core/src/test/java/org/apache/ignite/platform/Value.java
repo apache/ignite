@@ -15,14 +15,20 @@
  * limitations under the License.
  */
 
-namespace org.apache.ignite.platform
-{
-    /// <summary>
-    /// A class is a clone of Java class Department with the same namespace.
-    /// </summary>
-    public class Department
-    {
-        /** */
-        public string Name { get; set; }
+package org.apache.ignite.platform;
+
+/** Test value object. */
+public class Value {
+    /** */
+    private String val;
+
+    /** */
+    public Value(String val) {
+        this.val = val;
+    }
+
+    /** */
+    public String getVal() {
+        return val;
     }
 }

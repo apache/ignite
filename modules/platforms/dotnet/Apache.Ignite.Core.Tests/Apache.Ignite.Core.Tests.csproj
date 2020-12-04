@@ -285,10 +285,9 @@
     <Compile Include="Plugin\TestIgnitePluginConfiguration.cs" />
     <Compile Include="Plugin\TestIgnitePluginException.cs" />
     <Compile Include="Plugin\TestIgnitePluginProvider.cs" />
-    <Compile Include="Services\Address.cs" />
-    <Compile Include="Services\Employee.cs" />
-    <Compile Include="Services\Department.cs" />
+    <Compile Include="Services\Model.cs" />
     <Compile Include="Services\IJavaService.cs" />
+    <Compile Include="Services\JavaServiceDynamicProxy.cs" />
     <Compile Include="Ssl\SslConfigurationTest.cs" />
     <Compile Include="TaskExtensions.cs" />
     <Compile Include="TestAppConfig.cs" />

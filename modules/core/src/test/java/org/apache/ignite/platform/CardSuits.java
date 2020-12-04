@@ -15,17 +15,8 @@
  * limitations under the License.
  */
 
-namespace org.apache.ignite.platform
-{
-    /// <summary>
-    /// A class is a clone of Java class Address with the same namespace.
-    /// </summary>
-    public class Address
-    {
-        /** */
-        public string Zip { get; set; }
+package org.apache.ignite.platform;
 
-        /** */
-        public string Addr { get; set; }
-    }
+public enum CardSuits {
+    HEART, DIAMOND, CLUB, SPADE
 }

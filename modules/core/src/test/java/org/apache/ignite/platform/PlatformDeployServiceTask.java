@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.commons.collections.map.HashedMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
@@ -42,7 +43,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Calendar.JANUARY;
+import static org.apache.ignite.platform.CardSuits.CLUB;
+import static org.apache.ignite.platform.CardSuits.DIAMOND;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Task that deploys a Java service.
@@ -474,6 +478,30 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return res;
         }
 
+        /** */
+        public CardSuits testCards(CardSuits suit) {
+            assertEquals(CLUB, suit);
+
+            return DIAMOND;
+        }
+
+        /** */
+        public Map testMap(Map map) {
+            if (map == null)
+                return null;
+
+            assertTrue(map.containsKey(new Key(1)));
+            assertTrue(map.containsKey(new Key(2)));
+
+            assertEquals("value1", ((Value)map.get(new Key(1))).getVal());
+            assertEquals("value2", ((Value)map.get(new Key(2))).getVal());
+
+            Map m = new HashedMap();
+
+            m.put(new Key(3), new Value("value3"));
+
+            return m;
+        }
 
         /** */
         public void sleep(long delayMs) {
