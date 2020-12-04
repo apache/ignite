@@ -123,4 +123,9 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
 
         return planner.getCostFactory().makeCost(rowCount, 0, 0).multiplyBy(2);
     }
+
+    /***/
+    public IndexConditions indexConditions() {
+        return idxCond;
+    }
 }

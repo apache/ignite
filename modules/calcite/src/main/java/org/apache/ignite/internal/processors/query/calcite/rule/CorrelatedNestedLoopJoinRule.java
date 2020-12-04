@@ -150,7 +150,15 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
         RelNode left = convert(logicalJoin.getLeft(), leftInTraits);
         right = convert(right, rightInTraits);
 
-        call.transformTo(new IgniteCorrelatedNestedLoopJoin(cluster, outTraits, left, right, logicalJoin.getCondition(), correlationIds, joinType));
+        call.transformTo(
+            new IgniteCorrelatedNestedLoopJoin(
+                cluster,
+                outTraits,
+                left,
+                right,
+                logicalJoin.getCondition(),
+                correlationIds,
+                joinType));
     }
 
     /** */
