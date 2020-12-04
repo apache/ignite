@@ -445,7 +445,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 return RETRY;
 
             int cnt = io.getCount(pageAddr);
-
             int idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, p.row, 0);
 
             if (idx >= 0) // We do not support concurrent put of the same key.
@@ -5974,7 +5973,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         RETRY,
 
         /** */
-        RETRY_ROOT,
+        RETRY_ROOT
     }
 
     /**
