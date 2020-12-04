@@ -104,6 +104,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(10000, cfg.MvccVacuumFrequency);
             Assert.AreEqual(4, cfg.MvccVacuumThreadCount);
             Assert.AreEqual(123, cfg.SqlQueryHistorySize);
+            Assert.AreEqual(true, cfg.JavaPeerClassLoadingEnabled);
 
             Assert.IsNotNull(cfg.SqlSchemas);
             Assert.AreEqual(2, cfg.SqlSchemas.Count);
@@ -1064,6 +1065,7 @@ namespace Apache.Ignite.Core.Tests
                     Timeout = TimeSpan.FromSeconds(10)
                 },
                 SqlQueryHistorySize = 345,
+                JavaPeerClassLoadingEnabled = true,
                 ExecutorConfiguration = new[]
                 {
                     new ExecutorConfiguration
