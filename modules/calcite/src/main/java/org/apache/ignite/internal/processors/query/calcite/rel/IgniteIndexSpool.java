@@ -18,16 +18,19 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
@@ -36,17 +39,8 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
  * and allow to lookup rows by specified keys.
  */
 public class IgniteIndexSpool extends Spool implements IgniteRel {
-    /** */
-    protected List<RexNode> lowerCond;
-
-    /** */
-    protected List<RexNode> upperCond;
-
-    /** */
-    protected List<RexNode> lowerBound;
-
-    /** */
-    protected List<RexNode> upperBound;
+    /** Index condition. */
+    private IndexConditions idxCond;
 
     /** */
     public IgniteIndexSpool(
@@ -54,7 +48,18 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         RelTraitSet traits,
         RelNode input
     ) {
+        this(cluster, traits, input, null);
+    }
+
+    /** */
+    public IgniteIndexSpool(
+        RelOptCluster cluster,
+        RelTraitSet traits,
+        RelNode input,
+        @Nullable IndexConditions idxCond
+    ) {
         super(cluster, traits, input, Type.LAZY, Type.EAGER);
+        this.idxCond = idxCond;
     }
 
     /**
@@ -92,11 +97,27 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         return true;
     }
 
+    /** */
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        RelWriter writer = super.explainTerms(pw);
+
+        if (idxCond != null) {
+            writer
+                .item("lower", idxCond.lowerCondition())
+                .item("upper", idxCond.upperCondition())
+                .item("lowerBound", idxCond.lowerBound())
+                .item("upperBound", idxCond.upperBound());
+        }
+
+        return writer;
+    }
+
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         // TODO: add memory usage to cost
         double rowCount = mq.getRowCount(this);
         rowCount = RelMdUtil.addEpsilon(rowCount);
-        return planner.getCostFactory().makeCost(rowCount, 0, 0);
+
+        return planner.getCostFactory().makeCost(rowCount, 0, 0).multiplyBy(2);
     }
 }

@@ -588,8 +588,6 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
         if (type == BROADCAST_DISTRIBUTED || type == SINGLETON)
             rowCount = RelMdUtil.addEpsilon(rowCount);
 
-        System.out.println("+++ MJ self: " + planner.getCostFactory().makeCost(rowCount, 0, 0));
-
         return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }
 }

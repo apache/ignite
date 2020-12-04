@@ -74,19 +74,29 @@ public class IgniteExchange extends Exchange implements IgniteRel {
         double bytesPerRow = getRowType().getFieldCount() * 4;
         double mult;
 
+        // TODO: make dependency the cost on
+        //  - the Exchange's destination distribution;
+        //  - current distribution;
+        //  - cluster size.
+        // Now dummy multiplier is used to make differ cost.
         switch (distribution().function().type()) {
             case SINGLETON:
-                mult = 1000;
+                mult = 1;
 
                 break;
 
             case HASH_DISTRIBUTED:
-                mult = 1d;
+                mult = 2;
 
                 break;
 
             case BROADCAST_DISTRIBUTED:
-                mult = 10000d;
+                mult = 8;
+
+                break;
+
+            case RANDOM_DISTRIBUTED:
+                mult = Double.MAX_VALUE;
 
                 break;
 

@@ -85,67 +85,67 @@ public enum PlannerPhase {
         @Override public RuleSet getRules(PlanningContext ctx) {
             return ctx.rules(
                 RuleSets.ofList(
-                    FilterMergeRule.Config.DEFAULT
-                        .withOperandFor(LogicalFilter.class).toRule(),
-
-                    JoinPushThroughJoinRule.Config.LEFT
-                        .withOperandFor(LogicalJoin.class).toRule(),
-
-                    JoinPushThroughJoinRule.Config.RIGHT
-                        .withOperandFor(LogicalJoin.class).toRule(),
-
-                    JoinPushExpressionsRule.Config.DEFAULT
-                        .withOperandFor(LogicalJoin.class).toRule(),
-
-                    JoinConditionPushRule.Config.DEFAULT
-                        .withOperandSupplier(b -> b.operand(LogicalJoin.class)
-                            .anyInputs()).toRule(),
-
-                    FilterIntoJoinRule.Config.DEFAULT
-                        .withOperandSupplier(b0 ->
-                            b0.operand(LogicalFilter.class).oneInput(b1 ->
-                                b1.operand(LogicalJoin.class).anyInputs())).toRule(),
-
-                    FilterProjectTransposeRule.Config.DEFAULT
-                        .withOperandFor(LogicalFilter.class, f -> true, LogicalProject.class, p -> true).toRule(),
-
-                    ProjectFilterTransposeRule.Config.DEFAULT
-                        .withOperandFor(LogicalProject.class, LogicalFilter.class).toRule(),
-
-                    ProjectMergeRule.Config.DEFAULT
-                        .withOperandFor(LogicalProject.class).toRule(),
-
-                    ProjectRemoveRule.Config.DEFAULT
-                        .withOperandSupplier(b ->
-                            b.operand(LogicalProject.class)
-                                .predicate(ProjectRemoveRule::isTrivial)
-                                .anyInputs()).toRule(),
-
-                    AggregateMergeRule.Config.DEFAULT
-                        .withOperandSupplier(b0 ->
-                            b0.operand(LogicalAggregate.class)
-                                .oneInput(b1 ->
-                                    b1.operand(LogicalAggregate.class)
-                                        .predicate(Aggregate::isSimple)
-                                        .anyInputs())).toRule(),
-
-                    SortRemoveRule.Config.DEFAULT
-                        .withOperandSupplier(b ->
-                            b.operand(LogicalSort.class)
-                                .anyInputs()).toRule(),
-
-                    CoreRules.UNION_MERGE,
-                    CoreRules.UNION_REMOVE,
+//                    FilterMergeRule.Config.DEFAULT
+//                        .withOperandFor(LogicalFilter.class).toRule(),
+//
+//                    JoinPushThroughJoinRule.Config.LEFT
+//                        .withOperandFor(LogicalJoin.class).toRule(),
+//
+//                    JoinPushThroughJoinRule.Config.RIGHT
+//                        .withOperandFor(LogicalJoin.class).toRule(),
+//
+//                    JoinPushExpressionsRule.Config.DEFAULT
+//                        .withOperandFor(LogicalJoin.class).toRule(),
+//
+//                    JoinConditionPushRule.Config.DEFAULT
+//                        .withOperandSupplier(b -> b.operand(LogicalJoin.class)
+//                            .anyInputs()).toRule(),
+//
+//                    FilterIntoJoinRule.Config.DEFAULT
+//                        .withOperandSupplier(b0 ->
+//                            b0.operand(LogicalFilter.class).oneInput(b1 ->
+//                                b1.operand(LogicalJoin.class).anyInputs())).toRule(),
+//
+//                    FilterProjectTransposeRule.Config.DEFAULT
+//                        .withOperandFor(LogicalFilter.class, f -> true, LogicalProject.class, p -> true).toRule(),
+//
+//                    ProjectFilterTransposeRule.Config.DEFAULT
+//                        .withOperandFor(LogicalProject.class, LogicalFilter.class).toRule(),
+//
+//                    ProjectMergeRule.Config.DEFAULT
+//                        .withOperandFor(LogicalProject.class).toRule(),
+//
+//                    ProjectRemoveRule.Config.DEFAULT
+//                        .withOperandSupplier(b ->
+//                            b.operand(LogicalProject.class)
+//                                .predicate(ProjectRemoveRule::isTrivial)
+//                                .anyInputs()).toRule(),
+//
+//                    AggregateMergeRule.Config.DEFAULT
+//                        .withOperandSupplier(b0 ->
+//                            b0.operand(LogicalAggregate.class)
+//                                .oneInput(b1 ->
+//                                    b1.operand(LogicalAggregate.class)
+//                                        .predicate(Aggregate::isSimple)
+//                                        .anyInputs())).toRule(),
+//
+//                    SortRemoveRule.Config.DEFAULT
+//                        .withOperandSupplier(b ->
+//                            b.operand(LogicalSort.class)
+//                                .anyInputs()).toRule(),
+//
+//                    CoreRules.UNION_MERGE,
+//                    CoreRules.UNION_REMOVE,
                     CoreRules.JOIN_COMMUTE,
-                    CoreRules.AGGREGATE_REMOVE,
-                    CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
-
-                    PruneEmptyRules.SortFetchZeroRuleConfig.EMPTY
-                        .withOperandSupplier(b ->
-                            b.operand(LogicalSort.class).anyInputs())
-                        .withDescription("PruneSortLimit0")
-                        .as(PruneEmptyRules.SortFetchZeroRuleConfig.class)
-                        .toRule(),
+//                    CoreRules.AGGREGATE_REMOVE,
+//                    CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
+//
+//                    PruneEmptyRules.SortFetchZeroRuleConfig.EMPTY
+//                        .withOperandSupplier(b ->
+//                            b.operand(LogicalSort.class).anyInputs())
+//                        .withDescription("PruneSortLimit0")
+//                        .as(PruneEmptyRules.SortFetchZeroRuleConfig.class)
+//                        .toRule(),
 
                     ExposeIndexRule.INSTANCE,
                     ProjectScanMergeRule.TABLE_SCAN,
@@ -177,7 +177,25 @@ public enum PlannerPhase {
         @Override public Program getProgram(PlanningContext ctx) {
             return cbo(getRules(ctx));
         }
+    },
+
+    /** */
+    IGN_OPTIMIZATION("IGN optimization phase") {
+        /** {@inheritDoc} */
+        @Override public RuleSet getRules (PlanningContext ctx){
+            return ctx.rules(
+                RuleSets.ofList(
+                    FilterSpoolMergeRule.INSTANCE
+                )
+            );
+        }
+
+        /** {@inheritDoc} */
+        @Override public Program getProgram(PlanningContext ctx) {
+            return cbo(getRules(ctx));
+        }
     };
+
 
     /** */
     public final String description;

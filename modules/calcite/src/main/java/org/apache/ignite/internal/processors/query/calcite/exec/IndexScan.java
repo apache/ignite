@@ -107,7 +107,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
     private final Function<Row, Row> rowTransformer;
 
     /** */
-    private final ImmutableBitSet requiredColunms;
+    private final ImmutableBitSet requiredColumns;
 
     /**
      * @param ectx Execution context.
@@ -126,7 +126,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         Supplier<Row> lowerBound,
         Supplier<Row> upperBound,
         Function<Row, Row> rowTransformer,
-        @Nullable ImmutableBitSet requiredColunms
+        @Nullable ImmutableBitSet requiredColumns
     ) {
         this.ectx = ectx;
         this.desc = desc;
@@ -134,7 +134,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         kctx = cctx.kernalContext();
         coCtx = cctx.cacheObjectContext();
 
-        RelDataType rowType = desc.rowType(this.ectx.getTypeFactory(), requiredColunms);
+        RelDataType rowType = desc.rowType(this.ectx.getTypeFactory(), requiredColumns);
 
         factory = this.ectx.rowHandler().factory(this.ectx.getTypeFactory(), rowType);
         this.idx = idx;
@@ -145,7 +145,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         this.parts = parts;
         mvccSnapshot = ectx.mvccSnapshot();
         this.rowTransformer = rowTransformer;
-        this.requiredColunms = requiredColunms;
+        this.requiredColumns = requiredColumns;
     }
 
     /** {@inheritDoc} */
@@ -327,7 +327,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
             while (next == null && cursor.next()) {
                 H2Row h2Row = cursor.get();
 
-                Row r = desc.toRow(ectx, (CacheDataRow)h2Row, factory, requiredColunms);
+                Row r = desc.toRow(ectx, (CacheDataRow)h2Row, factory, requiredColumns);
 
                 if (filters != null && !filters.test(r))
                     continue;

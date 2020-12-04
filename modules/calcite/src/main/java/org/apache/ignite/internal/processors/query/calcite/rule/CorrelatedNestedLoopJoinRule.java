@@ -139,7 +139,7 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
         JoinRelType joinType = logicalJoin.getJoinType();
 
         RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+        RelTraitSet leftInTraits = logicalJoin.getLeft().getTraitSet().replace(IgniteConvention.INSTANCE);
 
         RelTraitSet rightInTraits = right.getTraitSet()
             .replace(IgniteConvention.INSTANCE)

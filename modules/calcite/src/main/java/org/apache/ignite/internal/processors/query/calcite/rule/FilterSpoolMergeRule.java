@@ -16,15 +16,23 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Spool;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /**
  * Rule that pushes filter into the scan. This might be useful for index range scans.
@@ -40,9 +48,31 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
 
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        final Filter rel = call.rel(0);
-        final RelNode rel1 = call.rel(1);
-        System.out.println("+++ FilterSpoolMergeRule");
+        final IgniteFilter filter = call.rel(0);
+        final IgniteIndexSpool spool = call.rel(1);
+
+        RelOptCluster cluster = spool.getCluster();
+
+        RelTraitSet trait = spool.getTraitSet();
+        CorrelationTrait filterCorr = TraitUtils.correlation(filter);
+
+        if (filterCorr.correlated())
+            trait = trait.replace(filterCorr);
+
+        RelNode res = new IgniteIndexSpool(
+            cluster,
+            trait,
+            spool.getInput(),
+            RexUtils.buildIndexConditions(
+                cluster,
+                spool.collation(),
+                filter.getCondition(),
+                spool.getRowType(),
+                null
+            )
+        );
+
+        call.transformTo(res);
     }
 
     /** */

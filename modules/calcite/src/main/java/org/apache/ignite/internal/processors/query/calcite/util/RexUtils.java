@@ -58,6 +58,7 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ControlFlowException;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
@@ -159,16 +160,22 @@ public class RexUtils {
     /**
      * Builds index conditions.
      */
-    public static Pair<List<RexNode>, List<RexNode>> buildIndexConditions(RelOptCluster cluster, RelCollation collation, RexNode condition, RelDataType rowType) {
+    public static IndexConditions buildIndexConditions(
+        RelOptCluster cluster,
+        RelCollation collation,
+        RexNode condition,
+        RelDataType rowType,
+        ImmutableBitSet requiredColumns
+    ) {
         if (condition == null || collation == null || collation.getFieldCollations().isEmpty())
-            return Pair.of(ImmutableList.of(), ImmutableList.of());
+            return new IndexConditions();
 
         condition = RexUtil.toCnf(builder(cluster), condition);
 
         Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields(condition, cluster);
 
         if (F.isEmpty(fieldsToPredicates))
-            return Pair.of(ImmutableList.of(), ImmutableList.of());
+            return new IndexConditions();
 
         List<RexNode> lower = new ArrayList<>();
         List<RexNode> upper = new ArrayList<>();
@@ -248,7 +255,25 @@ public class RexUtils {
             }
         }
 
-        return Pair.of(lower, upper);
+        Mappings.TargetMapping mapping = null;
+
+        if (requiredColumns != null)
+            mapping = Commons.inverseMapping(requiredColumns, rowType.getFieldCount());
+
+        List<RexNode> lowerBound = null;
+        List<RexNode> upperBound = null;
+
+        if (!F.isEmpty(lower))
+            lowerBound = asBound(cluster, lower, rowType, mapping);
+        else
+            lower = null;
+
+        if (!F.isEmpty(upper))
+            upperBound = asBound(cluster, upper, rowType, mapping);
+        else
+            upper = null;
+
+        return new IndexConditions(lower, upper, lowerBound, upperBound);
     }
 
     /** */

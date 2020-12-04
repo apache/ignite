@@ -287,6 +287,15 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** */
+    public String clear() {
+        StringWriter w = new StringWriter();
+
+        ((VolcanoPlanner)planner).clear();
+
+        return w.toString();
+    }
+
+    /** */
     private SqlValidator validator() {
         if (validator == null)
             validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx.parameters());

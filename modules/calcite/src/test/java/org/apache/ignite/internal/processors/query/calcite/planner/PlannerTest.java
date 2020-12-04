@@ -737,11 +737,11 @@ public class PlannerTest extends AbstractPlannerTest {
                         Supplier<Row> lowerIdxConditions,
                         Supplier<Row> upperIdxConditions,
                         Function<Row, Row> rowTransformer,
-                        @Nullable ImmutableBitSet requiredColunms
+                        @Nullable ImmutableBitSet requiredColumns
                     ) {
                         return Linq4j.asEnumerable(Arrays.asList(
-                            row(execCtx, requiredColunms, 0, "Igor", 0),
-                            row(execCtx, requiredColunms, 1, "Roman", 0)
+                            row(execCtx, requiredColumns, 0, "Igor", 0),
+                            row(execCtx, requiredColumns, 1, "Roman", 0)
                         ));
                     }
                 };
@@ -777,11 +777,11 @@ public class PlannerTest extends AbstractPlannerTest {
                         Supplier<Row> lowerIdxConditions,
                         Supplier<Row> upperIdxConditions,
                         Function<Row, Row> rowTransformer,
-                        @Nullable ImmutableBitSet requiredColunms
+                        @Nullable ImmutableBitSet requiredColumns
                     ) {
                         return Linq4j.asEnumerable(Arrays.asList(
-                            row(execCtx, requiredColunms, 0, "Calcite", 1),
-                            row(execCtx, requiredColunms, 1, "Ignite", 1)
+                            row(execCtx, requiredColumns, 0, "Calcite", 1),
+                            row(execCtx, requiredColumns, 1, "Ignite", 1)
                         ));
                     }
                 };

@@ -177,37 +177,7 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         // Give it some penalty
-
-        double mult;
-
-        switch (distribution().function().type()) {
-            case SINGLETON:
-                mult = 10;
-
-                break;
-
-            case HASH_DISTRIBUTED:
-                mult = 0.2d;
-
-                break;
-
-            case BROADCAST_DISTRIBUTED:
-                mult = 10d;
-
-                break;
-
-            case RANGE_DISTRIBUTED:
-            case ROUND_ROBIN_DISTRIBUTED:
-            case ANY:
-            default:
-                mult = Double.MAX_VALUE;
-//                assert false : "Invalid target distribution: " + distribution();
-
-                break;
-        }
-
-        System.out.println("+++ CNL self: " + super.computeSelfCost(planner, mq).multiplyBy(2).multiplyBy(mult) + " " + toString());
-        return super.computeSelfCost(planner, mq).multiplyBy(2).multiplyBy(mult);
+        return super.computeSelfCost(planner, mq).multiplyBy(5);
     }
 
     /** {@inheritDoc} */
@@ -247,11 +217,6 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteCorrelatedNestedLoopJoin(cluster, getTraitSet(), inputs.get(0), inputs.get(1), getCondition(), getVariablesSet(), getJoinType());
-    }
-
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits,
-        List<RelTraitSet> inputTraits) {
-        return super.passThroughDistribution(nodeTraits, inputTraits);
     }
 
     /** */

@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -95,7 +97,8 @@ public class TableSpoolTest extends GridCommonAbstractTest {
             .setKeyFieldName("ID")
             .addQueryField("ID", Integer.class.getName(), null)
             .addQueryField("JID", Integer.class.getName(), null)
-            .addQueryField("VAL", String.class.getName(), null);
+            .addQueryField("VAL", String.class.getName(), null)
+            .setIndexes(Collections.singletonList(new QueryIndex("JID")));
 
         QueryEntity part1 = new QueryEntity()
             .setTableName("TEST1")
@@ -104,18 +107,21 @@ public class TableSpoolTest extends GridCommonAbstractTest {
             .setKeyFieldName("ID")
             .addQueryField("ID", Integer.class.getName(), null)
             .addQueryField("JID", Integer.class.getName(), null)
-            .addQueryField("VAL", String.class.getName(), null);
+            .addQueryField("VAL", String.class.getName(), null)
+            .setIndexes(Collections.singletonList(new QueryIndex("JID")));
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
                 new CacheConfiguration<>(part0.getTableName())
                     .setAffinity(new RendezvousAffinityFunction(false, 8))
-                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setCacheMode(CacheMode.REPLICATED)
+//                    .setCacheMode(CacheMode.PARTITIONED)
                     .setQueryEntities(singletonList(part0))
                     .setSqlSchema("PUBLIC"),
                 new CacheConfiguration<>(part1.getTableName())
                     .setAffinity(new RendezvousAffinityFunction(false, 8))
-                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setCacheMode(CacheMode.REPLICATED)
+//                    .setCacheMode(CacheMode.PARTITIONED)
                     .setQueryEntities(singletonList(part1))
                     .setSqlSchema("PUBLIC")
             );

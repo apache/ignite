@@ -207,7 +207,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         ExecutionContext<Row> ectx,
         CacheDataRow row,
         RowHandler.RowFactory<Row> factory,
-        @Nullable ImmutableBitSet requiredColunms
+        @Nullable ImmutableBitSet requiredColumns
     ) throws IgniteCheckedException {
         RowHandler<Row> handler = factory.handler();
 
@@ -215,9 +215,9 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         Row res = factory.create();
 
-        assert handler.columnCount(res) == (requiredColunms == null ? descriptors.length : requiredColunms.cardinality());
+        assert handler.columnCount(res) == (requiredColumns == null ? descriptors.length : requiredColumns.cardinality());
 
-        if (requiredColunms == null) {
+        if (requiredColumns == null) {
             for (int i = 0; i < descriptors.length; i++) {
                 ColumnDescriptor desc = descriptors[i];
 
@@ -226,7 +226,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             }
         }
         else {
-            for (int i = 0, j = requiredColunms.nextSetBit(0); j != -1; j = requiredColunms.nextSetBit(j + 1), i++) {
+            for (int i = 0, j = requiredColumns.nextSetBit(0); j != -1; j = requiredColumns.nextSetBit(j + 1), i++) {
                 ColumnDescriptor desc = descriptors[j];
 
                 handler.set(i, res, TypeUtils.toInternal(ectx,

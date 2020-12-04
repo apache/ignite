@@ -18,10 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.util.List;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.rel.type.RelDataType;
+
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -29,22 +30,34 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IndexConditions {
     /** */
-    protected List<RexNode> lowerCond;
+    private final List<RexNode> lowerCond;
 
     /** */
-    protected List<RexNode> upperCond;
+    private final List<RexNode> upperCond;
 
     /** */
-    protected List<RexNode> lowerBound;
+    private final List<RexNode> lowerBound;
 
     /** */
-    protected List<RexNode> upperBound;
+    private final List<RexNode> upperBound;
+
+    /** */
+    public IndexConditions() {
+        this(null, null, null, null);
+    }
 
     /**
      */
-    protected IndexConditions(@Nullable List<RexNode> lowerCond, @Nullable List<RexNode> upperCond) {
+    public IndexConditions(
+        @Nullable List<RexNode> lowerCond,
+        @Nullable List<RexNode> upperCond,
+        @Nullable List<RexNode> lowerBound,
+        @Nullable List<RexNode> upperBound
+    ) {
         this.lowerCond = lowerCond;
         this.upperCond = upperCond;
+        this.lowerBound = lowerBound;
+        this.upperBound = upperBound;
     }
 
     /**
@@ -55,16 +68,6 @@ public class IndexConditions {
     }
 
     /**
-     * @return Lower index condition.
-     */
-    public List<RexNode> lowerBound(RelOptCluster cluster, RelDataType rowType, Mappings.TargetMapping mapping) {
-        if (lowerBound == null && lowerCond != null)
-            lowerBound = RexUtils.asBound(cluster, lowerCond, rowType, mapping);
-
-        return lowerBound;
-    }
-
-    /**
      * @return Upper index condition.
      */
     public List<RexNode> upperCondition() {
@@ -72,13 +75,25 @@ public class IndexConditions {
     }
 
     /**
-     * @return Upper index condition.
+     * @return Lower index bounds (a row with values at the index columns).
      */
-    public List<RexNode> upperBound(RelOptCluster cluster, RelDataType rowType, Mappings.TargetMapping mapping) {
-        if (upperBound == null && upperCond != null)
-            upperBound = RexUtils.asBound(cluster, upperCond, rowType, mapping);
+    public List<RexNode> lowerBound() {
+        return lowerBound;
+    }
 
+    /**
+     * @return Upper index bounds (a row with values at the index columns).
+     */
+    public List<RexNode> upperBound() {
         return upperBound;
     }
 
+    /** */
+    @Override public String toString() {
+        return S.toString(IndexConditions.class, this,
+            "lower", lowerCond,
+            "upper", upperCond,
+            "lowerBound", lowerBound,
+            "upperBound", upperBound);
+    }
 }
