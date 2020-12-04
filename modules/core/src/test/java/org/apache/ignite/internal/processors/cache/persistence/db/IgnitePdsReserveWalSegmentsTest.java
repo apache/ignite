@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -40,33 +41,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT
 @WithSystemProperty(key = IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, value = "2")
 public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setConsistentId(gridName);
-
-        CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-
-        cfg.setCacheConfiguration(ccfg);
-
-        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
-
-        cfg.setDataStorageConfiguration(dbCfg);
-
-        dbCfg.setWalSegmentSize(1024 * 1024)
-            .setMaxWalArchiveSize(Long.MAX_VALUE)
-            .setWalSegments(10)
-            .setWalMode(WALMode.LOG_ONLY)
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(100 * 1024 * 1024)
-                .setPersistenceEnabled(true));
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
@@ -78,6 +52,27 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        return super.getConfiguration(gridName)
+            .setConsistentId(gridName)
+            .setCacheConfiguration(
+                new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                    .setAffinity(new RendezvousAffinityFunction(false, 32))
+            ).setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setWalMode(WALMode.LOG_ONLY)
+                    .setMaxWalArchiveSize(Long.MAX_VALUE)
+                    .setWalSegmentSize(1024 * 1024)
+                    .setWalSegments(10)
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setMaxSize(100 * 1024 * 1024)
+                            .setPersistenceEnabled(true)
+                    )
+            );
     }
 
     /**
@@ -152,7 +147,8 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
     private IgniteEx prepareGrid(int cnt) throws Exception {
         IgniteEx ig0 = startGrids(cnt);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
+        awaitPartitionMapExchange();
 
         IgniteCache<Object, Object> cache = ig0.cache(DEFAULT_CACHE_NAME);
 
