@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
 
-/** */
+/** ReentrantReadWriteLock adapter with readLock tracking. */
 public class ReentrantReadWriteLockWithTracking implements ReadWriteLock {
     /** Lock hold message. */
     public static final String LOCK_HOLD_MESSAGE = "ReadLock held the lock more than ";
