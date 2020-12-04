@@ -385,7 +385,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
     @Test
     public void testPartitionFileDestroy() throws Exception {
         backups = 1;
-        pageScanRate = 1;
+        pageScanRate = 0.2;
         pageScanBatchSize = 10;
 
         T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
@@ -408,6 +408,10 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         forceCheckpoint();
 
         assertTrue(isReencryptionInProgress(Collections.singleton(cacheName())));
+
+        // Set unlimited re-encryption rate.
+        nodes.get1().context().encryption().setReencryptionRate(0);
+        nodes.get2().context().encryption().setReencryptionRate(0);
 
         checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
     }
