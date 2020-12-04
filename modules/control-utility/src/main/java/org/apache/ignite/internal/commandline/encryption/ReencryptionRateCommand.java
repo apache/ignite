@@ -114,7 +114,8 @@ public class ReencryptionRateCommand extends AbstractCommand<VisorReencryptionRa
 
             try {
                 rateLimit = Double.parseDouble(rateLimitArg);
-            } catch (NumberFormatException e) {
+            }
+            catch (NumberFormatException e) {
                 throw new IllegalArgumentException("Failed to parse command argument. Decimal value expected.", e);
             }
         }
