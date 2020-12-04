@@ -1270,8 +1270,9 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <summary>Write dictionary.</summary>
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
+         * <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
          */
-        public static void WriteDictionary(IDictionary val, BinaryWriter ctx)
+        public static void WriteDictionary(IDictionary val, BinaryWriter ctx, bool registerSameJavaType = false)
         {
             var valType = val.GetType();
 
@@ -1286,7 +1287,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
                 dictType = valType == typeof(Hashtable) ? MapHashMap : MapCustom;
 
-            WriteDictionary(val, ctx, dictType);
+            WriteDictionary(val, ctx, dictType, registerSameJavaType);
         }
 
         /**

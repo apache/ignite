@@ -51,22 +51,29 @@ namespace org.apache.ignite.platform
     }
 
     /// <summary>
-    /// A enum is a clone of Java class Employee with the same namespace.
-    /// </summary>
-    public enum CardSuits
-    {
-        Heart, 
-        Diamond, 
-        Club, 
-        Spade
-    }
-
-    /// <summary>
     /// A class is a clone of Java class Employee with the same namespace.
     /// </summary>
     public class Key
     {
         public long Id { get; set; }
+
+        protected bool Equals(Key other)
+        {
+            return Id == other.Id;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((Key) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return Id.GetHashCode();
+        }
     }
 
     /// <summary>

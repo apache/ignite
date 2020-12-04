@@ -175,10 +175,7 @@ namespace Apache.Ignite.Core.Tests.Services
         ICollection testDepartments(ICollection deps);
 
         /** */
-        CardSuits testCards(CardSuits suit);
-
-        /** */
-        IDictionary<Key, Value> testMap(IDictionary<Key, Value> dict);
+        IDictionary testMap(IDictionary<Key, Value> dict);
         
         /** */
         void sleep(long delayMs);

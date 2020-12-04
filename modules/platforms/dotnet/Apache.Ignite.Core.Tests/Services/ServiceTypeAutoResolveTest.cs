@@ -120,14 +120,13 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private void doTestService(IJavaService svc)
         {
-            /*
             Assert.IsNull(svc.testAddress(null));
 
             Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
 
             Assert.AreEqual("127000", addr.Zip);
             Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
-            
+
             Assert.IsNull(svc.testEmployees(null));
 
             Employee[] emps = svc.testEmployees(new[]
@@ -135,17 +134,15 @@ namespace Apache.Ignite.Core.Tests.Services
                 new Employee { Fio = "Sarah Connor", Salary = 1 }, 
                 new Employee { Fio = "John Connor", Salary = 2 }
             });
-            
+
             Assert.NotNull(emps);
             Assert.AreEqual(1, emps.Length);
-            
+
             Assert.AreEqual("Kyle Reese", emps[0].Fio);
             Assert.AreEqual(3, emps[0].Salary);
 
-            //Assert.AreEqual(CardSuits.Diamond, svc.testCards(CardSuits.Club));
-            */            
             Assert.IsNull(svc.testMap(null));
-            
+
             var map = new Dictionary<Key, Value>();
 
             map.Add(new Key() {Id = 1}, new Value() {Val = "value1"});
@@ -155,8 +152,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.NotNull(res);
             Assert.AreEqual(1, res.Count);
-            
-            Assert.AreEqual("value3", res[new Key() {Id = 3}]);
+            Assert.AreEqual("value3", ((Value)res[new Key() {Id = 3}]).Val);
         }
 
         /// <summary>
@@ -180,7 +176,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Ignition.StopAll(true);
         }
-        
+
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>

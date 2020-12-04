@@ -306,13 +306,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public CardSuits testCards(CardSuits suit)
-        {
-            return _svc.testCards(suit);
-        }
-
-        /** <inheritDoc /> */
-        public IDictionary<Key, Value> testMap(IDictionary<Key, Value> dict)
+        public IDictionary testMap(IDictionary<Key, Value> dict)
         {
             return _svc.testMap(dict);
         }

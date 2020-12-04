@@ -17,6 +17,8 @@
 
 package org.apache.ignite.platform;
 
+import java.util.Objects;
+
 /** Test value object. */
 public class Value {
     /** */
@@ -30,5 +32,20 @@ public class Value {
     /** */
     public String getVal() {
         return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Value value = (Value)o;
+        return Objects.equals(val, value.val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(val);
     }
 }

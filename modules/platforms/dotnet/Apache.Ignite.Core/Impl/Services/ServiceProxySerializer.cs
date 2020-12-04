@@ -265,6 +265,9 @@ namespace Apache.Ignite.Core.Impl.Services
             if (type.IsArray)
                 return (writer, o) => writer.WriteArrayInternal((Array) o, true);
 
+            if (arg is IDictionary)
+                return (writer, o) => writer.WriteDictionary((IDictionary) o, true);
+
             if (arg is ICollection)
                 return (writer, o) => writer.WriteCollection((ICollection) o, true);
 

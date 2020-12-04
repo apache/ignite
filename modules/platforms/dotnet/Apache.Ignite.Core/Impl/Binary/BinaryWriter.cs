@@ -1092,6 +1092,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(IDictionary val)
         {
+            WriteDictionary(val, false);
+        }
+
+        /// <summary>
+        /// Write dictionary.
+        /// </summary>
+        /// <param name="val">Dictionary.</param>
+        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
+        public void WriteDictionary(IDictionary val, bool registerSameJavaType = false)
+        {
             if (val == null)
                 WriteNullField();
             else
@@ -1100,7 +1110,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return;
 
                 WriteByte(BinaryTypeId.Dictionary);
-                BinaryUtils.WriteDictionary(val, this);
+                BinaryUtils.WriteDictionary(val, this, registerSameJavaType);
             }
         }
 
