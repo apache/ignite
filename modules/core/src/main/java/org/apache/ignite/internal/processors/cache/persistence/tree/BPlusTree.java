@@ -886,8 +886,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** Enable defragmentation optimizations. */
     public void enableDefragmentationOptimizations() {
-        assert canGetRowFromInner;
-
         defragmentationOptsEnabled = true;
     }
 
