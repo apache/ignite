@@ -287,7 +287,7 @@ public class RexUtils {
                 continue;
 
             RexCall predCall = (RexCall)rexNode;
-            RexLocalRef ref = (RexLocalRef)extractRef(predCall);
+            RexSlot ref = (RexSlot)extractRef(predCall);
 
             if (ref == null)
                 continue;
@@ -313,9 +313,9 @@ public class RexUtils {
         leftOp = RexUtil.removeCast(leftOp);
         rightOp = RexUtil.removeCast(rightOp);
 
-        if (leftOp instanceof RexLocalRef && idxOpSupports(rightOp))
+        if ((leftOp instanceof RexLocalRef || leftOp instanceof RexInputRef) && idxOpSupports(rightOp))
             return leftOp;
-        else if (rightOp instanceof RexLocalRef && idxOpSupports(leftOp))
+        else if ((rightOp instanceof RexLocalRef || rightOp instanceof RexInputRef) && idxOpSupports(leftOp))
             return rightOp;
 
         return null;
@@ -362,7 +362,7 @@ public class RexUtils {
             assert pred instanceof RexCall;
 
             RexCall call = (RexCall)pred;
-            RexLocalRef ref = (RexLocalRef)RexUtil.removeCast(call.operands.get(0));
+            RexSlot ref = (RexSlot)RexUtil.removeCast(call.operands.get(0));
             RexNode cond = RexUtil.removeCast(call.operands.get(1));
 
             assert idxOpSupports(cond) : cond;

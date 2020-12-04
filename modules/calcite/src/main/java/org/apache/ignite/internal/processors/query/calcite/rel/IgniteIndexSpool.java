@@ -84,12 +84,12 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
 
     /** */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteIndexSpool(cluster, getTraitSet(), inputs.get(0));
+        return new IgniteIndexSpool(cluster, getTraitSet(), inputs.get(0), idxCond);
     }
 
     /** {@inheritDoc} */
     @Override protected Spool copy(RelTraitSet traitSet, RelNode input, Type readType, Type writeType) {
-        return new IgniteIndexSpool(getCluster(), traitSet, input);
+        return new IgniteIndexSpool(getCluster(), traitSet, input, idxCond);
     }
 
     /** {@inheritDoc} */
@@ -117,6 +117,9 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         // TODO: add memory usage to cost
         double rowCount = mq.getRowCount(this);
         rowCount = RelMdUtil.addEpsilon(rowCount);
+
+        if (idxCond == null)
+            return planner.getCostFactory().makeCost(rowCount, 0, 0).multiplyBy(4);
 
         return planner.getCostFactory().makeCost(rowCount, 0, 0).multiplyBy(2);
     }

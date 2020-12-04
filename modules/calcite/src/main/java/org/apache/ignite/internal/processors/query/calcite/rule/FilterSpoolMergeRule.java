@@ -72,6 +72,7 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
             )
         );
 
+        System.out.println("+++ FilterSpoolMergeRule");
         call.transformTo(res);
     }
 
