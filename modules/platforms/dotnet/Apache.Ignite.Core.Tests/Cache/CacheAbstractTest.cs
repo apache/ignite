@@ -2329,6 +2329,25 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(2, cache[1]);
         }
 
+        /// <summary>
+        /// Tests that key and value objects can reference the same nested object.
+        /// </summary>
+        [Test]
+        public void TestPutGetWithKeyObjectReferenceInValue([Values(true, false)] bool async)
+        {
+            var cache = Cache<Container, Container>(async);
+
+            var key = new Container {Id = 1};
+            var val = new Container {Id = 2, Inner = key};
+
+            cache.Put(key, val);
+            
+            var res = cache.Get(key);
+            
+            Assert.AreEqual(2, res.Id);
+            Assert.AreEqual(2, res.Inner.Id);
+        }
+
         private void TestKeepBinaryFlag(bool async)
         {
             var cache0 = async ? Cache().WrapAsync() : Cache();
