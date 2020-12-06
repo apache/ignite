@@ -60,7 +60,7 @@ public class OsConfigurationSuggestions {
     public static synchronized List<String> getSuggestions() {
         List<String> suggestions = new ArrayList<>();
 
-        if (U.isRedHat()) {
+        if (U.isRedHat() || U.isLinux()) {
             String val;
             String exp = "500";
 
