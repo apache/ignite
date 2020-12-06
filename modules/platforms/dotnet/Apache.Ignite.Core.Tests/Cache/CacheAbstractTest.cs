@@ -2345,7 +2345,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             var res = cache.Get(key);
             
             Assert.AreEqual(2, res.Id);
-            Assert.AreEqual(2, res.Inner.Id);
+            Assert.AreEqual(1, res.Inner.Id);
         }
 
         private void TestKeepBinaryFlag(bool async)
