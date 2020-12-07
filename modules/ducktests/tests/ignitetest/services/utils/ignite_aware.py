@@ -62,14 +62,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         self.disconnected_nodes = []
         self.killed = False
 
-    def start_async(self):
+    def start_async(self, **kwargs):
         """
         Starts in async way.
         """
-        super().start()
+        super().start(**kwargs)
 
-    def start(self):
-        self.start_async()
+    def start(self, **kwargs):
+        self.start_async(**kwargs)
         self.await_started()
 
     def await_started(self):
@@ -366,10 +366,4 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         Restart ignite cluster without cleaning.
         """
         self.stop()
-
-        for node in self.nodes:
-            self.start_node(node, init_persistent=False)
-
-        self.logger.info("Waiting for Ignite(s) to start...")
-
-        self.await_started()
+        self.start(clean=False)
