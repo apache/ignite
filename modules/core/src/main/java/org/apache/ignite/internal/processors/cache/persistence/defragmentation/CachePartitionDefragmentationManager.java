@@ -357,9 +357,9 @@ public class CachePartitionDefragmentationManager {
                                 partCtx.partPageMemory
                             );
 
-                        partCtx.createNewCacheDataStore(offheap);
+                            partCtx.createNewCacheDataStore(offheap);
 
-                        copyPartitionData(partCtx, treeIter);
+                            copyPartitionData(partCtx, treeIter);
 
                             IgniteInClosure<IgniteInternalFuture<?>> cpLsnr = fut -> {
                                 if (fut.error() != null)
