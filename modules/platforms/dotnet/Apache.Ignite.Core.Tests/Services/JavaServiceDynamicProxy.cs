@@ -32,7 +32,10 @@ namespace Apache.Ignite.Core.Tests.Services
         private readonly dynamic _svc;
 
         /** */
-        public JavaServiceDynamicProxy(dynamic svc) => _svc = svc;
+        public JavaServiceDynamicProxy(dynamic svc)
+        {
+            _svc = svc;
+        } 
 
         /** <inheritDoc /> */
         public bool isCancelled()
