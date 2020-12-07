@@ -501,6 +501,7 @@ public interface GridQueryIndexing {
      * @param partPageMem Partition page memory.
      * @param mappingByPart Mapping page memory.
      * @param cpLock Defragmentation checkpoint read lock.
+     * @param cancellationChecker Cancellation checker.
      *
      * @throws IgniteCheckedException If failed.
      */
@@ -509,6 +510,7 @@ public interface GridQueryIndexing {
         CacheGroupContext newCtx,
         PageMemoryEx partPageMem,
         IntMap<LinkMap> mappingByPart,
-        CheckpointTimeoutLock cpLock
+        CheckpointTimeoutLock cpLock,
+        Runnable cancellationChecker
     ) throws IgniteCheckedException;
 }

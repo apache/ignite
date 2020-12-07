@@ -81,19 +81,28 @@ public class DefragmentationFileUtils {
 
             U.delete(defragmentationCompletionMarkerFile(workDir));
 
-            for (File file : workDir.listFiles()) {
-                String fileName = file.getName();
-
-                if (
-                    fileName.startsWith(DFRG_PARTITION_FILE_PREFIX)
-                    || fileName.startsWith(DFRG_INDEX_FILE_NAME)
-                    || fileName.startsWith(DFRG_LINK_MAPPING_FILE_PREFIX)
-                )
-                    U.delete(file);
-            }
+            deleteLeftovers(workDir);
         }
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Deletes all defragmentation related file from work directory, except for completion marker.
+     *
+     * @param workDir Cache group working directory.
+     */
+    public static void deleteLeftovers(File workDir) {
+        for (File file : workDir.listFiles()) {
+            String fileName = file.getName();
+
+            if (
+                fileName.startsWith(DFRG_PARTITION_FILE_PREFIX)
+                    || fileName.startsWith(DFRG_INDEX_FILE_NAME)
+                    || fileName.startsWith(DFRG_LINK_MAPPING_FILE_PREFIX)
+            )
+                U.delete(file);
         }
     }
 

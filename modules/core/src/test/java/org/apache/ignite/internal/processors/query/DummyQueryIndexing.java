@@ -345,7 +345,8 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         CacheGroupContext newCtx,
         PageMemoryEx partPageMem,
         IntMap<LinkMap> mappingByPart,
-        CheckpointTimeoutLock cpLock
+        CheckpointTimeoutLock cpLock,
+        Runnable cancellationChecker
     ) throws IgniteCheckedException {
         // No-op.
     }
