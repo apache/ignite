@@ -2742,15 +2742,19 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(), "re-encryption rate is not limited."));
 
-        ret = execute("--encryption", REENCRYPTION_RATE.toString(), "0.01");
+        double newRate = 0.01;
+
+        ret = execute("--encryption", REENCRYPTION_RATE.toString(), Double.toString(newRate));
 
         assertEquals(EXIT_CODE_OK, ret);
-        assertEquals(srvNodes, countSubstrs(testOut.toString(), "re-encryption rate has been limited to 0.01 MB/s."));
+        assertEquals(srvNodes, countSubstrs(testOut.toString(),
+            String.format("re-encryption rate has been limited to %.2f MB/s.", newRate)));
 
         ret = execute("--encryption", REENCRYPTION_RATE.toString());
 
         assertEquals(EXIT_CODE_OK, ret);
-        assertEquals(srvNodes, countSubstrs(testOut.toString(), "re-encryption rate is limited to 0.01 MB/s."));
+        assertEquals(srvNodes, countSubstrs(testOut.toString(),
+            String.format("re-encryption rate is limited to %.2f MB/s.", newRate)));
 
         ret = execute("--encryption", REENCRYPTION_RATE.toString(), "0");
 
