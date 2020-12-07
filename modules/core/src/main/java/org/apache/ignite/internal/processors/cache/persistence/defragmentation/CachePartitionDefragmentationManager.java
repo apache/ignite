@@ -386,9 +386,9 @@ public class CachePartitionDefragmentationManager {
                             partCtx.partPageMemory
                         );
 
-                        partCtx.createNewCacheDataStore(offheap);
+                            partCtx.createNewCacheDataStore(offheap);
 
-                        copyPartitionData(partCtx, treeIter);
+                            copyPartitionData(partCtx, treeIter);
 
                         DefragmentationPageReadWriteManager pageMgr = (DefragmentationPageReadWriteManager)partCtx.partPageMemory.pageManager();
 
