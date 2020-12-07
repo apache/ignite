@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ctx.Writer.WriteString(typeName);
             }, ctx => ctx.Stream.ReadBool());
 
-            if (BinaryWriter.RegisterSameJavaType.Value && res)
+            if (Marshaller.RegisterSameJavaType.Value && res)
             {
                 res = _socket.DoOutInOp(ClientOp.BinaryTypeNamePut, ctx =>
                 {

@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.Linq;
     using System.Runtime.Serialization;
+    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Common;
@@ -42,6 +43,9 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class Marshaller
     {
+        /** Register same java type flag. */
+        public static ThreadLocal<Boolean> RegisterSameJavaType = new ThreadLocal<Boolean>(() => false);
+
         /** Binary configuration. */
         private readonly BinaryConfiguration _cfg;
 

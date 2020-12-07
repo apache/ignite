@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             Debug.Assert(writer != null);
 
-            BinaryWriter.RegisterSameJavaType.Value = true;
+            Marshaller.RegisterSameJavaType.Value = true;
 
             try
             {
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Services
             }
             finally
             {
-                BinaryWriter.RegisterSameJavaType.Value = false;
+                Marshaller.RegisterSameJavaType.Value = false;
             }
         }
 

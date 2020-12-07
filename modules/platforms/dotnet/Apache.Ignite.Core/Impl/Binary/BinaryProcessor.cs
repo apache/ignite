@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 w.WriteInt(id);
                 w.WriteString(typeName);
-                w.WriteBoolean(BinaryWriter.RegisterSameJavaType.Value);
+                w.WriteBoolean(Marshaller.RegisterSameJavaType.Value);
             }) == True;
         }
 
