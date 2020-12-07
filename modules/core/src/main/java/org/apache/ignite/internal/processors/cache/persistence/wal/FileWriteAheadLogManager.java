@@ -1053,8 +1053,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         int deleted = 0;
 
         for (FileDescriptor desc : descs) {
-            // Do not delete reserved or locked segment or needed for binary recovery and any segment after it.
-            if (segmentReservedOrLocked(desc.idx) || desc.idx >= lastCheckpointPtr.index())
+            // Do not delete segments that are required for binary recovery, or those that are reserved/locked and any after them.
+            if (desc.idx >= lastCheckpointPtr.index() || segmentReservedOrLocked(desc.idx))
                 return deleted;
 
             long archivedAbsIdx = segmentAware.lastArchivedAbsoluteIndex();

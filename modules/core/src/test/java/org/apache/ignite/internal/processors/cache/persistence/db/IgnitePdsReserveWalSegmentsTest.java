@@ -29,6 +29,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -55,14 +56,15 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return super.getConfiguration(gridName)
-            .setConsistentId(gridName)
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setConsistentId(igniteInstanceName)
             .setCacheConfiguration(
                 new CacheConfiguration<>(DEFAULT_CACHE_NAME)
                     .setAffinity(new RendezvousAffinityFunction(false, 32))
             ).setDataStorageConfiguration(
                 new DataStorageConfiguration()
+                    .setCheckpointFrequency(Long.MAX_VALUE)
                     .setWalMode(WALMode.LOG_ONLY)
                     .setMaxWalArchiveSize(Long.MAX_VALUE)
                     .setWalSegmentSize(1024 * 1024)
@@ -82,18 +84,17 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWalManagerRangeReservation() throws Exception {
-        IgniteEx ig0 = prepareGrid(4);
+        IgniteEx n = prepareGrid(2);
 
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig0.context().cache().context()
-            .database();
+        IgniteWriteAheadLogManager wal = n.context().cache().context().wal();
 
-        IgniteWriteAheadLogManager wal = ig0.context().cache().context().wal();
+        assertNotNull(wal);
 
-        long resIdx = getReservedWalSegmentIndex(dbMgr);
+        long resIdx = getReservedWalSegmentIndex(wal);
 
         assertTrue("Expected that at least resIdx greater than 0, real is " + resIdx, resIdx > 0);
 
-        WALPointer lowPtr = dbMgr.checkpointHistory().firstCheckpointPointer();
+        WALPointer lowPtr = lastCheckpointPointer(n);
 
         assertTrue("Expected that dbMbr returns valid resIdx", lowPtr.index() == resIdx);
 
@@ -112,18 +113,17 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWalDoesNotTruncatedWhenSegmentReserved() throws Exception {
-        IgniteEx ig0 = prepareGrid(4);
+        IgniteEx n = prepareGrid(2);
 
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig0.context().cache().context()
-            .database();
+        IgniteWriteAheadLogManager wal = n.context().cache().context().wal();
 
-        IgniteWriteAheadLogManager wal = ig0.context().cache().context().wal();
+        assertNotNull(wal);
 
-        long resIdx = getReservedWalSegmentIndex(dbMgr);
+        long resIdx = getReservedWalSegmentIndex(wal);
 
         assertTrue("Expected that at least resIdx greater than 0, real is " + resIdx, resIdx > 0);
 
-        WALPointer lowPtr = dbMgr.checkpointHistory().firstCheckpointPointer();
+        WALPointer lowPtr = lastCheckpointPointer(n);
 
         assertTrue("Expected that dbMbr returns valid resIdx", lowPtr.index() == resIdx);
 
@@ -135,6 +135,39 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
         int expNumDel = (int)resIdx - 1;
 
         assertTrue("Expected del segments is " + expNumDel + ", real is " + numDel, expNumDel == numDel);
+    }
+
+    /**
+     * Checking that there will be no truncation of segments required for binary recovery.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNotTruncateSegmentsForBinaryRecovery() throws Exception {
+        IgniteEx n = prepareGrid(1);
+
+        IgniteWriteAheadLogManager wal = n.context().cache().context().wal();
+
+        assertNotNull(wal);
+
+        long resIdx = getReservedWalSegmentIndex(wal);
+        assertTrue(resIdx > 3);
+
+        WALPointer lowPtr = lastCheckpointPointer(n);
+        assertEquals(lowPtr.index(), resIdx);
+
+        wal.notchLastCheckpointPtr(new WALPointer(resIdx - 3, 0, 0));
+
+        int truncated = wal.truncate(lowPtr);
+        assertEquals(resIdx - 3, truncated);
+
+        truncated = wal.truncate(lowPtr);
+        assertEquals(0, truncated);
+
+        wal.notchLastCheckpointPtr(lowPtr);
+
+        truncated = wal.truncate(lowPtr);
+        assertEquals(3, truncated);
     }
 
     /**
@@ -163,11 +196,22 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Get index of reserved WAL segment by checkpointer.
+     * Get index of reserved WAL segment by checkpoint.
      *
      * @param dbMgr Database shared manager.
      */
-    private long getReservedWalSegmentIndex(GridCacheDatabaseSharedManager dbMgr) {
-        return dbMgr.checkpointHistory().firstCheckpointPointer().index();
+    private long getReservedWalSegmentIndex(IgniteWriteAheadLogManager dbMgr) {
+        return ((WALPointer)GridTestUtils.getFieldValueHierarchy(dbMgr, "lastCheckpointPtr")).index();
+    }
+
+    /**
+     * Getting WAL pointer last checkpoint.
+     *
+     * @param n Node.
+     * @return WAL pointer last checkpoint.
+     */
+    private WALPointer lastCheckpointPointer(IgniteEx n) {
+        return ((GridCacheDatabaseSharedManager)n.context().cache().context().database())
+            .checkpointHistory().lastCheckpoint().checkpointMark();
     }
 }
