@@ -67,7 +67,7 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
                 new DataStorageConfiguration()
                     .setCheckpointFrequency(Long.MAX_VALUE)
                     .setWalMode(WALMode.LOG_ONLY)
-                    .setMaxWalArchiveSize(Long.MAX_VALUE)
+                    .setMaxWalArchiveSize(DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE)
                     .setWalSegmentSize(1024 * 1024)
                     .setWalSegments(10)
                     .setDefaultDataRegionConfiguration(
