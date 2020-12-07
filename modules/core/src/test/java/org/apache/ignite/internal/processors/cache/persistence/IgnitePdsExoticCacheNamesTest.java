@@ -63,6 +63,12 @@ public class IgnitePdsExoticCacheNamesTest extends GridCommonAbstractTest {
         checkPersistentCaches("my/cool/cache");
     }
 
+    /** Test a persistent cache with slashes in the name */
+    @Test
+    public void testNameWithBackslashes() throws Exception {
+        checkPersistentCaches("my\\cool\\cache");
+    }
+
     /** Test a persistent cache with special symbols in the name */
     @Test
     public void testNameWithSpecialSymbols() throws Exception {
