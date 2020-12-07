@@ -85,9 +85,6 @@ namespace Apache.Ignite.Core.Impl.Services
             {
                 BinaryWriter.RegisterSameJavaType.Value = false;
             }
-
-            
-            //TODO: unset global flag.
         }
 
         /// <summary>

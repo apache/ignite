@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class BinaryWriter : IBinaryWriter, IBinaryRawWriter
     {
-        /** Register same java type flag.. */
+        /** Register same java type flag. */
         public static ThreadLocal<Boolean> RegisterSameJavaType = new ThreadLocal<Boolean>(() => false);
 
         /** Marshaller. */
