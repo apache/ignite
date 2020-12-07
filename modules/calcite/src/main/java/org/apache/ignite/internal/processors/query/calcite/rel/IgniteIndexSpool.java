@@ -124,8 +124,11 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         return planner.getCostFactory().makeCost(rowCount, 0, 0).multiplyBy(2);
     }
 
-    /***/
-    public IndexConditions indexConditions() {
-        return idxCond;
+    /** {@inheritDoc} */
+    @Override public double estimateRowCount(RelMetadataQuery mq) {
+        if (idxCond != null)
+            return mq.getRowCount(getInput()) / 3;
+
+        return mq.getRowCount(getInput());
     }
 }

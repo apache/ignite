@@ -165,10 +165,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
     }
 
     /** */
-    public Double getRowCount(IgniteIndexSpool rel, RelMetadataQuery mq) {
-        if (rel.indexConditions() != null)
-            return mq.getRowCount(rel.getInput()) / 2;
-        else
-            return mq.getRowCount(rel.getInput());
+    public double getRowCount(IgniteIndexSpool rel, RelMetadataQuery mq) {
+        return rel.estimateRowCount(mq);
     }
 }
