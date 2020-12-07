@@ -15,20 +15,18 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Cache.Affinity.Rendezvous
+namespace Apache.Ignite.Core.Cache.Affinity
 {
-    using System;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
 
     /// <summary>
-    /// Affinity function for partitioned cache based on Highest Random Weight algorithm.
+    /// Represents a backup filter for an affinity function - see
+    /// <see cref="RendezvousAffinityFunction.AffinityBackupFilter"/>.
+    /// <para />
+    /// Only predefined implementation is supported for now: <see cref="ClusterNodeAttributeAffinityBackupFilter"/>.
     /// </summary>
-    // Actual implementation of this class is in Java, see AffinityFunctionSerializer.Write method.
-    [Serializable]
-    public class RendezvousAffinityFunction : AffinityFunctionBase
+    public interface IAffinityBackupFilter
     {
-        /// <summary>
-        /// Gets or sets
-        /// </summary>
-        public IAffinityBackupFilter AffinityBackupFilter { get; set; }
+        
     }
 }
