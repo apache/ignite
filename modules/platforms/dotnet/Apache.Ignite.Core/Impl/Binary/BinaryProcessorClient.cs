@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public bool RegisterType(int id, string typeName, bool registerSameJavaType = false)
+        public bool RegisterType(int id, string typeName)
         {
             var res = _socket.DoOutInOp(ClientOp.BinaryTypeNamePut, ctx =>
             {
@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ctx.Writer.WriteString(typeName);
             }, ctx => ctx.Stream.ReadBool());
 
-            if (registerSameJavaType && res)
+            if (BinaryWriter.RegisterSameJavaType.Value && res)
             {
                 res = _socket.DoOutInOp(ClientOp.BinaryTypeNamePut, ctx =>
                 {

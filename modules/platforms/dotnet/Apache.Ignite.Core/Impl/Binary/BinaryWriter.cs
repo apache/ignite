@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
@@ -33,6 +34,9 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class BinaryWriter : IBinaryWriter, IBinaryRawWriter
     {
+        /** Register same java type flag.. */
+        public static ThreadLocal<Boolean> RegisterSameJavaType = new ThreadLocal<Boolean>(() => false);
+
         /** Marshaller. */
         private readonly Marshaller _marsh;
 
@@ -1019,8 +1023,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Write object array.
         /// </summary>
         /// <param name="val">Object array.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
-        public void WriteArrayInternal(Array val, bool registerSameJavaType = false)
+        public void WriteArrayInternal(Array val)
         {
             if (val == null)
                 WriteNullRawField();
@@ -1030,7 +1033,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return;
 
                 _stream.WriteByte(BinaryTypeId.Array);
-                BinaryUtils.WriteArray(val, this, registerSameJavaType: registerSameJavaType);
+                BinaryUtils.WriteArray(val, this);
             }
         }
 
@@ -1052,16 +1055,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Collection.</param>
         public void WriteCollection(ICollection val)
         {
-            WriteCollection(val, false);
-        }
-
-        /// <summary>
-        /// Write collection.
-        /// </summary>
-        /// <param name="val">Collection.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
-        public void WriteCollection(ICollection val, bool registerSameJavaType = false)
-        {
             if (val == null)
                 WriteNullField();
             else
@@ -1070,7 +1063,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return;
 
                 WriteByte(BinaryTypeId.Collection);
-                BinaryUtils.WriteCollection(val, this, registerSameJavaType: registerSameJavaType);
+                BinaryUtils.WriteCollection(val, this);
             }
         }
 
@@ -1092,16 +1085,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(IDictionary val)
         {
-            WriteDictionary(val, false);
-        }
-
-        /// <summary>
-        /// Write dictionary.
-        /// </summary>
-        /// <param name="val">Dictionary.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
-        public void WriteDictionary(IDictionary val, bool registerSameJavaType = false)
-        {
             if (val == null)
                 WriteNullField();
             else
@@ -1110,7 +1093,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return;
 
                 WriteByte(BinaryTypeId.Dictionary);
-                BinaryUtils.WriteDictionary(val, this, registerSameJavaType);
+                BinaryUtils.WriteDictionary(val, this);
             }
         }
 
@@ -1173,8 +1156,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Write object.
         /// </summary>
         /// <param name="obj">Object.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
-        public void Write<T>(T obj, bool registerSameJavaType = false)
+        public void Write<T>(T obj)
         {
             // Handle special case for null.
             // ReSharper disable once CompareNonConstrainedGenericWithNull
@@ -1209,7 +1191,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))
                     return;
 
-                handler.Write(this, obj, registerSameJavaType);
+                handler.Write(this, obj);
 
                 return;
             }
@@ -1231,7 +1213,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             // Suppose that we faced normal object and perform descriptor lookup.
-            var desc = _marsh.GetDescriptor(type, registerSameJavaType);
+            var desc = _marsh.GetDescriptor(type);
 
             // Writing normal object.
             var pos = _stream.Position;
@@ -1482,11 +1464,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Perform action with detached semantics.
         /// </summary>
-        internal void WriteObjectDetached<T>(T o, bool registerSameJavaType = false)
+        internal void WriteObjectDetached<T>(T o)
         {
             if (_detaching)
             {
-                Write(o, registerSameJavaType);
+                Write(o);
             }
             else
             {
@@ -1497,7 +1479,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 try
                 {
-                    Write(o, registerSameJavaType);
+                    Write(o);
                 }
                 finally
                 {

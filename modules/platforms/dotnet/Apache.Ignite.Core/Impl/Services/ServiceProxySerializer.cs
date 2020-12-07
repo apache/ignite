@@ -46,35 +46,48 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             Debug.Assert(writer != null);
 
-            writer.WriteString(methodName);
+            BinaryWriter.RegisterSameJavaType.Value = true;
 
-            if (arguments != null)
+            try
             {
-                writer.WriteBoolean(true);
-                writer.WriteInt(arguments.Length);
+                writer.WriteString(methodName);
 
-                if (platformType == PlatformType.DotNet)
+                if (arguments != null)
                 {
-                    // Write as is for .NET.
-                    foreach (var arg in arguments)
+                    writer.WriteBoolean(true);
+                    writer.WriteInt(arguments.Length);
+
+                    if (platformType == PlatformType.DotNet)
                     {
-                        writer.WriteObjectDetached(arg);
+                        // Write as is for .NET.
+                        foreach (var arg in arguments)
+                        {
+                            writer.WriteObjectDetached(arg);
+                        }
+                    }
+                    else
+                    {
+                        // Other platforms do not support Serializable, need to convert arrays and collections
+                        var mParams = method != null ? method.GetParameters() : null;
+                        Debug.Assert(mParams == null || mParams.Length == arguments.Length);
+
+                        for (var i = 0; i < arguments.Length; i++)
+                        {
+                            WriteArgForPlatforms(writer, mParams != null ? mParams[i].ParameterType : null,
+                                arguments[i]);
+                        }
                     }
                 }
                 else
-                {
-                    // Other platforms do not support Serializable, need to convert arrays and collections
-                    var mParams = method != null ? method.GetParameters() : null;
-                    Debug.Assert(mParams == null || mParams.Length == arguments.Length);
-
-                    for (var i = 0; i < arguments.Length; i++)
-                    {
-                        WriteArgForPlatforms(writer, mParams != null ? mParams[i].ParameterType : null, arguments[i]);
-                    }
-                }
+                    writer.WriteBoolean(false);
             }
-            else
-                writer.WriteBoolean(false);
+            finally
+            {
+                BinaryWriter.RegisterSameJavaType.Value = false;
+            }
+
+            
+            //TODO: unset global flag.
         }
 
         /// <summary>
@@ -225,7 +238,7 @@ namespace Apache.Ignite.Core.Impl.Services
             }
             else
             {
-                writer.WriteObjectDetached(arg, true);
+                writer.WriteObjectDetached(arg);
             }
         }
 
@@ -263,13 +276,13 @@ namespace Apache.Ignite.Core.Impl.Services
                 return null;
 
             if (type.IsArray)
-                return (writer, o) => writer.WriteArrayInternal((Array) o, true);
+                return (writer, o) => writer.WriteArrayInternal((Array) o);
 
             if (arg is IDictionary)
-                return (writer, o) => writer.WriteDictionary((IDictionary) o, true);
+                return (writer, o) => writer.WriteDictionary((IDictionary) o);
 
             if (arg is ICollection)
-                return (writer, o) => writer.WriteCollection((ICollection) o, true);
+                return (writer, o) => writer.WriteCollection((ICollection) o);
 
             if (arg is DateTime)
                 return (writer, o) => writer.WriteTimestamp((DateTime) o);

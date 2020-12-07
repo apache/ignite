@@ -1047,8 +1047,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Array.</param>
         /// <param name="ctx">Write context.</param>
         /// <param name="elemTypeId">The element type id.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
-        public static void WriteArray(Array val, BinaryWriter ctx, int? elemTypeId = null, bool registerSameJavaType = false)
+        public static void WriteArray(Array val, BinaryWriter ctx, int? elemTypeId = null)
         {
             Debug.Assert(val != null && ctx != null);
             Debug.Assert(val.Rank == 1);
@@ -1064,7 +1063,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var elemType = val.GetType().GetElementType();
                 Debug.Assert(elemType != null);
 
-                var typeId = GetArrayElementTypeId(val, ctx.Marshaller, registerSameJavaType);
+                var typeId = GetArrayElementTypeId(val, ctx.Marshaller);
                 stream.WriteInt(typeId);
 
                 if (typeId == BinaryTypeId.Unregistered)
@@ -1082,22 +1081,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the array element type identifier.
         /// </summary>
-        public static int GetArrayElementTypeId(Array val, Marshaller marsh, bool registerSameJavaType = false)
+        public static int GetArrayElementTypeId(Array val, Marshaller marsh)
         {
             var elemType = val.GetType().GetElementType();
             Debug.Assert(elemType != null);
 
-            return GetArrayElementTypeId(elemType, marsh, registerSameJavaType);
+            return GetArrayElementTypeId(elemType, marsh);
         }
 
         /// <summary>
         /// Gets the array element type identifier.
         /// </summary>
-        public static int GetArrayElementTypeId(Type elemType, Marshaller marsh, bool registerSameJavaType = false)
+        public static int GetArrayElementTypeId(Type elemType, Marshaller marsh)
         {
             return elemType == typeof(object) 
                 ? ObjTypeId 
-                : marsh.GetDescriptor(elemType, registerSameJavaType).TypeId;
+                : marsh.GetDescriptor(elemType).TypeId;
         }
 
         /// <summary>
@@ -1183,9 +1182,8 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <summary>Write collection.</summary>
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
-         * <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
          */
-        public static void WriteCollection(ICollection val, BinaryWriter ctx, bool registerSameJavaType = false)
+        public static void WriteCollection(ICollection val, BinaryWriter ctx)
         {
             var valType = val.GetType();
 
@@ -1205,7 +1203,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
                 colType = valType == typeof(ArrayList) ? CollectionArrayList : CollectionCustom;
 
-            WriteCollection(val, ctx, colType, registerSameJavaType);
+            WriteCollection(val, ctx, colType);
         }
 
         /**
@@ -1213,16 +1211,15 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
          * <param name="colType">Collection type.</param>
-         * <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
          */
-        public static void WriteCollection(ICollection val, BinaryWriter ctx, byte colType, bool registerSameJavaType = false)
+        public static void WriteCollection(ICollection val, BinaryWriter ctx, byte colType)
         {
             ctx.Stream.WriteInt(val.Count);
 
             ctx.Stream.WriteByte(colType);
 
             foreach (object elem in val)
-                ctx.Write(elem, registerSameJavaType);
+                ctx.Write(elem);
         }
 
         /**
@@ -1270,9 +1267,8 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <summary>Write dictionary.</summary>
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
-         * <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
          */
-        public static void WriteDictionary(IDictionary val, BinaryWriter ctx, bool registerSameJavaType = false)
+        public static void WriteDictionary(IDictionary val, BinaryWriter ctx)
         {
             var valType = val.GetType();
 
@@ -1287,7 +1283,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
                 dictType = valType == typeof(Hashtable) ? MapHashMap : MapCustom;
 
-            WriteDictionary(val, ctx, dictType, registerSameJavaType);
+            WriteDictionary(val, ctx, dictType);
         }
 
         /**
@@ -1295,9 +1291,8 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
          * <param name="dictType">Dictionary type.</param>
-         * <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
          */
-        public static void WriteDictionary(IDictionary val, BinaryWriter ctx, byte dictType, bool registerSameJavaType = false)
+        public static void WriteDictionary(IDictionary val, BinaryWriter ctx, byte dictType)
         {
             ctx.Stream.WriteInt(val.Count);
 
@@ -1305,8 +1300,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             foreach (DictionaryEntry entry in val)
             {
-                ctx.Write(entry.Key, registerSameJavaType);
-                ctx.Write(entry.Value, registerSameJavaType);
+                ctx.Write(entry.Key);
+                ctx.Write(entry.Value);
             }
         }
 

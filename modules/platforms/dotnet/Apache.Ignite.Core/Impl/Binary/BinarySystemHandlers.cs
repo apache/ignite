@@ -438,31 +438,31 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Writes the array.
         /// </summary>
-        private static void WriteArray(BinaryWriter ctx, object obj, bool registerSameJavaType)
+        private static void WriteArray(BinaryWriter ctx, object obj)
         {
             ctx.Stream.WriteByte(BinaryTypeId.Array);
 
-            BinaryUtils.WriteArray((Array) obj, ctx, registerSameJavaType: registerSameJavaType);
+            BinaryUtils.WriteArray((Array) obj, ctx);
         }
 
         /**
          * <summary>Write ArrayList.</summary>
          */
-        private static void WriteArrayList(BinaryWriter ctx, ICollection obj, bool registerSameJavaType)
+        private static void WriteArrayList(BinaryWriter ctx, ICollection obj)
         {
             ctx.Stream.WriteByte(BinaryTypeId.Collection);
 
-            BinaryUtils.WriteCollection(obj, ctx, BinaryUtils.CollectionArrayList, registerSameJavaType);
+            BinaryUtils.WriteCollection(obj, ctx, BinaryUtils.CollectionArrayList);
         }
 
         /**
          * <summary>Write Hashtable.</summary>
          */
-        private static void WriteHashtable(BinaryWriter ctx, IDictionary obj, bool registerSameJavaType)
+        private static void WriteHashtable(BinaryWriter ctx, IDictionary obj)
         {
             ctx.Stream.WriteByte(BinaryTypeId.Dictionary);
 
-            BinaryUtils.WriteDictionary(obj, ctx, BinaryUtils.MapHashMap, registerSameJavaType);
+            BinaryUtils.WriteDictionary(obj, ctx, BinaryUtils.MapHashMap);
         }
 
         /**
@@ -702,8 +702,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="writer">The writer.</param>
         /// <param name="obj">The object.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
-        void Write<T>(BinaryWriter writer, T obj, bool registerSameJavaType = false);
+        void Write<T>(BinaryWriter writer, T obj);
     }
 
     /// <summary>
@@ -713,9 +712,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     {
         /** */
         private readonly Action<BinaryWriter, T1> _writeAction;
-        
-        /** */
-        private readonly Action<BinaryWriter, T1, bool> _writeWithRegisterAction;
 
         /** */
         private readonly bool _supportsHandles;
@@ -733,26 +729,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             _supportsHandles = supportsHandles;
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BinarySystemWriteHandler{T1}" /> class.
-        /// </summary>
-        /// <param name="writeWithRegisterAction">The write action.</param>
-        /// <param name="supportsHandles">Handles flag.</param>
-        public BinarySystemWriteHandler(Action<BinaryWriter, T1, bool> writeWithRegisterAction, bool supportsHandles)
-        {
-            Debug.Assert(writeWithRegisterAction != null);
-
-            _writeWithRegisterAction = writeWithRegisterAction;
-            _supportsHandles = supportsHandles;
-        }
-
         /** <inheritdoc /> */
-        public void Write<T>(BinaryWriter writer, T obj, bool registerSameJavaType = false)
+        public void Write<T>(BinaryWriter writer, T obj)
         {
-            if (_writeAction != null)
-                _writeAction(writer, TypeCaster<T1>.Cast(obj));
-            else
-                _writeWithRegisterAction(writer, TypeCaster<T1>.Cast(obj), registerSameJavaType);
+            _writeAction(writer, TypeCaster<T1>.Cast(obj));
         }
 
         /** <inheritdoc /> */

@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
 
             /** <inheritdoc /> */
-            public bool RegisterType(int id, string typeName, bool registerSameJavaType = false)
+            public bool RegisterType(int id, string typeName)
             {
                 return false;
             }
