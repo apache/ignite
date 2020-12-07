@@ -999,15 +999,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (mode == WALMode.NONE)
             return false;
 
-        segmentAware.reserve(start.index());
-
-        if (!hasIndex(start.index())) {
-            segmentAware.release(start.index());
-
-            return false;
-        }
-
-        return true;
+        return segmentAware.reserve(start.index());
     }
 
     /** {@inheritDoc} */
@@ -1018,29 +1010,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return;
 
         segmentAware.release(start.index());
-    }
-
-    /**
-     * @param absIdx Absolulte index to check.
-     * @return {@code true} if has this index.
-     */
-    private boolean hasIndex(long absIdx) {
-        String segmentName = fileName(absIdx);
-
-        String zipSegmentName = segmentName + ZIP_SUFFIX;
-
-        boolean inArchive = new File(walArchiveDir, segmentName).exists() ||
-            new File(walArchiveDir, zipSegmentName).exists();
-
-        if (inArchive)
-            return true;
-
-        if (absIdx <= lastArchivedIndex())
-            return false;
-
-        FileWriteHandle cur = currHnd;
-
-        return cur != null && cur.getSegmentId() >= absIdx;
     }
 
     /** {@inheritDoc} */
@@ -1054,7 +1023,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         for (FileDescriptor desc : descs) {
             // Do not delete segments that are required for binary recovery, or those that are reserved/locked and any after them.
-            if (desc.idx >= lastCheckpointPtr.index() || segmentReservedOrLocked(desc.idx))
+            // TODO: 07.12.2020 Correct there?
+//            if (desc.idx >= lastCheckpointPtr.index() || segmentReservedOrLocked(desc.idx))
+            if (desc.idx >= lastCheckpointPtr.index() || !segmentAware.minReserveIndex(desc.idx))
                 return deleted;
 
             long archivedAbsIdx = segmentAware.lastArchivedAbsoluteIndex();
@@ -1366,7 +1337,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, ser);
 
+                FileDescriptor[] walArchiveFiles = walArchiveFiles();
+
                 segmentAware.curAbsWalIdx(absIdx);
+                segmentAware.minReserveIndex(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
 
                 if (archiver0 == null)
                     segmentAware.setLastArchivedAbsoluteIndex(absIdx - 1);

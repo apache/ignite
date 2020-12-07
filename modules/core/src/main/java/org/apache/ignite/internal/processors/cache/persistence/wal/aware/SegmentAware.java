@@ -174,6 +174,9 @@ public class SegmentAware {
     }
 
     /**
+     * Segment reservation. It will be successful if segment is {@code >} than the  {@link #minReserveIndex}
+     * and {@code <=} than the {@link #curAbsWalIdx current segment}.
+     * 
      * @param absIdx Index for reservation.
      * @return {@code True} if the reservation was successful.
      */
@@ -264,5 +267,17 @@ public class SegmentAware {
         segmentCompressStorage.interrupt();
 
         segmentCurrStateStorage.forceInterrupt();
+    }
+
+    /**
+     * Updating minimum segment index after that can be reserved.
+     * Value will be updated if it is greater than the current one.
+     * If segment is already reserved, the update will fail.
+     *
+     * @param absIdx Absolut segment index.
+     * @return {@code True} if update is successful.
+     */
+    public boolean minReserveIndex(long absIdx) {
+        return reservationStorage.minReserveIndex(absIdx);
     }
 }
