@@ -27,7 +27,16 @@ namespace Apache.Ignite.Core.Cache.Affinity.Rendezvous
     public class RendezvousAffinityFunction : AffinityFunctionBase
     {
         /// <summary>
-        /// Gets or sets
+        /// Gets or sets an optional backup filter. If provided, then backups will be selected from all nodes
+        /// that pass this filter. First node being passed to this filter is a node being tested,
+        /// and the second parameter is a list of nodes that are already assigned for a given partition
+        /// (primary node is the first in the list).
+        /// <para />
+        /// Note that <see cref="AffinityBackupFilter"/> is ignored when
+        /// <see cref="AffinityFunctionBase.ExcludeNeighbors"/> is <c>true</c>.
+        /// <para />
+        /// Only one predefined implementation is supported for now:
+        /// <see cref="ClusterNodeAttributeAffinityBackupFilter"/>.
         /// </summary>
         public IAffinityBackupFilter AffinityBackupFilter { get; set; }
     }

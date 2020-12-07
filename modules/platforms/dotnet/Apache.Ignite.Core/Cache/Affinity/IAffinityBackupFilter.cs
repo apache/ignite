@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
     /// Represents a backup filter for an affinity function - see
     /// <see cref="RendezvousAffinityFunction.AffinityBackupFilter"/>.
     /// <para />
-    /// Only predefined implementation is supported for now: <see cref="ClusterNodeAttributeAffinityBackupFilter"/>.
+    /// Only one predefined implementation is supported for now: <see cref="ClusterNodeAttributeAffinityBackupFilter"/>.
     /// </summary>
     public interface IAffinityBackupFilter
     {
