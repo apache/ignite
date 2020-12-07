@@ -80,6 +80,7 @@ public class IndexingDefragmentation {
      * @param partPageMem Partition page memory.
      * @param mappingByPartition Mapping page memory.
      * @param cpLock Defragmentation checkpoint read lock.
+     * @param cancellationChecker Cancellation checker.
      * @param log Log.
      *
      * @throws IgniteCheckedException If failed.
@@ -90,6 +91,7 @@ public class IndexingDefragmentation {
         PageMemoryEx partPageMem,
         IntMap<LinkMap> mappingByPartition,
         CheckpointTimeoutLock cpLock,
+        Runnable cancellationChecker,
         IgniteLogger log
     ) throws IgniteCheckedException {
         int pageSize = grpCtx.cacheObjectContext().kernalContext().grid().configuration().getDataStorageConfiguration().getPageSize();
@@ -114,6 +116,8 @@ public class IndexingDefragmentation {
 
                 if (cctx.groupId() != grpCtx.groupId())
                     continue; // Not our index.
+
+                cancellationChecker.run();
 
                 GridH2RowDescriptor rowDesc = table.rowDescriptor();
 
@@ -155,6 +159,8 @@ public class IndexingDefragmentation {
                     H2Tree tree = oldH2Idx.treeForRead(i);
 
                     treeIterator.iterate(tree, oldCachePageMem, (theTree, io, pageAddr, idx) -> {
+                        cancellationChecker.run();
+
                         if (System.currentTimeMillis() - lastCpLockTs.get() >= cpLockThreshold) {
                             cpLock.checkpointReadUnlock();
 

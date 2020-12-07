@@ -748,7 +748,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** */
-    private void prepareCacheDefragmentation(List<Integer> cacheGroupIds) throws IgniteCheckedException {
+    private void prepareCacheDefragmentation(List<String> cacheNames) throws IgniteCheckedException {
         GridKernalContext kernalCtx = cctx.kernalContext();
         DataStorageConfiguration dsCfg = kernalCtx.config().getDataStorageConfiguration();
 
@@ -778,7 +778,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         lightCheckpointMgr.start();
 
         defrgMgr = new CachePartitionDefragmentationManager(
-            cacheGroupIds,
+            cacheNames,
             cctx,
             this,
             (FilePageStoreManager)cctx.pageStore(),
@@ -786,6 +786,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             lightCheckpointMgr,
             persistenceCfg.getPageSize()
         );
+    }
+
+    /** */
+    public CachePartitionDefragmentationManager defragmentationManager() {
+        return defrgMgr;
     }
 
     /** {@inheritDoc} */
@@ -826,9 +831,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     .registerWorkflowCallbackIfTaskExists(
                         DEFRAGMENTATION_MNTC_TASK_NAME,
                         task -> {
-                            prepareCacheDefragmentation(fromStore(task).cacheGroupIds());
+                            prepareCacheDefragmentation(fromStore(task).cacheNames());
 
-                            return new DefragmentationWorkflowCallback(cctx.kernalContext()::log, defrgMgr);
+                            return new DefragmentationWorkflowCallback(
+                                cctx.kernalContext()::log,
+                                defrgMgr,
+                                cctx.kernalContext().failure()
+                            );
                         }
                     );
             }
@@ -1097,6 +1106,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
+        if (defrgMgr != null)
+            defrgMgr.cancel();
+
         checkpointManager.stop(cancel);
 
         super.onKernalStop0(cancel);
@@ -1395,6 +1407,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture exchangeFut) {
+        if (defrgMgr != null)
+            return;
+
         rebuildIndexes(cctx.cacheContexts(), (cacheCtx) -> cacheCtx.startTopologyVersion().equals(exchangeFut.initialVersion()));
     }
 
@@ -1885,6 +1900,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     public void resumeWalLogging() throws IgniteCheckedException {
         cctx.wal().resumeLogging(walTail);
+    }
+
+    /** */
+    public void preserveWalTailPointer() throws IgniteCheckedException {
+        walTail = cctx.wal().flush(null, true);
     }
 
     /**

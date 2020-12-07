@@ -136,6 +136,8 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         startGrid(0);
 
+        waitForDefragmentation(0);
+
         long newIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
 
         assertTrue(newIdxFileLen <= oldIdxFileLen);

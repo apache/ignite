@@ -221,6 +221,15 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
   Backup data files of only given caches:
     control.(sh|bat) --persistence backup caches cache1,cache2,cache3
 
+  Schedule PDS defragmentation on given nodes for all caches:
+    control.(sh|bat) --defragmentation schedule --nodes consistentId0,consistentId1
+
+  Schedule PDS defragmentation on given nodes but only for given caches:
+    control.(sh|bat) --defragmentation schedule --nodes consistentId0,consistentId1 --caches cache1,cache2,cache3
+
+  Cancel scheduled or active PDS defragmentation on underlying node:
+    control.(sh|bat) --defragmentation cancel
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 
