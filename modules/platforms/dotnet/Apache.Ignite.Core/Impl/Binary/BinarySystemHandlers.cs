@@ -712,10 +712,10 @@ namespace Apache.Ignite.Core.Impl.Binary
     internal class BinarySystemWriteHandler<T1> : IBinarySystemWriteHandler
     {
         /** */
-        private readonly Action<BinaryWriter, T1> _writeAction1;
+        private readonly Action<BinaryWriter, T1> _writeAction;
         
         /** */
-        private readonly Action<BinaryWriter, T1, bool> _writeAction2;
+        private readonly Action<BinaryWriter, T1, bool> _writeWithRegisterAction;
 
         /** */
         private readonly bool _supportsHandles;
@@ -729,30 +729,30 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(writeAction != null);
 
-            _writeAction1 = writeAction;
+            _writeAction = writeAction;
             _supportsHandles = supportsHandles;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BinarySystemWriteHandler{T1}" /> class.
         /// </summary>
-        /// <param name="writeAction">The write action.</param>
+        /// <param name="writeWithRegisterAction">The write action.</param>
         /// <param name="supportsHandles">Handles flag.</param>
-        public BinarySystemWriteHandler(Action<BinaryWriter, T1, bool> writeAction, bool supportsHandles)
+        public BinarySystemWriteHandler(Action<BinaryWriter, T1, bool> writeWithRegisterAction, bool supportsHandles)
         {
-            Debug.Assert(writeAction != null);
+            Debug.Assert(writeWithRegisterAction != null);
 
-            _writeAction2 = writeAction;
+            _writeWithRegisterAction = writeWithRegisterAction;
             _supportsHandles = supportsHandles;
         }
 
         /** <inheritdoc /> */
         public void Write<T>(BinaryWriter writer, T obj, bool registerSameJavaType = false)
         {
-            if (_writeAction1 != null)
-                _writeAction1(writer, TypeCaster<T1>.Cast(obj));
+            if (_writeAction != null)
+                _writeAction(writer, TypeCaster<T1>.Cast(obj));
             else
-                _writeAction2(writer, TypeCaster<T1>.Cast(obj), registerSameJavaType);
+                _writeWithRegisterAction(writer, TypeCaster<T1>.Cast(obj), registerSameJavaType);
         }
 
         /** <inheritdoc /> */
