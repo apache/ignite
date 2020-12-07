@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageServic
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
@@ -2604,6 +2605,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(schema)
                 .traitDefs(traitDefs)
+                .costFactory(new IgniteCostFactory(1, 100, 1, 1))
                 .build())
             .logger(log)
             .query(sql)
@@ -2721,7 +2723,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("ID", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
                 .add("DEPTNO", f.createJavaType(Integer.class))
-                .build()) {
+                .build(), RewindabilityTrait.REWINDABLE, 1000) {
 
             @Override public IgniteDistribution distribution() {
                 return IgniteDistributions.broadcast();
@@ -2734,7 +2736,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             new RelDataTypeFactory.Builder(f)
                 .add("DEPTNO", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
-                .build()) {
+                .build(), RewindabilityTrait.REWINDABLE, 100) {
 
             @Override public IgniteDistribution distribution() {
                 return IgniteDistributions.broadcast();
@@ -2748,19 +2750,17 @@ public class PlannerTest extends GridCommonAbstractTest {
         publicSchema.addTable("EMP", emp);
         publicSchema.addTable("DEPT", dept);
 
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
         String sql = "select * from dept d join emp e on d.deptno = e.deptno and e.name >= d.name order by e.name, d.deptno";
 
-        RelNode phys = physicalPlan(sql, publicSchema);
+        RelNode phys = physicalPlan(sql, publicSchema, "CorrelatedNestedLoopJoin");
 
         assertNotNull(phys);
         assertEquals("" +
-                "IgniteSort(sort0=[$3], sort1=[$0], dir0=[ASC], dir1=[ASC])\n" +
-                "  IgniteNestedLoopJoin(condition=[AND(=($0, $4), >=($3, $1))], joinType=[inner])\n" +
-                "    IgniteTableScan(table=[[PUBLIC, DEPT]])\n" +
-                "    IgniteTableScan(table=[[PUBLIC, EMP]])\n",
+                "IgniteProject(DEPTNO=[$3], NAME=[$4], ID=[$0], NAME0=[$1], DEPTNO0=[$2])\n" +
+                "  IgniteSort(sort0=[$1], sort1=[$3], dir0=[ASC], dir1=[ASC])\n" +
+                "    IgniteNestedLoopJoin(condition=[AND(=($3, $2), >=($1, $4))], joinType=[inner])\n" +
+                "      IgniteIndexScan(table=[[PUBLIC, EMP]], index=[emp_idx])\n" +
+                "      IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[dep_idx])\n",
             RelOptUtil.toString(phys));
     }
 
@@ -3106,8 +3106,6 @@ public class PlannerTest extends GridCommonAbstractTest {
             protoType = RelDataTypeImpl.proto(type);
             this.rewindable = rewindable;
             this.rowCnt = rowCnt;
-
-            addIndex(new IgniteIndex(RelCollations.of(), "PK", null, this));
         }
 
         /** {@inheritDoc} */

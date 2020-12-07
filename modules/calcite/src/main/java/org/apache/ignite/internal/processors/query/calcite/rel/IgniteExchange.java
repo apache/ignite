@@ -18,18 +18,20 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.rel.RelDistributions;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
@@ -72,9 +74,19 @@ public class IgniteExchange extends Exchange implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rowCount = mq.getRowCount(this);
-        double bytesPerRow = getRowType().getFieldCount() * 4 * (TraitUtils.distribution(this) == IgniteDistributions.broadcast() ? 10 : 1);
-        return planner.getCostFactory().makeCost(rowCount * bytesPerRow, rowCount, 0);
+        double rowCount = mq.getRowCount(getInput());
+        double bytesPerRow = getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
+        double totalBytes = rowCount * bytesPerRow;
+
+        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+
+        if (RelDistributions.BROADCAST_DISTRIBUTED.equals(distribution))
+            // With broadcast distribution each row will be sent to the each distination node,
+            // thus the total bytes amount will be multiplies of the destination nodes count.
+            // We have no such information, so let's just multiply it by 5.
+            totalBytes *= 5;
+
+        return costFactory.makeCost(rowCount, rowCount * IgniteCost.ROW_PASS_THROUGH_COST, 0D, 0D, totalBytes);
     }
 
     /** {@inheritDoc} */

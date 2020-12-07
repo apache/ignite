@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -25,8 +26,9 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Spool;
-import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
@@ -78,9 +80,12 @@ public class IgniteTableSpool extends Spool implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        // TODO: add memory usage to cost
-        double rowCount = mq.getRowCount(this);
-        rowCount = RelMdUtil.addEpsilon(rowCount);
-        return planner.getCostFactory().makeCost(rowCount, 0, 0);
+        double rowCount = mq.getRowCount(getInput());
+        double bytesPerRow = getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
+        double totalBytes = rowCount * bytesPerRow;
+
+        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+
+        return costFactory.makeCost(rowCount, totalBytes, 0, totalBytes, 0);
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -28,9 +29,12 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -148,6 +152,34 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return super.computeSelfCost(planner, mq).plus(planner.getCostFactory().makeTinyCost());
+        double rows = table.getRowCount();
+
+        double cost = rows * IgniteCost.ROW_PASS_THROUGH_COST;
+
+        RexBuilder builder = getCluster().getRexBuilder();
+
+        double selectivity = 1;
+
+        if (lowerCond != null) {
+            double selectivity0 = mq.getSelectivity(this, RexUtil.composeDisjunction(builder, lowerCond));
+
+            selectivity -= 1 - selectivity0;
+        }
+
+        if (upperCond != null) {
+            double selectivity0 = mq.getSelectivity(this, RexUtil.composeDisjunction(builder, upperCond));
+
+            selectivity -= 1 - selectivity0;
+        }
+
+        double rangedRows = rows * selectivity;
+
+        if (rangedRows <= 0)
+            rangedRows = 1;
+
+        if (condition != null)
+            cost += rangedRows * 4;
+
+        return planner.getCostFactory().makeCost(rows, cost, 0);
     }
 }

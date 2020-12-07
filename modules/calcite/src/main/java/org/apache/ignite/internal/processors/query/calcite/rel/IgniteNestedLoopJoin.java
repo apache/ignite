@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -34,9 +32,8 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
-import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
@@ -47,7 +44,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  * The set of output rows is a subset of the cartesian product of the two
  * inputs; precisely which subset depends on the join condition.
  */
-public class IgniteNestedLoopJoin extends AbstractIgniteNestedLoopJoin {
+public class IgniteNestedLoopJoin extends AbstractIgniteJoin {
     /**
      * Creates a Join.
      *
@@ -78,7 +75,23 @@ public class IgniteNestedLoopJoin extends AbstractIgniteNestedLoopJoin {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return super.computeSelfCost(planner, mq).multiplyBy(10);
+        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+
+        double leftCount = mq.getRowCount(getLeft());
+
+        if (Double.isInfinite(leftCount))
+            return costFactory.makeInfiniteCost();
+
+        double rightCount = mq.getRowCount(getRight());
+
+        if (Double.isInfinite(rightCount))
+            return costFactory.makeInfiniteCost();
+
+        double rows = leftCount * rightCount;
+
+        double rightSize = rightCount * getRight().getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
+
+        return costFactory.makeCost(rows, rows * IgniteCost.ROW_COMPARISON_COST, 0, rightSize, 0);
     }
 
     /** {@inheritDoc} */
@@ -89,18 +102,6 @@ public class IgniteNestedLoopJoin extends AbstractIgniteNestedLoopJoin {
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        // left correlations
-        Set<CorrelationId> corrIds = new HashSet<>(TraitUtils.correlation(inTraits.get(0)).correlationIds());
-        // right correlations
-        corrIds.addAll(TraitUtils.correlation(inTraits.get(1)).correlationIds());
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)),
-            inTraits));
     }
 
     /** {@inheritDoc} */
