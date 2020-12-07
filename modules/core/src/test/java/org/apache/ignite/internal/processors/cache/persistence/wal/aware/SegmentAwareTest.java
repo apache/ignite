@@ -521,6 +521,19 @@ public class SegmentAwareTest {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false);
 
+        // Upper limit is taken into account.
+        assertFalse(aware.reserve(0));
+        assertFalse(aware.reserve(1));
+
+        aware.curAbsWalIdx(1);
+        assertTrue(aware.reserve(0));
+        assertTrue(aware.reserve(1));
+
+        aware.release(0);
+        aware.release(1);
+
+        aware.curAbsWalIdx(10);
+
         //when: reserve one segment twice and one segment once.
         aware.reserve(5);
         aware.reserve(5);

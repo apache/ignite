@@ -1366,9 +1366,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, ser);
 
-                if (archiver0 != null)
-                    segmentAware.curAbsWalIdx(absIdx);
-                else
+                segmentAware.curAbsWalIdx(absIdx);
+
+                if (archiver0 == null)
                     segmentAware.setLastArchivedAbsoluteIndex(absIdx - 1);
 
                 // Getting segment sizes.
@@ -1602,6 +1602,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         FileArchiver archiver0 = archiver;
 
         if (archiver0 == null) {
+            segmentAware.curAbsWalIdx(curIdx + 1);
             segmentAware.setLastArchivedAbsoluteIndex(curIdx);
 
             return new File(walWorkDir, fileName(curIdx + 1));

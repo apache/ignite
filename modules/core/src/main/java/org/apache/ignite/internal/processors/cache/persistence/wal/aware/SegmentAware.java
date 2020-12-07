@@ -22,13 +22,14 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentArchivedStorage.buildArchivedStorage;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentCompressStorage.buildCompressStorage;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentCurrentStateStorage.buildCurrentStateStorage;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentReservationStorage.buildReservationStorage;
 
 /**
  * Holder of actual information of latest manipulation on WAL segments.
  */
 public class SegmentAware {
     /** Segment reservations storage: Protects WAL segments from deletion during WAL log cleanup. */
-    private final SegmentReservationStorage reservationStorage = new SegmentReservationStorage();
+    private final SegmentReservationStorage reservationStorage;
 
     /** Lock on segment protects from archiving segment. */
     private final SegmentLockStorage segmentLockStorage = new SegmentLockStorage();
@@ -43,12 +44,15 @@ public class SegmentAware {
     private final SegmentCurrentStateStorage segmentCurrStateStorage;
 
     /**
+     * Constructor.
+     *
      * @param walSegmentsCnt Total WAL segments count.
      * @param compactionEnabled Is wal compaction enabled.
      */
     public SegmentAware(int walSegmentsCnt, boolean compactionEnabled) {
         segmentCurrStateStorage = buildCurrentStateStorage(walSegmentsCnt, segmentArchivedStorage);
         segmentCompressStorage = buildCompressStorage(segmentArchivedStorage, compactionEnabled);
+        reservationStorage = buildReservationStorage(segmentCurrStateStorage);
     }
 
     /**
@@ -171,9 +175,10 @@ public class SegmentAware {
 
     /**
      * @param absIdx Index for reservation.
+     * @return {@code True} if the reservation was successful.
      */
-    public void reserve(long absIdx) {
-        reservationStorage.reserve(absIdx);
+    public boolean reserve(long absIdx) {
+        return reservationStorage.reserve(absIdx);
     }
 
     /**

@@ -27,13 +27,23 @@ class SegmentReservationStorage {
      * Maps absolute segment index to reservation counter. If counter > 0 then we wouldn't delete all segments which has
      * index >= reserved segment index. Guarded by {@code this}.
      */
-    private NavigableMap<Long, Integer> reserved = new TreeMap<>();
+    private final NavigableMap<Long, Integer> reserved = new TreeMap<>();
+
+    /** Maximum segment index that can be reserved. */
+    private volatile long maxReserveIdx = -1;
 
     /**
      * @param absIdx Index for reservation.
+     * @return {@code True} if the reservation was successful.
      */
-    synchronized void reserve(long absIdx) {
-        reserved.merge(absIdx, 1, (a, b) -> a + b);
+    synchronized boolean reserve(long absIdx) {
+        if (absIdx <= maxReserveIdx) {
+            reserved.merge(absIdx, 1, Integer::sum);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -58,5 +68,28 @@ class SegmentReservationStorage {
             reserved.remove(absIdx);
         else
             reserved.put(absIdx, cur - 1);
+    }
+
+    /**
+     * Updating maximum (only increase) segment index that can be reserved.
+     *
+     * @param absIdx Absolut segment index.
+     */
+    synchronized void maxReserveIndex(long absIdx) {
+        maxReserveIdx = Math.max(maxReserveIdx, absIdx);
+    }
+
+    /**
+     * Creating new instance with preparation.
+     *
+     * @param currStateStorage Storage of absolute current segment index.
+     * @return New instance.
+     */
+    static SegmentReservationStorage buildReservationStorage(SegmentCurrentStateStorage currStateStorage) {
+        SegmentReservationStorage reservationStorage = new SegmentReservationStorage();
+
+        currStateStorage.addObserver(reservationStorage::maxReserveIndex);
+
+        return reservationStorage;
     }
 }

@@ -22,7 +22,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 /**
  * Storage of absolute current segment index.
  */
-class SegmentCurrentStateStorage {
+class SegmentCurrentStateStorage extends SegmentObservable {
     /** Flag of interrupt of waiting on this object. */
     private volatile boolean interrupted;
 
@@ -42,6 +42,8 @@ class SegmentCurrentStateStorage {
     private volatile long curAbsWalIdx = -1;
 
     /**
+     * Constructor.
+     *
      * @param walSegmentsCnt Total WAL segments count.
      * @param segmentArchivedStorage Last archived segment storage.
      */
@@ -102,23 +104,31 @@ class SegmentCurrentStateStorage {
      *
      * @return Next absolute segment index.
      */
-    synchronized long nextAbsoluteSegmentIndex() throws IgniteInterruptedCheckedException {
-        curAbsWalIdx++;
+    long nextAbsoluteSegmentIndex() throws IgniteInterruptedCheckedException {
+        long nextAbsIdx;
 
-        notifyAll();
+        synchronized (this) {
+            curAbsWalIdx++;
 
-        try {
-            while (curAbsWalIdx - segmentArchivedStorage.lastArchivedAbsoluteIndex() > walSegmentsCnt && !forceInterrupted)
-                wait();
+            notifyAll();
+
+            try {
+                while (curAbsWalIdx - segmentArchivedStorage.lastArchivedAbsoluteIndex() > walSegmentsCnt && !forceInterrupted)
+                    wait();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedCheckedException(e);
+            }
+
+            if (forceInterrupted)
+                throw new IgniteInterruptedCheckedException("Interrupt waiting of change archived idx");
+
+            nextAbsIdx = curAbsWalIdx;
         }
-        catch (InterruptedException e) {
-            throw new IgniteInterruptedCheckedException(e);
-        }
 
-        if (forceInterrupted)
-            throw new IgniteInterruptedCheckedException("Interrupt waiting of change archived idx");
+        notifyObservers(nextAbsIdx);
 
-        return curAbsWalIdx;
+        return nextAbsIdx;
     }
 
     /**
@@ -126,10 +136,14 @@ class SegmentCurrentStateStorage {
      *
      * @param curAbsWalIdx New current WAL index.
      */
-    synchronized void curAbsWalIdx(long curAbsWalIdx) {
-        this.curAbsWalIdx = curAbsWalIdx;
+    void curAbsWalIdx(long curAbsWalIdx) {
+        synchronized (this) {
+            this.curAbsWalIdx = curAbsWalIdx;
 
-        notifyAll();
+            notifyAll();
+        }
+
+        notifyObservers(curAbsWalIdx);
     }
 
     /**
