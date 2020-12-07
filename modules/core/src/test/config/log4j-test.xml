@@ -134,9 +134,9 @@
 
     <!-- Disable all open source debugging. -->
     <category name="org">
-        <level value="TRACE"/>
+<!--        <level value="TRACE"/>-->
 <!--        <level value="DEBUG"/>-->
-<!--        <level value="INFO"/>-->
+        <level value="INFO"/>
     </category>
 
     <category name="org.eclipse.jetty">

@@ -327,7 +327,7 @@ public class RexUtils {
 
         rightOp = RexUtil.removeCast(rightOp);
 
-        return rightOp.isA(SqlKind.LOCAL_REF);
+        return rightOp.isA(SqlKind.LOCAL_REF) || rightOp.isA(SqlKind.INPUT_REF);
     }
 
     /** */

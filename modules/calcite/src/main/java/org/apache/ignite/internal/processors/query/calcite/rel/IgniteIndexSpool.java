@@ -119,7 +119,7 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         rowCount = RelMdUtil.addEpsilon(rowCount);
 
         if (idxCond == null)
-            return planner.getCostFactory().makeCost(rowCount, 0, 0).multiplyBy(4);
+            return planner.getCostFactory().makeCost(rowCount, 0, 0).multiplyBy(40);
 
         return planner.getCostFactory().makeCost(rowCount, 0, 0).multiplyBy(2);
     }
@@ -127,7 +127,7 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
         if (idxCond != null)
-            return mq.getRowCount(getInput()) / 3;
+            return mq.getRowCount(getInput()) / 10;
 
         return mq.getRowCount(getInput());
     }
