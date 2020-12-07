@@ -61,7 +61,7 @@ class DiscoveryTestConfig(NamedTuple):
     load_type: ClusterLoad = ClusterLoad.NONE
     sequential_failure: bool = False
     with_zk: bool = False
-    failure_detection_timeout: int = 2000
+    failure_detection_timeout: int = 1000
 
 
 # pylint: disable=W0223, no-member
