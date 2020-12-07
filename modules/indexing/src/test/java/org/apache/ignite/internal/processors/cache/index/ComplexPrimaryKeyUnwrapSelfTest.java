@@ -20,12 +20,16 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 /**
@@ -55,7 +59,7 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      */
     @Test
     public void testComplexPk() {
-        String tblName = createTableName();
+        String tblName = createTableName("TST_TABLE");
 
         executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
             "primary key (id, name, city))");
@@ -92,7 +96,7 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
 
         for (Map.Entry<String, String> entry : types.entrySet()) {
 
-            String tblName = createTableName();
+            String tblName = createTableName("TST_TABLE");
 
             String type = entry.getKey();
             String val = entry.getValue();
@@ -134,7 +138,7 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
 
         for (Map.Entry<String, String> entry : types.entrySet()) {
 
-            String tblName = createTableName();
+            String tblName = createTableName("TST_TABLE");
 
             String type = entry.getKey();
             String val = entry.getValue();
@@ -152,7 +156,7 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      */
     @Test
     public void testWrappedPk() {
-        String tblName = createTableName();
+        String tblName = createTableName("TST_TABLE");
 
         executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
             "primary key (id)) WITH \"wrap_key=true\"");
@@ -187,14 +191,14 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      */
     @Test
     public void testIndexesForCachesCreatedThroughCashApi() {
-        String tblName = TestValue.class.getSimpleName();
+        String tblName = createTableName(TestValue.class.getSimpleName());
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setSqlSchema("PUBLIC");
         ccfg.setName(tblName);
 
-        QueryEntity qryEntity = new QueryEntity(TestKey.class, TestValue.class);
+        QueryEntity qryEntity = new QueryEntity(TestKey.class, TestValue.class).setTableName(tblName);
 
         ccfg.setQueryEntities(F.asList(qryEntity));
 
@@ -202,7 +206,141 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
 
         List<List<?>> results = executeSql("explain SELECT * FROM " + tblName + " WHERE id=1");
 
-        assertDontUsingPkIndex(results);
+        assertUsingPkIndex(results, 2);
+    }
+
+    @Test
+    public void testSimplePkCashApi() {
+        String tblName = createTableName(TestValue.class.getSimpleName());
+
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        ccfg.setSqlSchema("PUBLIC");
+        ccfg.setName(tblName);
+
+        Set<String> keys = U.newLinkedHashSet(1);
+        keys.add("id");
+
+        QueryEntity qryEntity = new QueryEntity(Long.class.getName(), TestValue.class.getName());
+        fillTestEntityFields(qryEntity.setTableName(tblName).setKeyFields(keys).setKeyFieldName("id"));
+
+        ccfg.setQueryEntities(F.asList(qryEntity));
+
+        node().createCache(ccfg);
+
+        List<List<?>> results = executeSql("explain SELECT * FROM " + tblName + " WHERE id=1");
+
+        assertUsingPkIndex(results, 1);
+    }
+
+    @Test
+    public void testSimplePkWithAffinityCashApi() {
+        String tblName = createTableName(TestValue.class.getSimpleName());
+
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        ccfg.setSqlSchema("PUBLIC");
+        ccfg.setName(tblName);
+
+        Set<String> keys = U.newLinkedHashSet(1);
+        keys.add("id");
+
+        QueryEntity qryEntity = new QueryEntity(Long.class.getName(), TestValue.class.getName());
+        fillTestEntityFields(qryEntity.setTableName(tblName).setKeyFields(keys).setKeyFieldName("id"));
+
+        ccfg.setQueryEntities(F.asList(qryEntity));
+        ccfg.setKeyConfiguration(new CacheKeyConfiguration(Long.class.getName(), "city"));
+
+        node().createCache(ccfg);
+
+        List<List<?>> results = executeSql("explain SELECT * FROM " + tblName + " WHERE id=1");
+
+        assertUsingPkIndex(results, 1);
+    }
+
+    @Test
+    public void testComplexPkCashApi() {
+        String tblName = createTableName(TestValue.class.getSimpleName());
+
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        ccfg.setSqlSchema("PUBLIC");
+        ccfg.setName(tblName);
+
+        Set<String> keys = U.newLinkedHashSet(2);
+        keys.add("id");
+        keys.add("name");
+
+        QueryEntity qryEntity = new QueryEntity(TestKey.class.getName(), TestValue.class.getName());
+        fillTestEntityFields(qryEntity.setTableName(tblName).setKeyFields(keys));
+
+        ccfg.setQueryEntities(F.asList(qryEntity));
+
+        node().createCache(ccfg);
+
+        List<List<?>> results = executeSql("explain SELECT * FROM " + tblName + " WHERE id=1");
+
+        assertUsingPkIndex(results, 2);
+    }
+
+    @Test
+    public void testComplexPkWithAffKeyCashApi() {
+        String tblName = createTableName(TestValue.class.getSimpleName());
+
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        ccfg.setSqlSchema("PUBLIC");
+        ccfg.setName(tblName);
+
+        Set<String> keys = U.newLinkedHashSet(2);
+        keys.add("id");
+        keys.add("city");
+
+        QueryEntity qryEntity = new QueryEntity(TestKey.class.getName(), TestValue.class.getName());
+        fillTestEntityFields(qryEntity.setTableName(tblName).setKeyFields(keys));
+
+        ccfg.setQueryEntities(F.asList(qryEntity));
+        ccfg.setKeyConfiguration(new CacheKeyConfiguration(TestKey.class.getName(), "city"));
+
+        node().createCache(ccfg);
+
+        List<List<?>> results = executeSql("explain SELECT * FROM " + tblName + " WHERE id=1");
+
+        assertUsingPkIndex(results, 2);
+    }
+
+    @Test
+    public void testComplexPkWithAffFieldCashApi() {
+        String tblName = createTableName(TestValue.class.getSimpleName());
+
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        ccfg.setSqlSchema("PUBLIC");
+        ccfg.setName(tblName);
+
+        Set<String> keys = U.newLinkedHashSet(1);
+        keys.add("id");
+        keys.add("name");
+
+        QueryEntity qryEntity = new QueryEntity(TestKey.class.getName(), TestValue.class.getName());
+        fillTestEntityFields(qryEntity.setTableName(tblName).setKeyFields(keys));
+
+        ccfg.setQueryEntities(F.asList(qryEntity));
+        ccfg.setKeyConfiguration(new CacheKeyConfiguration(TestKey.class.getName(), "city"));
+
+        node().createCache(ccfg);
+
+        List<List<?>> results = executeSql("explain SELECT * FROM " + tblName + " WHERE id=1");
+
+        assertUsingPkIndex(results, 2);
+    }
+
+    private QueryEntity fillTestEntityFields(QueryEntity qryEntity) {
+        return qryEntity.addQueryField("id", Long.class.getName(), null)
+                .addQueryField("name", String.class.getName(), null)
+                .addQueryField("age", Integer.class.getName(), null)
+                .addQueryField("company", String.class.getName(), null)
+                .addQueryField("city", String.class.getName(), null);
     }
 
     /**
@@ -222,29 +360,12 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
     }
 
     /**
-     * Check that explain plan result shown don't use PK index and use scan.
-     *
-     * @param results result of execut explain plan query.
-     */
-    private void assertDontUsingPkIndex(List<List<?>> results) {
-        assertEquals(2, results.size());
-
-        String explainPlan = (String)results.get(0).get(0);
-
-        System.out.println(explainPlan);
-
-        assertFalse(explainPlan.contains("\"_key_PK\""));
-
-        assertTrue(explainPlan.contains("_SCAN_"));
-    }
-
-    /**
      * Create unique table name.
      *
      * @return unique name of table.
      */
-    private String createTableName() {
-        return "TST_TABLE_" + tblCnt++;
+    private String createTableName(String prefix) {
+        return prefix + "_" + tblCnt++;
     }
 
     /**

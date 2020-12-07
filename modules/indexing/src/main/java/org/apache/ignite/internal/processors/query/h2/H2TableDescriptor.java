@@ -318,36 +318,26 @@ public class H2TableDescriptor {
      * @return List of key and affinity columns. Key's, if it possible, splitted into simple components.
      */
     @NotNull private List<IndexColumn> extractKeyColumns(GridH2Table tbl, IndexColumn keyCol, IndexColumn affCol) {
-        ArrayList<IndexColumn> keyCols;
+        ArrayList<IndexColumn> keyCols = new ArrayList<>(type.fields().size() + 1);
 
-        if (isSql) {
-            keyCols = new ArrayList<>(type.fields().size() + 1);
+        // Check if key is simple type.
+        if (QueryUtils.isSqlType(type.keyClass()) && affCol == null)
+            keyCols.add(keyCol);
+        else {
+            for (String propName : type.fields().keySet()) {
+                GridQueryProperty prop = type.property(propName);
 
-            // Check if key is simple type.
-            if(QueryUtils.isSqlType(type.keyClass()))
-                keyCols.add(keyCol);
-            else {
-                for (String propName : type.fields().keySet()) {
-                    GridQueryProperty prop = type.property(propName);
+                if (prop.key()) {
+                    Column col = tbl.getColumn(propName);
 
-                    if (prop.key()) {
-                        Column col = tbl.getColumn(propName);
-
-                        keyCols.add(tbl.indexColumn(col.getColumnId(), SortOrder.ASCENDING));
-                    }
+                    keyCols.add(tbl.indexColumn(col.getColumnId(), SortOrder.ASCENDING));
                 }
-
-                // If key is object but the user has not specified any particular columns,
-                // we have to fall back to whole-key index.
-                if (keyCols.isEmpty())
-                    keyCols.add(keyCol);
             }
 
-        }
-        else {
-            keyCols = new ArrayList<>(2);
-
-            keyCols.add(keyCol);
+            // If key is object but the user has not specified any particular columns,
+            // we have to fall back to whole-key index.
+            if (keyCols.isEmpty())
+                keyCols.add(keyCol);
         }
 
         if (affCol != null && !H2Utils.containsColumn(keyCols, affCol))
