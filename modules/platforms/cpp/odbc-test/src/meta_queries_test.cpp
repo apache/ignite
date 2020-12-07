@@ -152,7 +152,7 @@ struct MetaQueriesTestSuiteFixture : public odbc::OdbcTestSuite
         SQLSMALLINT scale;
         SQLSMALLINT nullability;
 
-        SQLRETURN ret = SQLDescribeCol(stmt, idx, &name[0], name.size(), &nameLen, &dataType, &size, &scale, &nullability);
+        SQLRETURN ret = SQLDescribeCol(stmt, idx, &name[0], (SQLSMALLINT)name.size(), &nameLen, &dataType, &size, &scale, &nullability);
         ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
 
         BOOST_CHECK_GE(nameLen, 0);
@@ -249,7 +249,7 @@ struct MetaQueriesTestSuiteFixture : public odbc::OdbcTestSuite
         SQLLEN scale;
         SQLLEN nullability;
 
-        SQLRETURN ret = SQLColAttribute(stmt, idx, SQL_DESC_NAME, &name[0], name.size(), &nameLen, 0);
+        SQLRETURN ret = SQLColAttribute(stmt, idx, SQL_DESC_NAME, &name[0], (SQLSMALLINT)name.size(), &nameLen, 0);
         ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
 
         ret = SQLColAttribute(stmt, idx, SQL_DESC_TYPE, 0, 0, 0, &dataType);
