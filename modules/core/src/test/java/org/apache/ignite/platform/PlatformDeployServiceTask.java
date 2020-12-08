@@ -21,6 +21,8 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -40,6 +42,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Calendar.JANUARY;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Task that deploys a Java service.
@@ -411,6 +415,82 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
                 return null;
 
             return o.toBuilder().setField("field", 15).build();
+        }
+
+        /** */
+        public Address testAddress(Address addr) {
+            if (addr == null)
+                return null;
+
+            assertEquals("000", addr.getZip());
+            assertEquals("Moscow", addr.getAddr());
+
+            addr.setZip("127000");
+            addr.setAddr("Moscow Akademika Koroleva 12");
+
+            return addr;
+        }
+
+        /** */
+        public Employee[] testEmployees(Employee[] emps) {
+            if (emps == null)
+                return null;
+
+            assertEquals(2, emps.length);
+
+            assertEquals("Sarah Connor", emps[0].getFio());
+            assertEquals(1, emps[0].getSalary());
+
+            assertEquals("John Connor", emps[1].getFio());
+            assertEquals(2, emps[1].getSalary());
+
+            Employee kyle = new Employee();
+
+            kyle.setFio("Kyle Reese");
+            kyle.setSalary(3);
+
+            return new Employee[] { kyle };
+        }
+
+        /** */
+        public Collection testDepartments(Collection deps) {
+            if (deps == null)
+                return null;
+
+            assertEquals(2, deps.size());
+
+            Iterator<Department> iter = deps.iterator();
+
+            assertEquals("HR", iter.next().getName());
+            assertEquals("IT", iter.next().getName());
+
+            Collection<Department> res = new ArrayList<>();
+
+            Department d = new Department();
+
+            d.setName("Executive");
+
+            res.add(d);
+
+            return res;
+        }
+
+        /** */
+        public Map testMap(Map map) {
+            if (map == null)
+                return null;
+
+            assertTrue(map.containsKey(new Key(1)));
+            assertTrue(map.containsKey(new Key(2)));
+
+            assertEquals("value1", ((Value)map.get(new Key(1))).getVal());
+            assertEquals("value2", ((Value)map.get(new Key(2))).getVal());
+
+            Map m = new HashMap();
+
+            m.put(new Key(3), new Value("value3"));
+
+            return m;
         }
     }
 }
