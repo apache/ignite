@@ -139,29 +139,24 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
                 {
                     rendezvous.Partitions = partitions;
                     rendezvous.ExcludeNeighbors = exclNeighbors;
+                    rendezvous.AffinityBackupFilter = ReadBackupFilter(reader);
                 }
 
                 return userFunc;
             }
 
             Debug.Assert(overrideFlags == UserOverrides.None);
-            AffinityFunctionBase fun;
 
-            switch (typeCode)
+            if (typeCode != TypeCodeRendezvous)
+                throw new InvalidOperationException("Invalid AffinityFunction type code: " + typeCode);
+
+            return new RendezvousAffinityFunction
             {
-                case TypeCodeRendezvous:
-                    fun = new RendezvousAffinityFunction();
-                    break;
-                default:
-                    throw new InvalidOperationException("Invalid AffinityFunction type code: " + typeCode);
-            }
-
-            fun.Partitions = partitions;
-            fun.ExcludeNeighbors = exclNeighbors;
-
-            return fun;
+                Partitions = partitions,
+                ExcludeNeighbors = exclNeighbors,
+                AffinityBackupFilter = ReadBackupFilter(reader)
+            };
         }
-
 
         /// <summary>
         /// Writes the partitions assignment to a stream.
@@ -267,6 +262,29 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
             }
 
             writer.WriteObject(func);
+        }
+
+        /// <summary>
+        /// Reads the backup filter.
+        /// </summary>
+        private static ClusterNodeAttributeAffinityBackupFilter ReadBackupFilter(IBinaryRawReader reader)
+        {
+            var attrCount = reader.ReadInt();
+
+            if (attrCount <= 0)
+            {
+                return null;
+            }
+
+            var attrs = new string[attrCount];
+
+            for (var i = 0; i < attrCount; i++)
+            {
+                attrs[i] = reader.ReadString();
+            }
+
+            return new ClusterNodeAttributeAffinityBackupFilter(attrs);
+
         }
 
         /// <summary>
