@@ -27,6 +27,6 @@ namespace Apache.Ignite.Core.Cache.Affinity
     /// </summary>
     public interface IAffinityBackupFilter
     {
-        
+        // No-op: custom implementations are not supported.
     }
 }

@@ -282,7 +282,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
                 throw new NotSupportedException(string.Format(
                     "Unsupported RendezvousAffinityFunction.AffinityBackupFilter: '{0}'. " +
                     "Only predefined implementations are supported: '{1}'",
-                    func.AffinityBackupFilter.GetType().Name,
+                    func.AffinityBackupFilter.GetType().FullName,
                     typeof(ClusterNodeAttributeAffinityBackupFilter).Name));
             }
 

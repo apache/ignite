@@ -356,6 +356,30 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             CollectionAssert.AreEqual(new[] {BackupFilterAttrName}, filter.AttributeNames);
         }
 
+        /// <summary>
+        /// Tests that custom backup filters are not allowed.
+        /// </summary>
+        [Test]
+        public void TestCustomBackupFilterThrowsNotSupportedException()
+        {
+            var cfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                AffinityFunction = new RendezvousAffinityFunction
+                {
+                    AffinityBackupFilter = new CustomBackupFilter()
+                }
+            };
+
+            var ex = Assert.Throws<NotSupportedException>(() => _ignite.CreateCache<int, int>(cfg));
+
+            var expectedMessage = string.Format(
+                "Unsupported RendezvousAffinityFunction.AffinityBackupFilter: '{0}'. " +
+                "Only predefined implementations are supported: 'ClusterNodeAttributeAffinityBackupFilter'",
+                typeof(CustomBackupFilter).FullName);
+
+            Assert.AreEqual(expectedMessage, ex.Message);
+        }
+
         [Serializable]
         private class SimpleAffinityFunction : IAffinityFunction
         {
@@ -466,6 +490,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
 
             public override bool ExcludeNeighbors { get; set; }
+        }
+
+        /// <summary>
+        /// Custom backup filter.
+        /// </summary>
+        private class CustomBackupFilter : IAffinityBackupFilter
+        {
+            // No-op.
         }
     }
 }
