@@ -275,7 +275,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                         Bar = "test",
                         AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
                         {
-                            AttributeNames = new[]{BackupFilterAttrName}
+                            AttributeNames = new[] {BackupFilterAttrName}
                         }
                     }
                 })
