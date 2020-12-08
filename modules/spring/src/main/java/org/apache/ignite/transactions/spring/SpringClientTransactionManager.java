@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
 import org.apache.ignite.internal.transactions.proxy.ClientTransactionProxyFactory;
-import org.apache.ignite.internal.transactions.proxy.TransactionProxy;
 import org.apache.ignite.internal.transactions.proxy.TransactionProxyFactory;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -60,8 +59,6 @@ public class SpringClientTransactionManager extends AbstractSpringTransactionMan
                 " cluster. Check that 'clientInstance' property is set.");
         }
 
-        setRollbackOnCommitFailure(true);
-
         super.onApplicationEvent(evt);
     }
 
@@ -92,15 +89,6 @@ public class SpringClientTransactionManager extends AbstractSpringTransactionMan
 
     /** {@inheritDoc} */
     @Override protected void doSetRollbackOnly(DefaultTransactionStatus status) throws TransactionException {
-        IgniteTransactionHolder txHolder = ((IgniteTransactionObject)status.getTransaction()).getTransactionHolder();
-
-        TransactionProxy tx = txHolder.getTransaction();
-
-        assert tx != null;
-
-        if (status.isDebug() && log().isDebugEnabled())
-            log().debug("Setting Ignite transaction rollback-only: " + tx);
-
-        txHolder.setRollbackOnly();
+        ((IgniteTransactionObject)status.getTransaction()).getTransactionHolder().setRollbackOnly();
     }
 }

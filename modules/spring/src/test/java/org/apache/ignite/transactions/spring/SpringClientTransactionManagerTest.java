@@ -29,6 +29,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.TransactionSystemException;
+import org.springframework.transaction.UnexpectedRollbackException;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -84,8 +85,8 @@ public class SpringClientTransactionManagerTest extends GridSpringTransactionMan
 
                 return null;
             },
-            TransactionSystemException.class,
-            "Could not commit transaction: transaction marked as rollback-only.");
+            UnexpectedRollbackException.class,
+            "Transaction rolled back because it has been marked as rollback-only");
 
 
         assertEquals(0, cache().size());

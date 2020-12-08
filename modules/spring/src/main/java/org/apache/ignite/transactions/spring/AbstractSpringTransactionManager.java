@@ -18,7 +18,6 @@
 package org.apache.ignite.transactions.spring;
 
 import java.util.concurrent.TimeUnit;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.transactions.proxy.TransactionProxy;
 import org.apache.ignite.internal.transactions.proxy.TransactionProxyFactory;
@@ -34,7 +33,9 @@ import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.ResourceTransactionManager;
+import org.springframework.transaction.support.SmartTransactionObject;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionSynchronizationUtils;
 
 /** Abstract implementation of Spring Transaction manager with omitted Ignite cluster access logic. */
 public abstract class AbstractSpringTransactionManager extends AbstractPlatformTransactionManager
@@ -140,21 +141,17 @@ public abstract class AbstractSpringTransactionManager extends AbstractPlatformT
 
     /** {@inheritDoc} */
     @Override protected void doCommit(DefaultTransactionStatus status) throws TransactionException {
-        IgniteTransactionHolder txHolder = ((IgniteTransactionObject)status.getTransaction()).getTransactionHolder();
-        TransactionProxy tx = txHolder.getTransaction();
+        IgniteTransactionObject txObj = (IgniteTransactionObject)status.getTransaction();
+        TransactionProxy tx = txObj.getTransactionHolder().getTransaction();
 
-        if (txHolder.isRollbackOnly())
-            throw new TransactionSystemException("Could not commit transaction: transaction marked as rollback-only.");
-        else {
-            if (status.isDebug() && log.isDebugEnabled())
-                log.debug("Committing Ignite transaction: " + tx);
+        if (status.isDebug() && log.isDebugEnabled())
+            log.debug("Committing Ignite transaction: " + tx);
 
-            try {
-                tx.commit();
-            }
-            catch (IgniteException e) {
-                throw new TransactionSystemException("Could not commit Ignite transaction", e);
-            }
+        try {
+            tx.commit();
+        }
+        catch (Exception e) {
+            throw new TransactionSystemException("Could not commit Ignite transaction", e);
         }
     }
 
@@ -169,7 +166,7 @@ public abstract class AbstractSpringTransactionManager extends AbstractPlatformT
         try {
             tx.rollback();
         }
-        catch (IgniteException e) {
+        catch (Exception e) {
             throw new TransactionSystemException("Could not rollback Ignite transaction", e);
         }
     }
@@ -252,7 +249,7 @@ public abstract class AbstractSpringTransactionManager extends AbstractPlatformT
     /**
      * An object representing a managed Ignite transaction.
      */
-    protected static class IgniteTransactionObject {
+    protected static class IgniteTransactionObject implements SmartTransactionObject {
         /** */
         private IgniteTransactionHolder transactionHolder;
 
@@ -267,7 +264,7 @@ public abstract class AbstractSpringTransactionManager extends AbstractPlatformT
          * @param newHolder         true if the holder was created for this transaction,
          *                          false if it already existed
          */
-        protected void setTransactionHolder(IgniteTransactionHolder transactionHolder, boolean newHolder) {
+        private void setTransactionHolder(IgniteTransactionHolder transactionHolder, boolean newHolder) {
             this.transactionHolder = transactionHolder;
             this.newTransactionHolder = newHolder;
         }
@@ -289,8 +286,18 @@ public abstract class AbstractSpringTransactionManager extends AbstractPlatformT
          * @return true if the holder was created for this transaction, false if it
          * already existed
          */
-        protected boolean isNewTransactionHolder() {
+        private boolean isNewTransactionHolder() {
             return newTransactionHolder;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isRollbackOnly() {
+            return transactionHolder.isRollbackOnly();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void flush() {
+            TransactionSynchronizationUtils.triggerFlush();
         }
     }
 }
