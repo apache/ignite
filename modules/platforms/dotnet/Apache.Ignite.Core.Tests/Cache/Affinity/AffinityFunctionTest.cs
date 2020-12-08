@@ -380,6 +380,31 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             Assert.AreEqual(expectedMessage, ex.Message);
         }
 
+        /// <summary>
+        /// Tests that backup filter requires a non-empty attribute set.
+        /// </summary>
+        [Test]
+        public void TestBackupFilterWithNullAttributesThrowsException([Values(true, false)] bool nullOrEmpty)
+        {
+            var cfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                AffinityFunction = new RendezvousAffinityFunction
+                {
+                    AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
+                    {
+                        AttributeNames = nullOrEmpty ? null : new List<string>()
+                    }
+                }
+            };
+
+            var ex = Assert.Throws<ArgumentException>(() => _ignite.CreateCache<int, int>(cfg));
+
+            var expectedMessage =
+                "'ClusterNodeAttributeAffinityBackupFilter.AttributeNames' argument should not be null or empty.";
+
+            StringAssert.StartsWith(expectedMessage, ex.Message);
+        }
+
         [Serializable]
         private class SimpleAffinityFunction : IAffinityFunction
         {
