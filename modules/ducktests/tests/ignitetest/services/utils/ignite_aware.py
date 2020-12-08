@@ -66,10 +66,10 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         Starts in async way.
         """
-        super().start(clean)
+        super().start(clean=clean)
 
     def start(self, clean=True):
-        self.start_async(clean)
+        self.start_async(clean=clean)
         self.await_started()
 
     def await_started(self):
