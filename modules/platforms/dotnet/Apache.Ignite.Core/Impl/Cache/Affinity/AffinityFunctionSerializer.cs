@@ -80,8 +80,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
 
                 if (p.AffinityBackupFilter != null)
                 {
-                    writer.WriteBoolean(true);
-
                     var filter = p.AffinityBackupFilter as ClusterNodeAttributeAffinityBackupFilter;
 
                     if (filter == null)
@@ -102,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
                 }
                 else
                 {
-                    writer.WriteBoolean(false);
+                    writer.WriteInt(-1);
                 }
             }
             else
