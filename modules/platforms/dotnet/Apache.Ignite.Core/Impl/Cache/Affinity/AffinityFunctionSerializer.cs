@@ -77,6 +77,33 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
 
                 // Do not write user func if there is nothing overridden
                 WriteUserFunc(writer, overrideFlags != UserOverrides.None ? fun : null, userFuncOverride);
+
+                if (p.AffinityBackupFilter != null)
+                {
+                    writer.WriteBoolean(true);
+
+                    var filter = p.AffinityBackupFilter as ClusterNodeAttributeAffinityBackupFilter;
+
+                    if (filter == null)
+                    {
+                        throw new NotSupportedException(string.Format(
+                            "Unsupported RendezvousAffinityFunction.AffinityBackupFilter: '{0}'. " +
+                            "Only predefined implementations are supported: '{1}'",
+                            p.AffinityBackupFilter.GetType().Name,
+                            typeof(ClusterNodeAttributeAffinityBackupFilter).Name));
+                    }
+
+                    writer.WriteInt(filter.AttributeNames.Count);
+
+                    foreach (var attr in filter.AttributeNames)
+                    {
+                        writer.WriteString(attr);
+                    }
+                }
+                else
+                {
+                    writer.WriteBoolean(false);
+                }
             }
             else
             {

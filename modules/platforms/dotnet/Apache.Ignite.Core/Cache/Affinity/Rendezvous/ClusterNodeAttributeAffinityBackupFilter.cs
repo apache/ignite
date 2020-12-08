@@ -74,5 +74,13 @@ namespace Apache.Ignite.Core.Cache.Affinity.Rendezvous
         {
             // No-op.
         }
+
+        /// <summary>
+        /// Gets the attribute names.
+        /// </summary>
+        public IList<string> AttributeNames
+        {
+            get { return _attributeNames.ToList(); }
+        }
     }
 }
