@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Cache.Affinity.Rendezvous
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Attribute-based affinity backup filter, see <see cref="IBaselineNode.Attributes"/>,
@@ -57,7 +58,11 @@ namespace Apache.Ignite.Core.Cache.Affinity.Rendezvous
         /// <param name="attributeNames">One or more attribute names to use for backup node filtering.</param>
         public ClusterNodeAttributeAffinityBackupFilter(IEnumerable<string> attributeNames)
         {
+            IgniteArgumentCheck.NotNull(attributeNames, "attributeNames");
+
             _attributeNames = attributeNames.ToList();
+
+            IgniteArgumentCheck.NotNullOrEmpty(_attributeNames, "attributeNames");
         }
 
         /// <summary>
