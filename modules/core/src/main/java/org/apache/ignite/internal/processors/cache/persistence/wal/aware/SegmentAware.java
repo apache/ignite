@@ -19,23 +19,18 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentArchivedStorage.buildArchivedStorage;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentCompressStorage.buildCompressStorage;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentCurrentStateStorage.buildCurrentStateStorage;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentReservationStorage.buildReservationStorage;
-
 /**
  * Holder of actual information of latest manipulation on WAL segments.
  */
 public class SegmentAware {
     /** Segment reservations storage: Protects WAL segments from deletion during WAL log cleanup. */
-    private final SegmentReservationStorage reservationStorage;
+    private final SegmentReservationStorage reservationStorage = new SegmentReservationStorage();
 
     /** Lock on segment protects from archiving segment. */
     private final SegmentLockStorage segmentLockStorage = new SegmentLockStorage();
 
     /** Manages last archived index, emulates archivation in no-archiver mode. */
-    private final SegmentArchivedStorage segmentArchivedStorage = buildArchivedStorage(segmentLockStorage);
+    private final SegmentArchivedStorage segmentArchivedStorage;
 
     /** Storage of actual information about current index of compressed segments. */
     private final SegmentCompressStorage segmentCompressStorage;
@@ -50,9 +45,18 @@ public class SegmentAware {
      * @param compactionEnabled Is wal compaction enabled.
      */
     public SegmentAware(int walSegmentsCnt, boolean compactionEnabled) {
-        segmentCurrStateStorage = buildCurrentStateStorage(walSegmentsCnt, segmentArchivedStorage);
-        segmentCompressStorage = buildCompressStorage(segmentArchivedStorage, compactionEnabled);
-        reservationStorage = buildReservationStorage(segmentCurrStateStorage);
+        segmentArchivedStorage = new SegmentArchivedStorage(segmentLockStorage);
+
+        segmentCurrStateStorage = new SegmentCurrentStateStorage(walSegmentsCnt);
+        segmentCompressStorage = new SegmentCompressStorage(compactionEnabled);
+
+        segmentCurrStateStorage.addObserver(reservationStorage::incMaxReserveIndex);
+        segmentCurrStateStorage.addObserver(segmentLockStorage::incMaxLockIndex);
+
+        segmentArchivedStorage.addObserver(segmentCurrStateStorage::onSegmentArchived);
+        segmentArchivedStorage.addObserver(segmentCompressStorage::onSegmentArchived);
+
+        segmentLockStorage.addObserver(segmentArchivedStorage::onSegmentUnlocked);
     }
 
     /**
@@ -174,8 +178,8 @@ public class SegmentAware {
     }
 
     /**
-     * Segment reservation. It will be successful if segment is {@code >} than the  {@link #minReserveIndex}
-     * and {@code <=} than the {@link #curAbsWalIdx current segment}.
+     * Segment reservation. It will be successful if segment is {@code >} than the {@link #incMinReserveIndex}
+     * and {@code <=} than the {@link #curAbsWalIdx current}.
      * 
      * @param absIdx Index for reservation.
      * @return {@code True} if the reservation was successful.
@@ -202,9 +206,9 @@ public class SegmentAware {
     }
 
     /**
-     * Check if WAL segment locked (protected from move to archive)
+     * Check if WAL segment locked (protected from move to archive).
      *
-     * @param absIdx Index for check reservation.
+     * @param absIdx Index for check locking.
      * @return {@code True} if index is locked.
      */
     public boolean locked(long absIdx) {
@@ -212,27 +216,21 @@ public class SegmentAware {
     }
 
     /**
-     * @param absIdx Segment absolute index.
-     * @return <ul><li>{@code True} if can read, no lock is held, </li><li>{@code false} if work segment, need release
-     * segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
-     */
-    public boolean checkCanReadArchiveOrReserveWorkSegment(long absIdx) {
-        return lastArchivedAbsoluteIndex() >= absIdx || segmentLockStorage.lockWorkSegment(absIdx);
-    }
-
-    /**
-     * Visible for test.
+     * Segment lock. It will be successful if segment is
+     * {@code >} than the {@link #lastArchivedAbsoluteIndex last archived} and
+     * {@code <=} than the {@link #curAbsWalIdx current}.
      *
-     * @param absIdx Segment absolute index. segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
+     * @param absIdx Index to lock.
+     * @return {@code True} if the lock was successful.
      */
-    void lockWorkSegment(long absIdx) {
-        segmentLockStorage.lockWorkSegment(absIdx);
+    public boolean lock(long absIdx) {
+        return segmentLockStorage.lockWorkSegment(absIdx);
     }
 
     /**
-     * @param absIdx Segment absolute index.
+     * @param absIdx Index to unlock.
      */
-    public void releaseWorkSegment(long absIdx) {
+    public void unlock(long absIdx) {
         segmentLockStorage.releaseWorkSegment(absIdx);
     }
 
@@ -270,14 +268,44 @@ public class SegmentAware {
     }
 
     /**
-     * Updating minimum segment index after that can be reserved.
+     * Increasing minimum segment index after that can be reserved.
      * Value will be updated if it is greater than the current one.
      * If segment is already reserved, the update will fail.
      *
      * @param absIdx Absolut segment index.
      * @return {@code True} if update is successful.
      */
-    public boolean minReserveIndex(long absIdx) {
-        return reservationStorage.minReserveIndex(absIdx);
+    public boolean incMinReserveIndex(long absIdx) {
+        return reservationStorage.incMinReserveIndex(absIdx);
+    }
+
+    /**
+     * Increasing minimum segment index after that can be locked.
+     * Value will be updated if it is greater than the current one.
+     * If segment is already reserved, the update will fail.
+     *
+     * @param absIdx Absolut segment index.
+     * @return {@code True} if update is successful.
+     */
+    public boolean incMinLockIndex(long absIdx) {
+        return segmentLockStorage.incMinLockIndex(absIdx);
+    }
+
+    /**
+     * Updating maximum segment index after that can be reserved.
+     *
+     * @param absIdx Absolut segment index.
+     */
+    public void maxReserveIndex(long absIdx) {
+        reservationStorage.maxReserveIndex(absIdx);
+    }
+
+    /**
+     * Updating maximum segment index after that can be locked.
+     *
+     * @param absIdx Absolut segment index.
+     */
+    public void maxLockIndex(long absIdx) {
+        segmentLockStorage.maxLockIndex(absIdx);
     }
 }

@@ -53,25 +53,8 @@ public class SegmentCompressStorage {
      *
      * @param compactionEnabled If WAL compaction enabled.
      */
-    private SegmentCompressStorage(boolean compactionEnabled) {
+    SegmentCompressStorage(boolean compactionEnabled) {
         this.compactionEnabled = compactionEnabled;
-    }
-
-    /**
-     * Instance creation and preparation.
-     *
-     * @param segmentArchivedStorage Storage of last archived segment.
-     * @param compactionEnabled If WAL compaction enabled.
-     */
-    static SegmentCompressStorage buildCompressStorage(
-        SegmentArchivedStorage segmentArchivedStorage,
-        boolean compactionEnabled
-    ) {
-        SegmentCompressStorage storage = new SegmentCompressStorage(compactionEnabled);
-
-        segmentArchivedStorage.addObserver(storage::onSegmentArchived);
-
-        return storage;
     }
 
     /**
@@ -145,7 +128,7 @@ public class SegmentCompressStorage {
     /**
      * Callback for waking up compressor when new segment is archived.
      */
-    private synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
+    synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
         while (lastEnqueuedToCompressIdx < lastAbsArchivedIdx && compactionEnabled)
             segmentsToCompress.add(++lastEnqueuedToCompressIdx);
 

@@ -30,14 +30,14 @@ class SegmentReservationStorage {
     private final NavigableMap<Long, Integer> reserved = new TreeMap<>();
 
     /** Maximum segment index that can be reserved. */
-    private volatile long maxReserveIdx = -1;
+    private long maxReserveIdx = Long.MAX_VALUE;
 
     /** Maximum segment index that can be reserved. */
-    private volatile long minReserveIdx = -1;
+    private long minReserveIdx = -1;
 
     /**
-     * Segment reservation. It will be successful if segment is {@code >} than the {@link #minReserveIndex minimum}
-     * and {@code <=} than the {@link #maxReserveIndex maximum} segment for reservation.
+     * Segment reservation. It will be successful if segment is {@code >} than the {@link #minReserveIdx minimum}
+     * and {@code <=} than the {@link #maxReserveIdx maximum}.
      *
      * @param absIdx Index for reservation.
      * @return {@code True} if the reservation was successful.
@@ -78,42 +78,37 @@ class SegmentReservationStorage {
 
     /**
      * Updating maximum segment index that can be reserved.
-     * Value will be updated if it is greater than the current one.
      *
      * @param absIdx Absolut segment index.
      */
     synchronized void maxReserveIndex(long absIdx) {
+        maxReserveIdx = absIdx;
+    }
+
+    /**
+     * Increasing maximum segment index that can be reserved.
+     * Value will be updated if it is greater than the current one.
+     *
+     * @param absIdx Absolut segment index.
+     */
+    synchronized void incMaxReserveIndex(long absIdx) {
         maxReserveIdx = Math.max(maxReserveIdx, absIdx);
     }
 
     /**
-     * Updating minimum segment index that can be reserved.
+     * Increasing minimum segment index that can be reserved.
      * Value will be updated if it is greater than the current one.
      * If segment is already reserved, the update will fail.
      *
      * @param absIdx Absolut segment index.
      * @return {@code True} if update is successful.
      */
-    synchronized boolean minReserveIndex(long absIdx) {
+    synchronized boolean incMinReserveIndex(long absIdx) {
         if (reserved(absIdx))
             return false;
 
-        minReserveIdx = Math.min(minReserveIdx, absIdx);
+        minReserveIdx = Math.max(minReserveIdx, absIdx);
 
         return true;
-    }
-
-    /**
-     * Creating new instance with preparation.
-     *
-     * @param currStateStorage Storage of absolute current segment index.
-     * @return New instance.
-     */
-    static SegmentReservationStorage buildReservationStorage(SegmentCurrentStateStorage currStateStorage) {
-        SegmentReservationStorage reservationStorage = new SegmentReservationStorage();
-
-        currStateStorage.addObserver(reservationStorage::maxReserveIndex);
-
-        return reservationStorage;
     }
 }
