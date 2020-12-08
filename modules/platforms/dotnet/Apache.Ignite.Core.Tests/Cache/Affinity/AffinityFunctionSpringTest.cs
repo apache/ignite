@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /// Tests that config is propagated from Spring XML to .NET object model.
         /// </summary>
         [Test]
-        public void TestConfigPropagation()
+        public void TestSpringConfigPropagation()
         {
             var cfg = Grid.GetCache<int, int>("cache-with-backup-filter").GetConfiguration();
             var aff = cfg.AffinityFunction as RendezvousAffinityFunction;
