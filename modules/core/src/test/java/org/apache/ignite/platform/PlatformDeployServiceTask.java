@@ -21,6 +21,8 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -33,6 +35,7 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
@@ -411,6 +414,92 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
                 return null;
 
             return o.toBuilder().setField("field", 15).build();
+        }
+
+        /** */
+        public Address testAddress(Address addr) {
+            if (addr == null)
+                return null;
+
+            assert "000".equals(addr.getZip());
+            assert "Moscow".equals(addr.getAddr());
+
+            addr.setZip("127000");
+            addr.setAddr("Moscow Akademika Koroleva 12");
+
+            return addr;
+        }
+
+        /** */
+        public Employee[] testEmployees(Employee[] emps) {
+            if (emps == null)
+                return null;
+
+            assert 2 == emps.length;
+
+            assert "Sarah Connor".equals(emps[0].getFio());
+            assert 1 == emps[0].getSalary();
+
+            assert "John Connor".equals(emps[1].getFio());
+            assert 2 == emps[1].getSalary();
+
+            Employee kyle = new Employee();
+
+            kyle.setFio("Kyle Reese");
+            kyle.setSalary(3);
+
+            return new Employee[] { kyle };
+        }
+
+        /** */
+        public Collection testDepartments(Collection deps) {
+            if (deps == null)
+                return null;
+
+            assert 2 == deps.size();
+
+            Iterator<Department> iter = deps.iterator();
+
+            assert "HR".equals(iter.next().getName());
+            assert "IT".equals(iter.next().getName());
+
+            Collection<Department> res = new ArrayList<>();
+
+            Department d = new Department();
+
+            d.setName("Executive");
+
+            res.add(d);
+
+            return res;
+        }
+
+        /** */
+        public Map testMap(Map map) {
+            if (map == null)
+                return null;
+
+            assert map.containsKey(new Key(1));
+            assert map.containsKey(new Key(2));
+
+            assert "value1".equals(((Value)map.get(new Key(1))).getVal());
+            assert "value2".equals(((Value)map.get(new Key(2))).getVal());
+
+            Map m = new HashMap();
+
+            m.put(new Key(3), new Value("value3"));
+
+            return m;
+        }
+
+        /** */
+        public void sleep(long delayMs) {
+            try {
+                U.sleep(delayMs);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
         }
     }
 }
