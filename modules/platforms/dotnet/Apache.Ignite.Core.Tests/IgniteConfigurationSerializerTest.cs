@@ -787,7 +787,8 @@ namespace Apache.Ignite.Core.Tests
                         AffinityFunction = new RendezvousAffinityFunction
                         {
                             ExcludeNeighbors = true,
-                            Partitions = 48
+                            Partitions = 48,
+                            AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter("foo", "baz", "bar")
                         },
                         ExpiryPolicyFactory = new MyPolicyFactory(),
                         EnableStatistics = true,
