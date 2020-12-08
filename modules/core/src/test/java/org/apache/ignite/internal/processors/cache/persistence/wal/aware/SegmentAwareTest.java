@@ -521,18 +521,9 @@ public class SegmentAwareTest {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false);
 
-        // Upper limit is taken into account.
-        assertFalse(aware.reserve(0));
-        assertFalse(aware.reserve(1));
-
-        aware.curAbsWalIdx(1);
-        assertTrue(aware.reserve(0));
-        assertTrue(aware.reserve(1));
-
-        aware.release(0);
-        aware.release(1);
-
+        // Set limits.
         aware.curAbsWalIdx(10);
+        aware.minReserveIndex(0);
 
         //when: reserve one segment twice and one segment once.
         aware.reserve(5);
@@ -642,6 +633,37 @@ public class SegmentAwareTest {
         }
 
         fail("Should fail with AssertError because this segment have not reserved");
+    }
+
+    /**
+     * Check that the reservation border is working correctly.
+     */
+    @Test
+    public void testReservationBorder() {
+        SegmentAware aware = new SegmentAware(10, false);
+
+        assertFalse(aware.reserve(0));
+        assertFalse(aware.reserve(1));
+
+        aware.curAbsWalIdx(1);
+
+        assertTrue(aware.reserve(0));
+        assertTrue(aware.reserve(1));
+        assertFalse(aware.reserve(2));
+
+        aware.curAbsWalIdx(2);
+        assertTrue(aware.reserve(2));
+
+        assertFalse(aware.minReserveIndex(0));
+        assertFalse(aware.minReserveIndex(1));
+
+        aware.release(0);
+        assertTrue(aware.minReserveIndex(0));
+        assertFalse(aware.minReserveIndex(1));
+
+        aware.release(1);
+        assertTrue(aware.minReserveIndex(1));
+        assertFalse(aware.minReserveIndex(2));
     }
 
     /**
