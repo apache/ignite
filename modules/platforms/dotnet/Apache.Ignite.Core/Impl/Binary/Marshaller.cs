@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.Linq;
     using System.Runtime.Serialization;
+    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Common;
@@ -42,6 +43,9 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class Marshaller
     {
+        /** Register same java type flag. */
+        public static readonly ThreadLocal<Boolean> RegisterSameJavaType = new ThreadLocal<Boolean>(() => false);
+
         /** Binary configuration. */
         private readonly BinaryConfiguration _cfg;
 
@@ -562,7 +566,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var typeName = GetTypeName(type);
             var typeId = GetTypeId(typeName, _cfg.IdMapper);
 
-            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName);
+            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName, RegisterSameJavaType.Value);
 
             return AddUserType(type, typeId, typeName, registered, desc);
         }
