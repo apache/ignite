@@ -283,7 +283,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
             nodes = self.nodes
 
         for node in nodes:
-            self.logger.info("Dropping ignite network on '" + node.account.hostname + "' ...")
+            self.logger.info("Dropping ignite connections on '" + node.account.hostname + "' ...")
 
         self.__backup_iptables(nodes)
 
