@@ -291,7 +291,7 @@ def start_zookeeper(test_context, num_nodes, failure_detection_timeout):
     Start zookeeper cluster.
     """
     zk_settings = ZookeeperSettings(min_session_timeout=failure_detection_timeout,
-                                    tick_time=failure_detection_timeout // 2)
+                                    tick_time=failure_detection_timeout // 3)
 
     zk_quorum = ZookeeperService(test_context, num_nodes, settings=zk_settings)
     zk_quorum.start()
