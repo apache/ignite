@@ -80,7 +80,7 @@ class DiscoveryTest(IgniteTest):
 
     WARMUP_DATA_AMOUNT = 10_000
 
-    FAILURE_TIMEOUT = 500
+    FAILURE_TIMEOUT = 1000
 
     def __init__(self, test_context):
         super().__init__(test_context=test_context)
@@ -205,9 +205,10 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, load_config, params, modules, jvm_opts_str)
 
-        # Al least 3 sec to detect node failure. The calculated timeout is failure_detection_timeout * 4 in seconds.
+        # Al least 2 sec to detect node failure to avoid various additional enviromental delays on logs, ssh.
+        # The calculated timeout is 'failure_detection_timeout * 4' in seconds.
         results.update(self._simulate_and_detect_failure(servers, failed_nodes,
-                                                         max(3.0, 0.004 * test_config.failure_detection_timeout)))
+                                                         max(2.0, 0.004 * test_config.failure_detection_timeout)))
 
         return results
 
