@@ -64,7 +64,7 @@ class ZookeeperService(Service):
         self.start_timeout_sec = start_timeout_sec
 
     def start(self, clean=True):
-        super().start(clean)
+        super().start(clean=clean)
         self.logger.info("Waiting for Zookeeper quorum...")
 
         for node in self.nodes:
