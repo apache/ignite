@@ -22,8 +22,10 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -133,6 +135,19 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         metastorage.remove("key");
 
         assertNull(metastorage.read("key"));
+
+        stopGrid(0);
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> {
+                metastorage.writeAsync("key", "value").get(10, TimeUnit.SECONDS);
+
+                return null;
+            },
+            IgniteCheckedException.class,
+            "Node is stopped."
+        );
     }
 
     /**

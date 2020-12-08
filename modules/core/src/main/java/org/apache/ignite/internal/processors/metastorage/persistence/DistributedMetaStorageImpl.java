@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -175,6 +176,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      */
     private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> updateFuts = new ConcurrentHashMap<>();
 
+    /** */
+    private final ReadWriteLock updateFutsStopLock = new ReentrantReadWriteLock();
+
+    /** */
+    private boolean stopped;
+
     /**
      * Lock to access/update data and component's state.
      */
@@ -287,7 +294,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         finally {
             lock.writeLock().unlock();
 
-            cancelUpdateFutures();
+            cancelUpdateFutures("Node is stopping.", true);
         }
     }
 
@@ -914,7 +921,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             ver = INITIAL_VERSION;
 
-            cancelUpdateFutures();
+            cancelUpdateFutures("Client was disconnected during the operation.", false);
         }
         finally {
             lock.writeLock().unlock();
@@ -923,12 +930,23 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /**
      * Cancel all waiting futures and clear the map.
+     *
+     * @param msg Error message.
      */
-    private void cancelUpdateFutures() {
-        for (GridFutureAdapter<Boolean> fut : updateFuts.values())
-            fut.onDone(new IgniteCheckedException("Client was disconnected during the operation."));
+    private void cancelUpdateFutures(String msg, boolean stop) {
+        updateFutsStopLock.writeLock().lock();
 
-        updateFuts.clear();
+        try {
+            stopped = stop;
+
+            for (GridFutureAdapter<Boolean> fut : updateFuts.values())
+                fut.onDone(new IgniteCheckedException(msg));
+
+            updateFuts.clear();
+        }
+        finally {
+            updateFutsStopLock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -1040,7 +1058,20 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
 
-        updateFuts.put(reqId, fut);
+        updateFutsStopLock.readLock().lock();
+
+        try {
+            if (stopped) {
+                fut.onDone(new IgniteCheckedException("Node is stopped."));
+
+                return fut;
+            }
+
+            updateFuts.put(reqId, fut);
+        }
+        finally {
+            updateFutsStopLock.readLock().unlock();
+        }
 
         DiscoveryCustomMessage msg = new DistributedMetaStorageUpdateMessage(reqId, key, valBytes);
 
@@ -1061,7 +1092,20 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
 
-        updateFuts.put(reqId, fut);
+        updateFutsStopLock.readLock().lock();
+
+        try {
+            if (stopped) {
+                fut.onDone(new IgniteCheckedException("Node is stopped."));
+
+                return fut;
+            }
+
+            updateFuts.put(reqId, fut);
+        }
+        finally {
+            updateFutsStopLock.readLock().unlock();
+        }
 
         DiscoveryCustomMessage msg = new DistributedMetaStorageCasMessage(reqId, key, expValBytes, newValBytes);
 
@@ -1119,7 +1163,16 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ClusterNode node,
         DistributedMetaStorageUpdateAckMessage msg
     ) {
-        GridFutureAdapter<Boolean> fut = updateFuts.remove(msg.requestId());
+        GridFutureAdapter<Boolean> fut;
+
+        updateFutsStopLock.readLock().lock();
+
+        try {
+            fut = updateFuts.remove(msg.requestId());
+        }
+        finally {
+            updateFutsStopLock.readLock().unlock();
+        }
 
         if (fut != null) {
             String errorMsg = msg.errorMessage();
