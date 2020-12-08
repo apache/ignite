@@ -455,7 +455,7 @@ public class PlatformConfigurationUtils {
                 baseFunc = f;
 
                 int attrCnt = in.readInt();
-                if (attrCnt >= 0) {
+                if (attrCnt > 0) {
                     String[] attrs = new String[attrCnt];
 
                     for (int i = 0; i < attrCnt; i++) {
