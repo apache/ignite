@@ -69,4 +69,4 @@ class IgniteLoggerConfigTemplate(ConfigTemplate):
     Ignite logger configuration.
     """
     def __init__(self):
-        super().__init__(DEFAULT_CONFIG_PATH + "/log4j.xml.j2")
+        super().__init__(DEFAULT_CONFIG_PATH + "/log4j2.xml.j2")

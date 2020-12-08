@@ -102,12 +102,13 @@ class IgniteNodeSpec(IgniteSpec, IgnitePersistenceAware):
     """
     @property
     def command(self):
-        cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
+        cmd = "%s %s %s %s 2>&1 | tee %s >> %s &" % \
               (self._envs(),
                self.path.script("ignite.sh"),
                self._jvm_opts(),
                self.CONFIG_FILE,
-               self.STDOUT_STDERR_CAPTURE)
+               self.STDOUT_STDERR_CAPTURE,
+               self.STDOUT_STDERR_ALL)
 
         return cmd
 
@@ -125,12 +126,13 @@ class IgniteApplicationSpec(IgniteSpec, IgnitePersistenceAware):
 
     @property
     def command(self):
-        cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
+        cmd = "%s %s %s %s 2>&1 | tee %s >> %s &" % \
               (self._envs(),
                self.path.script("ignite.sh"),
                self._jvm_opts(),
                self._app_args(),
-               self.STDOUT_STDERR_CAPTURE)
+               self.STDOUT_STDERR_CAPTURE,
+               self.STDOUT_STDERR_ALL)
 
         return cmd
 
@@ -143,7 +145,7 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec, IgnitePersistenceAware):
         super().__init__(project="ignite", **kwargs)
 
         libs = (modules or [])
-        libs.append("log4j")
+        libs.append("log4j2")
         libs = list(map(lambda m: self.path.module(m) + "/*", libs))
 
         libs.append(IgnitePath(DEV_BRANCH).module("ducktests") + "/*")
@@ -156,8 +158,8 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec, IgnitePersistenceAware):
 
         self.jvm_opts.extend([
             "-DIGNITE_SUCCESS_FILE=" + self.PERSISTENT_ROOT + "/success_file",
-            "-Dlog4j.configuration=file:" + self.LOG4J_CONFIG_FILE,
-            "-Dlog4j.configDebug=true"
+            "-Dlog4j2.debug",
+            "-Dlog4j2.configurationFile=" + self.PERSISTENT_ROOT + "/ignite-log4j2.xml"
         ])
 
 
@@ -171,7 +173,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
         self.context = context
 
         libs = modules or []
-        libs.extend(["log4j"])
+        libs.extend(["log4j2"])
 
         libs = [self.path.module(m) + "/*" for m in libs]
         libs.append(IgnitePath(DEV_BRANCH).module("ducktests") + "/*")
@@ -186,8 +188,8 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware)
 
         self.jvm_opts.extend([
             "-DIGNITE_SUCCESS_FILE=" + self.PERSISTENT_ROOT + "/success_file",
-            "-Dlog4j.configuration=file:" + self.LOG4J_CONFIG_FILE,
-            "-Dlog4j.configDebug=true",
+            "-Dlog4j2.debug",
+            "-Dlog4j2.configurationFile=" + self.PERSISTENT_ROOT + "/ignite-log4j2.xml",
             "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
             "-Xmx1G",
             "-ea",

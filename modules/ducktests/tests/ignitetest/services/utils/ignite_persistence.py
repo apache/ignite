@@ -28,12 +28,14 @@ class PersistenceAware:
     """
     # Root directory for persistent output
     PERSISTENT_ROOT = "/mnt/service"
-    STDOUT_STDERR_CAPTURE = os.path.join(PERSISTENT_ROOT, "console.log")
     TEMP_DIR = os.path.join(PERSISTENT_ROOT, "tmp")
+    LOGS_DIR = os.path.join(PERSISTENT_ROOT, "logs")
+    STDOUT_STDERR_CAPTURE = os.path.join(LOGS_DIR, "console.log")
+    STDOUT_STDERR_ALL = os.path.join(LOGS_DIR, "console_all.log")
 
     logs = {
-        "console_log": {
-            "path": STDOUT_STDERR_CAPTURE,
+        "ignite_logs": {
+            "path": LOGS_DIR,
             "collect_default": True
         }
     }
@@ -43,8 +45,7 @@ class PersistenceAware:
         Init persistent directory.
         :param node: Service node.
         """
-        node.account.mkdirs(self.PERSISTENT_ROOT)
-        node.account.mkdirs(self.TEMP_DIR)
+        node.account.mkdirs(f'{self.PERSISTENT_ROOT} {self.TEMP_DIR} {self.LOGS_DIR}')
 
 
 class IgnitePersistenceAware(PersistenceAware):
@@ -53,7 +54,7 @@ class IgnitePersistenceAware(PersistenceAware):
     """
     WORK_DIR = os.path.join(PersistenceAware.PERSISTENT_ROOT, "work")
     CONFIG_FILE = os.path.join(PersistenceAware.PERSISTENT_ROOT, "ignite-config.xml")
-    LOG4J_CONFIG_FILE = os.path.join(PersistenceAware.PERSISTENT_ROOT, "ignite-log4j.xml")
+    LOG4J2_CONFIG_FILE = os.path.join(PersistenceAware.PERSISTENT_ROOT, "ignite-log4j2.xml")
 
     def __getattribute__(self, item):
         if item == 'logs':
@@ -68,5 +69,5 @@ class IgnitePersistenceAware(PersistenceAware):
         """
         super().init_persistent(node)
 
-        logger_config = IgniteLoggerConfigTemplate().render(work_dir=self.WORK_DIR)
-        node.account.create_file(self.LOG4J_CONFIG_FILE, logger_config)
+        logger_config = IgniteLoggerConfigTemplate().render(logs_dir=self.LOGS_DIR)
+        node.account.create_file(self.LOG4J2_CONFIG_FILE, logger_config)
