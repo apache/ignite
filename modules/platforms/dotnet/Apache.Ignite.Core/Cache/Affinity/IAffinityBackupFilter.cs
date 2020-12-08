@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Cache.Affinity
 {
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
 
     /// <summary>
@@ -25,6 +26,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
     /// <para />
     /// Only one predefined implementation is supported for now: <see cref="ClusterNodeAttributeAffinityBackupFilter"/>.
     /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface IAffinityBackupFilter
     {
         // No-op: custom implementations are not supported.

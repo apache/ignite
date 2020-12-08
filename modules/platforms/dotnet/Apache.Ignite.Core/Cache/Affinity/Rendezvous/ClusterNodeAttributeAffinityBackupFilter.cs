@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Cache.Affinity.Rendezvous
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
 
@@ -50,6 +51,7 @@ namespace Apache.Ignite.Core.Cache.Affinity.Rendezvous
         /// <summary>
         /// Gets or sets the attribute names.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> AttributeNames { get; set; }
     }
 }
