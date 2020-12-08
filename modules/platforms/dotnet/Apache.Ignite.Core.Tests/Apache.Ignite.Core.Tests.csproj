@@ -273,7 +273,9 @@
     <Compile Include="Plugin\TestIgnitePluginConfiguration.cs" />
     <Compile Include="Plugin\TestIgnitePluginException.cs" />
     <Compile Include="Plugin\TestIgnitePluginProvider.cs" />
+    <Compile Include="Services\Model.cs" />
     <Compile Include="Services\IJavaService.cs" />
+    <Compile Include="Services\JavaServiceDynamicProxy.cs" />
     <Compile Include="Ssl\SslConfigurationTest.cs" />
     <Compile Include="TaskExtensions.cs" />
     <Compile Include="TestAppConfig.cs" />
@@ -385,6 +387,7 @@
     <Compile Include="Services\ServicesTestAsync.cs" />
     <Compile Include="Services\ServiceProxyTest.cs" />
     <Compile Include="Services\ServicesAsyncWrapper.cs" />
+    <Compile Include="Services\ServiceTypeAutoResolveTest.cs" />
     <Compile Include="TestRunner.cs" />
     <Compile Include="TestUtils.cs" />
     <Compile Include="Unmanaged\JniThreadDetachTest.cs" />
