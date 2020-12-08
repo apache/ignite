@@ -49,6 +49,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilter;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
@@ -452,6 +453,18 @@ public class PlatformConfigurationUtils {
                 f.setPartitions(partitions);
                 f.setExcludeNeighbors(exclNeighbours);
                 baseFunc = f;
+
+                if (in.readBoolean()) {
+                    int attrCnt = in.readInt();
+                    String[] attrs = new String[attrCnt];
+
+                    for (int i = 0; i < attrCnt; i++) {
+                        attrs[i] = in.readString();
+                    }
+
+                    f.setAffinityBackupFilter(new ClusterNodeAttributeAffinityBackupFilter(attrs));
+                }
+
                 break;
             }
             default:
