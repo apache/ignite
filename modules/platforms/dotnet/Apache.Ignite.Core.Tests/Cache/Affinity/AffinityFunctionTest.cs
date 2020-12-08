@@ -270,7 +270,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 _ignite.GetCache<int, int>(CacheNameRendezvous),
                 _ignite.CreateCache<int, int>(new CacheConfiguration(CacheNameRendezvous + "2")
                 {
-                    AffinityFunction = new RendezvousAffinityFunctionEx {Bar = "test"}
+                    AffinityFunction = new RendezvousAffinityFunctionEx
+                    {
+                        Bar = "test",
+                        AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter(BackupFilterAttrName)
+                    }
                 })
             };
 
@@ -290,6 +294,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 // Check config
                 var func = (RendezvousAffinityFunctionEx)cache.GetConfiguration().AffinityFunction;
                 Assert.AreEqual("test", func.Bar);
+
+                if (cache.Name == CacheNameRendezvous)
+                {
+                    Assert.IsNull(func.AffinityBackupFilter);
+                }
+                else
+                {
+                    var filter = func.AffinityBackupFilter as ClusterNodeAttributeAffinityBackupFilter;
+                    Assert.IsNotNull(filter);
+                    CollectionAssert.AreEqual(new[]{BackupFilterAttrName}, filter.AttributeNames);
+                }
             }
         }
 
