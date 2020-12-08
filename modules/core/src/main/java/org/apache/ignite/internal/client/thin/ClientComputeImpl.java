@@ -358,13 +358,20 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
         Exception err
     ) {
         if (op == ClientOperation.COMPUTE_TASK_FINISHED) {
-            Object res = payload == null ? null : utils.readObject(BinaryByteBufferInputStream.create(payload), false);
-
             ClientComputeTask<Object> task = addTask(ch, rsrcId);
 
             if (task != null) { // If channel is closed concurrently, task is already done with "channel closed" reason.
-                if (err == null)
-                    task.fut.onDone(res);
+                if (err == null) {
+                    try {
+                        Object res = payload == null ? null :
+                            utils.readObject(BinaryByteBufferInputStream.create(payload), false);
+
+                        task.fut.onDone(res);
+                    }
+                    catch (Throwable e) {
+                        task.fut.onDone(e);
+                    }
+                }
                 else
                     task.fut.onDone(err);
 
