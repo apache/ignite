@@ -334,7 +334,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestSimpleInheritanceWithBackupFilter()
         {
-           var cache = _ignite.CreateCache<int, int>(new CacheConfiguration(TestUtils.TestName)
+            // TODO:
+            // * Constructor-based config is not serialization-friendly! Replace it with a property.
+            // * Test Spring -> .NET propagation
+            // * Test .NET XML config (can we define arrays?)
+            var cache = _ignite.CreateCache<int, int>(new CacheConfiguration(TestUtils.TestName)
             {
                 AffinityFunction = new SimpleOverride
                 {
@@ -342,12 +346,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 }
             });
 
-           var aff = cache.GetConfiguration().AffinityFunction as RendezvousAffinityFunction;
-           Assert.IsNotNull(aff);
+            var aff = cache.GetConfiguration().AffinityFunction as RendezvousAffinityFunction;
+            Assert.IsNotNull(aff);
 
-           var filter = aff.AffinityBackupFilter as ClusterNodeAttributeAffinityBackupFilter;
-           Assert.IsNotNull(filter);
-           CollectionAssert.AreEqual(new[]{BackupFilterAttrName}, filter.AttributeNames);
+            var filter = aff.AffinityBackupFilter as ClusterNodeAttributeAffinityBackupFilter;
+            Assert.IsNotNull(filter);
+            CollectionAssert.AreEqual(new[] {BackupFilterAttrName}, filter.AttributeNames);
         }
 
         [Serializable]
