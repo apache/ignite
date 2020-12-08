@@ -2889,7 +2889,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
                 }
                 finally {
-                    if (!readArchive)
+                    if (archiver != null && !readArchive)
                         segmentAware.unlock(curWalSegmIdx);
                 }
 
