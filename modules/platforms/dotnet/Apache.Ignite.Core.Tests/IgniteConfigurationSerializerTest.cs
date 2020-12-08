@@ -788,7 +788,10 @@ namespace Apache.Ignite.Core.Tests
                         {
                             ExcludeNeighbors = true,
                             Partitions = 48,
-                            AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter("foo", "baz", "bar")
+                            AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
+                            {
+                                AttributeNames = new[] {"foo", "baz", "bar"}
+                            }
                         },
                         ExpiryPolicyFactory = new MyPolicyFactory(),
                         EnableStatistics = true,

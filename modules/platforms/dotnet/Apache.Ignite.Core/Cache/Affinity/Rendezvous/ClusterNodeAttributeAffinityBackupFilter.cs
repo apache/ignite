@@ -18,10 +18,8 @@
 namespace Apache.Ignite.Core.Cache.Affinity.Rendezvous
 {
     using System.Collections.Generic;
-    using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Attribute-based affinity backup filter, see <see cref="IBaselineNode.Attributes"/>,
@@ -49,38 +47,9 @@ namespace Apache.Ignite.Core.Cache.Affinity.Rendezvous
     /// </summary>
     public sealed class ClusterNodeAttributeAffinityBackupFilter : IAffinityBackupFilter
     {
-        /** */
-        private readonly List<string> _attributeNames;
-
         /// <summary>
-        /// Initializes a new instance of <see cref="ClusterNodeAttributeAffinityBackupFilter"/>.
+        /// Gets or sets the attribute names.
         /// </summary>
-        /// <param name="attributeNames">One or more attribute names to use for backup node filtering.</param>
-        public ClusterNodeAttributeAffinityBackupFilter(IEnumerable<string> attributeNames)
-        {
-            IgniteArgumentCheck.NotNull(attributeNames, "attributeNames");
-
-            _attributeNames = attributeNames.ToList();
-
-            IgniteArgumentCheck.NotNullOrEmpty(_attributeNames, "attributeNames");
-        }
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="ClusterNodeAttributeAffinityBackupFilter"/>.
-        /// </summary>
-        /// <param name="attributeNames">One or more attribute names to use for backup node filtering.</param>
-        public ClusterNodeAttributeAffinityBackupFilter(params string[] attributeNames)
-            : this((IEnumerable<string>) attributeNames)
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Gets the attribute names.
-        /// </summary>
-        public IList<string> AttributeNames
-        {
-            get { return _attributeNames.ToList(); }
-        }
+        public ICollection<string> AttributeNames { get; set; }
     }
 }

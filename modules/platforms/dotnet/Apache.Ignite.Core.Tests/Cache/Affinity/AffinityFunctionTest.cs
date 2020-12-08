@@ -273,7 +273,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                     AffinityFunction = new RendezvousAffinityFunctionEx
                     {
                         Bar = "test",
-                        AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter(BackupFilterAttrName)
+                        AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
+                        {
+                            AttributeNames = new[]{BackupFilterAttrName}
+                        }
                     }
                 })
             };
@@ -342,7 +345,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             {
                 AffinityFunction = new SimpleOverride
                 {
-                    AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter(BackupFilterAttrName)
+                    AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
+                    {
+                        AttributeNames = new[] {BackupFilterAttrName}
+                    }
                 }
             });
 

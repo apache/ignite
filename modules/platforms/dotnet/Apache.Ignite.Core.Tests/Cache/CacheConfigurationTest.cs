@@ -795,7 +795,10 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     Partitions = 113,
                     ExcludeNeighbors = false,
-                    AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter("foo", "bar")
+                    AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
+                    {
+                        AttributeNames = new[] {"foo", "bar"}
+                    }
                 }
             };
         }
