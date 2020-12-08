@@ -30,6 +30,7 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -90,5 +91,36 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
 
         RexNode diff = RelMdUtil.minusPreds(RexUtils.builder(rel), predicate, condition);
         return RelMdUtil.guessSelectivity(diff);
+    }
+
+    /** */
+    public Double getSelectivity(IgniteIndexSpool rel, RelMetadataQuery mq, RexNode predicate) {
+        assert predicate == null : "IndexSpool doesn't support predicate: " + predicate;
+
+        if (rel.indexCondition() == null)
+            return 1.0;
+
+        List<RexNode> lowerCond = rel.indexCondition().lowerCondition();
+        List<RexNode> upperCond = rel.indexCondition().upperCondition();
+
+        if (F.isEmpty(lowerCond) && F.isEmpty(upperCond))
+            return 1.0;
+
+        double idxSelectivity = 1.0;
+        int len = F.isEmpty(lowerCond) ? upperCond.size() : F.isEmpty(upperCond) ? lowerCond.size() : Math.max(lowerCond.size(), upperCond.size());
+
+        for (int i = 0; i < len; i++) {
+            RexCall lower = F.isEmpty(lowerCond) || lowerCond.size() <= i ? null : (RexCall)lowerCond.get(i);
+            RexCall upper = F.isEmpty(upperCond) || upperCond.size() <= i ? null : (RexCall)upperCond.get(i);
+
+            assert lower != null || upper != null;
+
+            if (lower != null && upper != null)
+                idxSelectivity *= lower.op.kind == SqlKind.EQUALS ? .1 : .2;
+            else
+                idxSelectivity *= .35;
+        }
+
+        return idxSelectivity;
     }
 }

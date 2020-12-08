@@ -25,9 +25,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Spool;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexUtil;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
@@ -72,9 +69,7 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
             )
         );
 
-        System.out.println("+++ FilterSpoolMergeRule");
-        call.getPlanner().ensureRegistered(res, null);
-//        call.transformTo(res);
+        call.transformTo(res);
     }
 
     /** */
