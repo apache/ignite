@@ -17,8 +17,57 @@
 
 namespace Apache.Ignite.Core.Cache.Affinity.Rendezvous
 {
-    public class ClusterNodeAttributeAffinityBackupFilter
+    using System.Collections.Generic;
+    using System.Linq;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cluster;
+
+    /// <summary>
+    /// Attribute-based affinity backup filter, see <see cref="IBaselineNode.Attributes"/>,
+    /// <see cref="RendezvousAffinityFunction.AffinityBackupFilter"/>.
+    /// <para />
+    /// This filter can be used to ensure that, for a given partition, primary and backup nodes are selected from
+    /// different racks in a datacenter, or from different availability zones in a cloud environment, so that
+    /// a single hardware failure does not cause data loss.
+    /// <para />
+    /// This implementation will discard backups rather than place multiple on the same set of nodes. This avoids
+    /// trying to cram more data onto remaining nodes  when some have failed.
+    /// <para />
+    /// This class is constructed with a set of node attribute names, and a candidate node will be rejected if
+    /// *any* of the previously selected nodes for a partition have identical values for *all* of those attributes
+    /// on the candidate node. Another way to understand this is the set of attribute values defines the key of a
+    /// group into which a node is placed, and the primaries and backups for a partition cannot share nodes
+    /// in the same group. A null attribute is treated as a distinct value, so two nodes with a null attribute will
+    /// be treated as having the same value.
+    /// <para />
+    /// For example, let's say Ignite cluster of 12 nodes is deployed into 3 racks - r1, r2, r3. Ignite nodes
+    /// have "SITE" attributes set accordingly to "r1", "r2", "r3". For a cache with 1 backup
+    /// (<see cref="CacheConfiguration.Backups"/> set to <c>1</c>), every partition is assigned to 2 nodes.
+    /// When the primary node has "SITE" attribute set to "r1", all other nodes with "SITE"="r1" are excluded
+    /// by this filter when selecting the backup node.
+    /// </summary>
+    public sealed class ClusterNodeAttributeAffinityBackupFilter : IAffinityBackupFilter
     {
-        
+        /** */
+        private readonly List<string> _attributeNames;
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ClusterNodeAttributeAffinityBackupFilter"/>.
+        /// </summary>
+        /// <param name="attributeNames">One or more attribute names to use for backup node filtering.</param>
+        public ClusterNodeAttributeAffinityBackupFilter(IEnumerable<string> attributeNames)
+        {
+            _attributeNames = attributeNames.ToList();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ClusterNodeAttributeAffinityBackupFilter"/>.
+        /// </summary>
+        /// <param name="attributeNames">One or more attribute names to use for backup node filtering.</param>
+        public ClusterNodeAttributeAffinityBackupFilter(params string[] attributeNames)
+            : this((IEnumerable<string>) attributeNames)
+        {
+            // No-op.
+        }
     }
 }
