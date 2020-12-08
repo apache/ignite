@@ -506,7 +506,7 @@ public class PlatformConfigurationUtils {
             out.writeByte((byte) 0);  // override flags
             out.writeObject(null);  // user func
 
-            writeAffinityBackupFilter(out, f0.getBackupFilter());
+            writeAffinityBackupFilter(out, f0.getAffinityBackupFilter());
         }
         else if (f instanceof PlatformAffinityFunction) {
             PlatformAffinityFunction f0 = (PlatformAffinityFunction) f;
