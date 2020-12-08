@@ -19,7 +19,7 @@ This module contains JVM utilities.
 
 JVM_PARAMS_GC_CMS = "-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSIncrementalMode " \
                     "-XX:ConcGCThreads=$(((`nproc`/4)>1?(`nproc`/4):1)) " \
-                    "-XX:ParallelGCThreads=$(((`nproc`*3/4)>1?(`nproc`*3/4):1)) " \
+                    "-XX:ParallelGCThreads=$(((`nproc`/2)>1?(`nproc`/2):1)) " \
                     "-XX:CMSInitiatingOccupancyFraction=70 -XX:+UseCMSInitiatingOccupancyOnly " \
                     "-XX:+CMSParallelRemarkEnabled -XX:+CMSClassUnloadingEnabled"
 
@@ -32,7 +32,7 @@ JVM_PARAMS_GENERIC = "-server -da -XX:+DisableExplicitGC -XX:+AggressiveOpts -XX
                      "-XX:+OptimizeStringConcat -XX:+UseStringDeduplication"
 
 
-def jvm_settings(heap_size="768M", gc_settings=JVM_PARAMS_GC_G1, generic_params=JVM_PARAMS_GENERIC, gc_dump_path=None,
+def jvm_settings(heap_size="768M", gc_settings=JVM_PARAMS_GC_CMS, generic_params=JVM_PARAMS_GENERIC, gc_dump_path=None,
                  oom_path=None):
     """Provides settings string for JVM process."""
     gc_dump = "-XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=32M " \

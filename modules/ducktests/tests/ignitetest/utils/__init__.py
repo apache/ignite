@@ -17,6 +17,6 @@
 This module contains convenient utils for test.
 """
 
-from ._mark import version_if, ignite_versions, cluster
+from ._mark import version_if, ignite_versions, cluster, global_as_meta
 
-__all__ = ['version_if', 'ignite_versions', 'cluster']
+__all__ = ['version_if', 'ignite_versions', 'cluster', 'global_as_meta']

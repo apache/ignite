@@ -179,6 +179,37 @@ class ParametrizableClusterMetadata(Mark):
             self.metadata[CLUSTER_SIZE_KEYWORD] = new_size
 
 
+class GlobalToMeta(Mark):
+    """Saves global value as metadata available to set and read in each tests run."""
+
+    def __init__(self, global_param_name):
+        self.global_param_name = global_param_name
+
+    @property
+    def name(self):
+        return "GLOBAL_PARAM_TO_META"
+
+    def apply(self, seed_context, context_list):
+        assert len(context_list) > 0, "parametrizable cluster use annotation is not being applied to any test cases"
+
+        value = seed_context.globals.get(self.global_param_name)
+
+        if value:
+            for ctx in context_list:
+                if ctx.cluster_use_metadata:
+                    assert ctx.cluster_use_metadata[self.global_param_name] is None, \
+                        f"Unable to set global param '{self.global_param_name}' as meta. The test run context already " \
+                        f"has named value: {ctx.cluster_use_metadata[self.global_param_name]}"
+
+                    replace_ctx = copy.copy(ctx.cluster_use_metadata)
+                    replace_ctx[self.global_param_name] = value
+                    ctx.cluster_use_metadata = replace_ctx
+                else:
+                    ctx.cluster_use_metadata = {self.global_param_name: value}
+
+        return context_list
+
+
 def ignite_versions(*args, version_prefix="ignite_version"):
     """
     Decorate test function to inject ignite versions. Versions will be overriden by globals "ignite_versions" param.
@@ -219,3 +250,17 @@ def cluster(**kwargs):
         return func
 
     return cluster_use_metadata_adder
+
+
+def global_as_meta(global_name):
+    """Test method decorator used to provide hints about how the test will use the given int value.
+
+    :Keywords:
+
+      - ``param_name`` int parameter name
+    """
+    def int_param_setter(func):
+        Mark.mark(func, GlobalToMeta(global_name))
+        return func
+
+    return int_param_setter
