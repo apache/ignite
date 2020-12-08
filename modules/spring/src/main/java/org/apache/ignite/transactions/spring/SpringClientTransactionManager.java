@@ -19,10 +19,13 @@ package org.apache.ignite.transactions.spring;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientTransactionConfiguration;
 import org.apache.ignite.internal.transactions.proxy.ClientTransactionProxyFactory;
 import org.apache.ignite.internal.transactions.proxy.TransactionProxy;
 import org.apache.ignite.internal.transactions.proxy.TransactionProxyFactory;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.DefaultTransactionStatus;
@@ -60,6 +63,21 @@ public class SpringClientTransactionManager extends AbstractSpringTransactionMan
         setRollbackOnCommitFailure(true);
 
         super.onApplicationEvent(evt);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected TransactionIsolation defaultTransactionIsolation() {
+        return ClientTransactionConfiguration.DFLT_TX_ISOLATION;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long defaultTransactionTimeout() {
+        return ClientTransactionConfiguration.DFLT_TRANSACTION_TIMEOUT;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected TransactionConcurrency defaultTransactionConcurrency() {
+        return ClientTransactionConfiguration.DFLT_TX_CONCURRENCY;
     }
 
     /** {@inheritDoc} */

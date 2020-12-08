@@ -36,10 +36,6 @@ import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.ResourceTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import static org.apache.ignite.configuration.TransactionConfiguration.DFLT_TRANSACTION_TIMEOUT;
-import static org.apache.ignite.configuration.TransactionConfiguration.DFLT_TX_CONCURRENCY;
-import static org.apache.ignite.configuration.TransactionConfiguration.DFLT_TX_ISOLATION;
-
 /** Abstract implementation of Spring Transaction manager with omitted Ignite cluster access logic. */
 public abstract class AbstractSpringTransactionManager extends AbstractPlatformTransactionManager
     implements ResourceTransactionManager, ApplicationListener<ContextRefreshedEvent>
@@ -239,19 +235,13 @@ public abstract class AbstractSpringTransactionManager extends AbstractPlatformT
     }
 
     /** @return Default transaction isolation. */
-    protected TransactionIsolation defaultTransactionIsolation() {
-        return DFLT_TX_ISOLATION;
-    }
+    protected abstract TransactionIsolation defaultTransactionIsolation();
 
     /** @return Default transaction timeout. */
-    protected long defaultTransactionTimeout() {
-        return DFLT_TRANSACTION_TIMEOUT;
-    }
+    protected abstract long defaultTransactionTimeout();
 
     /** @return Default transaction concurrency. */
-    protected TransactionConcurrency defaultTransactionConcurrency() {
-        return DFLT_TX_CONCURRENCY;
-    }
+    protected abstract TransactionConcurrency defaultTransactionConcurrency();
 
     /** Creates instance of {@link TransactionProxyFactory} that will be used to start new Ignite transactions. */
     protected abstract TransactionProxyFactory createTransactionFactory();
