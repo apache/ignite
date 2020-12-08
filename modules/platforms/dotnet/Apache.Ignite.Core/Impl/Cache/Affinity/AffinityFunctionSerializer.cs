@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
 
     /// <summary>
@@ -78,30 +79,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
                 // Do not write user func if there is nothing overridden
                 WriteUserFunc(writer, overrideFlags != UserOverrides.None ? fun : null, userFuncOverride);
 
-                if (p.AffinityBackupFilter != null)
-                {
-                    var filter = p.AffinityBackupFilter as ClusterNodeAttributeAffinityBackupFilter;
-
-                    if (filter == null)
-                    {
-                        throw new NotSupportedException(string.Format(
-                            "Unsupported RendezvousAffinityFunction.AffinityBackupFilter: '{0}'. " +
-                            "Only predefined implementations are supported: '{1}'",
-                            p.AffinityBackupFilter.GetType().Name,
-                            typeof(ClusterNodeAttributeAffinityBackupFilter).Name));
-                    }
-
-                    writer.WriteInt(filter.AttributeNames.Count);
-
-                    foreach (var attr in filter.AttributeNames)
-                    {
-                        writer.WriteString(attr);
-                    }
-                }
-                else
-                {
-                    writer.WriteInt(-1);
-                }
+                WriteBackupFilter(writer, p);
             }
             else
             {
@@ -284,6 +262,39 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
             }
 
             return new ClusterNodeAttributeAffinityBackupFilter{AttributeNames = attrs};
+        }
+
+        /// <summary>
+        /// Writes the backup filter.
+        /// </summary>
+        private static void WriteBackupFilter(IBinaryRawWriter writer, RendezvousAffinityFunction func)
+        {
+            if (func.AffinityBackupFilter == null)
+            {
+                writer.WriteInt(-1);
+                return;
+            }
+
+            var filter = func.AffinityBackupFilter as ClusterNodeAttributeAffinityBackupFilter;
+
+            if (filter == null)
+            {
+                throw new NotSupportedException(string.Format(
+                    "Unsupported RendezvousAffinityFunction.AffinityBackupFilter: '{0}'. " +
+                    "Only predefined implementations are supported: '{1}'",
+                    func.AffinityBackupFilter.GetType().Name,
+                    typeof(ClusterNodeAttributeAffinityBackupFilter).Name));
+            }
+
+            IgniteArgumentCheck.NotNullOrEmpty(filter.AttributeNames,
+                "ClusterNodeAttributeAffinityBackupFilter.AttributeNames");
+
+            writer.WriteInt(filter.AttributeNames.Count);
+
+            foreach (var attr in filter.AttributeNames)
+            {
+                writer.WriteString(attr);
+            }
         }
 
         /// <summary>
