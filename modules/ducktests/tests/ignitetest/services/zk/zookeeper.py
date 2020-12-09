@@ -34,6 +34,7 @@ class ZookeeperSettings:
         self.tick_time = kwargs.get('tick_time', self.min_session_timeout // 3)
         self.init_limit = kwargs.get('init_limit', 10)
         self.sync_limit = kwargs.get('sync_limit', 5)
+        self.force_sync = kwargs.get('force_sync', 'yes')
         self.client_port = kwargs.get('client_port', 2181)
 
         assert self.tick_time <= self.min_session_timeout // 2, "'tick_time' must be <= 'min_session_timeout' / 2"
@@ -75,7 +76,7 @@ class ZookeeperService(Service):
     def start_node(self, node):
         idx = self.idx(node)
 
-        self.logger.info("Starting ZooKeeper node %d on %s", idx, node.account.hostname)
+        self.logger.info("Starting Zookeeper node %d on %s", idx, node.account.hostname)
 
         node.account.ssh("mkdir -p %s" % self.DATA_DIR)
         node.account.ssh("mkdir -p %s" % self.CONFIG_ROOT)
@@ -83,7 +84,7 @@ class ZookeeperService(Service):
 
         config_file = self.render('zookeeper.properties.j2', settings=self.settings)
         node.account.create_file(self.CONFIG_FILE, config_file)
-        self.logger.info("ZooKeeper config %s", config_file)
+        self.logger.info("ZK config %s", config_file)
 
         log_config_file = self.render('log4j.properties.j2')
         node.account.create_file(self.LOG_CONFIG_FILE, log_config_file)

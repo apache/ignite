@@ -71,10 +71,11 @@ class DiscoveryTest(IgniteTest):
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
+
+    # Name of global param to control failure_detection_timeout used.
     GLOBAL_DETECTION_TIMEOUT = "failure_detection_timeout"
 
-    FAILURE_DETECTION_TIMEOUT = 1000
-
+    # Default maximum numbers of containers to utilize for the test.
     MAX_CONTAINERS = 12
 
     ZOOKEEPER_NODES = 3
@@ -82,6 +83,8 @@ class DiscoveryTest(IgniteTest):
     DATA_AMOUNT = 5_000_000
 
     WARMUP_DATA_AMOUNT = 10_000
+
+    DEFAULT_DETECTION_TIMEOUT = 1000
 
     def __init__(self, test_context):
         super().__init__(test_context=test_context)
@@ -124,7 +127,8 @@ class DiscoveryTest(IgniteTest):
         Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
-                                          load_type=ClusterLoad.construct_from(load_type), sequential_failure=False)
+                                          load_type=ClusterLoad.construct_from(load_type), sequential_failure=False,
+                                          with_zk=True)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -144,24 +148,23 @@ class DiscoveryTest(IgniteTest):
         return self._perform_node_fail_scenario(test_config)
 
     def _perform_node_fail_scenario(self, test_config):
-        failure_detection_timeout = self._read_meta_int(DiscoveryTest.GLOBAL_DETECTION_TIMEOUT,
-                                                        DiscoveryTest.FAILURE_DETECTION_TIMEOUT)
+        failure_detection_timeout = self._read_meta_int(self.GLOBAL_DETECTION_TIMEOUT, self.DEFAULT_DETECTION_TIMEOUT)
 
         # One node is required to detect the failure.
         assert len(self.test_context.cluster) >= 1 + test_config.nodes_to_kill + (
-            DiscoveryTest.ZOOKEEPER_NODES if test_config.with_zk else 0) + \
+            self.ZOOKEEPER_NODES if test_config.with_zk else 0) + \
                (0 if test_config.load_type == ClusterLoad.NONE else 1), \
             "Few required containers: " + str(len(self.test_context.cluster)) + ". Check the params."
 
         self.logger.info("Starting on " + str(len(self.test_context.cluster)) + " maximal containers.")
-        self.logger.info(f"{DiscoveryTest.GLOBAL_DETECTION_TIMEOUT}: {failure_detection_timeout}")
+        self.logger.info(f"{self.GLOBAL_DETECTION_TIMEOUT}: {failure_detection_timeout}")
 
         results = {}
 
         modules = ['zookeeper'] if test_config.with_zk else None
 
         if test_config.with_zk:
-            zk_quorum = start_zookeeper(self.test_context, DiscoveryTest.ZOOKEEPER_NODES, failure_detection_timeout)
+            zk_quorum = start_zookeeper(self.test_context, self.ZOOKEEPER_NODES, failure_detection_timeout)
 
             discovery_spi = from_zookeeper_cluster(zk_quorum)
         else:
@@ -187,7 +190,7 @@ class DiscoveryTest(IgniteTest):
         # Start Ignite nodes in count less than max_nodes_in_use. One node is erequired for the loader. Some nodes might
         # be needed for ZooKeeper.
         servers, start_servers_sec = start_servers(
-            self.test_context, len(self.test_context.cluster) - DiscoveryTest.ZOOKEEPER_NODES - 1,
+            self.test_context, len(self.test_context.cluster) - self.ZOOKEEPER_NODES - 1,
             ignite_config, modules, jvm_opts_str)
 
         results['Ignite cluster start time (s)'] = start_servers_sec
@@ -289,8 +292,7 @@ def start_zookeeper(test_context, num_nodes, failure_detection_timeout):
     """
     Start zookeeper cluster.
     """
-    zk_settings = ZookeeperSettings(min_session_timeout=failure_detection_timeout,
-                                    tick_time=failure_detection_timeout // 3)
+    zk_settings = ZookeeperSettings(min_session_timeout=failure_detection_timeout, force_sync="no")
 
     zk_quorum = ZookeeperService(test_context, num_nodes, settings=zk_settings)
     zk_quorum.start()
