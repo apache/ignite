@@ -23,7 +23,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
@@ -55,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointManager;
+import org.apache.ignite.internal.util.ReentrantReadWriteLockWithTracking;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -286,7 +286,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
                 checkpointManager.checkpointTimeoutLock(), "checkpointReadWriteLock"
             );
 
-            ReentrantReadWriteLock lock = U.field(checkpointReadWriteLock, "checkpointLock");
+            ReentrantReadWriteLockWithTracking lock = U.field(checkpointReadWriteLock, "checkpointLock");
 
             while (!timeoutReached.get()) {
                 try {
