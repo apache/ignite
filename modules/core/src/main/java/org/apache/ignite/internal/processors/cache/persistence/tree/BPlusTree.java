@@ -150,8 +150,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /** Failure processor. */
     private final FailureProcessor failureProcessor;
 
-    /** Flag for enabling defragmentation-specific optimizations - for single-threaded append-only tree creation. */
-    private boolean defragmentationOptsEnabled;
+    /** Flag for enabling single-threaded append-only tree creation. */
+    private boolean sequentialWriteOptsEnabled;
 
     /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
@@ -883,9 +883,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         return name;
     }
 
-    /** Enable defragmentation optimizations. */
-    public void enableDefragmentationOptimizations() {
-        defragmentationOptsEnabled = true;
+    /** Flag for enabling single-threaded append-only tree creation. */
+    public void enableSequentialWriteMode() {
+        sequentialWriteOptsEnabled = true;
     }
 
     /**
@@ -2716,7 +2716,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     ) throws IgniteCheckedException {
         int cnt = io.getCount(pageAddr);
 
-        int mid = defragmentationOptsEnabled ? (int)(cnt * 0.85) : cnt >>> 1;
+        int mid = sequentialWriteOptsEnabled ? (int)(cnt * 0.85) : cnt >>> 1;
 
         boolean res = false;
 
@@ -5307,7 +5307,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         throws IgniteCheckedException {
         assert row != null;
 
-        if (defragmentationOptsEnabled)
+        if (sequentialWriteOptsEnabled)
             return -cnt - 1;
 
         int high = cnt - 1;
