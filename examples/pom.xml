@@ -122,6 +122,12 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-ml-catboost-model-parser</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-ml-h2o-model-parser</artifactId>
             <version>${project.version}</version>
         </dependency>
