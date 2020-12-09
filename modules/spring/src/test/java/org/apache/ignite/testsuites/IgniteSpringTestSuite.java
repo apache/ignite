@@ -44,6 +44,7 @@ import org.apache.ignite.spring.injection.IgniteSpringBeanSpringResourceInjectio
 import org.apache.ignite.startup.cmdline.GridCommandLineLoaderTest;
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSelfTest;
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSpringBeanSelfTest;
+import org.apache.ignite.transactions.spring.SpringClientTransactionManagerTest;
 import org.apache.ignite.transactions.spring.SpringTransactionManagerContextInjectionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -80,6 +81,7 @@ import org.junit.runners.Suite;
 
     GridSpringTransactionManagerSelfTest.class,
     GridSpringTransactionManagerSpringBeanSelfTest.class,
+    SpringClientTransactionManagerTest.class,
 
     GridServiceInjectionSpringResourceTest.class,
     IgniteSpringBeanSpringResourceInjectionTest.class,

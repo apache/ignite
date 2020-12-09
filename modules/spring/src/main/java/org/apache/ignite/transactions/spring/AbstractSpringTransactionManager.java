@@ -48,7 +48,7 @@ public abstract class AbstractSpringTransactionManager extends AbstractPlatformT
     private IgniteLogger log;
 
     /** Transaction concurrency level. */
-    private TransactionConcurrency transactionConcurrency;
+    private TransactionConcurrency txConcurrency;
 
     /** Default transaction isolation. */
     private TransactionIsolation dfltTxIsolation;
@@ -62,22 +62,22 @@ public abstract class AbstractSpringTransactionManager extends AbstractPlatformT
      * @return Transaction concurrency level.
      */
     public TransactionConcurrency getTransactionConcurrency() {
-        return transactionConcurrency;
+        return txConcurrency;
     }
 
     /**
      * Sets transaction concurrency level.
      *
-     * @param transactionConcurrency transaction concurrency level.
+     * @param txConcurrency transaction concurrency level.
      */
-    public void setTransactionConcurrency(TransactionConcurrency transactionConcurrency) {
-        this.transactionConcurrency = transactionConcurrency;
+    public void setTransactionConcurrency(TransactionConcurrency txConcurrency) {
+        this.txConcurrency = txConcurrency;
     }
 
     /** {@inheritDoc} */
     @Override public void onApplicationEvent(ContextRefreshedEvent evt) {
-        if (transactionConcurrency == null)
-            transactionConcurrency = defaultTransactionConcurrency();
+        if (txConcurrency == null)
+            txConcurrency = defaultTransactionConcurrency();
 
         dfltTxIsolation = defaultTransactionIsolation();
 
@@ -113,7 +113,7 @@ public abstract class AbstractSpringTransactionManager extends AbstractPlatformT
                 if (definition.getTimeout() > 0)
                     timeout = TimeUnit.SECONDS.toMillis(definition.getTimeout());
 
-                TransactionProxy newTx = txFactory.txStart(transactionConcurrency,
+                TransactionProxy newTx = txFactory.txStart(txConcurrency,
                     convertToIgniteIsolationLevel(definition.getIsolationLevel()), timeout);
 
                 if (log.isDebugEnabled())
@@ -218,16 +218,22 @@ public abstract class AbstractSpringTransactionManager extends AbstractPlatformT
      */
     private TransactionIsolation convertToIgniteIsolationLevel(int isolationLevel) {
         TransactionIsolation isolation = dfltTxIsolation;
+
         switch (isolationLevel) {
             case TransactionDefinition.ISOLATION_READ_COMMITTED:
                 isolation = TransactionIsolation.READ_COMMITTED;
+
                 break;
+
             case TransactionDefinition.ISOLATION_REPEATABLE_READ:
                 isolation = TransactionIsolation.REPEATABLE_READ;
+
                 break;
+
             case TransactionDefinition.ISOLATION_SERIALIZABLE:
                 isolation = TransactionIsolation.SERIALIZABLE;
         }
+
         return isolation;
     }
 
@@ -251,22 +257,22 @@ public abstract class AbstractSpringTransactionManager extends AbstractPlatformT
      */
     protected static class IgniteTransactionObject implements SmartTransactionObject {
         /** */
-        private IgniteTransactionHolder transactionHolder;
+        private IgniteTransactionHolder txHolder;
 
         /** */
-        private boolean newTransactionHolder;
+        private boolean newTxHolder;
 
         /**
          * Sets the resource holder being used to hold Ignite resources in the
          * transaction.
          *
-         * @param transactionHolder the transaction resource holder
-         * @param newHolder         true if the holder was created for this transaction,
+         * @param txHolder the transaction resource holder
+         * @param newTxHolder         true if the holder was created for this transaction,
          *                          false if it already existed
          */
-        private void setTransactionHolder(IgniteTransactionHolder transactionHolder, boolean newHolder) {
-            this.transactionHolder = transactionHolder;
-            this.newTransactionHolder = newHolder;
+        private void setTransactionHolder(IgniteTransactionHolder txHolder, boolean newTxHolder) {
+            this.txHolder = txHolder;
+            this.newTxHolder = newTxHolder;
         }
 
         /**
@@ -276,7 +282,7 @@ public abstract class AbstractSpringTransactionManager extends AbstractPlatformT
          * @return the transaction resource holder
          */
         protected IgniteTransactionHolder getTransactionHolder() {
-            return transactionHolder;
+            return txHolder;
         }
 
         /**
@@ -287,12 +293,12 @@ public abstract class AbstractSpringTransactionManager extends AbstractPlatformT
          * already existed
          */
         private boolean isNewTransactionHolder() {
-            return newTransactionHolder;
+            return newTxHolder;
         }
 
         /** {@inheritDoc} */
         @Override public boolean isRollbackOnly() {
-            return transactionHolder.isRollbackOnly();
+            return txHolder.isRollbackOnly();
         }
 
         /** {@inheritDoc} */

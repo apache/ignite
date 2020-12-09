@@ -28,7 +28,6 @@ import org.apache.ignite.transactions.spring.GridSpringTransactionService.Client
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.UnexpectedRollbackException;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
@@ -77,7 +76,7 @@ public class SpringClientTransactionManagerTest extends GridSpringTransactionMan
     }
 
     /** {@inheritDoc} */
-    @Override public void testDoSetRollbackOnlyInExistingTransaction(){
+    @Override public void testDoSetRollbackOnlyInExistingTransaction() {
         GridTestUtils.assertThrowsAnyCause(
             log,
             () -> {
@@ -87,7 +86,6 @@ public class SpringClientTransactionManagerTest extends GridSpringTransactionMan
             },
             UnexpectedRollbackException.class,
             "Transaction rolled back because it has been marked as rollback-only");
-
 
         assertEquals(0, cache().size());
     }

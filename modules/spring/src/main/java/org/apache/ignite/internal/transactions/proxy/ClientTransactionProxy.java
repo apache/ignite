@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.transactions.proxy;
 
 import org.apache.ignite.client.ClientTransaction;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Represents {@link TransactionProxy} implementation that uses {@link ClientTransaction} to perform transaction
@@ -50,5 +51,10 @@ public class ClientTransactionProxy implements TransactionProxy {
     /** {@inheritDoc} */
     @Override public boolean setRollbackOnly() {
         throw new UnsupportedOperationException("Operation is not supported by thin client.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ClientTransactionProxy.class, this);
     }
 }

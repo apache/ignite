@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.transactions.proxy;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.transactions.Transaction;
 
 /**
@@ -50,5 +51,10 @@ public class IgniteTransactionProxy implements TransactionProxy {
     /** {@inheritDoc} */
     @Override public boolean setRollbackOnly() {
         return tx.setRollbackOnly();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteTransactionProxy.class, this);
     }
 }
