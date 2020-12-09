@@ -75,7 +75,7 @@ public class EncryptionConfiguration implements Serializable {
      */
     public EncryptionConfiguration setReencryptionRateLimit(double reencryptionRateLimit) {
         A.ensure(reencryptionRateLimit >= 0,
-            "Reencryption rate limit (" + reencryptionRateLimit + ") must be non-negative.");
+            "Re-encryption rate limit (" + reencryptionRateLimit + ") must be non-negative.");
 
         this.reencryptionRateLimit = reencryptionRateLimit;
 

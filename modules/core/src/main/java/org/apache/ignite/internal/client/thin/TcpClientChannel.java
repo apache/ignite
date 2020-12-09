@@ -378,19 +378,22 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         int hdrSize = dataInput.position();
         int msgSize = buf.limit();
 
-        ByteBuffer res = null;
-        Exception err = null;
+        ByteBuffer res;
+        Exception err;
 
         if (status == 0) {
-            if (msgSize > hdrSize)
-                res = buf;
+            err = null;
+            res = msgSize > hdrSize ? buf : null;
         }
-        else if (status == ClientStatus.SECURITY_VIOLATION)
+        else if (status == ClientStatus.SECURITY_VIOLATION) {
             err = new ClientAuthorizationException();
+            res = null;
+        }
         else {
             String errMsg = ClientUtils.createBinaryReader(null, dataInput).readString();
 
             err = new ClientServerError(errMsg, status, resId);
+            res = null;
         }
 
         if (notificationOp == null) { // Respone received.
@@ -402,8 +405,12 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             pendingReq.onDone(res, err);
         }
         else { // Notification received.
-            for (NotificationListener lsnr : notificationLsnrs)
-                lsnr.acceptNotification(this, notificationOp, resId, res, err);
+            ClientOperation notificationOp0 = notificationOp;
+
+            asyncContinuationExecutor.execute(() -> {
+                for (NotificationListener lsnr : notificationLsnrs)
+                    lsnr.acceptNotification(this, notificationOp0, resId, res, err);
+            });
         }
     }
 

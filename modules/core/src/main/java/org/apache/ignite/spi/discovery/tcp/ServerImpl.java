@@ -860,7 +860,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>> fut = new GridPingFutureAdapter<>(nodeId);
 
-        GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>> oldFut = pingMap.putIfAbsent(addr, fut);
+        InetSocketAddress addrKey = addr;
+
+        GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>> oldFut = pingMap.putIfAbsent(addrKey, fut);
 
         if (oldFut != null)
             return oldFut.get();
@@ -960,7 +962,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!fut.isDone())
                     fut.onDone(U.exceptionWithSuppressed("Failed to ping node by address: " + addr, errs));
 
-                boolean b = pingMap.remove(addr, fut);
+                boolean b = pingMap.remove(addrKey, fut);
 
                 assert b;
             }
