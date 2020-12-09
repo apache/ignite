@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Comparator;
+import java.util.TreeMap;
+import java.util.function.Supplier;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Table spool node.
+ * Index spool node.
  */
 public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** How many rows are requested by downstream. */
@@ -38,7 +39,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     private int rowIdx;
 
     /** Rows buffer. */
-    private final List<Row> rows;
+    private final TreeMap<Row, Boolean> idx;
 
     /**
      * Flag indicates that spool pushes row to downstream.
@@ -49,10 +50,15 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     /**
      * @param ctx Execution context.
      */
-    public IndexSpoolNode(ExecutionContext<Row> ctx, RelDataType rowType) {
+    public IndexSpoolNode(
+        ExecutionContext<Row> ctx,
+        RelDataType rowType,
+        Comparator<Row> comp,
+        Supplier<Row> lowerIdxConditions,
+        Supplier<Row> upperIdxConditions) {
         super(ctx, rowType);
 
-        rows = new ArrayList<>();
+        idx = new TreeMap<>(comp);
     }
 
     /** {@inheritDoc} */
@@ -96,13 +102,13 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
     /** */
     private void doPush() {
-        if (rowIdx >= rows.size() && waiting == -1 && requested > 0) {
+        if (rowIdx >= idx.size() && waiting == -1 && requested > 0) {
             downstream().end();
 
             return;
         }
 
-        while (requested > 0 && rowIdx < rows.size())
+        while (requested > 0 && rowIdx < idx.size())
             pushToDownstream();
     }
 
@@ -110,15 +116,14 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     private void pushToDownstream() {
         inLoop = true;
 
-        downstream().push(rows.get(rowIdx));
+//        downstream().push(idx.get(rowIdx));
 
         inLoop = false;
 
-        rowIdx++;
         requested--;
 
-        if (rowIdx >= rows.size() && waiting == -1 && requested > 0)
-            downstream().end();
+//        if (rowIdx >= rows.size() && waiting == -1 && requested > 0)
+//            downstream().end();
     }
 
     /** {@inheritDoc} */
@@ -131,12 +136,12 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
             waiting--;
 
-            rows.add(row);
+            idx.put(row, Boolean.FALSE);
 
             if (waiting == 0)
                 source().request(waiting = IN_BUFFER_SIZE);
 
-            if (requested > 0 && rowIdx < rows.size())
+            if (requested > 0 && rowIdx < idx.size())
                 pushToDownstream();
         }
         catch (Exception e) {
@@ -154,8 +159,8 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
             waiting = -1;
 
-            if (rowIdx >= rows.size() && requested > 0)
-                downstream().end();
+//            if (rowIdx >= rows.size() && requested > 0)
+//                downstream().end();
         }
         catch (Exception e) {
             downstream().onError(e);
