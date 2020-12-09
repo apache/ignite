@@ -50,12 +50,10 @@ import org.junit.runners.Suite;
     IgniteTcBotInitNewPageTest.class,
     RebuildIndexWithHistoricalRebalanceTest.class,
     IndexingMultithreadedLoadContinuousRestartTest.class,
-//    LongDestroyDurableBackgroundTaskTest.class,
     RebuildIndexTest.class,
     RebuildIndexWithMVCCTest.class,
     IgniteClusterSnapshotWithIndexesTest.class,
     ClientReconnectWithSqlTableConfiguredTest.class,
-//    MultipleParallelCacheDeleteDeadlockTest.class,
     CacheGroupReencryptionTest.class
 })
 public class IgnitePdsWithIndexingTestSuite {

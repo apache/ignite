@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
@@ -64,21 +63,6 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public H2CacheRow put(H2CacheRow row) {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean putx(H2CacheRow row) {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removex(SearchRow row) {
         throw unsupported();
     }
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.indexing;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import javax.cache.Cache;
 import org.apache.ignite.cache.query.index.Index;
@@ -99,9 +100,24 @@ public interface IndexingSpi extends IgniteSpi {
      * @param newRow cache row to store in index.
      * @param prevRow optional cache row that will be replaced with new row.
      */
-    public default void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow)
+    public default void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+        boolean prevRowAvailable)
         throws IgniteSpiException {
-        // No-Op
+        // No-Op.
+    }
+
+    /**
+     * Updates index with new row. Note that key is unique for cache, so if cache contains multiple indexes
+     * the key should be removed from indexes other than one being updated.
+     *
+     * @param idxs List of indexes to update.
+     * @param newRow cache row to store in index.
+     * @param prevRow optional cache row that will be replaced with new row.
+     */
+    public default void store(Collection<Index> idxs, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+        boolean prevRowAvailable)
+        throws IgniteSpiException {
+        // No-Op.
     }
 
     /**
@@ -117,12 +133,11 @@ public interface IndexingSpi extends IgniteSpi {
     /**
      * Removes an index.
      *
-     * @param cacheName Cache name.
-     * @param idxName Index name.
+     * @param def Index definition.
      * @param softDelete whether it's required to delete underlying structures.
      */
-    public default void removeIndex(String cacheName, String idxName, boolean softDelete) {
-        // No-op
+    public default void removeIndex(IndexDefinition def, boolean softDelete) {
+        // No-op.
     }
 
     /**
@@ -141,6 +156,23 @@ public interface IndexingSpi extends IgniteSpi {
      * @param prevRow Cache row to delete from index.
      */
     public default void remove(String cacheName, @Nullable CacheDataRow prevRow) {
-        // No-op
+        // No-op.
+    }
+
+    /**
+     * Mark/unmark for rebuild indexes for a specific cache.
+     */
+    public default void markRebuildIndexesForCache(GridCacheContext cctx, boolean val) {
+        // No-op.
+    }
+
+    /**
+     * Returns list of indexes for specified cache.
+     *
+     * @param cctx Cache context.
+     * @return List of indexes for specified cache.
+     */
+    public default Collection<Index> getIndexes(GridCacheContext cctx) {
+        return Collections.emptyList();
     }
 }

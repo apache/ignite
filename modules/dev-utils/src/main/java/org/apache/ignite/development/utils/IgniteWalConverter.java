@@ -19,6 +19,10 @@ package org.apache.ignite.development.utils;
 
 import java.io.File;
 import java.util.List;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -28,12 +32,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccInnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccLeafIO;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
@@ -76,9 +74,9 @@ public class IgniteWalConverter {
                     "\t2. Path to dir with wal files.\n" +
                     "\t3. (Optional) Path to dir with archive wal files.");
 
-        PageIO.registerH2(H2InnerIO.VERSIONS, H2LeafIO.VERSIONS, H2MvccInnerIO.VERSIONS, H2MvccLeafIO.VERSIONS);
-        H2ExtrasInnerIO.register();
-        H2ExtrasLeafIO.register();
+        PageIO.registerH2(InnerIO.VERSIONS, LeafIO.VERSIONS, null, null);
+        AbstractInlineInnerIO.register();
+        AbstractInlineLeafIO.register();
 
         boolean printRecords = getBoolean(PRINT_RECORDS, false); //TODO read them from argumetns
         boolean printStat = getBoolean(PRINT_STAT, true); //TODO read them from argumetns

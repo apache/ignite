@@ -38,8 +38,13 @@ public interface Index {
 
     /**
      * Callback that runs when the underlying cache is updated.
+     *
+     * @param oldRow Cache row that was replaced with newRow.
+     * @param newRow Cache row that was stored.
+     * @param prevRowAvailable Whether oldRow available.
      */
-    public void onUpdate(@Nullable CacheDataRow oldRow, @Nullable CacheDataRow newRow) throws IgniteCheckedException;
+    public void onUpdate(@Nullable CacheDataRow oldRow, @Nullable CacheDataRow newRow, boolean prevRowAvailable)
+        throws IgniteCheckedException;
 
     /**
      * Explicitly put cache row to index.

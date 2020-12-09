@@ -27,7 +27,6 @@ public class IndexSearchRowImpl extends IndexRowImpl {
     private final Object[] idxKeys;
 
     /**
-     * TODO
      * If {@code true} then length of {@link #idxKeys} must be equal to length of schema, so use full
      * schema to search. If {@code false} then it's possible to use only part of schema for search. Only first
      */

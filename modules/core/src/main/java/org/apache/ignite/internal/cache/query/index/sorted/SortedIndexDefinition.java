@@ -20,6 +20,7 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexRowComparator;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a definition of sorted index.
@@ -43,9 +44,16 @@ public class SortedIndexDefinition implements IndexDefinition {
     /** Segments. */
     private final int segments;
 
+    /** Table name. */
+    private final String tableName;
+
+    /** Schema name. */
+    private final String schemaName;
+
     /** Constructor. */
     public SortedIndexDefinition(GridCacheContext ctx, String idxName, int segments,
-        SortedIndexSchema schema, IndexRowComparator rowComparator, int inlineSize) {
+        SortedIndexSchema schema, IndexRowComparator rowComparator, int inlineSize,
+        String tableName, String schemaName) {
 
         this.ctx = ctx;
         this.idxName = idxName;
@@ -53,6 +61,8 @@ public class SortedIndexDefinition implements IndexDefinition {
         this.schema = schema;
         this.rowComparator = rowComparator;
         this.inlineSize = inlineSize;
+        this.tableName = tableName;
+        this.schemaName = schemaName;
     }
 
     /** {@inheritDoc} */
@@ -68,6 +78,16 @@ public class SortedIndexDefinition implements IndexDefinition {
     /** {@inheritDoc} */
     @Override public String getCacheName() {
         return ctx.name();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable String getTableName() {
+        return tableName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable String getSchemaName() {
+        return schemaName;
     }
 
     /** */

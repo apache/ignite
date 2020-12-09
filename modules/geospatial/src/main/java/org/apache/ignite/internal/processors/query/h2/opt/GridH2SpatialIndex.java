@@ -163,7 +163,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override public H2CacheRow put(H2CacheRow row) {
+    public H2CacheRow put(H2CacheRow row) {
         assert row instanceof H2CacheRow : "requires key to be at 0";
 
         Lock l = lock.writeLock();
@@ -204,13 +204,6 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         finally {
             l.unlock();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean putx(H2CacheRow row) {
-        H2CacheRow old = put(row);
-
-        return old != null;
     }
 
     /**
@@ -268,7 +261,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(SearchRow row) {
+    public boolean removex(SearchRow row) {
         H2Row old = remove(row);
 
         return old != null;

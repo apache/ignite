@@ -19,12 +19,8 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.HashSet;
-import java.util.List;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.util.typedef.F;
 import org.h2.engine.Session;
 import org.h2.index.IndexType;
 import org.h2.result.SortOrder;
@@ -63,45 +59,6 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
         int mul = getDistributedMultiplier(ses, filters, filter);
 
         return mul * baseCost;
-    }
-
-    /**
-     * @param inlineIdxs Inline index helpers.
-     * @param cfgInlineSize Inline size from index config.
-     * @param maxInlineSize Max inline size from cache config.
-     * @return Inline size.
-     */
-    protected static int computeInlineSize(
-        List<InlineIndexColumn> inlineIdxs,
-        int cfgInlineSize,
-        int maxInlineSize
-    ) {
-        if (cfgInlineSize == 0)
-            return 0;
-
-        if (F.isEmpty(inlineIdxs))
-            return 0;
-
-        if (cfgInlineSize != -1)
-            return Math.min(PageIO.MAX_PAYLOAD_SIZE, cfgInlineSize);
-
-        int propSize = maxInlineSize == -1
-            ? IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE, IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT)
-            : maxInlineSize;
-
-        int size = 0;
-
-        for (InlineIndexColumn idxHelper : inlineIdxs) {
-            if (idxHelper.size() <= 0) {
-                size = propSize;
-                break;
-            }
-
-            // 1 byte type + size
-            size += idxHelper.size() + 1;
-        }
-
-        return Math.min(PageIO.MAX_PAYLOAD_SIZE, size);
     }
 
     /** {@inheritDoc} */

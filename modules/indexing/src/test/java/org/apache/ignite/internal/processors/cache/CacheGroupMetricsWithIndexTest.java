@@ -36,7 +36,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest.BlockingIndexing;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest.BlockingIndexesRebuildTask;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -140,9 +140,10 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
     public void testIndexRebuildCountPartitionsLeft() throws Exception {
         pds = true;
 
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
-
         IgniteEx ignite = startGrid(0);
+
+        BlockingIndexesRebuildTask blockingRebuild = new BlockingIndexesRebuildTask();
+        ignite.context().indexing().setRebuild(blockingRebuild);
 
         ignite.cluster().active(true);
 
@@ -171,9 +172,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         ignite.cluster().active(true);
 
-        BlockingIndexing blockingIndexing = (BlockingIndexing)ignite.context().query().getIndexing();
-
-        while (!blockingIndexing.isBlock(cacheName2) || !blockingIndexing.isBlock(cacheName3))
+        while (!blockingRebuild.isBlock(cacheName2) || !blockingRebuild.isBlock(cacheName3))
             U.sleep(10);
 
         MetricRegistry grpMreg = cacheGroupMetrics(0, GROUP_NAME_2).get2();
@@ -182,13 +181,13 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         assertEquals(parts2 + parts3, indexBuildCountPartitionsLeft.value());
 
-        blockingIndexing.stopBlock(cacheName2);
+        blockingRebuild.stopBlock(cacheName2);
 
         ignite.cache(cacheName2).indexReadyFuture().get(30_000);
 
         assertEquals(parts3, indexBuildCountPartitionsLeft.value());
 
-        blockingIndexing.stopBlock(cacheName3);
+        blockingRebuild.stopBlock(cacheName3);
 
         ignite.cache(cacheName3).indexReadyFuture().get(30_000);
 

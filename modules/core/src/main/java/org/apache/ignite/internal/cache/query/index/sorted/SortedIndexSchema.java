@@ -23,11 +23,10 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
  * Schema for sorted index.
  */
 public interface SortedIndexSchema {
-    /** Describe all index keys. */
+    /**
+     * Describe all index keys.
+     */
     public IndexKeyDefinition[] getKeyDefinitions();
-
-    /** Cache for inlined key types */
-    public IndexKeyDefinition[] getInlineKeys();
 
     /**
      * @param idx index of key within index schema.

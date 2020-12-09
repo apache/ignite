@@ -1,12 +1,28 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.query.h2.index;
 
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.cache.query.index.sorted.NullsOrder;
 import org.apache.ignite.cache.query.index.sorted.Order;
 import org.apache.ignite.cache.query.index.sorted.SortOrder;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -15,28 +31,31 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.table.IndexColumn;
 
-
+/**
+ * Schema for QueryIndex.
+ */
 public class QueryIndexSchema implements SortedIndexSchema {
+    /** Key definitions. */
+    private final IndexKeyDefinition[] idxKeyDefinitions;
 
-    private final IndexKeyDefinition[] indexKeyDefinitions;
+    /** H2 index columns. */
+    private final IndexColumn[] h2IdxColumns;
 
-    private IndexKeyDefinition[] inlineKeys;
-
-    private final IndexColumn[] h2IndexColumns;
-
+    /** Cache descriptor. */
     private final GridH2RowDescriptor cacheDesc;
 
-    protected final GridH2Table table;
+    /** Table. */
+    private final GridH2Table table;
 
+    /** */
     public QueryIndexSchema(GridH2Table table, IndexColumn[] h2IndexColumns) {
         this.table = table;
 
         cacheDesc = table.rowDescriptor();
 
-        indexKeyDefinitions = new IndexKeyDefinition[h2IndexColumns.length];
-        inlineKeys = new IndexKeyDefinition[h2IndexColumns.length];
+        idxKeyDefinitions = new IndexKeyDefinition[h2IndexColumns.length];
 
-        this.h2IndexColumns = h2IndexColumns.clone();
+        this.h2IdxColumns = h2IndexColumns.clone();
 
         for (int i = 0; i < h2IndexColumns.length; ++i) {
             IndexColumn c = h2IndexColumns[i];
@@ -44,28 +63,15 @@ public class QueryIndexSchema implements SortedIndexSchema {
             addKeyDefinition(i, c.column.getType(), c.sortType);
         }
 
-        int inlineKeysCnt = stopInlineIdx != -1 ? stopInlineIdx : h2IndexColumns.length;
-        inlineKeys = new IndexKeyDefinition[inlineKeysCnt];
-        for (int i = 0; i < inlineKeysCnt; i++)
-            inlineKeys[i] = indexKeyDefinitions[i];
-
         IndexColumn.mapColumns(h2IndexColumns, table);
     }
 
-    private int stopInlineIdx = -1;
-
+    /** */
     private void addKeyDefinition(int i, int idxKeyType, int h2SortType) {
-        IndexKeyDefinition def;
-
-        // Stop inline if a key does not support inlining.
-        if (stopInlineIdx < 0 && !InlineIndexKeyTypeRegistry.supportInline(idxKeyType))
-            stopInlineIdx = i;
-
-        def = new IndexKeyDefinition(idxKeyType, stopInlineIdx < 0, getSortOrder(h2SortType));
-
-        indexKeyDefinitions[i] = def;
+        idxKeyDefinitions[i] = new IndexKeyDefinition(idxKeyType, getSortOrder(h2SortType));;
     }
 
+    /** */
     private Order getSortOrder(int sortType) {
         Order o = new Order();
 
@@ -83,16 +89,14 @@ public class QueryIndexSchema implements SortedIndexSchema {
     }
 
 
+    /** {@inheritDoc} */
     @Override public IndexKeyDefinition[] getKeyDefinitions() {
-        return indexKeyDefinitions.clone();
+        return idxKeyDefinitions.clone();
     }
 
-    @Override public IndexKeyDefinition[] getInlineKeys() {
-        return inlineKeys;
-    }
-
+    /** {@inheritDoc} */
     @Override public Object getIndexKey(int idx, CacheDataRow row) {
-        int cacheIdx = h2IndexColumns[idx].column.getColumnId();
+        int cacheIdx = h2IdxColumns[idx].column.getColumnId();
 
         switch (cacheIdx) {
             case QueryUtils.KEY_COL:
@@ -113,12 +117,16 @@ public class QueryIndexSchema implements SortedIndexSchema {
         }
     }
 
-    /**
-     */
+     /** {@inheritDoc} */
     @Override public int partition(CacheDataRow row) {
         Object key = key(row);
 
         return cacheDesc.context().affinity().partition(key);
+    }
+
+    /** */
+    GridH2Table getTable() {
+        return table;
     }
 
     /** */
@@ -136,31 +144,6 @@ public class QueryIndexSchema implements SortedIndexSchema {
 
         return key.value(coctx, false);
     }
-
-/*
-    protected int segmentForRow(GridCacheContext ctx, SearchRow row) {
-        assert row != null;
-
-        if (segmentsCount() == 1 || ctx == null)
-            return 0;
-
-        CacheObject key;
-
-        final Value keyColValue = row.getValue(QueryUtils.KEY_COL);
-
-        assert keyColValue != null;
-
-        final Object o = keyColValue.getObject();
-
-        if (o instanceof CacheObject)
-            key = (CacheObject)o;
-        else
-            key = ctx.toCacheKeyObject(o);
-
-        return segmentForPartition(ctx.affinity().partition(key));
-    }
-*/
-
 
     /** */
     private Object value(CacheDataRow row) {

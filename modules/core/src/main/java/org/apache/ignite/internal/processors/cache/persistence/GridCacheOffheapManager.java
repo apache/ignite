@@ -110,7 +110,6 @@ import org.apache.ignite.internal.processors.cache.tree.PendingRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -1289,7 +1288,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 try {
                     RootPage page = indexStorage.allocateIndex(name);
 
-                    ctx.kernalContext().query().getIndexing().destroyOrphanIndex(
+                    ctx.kernalContext().indexing().destroyOrphanIndex(
+                        ctx.kernalContext(),
                         page,
                         name,
                         grp.groupId(),
@@ -2523,19 +2523,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                 // Partition may not exists before recovery starts in case of recovering counters from RollbackRecord.
                 delegate0.updateInitialCounter(start, delta);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
-            try {
-                CacheDataStore delegate0 = init0(true);
-
-                if (delegate0 != null)
-                    delegate0.setRowCacheCleaner(rowCacheCleaner);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

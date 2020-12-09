@@ -406,9 +406,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
         try {
-            if (isIndexingSpiEnabled())
-                cctx.kernalContext().indexing().store(cctx, newRow, prevRow, prevRowAvailable);
-
             if (qryProcEnabled)
                 qryProc.store(cctx, newRow, prevRow, prevRowAvailable);
         }
@@ -426,19 +423,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     public void remove(KeyCacheObject key, @Nullable CacheDataRow prevRow)
         throws IgniteCheckedException {
-        // TODO
-//        if (!qryProcEnabled)
-//            return; // No-op.
+        if (!qryProcEnabled)
+            return; // No-op.
 
         if (!enterBusy())
             return; // Ignore index update when node is stopping.
 
         try {
-            if (isIndexingSpiEnabled())
-                cctx.kernalContext().indexing().remove(cacheName, prevRow);
-
             // val may be null if we have no previous value. We should not call processor in this case.
-            if (qryProcEnabled && prevRow != null)
+            if (prevRow != null)
                 qryProc.remove(cctx, prevRow);
         }
         finally {

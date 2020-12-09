@@ -23,17 +23,18 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.index.AbstractIndex;
 import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.SingleCursor;
+import org.apache.ignite.cache.query.index.sorted.IndexKey;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.ThreadLocalSchemaHolder;
-import org.apache.ignite.cache.query.index.sorted.IndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
@@ -45,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Sorted index implementation.
  */
-public class InlineIndexImpl implements InlineIndex {
+public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     /** Unique ID. */
     private final UUID id = UUID.randomUUID();
 
@@ -157,8 +158,8 @@ public class InlineIndexImpl implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexSearchRow> findFirstOrLast(boolean firstOrLast, int segment, IndexingQueryFilter filter)
-        throws IgniteCheckedException{
+    @Override public GridCursor<IndexSearchRow> findFirstOrLast(
+        boolean firstOrLast, int segment, IndexingQueryFilter filter) throws IgniteCheckedException {
 
         try {
             ThreadLocalSchemaHolder.setSchema(def.getSchema());
@@ -191,35 +192,43 @@ public class InlineIndexImpl implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public void onUpdate(@Nullable CacheDataRow oldRow, @Nullable CacheDataRow newRow) throws IgniteCheckedException {
+    @Override public void onUpdate(@Nullable CacheDataRow oldRow, @Nullable CacheDataRow newRow,
+        boolean prevRowAvailable) throws IgniteCheckedException {
         try {
+            if (destroyed.get())
+                return;
+
             ThreadLocalSchemaHolder.setSchema(def.getSchema());
 
-            // Delete or clean before Update.
-            if (oldRow != null) {
+            boolean replaced = false;
+
+            // Create or Update.
+            if (newRow != null) {
+                int segment = segmentForRow(newRow);
+
+                IndexRowImpl row0 = new IndexRowImpl(def.getSchema(), newRow);
+
+                if (prevRowAvailable && !rebuildInProgress())
+                    replaced = segments[segment].putx(row0);
+                else {
+                    IndexSearchRow prevRow0 = segments[segment].put(row0);
+
+                    replaced = prevRow0 != null;
+                }
+            }
+
+            // TODO: statistic. Is it used? StatsHolder
+
+            // Delete.
+            if (!replaced && oldRow != null) {
                 int segment = segmentForRow(oldRow);
 
                 segments[segment].remove(new IndexRowImpl(def.getSchema(), oldRow));
             }
 
-            if (newRow == null)
-                return;
-
-            // Create.
-            try {
-                int segment = segmentForRow(newRow);
-
-                segments[segment].put(new IndexRowImpl(def.getSchema(), newRow));
-
-                // TODO: statistic
-
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
         } finally {
             ThreadLocalSchemaHolder.cleanSchema();
         }
-
     }
 
     /** {@inheritDoc} */
@@ -306,7 +315,7 @@ public class InlineIndexImpl implements InlineIndex {
     }
 
     /** */
-    private InlineTreeFilterClosure getFilterClosure(IndexingQueryFilter filter) {
+    public InlineTreeFilterClosure getFilterClosure(IndexingQueryFilter filter) {
         if (filter != null) {
             IndexingQueryCacheFilter f = filter.forCache(def.getContext().cache().name());
             if (f != null)
@@ -328,10 +337,9 @@ public class InlineIndexImpl implements InlineIndex {
                     return true;
             }
             catch (Exception e) {
-                // TODO
-                throw new IgniteException("Failed to check index tree root page existence");
-//                throw new IgniteException("Failed to check index tree root page existence [cacheName=" + cctx.name() +
-//                    ", tblName=" + tblName + ", idxName=" + idxName + ", segment=" + i + ']');
+                throw new IgniteException("Failed to check index tree root page existence [cacheName=" +
+                    def.getCacheName() + ", tblName=" + def.getTableName() + ", idxName=" + def.getIdxName() +
+                    ", segment=" + i + ']');
             }
         }
 
@@ -382,8 +390,7 @@ public class InlineIndexImpl implements InlineIndex {
                     trees,
                     cctx.group().name(),
                     cctx.cache().name(),
-                    "",
-//                    table.getSchema().getName(),  // TODO
+                    def.getSchemaName(),
                     def.getIdxName()
                 );
 
@@ -392,10 +399,6 @@ public class InlineIndexImpl implements InlineIndex {
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
-        }
-        finally {
-//            if (msgLsnr != null)  TODO
-//                ctx.io().removeMessageListener(msgTopic, msgLsnr);
         }
     }
 

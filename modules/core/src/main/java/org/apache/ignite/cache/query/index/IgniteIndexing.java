@@ -18,9 +18,11 @@
 package org.apache.ignite.cache.query.index;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
@@ -30,6 +32,9 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -37,12 +42,10 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.Nullable;
 
-
 /**
  * Implementation of IndexingSpi that tracks all cache indexes.
  */
 public class IgniteIndexing implements IndexingSpi {
-
     /**
      * Register inline IOs for sorted indexes.
      */
@@ -54,9 +57,12 @@ public class IgniteIndexing implements IndexingSpi {
     }
 
     /**
-     * Registry of all indexes. High key is a cache name, lower key is an index name.
+     * Registry of all indexes. High key is a cache name, lower key is an unique index name.
      */
     private final Map<String, Map<String, Index>> cacheToIdx = new ConcurrentHashMap<>();
+
+    /** Exclusive lock for DDL operations. */
+    private final ReentrantReadWriteLock ddlLock = new ReentrantReadWriteLock();
 
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String cacheName, Collection<Object> params,
@@ -67,114 +73,225 @@ public class IgniteIndexing implements IndexingSpi {
     /** {@inheritDoc} */
     @Override public void store(@Nullable String cacheName, Object key, Object val,
         long expirationTime) throws IgniteSpiException {
-
+        throw new IgniteSpiException("Not implemented.");
     }
 
     /** {@inheritDoc} */
-    @Override public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow)
+    @Override public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+        boolean prevRowAvailable)
         throws IgniteSpiException {
-
-        String cacheName = cctx.cache().name();
-        Map<String, Index> indexes = cacheToIdx.get(cacheName);
-
-        if (indexes == null)
-            return;
-
         try {
-            for (Index idx: indexes.values())
-                idx.onUpdate(prevRow, newRow);
+            updateIndexes(cctx.name(), newRow, prevRow, prevRowAvailable);
 
         } catch (IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to update indexes.", e);
+            throw new IgniteSpiException("Failed to store row in cache", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void store(Collection<Index> idxs, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+        boolean prevRowAvailable) throws IgniteSpiException {
+        IgniteCheckedException err = null;
+
+        ddlLock.readLock().lock();
+
+        try {
+            for (Index idx : idxs)
+                err = addToIndex(idx, newRow, prevRow, prevRowAvailable, err);
+
+            if (err != null)
+                throw err;
+
+        } catch (IgniteCheckedException e) {
+            throw new IgniteSpiException("Failed to store row in index", e);
+
+        } finally {
+            ddlLock.readLock().unlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException {
+        throw new IgniteSpiException("Not implemented.");
     }
 
     /** {@inheritDoc} */
     @Override public void remove(String cacheName, @Nullable CacheDataRow prevRow) throws IgniteSpiException {
-        Map<String, Index> indexes = cacheToIdx.get(cacheName);
-
-        if (indexes == null)
-            return;
-
         try {
-            for (Index idx: indexes.values())
-                idx.onUpdate(prevRow, null);
+            updateIndexes(cacheName, null, prevRow, true);
 
         } catch (IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to remove item.", e);
+            throw new IgniteSpiException("Failed to remove row in cache", e);
         }
     }
 
     /** {@inheritDoc} */
     @Override public Index createIndex(IndexFactory factory, IndexDefinition definition) {
-        Index idx = factory.createIndex(definition);
-        String cacheName = definition.getCacheName();
+        ddlLock.writeLock().lock();
 
-        if (!cacheToIdx.containsKey(cacheName))
-            cacheToIdx.put(cacheName, new ConcurrentHashMap<>());
+        try {
+            String cacheName = definition.getCacheName();
 
-        cacheToIdx.get(cacheName).put(idx.name(), idx);
+            cacheToIdx.putIfAbsent(cacheName, new ConcurrentHashMap<>());
 
-        return idx;
+            String uniqIdxName = uniqIdxName(definition);
+
+            // GridQueryProcessor already checked schema operation for index duplication.
+            assert cacheToIdx.get(cacheName).get(uniqIdxName) == null : "Duplicated index name " + uniqIdxName;
+
+            Index idx = factory.createIndex(definition);
+
+            cacheToIdx.get(cacheName).put(uniqIdxName, idx);
+
+            return idx;
+
+        } finally {
+            ddlLock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void removeIndex(String cacheName, String idxName, boolean softDelete) {
-        Map<String, Index> idxs = cacheToIdx.get(cacheName);
+    @Override public void removeIndex(IndexDefinition def, boolean softDelete) {
+        ddlLock.writeLock().lock();
 
-        Index idx = idxs.remove(idxName);
+        try {
+            Map<String, Index> idxs = cacheToIdx.get(def.getCacheName());
 
-        if (idx != null)
-            idx.destroy(softDelete);
+            Index idx = idxs.remove(uniqIdxName(def));
+
+            if (idx != null)
+                idx.destroy(softDelete);
+
+        } finally {
+            ddlLock.writeLock().unlock();
+        }
     }
 
+    /** */
+    private void updateIndexes(String cacheName, CacheDataRow newRow, CacheDataRow prevRow, boolean prevRowAvailable)
+        throws IgniteCheckedException {
+        IgniteCheckedException err = null;
 
+        ddlLock.readLock().lock();
 
+        try {
+            Map<String, Index> indexes = cacheToIdx.get(cacheName);
 
+            if (indexes == null)
+                return;
 
+            for (Index idx: indexes.values())
+                err = addToIndex(idx, newRow, prevRow, prevRowAvailable, err);
 
+        } finally {
+            ddlLock.readLock().unlock();
+        }
 
+        if (err != null)
+            throw err;
+    }
 
+    /** {@inheritDoc} */
+    @Override public void markRebuildIndexesForCache(GridCacheContext cctx, boolean val) {
+        ddlLock.readLock().lock();
 
+        try {
+            Collection<Index> idxs = cacheToIdx.get(cctx.name()).values();
 
+            for (Index idx: idxs)
+                ((AbstractIndex) idx).markIndexRebuild(val);
 
+        } finally {
+            ddlLock.readLock().unlock();
+        }
+    }
 
+    /** {@inheritDoc} */
+    @Override public Collection<Index> getIndexes(GridCacheContext cctx) {
+        Map<String, Index> idxs = cacheToIdx.get(cctx.name());
 
+        if (idxs == null)
+            return Collections.emptyList();
 
+        return idxs.values();
+    }
 
+    /**
+     * Add row to index.
+     * @param idx Index to add row to.
+     * @param row Row to add to index.
+     * @param prevRow Previous row state, if any.
+     * @param prevRowAvailable Whether previous row is available.
+     * @param prevErr Error on index add.
+     */
+    private IgniteCheckedException addToIndex(
+        Index idx, CacheDataRow row, CacheDataRow prevRow, boolean prevRowAvailable, IgniteCheckedException prevErr
+    ) throws IgniteCheckedException {
+        try {
+            idx.onUpdate(prevRow, row, prevRowAvailable);
 
+            return prevErr;
+        }
+        catch (Throwable t) {
+            IgniteSQLException ex = X.cause(t, IgniteSQLException.class);
+
+            if (ex != null && ex.statusCode() == IgniteQueryErrorCode.FIELD_TYPE_MISMATCH) {
+                if (prevErr != null) {
+                    prevErr.addSuppressed(t);
+
+                    return prevErr;
+                }
+                else
+                    return new IgniteCheckedException("Error on add row to index '" + getName() + '\'', t);
+            }
+            else
+                throw t;
+        }
+    }
+
+    /**
+     * @return Unique name of index within cache.
+     */
+    private static String uniqIdxName(IndexDefinition def) {
+        return def.getTableName() == null ? def.getIdxName() : def.getTableName() + "." + def.getIdxName();
+    }
+
+    /** {@inheritDoc} */
     @Override public String getName() {
-        return null;
+        return "IginiteIndexingSpi";
     }
 
+    /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
 
     }
 
+    /** {@inheritDoc} */
     @Override public void onContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException {
 
     }
 
+    /** {@inheritDoc} */
     @Override public void onContextDestroyed() {
 
     }
 
+    /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
 
     }
 
+    /** {@inheritDoc} */
     @Override public void onClientDisconnected(IgniteFuture<?> reconnectFut) {
 
     }
 
+    /** {@inheritDoc} */
     @Override public void onClientReconnected(boolean clusterRestarted) {
 
     }

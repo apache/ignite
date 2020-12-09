@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface IndexDefinition {
     /**
-     * @return Cache context.
+     * @return Cache context or {@code null} if context is not started.
      */
     public @Nullable GridCacheContext getContext();
 
@@ -38,4 +38,14 @@ public interface IndexDefinition {
      * @return Cache name.
      */
     public String getCacheName();
+
+    /**
+     * @return Table name or {@code null} if index does not relate to SQL table.
+     */
+    public @Nullable String getTableName();
+
+    /**
+     * @return Schema name or {@code null} if index does not relate to SQL table.
+     */
+    public @Nullable String getSchemaName();
 }

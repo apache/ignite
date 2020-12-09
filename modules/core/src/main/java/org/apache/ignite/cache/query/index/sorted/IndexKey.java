@@ -17,7 +17,9 @@
 
 package org.apache.ignite.cache.query.index.sorted;
 
-/** Represents a complex index key. */
+/**
+ * Represents a complex index key.
+ */
 public interface IndexKey {
     /**
      * @return underlying keys.

@@ -17,19 +17,38 @@
 
 package org.apache.ignite.internal.managers.indexing;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.cache.query.index.IndexFactory;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.SkipDaemon;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
@@ -42,6 +61,9 @@ import org.jetbrains.annotations.Nullable;
 public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+
+    /** Indexes rebuild job. */
+    private IndexesRebuildTask rebuild = new IndexesRebuildTask();
 
     /**
      * @param ctx  Kernal context.
@@ -82,7 +104,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     }
 
     /**
-     * Writes cache rwo to index.
+     * Writes cache row to index.
      *
      * @throws IgniteCheckedException In case of error.
      */
@@ -95,7 +117,28 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
             throw new IllegalStateException("Failed to write to index (grid is stopping).");
 
         try {
-            getSpi().store(cctx, newRow, prevRow);
+            getSpi().store(cctx, newRow, prevRow, prevRowAvailable);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * Writes cache row to specified indexes.
+     *
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void store(Collection<Index> idxs, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+        boolean prevRowAvailable)
+        throws IgniteCheckedException {
+        assert enabled();
+
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to write to index (grid is stopping).");
+
+        try {
+            getSpi().store(idxs, newRow, prevRow, prevRowAvailable);
         }
         finally {
             busyLock.leaveBusy();
@@ -107,20 +150,73 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      *
      * @param factory Index factory.
      * @param definition Description of an index to create.
+     * @param cacheVisitor Enable to cancel dynamic index populating.
+     */
+    public Index createIndexDynamically(IndexFactory factory, IndexDefinition definition, SchemaIndexCacheVisitor cacheVisitor) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to write to index (grid is stopping).");
+
+        try {
+            Index idx = getSpi().createIndex(factory, definition);
+
+            // Populate index with cache rows.
+            cacheVisitor.visit(idx::putx);
+
+            return idx;
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * Start rebuild of indexes for specified cache.
+     */
+    public IgniteInternalFuture<?> rebuildIndexesForCache(GridCacheContext cctx) {
+        return rebuild.rebuild(cctx);
+    }
+
+    /**
+     * Mark or unmark index for rebuild.
+     */
+    public void markIndexesRebuildForCache(GridCacheContext cctx, boolean val) {
+        getSpi().markRebuildIndexesForCache(cctx, val);
+    }
+
+    /**
+     * Creates a new index.
+     *
+     * @param factory Index factory.
+     * @param definition Description of an index to create.
      */
     public Index createIndex(IndexFactory factory, IndexDefinition definition) {
-        return getSpi().createIndex(factory, definition);
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to write to index (grid is stopping).");
+
+        try {
+            return getSpi().createIndex(factory, definition);
+
+        } finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**
      * Deletes specified index.
      *
-     * @param cacheName Cache name.
-     * @param idxName Index name.
+     * @param def Index definition.
      * @param softDelete Soft delete flag.
      */
-    public void removeIndex(String cacheName, String idxName, boolean softDelete) {
-        getSpi().removeIndex(cacheName, idxName, softDelete);
+    public void removeIndex(IndexDefinition def, boolean softDelete) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to write to index (grid is stopping).");
+
+        try {
+            getSpi().removeIndex(def, softDelete);
+
+        } finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**
@@ -192,5 +288,129 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * Destroy founded index which belongs to stopped cache.
+     *
+     * @param page Root page.
+     * @param indexName Index name.
+     * @param grpId Group id which contains garbage.
+     * @param pageMemory Page memory to work with.
+     * @param removeId Global remove id.
+     * @param reuseList Reuse list where free pages should be stored.
+     * @param mvccEnabled Is mvcc enabled for group or not.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void destroyOrphanIndex(
+        GridKernalContext ctx,
+        RootPage page,
+        String indexName,
+        int grpId,
+        PageMemory pageMemory,
+        final GridAtomicLong removeId,
+        final ReuseList reuseList,
+        boolean mvccEnabled) throws IgniteCheckedException {
+
+        assert ctx.cache().context().database().checkpointLockIsHeldByThread();
+
+        long metaPageId = page.pageId().pageId();
+
+        int inlineSize = getInlineSize(page, grpId, pageMemory);
+
+        String grpName = ctx.cache().cacheGroup(grpId).cacheOrGroupName();
+
+        PageLockListener lockLsnr = ctx.cache().context().diagnostic()
+            .pageLockTracker().createPageLockTracker(grpName + "IndexTree##" + indexName);
+
+        BPlusTree<IndexSearchRow, IndexSearchRow> tree = new BPlusTree<IndexSearchRow, IndexSearchRow>(
+            indexName,
+            grpId,
+            grpName,
+            pageMemory,
+            ctx.cache().context().wal(),
+            removeId,
+            metaPageId,
+            reuseList,
+            AbstractInlineInnerIO.getVersions(inlineSize, mvccEnabled),
+            AbstractInlineLeafIO.getVersions(inlineSize, mvccEnabled),
+            PageIdAllocator.FLAG_IDX,
+            ctx.failure(),
+            lockLsnr
+        ) {
+            @Override protected int compare(BPlusIO io, long pageAddr, int idx, IndexSearchRow row) {
+                throw new AssertionError();
+            }
+
+            @Override public IndexSearchRow getRow(BPlusIO io, long pageAddr, int idx, Object x) {
+                throw new AssertionError();
+            }
+        };
+
+        tree.destroy();
+    }
+
+    /**
+     * @param page Root page.
+     * @param grpId Cache group id.
+     * @param pageMemory Page memory.
+     * @return Inline size.
+     * @throws IgniteCheckedException If something went wrong.
+     */
+    private int getInlineSize(RootPage page, int grpId, PageMemory pageMemory) throws IgniteCheckedException {
+        long metaPageId = page.pageId().pageId();
+
+        final long metaPage = pageMemory.acquirePage(grpId, metaPageId);
+
+        try {
+            long pageAddr = pageMemory.readLock(grpId, metaPageId, metaPage); // Meta can't be removed.
+
+            assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" +
+                U.hexLong(metaPageId) + ']';
+
+            try {
+                BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
+
+                return io.getInlineSize(pageAddr);
+            }
+            finally {
+                pageMemory.readUnlock(grpId, metaPageId, metaPage);
+            }
+        }
+        finally {
+            pageMemory.releasePage(grpId, metaPageId, metaPage);
+        }
+    }
+
+    /**
+     * Collect indexes for rebuild.
+     */
+    public List<Index> collectIndexesForPartialRebuild(GridCacheContext cctx) {
+        Collection<Index> idxs = getSpi().getIndexes(cctx);
+
+        List<Index> toRebuild = new ArrayList<>();
+
+        for (Index idx: idxs) {
+            if (idx instanceof InlineIndex) {
+                InlineIndex idx0 = (InlineIndex)idx;
+
+                if (idx0.isCreated())
+                    toRebuild.add(idx);
+            }
+        }
+
+        return toRebuild;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger getLogger() {
+        return log;
+    }
+
+    /** Set custom rebuild indexes job. For test purposes only. */
+    public void setRebuild(IndexesRebuildTask rebuild) {
+        this.rebuild = rebuild;
     }
 }

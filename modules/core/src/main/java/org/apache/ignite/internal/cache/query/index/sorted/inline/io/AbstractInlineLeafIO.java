@@ -19,8 +19,9 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -78,11 +79,11 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexSearchRow> i
 
         SortedIndexSchema schema = ThreadLocalSchemaHolder.getSchema();
 
-        for (int i = 0; i < schema.getInlineKeys().length; i++) {
+        for (int i = 0; i < schema.getKeyDefinitions().length; i++) {
             try {
                 int maxSize = inlineSize - fieldOff;
 
-                int size = schema.getInlineKeys()[i].getInlineType()
+                int size = InlineIndexKeyTypeRegistry.get(schema.getKeyDefinitions()[i].getIdxType())
                     .put(pageAddr, off + fieldOff, row.getKey(i), maxSize);
 
                 // Inline size has exceeded.
@@ -135,5 +136,20 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexSearchRow> i
     /** {@inheritDoc} */
     @Override public long getLink(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + inlineSize);
+    }
+
+    /**
+     * @param payload Payload size.
+     * @param mvccEnabled Mvcc flag.
+     * @return IOVersions for given payload.
+     */
+    public static IOVersions<? extends BPlusLeafIO<IndexSearchRow>> getVersions(int payload, boolean mvccEnabled) {
+        assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
+
+        // TODO: mvcc
+        if (payload == 0)
+            return mvccEnabled ? null : LeafIO.VERSIONS;
+        else
+            return (IOVersions<BPlusLeafIO<IndexSearchRow>>)PageIO.getLeafVersions((short)(payload - 1), mvccEnabled);
     }
 }

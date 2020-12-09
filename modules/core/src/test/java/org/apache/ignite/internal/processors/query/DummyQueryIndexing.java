@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -26,19 +27,14 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.RootPage;
-import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
-import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -172,19 +168,6 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void destroyOrphanIndex(
-        RootPage page,
-        String idxName,
-        int grpId,
-        PageMemory pageMemory,
-        GridAtomicLong rmvId,
-        ReuseList reuseList,
-        boolean mvccEnabled
-    ) throws IgniteCheckedException {
-
-    }
-
-    /** {@inheritDoc} */
     @Override public UpdateSourceIterator<?> executeUpdateOnDataNodeTransactional(
         GridCacheContext<?, ?> cctx,
         int[] ids,
@@ -244,12 +227,7 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void markAsRebuildNeeded(GridCacheContext cctx) {
+    @Override public void markAsRebuildNeeded(GridCacheContext cctx, boolean val) {
 
     }
 
@@ -294,11 +272,6 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGrpId) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public @Nullable GridCacheContextInfo registeredCacheInfo(String cacheName) {
         return null;
     }
@@ -331,6 +304,16 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         String schemaNamePtrn,
         String tblNamePtrn,
         String colNamePtrn) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long indexSize(String schemaName, String tblName, String idxName) throws IgniteCheckedException {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Integer> secondaryIndexesInlineSize() {
         return null;
     }
 }

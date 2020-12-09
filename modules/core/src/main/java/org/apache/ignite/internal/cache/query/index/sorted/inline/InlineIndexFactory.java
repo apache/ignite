@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.cache.query.index.IndexFactory;
@@ -31,12 +30,12 @@ import org.apache.ignite.internal.processors.cache.persistence.RootPage;
  * Factory to create {@link InlineIndex}.
  */
 public class InlineIndexFactory implements IndexFactory {
-    /** */
-    private final IgniteLogger log;
+    /** Instance of factory. */
+    public static final InlineIndexFactory INSTANCE = new InlineIndexFactory();
 
-    /** */
-    public InlineIndexFactory(IgniteLogger log) {
-        this.log = log;
+    /** No-op constructor. */
+    private InlineIndexFactory() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -44,7 +43,7 @@ public class InlineIndexFactory implements IndexFactory {
         SortedIndexDefinition sdef = (SortedIndexDefinition) def;
 
         InlineIndexTree[] trees = new InlineIndexTree[sdef.getSegments()];
-        InlineRecommender recommender = new InlineRecommender(log, sdef);
+        InlineRecommender recommender = new InlineRecommender(sdef);
 
         try {
             for (int i = 0; i < sdef.getSegments(); ++i) {
@@ -59,7 +58,6 @@ public class InlineIndexFactory implements IndexFactory {
                 } finally {
                     db.checkpointReadUnlock();
                 }
-
             }
 
             return new InlineIndexImpl(sdef, trees);

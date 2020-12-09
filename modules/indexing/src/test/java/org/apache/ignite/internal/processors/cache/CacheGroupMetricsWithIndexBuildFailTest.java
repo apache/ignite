@@ -117,9 +117,11 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         idxPaths.forEach(idxPath -> assertTrue(U.delete(idxPath)));
 
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
+        BlockingIndexesRebuildTask blkRebuild = new BlockingIndexesRebuildTask();
 
         IgniteEx ignite = startGrid(0);
+
+        ignite.context().indexing().setRebuild(blkRebuild);
 
         ignite.cluster().active(true);
 
@@ -131,7 +133,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         failIndexRebuild.set(true);
 
-        ((AbstractIndexingCommonTest.BlockingIndexing)ignite.context().query().getIndexing()).stopBlock(cacheName1);
+        blkRebuild.stopBlock(cacheName1);
 
         GridTestUtils.assertThrows(log, () -> ignite.cache(cacheName1).indexReadyFuture().get(30_000),
             IgniteSpiException.class, "Test exception.");
@@ -140,7 +142,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         failIndexRebuild.set(false);
 
-        ((AbstractIndexingCommonTest.BlockingIndexing)ignite.context().query().getIndexing()).stopBlock(cacheName2);
+        blkRebuild.stopBlock(cacheName2);
 
         ignite.cache(cacheName2).indexReadyFuture().get(30_000);
 

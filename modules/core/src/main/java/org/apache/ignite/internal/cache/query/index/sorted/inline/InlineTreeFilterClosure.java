@@ -27,8 +27,6 @@ import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
-// TODO: H2TreeFilterClosure, MVCC
-
 /**
  * Reopresents filter that allow query only primary partitions.
  */
@@ -36,6 +34,7 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexSe
     /** */
     private final IndexingQueryCacheFilter filter;
 
+    /** Constructor. */
     public InlineTreeFilterClosure(IndexingQueryCacheFilter filter) {
         this.filter = filter;
     }

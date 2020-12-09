@@ -21,11 +21,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRowImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/** */
+/**
+ * Write to a log recommendation for inline size.
+ */
 public class InlineRecommender {
     /** @see #IGNITE_THROTTLE_INLINE_SIZE_CALCULATION */
     public static final int DFLT_THROTTLE_INLINE_SIZE_CALCULATION = 1_000;
@@ -44,19 +48,22 @@ public class InlineRecommender {
             DFLT_THROTTLE_INLINE_SIZE_CALCULATION);
 
     /** Keep max calculated inline size for current index. */
-    // TODO: share it between segments.
     private final AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
+    /** Ignite logger. */
     private final IgniteLogger log;
 
+    /** Cache name. */
     private final String cacheName;
 
+    /** Index name. */
     private final String idxName;
 
-    public InlineRecommender(IgniteLogger log, SortedIndexDefinition def) {
+    /** Constructor. */
+    public InlineRecommender(SortedIndexDefinition def) {
         cacheName = def.getContext().name();
         idxName = def.getIdxName();
-        this.log = log;
+        log = def.getContext().kernalContext().indexing().getLogger();
     }
 
     /**
@@ -65,9 +72,9 @@ public class InlineRecommender {
      */
     @SuppressWarnings({"ConditionalBreakInInfiniteLoop", "IfMayBeConditional"})
     public void recommend(IndexRow row, int currInlineSize) {
-        //TODO Do the check only for put operations.
-//        if (!(row instanceof H2CacheRow))
-//            return;
+        // Do the check only for put operations.
+        if (row instanceof IndexSearchRowImpl)
+            return;
 
         Long invokeCnt = inlineSizeCalculationCntr.get();
 
@@ -80,8 +87,14 @@ public class InlineRecommender {
 
         int newSize = 0;
 
-        for (int i = 0; i < row.getSchema().getInlineKeys().length; i++)
-            newSize += row.getSchema().getInlineKeys()[i].getInlineType().inlineSize(row.getKey(i));
+        for (int i = 0; i < row.getSchema().getKeyDefinitions().length; i++) {
+            IndexKeyDefinition keyDef = row.getSchema().getKeyDefinitions()[i];
+
+            if (!InlineIndexKeyTypeRegistry.supportInline(keyDef.getIdxType()))
+                break;
+
+            newSize += InlineIndexKeyTypeRegistry.get(keyDef.getIdxType()).inlineSize(row.getKey(i));
+        }
 
         if (newSize > currInlineSize) {
             int oldSize;
@@ -96,33 +109,19 @@ public class InlineRecommender {
                     break;
             }
 
-//            String cols = colNames.stream().collect(Collectors.joining(", ", "(", ")"));
-//
-//            String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
-            String idxType = "SECONDARY";
+            String recommendation = "For PK index: set system property "
+                    + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " with recommended size " +
+                    "(be aware it will be used by default for all indexes without explicit inline size)";
 
-            String recommendation;
-
-            // TODO
-//            if (pk || affinityKey) {
-//                recommendation = "set system property "
-//                    + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " with recommended size " +
-//                    "(be aware it will be used by default for all indexes without explicit inline size)";
-//            }
-//            else {
-                recommendation = "use INLINE_SIZE option for CREATE INDEX command, " +
+            recommendation += ". For secondary index use INLINE_SIZE option for CREATE INDEX command, " +
                     "QuerySqlField.inlineSize for annotated classes, or QueryIndex.inlineSize for explicit " +
                     "QueryEntity configuration";
-//            }
 
             String warn = "Indexed columns of a row cannot be fully inlined into index " +
                 "what may lead to slowdown due to additional data page reads, increase index inline size if needed " +
                 "(" + recommendation + ") " +
                 "[cacheName=" + cacheName +
                 ", idxName=" + idxName +
-                // TODO: cols for query definition?
-//                ", idxCols=" + idxCols +
-                ", idxType=" + idxType +
                 ", curSize=" + currInlineSize +
                 ", recommendedInlineSize=" + newSize + "]";
 

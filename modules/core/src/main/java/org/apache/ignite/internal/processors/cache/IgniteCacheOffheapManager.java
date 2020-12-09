@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -1075,13 +1074,6 @@ public interface IgniteCacheOffheapManager {
          * @param delta Delta.
          */
         public void updateInitialCounter(long start, long delta);
-
-        /**
-         * Inject rows cache cleaner.
-         *
-         * @param rowCacheCleaner Rows cache cleaner.
-         */
-        public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner);
 
         /**
          * Return PendingTree for data store.

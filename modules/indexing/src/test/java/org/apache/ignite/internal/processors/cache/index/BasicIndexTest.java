@@ -63,7 +63,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanInde
 /**
  * A set of basic tests for caches with indexes.
  */
- public class BasicIndexTest extends AbstractIndexingCommonTest {
+public class BasicIndexTest extends AbstractIndexingCommonTest {
     /** Default client name. */
     private static final String CLIENT_NAME = "client";
 
@@ -231,7 +231,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanInde
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
 
-            inlineSize = 100;
+            inlineSize = i;
 
             startGridsMultiThreaded(gridCount());
 
@@ -741,14 +741,14 @@ import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanInde
 
         IgniteCache<Object, Object> jcache = ig0.cache(cacheName);
 
-//        assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "LANG"));
-//
-//        assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "LAST_NAME"));
+        assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "LANG"));
 
-//        assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "FIRST_NAME"));
-//
-//        assertTrue(checkIdxUsed(qryProc, PK_IDX_NAME, TEST_TBL_NAME, "FIRST_NAME",
-//            "LAST_NAME", "LANG", "ADDRESS"));
+        assertFalse(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "LAST_NAME"));
+
+        assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "FIRST_NAME"));
+
+        assertTrue(checkIdxUsed(qryProc, PK_IDX_NAME, TEST_TBL_NAME, "FIRST_NAME",
+            "LAST_NAME", "LANG", "ADDRESS"));
 
         assertTrue(checkIdxAlreadyExistLog(
             qryProc, "idx1", TEST_TBL_NAME, "FIRST_NAME", "LAST_NAME"));

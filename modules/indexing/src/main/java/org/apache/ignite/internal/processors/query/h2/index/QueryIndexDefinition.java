@@ -1,9 +1,27 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.query.h2.index;
 
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Define H2 query index.
@@ -13,21 +31,26 @@ public class QueryIndexDefinition extends SortedIndexDefinition {
     private final QueryIndexSchema schema;
 
     /** */
-    public QueryIndexDefinition(GridCacheContext ctx, String idxName, int segments,
-        QueryIndexSchema schema, int cfgInlineSize) {
-        super(ctx, idxName, segments, schema, new H2RowComparator(schema.table), cfgInlineSize);
+    public QueryIndexDefinition(GridH2Table tbl, String idxName, QueryIndexSchema schema, int cfgInlineSize) {
+        super(tbl.cacheContext(), idxName, tbl.rowDescriptor().context().config().getQueryParallelism(),
+            schema, new H2RowComparator(schema.getTable()), cfgInlineSize, tbl.getName(), tbl.getSchema().getName());
 
         this.schema = schema;
     }
 
     /** {@inheritDoc} */
     @Override public String getTreeName() {
-        GridQueryTypeDescriptor typeDesc = schema.table.rowDescriptor().type();
+        GridQueryTypeDescriptor typeDesc = schema.getTable().rowDescriptor().type();
 
         int typeId = getContext().binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
 
-        // TODO: H2Tree in treeName, can change it?
-        return BPlusTree.treeName((schema.table.rowDescriptor() == null ? "" : typeId + "_") + getIdxName(),
+        // Legacy in treeName from H2Tree.
+        return BPlusTree.treeName((schema.getTable().rowDescriptor() == null ? "" : typeId + "_") + getIdxName(),
             "H2Tree");
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable String getTableName() {
+        return schema.getTable().getName();
     }
 }

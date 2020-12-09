@@ -40,8 +40,8 @@ public class DefaultIndexRowComparator implements IndexRowComparator {
 
     /** */
     private int compare(Object o1, Object o2) {
-        assert o1 instanceof Comparable: o1;
-        assert o2 instanceof Comparable: o2;
+        assert o1 instanceof Comparable : o1;
+        assert o2 instanceof Comparable : o2;
 
         assert haveCommonComparableSuperclass(o1.getClass(), o2.getClass());
 
@@ -57,13 +57,13 @@ public class DefaultIndexRowComparator implements IndexRowComparator {
             do {
                 baseClazz0 = clazz0;
                 clazz0 = clazz0.getSuperclass();
-            } while(Comparable.class.isAssignableFrom(clazz0));
+            } while (Comparable.class.isAssignableFrom(clazz0));
 
             Class<?> baseClazz1;
             do {
                 baseClazz1 = clazz1;
                 clazz1 = clazz1.getSuperclass();
-            } while(Comparable.class.isAssignableFrom(clazz1));
+            } while (Comparable.class.isAssignableFrom(clazz1));
 
             return baseClazz0 == baseClazz1;
         } else

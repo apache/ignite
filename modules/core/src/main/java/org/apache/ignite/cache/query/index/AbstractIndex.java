@@ -15,16 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.cache.query.index;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 
 /**
- * Row cache cleaner is used by page memory manager to remove updated / evicted links from rows cache.
+ * Abstract class for all Index implementations.
  */
-public interface GridQueryRowCacheCleaner {
+public abstract class AbstractIndex implements Index {
+    /** Whether index is rebuilding now. */
+    private final AtomicBoolean rebuildInProgress = new AtomicBoolean(false);
+
     /**
-     * Remove row by link.
-     *
-     * @param link Link to remove.
+     * @param val Mark or unmark index to rebuild.
      */
-    void remove(long link);
+    public void markIndexRebuild(boolean val) {
+        rebuildInProgress.compareAndSet(val ? FALSE : TRUE, val ? TRUE : FALSE);
+    }
+
+    /**
+     * @return Whether index is rebuilding now.
+     */
+    public boolean rebuildInProgress() {
+        return rebuildInProgress.get();
+    }
 }

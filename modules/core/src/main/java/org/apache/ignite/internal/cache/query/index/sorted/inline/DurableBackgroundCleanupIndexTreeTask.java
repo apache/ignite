@@ -109,7 +109,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                     String treeName = "deletedTree_" + i + "_" + shortName();
 
                     InlineIndexTree tree = new InlineIndexTree(
-                        null, null, treeName, cctx.offheap().reuseListForIndex(treeName),
+                        null, cctx.group(), treeName, cctx.offheap().reuseListForIndex(treeName),
                         rootPage, false, 0, null);
 
                     trees0.add(tree);

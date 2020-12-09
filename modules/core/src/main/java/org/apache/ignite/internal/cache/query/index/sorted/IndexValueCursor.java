@@ -19,7 +19,6 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.util.lang.GridCursor;
 

@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.BooleanInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.ByteInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.BytesInlineIndexKeyType;
@@ -38,7 +39,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.StringInl
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.TimeInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.TimestampInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.UuidInlineIndexKeyType;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
 
 /**
  * Provide mapping for java types and {@link IndexKeyTypes} that supports inlining.
@@ -51,7 +51,7 @@ public class InlineIndexKeyTypeRegistry {
     private static final Map<Integer, InlineIndexKeyType> typeMapping = new HashMap<>();
 
     /** Object key type does not map to known java type. */
-    private static final  ObjectHashInlineIndexKeyType objectType = new ObjectHashInlineIndexKeyType();
+    private static final ObjectHashInlineIndexKeyType objectType = new ObjectHashInlineIndexKeyType();
 
     static {
         classMapping.put(Boolean.class, new BooleanInlineIndexKeyType());
@@ -108,5 +108,12 @@ public class InlineIndexKeyTypeRegistry {
             throw new IgniteException("Type does not support inlining: " + type);
 
         return indexKeyType;
+    }
+
+    /**
+     * Validates that specified type and specified class are the same InlineIndexKeyType.
+     */
+    public static boolean validate(int type, Class<?> clazz) {
+        return typeMapping.get(type) == classMapping.get(clazz);
     }
 }

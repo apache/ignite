@@ -98,7 +98,6 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccMinSearc
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccSnapshotSearchRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccTreeClosure;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -3062,11 +3061,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public RowStore rowStore() {
             return rowStore;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
-            rowStore().setRowCacheCleaner(rowCacheCleaner);
         }
 
         /**

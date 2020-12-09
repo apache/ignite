@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.Index;
@@ -43,6 +44,7 @@ import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Information about table in database.
@@ -229,7 +231,7 @@ public class H2TableDescriptor {
         if (hashIdx != null)
             idxs.add(hashIdx);
 
-//        // Add primary key index.
+        // Add primary key index.
         Index pkIdx = idx.createSortedIndex(
             PK_IDX_NAME,
             tbl,
@@ -237,7 +239,8 @@ public class H2TableDescriptor {
             false,
             unwrappedKeyAndAffinityCols,
             wrappedKeyCols,
-            -1
+            -1,
+            null
         );
 
         idxs.add(pkIdx);
@@ -300,7 +303,8 @@ public class H2TableDescriptor {
                     true,
                     colsWithUnwrappedKey,
                     cols,
-                    -1)
+                    -1,
+                    null)
                 );
             }
         }
@@ -384,7 +388,7 @@ public class H2TableDescriptor {
         ArrayList<GridH2IndexBase> res = new ArrayList<>();
 
         for (GridQueryIndexDescriptor idxDesc : type.indexes().values()) {
-            GridH2IndexBase idx = createUserIndex(idxDesc);
+            GridH2IndexBase idx = createUserIndex(idxDesc, null);
 
             res.add(idx);
         }
@@ -396,10 +400,11 @@ public class H2TableDescriptor {
      * Create user index.
      *
      * @param idxDesc Index descriptor.
+     * @param cacheVisitor Cache visitor.
      * @return Index.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
-    public GridH2IndexBase createUserIndex(GridQueryIndexDescriptor idxDesc) {
+    public GridH2IndexBase createUserIndex(GridQueryIndexDescriptor idxDesc, @Nullable SchemaIndexCacheVisitor cacheVisitor) {
         IndexColumn keyCol = tbl.indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
         IndexColumn affCol = tbl.getAffinityKeyColumn();
 
@@ -430,7 +435,8 @@ public class H2TableDescriptor {
                 false,
                 colsWithUnwrappedKey,
                 cols,
-                idxDesc.inlineSize()
+                idxDesc.inlineSize(),
+                cacheVisitor
             );
         }
         else if (idxDesc.type() == QueryIndexType.GEOSPATIAL)

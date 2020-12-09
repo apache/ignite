@@ -48,12 +48,14 @@ import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -605,9 +607,9 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
      * @throws Exception If failed.
      */
     private IgniteEx ignitionStart(IgniteConfiguration cfg, final CountDownLatch latch) throws Exception {
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
-
         IgniteEx node = startGrid(cfg);
+
+        node.context().indexing().setRebuild(new BlockingIndexesRebuildTask());
 
         if (latch != null) {
             node.context().discovery().setCustomEventListener(SchemaFinishDiscoveryMessage.class,
@@ -628,12 +630,13 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
     /**
      * Blocking indexing processor.
      */
-    private static class BlockingIndexing extends IgniteH2Indexing {
+    private static class BlockingIndexesRebuildTask extends IndexesRebuildTask {
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
-            awaitIndexing(ctx.localNodeId());
+        @Override public void startRebuild(
+            GridCacheContext cctx, GridFutureAdapter<Void> fut, SchemaIndexCacheVisitorClosure clo) {
+            awaitIndexing(cctx.localNodeId());
 
-            return super.rebuildIndexesFromHash(cctx);
+            super.startRebuild(cctx, fut, clo);
         }
     }
 }

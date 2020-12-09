@@ -360,23 +360,25 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         idxPaths.forEach(idxPath -> assertTrue(U.delete(idxPath)));
 
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
+        BlockingIndexesRebuildTask blkRebuild = new BlockingIndexesRebuildTask();
 
         srv = startGrid(getConfiguration());
+
+        srv.context().indexing().setRebuild(blkRebuild);
 
         srv.cluster().active(true);
 
         checkIndexRebuild(cacheName1, true);
         checkIndexRebuild(cacheName2, true);
 
-        ((BlockingIndexing)srv.context().query().getIndexing()).stopBlock(cacheSqlName1);
+        blkRebuild.stopBlock(cacheSqlName1);
 
         srv.cache(cacheSqlName1).indexReadyFuture().get(30_000);
 
         checkIndexRebuild(cacheName1, false);
         checkIndexRebuild(cacheName2, true);
 
-        ((BlockingIndexing)srv.context().query().getIndexing()).stopBlock(cacheSqlName2);
+        blkRebuild.stopBlock(cacheSqlName2);
 
         srv.cache(cacheSqlName2).indexReadyFuture().get(30_000);
 

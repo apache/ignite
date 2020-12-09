@@ -18,41 +18,34 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.cache.query.index.sorted.Order;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 
+/**
+ * Defines IndexKey.
+ */
 public class IndexKeyDefinition {
-
-    // TODO: Nullable, as may skip inlining due to previous keys.
-    private InlineIndexKeyType inlineType;
-
+    /** Index type. */
     private final int idxType;
 
+    /** Order. */
     private final Order order;
 
-    public IndexKeyDefinition(int idxType, boolean inline) {
-        this(idxType, inline, Order.DEFAULT);
+    /** Constructor. */
+    public IndexKeyDefinition(int idxType) {
+        this(idxType, Order.DFLT);
     }
 
-    public IndexKeyDefinition(int idxType, boolean inline, Order order) {
+    /** Constructor. */
+    public IndexKeyDefinition(int idxType, Order order) {
         this.idxType = idxType;
         this.order = order;
-
-        if (inline) {
-            assert InlineIndexKeyTypeRegistry.supportInline(idxType): idxType;
-
-            inlineType = InlineIndexKeyTypeRegistry.get(idxType);
-        }
     }
 
-    public InlineIndexKeyType getInlineType() {
-        return inlineType;
-    }
-
+    /** */
     public Order getOrder() {
         return order;
     }
 
+    /** */
     public int getIdxType() {
         return idxType;
     }

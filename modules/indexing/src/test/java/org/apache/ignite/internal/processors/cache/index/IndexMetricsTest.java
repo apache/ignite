@@ -137,9 +137,11 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         idxPaths.forEach(idxPath -> assertTrue(U.delete(idxPath)));
 
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
+        BlockingIndexesRebuildTask blkRebuild = new BlockingIndexesRebuildTask();
 
         n = startGrid(0);
+
+        n.context().indexing().setRebuild(blkRebuild);
 
         BooleanMetric idxRebuildInProgress1 = indexRebuildMetric(n, cacheName1, "IsIndexRebuildInProgress");
         BooleanMetric idxRebuildInProgress2 = indexRebuildMetric(n, cacheName2, "IsIndexRebuildInProgress");
@@ -204,7 +206,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         assertEquals(0, idxRebuildKeyProcessedCache2);
         assertEquals(0, idxRebuildKeyProcessedCluster);
 
-        ((BlockingIndexing)n.context().query().getIndexing()).stopBlock(cacheName1);
+        blkRebuild.stopBlock(cacheName1);
 
         n.cache(cacheName1).indexReadyFuture().get(30_000);
 
@@ -216,7 +218,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         assertEquals(0, idxRebuildKeyProcessedCache2);
         assertEquals(0, idxRebuildKeyProcessedCluster);
 
-        ((BlockingIndexing)n.context().query().getIndexing()).stopBlock(cacheName2);
+        blkRebuild.stopBlock(cacheName2);
 
         n.cache(cacheName2).indexReadyFuture().get(30_000);
 

@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.query.h2.opt.join;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 
 import static java.util.Collections.emptyIterator;
 
@@ -47,7 +47,7 @@ public class RangeSource {
     private final int segment;
 
     /** */
-    private final BPlusTree.TreeRowClosure<H2Row, H2Row> filter;
+    private final IndexingQueryFilter filter;
 
     /** Iterator. */
     private Iterator<H2Row> iter = emptyIterator();
@@ -61,7 +61,7 @@ public class RangeSource {
         H2TreeIndex idx,
         Iterable<GridH2RowRangeBounds> bounds,
         int segment,
-        BPlusTree.TreeRowClosure<H2Row, H2Row> filter
+        IndexingQueryFilter filter
     ) {
         this.idx = idx;
         this.segment = segment;

@@ -81,30 +81,6 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
     }
 
     /**
-     * Puts row.
-     *
-     * @param row Row.
-     * @return Existing row or {@code null}.
-     */
-    public abstract H2CacheRow put(H2CacheRow row);
-
-    /**
-     * Puts row.
-     *
-     * @param row Row.
-     * @return {@code True} if existing row row has been replaced.
-     */
-    public abstract boolean putx(H2CacheRow row);
-
-    /**
-     * Removes row from index.
-     *
-     * @param row Row.
-     * @return {@code True} if row has been removed.
-     */
-    public abstract boolean removex(SearchRow row);
-
-    /**
      * @param ses Session.
      * @param filters All joined table filters.
      * @param filter Current filter.

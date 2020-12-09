@@ -63,6 +63,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -180,6 +181,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** */
     private final @Nullable GridQueryIndexing idx;
 
+    /** */
+    private final GridIndexingManager idxMng;
+
     /** Value object context. */
     private final CacheQueryObjectValueContext valCtx;
 
@@ -251,6 +255,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
 
         valCtx = new CacheQueryObjectValueContext(ctx);
+
+        idxMng = ctx.indexing();
 
         ioLsnr = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
@@ -1873,7 +1879,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName);
 
         try {
-            // TODO:
             if (op instanceof SchemaIndexCreateOperation) {
                 SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
 
@@ -2286,11 +2291,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      */
-    public void markAsRebuildNeeded(GridCacheContext cctx) {
+    public void markAsRebuildNeeded(GridCacheContext cctx, boolean val) {
         if (rebuildIsMeaningless(cctx))
             return;
 
-        idx.markAsRebuildNeeded(cctx);
+        idxMng.markIndexesRebuildForCache(cctx, val);
+
+        idx.markAsRebuildNeeded(cctx, val);
     }
 
     /**
@@ -2359,7 +2366,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      */
     private IgniteInternalFuture<?> rebuildIndexesFromHash0(GridCacheContext<?, ?> cctx) {
-        IgniteInternalFuture<?> idxFut = idx.rebuildIndexesFromHash(cctx);
+        IgniteInternalFuture<?> idxFut = idxMng.rebuildIndexesForCache(cctx);
 
         return chainIndexRebuildFuture(idxFut, cctx);
     }
@@ -2462,8 +2469,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 false);
 
             if (prevValDesc != desc) {
-                if (prevValDesc != null)
+                if (prevValDesc != null) {
+                    idxMng.remove(cacheName, prevRow);
+
                     idx.remove(cctx, prevValDesc, prevRow);
+                }
 
                 // Row has already been removed from another table indexes
                 prevRow = null;
@@ -2488,6 +2498,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             return;
         }
+
+        idxMng.store(cctx, newRow, prevRow, prevRowAvailable);
 
         idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
     }
@@ -3249,6 +3261,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Remove [cacheName=" + cctx.name() + ", key=" + row.key() + ", val=" + row.value() + "]");
+
+        idxMng.remove(cctx.name(), row);
 
         if (idx == null)
             return;

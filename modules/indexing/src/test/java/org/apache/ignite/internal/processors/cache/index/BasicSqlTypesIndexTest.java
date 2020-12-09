@@ -199,8 +199,8 @@ public class BasicSqlTypesIndexTest extends AbstractIndexingCommonTest {
         String idxTypeStr = "REAL";
         Class<Float> idxCls = Float.class;
 
-//        createPopulateAndVerify(idxTypeStr, idxCls, Float::compareTo, PK, "BACKUPS=1");
-//        createPopulateAndVerify(idxTypeStr, idxCls, Float::compareTo, PK, "BACKUPS=1,AFFINITY_KEY=idxVal");
+        createPopulateAndVerify(idxTypeStr, idxCls, Float::compareTo, PK, "BACKUPS=1");
+        createPopulateAndVerify(idxTypeStr, idxCls, Float::compareTo, PK, "BACKUPS=1,AFFINITY_KEY=idxVal");
         createPopulateAndVerify(idxTypeStr, idxCls, Float::compareTo, SECONDARY_DESC, "BACKUPS=1");
         createPopulateAndVerify(idxTypeStr, idxCls, Float::compareTo, SECONDARY_ASC, "BACKUPS=1");
     }

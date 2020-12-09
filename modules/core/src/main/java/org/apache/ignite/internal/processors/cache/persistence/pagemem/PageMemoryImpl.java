@@ -72,7 +72,6 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
@@ -80,7 +79,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingP
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
-import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -2156,8 +2154,6 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (PageHeader.isAcquired(absPtr))
                 return false;
 
-            clearRowCache(fullPageId, absPtr);
-
             if (isDirty(absPtr)) {
                 CheckpointPages checkpointPages = this.checkpointPages;
                 // Can evict a dirty page only if should be written by a checkpoint.
@@ -2190,44 +2186,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 // Page was not modified, ok to evict.
                 return true;
-            }
-        }
-
-        /**
-         * @param fullPageId Full page ID to remove all links placed on the page from row cache.
-         * @param absPtr Absolute pointer of the page to evict.
-         * @throws IgniteCheckedException On error.
-         */
-        private void clearRowCache(FullPageId fullPageId, long absPtr) throws IgniteCheckedException {
-            assert writeLock().isHeldByCurrentThread();
-
-            if (ctx.kernalContext().query() == null || !ctx.kernalContext().query().moduleEnabled())
-                return;
-
-            long pageAddr = PageMemoryImpl.this.readLock(absPtr, fullPageId.pageId(), true, false);
-
-            try {
-                if (PageIO.getType(pageAddr) != PageIO.T_DATA)
-                    return;
-
-                final GridQueryRowCacheCleaner cleaner = ctx.kernalContext().query()
-                    .getIndexing().rowCacheCleaner(fullPageId.groupId());
-
-                if (cleaner == null)
-                    return;
-
-                DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
-
-                io.forAllItems(pageAddr, new DataPageIO.CC<Void>() {
-                    @Override public Void apply(long link) {
-                        cleaner.remove(link);
-
-                        return null;
-                    }
-                });
-            }
-            finally {
-                readUnlockPage(absPtr);
             }
         }
 

@@ -20,14 +20,14 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.query.index.sorted.SortOrder;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.ThreadLocalSchemaHolder;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
-import org.apache.ignite.cache.query.index.sorted.SortOrder;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -119,10 +119,8 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
                 upgradeMetaPage(inlineObjSupported);
 
         } else {
-            // TODO: check computeInlineSize todos
             inlineSize = computeInlineSize(
-                def.getSchema().getInlineKeys(), configuredInlineSize, grp.config().getSqlIndexMaxInlineSize());
-
+                def.getSchema().getKeyDefinitions(), configuredInlineSize, grp.config().getSqlIndexMaxInlineSize());
         }
 
         if (inlineSize == 0)
@@ -132,7 +130,6 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
                 // -1 is required as payload starts with 1, and indexes in list of IOs are with 0.
                 (IOVersions<BPlusInnerIO<IndexSearchRow>>) PageIO.getInnerVersions(inlineSize - 1, false),
                 (IOVersions<BPlusLeafIO<IndexSearchRow>>) PageIO.getLeafVersions(inlineSize - 1, false));
-
 
         initTree(initNew, inlineSize);
 
@@ -146,6 +143,9 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
         throws IgniteCheckedException {
 
         int searchKeysLength = row.getSearchKeysCount();
+
+        if (inlineSize == 0)
+            return compareFullRows(getRow(io, pageAddr, idx), row, 0, searchKeysLength);
 
         SortedIndexSchema schema = def.getSchema();
 
@@ -165,7 +165,7 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
                     return 0;
 
                 // Other keys are not inlined. Should compare as rows.
-                if (i >= schema.getInlineKeys().length) {
+                if (i >= schema.getKeyDefinitions().length) {
                     lastIdxUsed = i;
                     break;
                 }
@@ -174,17 +174,19 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
 
                 int off = io.offset(idx);
 
-                // TODO: Put comparator there. NULLs, ASC / DESC, ignore case
+                IndexKeyDefinition keyDef = schema.getKeyDefinitions()[i];
 
-                InlineIndexKeyType keyType = schema.getInlineKeys()[i].getInlineType();
-
-                int schemaType = keyType.type();
-                int searchType = InlineIndexKeyTypeRegistry.get(row.getKey(i).getClass()).type();
+                if (!InlineIndexKeyTypeRegistry.supportInline(keyDef.getIdxType())) {
+                    lastIdxUsed = i;
+                    break;
+                }
 
                 int cmp = COMPARE_UNSUPPORTED;
 
-                // TODO: by default do not compare different types.
-                if (schemaType == searchType)
+                InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(keyDef.getIdxType());
+
+                // By default do not compare different types.
+                if (InlineIndexKeyTypeRegistry.validate(keyDef.getIdxType(), row.getKey(i).getClass()))
                     cmp = keyType.compare(pageAddr, off + fieldOff, maxSize, row.getKey(i));
 
                 // Can't compare as inlined bytes are not enough for comparation.
@@ -194,7 +196,6 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
                 }
 
                 // Try compare stored values for inlined keys with different approach?
-                // TODO: looks unclear
                 if (cmp == COMPARE_UNSUPPORTED)
                     cmp = def.getRowComparator().compareKey(
                         pageAddr, off + fieldOff, maxSize, row.getKey(i), keyType.type());
@@ -225,6 +226,23 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
                 if (c != 0)
                     return applySortOrder(Integer.signum(c), schema.getKeyDefinitions()[i].getOrder().getSortOrder());
             }
+        }
+
+        return 0;
+    }
+
+    /** */
+    private int compareFullRows(IndexSearchRow currRow, IndexSearchRow row, int from, int searchKeysLength) throws IgniteCheckedException {
+        for (int i = from; i < searchKeysLength; i++) {
+            // If a search key is null then skip other keys (consider that null shows that we should get all
+            // possible keys for that comparison).
+            if (row.getKey(i) == null)
+                return 0;
+
+            int c = def.getRowComparator().compareKey(currRow, row, i);
+
+            if (c != 0)
+                return applySortOrder(Integer.signum(c), def.getSchema().getKeyDefinitions()[i].getOrder().getSortOrder());
         }
 
         return 0;
@@ -269,8 +287,8 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
 
     /**
      * @param keyDefs definition on index keys.
-     * @param cfgInlineSize Inline size from index config. // TODO, it ignores cache.setMaxSqlInlineIndex?
-     * @param maxInlineSize Max inline size from cache config. // TODO
+     * @param cfgInlineSize Inline size from index config.
+     * @param maxInlineSize Max inline size from cache config.
      * @return Inline size.
      */
     public static int computeInlineSize(
@@ -294,7 +312,12 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
         int size = 0;
 
         for (IndexKeyDefinition keyDef : keyDefs) {
-            InlineIndexKeyType keyType = keyDef.getInlineType();
+            if (!InlineIndexKeyTypeRegistry.supportInline(keyDef.getIdxType())) {
+                size = propSize;
+                break;
+            }
+
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(keyDef.getIdxType());
 
             if (keyType.inlineSize() <= 0) {
                 size = propSize;
