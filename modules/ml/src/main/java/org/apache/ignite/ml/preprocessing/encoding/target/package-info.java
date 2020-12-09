@@ -15,26 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.encoding;
-
 /**
- * Describes Encoder preprocessor types to define resulting model in EncoderTrainer.
- *
- * @see EncoderTrainer
+ * <!-- Package description. -->
+ * Contains frequency encoding preprocessor.
  */
-public enum EncoderType {
-    /** One hot encoder. */
-    ONE_HOT_ENCODER,
-
-    /** String encoder. */
-    STRING_ENCODER,
-
-    /** Frequency encoder. */
-    FREQUENCY_ENCODER,
-
-    /** Label encoder. */
-    LABEL_ENCODER,
-
-    /** Target encoder. */
-    TARGET_ENCODER,
-}
+package org.apache.ignite.ml.preprocessing.encoding.target;
