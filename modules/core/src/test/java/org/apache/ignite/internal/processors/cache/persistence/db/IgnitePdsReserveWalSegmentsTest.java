@@ -35,6 +35,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Test correctness of truncating unused WAL segments.
@@ -153,21 +154,30 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
         long resIdx = getReservedWalSegmentIndex(wal);
         assertTrue(resIdx > 3);
 
-        WALPointer lowPtr = lastCheckpointPointer(n);
-        assertEquals(lowPtr.index(), resIdx);
+        WALPointer lastCheckpointPtr = lastCheckpointPointer(n);
+        assertEquals(lastCheckpointPtr.index(), resIdx);
 
-        wal.notchLastCheckpointPtr(new WALPointer(resIdx - 3, 0, 0));
+        wal.notchLastCheckpointPtr(new WALPointer(1, 0, 0));
 
-        int truncated = wal.truncate(lowPtr);
-        assertEquals(resIdx - 3, truncated);
+        if (compactionEnabled(n))
+            assertTrue(waitForCondition(() -> wal.lastCompactedSegment() >= 1, 10_000));
 
-        truncated = wal.truncate(lowPtr);
+        int truncated = wal.truncate(lastCheckpointPtr);
+        assertTrue("truncated: " + truncated, truncated >= 1);
+
+        truncated = wal.truncate(lastCheckpointPtr);
         assertEquals(0, truncated);
 
-        wal.notchLastCheckpointPtr(lowPtr);
+        wal.notchLastCheckpointPtr(new WALPointer(2, 0, 0));
 
-        truncated = wal.truncate(lowPtr);
-        assertEquals(3, truncated);
+        if (compactionEnabled(n))
+            assertTrue(waitForCondition(() -> wal.lastCompactedSegment() >= 2, 10_000));
+
+        truncated = wal.truncate(lastCheckpointPtr);
+        assertTrue("truncated: " + truncated, truncated >= 1);
+
+        truncated = wal.truncate(lastCheckpointPtr);
+        assertEquals(0, truncated);
     }
 
     /**
@@ -213,5 +223,15 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
     private WALPointer lastCheckpointPointer(IgniteEx n) {
         return ((GridCacheDatabaseSharedManager)n.context().cache().context().database())
             .checkpointHistory().lastCheckpoint().checkpointMark();
+    }
+
+    /**
+     * Checking that wal compaction enabled.
+     *
+     * @param n Node.
+     * @return {@code True} if enabled.
+     */
+    private boolean compactionEnabled(IgniteEx n) {
+        return n.configuration().getDataStorageConfiguration().isWalCompactionEnabled();
     }
 }

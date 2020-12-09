@@ -1023,6 +1023,29 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         segmentAware.release(start.index());
     }
 
+    /**
+     * Checking for the existence of an index.
+     *
+     * @param absIdx Segment index.
+     * @return {@code True} exists.
+     */
+    private boolean hasIndex(long absIdx) {
+        String segmentName = fileName(absIdx);
+
+        boolean inArchive = new File(walArchiveDir, segmentName).exists() ||
+            new File(walArchiveDir, segmentName + ZIP_SUFFIX).exists();
+
+        if (inArchive)
+            return true;
+
+        if (absIdx <= lastArchivedIndex())
+            return false;
+
+        FileWriteHandle cur = currHnd;
+
+        return cur != null && cur.getSegmentId() >= absIdx;
+    }
+
     /** {@inheritDoc} */
     @Override public int truncate(@Nullable WALPointer high) {
         if (high == null)
@@ -1033,16 +1056,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         int deleted = 0;
 
         for (FileDescriptor desc : descs) {
-            // Do not delete segments that are required for binary recovery, or those that are reserved and any after them.
-            if (desc.idx >= lastCheckpointPtr.index() || !segmentAware.incMinReserveIndex(desc.idx))
-                return deleted;
-
             long archivedAbsIdx = segmentAware.lastArchivedAbsoluteIndex();
 
             long lastArchived = archivedAbsIdx >= 0 ? archivedAbsIdx : lastArchivedIndex();
 
-            // We need to leave at least one archived segment to correctly determine the archive index.
-            if (desc.idx < high.index() && desc.idx < lastArchived) {
+            if (desc.idx >= lastCheckpointPtr.index() // We cannot delete segments needed for binary recovery.
+                || desc.idx >= lastArchived // We cannot delete last segment, it is needed at start of node and avoid gaps.
+                || !segmentAware.incMinReserveIndex(desc.idx)) // We cannot delete reserved segment.
+                return deleted;
+
+            if (desc.idx < high.index()) {
                 if (!desc.file.delete()) {
                     U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                         desc.file.getAbsolutePath());
@@ -3069,28 +3092,5 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     public static boolean isSegmentFileName(@Nullable String name) {
         return name != null && (WAL_NAME_PATTERN.matcher(name).matches() ||
             WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(name).matches());
-    }
-
-    /**
-     * Checking for the existence of an index.
-     *
-     * @param absIdx Segment index.
-     * @return {@code True} exists.
-     */
-    private boolean hasIndex(long absIdx) {
-        String segmentName = fileName(absIdx);
-
-        boolean inArchive = new File(walArchiveDir, segmentName).exists() ||
-            new File(walArchiveDir, segmentName + ZIP_SUFFIX).exists();
-
-        if (inArchive)
-            return true;
-
-        if (absIdx <= lastArchivedIndex())
-            return false;
-
-        FileWriteHandle cur = currHnd;
-
-        return cur != null && cur.getSegmentId() >= absIdx;
     }
 }
