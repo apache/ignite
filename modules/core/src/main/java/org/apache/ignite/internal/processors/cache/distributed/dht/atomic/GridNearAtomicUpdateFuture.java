@@ -730,7 +730,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         if (syncMode == FULL_ASYNC)
-            completeFuture(new GridCacheReturn(cctx, true, true, null, true), null, null);
+            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, null);
     }
 
     /** {@inheritDoc} */
@@ -827,7 +827,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             assert mappings0 != null;
 
             if (size == 0) {
-                completeFuture(new GridCacheReturn(cctx, true, true, null, true), null, futId);
+                completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, futId);
 
                 return;
             }
@@ -836,7 +836,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         if (syncMode == FULL_ASYNC) {
-            completeFuture(new GridCacheReturn(cctx, true, true, null, true), null, futId);
+            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, futId);
 
             return;
         }

@@ -50,7 +50,7 @@ import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPL
 /**
  * Commands associated with tracing configuration functionality.
  */
-public class TracingConfigurationCommand implements Command<TracingConfigurationArguments> {
+public class TracingConfigurationCommand extends AbstractCommand<TracingConfigurationArguments> {
     /** Arguments. */
     private TracingConfigurationArguments args;
 

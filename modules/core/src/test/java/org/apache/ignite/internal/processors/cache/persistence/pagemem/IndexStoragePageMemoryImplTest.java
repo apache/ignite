@@ -123,6 +123,7 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
         return new PageMemoryImpl(
             provider, sizes,
             sharedCtx,
+            sharedCtx.pageStore(),
             PAGE_SIZE,
             (fullPageId, byteBuf, tag) -> {
                 assert false : "No page replacement (rotation with disk) should happen during the test";

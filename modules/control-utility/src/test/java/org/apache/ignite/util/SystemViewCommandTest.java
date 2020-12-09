@@ -469,15 +469,17 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
         List<String> row = sqlTablesView.get(0);
 
-        assertEquals("T1", row.get(0)); // TABLE_NAME
-        assertEquals(DFLT_SCHEMA, row.get(1)); // SCHEMA_NAME
-        assertEquals("SQL_PUBLIC_T1", row.get(2)); // CACHE_NAME
-        assertEquals(Integer.toString(cacheId("SQL_PUBLIC_T1")), row.get(3)); // CACHE_ID
-        assertEquals("null", row.get(4)); // AFFINITY_KEY_COLUMN
-        assertEquals("ID", row.get(5)); // KEY_ALIAS
-        assertEquals("null", row.get(6)); // VALUE_ALIAS
-        assertEquals("java.lang.Long", row.get(7)); // KEY_TYPE_NAME
-        assertFalse("null".equals(row.get(8))); // VALUE_TYPE_NAME
+        assertEquals(Integer.toString(cacheId("SQL_PUBLIC_T1")), row.get(0)); // CACHE_GROUP_ID
+        assertEquals("SQL_PUBLIC_T1", row.get(1)); // CACHE_GROUP_NAME
+        assertEquals(Integer.toString(cacheId("SQL_PUBLIC_T1")), row.get(2)); // CACHE_ID
+        assertEquals("SQL_PUBLIC_T1", row.get(3)); // CACHE_NAME
+        assertEquals(DFLT_SCHEMA, row.get(4)); // SCHEMA_NAME
+        assertEquals("T1", row.get(5)); // TABLE_NAME
+        assertEquals("null", row.get(6)); // AFFINITY_KEY_COLUMN
+        assertEquals("ID", row.get(7)); // KEY_ALIAS
+        assertEquals("null", row.get(8)); // VALUE_ALIAS
+        assertEquals("java.lang.Long", row.get(9)); // KEY_TYPE_NAME
+        assertFalse("null".equals(row.get(10))); // VALUE_TYPE_NAME
 
         executeSql(ignite0, "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR)");
 

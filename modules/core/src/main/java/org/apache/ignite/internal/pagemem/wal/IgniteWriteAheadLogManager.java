@@ -167,6 +167,11 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public void notchLastCheckpointPtr(WALPointer ptr);
 
     /**
+     * @return Current segment index.
+     */
+    public long currentSegment();
+
+    /**
      * @return Total number of segments in the WAL archive.
      */
     public int walArchiveSegments();
@@ -209,4 +214,19 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @param grpId Group id.
      */
     public boolean disabled(int grpId);
+
+    /**
+     * Getting local WAL segment size.
+     *
+     * @param idx Absolute segment index.
+     * @return Segment size, {@code 0} if size is unknown.
+     */
+    long segmentSize(long idx);
+
+    /**
+     * Get last written pointer.
+     *
+     * @return Last written pointer.
+     */
+    WALPointer lastWritePointer();
 }

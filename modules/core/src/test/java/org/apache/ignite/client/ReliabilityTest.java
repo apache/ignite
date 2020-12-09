@@ -155,14 +155,33 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            try {
-                cachePut(cache, 0, 0);
-            }
-            catch (Exception expected) {
-                // No-op.
-            }
+            GridTestUtils.assertThrowsWithCause(() -> cachePut(cache, 0, 0), ClientConnectionException.class);
 
             // Recover after fail.
+            cachePut(cache, 0, 0);
+        }
+    }
+
+    /**
+     * Test single server can be used multiple times in configuration.
+     */
+    @Test
+    public void testSingleServerDuplicatedFailover() throws Exception {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setAddresses(
+                     cluster.clientAddresses().iterator().next(),
+                     cluster.clientAddresses().iterator().next()))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            // Before fail.
+            cachePut(cache, 0, 0);
+
+            // Fail.
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            // Reuse second address without fail.
             cachePut(cache, 0, 0);
         }
     }

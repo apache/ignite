@@ -81,6 +81,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.DFLT_MVCC_TX_SIZE_CACHING_THRESHOLD;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory.DFLT_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWorkflow.DFLT_CHECKPOINT_PARALLEL_SORT_THRESHOLD;
@@ -1934,6 +1935,32 @@ public final class IgniteSystemProperties {
         "lock queue may rise. This property sets the interval during which statistics are collected", type = Integer.class,
         defaults = "" + DFLT_DUMP_TX_COLLISIONS_INTERVAL)
     public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
+
+    /**
+     * Set to true only during the junit tests.
+     * Signals that the cluster is running in a test environment.
+     *
+     * Can be used for changing behaviour of tightly coupled code pieces during the tests.
+     * Use it as a last resort only, prefer another toolchain like DI, mocks and etc. if possible
+     */
+    @SystemProperty(value = "Set to true only during the junit tests. " +
+        "Can be used for changing behaviour of tightly coupled code pieces during the tests. " +
+        "Use it as a last resort only, prefer another toolchain like DI, mocks and etc. if possible",
+        type = Boolean.class)
+    public static final String IGNITE_TEST_ENV = "IGNITE_TEST_ENV";
+
+    /**
+     * Defragmentation region size percentage of configured region size.
+     * This percentage will be calculated from largest configured region size and then proportionally subtracted
+     * from all configured regions.
+     */
+    @SystemProperty(value = "Defragmentation region size percentage of configured region size. " +
+        "This percentage will be calculated from largest configured region size and then proportionally subtracted " +
+        "from all configured regions",
+        type = Integer.class,
+        defaults = "" + DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE)
+    public static final String IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE =
+        "IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE";
 
     /**
      * Enforces singleton.

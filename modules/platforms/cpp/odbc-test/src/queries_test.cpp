@@ -748,15 +748,15 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    ret = SQLBindCol(stmt, 9, SQL_C_DATE, &dateColumn, 0, &columnLens[8]);
+    ret = SQLBindCol(stmt, 9, SQL_C_TYPE_DATE, &dateColumn, 0, &columnLens[8]);
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    ret = SQLBindCol(stmt, 10, SQL_C_TIME, &timeColumn, 0, &columnLens[9]);
+    ret = SQLBindCol(stmt, 10, SQL_C_TYPE_TIME, &timeColumn, 0, &columnLens[9]);
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    ret = SQLBindCol(stmt, 11, SQL_C_TIMESTAMP, &timestampColumn, 0, &columnLens[10]);
+    ret = SQLBindCol(stmt, 11, SQL_C_TYPE_TIMESTAMP, &timestampColumn, 0, &columnLens[10]);
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
@@ -922,7 +922,7 @@ BOOST_AUTO_TEST_CASE(TestInsertSelect)
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        std::string expectedStr = getTestString(selectedRecordsNum);
+        std::string expectedStr = GetTestString(selectedRecordsNum);
         int64_t expectedKey = selectedRecordsNum + 1;
 
         BOOST_CHECK_EQUAL(key, expectedKey);
@@ -999,7 +999,7 @@ BOOST_AUTO_TEST_CASE(TestInsertUpdateSelect)
         if (expectedKey == 42)
             expectedStr = "Updated value";
         else
-            expectedStr = getTestString(selectedRecordsNum);
+            expectedStr = GetTestString(selectedRecordsNum);
 
         BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), expectedStr);
 
@@ -1066,7 +1066,7 @@ BOOST_AUTO_TEST_CASE(TestInsertDeleteSelect)
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         int64_t expectedKey = (selectedRecordsNum + 1) * 2;
-        std::string expectedStr = getTestString(expectedKey - 1);
+        std::string expectedStr = GetTestString(expectedKey - 1);
 
         BOOST_CHECK_EQUAL(key, expectedKey);
         BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), expectedStr);
@@ -1127,7 +1127,7 @@ BOOST_AUTO_TEST_CASE(TestInsertMergeSelect)
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        std::string expectedStr = getTestString(selectedRecordsNum);
+        std::string expectedStr = GetTestString(selectedRecordsNum);
         int64_t expectedKey = selectedRecordsNum + 1;
 
         BOOST_CHECK_EQUAL(key, expectedKey);
@@ -1629,7 +1629,7 @@ BOOST_AUTO_TEST_CASE(TestErrorMessage)
 
 BOOST_AUTO_TEST_CASE(TestAffectedRows)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PAGE_SIZE=1024");
 
     const int recordsNum = 100;
 
@@ -1670,7 +1670,41 @@ BOOST_AUTO_TEST_CASE(TestAffectedRows)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    BOOST_CHECK_EQUAL(affected, 0);
+    BOOST_CHECK_EQUAL(affected, 1024);
+}
+
+BOOST_AUTO_TEST_CASE(TestAffectedRowsOnSelect)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PAGE_SIZE=123");
+
+    const int recordsNum = 1000;
+
+    // Inserting values.
+    InsertTestStrings(recordsNum);
+
+    // Just selecting everything to make sure everything is OK
+    SQLCHAR selectReq[] = "SELECT _key, strField FROM TestType ORDER BY _key";
+
+    SQLRETURN ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    for (int i = 0; i < 200; ++i)
+    {
+        SQLLEN affected = -1;
+        ret = SQLRowCount(stmt, &affected);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECK_EQUAL(affected, 123);
+
+        ret = SQLFetch(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
 }
 
 BOOST_AUTO_TEST_CASE(TestMultipleSelects)

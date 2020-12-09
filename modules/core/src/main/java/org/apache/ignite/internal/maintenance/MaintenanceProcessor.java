@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -61,6 +60,9 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** */
     private final boolean inMemoryMode;
+
+    /** */
+    private volatile boolean maintenanceMode;
 
     /**
      * @param ctx Kernal context.
@@ -100,7 +102,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             log.info(
                 "Maintenance Task with name " + task.name() +
                     " is already registered" +
-                    oldTask.parameters() != null ? " with parameters " + oldTask.parameters() : "" + "." +
+                    (oldTask.parameters() != null ? " with parameters " + oldTask.parameters() : ".") +
                     " It will be replaced with new task" +
                     task.parameters() != null ? " with parameters " + task.parameters() : "" + "."
             );
@@ -135,6 +137,8 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             fileStorage.init();
 
             activeTasks.putAll(fileStorage.getAllTasks());
+
+            maintenanceMode = !activeTasks.isEmpty();
         }
         catch (Throwable t) {
             log.warning("Caught exception when starting MaintenanceProcessor," +
@@ -162,12 +166,21 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             );
         }
 
-        if (!workflowCallbacks.isEmpty())
+        if (!workflowCallbacks.isEmpty()) {
+            if (log.isInfoEnabled()) {
+                String mntcTasksNames = String.join(", ", workflowCallbacks.keySet());
+
+                log.info("Node requires maintenance, non-empty set of maintenance tasks is found: [" +
+                    mntcTasksNames + ']');
+            }
+
             proceedWithMaintenance();
-        else {
-            if (log.isInfoEnabled())
+        }
+        else if (isMaintenanceMode()) {
+            if (log.isInfoEnabled()) {
                 log.info("All maintenance tasks are fixed, no need to enter maintenance mode. " +
                     "Restart the node to get it back to normal operations.");
+            }
         }
     }
 
@@ -182,11 +195,11 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
      */
     private void proceedWithMaintenance() {
         for (Map.Entry<String, MaintenanceWorkflowCallback> cbE : workflowCallbacks.entrySet()) {
-            MaintenanceAction mntcAction = cbE.getValue().automaticAction();
+            MaintenanceAction<?> mntcAct = cbE.getValue().automaticAction();
 
-            if (mntcAction != null) {
+            if (mntcAct != null) {
                 try {
-                    mntcAction.execute();
+                    mntcAct.execute();
                 }
                 catch (Throwable t) {
                     log.warning("Failed to execute automatic action for maintenance task: " +
@@ -205,18 +218,20 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
     /** {@inheritDoc} */
     @Override public boolean isMaintenanceMode() {
-        return !activeTasks.isEmpty();
+        return maintenanceMode;
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterMaintenanceTask(String maintenanceTaskName) {
+    @Override public boolean unregisterMaintenanceTask(String maintenanceTaskName) {
         if (inMemoryMode)
-            return;
+            return false;
+
+        boolean deleted;
 
         if (isMaintenanceMode())
-            activeTasks.remove(maintenanceTaskName);
+            deleted = activeTasks.remove(maintenanceTaskName) != null;
         else
-            requestedTasks.remove(maintenanceTaskName);
+            deleted = requestedTasks.remove(maintenanceTaskName) != null;
 
         try {
             fileStorage.deleteMaintenanceTask(maintenanceTaskName);
@@ -229,6 +244,8 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
             fileStorage.clear();
         }
+
+        return deleted;
     }
 
     /** {@inheritDoc} */
@@ -236,17 +253,17 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
         if (inMemoryMode)
             throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
 
-        List<MaintenanceAction> actions = cb.allActions();
+        List<MaintenanceAction<?>> actions = cb.allActions();
 
         if (actions == null || actions.isEmpty())
-            throw new IgniteException("Maintenance workflow callback should provide at least one mainetance action");
+            throw new IgniteException("Maintenance workflow callback should provide at least one maintenance action");
 
         int size = actions.size();
-        long distinctSize = actions.stream().map(a -> a.name()).distinct().count();
+        long distinctSize = actions.stream().map(MaintenanceAction::name).distinct().count();
 
         if (distinctSize < size)
             throw new IgniteException("All actions of a single workflow should have unique names: " +
-                actions.stream().map(a -> a.name()).collect(Collectors.joining(", ")));
+                actions.stream().map(MaintenanceAction::name).collect(Collectors.joining(", ")));
 
         Optional<String> wrongActionName = actions
             .stream()
@@ -263,7 +280,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     }
 
     /** {@inheritDoc} */
-    @Override public List<MaintenanceAction> actionsForMaintenanceTask(String maintenanceTaskName) {
+    @Override public List<MaintenanceAction<?>> actionsForMaintenanceTask(String maintenanceTaskName) {
         if (inMemoryMode)
             throw new IgniteException(IN_MEMORY_MODE_ERR_MSG);
 

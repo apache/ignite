@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Encryption.Keystore;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Tests.Plugin;
@@ -273,6 +274,8 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.NotNull(cfg.ExecutorConfiguration);
                 AssertExtensions.ReflectionEqual(cfg.ExecutorConfiguration, resCfg.ExecutorConfiguration);
+
+                Assert.AreEqual(false, resCfg.JavaPeerClassLoadingEnabled);
             }
         }
 
@@ -288,7 +291,8 @@ namespace Apache.Ignite.Core.Tests
                 DataStorageConfiguration = null,
                 SpringConfigUrl = Path.Combine("Config", "spring-test.xml"),
                 NetworkSendRetryDelay = TimeSpan.FromSeconds(45),
-                MetricsHistorySize = 57
+                MetricsHistorySize = 57,
+                JavaPeerClassLoadingEnabled = false
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -309,6 +313,27 @@ namespace Apache.Ignite.Core.Tests
 
                 // Connector defaults.
                 CheckDefaultProperties(resCfg.ClientConnectorConfiguration);
+
+                Assert.AreEqual(false, resCfg.JavaPeerClassLoadingEnabled);
+            }
+        }
+
+        /// <summary>
+        /// Tests that values specified in spring.xml could be read properly by .NET side.
+        /// </summary>
+        [Test]
+        public void TestSpringXmlIsReadCorrectly()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = Path.Combine("Config", "spring-test.xml"),
+            };
+            using (var ignite = Ignition.Start(cfg))
+            {
+                var resCfg = ignite.GetConfiguration();
+                Assert.AreEqual(765, resCfg.NetworkSendRetryDelay.TotalMilliseconds);
+                Assert.AreEqual(2999, resCfg.NetworkTimeout.TotalMilliseconds);
+                Assert.AreEqual(true, resCfg.JavaPeerClassLoadingEnabled);
             }
         }
 
@@ -611,11 +636,24 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(DataRegionConfiguration.DefaultEmptyPagesPoolSize, cfg.EmptyPagesPoolSize);
             Assert.AreEqual(DataRegionConfiguration.DefaultEvictionThreshold, cfg.EvictionThreshold);
             Assert.AreEqual(DataRegionConfiguration.DefaultInitialSize, cfg.InitialSize);
-            Assert.AreEqual(DataRegionConfiguration.DefaultMaxSize, cfg.MaxSize);
             Assert.AreEqual(DataRegionConfiguration.DefaultPersistenceEnabled, cfg.PersistenceEnabled);
             Assert.AreEqual(DataRegionConfiguration.DefaultMetricsRateTimeInterval, cfg.MetricsRateTimeInterval);
             Assert.AreEqual(DataRegionConfiguration.DefaultMetricsSubIntervalCount, cfg.MetricsSubIntervalCount);
             Assert.AreEqual(default(long), cfg.CheckpointPageBufferSize);
+
+            if (DataRegionConfiguration.DefaultMaxSize != cfg.MaxSize)
+            {
+                // Java respects cgroup limits only in recent JDK versions.
+                // We don't know which version is used for tests, so we should expect both variants
+                var physMem = MemoryInfo.TotalPhysicalMemory;
+                Assert.IsNotNull(physMem);
+
+                var expected = (long) physMem / 5;
+
+                Assert.AreEqual(expected, cfg.MaxSize,
+                    string.Format("Expected max size with cgroup limit: '{0}', without: '{1}'",
+                        DataRegionConfiguration.DefaultMaxSize, expected));
+            }
         }
 
         /// <summary>
@@ -884,6 +922,7 @@ namespace Apache.Ignite.Core.Tests
                 MvccVacuumFrequency = 20000,
                 MvccVacuumThreadCount = 8,
                 SqlQueryHistorySize = 99,
+                JavaPeerClassLoadingEnabled = false,
                 SqlSchemas = new List<string> { "SCHEMA_3", "schema_4" },
                 ExecutorConfiguration = new[]
                 {

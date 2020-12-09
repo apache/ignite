@@ -23,6 +23,7 @@ import java.util.UUID;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.TaskExecutor;
@@ -41,7 +42,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.IndexListCom
 /**
  * Cache subcommand that allows to show caches that have
  */
-public class CacheIndexesRebuildStatus implements Command<CacheIndexesRebuildStatus.Arguments> {
+public class CacheIndexesRebuildStatus extends AbstractCommand<CacheIndexesRebuildStatus.Arguments> {
     /** Command parsed arguments. */
     private Arguments args;
 

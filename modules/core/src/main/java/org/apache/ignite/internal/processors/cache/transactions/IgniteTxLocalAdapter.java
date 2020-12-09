@@ -1240,8 +1240,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 addInvokeResult(txEntry, v, ret, ver);
                             }
                         }
-                        else
-                            ret.value(cacheCtx, v, txEntry.keepBinary());
+                        else {
+                            ret.value(
+                                cacheCtx,
+                                v,
+                                txEntry.keepBinary(),
+                                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
+                            );
+                        }
                     }
 
                     boolean pass = F.isEmpty(filter) || cacheCtx.isAll(cached, filter);
@@ -1311,6 +1317,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         Object val0 = null;
 
         IgniteThread.onEntryProcessorEntered(true);
+
+        if (cctx.kernalContext().deploy().enabled() && deploymentLdrId != null)
+            U.restoreDeploymentContext(cctx.kernalContext(), deploymentLdrId);
 
         try {
             Object res = null;

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline.diagnostic;
 import java.util.Arrays;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 
@@ -34,7 +35,7 @@ import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCom
 /**
  *
  */
-public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
+public class DiagnosticCommand extends AbstractCommand<DiagnosticSubCommand> {
     /** */
     private DiagnosticSubCommand subcommand;
 

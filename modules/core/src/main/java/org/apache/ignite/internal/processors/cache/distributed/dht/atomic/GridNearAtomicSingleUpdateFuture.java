@@ -496,7 +496,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         sendSingleRequest(reqState0.req.nodeId(), reqState0.req);
 
         if (syncMode == FULL_ASYNC) {
-            completeFuture(new GridCacheReturn(cctx, true, true, null, true), null, null);
+            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, null);
 
             return;
         }

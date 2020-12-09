@@ -18,11 +18,13 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
@@ -37,7 +39,10 @@ public final class ClientConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** @serial Server addresses. */
-    private String[] addrs;
+    private String[] addrs = null;
+
+    /** Server addresses finder. */
+    private transient ClientAddressFinder addrFinder;
 
     /** @serial Tcp no delay. */
     private boolean tcpNoDelay = true;
@@ -118,6 +123,9 @@ public final class ClientConfiguration implements Serializable {
     /** Reconnect throttling retries. See {@code reconnectThrottlingPeriod}. */
     private int reconnectThrottlingRetries = 3;
 
+    /** Retry limit. */
+    private int retryLimit = 0;
+
     /** Executor for async operations continuations. */
     private Executor asyncContinuationExecutor;
 
@@ -125,14 +133,38 @@ public final class ClientConfiguration implements Serializable {
      * @return Host addresses.
      */
     public String[] getAddresses() {
-        return addrs;
+        if (addrs != null)
+            return Arrays.copyOf(addrs, addrs.length);
+
+        return null;
     }
 
     /**
+     * Set addresses of Ignite server nodes within a cluster. An address can be IPv4 address or hostname, with or
+     * without port. If port is not set then Ignite will generate multiple addresses for default port range. See
+     * {@link ClientConnectorConfiguration#DFLT_PORT}, {@link ClientConnectorConfiguration#DFLT_PORT_RANGE}.
+     *
      * @param addrs Host addresses.
      */
     public ClientConfiguration setAddresses(String... addrs) {
-        this.addrs = addrs;
+        if (addrs != null)
+            this.addrs = Arrays.copyOf(addrs, addrs.length);
+
+        return this;
+    }
+
+    /**
+     * @return Finder that finds server node addresses.
+     */
+    public ClientAddressFinder getAddressesFinder() {
+        return addrFinder;
+    }
+
+    /**
+     * @param finder Finds server node addresses.
+     */
+    public ClientConfiguration setAddressesFinder(ClientAddressFinder finder) {
+        addrFinder = finder;
 
         return this;
     }
@@ -495,6 +527,26 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientConfiguration setReconnectThrottlingRetries(int reconnectThrottlingRetries) {
         this.reconnectThrottlingRetries = reconnectThrottlingRetries;
+
+        return this;
+    }
+
+    /**
+     * Get retry limit.
+     */
+    public int getRetryLimit() {
+        return retryLimit;
+    }
+
+    /**
+     * Sets the retry limit. When a request fails due to a connection error, and multiple server connections
+     * are available, Ignite will retry the request on every connection. When this property is greater than zero,
+     * Ignite will limit the number of retries.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setRetryLimit(int retryLimit) {
+        this.retryLimit = retryLimit;
 
         return this;
     }

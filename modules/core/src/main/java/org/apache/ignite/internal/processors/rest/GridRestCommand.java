@@ -223,7 +223,10 @@ public enum GridRestCommand {
     NODE_STATE_BEFORE_START("nodestatebeforestart"),
 
     /** Warm-up. */
-    WARM_UP("warmup");
+    WARM_UP("warmup"),
+
+    /** probe. */
+    PROBE("probe");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();

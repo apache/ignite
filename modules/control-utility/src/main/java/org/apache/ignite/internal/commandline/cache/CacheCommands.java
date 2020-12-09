@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
@@ -42,7 +43,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALI
 /**
  * High-level "cache" command implementation.
  */
-public class CacheCommands implements Command<CacheSubcommands> {
+public class CacheCommands extends AbstractCommand<CacheSubcommands> {
     /** Empty group name. */
     public static final String EMPTY_GROUP_NAME = "no_group";
 
@@ -75,7 +76,7 @@ public class CacheCommands implements Command<CacheSubcommands> {
         if (command == null)
             throw new IllegalStateException("Unknown command " + subcommand);
 
-        return command.execute(clientCfg, logger);
+        return command.execute(clientCfg, logger, verbose);
     }
 
     /** {@inheritDoc} */

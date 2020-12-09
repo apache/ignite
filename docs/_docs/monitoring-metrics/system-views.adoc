@@ -32,7 +32,7 @@ See the link:SQL/schemas[Understanding Schemas] page for the information on how 
 == Querying System Views
 
 
-To query the system views using the link:sqlline[SQLLine] tool, connect to the SYS schema as follows:
+To query the system views using the link:tools/sqlline[SQLLine] tool, connect to the SYS schema as follows:
 
 [source, shell]
 ----

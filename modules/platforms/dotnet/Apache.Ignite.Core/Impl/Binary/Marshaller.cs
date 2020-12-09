@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.Linq;
     using System.Runtime.Serialization;
+    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Common;
@@ -42,6 +43,9 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class Marshaller
     {
+        /** Register same java type flag. */
+        public static readonly ThreadLocal<Boolean> RegisterSameJavaType = new ThreadLocal<Boolean>(() => false);
+
         /** Binary configuration. */
         private readonly BinaryConfiguration _cfg;
 
@@ -457,8 +461,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets descriptor for type name.
         /// </summary>
         /// <param name="typeName">Type name.</param>
+        /// <param name="requiresType">If set to true, resulting descriptor must have Type property populated.
+        /// <para />
+        /// When working in binary mode, we don't need Type. And there is no Type at all in some cases.
+        /// So we should not attempt to call BinaryProcessor right away.
+        /// Only when we really deserialize the value, requiresType is set to true
+        /// and we attempt to resolve the type by all means.</param>
         /// <returns>Descriptor.</returns>
-        public IBinaryTypeDescriptor GetDescriptor(string typeName)
+        public IBinaryTypeDescriptor GetDescriptor(string typeName, bool requiresType = false)
         {
             BinaryFullTypeDescriptor desc;
 
@@ -469,7 +479,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var typeId = GetTypeId(typeName, _cfg.IdMapper);
 
-            return GetDescriptor(true, typeId, typeName: typeName);
+            return GetDescriptor(true, typeId, typeName: typeName, requiresType: requiresType);
         }
 
         /// <summary>
@@ -556,7 +566,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var typeName = GetTypeName(type);
             var typeId = GetTypeId(typeName, _cfg.IdMapper);
 
-            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName);
+            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName, RegisterSameJavaType.Value);
 
             return AddUserType(type, typeId, typeName, registered, desc);
         }
