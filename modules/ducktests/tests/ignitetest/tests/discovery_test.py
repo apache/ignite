@@ -212,14 +212,13 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, load_config, params, modules, jvm_opts_str)
 
-        # Al least 3 sec to detect node failure to avoid various additional enviromental delays on logs, ssh.
-        # The calculated timeout is 'failure_detection_timeout * 3' in seconds.
+        # Minimal detection timeout is failure_detection_timeout * 2. Let's more to capture also 'bad' results.
         results.update(self._simulate_and_detect_failure(servers, failed_nodes,
-                                                         max(3.0, 0.003 * ignite_config.failure_detection_timeout)))
+                                                         0.004 * ignite_config.failure_detection_timeout))
 
         return results
 
-    def _simulate_and_detect_failure(self, servers, failed_nodes, timeout_sec):
+    def _simulate_and_detect_failure(self, servers, failed_nodes, event_timeout_sec):
         """
         Perform node failure scenario
         """
@@ -228,8 +227,7 @@ class DiscoveryTest(IgniteTest):
         for node in failed_nodes:
             ids_to_wait.append(read_node_id(node))
 
-            self.logger.info("Simulating failure of node '%s' (ID: %s). Timeout: %.2f sec" %
-                             (node.name, ids_to_wait[-1], timeout_sec))
+            self.logger.info("Simulating failure of node '%s' (ID: %s)." % (node.name, ids_to_wait[-1]))
 
         _, first_terminated = servers.drop_network(failed_nodes)
 
@@ -241,8 +239,9 @@ class DiscoveryTest(IgniteTest):
 
         for survivor in [n for n in servers.nodes if n not in failed_nodes]:
             for failed_id in ids_to_wait:
+                # We'll add several seconds to read and re-read logs to find the event.
                 logged_timestamps.append(get_event_time(servers, survivor, node_failed_event_pattern(failed_id),
-                                                        timeout=start + timeout_sec - monotonic()))
+                                                        timeout=3 + start + event_timeout_sec - monotonic()))
 
             self._check_failed_number(failed_nodes, survivor)
 
