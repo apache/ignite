@@ -144,18 +144,16 @@ class DiscoveryTest(IgniteTest):
         return self._perform_node_fail_scenario(test_config)
 
     def _perform_node_fail_scenario(self, test_config):
-        max_containers = len(self.test_context.cluster)
-
         failure_detection_timeout = self._read_meta_int(DiscoveryTest.GLOBAL_DETECTION_TIMEOUT,
                                                         DiscoveryTest.FAILURE_DETECTION_TIMEOUT)
 
         # One node is required to detect the failure.
-        assert max_containers >= 1 + test_config.nodes_to_kill + (
-            DiscoveryTest.ZOOKEEPER_NODES if test_config.with_zk else 0) + (
-                   0 if test_config.load_type == ClusterLoad.NONE else 1), "Few required containers: " + \
-                                                                           str(max_containers) + ". Check the params."
+        assert len(self.test_context.cluster) >= 1 + test_config.nodes_to_kill + (
+            DiscoveryTest.ZOOKEEPER_NODES if test_config.with_zk else 0) + \
+               (0 if test_config.load_type == ClusterLoad.NONE else 1), \
+            "Few required containers: " + str(len(self.test_context.cluster)) + ". Check the params."
 
-        self.logger.info("Starting on " + str(max_containers) + " maximal containers.")
+        self.logger.info("Starting on " + str(len(self.test_context.cluster)) + " maximal containers.")
         self.logger.info(f"{DiscoveryTest.GLOBAL_DETECTION_TIMEOUT}: {failure_detection_timeout}")
 
         results = {}
@@ -189,7 +187,8 @@ class DiscoveryTest(IgniteTest):
         # Start Ignite nodes in count less than max_nodes_in_use. One node is erequired for the loader. Some nodes might
         # be needed for ZooKeeper.
         servers, start_servers_sec = start_servers(
-            self.test_context, max_containers - DiscoveryTest.ZOOKEEPER_NODES - 1, ignite_config, modules, jvm_opts_str)
+            self.test_context, len(self.test_context.cluster) - DiscoveryTest.ZOOKEEPER_NODES - 1,
+            ignite_config, modules, jvm_opts_str)
 
         results['Ignite cluster start time (s)'] = start_servers_sec
 

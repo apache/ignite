@@ -198,8 +198,8 @@ class GlobalToMeta(Mark):
             for ctx in context_list:
                 if ctx.cluster_use_metadata:
                     assert ctx.cluster_use_metadata[self.global_param_name] is None, \
-                        f"Unable to set global param '{self.global_param_name}' as meta. The test run context already " \
-                        f"has named value: {ctx.cluster_use_metadata[self.global_param_name]}"
+                        f"Unable to set global param '{self.global_param_name}' as meta. The context already has " \
+                        f" value: {ctx.cluster_use_metadata[self.global_param_name]}"
 
                     replace_ctx = copy.copy(ctx.cluster_use_metadata)
                     replace_ctx[self.global_param_name] = value

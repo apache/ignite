@@ -24,6 +24,7 @@ from ducktape.utils.util import wait_until
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.jvm_utils import jvm_settings
 
+
 class ZookeeperSettings:
     """
     Settings for zookeeper quorum nodes.
@@ -88,7 +89,7 @@ class ZookeeperService(Service):
         node.account.create_file(self.LOG_CONFIG_FILE, log_config_file)
 
         jvm_params = jvm_settings(gc_settings="",
-            gc_dump_path=os.path.join(self.PERSISTENT_ROOT, "gc.log"),
+                                  gc_dump_path=os.path.join(self.PERSISTENT_ROOT, "gc.log"),
                                   oom_path=os.path.join(self.PERSISTENT_ROOT, "'out_of_mem_`date`.hprof'"))
 
         start_cmd = "nohup java %s -cp %s/*:%s " \
