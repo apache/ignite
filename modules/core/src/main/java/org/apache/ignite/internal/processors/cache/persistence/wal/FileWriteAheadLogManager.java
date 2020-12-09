@@ -290,7 +290,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Failure processor */
     private final FailureProcessor failureProcessor;
 
-    /** */
+    /** Ignite configuration. */
     private final IgniteConfiguration igCfg;
 
     /** Persistence metrics tracker. */
@@ -1000,7 +1000,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (mode == WALMode.NONE)
             return false;
 
-        return segmentAware.reserve(start.index());
+        // Protection from deletion.
+        boolean reserved = segmentAware.reserve(start.index());
+
+        // Segment presence check.
+        if (reserved && !hasIndex(start.index())) {
+            segmentAware.reserve(start.index());
+
+            reserved = false;
+        }
+
+        return reserved;
     }
 
     /** {@inheritDoc} */
@@ -1335,9 +1345,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
 
                 FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, ser);
-
-                segmentAware.maxReserveIndex(-1);
-                segmentAware.maxLockIndex(-1);
 
                 segmentAware.curAbsWalIdx(absIdx);
 
@@ -3062,5 +3069,28 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     public static boolean isSegmentFileName(@Nullable String name) {
         return name != null && (WAL_NAME_PATTERN.matcher(name).matches() ||
             WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(name).matches());
+    }
+
+    /**
+     * Checking for the existence of an index.
+     *
+     * @param absIdx Segment index.
+     * @return {@code True} exists.
+     */
+    private boolean hasIndex(long absIdx) {
+        String segmentName = fileName(absIdx);
+
+        boolean inArchive = new File(walArchiveDir, segmentName).exists() ||
+            new File(walArchiveDir, segmentName + ZIP_SUFFIX).exists();
+
+        if (inArchive)
+            return true;
+
+        if (absIdx <= lastArchivedIndex())
+            return false;
+
+        FileWriteHandle cur = currHnd;
+
+        return cur != null && cur.getSegmentId() >= absIdx;
     }
 }

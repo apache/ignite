@@ -32,9 +32,6 @@ public class SegmentLockStorage extends SegmentObservable {
     private final Map<Long, Integer> locked = new ConcurrentHashMap<>();
 
     /** Maximum segment index that can be locked. */
-    private volatile long maxLockIdx = Long.MAX_VALUE;
-
-    /** Maximum segment index that can be locked. */
     private volatile long minLockIdx = -1;
 
     /**
@@ -48,14 +45,13 @@ public class SegmentLockStorage extends SegmentObservable {
     }
 
     /**
-     * Segment lock. It will be successful if segment is {@code >} than the {@link #minLockIdx minimum}
-     * and {@code <=} than the {@link #maxLockIdx maximum}.
+     * Segment lock. It will be successful if segment is {@code >} than the {@link #minLockIdx minimum}.
      *
      * @param absIdx Index to lock.
      * @return {@code True} if the lock was successful.
      */
     synchronized boolean lockWorkSegment(long absIdx) {
-        if (absIdx > minLockIdx && absIdx <= maxLockIdx) {
+        if (absIdx > minLockIdx) {
             locked.merge(absIdx, 1, Integer::sum);
 
             return true;
@@ -75,25 +71,6 @@ public class SegmentLockStorage extends SegmentObservable {
         });
 
         notifyObservers(absIdx);
-    }
-
-    /**
-     * Updating maximum segment index that can be locked.
-     *
-     * @param absIdx Absolut segment index.
-     */
-    synchronized void maxLockIndex(long absIdx) {
-        maxLockIdx = absIdx;
-    }
-
-    /**
-     * Increasing maximum segment index that can be locked.
-     * Value will be updated if it is greater than the current one.
-     *
-     * @param absIdx Absolut segment index.
-     */
-    synchronized void incMaxLockIndex(long absIdx) {
-        maxLockIdx = Math.max(maxLockIdx, absIdx);
     }
 
     /**

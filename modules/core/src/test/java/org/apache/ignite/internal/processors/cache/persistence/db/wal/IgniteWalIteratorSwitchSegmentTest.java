@@ -75,13 +75,13 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
     private static final int SEGMENT_SIZE = 1024 * 1024;
 
     /** Node dir. */
-    private static final String NODE_DIR = String.join(File.separator, "", "NODE");
+    private static final String NODE_DIR = "NODE";
 
     /** WAL segment file sub directory. */
-    private static final String WORK_SUB_DIR = String.join(File.separator, NODE_DIR, "wal");
+    private static final String WORK_SUB_DIR = String.join(File.separator, "", NODE_DIR, "wal");
 
     /** WAL archive segment file sub directory. */
-    private static final String ARCHIVE_SUB_DIR = String.join(File.separator, NODE_DIR, "walArchive");
+    private static final String ARCHIVE_SUB_DIR = String.join(File.separator, "", NODE_DIR, "walArchive");
 
     /** Serializer versions for check. */
     private final int[] checkSerializerVers = new int[] {1, 2};

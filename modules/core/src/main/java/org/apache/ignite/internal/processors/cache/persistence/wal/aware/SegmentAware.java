@@ -50,9 +50,6 @@ public class SegmentAware {
         segmentCurrStateStorage = new SegmentCurrentStateStorage(walSegmentsCnt);
         segmentCompressStorage = new SegmentCompressStorage(compactionEnabled);
 
-        segmentCurrStateStorage.addObserver(reservationStorage::incMaxReserveIndex);
-        segmentCurrStateStorage.addObserver(segmentLockStorage::incMaxLockIndex);
-
         segmentArchivedStorage.addObserver(segmentCurrStateStorage::onSegmentArchived);
         segmentArchivedStorage.addObserver(segmentCompressStorage::onSegmentArchived);
 
@@ -178,8 +175,8 @@ public class SegmentAware {
     }
 
     /**
-     * Segment reservation. It will be successful if segment is {@code >} than the {@link #incMinReserveIndex}
-     * and {@code <=} than the {@link #curAbsWalIdx current}.
+     * Segment reservation. It will be successful if segment is {@code >} than
+     * the {@link #incMinReserveIndex minimum}.
      * 
      * @param absIdx Index for reservation.
      * @return {@code True} if the reservation was successful.
@@ -216,9 +213,8 @@ public class SegmentAware {
     }
 
     /**
-     * Segment lock. It will be successful if segment is
-     * {@code >} than the {@link #lastArchivedAbsoluteIndex last archived} and
-     * {@code <=} than the {@link #curAbsWalIdx current}.
+     * Segment lock. It will be successful if segment is {@code >} than
+     * the {@link #lastArchivedAbsoluteIndex last archived}.
      *
      * @param absIdx Index to lock.
      * @return {@code True} if the lock was successful.
@@ -289,23 +285,5 @@ public class SegmentAware {
      */
     public boolean incMinLockIndex(long absIdx) {
         return segmentLockStorage.incMinLockIndex(absIdx);
-    }
-
-    /**
-     * Updating maximum segment index after that can be reserved.
-     *
-     * @param absIdx Absolut segment index.
-     */
-    public void maxReserveIndex(long absIdx) {
-        reservationStorage.maxReserveIndex(absIdx);
-    }
-
-    /**
-     * Updating maximum segment index after that can be locked.
-     *
-     * @param absIdx Absolut segment index.
-     */
-    public void maxLockIndex(long absIdx) {
-        segmentLockStorage.maxLockIndex(absIdx);
     }
 }

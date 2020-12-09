@@ -644,29 +644,16 @@ public class SegmentAwareTest {
         assertTrue(aware.reserve(0));
         assertTrue(aware.reserve(1));
 
-        aware.release(0);
-        aware.release(1);
-
-        aware.maxReserveIndex(1);
-
-        assertTrue(aware.reserve(0));
-        assertTrue(aware.reserve(1));
-        assertFalse(aware.reserve(2));
-
-        aware.curAbsWalIdx(2);
-        assertTrue(aware.reserve(2));
-        assertFalse(aware.reserve(3));
-
         assertFalse(aware.incMinReserveIndex(0));
         assertFalse(aware.incMinReserveIndex(1));
 
         aware.release(0);
+
         assertTrue(aware.incMinReserveIndex(0));
         assertFalse(aware.incMinReserveIndex(1));
 
-        aware.release(1);
-        assertTrue(aware.incMinReserveIndex(1));
-        assertFalse(aware.incMinReserveIndex(2));
+        assertFalse(aware.reserve(0));
+        assertTrue(aware.reserve(1));
     }
 
     /**
@@ -679,21 +666,16 @@ public class SegmentAwareTest {
         assertTrue(aware.lock(0));
         assertTrue(aware.lock(1));
 
-        aware.unlock(0);
-        aware.unlock(1);
-
-        aware.maxLockIndex(1);
-
-        assertTrue(aware.lock(0));
-        assertTrue(aware.lock(1));
-        assertFalse(aware.lock(2));
-
         assertFalse(aware.incMinLockIndex(0));
         assertFalse(aware.incMinLockIndex(1));
 
         aware.unlock(0);
+
         assertTrue(aware.incMinLockIndex(0));
+        assertFalse(aware.incMinLockIndex(1));
+
         assertFalse(aware.lock(0));
+        assertTrue(aware.lock(1));
     }
 
     /**

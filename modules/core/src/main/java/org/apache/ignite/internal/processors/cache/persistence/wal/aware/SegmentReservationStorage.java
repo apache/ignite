@@ -30,20 +30,16 @@ class SegmentReservationStorage {
     private final NavigableMap<Long, Integer> reserved = new TreeMap<>();
 
     /** Maximum segment index that can be reserved. */
-    private long maxReserveIdx = Long.MAX_VALUE;
-
-    /** Maximum segment index that can be reserved. */
     private long minReserveIdx = -1;
 
     /**
-     * Segment reservation. It will be successful if segment is {@code >} than the {@link #minReserveIdx minimum}
-     * and {@code <=} than the {@link #maxReserveIdx maximum}.
+     * Segment reservation. It will be successful if segment is {@code >} than the {@link #minReserveIdx minimum}.
      *
      * @param absIdx Index for reservation.
      * @return {@code True} if the reservation was successful.
      */
     synchronized boolean reserve(long absIdx) {
-        if (absIdx > minReserveIdx && absIdx <= maxReserveIdx) {
+        if (absIdx > minReserveIdx) {
             reserved.merge(absIdx, 1, Integer::sum);
 
             return true;
@@ -74,25 +70,6 @@ class SegmentReservationStorage {
             reserved.remove(absIdx);
         else
             reserved.put(absIdx, cur - 1);
-    }
-
-    /**
-     * Updating maximum segment index that can be reserved.
-     *
-     * @param absIdx Absolut segment index.
-     */
-    synchronized void maxReserveIndex(long absIdx) {
-        maxReserveIdx = absIdx;
-    }
-
-    /**
-     * Increasing maximum segment index that can be reserved.
-     * Value will be updated if it is greater than the current one.
-     *
-     * @param absIdx Absolut segment index.
-     */
-    synchronized void incMaxReserveIndex(long absIdx) {
-        maxReserveIdx = Math.max(maxReserveIdx, absIdx);
     }
 
     /**
