@@ -39,6 +39,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -160,6 +162,9 @@ class TcpClientChannel implements ClientChannel {
     /** Receiver thread (processes incoming messages). */
     private Thread receiverThread;
 
+    /** Executor for async operation listeners. */
+    private final Executor asyncContinuationExecutor;
+
     /** Constructor. */
     TcpClientChannel(ClientChannelConfiguration cfg)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
@@ -176,6 +181,8 @@ class TcpClientChannel implements ClientChannel {
         }
 
         handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
+
+        asyncContinuationExecutor = ForkJoinPool.commonPool();
     }
 
     /** {@inheritDoc} */
@@ -373,17 +380,18 @@ class TcpClientChannel implements ClientChannel {
 
         int hdrSize = (int)(dataInput.totalBytesRead() - bytesReadOnStartMsg);
 
-        byte[] res = null;
-        Exception err = null;
+        byte[] res;
+        Exception err;
 
         if (status == 0) {
-            if (msgSize > hdrSize)
-                res = dataInput.read(msgSize - hdrSize);
+            err = null;
+            res = msgSize > hdrSize ? dataInput.read(msgSize - hdrSize) : null;
         }
         else if (status == ClientStatus.SECURITY_VIOLATION) {
             dataInput.read(msgSize - hdrSize); // Read message to the end.
 
             err = new ClientAuthorizationException();
+            res = null;
         }
         else {
             resIn = new BinaryHeapInputStream(dataInput.read(msgSize - hdrSize));
@@ -391,6 +399,7 @@ class TcpClientChannel implements ClientChannel {
             String errMsg = ClientUtils.createBinaryReader(null, resIn).readString();
 
             err = new ClientServerError(errMsg, status, resId);
+            res = null;
         }
 
         if (notificationOp == null) { // Respone received.
@@ -402,8 +411,12 @@ class TcpClientChannel implements ClientChannel {
             pendingReq.onDone(res, err);
         }
         else { // Notification received.
-            for (NotificationListener lsnr : notificationLsnrs)
-                lsnr.acceptNotification(this, notificationOp, resId, res, err);
+            ClientOperation notificationOp0 = notificationOp;
+
+            asyncContinuationExecutor.execute(() -> {
+                for (NotificationListener lsnr : notificationLsnrs)
+                    lsnr.acceptNotification(this, notificationOp0, resId, res, err);
+            });
         }
     }
 
