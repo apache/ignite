@@ -375,12 +375,8 @@ public class CheckpointHistory {
 
         List<CheckpointEntry> deletedCheckpoints = onWalTruncated(checkpointMarkUntilDel);
 
-        int deleted = 0;
-
         if (truncateWalOnCpFinish)
-            deleted += wal.truncate(null, firstCheckpointPointer());
-
-        chp.walFilesDeleted(deleted);
+            wal.truncate(null, firstCheckpointPointer());
 
         return deletedCheckpoints;
     }
