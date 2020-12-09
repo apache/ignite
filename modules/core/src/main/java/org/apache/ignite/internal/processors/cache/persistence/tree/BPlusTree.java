@@ -2723,7 +2723,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         boolean res = false;
 
-        if (idx > mid && cnt - mid != 1) { // If insertion is going to be to the forward page, keep more in the back page.
+        if (idx > mid) { // If insertion is going to be to the forward page, keep more in the back page.
             mid++;
 
             res = true;
