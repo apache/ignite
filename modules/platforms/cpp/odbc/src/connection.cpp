@@ -119,7 +119,7 @@ namespace ignite
             {
                 std::string dsn = config.GetDsn();
 
-                ReadDsnConfiguration(dsn.c_str(), config);
+                ReadDsnConfiguration(dsn.c_str(), config, &GetDiagnosticRecords());
             }
 
             return InternalEstablish(config);
