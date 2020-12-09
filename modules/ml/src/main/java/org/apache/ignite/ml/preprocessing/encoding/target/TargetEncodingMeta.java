@@ -15,26 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.encoding;
+package org.apache.ignite.ml.preprocessing.encoding.target;
+
+import java.util.Collections;
+import java.util.Map;
 
 /**
- * Describes Encoder preprocessor types to define resulting model in EncoderTrainer.
- *
- * @see EncoderTrainer
+ * Metadata for encode category.
  */
-public enum EncoderType {
-    /** One hot encoder. */
-    ONE_HOT_ENCODER,
+public class TargetEncodingMeta {
+  /** */
+  private Double globalMean;
 
-    /** String encoder. */
-    STRING_ENCODER,
+  /** */
+  private Map<String, Double> categoryMean;
 
-    /** Frequency encoder. */
-    FREQUENCY_ENCODER,
+  /** */
+  public TargetEncodingMeta withGlobalMean(Double globalMean) {
+    this.globalMean = globalMean;
 
-    /** Label encoder. */
-    LABEL_ENCODER,
+    return this;
+  }
 
-    /** Target encoder. */
-    TARGET_ENCODER,
+  /** */
+  public TargetEncodingMeta withCategoryMean(Map<String, Double> categoryMean) {
+    this.categoryMean = categoryMean;
+
+    return this;
+  }
+
+  /** */
+  public Double getGlobalMean() {
+    return globalMean;
+  }
+
+  /** */
+  public Map<String, Double> getCategoryMean() {
+    return Collections.unmodifiableMap(categoryMean);
+  }
 }
