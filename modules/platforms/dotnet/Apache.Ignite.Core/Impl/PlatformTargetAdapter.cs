@@ -427,8 +427,8 @@ namespace Apache.Ignite.Core.Impl
         {
             return GetFuture<TR>((futId, futType) => DoOutOp(type, w =>
             {
-                w.WriteObject(val1);
-                w.WriteObject(val2);
+                w.WriteObjectDetached(val1);
+                w.WriteObjectDetached(val2);
                 w.WriteLong(futId);
                 w.WriteInt(futType);
             })).Task;
