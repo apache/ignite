@@ -2455,6 +2455,11 @@
                     <xs:documentation>Number of SQL query history elements to keep in memory.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="javaPeerClassLoadingEnabled" type="xs:boolean">
+              <xs:annotation>
+                <xs:documentation>Indicates whether Java peer class loading is enabled.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">
                 <xs:annotation>
                     <xs:documentation>Whether client connector should be enabled (allow thin clients, ODBC and JDBC drivers to work with Ignite).</xs:documentation>

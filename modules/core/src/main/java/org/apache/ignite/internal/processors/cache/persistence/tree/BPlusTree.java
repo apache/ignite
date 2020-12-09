@@ -104,6 +104,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /** Wrapper for tree pages operations. Noop by default. Override for test purposes. */
     public static PageHandlerWrapper<Result> testHndWrapper = null;
 
+    /** */
+    public static final ThreadLocal<Boolean> suspendFailureDiagnostic = ThreadLocal.withInitial(() -> false);
+
     /** Destroy msg. */
     public static final String CONC_DESTROY_MSG = "Tree is being concurrently destroyed: ";
 
@@ -6138,7 +6141,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param e Exception.
      */
     protected void processFailure(FailureType failureType, Throwable e) {
-        if (failureProcessor != null)
+        if (failureProcessor != null && !suspendFailureDiagnostic.get())
             failureProcessor.process(new FailureContext(failureType, e));
     }
 
