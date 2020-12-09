@@ -34,7 +34,9 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -138,16 +140,16 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        GridTestUtils.assertThrowsAnyCause(
-            log,
-            () -> {
-                metastorage.writeAsync("key", "value").get(10, TimeUnit.SECONDS);
+        try {
+            metastorage.writeAsync("key", "value").get(10, TimeUnit.SECONDS);
 
-                return null;
-            },
-            IgniteCheckedException.class,
-            "Node is stopped."
-        );
+            fail("Exception is expected");
+        }
+        catch (Exception e) {
+            assertTrue(X.hasCause(e, IgniteCheckedException.class) || X.hasCause(e, IgniteSpiException.class));
+
+            assertTrue(e.getMessage().contains("Node is stopped.") || e.getMessage().contains("Node stopped."));
+        }
     }
 
     /**
