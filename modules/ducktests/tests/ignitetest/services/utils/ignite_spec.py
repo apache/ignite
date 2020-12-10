@@ -54,7 +54,7 @@ def resolve_spec(service, context, config, **kwargs):
     raise Exception("There is no specification for class %s" % type(service))
 
 
-class IgniteSpec(IgnitePersistenceAware, metaclass=ABCMeta):
+class IgniteSpec(metaclass=ABCMeta):
     """
     This class is a basic Spec
     """
@@ -64,12 +64,6 @@ class IgniteSpec(IgnitePersistenceAware, metaclass=ABCMeta):
         self.envs = {}
         self.jvm_opts = jvm_opts or []
         self.config = config
-
-        self.jvm_opts.extend([
-            "-DIGNITE_SUCCESS_FILE=" + self.PERSISTENT_ROOT + "/success_file",
-            "-Dlog4j2.debug",
-            "-Dlog4j2.configurationFile=" + self.PERSISTENT_ROOT + "/ignite-log4j2.xml"
-        ])
 
     @property
     def config_template(self):
@@ -102,7 +96,7 @@ class IgniteSpec(IgnitePersistenceAware, metaclass=ABCMeta):
         return " ".join(opts)
 
 
-class IgniteNodeSpec(IgniteSpec):
+class IgniteNodeSpec(IgniteSpec, IgnitePersistenceAware):
     """
     Spec to run ignite node
     """
@@ -119,7 +113,7 @@ class IgniteNodeSpec(IgniteSpec):
         return cmd
 
 
-class IgniteApplicationSpec(IgniteSpec):
+class IgniteApplicationSpec(IgniteSpec, IgnitePersistenceAware):
     """
     Spec to run ignite application
     """
@@ -143,7 +137,7 @@ class IgniteApplicationSpec(IgniteSpec):
         return cmd
 
 
-class ApacheIgniteNodeSpec(IgniteNodeSpec):
+class ApacheIgniteNodeSpec(IgniteNodeSpec, IgnitePersistenceAware):
     """
     Implementation IgniteNodeSpec for Apache Ignite project
     """
@@ -162,8 +156,14 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec):
             'USER_LIBS': ":".join(libs)
         }
 
+        self.jvm_opts.extend([
+            "-DIGNITE_SUCCESS_FILE=" + self.PERSISTENT_ROOT + "/success_file",
+            "-Dlog4j2.debug",
+            "-Dlog4j2.configurationFile=" + self.PERSISTENT_ROOT + "/ignite-log4j2.xml"
+        ])
 
-class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
+
+class ApacheIgniteApplicationSpec(IgniteApplicationSpec, IgnitePersistenceAware):
     """
     Implementation IgniteApplicationSpec for Apache Ignite project
     """
@@ -187,6 +187,9 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
         }
 
         self.jvm_opts.extend([
+            "-DIGNITE_SUCCESS_FILE=" + self.PERSISTENT_ROOT + "/success_file",
+            "-Dlog4j2.debug",
+            "-Dlog4j2.configurationFile=" + self.PERSISTENT_ROOT + "/ignite-log4j2.xml",
             "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
             "-Xmx1G",
             "-ea",
