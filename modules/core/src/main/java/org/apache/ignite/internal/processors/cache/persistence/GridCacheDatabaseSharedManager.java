@@ -2743,11 +2743,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Wal truncate callBack.
+     * Wal truncate callback.
      *
-     * @param highBound WALPointer.
+     * @param highBound Upper bound.
+     * @throws IgniteCheckedException If failed.
      */
-    public void onWalTruncated(WALPointer highBound) throws IgniteCheckedException {
+    public void onWalTruncated(@Nullable WALPointer highBound) throws IgniteCheckedException {
         checkpointManager.removeCheckpointsUntil(highBound);
     }
 

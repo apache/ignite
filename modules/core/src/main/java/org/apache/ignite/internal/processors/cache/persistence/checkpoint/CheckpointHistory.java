@@ -323,10 +323,14 @@ public class CheckpointHistory {
     /**
      * Clears checkpoint history after WAL truncation.
      *
+     * @param highBound Upper bound.
      * @return List of checkpoint entries removed from history.
      */
-    public List<CheckpointEntry> onWalTruncated(WALPointer highBound) {
-        List<CheckpointEntry> removed = new ArrayList<>();
+    public List<CheckpointEntry> onWalTruncated(@Nullable WALPointer highBound) {
+        if (highBound == null)
+            return Collections.emptyList();
+
+        List<CheckpointEntry> rmv = new ArrayList<>();
 
         for (CheckpointEntry cpEntry : histMap.values()) {
             WALPointer cpPnt = cpEntry.checkpointMark();
@@ -344,56 +348,30 @@ public class CheckpointHistory {
             synchronized (earliestCp) {
                 CheckpointEntry deletedCpEntry = histMap.remove(cpEntry.timestamp());
 
-                CheckpointEntry oldestCpInHistory = firstCheckpoint();
+                CheckpointEntry oldestCpInHist = firstCheckpoint();
 
                 for (Map.Entry<GroupPartitionId, CheckpointEntry> grpPartPerCp : earliestCp.entrySet()) {
                     if (grpPartPerCp.getValue() == deletedCpEntry)
-                        grpPartPerCp.setValue(oldestCpInHistory);
+                        grpPartPerCp.setValue(oldestCpInHist);
                 }
             }
 
-            removed.add(cpEntry);
+            rmv.add(cpEntry);
         }
 
-        return removed;
+        return rmv;
     }
 
     /**
      * Logs and clears checkpoint history after checkpoint finish.
      *
+     * @param chp Finished checkpoint.
      * @return List of checkpoints removed from history.
      */
     public List<CheckpointEntry> onCheckpointFinished(Checkpoint chp) {
         chp.walSegsCoveredRange(calculateWalSegmentsCovered());
 
-        WALPointer checkpointMarkUntilDel = isWalHistorySizeParameterEnabled //check for compatibility mode.
-            ? checkpointMarkUntilDeleteByMemorySize()
-            : newerPointer(checkpointMarkUntilDeleteByMemorySize(), checkpointMarkUntilDeleteByArchiveSize());
-
-        if (checkpointMarkUntilDel == null)
-            return Collections.emptyList();
-
-        List<CheckpointEntry> deletedCheckpoints = onWalTruncated(checkpointMarkUntilDel);
-
-        if (truncateWalOnCpFinish)
-            wal.truncate(null, firstCheckpointPointer());
-
-        return deletedCheckpoints;
-    }
-
-    /**
-     * @param first One of pointers to choose the newest.
-     * @param second One of pointers to choose the newest.
-     * @return The newest pointer from input ones.
-     */
-    private WALPointer newerPointer(WALPointer first, WALPointer second) {
-        if (first == null)
-            return second;
-
-        if (second == null)
-            return first;
-
-        return first.index() > second.index() ? first : second;
+        return onWalTruncated(truncateWalOnCpFinish ? null : checkpointMarkUntilDeleteByMemorySize());
     }
 
     /**
@@ -413,41 +391,6 @@ public class CheckpointHistory {
         }
 
         return lastCheckpoint().checkpointMark();
-    }
-
-    /**
-     * Calculate mark until delete by maximum allowed archive size.
-     *
-     * @return Checkpoint mark until which checkpoints can be deleted(not including this pointer).
-     */
-    @Nullable private WALPointer checkpointMarkUntilDeleteByArchiveSize() {
-        long absFileIdxToDel = wal.maxArchivedSegmentToDelete();
-
-        if (absFileIdxToDel < 0)
-            return null;
-
-        long fileUntilDel = absFileIdxToDel + 1;
-
-        long checkpointFileIdx = absFileIdx(lastCheckpoint());
-
-        for (CheckpointEntry cpEntry : histMap.values()) {
-            long currFileIdx = absFileIdx(cpEntry);
-
-            if (checkpointFileIdx <= currFileIdx || fileUntilDel <= currFileIdx)
-                return cpEntry.checkpointMark();
-        }
-
-        return lastCheckpoint().checkpointMark();
-    }
-
-    /**
-     * Retrieve absolute file index by checkpoint entry.
-     *
-     * @param pointer checkpoint entry for which need to calculate absolute file index.
-     * @return absolute file index for given checkpoint entry.
-     */
-    private long absFileIdx(CheckpointEntry pointer) {
-        return pointer.checkpointMark().index();
     }
 
     /**
