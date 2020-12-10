@@ -17,8 +17,8 @@
 
 package org.apache.ignite.tools.checkstyle;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import com.puppycrawl.tools.checkstyle.api.AbstractCheck;
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
 
@@ -26,6 +26,7 @@ import static com.puppycrawl.tools.checkstyle.api.TokenTypes.DOT;
 import static com.puppycrawl.tools.checkstyle.api.TokenTypes.ELIST;
 import static com.puppycrawl.tools.checkstyle.api.TokenTypes.IDENT;
 import static com.puppycrawl.tools.checkstyle.api.TokenTypes.METHOD_CALL;
+import static com.puppycrawl.tools.checkstyle.api.TokenTypes.METHOD_DEF;
 import static com.puppycrawl.tools.checkstyle.api.TokenTypes.TYPE;
 import static com.puppycrawl.tools.checkstyle.api.TokenTypes.VARIABLE_DEF;
 import static com.puppycrawl.tools.checkstyle.utils.CommonUtil.EMPTY_INT_ARRAY;
@@ -35,14 +36,20 @@ import static com.puppycrawl.tools.checkstyle.utils.CommonUtil.EMPTY_INT_ARRAY;
  */
 public class FindGetCallCheck extends AbstractCheck {
     /** */
-    public static final String SIMPLE_NAME = "IgniteInternalFuture";
+    private static final Map<String, String> BLOCK_CALL_MAP = new HashMap<>();
 
-    private Set<String> igniteInternalFutureVariable = new HashSet<>();
+    static {
+        BLOCK_CALL_MAP.put("IgniteInternalFuture", "get");
+        BLOCK_CALL_MAP.put("CountDownLatch", "await");
+    }
+
+    /** */
+    private final Map<String, String> igniteInternalFutureVariable = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override public int[] getDefaultTokens() {
         return new int[] {
-            VARIABLE_DEF, METHOD_CALL
+            VARIABLE_DEF, METHOD_CALL, METHOD_DEF
         };
     }
 
@@ -57,18 +64,20 @@ public class FindGetCallCheck extends AbstractCheck {
     }
 
     @Override public void visitToken(DetailAST ast) {
-        if (ast.getType() == VARIABLE_DEF) {
+        if (ast.getType() == METHOD_DEF) {
+            igniteInternalFutureVariable.clear();
+        } else if (ast.getType() == VARIABLE_DEF) {
             String type = variableType(ast);
 
             if (type == null)
                 return;
 
-            if (!type.contains(SIMPLE_NAME))
+            if (!BLOCK_CALL_MAP.containsKey(type))
                 return;
 
             String varName = ast.findFirstToken(IDENT).getText();
 
-            igniteInternalFutureVariable.add(varName);
+            igniteInternalFutureVariable.put(varName, type);
         }
         else if (ast.getType() == METHOD_CALL) {
             DetailAST dot = ast.findFirstToken(DOT);
@@ -80,12 +89,12 @@ public class FindGetCallCheck extends AbstractCheck {
             if (varName == null)
                 return;
 
-            if (!igniteInternalFutureVariable.contains(varName.getText()))
+            if (!igniteInternalFutureVariable.containsKey(varName.getText()))
                 return;
 
             DetailAST methodName = dot.getLastChild();
 
-            if (!"get".equals(methodName.getText()))
+            if (!BLOCK_CALL_MAP.containsValue(methodName.getText()))
                 return;
 
             DetailAST elist = ast.findFirstToken(ELIST);
@@ -93,7 +102,10 @@ public class FindGetCallCheck extends AbstractCheck {
             if (elist != null && elist.getChildCount() > 0)
                 return;
 
-            log(ast.getLineNo(), "Usage of the IgniteInternalFuture.get() prohibited");
+            String type = igniteInternalFutureVariable.get(varName.getText());
+            String method = BLOCK_CALL_MAP.get(type);
+
+            log(ast.getLineNo(), "Usage of the " + type + "#" + method + "() prohibited");
         }
     }
 
