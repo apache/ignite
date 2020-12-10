@@ -51,7 +51,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -62,6 +61,7 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KE
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class AbstractExecutionTest extends GridCommonAbstractTest {
     /** */
     private Throwable lastE;
@@ -113,7 +113,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             GridTestKernalContext kernal = newContext();
 
             QueryTaskExecutorImpl taskExecutor = new QueryTaskExecutorImpl(kernal);
-            taskExecutor.stripedThreadPoolExecutor(new IgniteRandomStripedThreadPoolExecutor(
+            taskExecutor.stripedThreadPoolExecutor(new IgniteTestStripedThreadPoolExecutor(
                 kernal.config().getQueryThreadPoolSize(),
                 kernal.igniteInstanceName(),
                 "calciteQry",
@@ -143,7 +143,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     }
 
     /** Task reordering executor. */
-    private static class IgniteRandomStripedThreadPoolExecutor extends IgniteStripedThreadPoolExecutor {
+    private static class IgniteTestStripedThreadPoolExecutor extends org.apache.ignite.thread.IgniteStripedThreadPoolExecutor {
         /** */
         final Deque<T2<Runnable, Integer>> tasks = new ArrayDeque<>();
 
@@ -154,7 +154,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         ExecutorService exec = Executors.newWorkStealingPool();
 
         /** {@inheritDoc} */
-        public IgniteRandomStripedThreadPoolExecutor(int concurrentLvl, String igniteInstanceName, String threadNamePrefix, Thread.UncaughtExceptionHandler eHnd, boolean allowCoreThreadTimeOut, long keepAliveTime) {
+        public IgniteTestStripedThreadPoolExecutor(int concurrentLvl, String igniteInstanceName, String threadNamePrefix, Thread.UncaughtExceptionHandler eHnd, boolean allowCoreThreadTimeOut, long keepAliveTime) {
             super(concurrentLvl, igniteInstanceName, threadNamePrefix, eHnd, allowCoreThreadTimeOut, keepAliveTime);
 
             GridTestUtils.runAsync(() -> {
