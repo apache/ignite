@@ -1191,7 +1191,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     @Nullable private FileDescriptor readFileDescriptor(File file, FileIOFactory ioFactory) {
         FileDescriptor ds = new FileDescriptor(file);
 
-        try (SegmentIO fileIO = ds.toIO(ioFactory)) {
+        try (SegmentIO fileIO = ds.toReadOnlyIO(ioFactory)) {
             // File may be empty when LOG_ONLY mode is enabled and mmap is disabled.
             if (fileIO.size() == 0)
                 return null;
