@@ -42,6 +42,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -294,7 +295,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         finally {
             lock.writeLock().unlock();
 
-            cancelUpdateFutures("Node is stopping.", true);
+            cancelUpdateFutures(new NodeStoppingException("Node is stopping."), true);
         }
     }
 
@@ -921,7 +922,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             ver = INITIAL_VERSION;
 
-            cancelUpdateFutures("Client was disconnected during the operation.", false);
+            cancelUpdateFutures(new IgniteCheckedException("Client was disconnected during the operation."), false);
         }
         finally {
             lock.writeLock().unlock();
@@ -930,17 +931,15 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /**
      * Cancel all waiting futures and clear the map.
-     *
-     * @param msg Error message.
      */
-    private void cancelUpdateFutures(String msg, boolean stop) {
+    private void cancelUpdateFutures(Exception e, boolean stop) {
         updateFutsStopLock.writeLock().lock();
 
         try {
             stopped = stop;
 
             for (GridFutureAdapter<Boolean> fut : updateFuts.values())
-                fut.onDone(new IgniteCheckedException(msg));
+                fut.onDone(e);
 
             updateFuts.clear();
         }
@@ -1062,7 +1061,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         try {
             if (stopped) {
-                fut.onDone(new IgniteCheckedException("Node is stopped."));
+                fut.onDone(new NodeStoppingException("Node is stopping."));
 
                 return fut;
             }
@@ -1096,7 +1095,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         try {
             if (stopped) {
-                fut.onDone(new IgniteCheckedException("Node is stopped."));
+                fut.onDone(new NodeStoppingException("Node is stopping."));
 
                 return fut;
             }

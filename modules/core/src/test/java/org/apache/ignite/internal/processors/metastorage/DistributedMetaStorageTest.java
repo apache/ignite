@@ -148,7 +148,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         catch (Exception e) {
             assertTrue(X.hasCause(e, IgniteCheckedException.class) || X.hasCause(e, IgniteSpiException.class));
 
-            assertTrue(e.getMessage().contains("Node is stopped.") || e.getMessage().contains("Node stopped."));
+            assertTrue(e.getMessage().contains("Node is stopping.") || e.getMessage().contains("Node stopped."));
         }
     }
 
