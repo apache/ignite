@@ -391,6 +391,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Current size of WAL archive in bytes. */
     private final AtomicLong walArchiveSize = new AtomicLong();
 
+    /** Reserved size of WAL archive in bytes. */
+    private final AtomicLong reservedWalArchiveSize = new AtomicLong();
+
     /**
      * @param ctx Kernal context.
      */
@@ -708,6 +711,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         // It needs to be calculated before #startArchiverAndCompressor, to avoid possible race.
         walArchiveSize.set(Stream.of(walArchiveFiles()).mapToLong(fd -> fd.file.length()).sum());
+        reservedWalArchiveSize.set(0);
 
         startArchiverAndCompressor();
 
@@ -2001,24 +2005,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     ", origFile=" + origFile.getAbsolutePath() + ", dstFile=" + dstFile.getAbsolutePath() + ']');
             }
 
+            assert switchSegmentRecordOffset != null;
+
+            long offs = switchSegmentRecordOffset.getAndSet((int)segIdx, 0);
+            long origLen = origFile.length();
+
+            long reservedSize = offs > 0 && offs < origLen ? offs : origLen;
+            reservedWalArchiveSize.addAndGet(reservedSize);
+
             try {
-                boolean copied = false;
-
-                assert switchSegmentRecordOffset != null;
-
-                long offs = switchSegmentRecordOffset.get((int)segIdx);
-
-                if (offs > 0) {
-                    switchSegmentRecordOffset.set((int)segIdx, 0);
-
-                    if (offs < origFile.length()) {
-                        GridFileUtils.copy(ioFactory, origFile, ioFactory, dstTmpFile, offs);
-
-                        copied = true;
-                    }
-                }
-
-                if (!copied)
+                if (offs > 0 && offs < origLen)
+                    GridFileUtils.copy(ioFactory, origFile, ioFactory, dstTmpFile, offs);
+                else
                     Files.copy(origFile.toPath(), dstTmpFile.toPath());
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
@@ -2038,6 +2036,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 throw new StorageException("Failed to archive WAL segment [" +
                     "srcFile=" + origFile.getAbsolutePath() +
                     ", dstFile=" + dstTmpFile.getAbsolutePath() + ']', e);
+            }
+            finally {
+                reservedWalArchiveSize.addAndGet(-reservedSize);
             }
 
             if (log.isInfoEnabled()) {
@@ -2247,6 +2248,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     File raw = new File(walArchiveDir, segmentFileName);
 
+                    long reservedSize = raw.length();
+                    reservedWalArchiveSize.addAndGet(reservedSize);
+
                     try {
                         deleteObsoleteRawSegments();
 
@@ -2278,6 +2282,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             "] was skipped due to unexpected error", lastCompressionError);
 
                         segmentAware.onSegmentCompressed(segIdx);
+                    }
+                    finally {
+                        reservedWalArchiveSize.addAndGet(-reservedSize);
                     }
                 }
                 catch (IgniteInterruptedCheckedException ignore) {
@@ -2440,6 +2447,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     File unzipTmp = new File(walArchiveDir, segmentFileName + TMP_SUFFIX);
                     File unzip = new File(walArchiveDir, segmentFileName);
 
+                    long reservedSize = U.uncompressedSize(zip);
+                    reservedWalArchiveSize.addAndGet(reservedSize);
+
                     try {
                         if (unzip.exists())
                             throw new FileAlreadyExistsException(unzip.getAbsolutePath());
@@ -2475,6 +2485,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                 continue;
                             }
                         }
+                    }
+                    finally {
+                        reservedWalArchiveSize.addAndGet(-reservedSize);
                     }
 
                     updateHeartbeat();
@@ -3136,7 +3149,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @throws IgniteCheckedException If failed.
      */
     private void cleanWalArchive() throws IgniteCheckedException {
-        if (maxWalArchiveSize != Long.MAX_VALUE && walArchiveSize.get() < maxWalArchiveSize)
+        if (maxWalArchiveSize != Long.MAX_VALUE &&
+            (walArchiveSize.get() + reservedWalArchiveSize.get()) < maxWalArchiveSize)
             return;
 
         FileDescriptor[] walArchiveFiles = walArchiveFiles();
