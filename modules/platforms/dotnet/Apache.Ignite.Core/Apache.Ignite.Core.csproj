@@ -52,6 +52,8 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryBasicNameMapper.cs" />
     <Compile Include="Binary\TimestampAttribute.cs" />
+    <Compile Include="Cache\Affinity\IAffinityBackupFilter.cs" />
+    <Compile Include="Cache\Affinity\Rendezvous\ClusterNodeAttributeAffinityBackupFilter.cs" />
     <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Cache\Configuration\PlatformCacheConfiguration.cs" />

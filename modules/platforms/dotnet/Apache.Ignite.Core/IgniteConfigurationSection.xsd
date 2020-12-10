@@ -594,6 +594,32 @@
                                                 <xs:documentation>Affinity function to provide mapping from keys to nodes.</xs:documentation>
                                             </xs:annotation>
                                             <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="affinityBackupFilter" minOccurs="0">
+                                                        <xs:annotation>
+                                                            <xs:documentation>Optional backup filter. If provided, then backups will be selected from all nodes that pass this filter.</xs:documentation>
+                                                        </xs:annotation>
+                                                        <xs:complexType>
+                                                            <xs:all>
+                                                                <xs:element name="attributeNames" minOccurs="0">
+                                                                    <xs:annotation>
+                                                                        <xs:documentation>Attribute names for the backup filter.</xs:documentation>
+                                                                    </xs:annotation>
+                                                                    <xs:complexType>
+                                                                        <xs:sequence>
+                                                                            <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                                                                        </xs:sequence>
+                                                                    </xs:complexType>
+                                                                </xs:element>
+                                                            </xs:all>
+                                                            <xs:attribute name="type" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:all>
                                                 <xs:attribute name="partitions" type="xs:int">
                                                     <xs:annotation>
                                                         <xs:documentation>Number of partitions.</xs:documentation>
