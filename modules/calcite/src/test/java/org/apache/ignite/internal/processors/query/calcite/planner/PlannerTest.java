@@ -2333,8 +2333,6 @@ public class PlannerTest extends AbstractPlannerTest {
             // Convert to Relational operators graph
             rel = planner.convert(sqlNode);
 
-            planner.setDisabledRules(ImmutableSet.copyOf(Arrays.asList("MergeJoinConverter", "NestedLoopJoinConverter")));
-
             rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 
             // Transformation chain
