@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -31,7 +34,6 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
@@ -39,30 +41,50 @@ import org.junit.runners.Parameterized.Parameter;
  *
  */
 @SuppressWarnings("TypeMayBeWeakened")
-@RunWith(Parameterized.class)
 public class ContinuousExecutionTest extends AbstractExecutionTest {
+    /** Row count parameter number. */
+    protected static final int ROW_CNT_PARAM_NUM = LAST_PARAM_NUM + 1;
+
+    /** Remote fragment parameter number. */
+    protected static final int REMOTE_FRAGMENTS_PARAM_NUM = LAST_PARAM_NUM + 2;
+
     /** */
-    @Parameter()
+    @Parameter(ROW_CNT_PARAM_NUM)
     public int rowsCnt;
 
     /** */
-    @Parameter(1)
+    @Parameter(REMOTE_FRAGMENTS_PARAM_NUM)
     public int remoteFragmentsCnt;
 
     /** */
-    @Parameterized.Parameters(name = "rowsCount={0}, remoteFragmentsCount={1}")
-    public static List<Object[]> parameters() {
-        return ImmutableList.of(
-            new Object[]{10, 1},
-            new Object[]{10, 5},
-            new Object[]{10, 10},
-            new Object[]{100, 1},
-            new Object[]{100, 5},
-            new Object[]{100, 10},
-            new Object[]{100_000, 1},
-            new Object[]{100_000, 5},
-            new Object[]{100_000, 10}
+    @Parameterized.Parameters(name = PARAMS_STRING + ", " +
+        "rowsCount={" + ROW_CNT_PARAM_NUM + "}, " +
+        "remoteFragmentsCount={" + REMOTE_FRAGMENTS_PARAM_NUM + "}")
+    public static List<Object[]> data() {
+        List<Object[]> extraParams = new ArrayList<>();
+
+        ImmutableList<Object[]> newParams = ImmutableList.of(
+            new Object[] {10, 1},
+            new Object[] {10, 5},
+            new Object[] {10, 10},
+            new Object[] {100, 1},
+            new Object[] {100, 5},
+            new Object[] {100, 10},
+            new Object[] {100_000, 1},
+            new Object[] {100_000, 5},
+            new Object[] {100_000, 10}
         );
+
+        for (Object[] newParam : newParams) {
+            for (Object[] inheritedParam : AbstractExecutionTest.parameters()) {
+                Object[] both = Stream.concat(Arrays.stream(inheritedParam), Arrays.stream(newParam))
+                    .toArray(Object[]::new);
+
+                extraParams.add(both);
+            }
+        }
+
+        return extraParams;
     }
 
     /**
