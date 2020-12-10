@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
@@ -41,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /// affects backup nodes affinity assignment.
         /// </summary>
         [Test]
-        public void TestBackupFilter()
+        public void TestBackupFilterPlacesBackupsToDifferentRacks()
         {
             for (int i = 0; i < 4; i++)
             {
@@ -73,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                     Partitions = 12,
                     AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
                     {
-                        AttributeNames = new[] {"DC"}
+                        AttributeNames = new[] {Rack}
                     }
                 }
             };
@@ -87,8 +86,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             var placement1 = GetPlacementString(aff.MapPartitionToPrimaryAndBackups(1));
             var placement2 = GetPlacementString(aff2.MapPartitionToPrimaryAndBackups(1));
 
-            Console.WriteLine(placement1);
-            Console.WriteLine(placement2);
+            Assert.AreEqual(
+                "Primary: Node 1 in Rack 0, Backup: Node 0 in Rack 0",
+                placement1,
+                "Without backup filter both backups are in the same rack.");
+
+            Assert.AreEqual(
+                "Primary: Node 1 in Rack 0, Backup: Node 2 in Rack 1",
+                placement2,
+                "With backup filter backups are in different racks.");
         }
 
         /**
