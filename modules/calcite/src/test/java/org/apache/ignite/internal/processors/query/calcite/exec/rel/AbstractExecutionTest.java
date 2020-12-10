@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
@@ -82,20 +83,48 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     protected int nodesCnt = 3;
 
     /** */
-    @Parameterized.Parameters(name = "Execution direction = {0}")
+    enum ExecutionStrategy {
+        /** */
+        FIFO {
+            @Override public T2<Runnable, Integer> nextTask(Deque<T2<Runnable, Integer>> tasks) {
+                return tasks.pollFirst();
+            }
+        },
+
+        /** */
+        LIFO {
+            @Override public T2<Runnable, Integer> nextTask(Deque<T2<Runnable, Integer>> tasks) {
+                return tasks.pollLast();
+            }
+        },
+
+        /** */
+        RANDOM {
+            @Override public T2<Runnable, Integer> nextTask(Deque<T2<Runnable, Integer>> tasks) {
+                return ThreadLocalRandom.current().nextBoolean() ? tasks.pollLast() : tasks.pollFirst();
+            }
+        };
+
+        /**
+         * Returns a next task according to the strategy.
+         *
+         * @param tasks Task list.
+         * @return Next task.
+         */
+        public T2<Runnable, Integer> nextTask(Deque<T2<Runnable, Integer>> tasks) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    /** */
+    @Parameterized.Parameters(name = "Execution strategy = {0}")
     public static List<Object[]> parameters() {
-        ArrayList<Object[]> params = new ArrayList<>();
-
-        params.add(new Object[]{true});
-        params.add(new Object[]{false});
-        params.add(new Object[]{null});
-
-        return params;
+        return Stream.of(ExecutionStrategy.values()).map(s -> new Object[]{s}).collect(Collectors.toList());
     }
 
     /** Execution direction. */
     @Parameterized.Parameter
-    public static Boolean execDir;
+    public static ExecutionStrategy execStgy;
 
     /** */
     @Before
@@ -161,8 +190,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
                 while (!stop.get()) {
                     synchronized (tasks) {
                         while (!tasks.isEmpty()) {
-                            T2<Runnable, Integer> r = execDir != null ? (execDir ? tasks.pollLast() : tasks.pollFirst()) :
-                                ThreadLocalRandom.current().nextBoolean() ? tasks.pollLast() : tasks.pollFirst();
+                            T2<Runnable, Integer> r = execStgy.nextTask(tasks);
 
                             exec.execute(() -> super.execute(r.getKey(), r.getValue()));
                         }
