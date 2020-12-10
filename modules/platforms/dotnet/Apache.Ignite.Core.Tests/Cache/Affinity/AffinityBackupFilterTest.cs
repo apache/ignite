@@ -36,11 +36,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         private const string NodeIdx = "Node_Idx";
 
         /// <summary>
-        /// Tests that the presence of <see cref="RendezvousAffinityFunction.AffinityBackupFilter"/>
-        /// affects backup nodes affinity assignment.
+        /// Fixture set up.
         /// </summary>
-        [Test]
-        public void TestBackupFilterPlacesBackupsToDifferentRacks()
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
         {
             for (int i = 0; i < 4; i++)
             {
@@ -56,7 +55,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
                 Ignition.Start(cfg);
             }
+        }
 
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
+        }
+
+        /// <summary>
+        /// Tests that the presence of <see cref="RendezvousAffinityFunction.AffinityBackupFilter"/>
+        /// affects backup nodes affinity assignment.
+        /// </summary>
+        [Test]
+        public void TestBackupFilterPlacesBackupsToDifferentRacks()
+        {
             var ign = Ignition.GetAll().First();
 
             var cacheCfg1 = new CacheConfiguration("c1")
