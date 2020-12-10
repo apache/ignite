@@ -147,5 +147,30 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             var res = qry.ToArray();
             Console.WriteLine(res.Length);
         }
+
+        /// <summary>
+        /// Tests grouping combined with join in a reverse order.
+        /// </summary>
+        [Test]
+        public void TestGroupByWithReverseJoin()
+        {
+            var organizations = GetOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
+
+            var qry = organizations.Join(
+                    persons,
+                    o => o.Value.Id,
+                    p => p.Value.OrganizationId,
+                    (org, person) => new {person, org})
+                .GroupBy(x => x.person.Value.OrganizationId)
+                .Select(g =>
+                    new {OrgId = g.Key, MaxAge = g.Max(x => x.person.Value.Age)});
+
+            Console.WriteLine(qry.ToCacheQueryable().GetFieldsQuery().Sql);
+
+            var res = qry.ToArray();
+            Console.WriteLine(res.Length);
+        }
+
     }
 }
