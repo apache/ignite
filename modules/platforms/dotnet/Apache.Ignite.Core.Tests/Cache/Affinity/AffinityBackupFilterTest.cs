@@ -97,9 +97,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 "With backup filter backups are in different racks.");
         }
 
-        /**
-         * Gets the placement string.
-         */
+        /// <summary>
+        /// Gets the placement string.
+        /// </summary>
         private static string GetPlacementString(IList<IClusterNode> primaryAndBackup)
         {
             var primary = primaryAndBackup.First();
