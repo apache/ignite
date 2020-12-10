@@ -56,10 +56,10 @@ class IgniteTest(Test):
 
         super().tearDown()
 
-    def _read_meta(self, param_name, default=None):
-        """"""
-        return self.test_context.cluster_use_metadata.get(param_name, default)
+    def _global_param(self, param_name, default=None):
+        """Reads global parameter passed to the test suite."""
+        return self.test_context.globals.get(param_name, default)
 
-    def _read_meta_int(self, param_name, default: int = None):
-        """"""
-        return int(self._read_meta(param_name, default))
+    def _global_int(self, param_name, default: int = None):
+        """Reads global parameter passed to the test suite and converts to int."""
+        return int(self._global_param(param_name, default))

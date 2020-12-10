@@ -35,9 +35,9 @@ from ignitetest.services.utils.ignite_configuration.discovery import from_zookee
 from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.utils.jvm_utils import jvm_settings
 from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
-from ignitetest.utils import ignite_versions, version_if, cluster, global_as_meta
+from ignitetest.utils import ignite_versions, version_if, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST, LATEST_2_7, V_2_8_0, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, LATEST, LATEST_2_7, V_2_8_0, V_2_9_1, IgniteVersion
 from ignitetest.utils.enum import constructible
 
 
@@ -92,7 +92,6 @@ class DiscoveryTest(IgniteTest):
         self.netfilter_store_path = None
 
     @cluster(num_nodes=MAX_CONTAINERS)
-    @global_as_meta(GLOBAL_DETECTION_TIMEOUT)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(nodes_to_kill=[1, 2], load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type):
@@ -105,7 +104,6 @@ class DiscoveryTest(IgniteTest):
         return self._perform_node_fail_scenario(test_config)
 
     @cluster(num_nodes=MAX_CONTAINERS)
-    @global_as_meta(GLOBAL_DETECTION_TIMEOUT)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
     def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type):
@@ -118,7 +116,6 @@ class DiscoveryTest(IgniteTest):
         return self._perform_node_fail_scenario(test_config)
 
     @cluster(num_nodes=MAX_CONTAINERS)
-    @global_as_meta(GLOBAL_DETECTION_TIMEOUT)
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(nodes_to_kill=[1, 2], load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
@@ -133,7 +130,6 @@ class DiscoveryTest(IgniteTest):
         return self._perform_node_fail_scenario(test_config)
 
     @cluster(num_nodes=MAX_CONTAINERS)
-    @global_as_meta(GLOBAL_DETECTION_TIMEOUT)
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
@@ -148,7 +144,7 @@ class DiscoveryTest(IgniteTest):
         return self._perform_node_fail_scenario(test_config)
 
     def _perform_node_fail_scenario(self, test_config):
-        failure_detection_timeout = self._read_meta_int(self.GLOBAL_DETECTION_TIMEOUT, self.DEFAULT_DETECTION_TIMEOUT)
+        failure_detection_timeout = self._global_int(self.GLOBAL_DETECTION_TIMEOUT, self.DEFAULT_DETECTION_TIMEOUT)
 
         # One node is required to detect the failure.
         assert len(self.test_context.cluster) >= 1 + test_config.nodes_to_kill + (
@@ -170,7 +166,7 @@ class DiscoveryTest(IgniteTest):
         else:
             discovery_spi = TcpDiscoverySpi()
 
-            if LATEST_2_7 != test_config.version:
+            if LATEST_2_7 < test_config.version < V_2_9_1:
                 discovery_spi.so_linger = 0
 
         ignite_config = IgniteConfiguration(
@@ -235,13 +231,10 @@ class DiscoveryTest(IgniteTest):
         logged_timestamps = []
         data = {}
 
-        start = monotonic()
-
         for survivor in [n for n in servers.nodes if n not in failed_nodes]:
             for failed_id in ids_to_wait:
-                # We'll add several seconds to read and re-read logs to find the event.
                 logged_timestamps.append(get_event_time(servers, survivor, node_failed_event_pattern(failed_id),
-                                                        timeout=3 + start + event_timeout_sec - monotonic()))
+                                                        timeout=event_timeout_sec))
 
             self._check_failed_number(failed_nodes, survivor)
 
