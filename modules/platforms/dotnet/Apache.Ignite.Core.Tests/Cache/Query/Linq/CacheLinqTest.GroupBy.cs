@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 {
+    using System;
     using System.Linq;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
@@ -130,7 +131,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         [Test]
         public void TestGroupByWithJoin()
         {
-            // TODO
+            var organizations = GetOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
+
+            var qry = persons.Join(
+                    organizations,
+                    p => p.Value.OrganizationId,
+                    o => o.Value.Id,
+                    (person, org) => new {person, org})
+                .GroupBy(x => x.person.Value.OrganizationId)
+                .Select(g => new {orgId = g.Key, maxAge = g.Max(x => x.person.Value.Age)});
+
+            Console.WriteLine(qry.ToCacheQueryable().GetFieldsQuery().Sql);
+
+            var res = qry.ToArray();
+            Console.WriteLine(res.Length);
         }
     }
 }
