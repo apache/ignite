@@ -25,25 +25,25 @@ It allows users to change the encryption key of the cache group and re-encrypt e
 
 Rotation of the cache encryption key is required if this key has been compromised or at the end of the crypto period (key validity period).
 
-The process of changing the cache encryption key consists of two stages:
+The process of changing the cache encryption key consists of two stages, which are performed sequentially:
 
-1. _Rotate cache group key_, this process adds a new encryption key for the specified cache group(s) on each server node and sets it to write new data.
-2. _Background re-encryption_ of existing (archived) cache data.
+1. Rotate cache group key, this process adds a new encryption key for the specified cache group(s) on each server node and sets it to write new data.
 
-Re-encrypting existing data can take a long time, so during this period the old key will be kept to read the archived data.
-To understand what key the data is encrypted with, each encryption key has an _identifier_, by default it is equal to zero, with each rotation the identifier of the new key is increased.
+    Node join during this stage is prohibited and will be rejected.
+
+2. Re-encrypt existing (archived) cache data with the new encryption key.
+
+The second stage can take a long time, which depends on the amount of existing data. During this period the old key will be kept to read the archived data.
+To understand what key the data is encrypted with, each encryption key has an _identifier_. By default it is equal to zero, with each rotation the identifier of the new key is increased.
 The same cache group has the same encryption key (with the same encryption key ID) on all nodes.
+
+NOTE: Secondary rotation of the cache encryption key is possible only after a complete change of the encryption key for this cache group (both stages).
 
 == Prerequisites
 
 The cluster should be active.
 
-== Changing cache encryption key
-
-=== Limitations
-
-* Node join during _the rotation of the encryption key_ is prohibited and will be rejected. During re-encryption of existing data, which begins after the encryption key is rotated, the node join is not rejected and the cluster remains fully functional.
-* Secondary rotation of the encryption key of a cache group is only possible after background re-encryption of existing data in that cache group has been completed.
+== Changing the encryption key
 
 Ignite provides the ability to change the cache encryption key using the following interfaces:
 
@@ -89,7 +89,7 @@ include::{javaCodeDir}/TDE.java[tags=cache-group-key-rotation, indent=0]
 ----
 --
 
-== Background re-encryption management
+== Managing the re-encryption process
 
 Re-encrypting existing data can take a long time. This is a fault-tolerant operation that automatically continues after a node restart.
 The previous encryption key is automatically removed when all local partitions are encrypted with the new key, and the last link:persistence/native-persistence#write-ahead-log[Write-Ahead Log] segment, which may contain entries encrypted with the previous key, is removed from disk.

@@ -60,6 +60,8 @@ public class TDE {
 
         //tag::cache-group-key-rotation[]
         // Starts cache group encryption key change process.
+        // This future will be completed when the new encryption key is set for writing on
+        // all nodes in the cluster and re-encryption of existing cache data is initiated.
         IgniteFuture<Void> fut = ignite.encryption().changeCacheGroupKey(Collections.singleton("encrypted-cache"));
         //end::cache-group-key-rotation[]
 
