@@ -123,5 +123,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 new {Org = "Org_0", AgeSum = persons.Where(x => x.Value.OrganizationId == 1000).Sum(x => x.Value.Age)},
             }, resArr2);
         }
+
+        /// <summary>
+        /// Tests grouping combined with join.
+        /// </summary>
+        [Test]
+        public void TestGroupByWithJoin()
+        {
+            // TODO
+        }
     }
 }
