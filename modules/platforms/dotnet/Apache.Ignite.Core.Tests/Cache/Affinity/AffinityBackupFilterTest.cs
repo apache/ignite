@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using System.Linq;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cluster;
     using NUnit.Framework;
 
     /// <summary>
@@ -29,6 +30,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     /// </summary>
     public class AffinityBackupFilterTest
     {
+        /** */
+        private const string Rack = "Rack";
+
+        /** */
+        private const string NodeIdx = "Node_Idx";
+
         /// <summary>
         /// Tests that the presence of <see cref="RendezvousAffinityFunction.AffinityBackupFilter"/>
         /// affects backup nodes affinity assignment.
@@ -42,8 +49,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 {
                     UserAttributes = new Dictionary<string, object>
                     {
-                        {"DC", i < 2 ? 0 : 1},
-                        {"IDX", i}
+                        {Rack, i < 2 ? 0 : 1},
+                        {NodeIdx, i}
                     },
                     AutoGenerateIgniteInstanceName = true
                 };
@@ -53,38 +60,51 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             var ign = Ignition.GetAll().First();
 
-            var cacheCfg = new CacheConfiguration
+            var cacheCfg1 = new CacheConfiguration("c1")
             {
-                Name = "c",
+                Backups = 1
+            };
+
+            var cacheCfg2 = new CacheConfiguration("c2")
+            {
                 Backups = 1,
                 AffinityFunction = new RendezvousAffinityFunction
                 {
                     Partitions = 12,
-                    // AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
-                    // {
-                    //     AttributeNames = new[] {"DC"}
-                    // }
+                    AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
+                    {
+                        AttributeNames = new[] {"DC"}
+                    }
                 }
             };
 
-            var cache = ign.CreateCache<int, int>(cacheCfg);
-            cache[1] = 2;
+            var cache1 = ign.CreateCache<int, int>(cacheCfg1);
+            var cache2 = ign.CreateCache<int, int>(cacheCfg2);
 
-            var aff = ign.GetAffinity(cache.Name);
-            // var nodes = ign.GetCluster().GetNodes();
-            //
-            // foreach (var node in nodes)
-            // {
-            //     var parts = aff.GetBackupPartitions(node);
-            //     Console.WriteLine(string.Join(", ", parts));
-            // }
+            var aff = ign.GetAffinity(cache1.Name);
+            var aff2 = ign.GetAffinity(cache2.Name);
 
-            var primaryAndBackup = aff.MapPartitionToPrimaryAndBackups(1);
+            var placement1 = GetPlacementString(aff.MapPartitionToPrimaryAndBackups(1));
+            var placement2 = GetPlacementString(aff2.MapPartitionToPrimaryAndBackups(1));
+
+            Console.WriteLine(placement1);
+            Console.WriteLine(placement2);
+        }
+
+        /**
+         * Gets the placement string.
+         */
+        private static string GetPlacementString(IList<IClusterNode> primaryAndBackup)
+        {
             var primary = primaryAndBackup.First();
             var backup = primaryAndBackup.Last();
 
-            Console.WriteLine("Primary: Node {0} in DC {1}", primary.Attributes["IDX"], primary.Attributes["DC"]);
-            Console.WriteLine("Backup: Node {0} in DC {1}", backup.Attributes["IDX"], backup.Attributes["DC"]);
+            return string.Format(
+                "Primary: Node {0} in Rack {1}, Backup: Node {2} in Rack {3}",
+                primary.Attributes[NodeIdx],
+                primary.Attributes[Rack],
+                backup.Attributes[NodeIdx],
+                backup.Attributes[Rack]);
         }
     }
 }
