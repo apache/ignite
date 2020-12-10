@@ -148,9 +148,8 @@ class DiscoveryTest(IgniteTest):
 
         # One node is required to detect the failure.
         assert len(self.test_context.cluster) >= 1 + test_config.nodes_to_kill + (
-            self.ZOOKEEPER_NODES if test_config.with_zk else 0) + \
-               (0 if test_config.load_type == ClusterLoad.NONE else 1), \
-            "Few required containers: " + str(len(self.test_context.cluster)) + ". Check the params."
+            self.ZOOKEEPER_NODES if test_config.with_zk else 0), \
+            f"Few required containers: {len(self.test_context.cluster)}. Check the params."
 
         self.logger.info("Starting on " + str(len(self.test_context.cluster)) + " maximal containers.")
         self.logger.info(f"{self.GLOBAL_DETECTION_TIMEOUT}: {failure_detection_timeout}")
