@@ -140,12 +140,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                     o => o.Value.Id,
                     (person, org) => new {person, org})
                 .GroupBy(x => x.person.Value.OrganizationId)
-                .Select(g => new {orgId = g.Key, maxAge = g.Max(x => x.person.Value.Age)});
-
-            Console.WriteLine(qry.ToCacheQueryable().GetFieldsQuery().Sql);
+                .Select(g => new {OrgId = g.Key, MaxAge = g.Max(x => x.person.Value.Age)})
+                .OrderBy(x => x.MaxAge);
 
             var res = qry.ToArray();
-            Console.WriteLine(res.Length);
+
+            Assert.AreEqual(2, res.Length);
+
+            Assert.AreEqual(1000, res[0].OrgId);
+            Assert.AreEqual(898, res[0].MaxAge);
+
+            Assert.AreEqual(1001, res[1].OrgId);
+            Assert.AreEqual(899, res[1].MaxAge);
         }
 
         /// <summary>
@@ -164,13 +170,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                     (org, person) => new {person, org})
                 .GroupBy(x => x.person.Value.OrganizationId)
                 .Select(g =>
-                    new {OrgId = g.Key, MaxAge = g.Max(x => x.person.Value.Age)});
-
-            Console.WriteLine(qry.ToCacheQueryable().GetFieldsQuery().Sql);
+                    new {OrgId = g.Key, MaxAge = g.Max(x => x.person.Value.Age)})
+                .OrderBy(x => x.MaxAge);
 
             var res = qry.ToArray();
-            Console.WriteLine(res.Length);
-        }
 
+            Assert.AreEqual(2, res.Length);
+
+            Assert.AreEqual(1000, res[0].OrgId);
+            Assert.AreEqual(898, res[0].MaxAge);
+
+            Assert.AreEqual(1001, res[1].OrgId);
+            Assert.AreEqual(899, res[1].MaxAge);
+        }
     }
 }
