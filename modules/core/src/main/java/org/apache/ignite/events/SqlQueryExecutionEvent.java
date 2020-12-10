@@ -28,6 +28,10 @@ import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 
 /**
  * Query execution event.
+ * This event is triggered after a corresponding SQL query validated and before it is executed.
+ * Unlike {@link EventType#EVT_CACHE_QUERY_EXECUTED}, {@link EventType#EVT_SQL_QUERY_EXECUTION} is fired only once for a request
+ * and does not relate to a specific cache.
+ *
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design Ignite keeps all events generated on the local node locally and it provides
