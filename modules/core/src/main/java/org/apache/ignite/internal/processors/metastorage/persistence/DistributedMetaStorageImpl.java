@@ -1125,7 +1125,16 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         return fut;
     }
 
-    /** */
+    /**
+     * This method will perform some preliminary checks before starting write or cas operation.
+     *
+     * Tricky part is exception handling from "isSupported" method. It can be thrown by
+     * {@code ZookeeperDiscoveryImpl#checkState()} method, but we can't just leave it as is.
+     * There are components that rely on distributed metastorage throwing {@link NodeStoppingException}.
+     *
+     * @return Future that must be returned immediately or {@code null}.
+     * @throws IgniteCheckedException If cluster can't perform this update.
+     */
     private GridFutureAdapter<Boolean> validateBeforeWrite(String key) throws IgniteCheckedException {
         boolean supported;
 
