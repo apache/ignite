@@ -60,6 +60,7 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
             cluster,
             trait,
             spool.getInput(),
+            spool.collation(),
             RexUtils.buildIndexConditions(
                 cluster,
                 spool.collation(),

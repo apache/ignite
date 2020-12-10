@@ -36,9 +36,9 @@ public class IgniteLogicalTableScan extends ProjectableFilterableTableScan {
         RelOptTable tbl,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColunms
+        @Nullable ImmutableBitSet requiredColumns
     ) {
-        return new IgniteLogicalTableScan(cluster, traits, tbl, proj, cond, requiredColunms);
+        return new IgniteLogicalTableScan(cluster, traits, tbl, proj, cond, requiredColumns);
     }
 
     /**

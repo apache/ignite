@@ -55,7 +55,8 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         RelDataType rowType,
         Comparator<Row> comp,
         Supplier<Row> lowerIdxConditions,
-        Supplier<Row> upperIdxConditions) {
+        Supplier<Row> upperIdxConditions
+    ) {
         super(ctx, rowType);
 
         idx = new TreeMap<>(comp);

@@ -20,11 +20,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.apache.calcite.rel.type.RelDataType;
+
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -47,28 +46,22 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeFilterClosure;
 import org.apache.ignite.internal.processors.query.h2.opt.H2PlainRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.h2.value.DataType;
 import org.h2.value.Value;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Scan on index.
  */
-public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
+public class IndexScan<Row> extends AbstractIndexScan<Row, H2Row> implements Iterable<Row>, AutoCloseable {
     /** */
     private final GridKernalContext kctx;
 
     /** */
     private final GridCacheContext<?, ?> cctx;
-
-    /** */
-    private final ExecutionContext<Row> ectx;
 
     /** */
     private final CacheObjectContext coCtx;
@@ -80,19 +73,7 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
     private final RowFactory<Row> factory;
 
     /** */
-    private final GridIndex<H2Row> idx;
-
-    /** */
     private final AffinityTopologyVersion topVer;
-
-    /** Additional filters. */
-    private final Predicate<Row> filters;
-
-    /** Lower index scan bound. */
-    private final Supplier<Row> lowerBound;
-
-    /** Upper index scan bound. */
-    private final Supplier<Row> upperBound;
 
     /** */
     private final int[] parts;
@@ -102,9 +83,6 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
 
     /** */
     private volatile List<GridDhtLocalPartition> reserved;
-
-    /** */
-    private final Function<Row, Row> rowTransformer;
 
     /** */
     private final ImmutableBitSet requiredColumns;
@@ -128,40 +106,50 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        this.ectx = ectx;
+        super(
+            ectx,
+            desc.rowType(ectx.getTypeFactory(), requiredColumns),
+            idx,
+            filters,
+            lowerBound,
+            upperBound,
+            rowTransformer
+        );
+
         this.desc = desc;
         cctx = desc.cacheContext();
         kctx = cctx.kernalContext();
         coCtx = cctx.cacheObjectContext();
 
-        RelDataType rowType = desc.rowType(this.ectx.getTypeFactory(), requiredColumns);
-
-        factory = this.ectx.rowHandler().factory(this.ectx.getTypeFactory(), rowType);
-        this.idx = idx;
+        factory = ectx.rowHandler().factory(ectx.getTypeFactory(), rowType);
         topVer = ectx.planningContext().topologyVersion();
-        this.filters = filters;
-        this.lowerBound = lowerBound;
-        this.upperBound = upperBound;
         this.parts = parts;
         mvccSnapshot = ectx.mvccSnapshot();
-        this.rowTransformer = rowTransformer;
         this.requiredColumns = requiredColumns;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized Iterator<Row> iterator() {
         reserve();
-        try {
-            H2Row lower = lowerBound == null ? null : new H2PlainRow(values(coCtx, ectx, lowerBound.get()));
-            H2Row upper = upperBound == null ? null : new H2PlainRow(values(coCtx, ectx, upperBound.get()));
 
-            return new IteratorImpl(idx.find(lower, upper, filterClosure()));
+        try {
+            return super.iterator();
         }
         catch (Exception e) {
             release();
 
             throw e;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected H2Row row2indexRow(Row bound) {
+        return new H2PlainRow(values(coCtx, ectx, bound));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Row indexRow2Row(H2Row row) throws IgniteCheckedException {
+        return desc.toRow(ectx, (CacheDataRow)row, factory, requiredColumns);
     }
 
     /** */
@@ -213,12 +201,17 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
 
         try {
             for (GridDhtLocalPartition part : toReserve) {
-                if (part == null || !part.reserve())
-                    throw new ClusterTopologyException("Failed to reserve partition for query execution. Retry on stable topology.");
+                if (part == null || !part.reserve()) {
+                    throw new ClusterTopologyException(
+                        "Failed to reserve partition for query execution. Retry on stable topology."
+                    );
+                }
                 else if (part.state() != GridDhtPartitionState.OWNING) {
                     part.release();
 
-                    throw new ClusterTopologyException("Failed to reserve partition for query execution. Retry on stable topology.");
+                    throw new ClusterTopologyException(
+                        "Failed to reserve partition for query execution. Retry on stable topology."
+                    );
                 }
 
                 reserved.add(part);
@@ -245,8 +238,8 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         reserved = null;
     }
 
-    /** */
-    private H2TreeFilterClosure filterClosure() {
+    /** {@inheritDoc} */
+    @Override protected H2TreeFilterClosure filterClosure() {
         IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
         IndexingQueryCacheFilter f = filter.forCache(cctx.name());
         H2TreeFilterClosure filterC = null;
@@ -275,68 +268,6 @@ public class IndexScan<Row> implements Iterable<Row>, AutoCloseable {
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to wrap object into H2 Value.", e);
-        }
-    }
-
-    /** */
-    private class IteratorImpl extends GridIteratorAdapter<Row> {
-        /** */
-        private final GridCursor<H2Row> cursor;
-
-        /** Next element. */
-        private Row next;
-
-        /** */
-        public IteratorImpl(@NotNull GridCursor<H2Row> cursor) {
-            this.cursor = cursor;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasNextX() throws IgniteCheckedException {
-            advance();
-
-            return next != null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Row nextX() throws IgniteCheckedException {
-            advance();
-
-            if (next == null)
-                throw new NoSuchElementException();
-
-            Row res = next;
-
-            next = null;
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void removeX() {
-            throw new UnsupportedOperationException("Remove is not supported.");
-        }
-
-        /** */
-        private void advance() throws IgniteCheckedException {
-            assert cursor != null;
-
-            if (next != null)
-                return;
-
-            while (next == null && cursor.next()) {
-                H2Row h2Row = cursor.get();
-
-                Row r = desc.toRow(ectx, (CacheDataRow)h2Row, factory, requiredColumns);
-
-                if (filters != null && !filters.test(r))
-                    continue;
-
-                if (rowTransformer != null)
-                    r = rowTransformer.apply(r);
-
-                next = r;
-            }
         }
     }
 }

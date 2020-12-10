@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -32,13 +33,14 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
-
 /**
  * Relational operator that returns the sorted contents of a table
  * and allow to lookup rows by specified keys.
  */
 public class IgniteIndexSpool extends Spool implements IgniteRel {
+    /** */
+    private final RelCollation collation;
+
     /** Index condition. */
     private IndexConditions idxCond;
 
@@ -46,9 +48,10 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
     public IgniteIndexSpool(
         RelOptCluster cluster,
         RelTraitSet traits,
-        RelNode input
+        RelNode input,
+        RelCollation collation
     ) {
-        this(cluster, traits, input, null);
+        this(cluster, traits, input, collation, null);
     }
 
     /** */
@@ -56,10 +59,12 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode input,
+        RelCollation collation,
         @Nullable IndexConditions idxCond
     ) {
         super(cluster, traits, input, Type.LAZY, Type.EAGER);
         this.idxCond = idxCond;
+        this.collation = collation;
     }
 
     /**
@@ -68,12 +73,11 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
      * @param input Serialized representation.
      */
     public IgniteIndexSpool(RelInput input) {
-        super(
-            changeTraits(input, IgniteConvention.INSTANCE).getCluster(),
-            changeTraits(input, IgniteConvention.INSTANCE).getTraitSet(),
-            changeTraits(input, IgniteConvention.INSTANCE).getInput(),
-            changeTraits(input, IgniteConvention.INSTANCE).getEnum("readType", Type.class),
-            changeTraits(input, IgniteConvention.INSTANCE).getEnum("writeType", Type.class)
+        this(input.getCluster(),
+            input.getTraitSet().replace(IgniteConvention.INSTANCE),
+            input.getInputs().get(0),
+            input.getCollation(),
+            (IndexConditions)input.get("idxCond")
         );
     }
 
@@ -84,12 +88,12 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
 
     /** */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteIndexSpool(cluster, getTraitSet(), inputs.get(0), idxCond);
+        return new IgniteIndexSpool(cluster, getTraitSet(), inputs.get(0), collation, idxCond);
     }
 
     /** {@inheritDoc} */
     @Override protected Spool copy(RelTraitSet traitSet, RelNode input, Type readType, Type writeType) {
-        return new IgniteIndexSpool(getCluster(), traitSet, input, idxCond);
+        return new IgniteIndexSpool(getCluster(), traitSet, input, collation, idxCond);
     }
 
     /** {@inheritDoc} */
@@ -129,5 +133,10 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
     /** */
     public IndexConditions indexCondition() {
         return idxCond;
+    }
+
+    /** */
+    public RelCollation collation() {
+        return collation;
     }
 }
