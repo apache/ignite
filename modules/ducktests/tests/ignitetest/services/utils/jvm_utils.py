@@ -19,7 +19,7 @@ This module contains JVM utilities.
 
 JVM_PARAMS_GC_CMS = "-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSIncrementalMode " \
                     "-XX:ConcGCThreads=$(((`nproc`/4)>1?(`nproc`/4):1)) " \
-                    "-XX:ParallelGCThreads=$(((`nproc`*3/4)>1?(`nproc`*3/4):1)) " \
+                    "-XX:ParallelGCThreads=$(((`nproc`/2)>1?(`nproc`/2):1)) " \
                     "-XX:CMSInitiatingOccupancyFraction=70 -XX:+UseCMSInitiatingOccupancyOnly " \
                     "-XX:+CMSParallelRemarkEnabled -XX:+CMSClassUnloadingEnabled"
 

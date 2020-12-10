@@ -62,9 +62,14 @@ DEV_BRANCH = IgniteVersion("dev")
 V_2_7_6 = IgniteVersion("2.7.6")
 LATEST_2_7 = V_2_7_6
 
-# 2.8.0 versions
+# 2.8.x versions
 V_2_8_0 = IgniteVersion("2.8.0")
 V_2_8_1 = IgniteVersion("2.8.1")
 LATEST_2_8 = V_2_8_1
 
-LATEST = LATEST_2_8
+# 2.9.x versions
+V_2_9_0 = IgniteVersion("2.9.0")
+V_2_9_1 = IgniteVersion("2.9.1")
+LATEST_2_9 = V_2_9_0
+
+LATEST = LATEST_2_9

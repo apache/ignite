@@ -37,7 +37,7 @@ from ignitetest.services.utils.jvm_utils import jvm_settings
 from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
 from ignitetest.utils import ignite_versions, version_if, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST, V_2_8_0, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, LATEST, LATEST_2_7, V_2_8_0, V_2_9_1, IgniteVersion
 from ignitetest.utils.enum import constructible
 
 
@@ -61,7 +61,6 @@ class DiscoveryTestConfig(NamedTuple):
     load_type: ClusterLoad = ClusterLoad.NONE
     sequential_failure: bool = False
     with_zk: bool = False
-    failure_detection_timeout: int = 2000
 
 
 # pylint: disable=W0223, no-member
@@ -72,6 +71,11 @@ class DiscoveryTest(IgniteTest):
     2. Kill random node.
     3. Wait that survived node detects node failure.
     """
+
+    # Name of global param to control failure_detection_timeout used.
+    GLOBAL_DETECTION_TIMEOUT = "failure_detection_timeout"
+
+    # Default maximum numbers of containers to utilize for the test.
     MAX_CONTAINERS = 12
 
     ZOOKEEPER_NODES = 3
@@ -80,7 +84,7 @@ class DiscoveryTest(IgniteTest):
 
     WARMUP_DATA_AMOUNT = 10_000
 
-    FAILURE_TIMEOUT = 500
+    DEFAULT_DETECTION_TIMEOUT = 1000
 
     def __init__(self, test_context):
         super().__init__(test_context=test_context)
@@ -89,88 +93,86 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[FAILURE_TIMEOUT],
-            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
+    @matrix(nodes_to_kill=[1, 2], load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type):
         """
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
-                                          load_type=ClusterLoad.construct_from(load_type), sequential_failure=False,
-                                          failure_detection_timeout=failure_detection_timeout)
+                                          load_type=ClusterLoad.construct_from(load_type), sequential_failure=False)
 
         return self._perform_node_fail_scenario(test_config)
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
-            failure_detection_timeout=[FAILURE_TIMEOUT])
-    def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, failure_detection_timeout):
+    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2,
-                                          load_type=ClusterLoad.construct_from(load_type), sequential_failure=True,
-                                          failure_detection_timeout=failure_detection_timeout)
+                                          load_type=ClusterLoad.construct_from(load_type), sequential_failure=True)
 
         return self._perform_node_fail_scenario(test_config)
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(nodes_to_kill=[1, 2], failure_detection_timeout=[FAILURE_TIMEOUT],
-            load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type, failure_detection_timeout):
+    @matrix(nodes_to_kill=[1, 2], load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    def test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type):
         """
         Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
                                           load_type=ClusterLoad.construct_from(load_type), sequential_failure=False,
-                                          with_zk=True, failure_detection_timeout=failure_detection_timeout)
+                                          with_zk=True)
 
         return self._perform_node_fail_scenario(test_config)
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @version_if(lambda version: version != V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
-            failure_detection_timeout=[FAILURE_TIMEOUT])
-    def test_2_nodes_fail_sequential_zk(self, ignite_version, load_type, failure_detection_timeout):
+    @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    def test_2_nodes_fail_sequential_zk(self, ignite_version, load_type):
         """
         Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2,
                                           load_type=ClusterLoad.construct_from(load_type), sequential_failure=True,
-                                          with_zk=True, failure_detection_timeout=failure_detection_timeout)
+                                          with_zk=True)
 
         return self._perform_node_fail_scenario(test_config)
 
     def _perform_node_fail_scenario(self, test_config):
-        max_containers = len(self.test_context.cluster)
+        failure_detection_timeout = self._global_int(self.GLOBAL_DETECTION_TIMEOUT, self.DEFAULT_DETECTION_TIMEOUT)
 
         # One node is required to detect the failure.
-        assert max_containers >= 1 + test_config.nodes_to_kill + (
-            DiscoveryTest.ZOOKEEPER_NODES if test_config.with_zk else 0) + (
-                   0 if test_config.load_type == ClusterLoad.NONE else 1), "Few required containers: " + \
-                                                                           str(max_containers) + ". Check the params."
+        assert len(self.test_context.cluster) >= 1 + test_config.nodes_to_kill + (
+            self.ZOOKEEPER_NODES if test_config.with_zk else 0) + \
+               (0 if test_config.load_type == ClusterLoad.NONE else 1), \
+            "Few required containers: " + str(len(self.test_context.cluster)) + ". Check the params."
 
-        self.logger.info("Starting on " + str(max_containers) + " maximal containers.")
+        self.logger.info("Starting on " + str(len(self.test_context.cluster)) + " maximal containers.")
+        self.logger.info(f"{self.GLOBAL_DETECTION_TIMEOUT}: {failure_detection_timeout}")
 
         results = {}
 
         modules = ['zookeeper'] if test_config.with_zk else None
 
         if test_config.with_zk:
-            zk_quorum = start_zookeeper(self.test_context, DiscoveryTest.ZOOKEEPER_NODES, test_config)
+            zk_quorum = start_zookeeper(self.test_context, self.ZOOKEEPER_NODES, failure_detection_timeout)
 
             discovery_spi = from_zookeeper_cluster(zk_quorum)
         else:
             discovery_spi = TcpDiscoverySpi()
 
+            if LATEST_2_7 < test_config.version < V_2_9_1:
+                discovery_spi.so_linger = 0
+
         ignite_config = IgniteConfiguration(
             version=test_config.version,
             discovery_spi=discovery_spi,
-            failure_detection_timeout=test_config.failure_detection_timeout,
+            failure_detection_timeout=failure_detection_timeout,
             caches=[CacheConfiguration(
                 name='test-cache',
                 backups=1,
@@ -184,7 +186,8 @@ class DiscoveryTest(IgniteTest):
         # Start Ignite nodes in count less than max_nodes_in_use. One node is erequired for the loader. Some nodes might
         # be needed for ZooKeeper.
         servers, start_servers_sec = start_servers(
-            self.test_context, max_containers - DiscoveryTest.ZOOKEEPER_NODES - 1, ignite_config, modules, jvm_opts_str)
+            self.test_context, len(self.test_context.cluster) - self.ZOOKEEPER_NODES - 1,
+            ignite_config, modules, jvm_opts_str)
 
         results['Ignite cluster start time (s)'] = start_servers_sec
 
@@ -205,13 +208,13 @@ class DiscoveryTest(IgniteTest):
 
             start_load_app(self.test_context, load_config, params, modules, jvm_opts_str)
 
-        # Al least 3 sec to detect node failure. The calculated timeout is failure_detection_timeout * 4 in seconds.
+        # Minimal detection timeout is failure_detection_timeout * 2. Let's more to capture also 'bad' results.
         results.update(self._simulate_and_detect_failure(servers, failed_nodes,
-                                                         max(3.0, 0.004 * test_config.failure_detection_timeout)))
+                                                         0.004 * ignite_config.failure_detection_timeout))
 
         return results
 
-    def _simulate_and_detect_failure(self, servers, failed_nodes, timeout_sec):
+    def _simulate_and_detect_failure(self, servers, failed_nodes, event_timeout_sec):
         """
         Perform node failure scenario
         """
@@ -220,8 +223,7 @@ class DiscoveryTest(IgniteTest):
         for node in failed_nodes:
             ids_to_wait.append(read_node_id(node))
 
-            self.logger.info("Simulating failure of node '%s' (ID: %s). Timeout: %.2f sec" %
-                             (node.name, ids_to_wait[-1], timeout_sec))
+            self.logger.info("Simulating failure of node '%s' (ID: %s)." % (node.name, ids_to_wait[-1]))
 
         _, first_terminated = servers.drop_network(failed_nodes)
 
@@ -229,12 +231,10 @@ class DiscoveryTest(IgniteTest):
         logged_timestamps = []
         data = {}
 
-        start = monotonic()
-
         for survivor in [n for n in servers.nodes if n not in failed_nodes]:
             for failed_id in ids_to_wait:
                 logged_timestamps.append(get_event_time(servers, survivor, node_failed_event_pattern(failed_id),
-                                                        timeout=start + timeout_sec - monotonic()))
+                                                        timeout=event_timeout_sec))
 
             self._check_failed_number(failed_nodes, survivor)
 
@@ -280,13 +280,11 @@ class DiscoveryTest(IgniteTest):
                         "Wrong node failed (segmented) on '%s'. Check the logs." % node.name)
 
 
-def start_zookeeper(test_context, num_nodes, test_config):
+def start_zookeeper(test_context, num_nodes, failure_detection_timeout):
     """
     Start zookeeper cluster.
     """
-    zk_settings = ZookeeperSettings(min_session_timeout=test_config.failure_detection_timeout,
-                                    max_session_timeout=test_config.failure_detection_timeout,
-                                    tick_time=test_config.failure_detection_timeout // 3)
+    zk_settings = ZookeeperSettings(min_session_timeout=failure_detection_timeout, force_sync="no")
 
     zk_quorum = ZookeeperService(test_context, num_nodes, settings=zk_settings)
     zk_quorum.start()

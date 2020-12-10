@@ -63,8 +63,6 @@ The options are as follows:
 -p|--param
     Use specified param to inject in tests. Could be used multiple times.
 
-    ./run_tests.sh --param version=2.8.1
-
 -pj|--params-json
     Use specified json as parameters to inject in tests. Can be extended with -p|--param.
 
