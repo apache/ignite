@@ -69,12 +69,16 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.DataRowPersistenceAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -90,8 +94,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageI
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
-import org.apache.ignite.internal.processors.cache.tree.DataRow;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -104,8 +106,10 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -139,10 +143,12 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_I
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
+import static org.apache.ignite.internal.processors.cache.tree.CacheDataTree.asRowData;
 import static org.apache.ignite.internal.util.GridArrays.clearTail;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
@@ -936,6 +942,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @param snpName Snapshot name.
+     * @param grpId Group id.
+     * @param partId Partition id.
+     * @return Iterator over partition.
+     * @throws IgniteCheckedException If fails.
+     */
+    public GridCloseableIterator<CacheDataRow> getSnapshotDataRows(String snpName, int grpId, int partId)
+        throws IgniteCheckedException {
+        CacheGroupContext grp = cctx.kernalContext().cache().cacheGroup(grpId);
+
+        File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName), databaseRelativePath(pdsSettings.folderName())),
+            cacheDirName(grp.config()), partId);
+
+        FilePageStore pageStore = (FilePageStore)storeFactory
+            .apply(grpId, false)
+            .createPageStore(getTypeByPartId(partId),
+                snpPart::toPath,
+                val -> {
+                });
+
+        return new SerialPageStoreIterator(cctx, grp, pageStore, partId, CacheDataRowAdapter.RowData.FULL);
+    }
+
+    /**
      * @param snpName Unique snapshot name.
      * @param srcNodeId Node id which cause snapshot operation.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
@@ -1096,13 +1126,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** */
     private static class SerialPageStoreIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
         /** */
+        private final GridCacheSharedContext<?, ?> sctx;
+
+        /** */
+        private final CacheGroupContext grp;
+
+        /** */
         private final PageStore store;
 
         /** */
         private final int partId;
 
         /** */
+        private final CacheDataRowAdapter.RowData rowData;
+
+        /** */
         private final ByteBuffer locBuff;
+
+        /** */
+        private final ByteBuffer fragmentBuff;
 
         /** */
         private final int pages;
@@ -1119,12 +1161,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /**
          * @param store Store to iterate over.
          */
-        public SerialPageStoreIterator(PageStore store, int partId) {
+        public SerialPageStoreIterator(
+            GridCacheSharedContext<?, ?> sctx,
+            CacheGroupContext grp,
+            PageStore store,
+            int partId,
+            Object flags
+        ) {
+            this.sctx = sctx;
+            this.grp = grp;
             this.store = store;
             this.partId = partId;
 
+            rowData = asRowData(flags);
             pages = store.pages();
+
             locBuff = ByteBuffer.allocateDirect(store.getPageSize())
+                .order(ByteOrder.nativeOrder());
+            fragmentBuff = ByteBuffer.allocateDirect(store.getPageSize())
                 .order(ByteOrder.nativeOrder());
 
         }
@@ -1139,8 +1193,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             long startPageId = PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, 0);
 
             for (;;) {
+                currPageIdx++;
+
                 long pageId = startPageId + currPageIdx;
                 boolean skipVer = CacheDataRowStore.getSkipVersion();
+
+                assert !CacheDataRowStore.getSkipVersion();
+                assert locBuff.capacity() == store.getPageSize();
+
+                locBuff.clear();
 
                 boolean success = store.read(pageId, locBuff, true);
 
@@ -1165,18 +1226,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 int r = 0;
 
                 for (int i = 0; i < rowsCnt; i++) {
-                    DataRow row = new DataRow();
+                    DataRowPersistenceAdapter row = new DataRowPersistenceAdapter();
 
-                    row.initFromDataPage(
+                    row.initFromPageBuffer(
+                        new IgniteInClosure2X<Long, ByteBuffer>() {
+                            @Override public void applyx(Long nextPageId, ByteBuffer buff) throws IgniteCheckedException {
+                                boolean read = store.read(nextPageId, buff, true);
+
+                                assert read : nextPageId;
+                            }
+                        },
                         io,
-                        pageAddr,
+                        locBuff,
+                        fragmentBuff,
                         i,
                         grp,
-                        shared,
-                        pageMem,
+                        sctx,
                         rowData,
-                        skipVer
-                    );
+                        skipVer);
 
                     rows[r++] = row;
                 }
@@ -1188,8 +1255,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 return true;
             }
-
-            return false;
         }
     }
 

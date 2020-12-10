@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1164,6 +1166,26 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             fut::get,
             IgniteException.class,
             "Snapshots on an in-memory clusters are not allowed.");
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testClusterSnapshotIterator() throws Exception {
+        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        int grpId = ignite.cachex(dfltCacheCfg.getName()).context().groupId();
+
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).getSnapshotDataRows(SNAPSHOT_NAME, grpId, 0)) {
+            while (iter.hasNext()) {
+                CacheDataRow row = iter.next();
+
+                System.out.println("row = " + row);
+            }
+        }
     }
 
     /**

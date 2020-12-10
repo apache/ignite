@@ -133,6 +133,27 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
     private int getPageEntrySize(long pageAddr, int dataOff, int show) {
         int payloadLen = PageUtils.getShort(pageAddr, dataOff) & 0xFFFF;
 
+        return getPayloadLen(payloadLen, show);
+    }
+
+    /**
+     * @param buff Page buffer.
+     * @param dataOff Data offset.
+     * @param show What elements of data page entry to show in the result.
+     * @return Data page entry size.
+     */
+    private int getPageEntrySize(ByteBuffer buff, int dataOff, int show) {
+        int payloadLen = buff.getShort(dataOff) & 0xFFFF;
+
+        return getPayloadLen(payloadLen, show);
+    }
+
+    /**
+     * @param payloadLen Payload length.
+     * @param show What elements of data page entry to show in the result.
+     * @return Data page entry size.
+     */
+    private int getPayloadLen(int payloadLen, int show) {
         if ((payloadLen & FRAGMENTED_FLAG) != 0)
             payloadLen &= ~FRAGMENTED_FLAG; // We are fragmented and have a link.
         else
@@ -489,12 +510,83 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
     }
 
     /**
+     * @param buff Page buffer.
+     * @param dataOff Points to the entry start.
+     * @return Link to the next entry fragment or 0 if no fragments left or if entry is not fragmented.
+     */
+    private long getNextFragmentLink(ByteBuffer buff, int dataOff) {
+        assert isFragmented(buff, dataOff);
+
+        return buff.getLong(dataOff + PAYLOAD_LEN_SIZE);
+    }
+
+    /**
      * @param pageAddr Page address.
      * @param dataOff Data offset.
      * @return {@code true} If the data row is fragmented across multiple pages.
      */
     protected boolean isFragmented(long pageAddr, int dataOff) {
         return (PageUtils.getShort(pageAddr, dataOff) & FRAGMENTED_FLAG) != 0;
+    }
+
+    /**
+     * @param buff Page buffer.
+     * @param dataOff Data offset.
+     * @return {@code true} If the data row is fragmented across multiple pages.
+     */
+    protected boolean isFragmented(ByteBuffer buff, int dataOff) {
+        return (buff.getShort(dataOff) & FRAGMENTED_FLAG) != 0;
+    }
+
+    /**
+     * @param buff Page buffer.
+     * @param itemId Fixed item ID (the index used for referencing an entry from the outside).
+     * @return Data entry offset in bytes.
+     */
+    protected int getDataOffset(ByteBuffer buff, int itemId) {
+        assert checkIndex(itemId) : itemId;
+
+        int directCnt = getRowsCount(buff);
+
+        assert directCnt > 0 : "itemId=" + itemId + ", directCnt=" + directCnt;
+
+        // TODO do we need indirect search for pages accessed right from page store?
+        assert itemId < directCnt : "itemId=" + itemId + ", directCnt=" + directCnt;
+
+//        if (itemId >= directCnt) { // Need to do indirect lookup.
+//            int indirectCnt = buff.get(INDIRECT_CNT_OFF) & 0xFF;;
+//
+//            // Must have indirect items here.
+//            assert indirectCnt > 0 : "itemId=" + itemId + ", directCnt=" + directCnt + ", indirectCnt=" + indirectCnt;
+//
+//            int indirectItemIdx = findIndirectItemIndex(pageAddr, itemId, directCnt, indirectCnt);
+//
+//            assert indirectItemIdx >= directCnt : indirectItemIdx + " " + directCnt;
+//            assert indirectItemIdx < directCnt + indirectCnt : indirectItemIdx + " " + directCnt + " " + indirectCnt;
+//
+//            itemId = directItemIndex(getItem(buff, indirectItemIdx));
+//
+//            assert itemId >= 0 && itemId < directCnt : itemId + " " + directCnt + " " + indirectCnt; // Direct item.
+//        }
+
+        return directItemToOffset(getItem(buff, itemId));
+    }
+
+    /**
+     * @param buff Page buffer.
+     * @param itemId Item to position on.
+     * @return {@link DataPagePayload} object.
+     */
+    public DataPagePayload readPayload(ByteBuffer buff, int itemId) {
+        int dataOff = getDataOffset(buff, itemId);
+
+        boolean fragmented = isFragmented(buff, dataOff);
+        long nextLink = fragmented ? getNextFragmentLink(buff, dataOff) : 0;
+        int payloadSize = getPageEntrySize(buff, dataOff, 0);
+
+        return new DataPagePayload(dataOff + PAYLOAD_LEN_SIZE + (fragmented ? LINK_SIZE : 0),
+            payloadSize,
+            nextLink);
     }
 
     /**
@@ -541,6 +633,15 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      */
     private short getItem(long pageAddr, int idx) {
         return PageUtils.getShort(pageAddr, itemOffset(idx));
+    }
+
+    /**
+     * @param buff Page buffer.
+     * @param idx Item index.
+     * @return Item.
+     */
+    private short getItem(ByteBuffer buff, int idx) {
+        return buff.getShort(itemOffset(idx));
     }
 
     /**
