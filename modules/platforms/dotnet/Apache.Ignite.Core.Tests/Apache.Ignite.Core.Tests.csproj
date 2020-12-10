@@ -111,6 +111,7 @@
     <Compile Include="Binary\Serializable\GenericCollectionsTest.cs" />
     <Compile Include="Binary\Serializable\DynamicFieldSetTest.cs" />
     <Compile Include="Cache\Affinity\AffinityAttributeTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityBackupFilterTest.cs" />
     <Compile Include="Cache\CacheCreateTest.cs" />
     <Compile Include="Cache\CacheNodeFilterTest.cs" />
     <Compile Include="Cache\CacheQueryMetricsTest.cs" />
