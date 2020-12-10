@@ -244,7 +244,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         threads = []
 
         for node in nodes:
-            thread = Thread(target=self.__exec_on_node, args=(node, task, sem, delay, time_holder))
+            thread = Thread(target=self._exec_on_node, args=(node, task, sem, delay, time_holder))
 
             threads.append(thread)
 
@@ -257,8 +257,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         return time_holder.get()
 
-    @staticmethod
-    def __exec_on_node(node, task, start_waiter=None, delay_ms=0, time_holder=None):
+    def _exec_on_node(self, node, task, start_waiter=None, delay_ms=0, time_holder=None):
         if start_waiter:
             start_waiter.count_down()
             start_waiter.wait()
@@ -272,7 +271,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
             time_holder.compare_and_set(None, (mono, timestamp))
 
-        task(node)
+        task(self, node)
 
     def drop_network(self, nodes=None):
         """
@@ -299,11 +298,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         cmd = f"sudo iptables -I %s 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"
 
         return self.exec_on_nodes_async(nodes,
-                                        lambda n: (n.account.ssh_client.exec_command(cmd % "INPUT"),
-                                                   n.account.ssh_client.exec_command(cmd % "OUTPUT"),
-                                                   self.logger.debug("Activated netfilter on '%s': %s" %
-                                                                     (n.name, self.__dump_netfilter_settings(n)))
-                                                   )
+                                        lambda srvc, n: (n.account.ssh_client.exec_command(cmd % "INPUT"),
+                                                         n.account.ssh_client.exec_command(cmd % "OUTPUT"),
+                                                         self.logger.debug("Activated netfilter on '%s': %s" %
+                                                                           (n.name, self.__dump_netfilter_settings(n)))
+                                                         )
                                         )
 
     def __backup_iptables(self, nodes):
