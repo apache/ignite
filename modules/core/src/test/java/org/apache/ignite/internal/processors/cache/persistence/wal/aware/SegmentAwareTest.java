@@ -65,9 +65,8 @@ public class SegmentAwareTest {
             int i = iterationCnt;
 
             while (i-- > 0) {
-                aware.lockWorkSegment(segmentToHandle);
-
-                aware.releaseWorkSegment(segmentToHandle);
+                if (aware.lock(segmentToHandle))
+                    aware.unlock(segmentToHandle);
             }
         });
 
@@ -388,12 +387,12 @@ public class SegmentAwareTest {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false);
 
-        aware.checkCanReadArchiveOrReserveWorkSegment(5);
+        assertTrue(aware.lock(5));
 
         IgniteInternalFuture future = awaitThread(() -> aware.markAsMovedToArchive(5));
 
         //when: release exact expected work segment.
-        aware.releaseWorkSegment(5);
+        aware.unlock(5);
 
         //then: waiting should finish immediately.
         future.get(20);
@@ -406,7 +405,8 @@ public class SegmentAwareTest {
     public void testMarkAsMovedToArchive_WhenInterruptWasCall() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false);
-        aware.checkCanReadArchiveOrReserveWorkSegment(5);
+
+        assertTrue(aware.lock(5));
 
         IgniteInternalFuture future = awaitThread(() -> aware.markAsMovedToArchive(5));
 
@@ -521,6 +521,10 @@ public class SegmentAwareTest {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false);
 
+        // Set limits.
+        aware.curAbsWalIdx(10);
+        aware.minReserveIndex(0);
+
         //when: reserve one segment twice and one segment once.
         aware.reserve(5);
         aware.reserve(5);
@@ -586,8 +590,8 @@ public class SegmentAwareTest {
         SegmentAware aware = new SegmentAware(10, false);
 
         //when: lock one segment twice.
-        aware.checkCanReadArchiveOrReserveWorkSegment(5);
-        aware.checkCanReadArchiveOrReserveWorkSegment(5);
+        assertTrue(aware.lock(5));
+        assertTrue(aware.lock(5));
 
         //then: exact one segment should locked.
         assertTrue(aware.locked(5));
@@ -595,7 +599,7 @@ public class SegmentAwareTest {
         assertFalse(aware.locked(4));
 
         //when: release segment once.
-        aware.releaseWorkSegment(5);
+        aware.unlock(5);
 
         //then: nothing to change, segment still locked.
         assertTrue(aware.locked(5));
@@ -603,7 +607,7 @@ public class SegmentAwareTest {
         assertFalse(aware.locked(4));
 
         //when: release segment.
-        aware.releaseWorkSegment(5);
+        aware.unlock(5);
 
         //then: all segments should be unlocked.
         assertFalse(aware.locked(5));
@@ -619,16 +623,59 @@ public class SegmentAwareTest {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false);
 
-        aware.checkCanReadArchiveOrReserveWorkSegment(5);
+        assertTrue(aware.lock(5));
         try {
-
-            aware.releaseWorkSegment(7);
+            aware.unlock(7);
         }
         catch (AssertionError e) {
             return;
         }
 
         fail("Should fail with AssertError because this segment have not reserved");
+    }
+
+    /**
+     * Check that the reservation border is working correctly.
+     */
+    @Test
+    public void testReservationBorder() {
+        SegmentAware aware = new SegmentAware(10, false);
+
+        assertTrue(aware.reserve(0));
+        assertTrue(aware.reserve(1));
+
+        assertFalse(aware.minReserveIndex(0));
+        assertFalse(aware.minReserveIndex(1));
+
+        aware.release(0);
+
+        assertTrue(aware.minReserveIndex(0));
+        assertFalse(aware.minReserveIndex(1));
+
+        assertFalse(aware.reserve(0));
+        assertTrue(aware.reserve(1));
+    }
+
+    /**
+     * Check that the lock border is working correctly.
+     */
+    @Test
+    public void testLockBorder() {
+        SegmentAware aware = new SegmentAware(10, false);
+
+        assertTrue(aware.lock(0));
+        assertTrue(aware.lock(1));
+
+        assertFalse(aware.minLockIndex(0));
+        assertFalse(aware.minLockIndex(1));
+
+        aware.unlock(0);
+
+        assertTrue(aware.minLockIndex(0));
+        assertFalse(aware.minLockIndex(1));
+
+        assertFalse(aware.lock(0));
+        assertTrue(aware.lock(1));
     }
 
     /**
