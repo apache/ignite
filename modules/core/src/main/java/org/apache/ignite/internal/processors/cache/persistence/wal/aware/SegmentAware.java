@@ -19,10 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentArchivedStorage.buildArchivedStorage;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentCompressStorage.buildCompressStorage;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentCurrentStateStorage.buildCurrentStateStorage;
-
 /**
  * Holder of actual information of latest manipulation on WAL segments.
  */
@@ -34,7 +30,7 @@ public class SegmentAware {
     private final SegmentLockStorage segmentLockStorage = new SegmentLockStorage();
 
     /** Manages last archived index, emulates archivation in no-archiver mode. */
-    private final SegmentArchivedStorage segmentArchivedStorage = buildArchivedStorage(segmentLockStorage);
+    private final SegmentArchivedStorage segmentArchivedStorage;
 
     /** Storage of actual information about current index of compressed segments. */
     private final SegmentCompressStorage segmentCompressStorage;
@@ -43,12 +39,21 @@ public class SegmentAware {
     private final SegmentCurrentStateStorage segmentCurrStateStorage;
 
     /**
+     * Constructor.
+     *
      * @param walSegmentsCnt Total WAL segments count.
      * @param compactionEnabled Is wal compaction enabled.
      */
     public SegmentAware(int walSegmentsCnt, boolean compactionEnabled) {
-        segmentCurrStateStorage = buildCurrentStateStorage(walSegmentsCnt, segmentArchivedStorage);
-        segmentCompressStorage = buildCompressStorage(segmentArchivedStorage, compactionEnabled);
+        segmentArchivedStorage = new SegmentArchivedStorage(segmentLockStorage);
+
+        segmentCurrStateStorage = new SegmentCurrentStateStorage(walSegmentsCnt);
+        segmentCompressStorage = new SegmentCompressStorage(compactionEnabled);
+
+        segmentArchivedStorage.addObserver(segmentCurrStateStorage::onSegmentArchived);
+        segmentArchivedStorage.addObserver(segmentCompressStorage::onSegmentArchived);
+
+        segmentLockStorage.addObserver(segmentArchivedStorage::onSegmentUnlocked);
     }
 
     /**
@@ -133,20 +138,6 @@ public class SegmentAware {
     }
 
     /**
-     * @param idx Minimum raw segment index that should be preserved from deletion.
-     */
-    public void keepUncompressedIdxFrom(long idx) {
-        segmentCompressStorage.keepUncompressedIdxFrom(idx);
-    }
-
-    /**
-     * @return  Minimum raw segment index that should be preserved from deletion.
-     */
-    public long keepUncompressedIdxFrom() {
-        return segmentCompressStorage.keepUncompressedIdxFrom();
-    }
-
-    /**
      * Update current WAL index.
      *
      * @param curAbsWalIdx New current WAL index.
@@ -184,10 +175,14 @@ public class SegmentAware {
     }
 
     /**
+     * Segment reservation. It will be successful if segment is {@code >} than
+     * the {@link #minReserveIndex minimum}.
+     * 
      * @param absIdx Index for reservation.
+     * @return {@code True} if the reservation was successful.
      */
-    public void reserve(long absIdx) {
-        reservationStorage.reserve(absIdx);
+    public boolean reserve(long absIdx) {
+        return reservationStorage.reserve(absIdx);
     }
 
     /**
@@ -208,9 +203,9 @@ public class SegmentAware {
     }
 
     /**
-     * Check if WAL segment locked (protected from move to archive)
+     * Check if WAL segment locked (protected from move to archive).
      *
-     * @param absIdx Index for check reservation.
+     * @param absIdx Index for check locking.
      * @return {@code True} if index is locked.
      */
     public boolean locked(long absIdx) {
@@ -218,27 +213,20 @@ public class SegmentAware {
     }
 
     /**
-     * @param absIdx Segment absolute index.
-     * @return <ul><li>{@code True} if can read, no lock is held, </li><li>{@code false} if work segment, need release
-     * segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
-     */
-    public boolean checkCanReadArchiveOrReserveWorkSegment(long absIdx) {
-        return lastArchivedAbsoluteIndex() >= absIdx || segmentLockStorage.lockWorkSegment(absIdx);
-    }
-
-    /**
-     * Visible for test.
+     * Segment lock. It will be successful if segment is {@code >} than
+     * the {@link #lastArchivedAbsoluteIndex last archived}.
      *
-     * @param absIdx Segment absolute index. segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
+     * @param absIdx Index to lock.
+     * @return {@code True} if the lock was successful.
      */
-    void lockWorkSegment(long absIdx) {
-        segmentLockStorage.lockWorkSegment(absIdx);
+    public boolean lock(long absIdx) {
+        return segmentLockStorage.lockWorkSegment(absIdx);
     }
 
     /**
-     * @param absIdx Segment absolute index.
+     * @param absIdx Index to unlock.
      */
-    public void releaseWorkSegment(long absIdx) {
+    public void unlock(long absIdx) {
         segmentLockStorage.releaseWorkSegment(absIdx);
     }
 
@@ -273,5 +261,29 @@ public class SegmentAware {
         segmentCompressStorage.interrupt();
 
         segmentCurrStateStorage.forceInterrupt();
+    }
+
+    /**
+     * Increasing minimum segment index after that can be reserved.
+     * Value will be updated if it is greater than the current one.
+     * If segment is already reserved, the update will fail.
+     *
+     * @param absIdx Absolut segment index.
+     * @return {@code True} if update is successful.
+     */
+    public boolean minReserveIndex(long absIdx) {
+        return reservationStorage.minReserveIndex(absIdx);
+    }
+
+    /**
+     * Increasing minimum segment index after that can be locked.
+     * Value will be updated if it is greater than the current one.
+     * If segment is already reserved, the update will fail.
+     *
+     * @param absIdx Absolut segment index.
+     * @return {@code True} if update is successful.
+     */
+    public boolean minLockIndex(long absIdx) {
+        return segmentLockStorage.minLockIndex(absIdx);
     }
 }

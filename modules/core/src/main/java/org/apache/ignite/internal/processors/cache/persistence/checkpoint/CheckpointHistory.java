@@ -378,7 +378,7 @@ public class CheckpointHistory {
         int deleted = 0;
 
         if (truncateWalOnCpFinish)
-            deleted += wal.truncate(null, firstCheckpointPointer());
+            deleted += wal.truncate(firstCheckpointPointer());
 
         chp.walFilesDeleted(deleted);
 
