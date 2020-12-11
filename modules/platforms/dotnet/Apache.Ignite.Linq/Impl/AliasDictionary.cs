@@ -172,7 +172,11 @@ namespace Apache.Ignite.Linq.Impl
                 var querySource = GetQuerySource(subQueryExp.QueryModel.MainFromClause.FromExpression);
 
                 if (querySource != null)
+                {
+                    // TODO: This is not covered by any test and is probably incorrect -
+                    // we should throw an exception instead?
                     return querySource;
+                }
 
                 // TODO: subQueryExp.QueryModel may be a JOIN - we need to pick the right part of it
                 // Based on type?
