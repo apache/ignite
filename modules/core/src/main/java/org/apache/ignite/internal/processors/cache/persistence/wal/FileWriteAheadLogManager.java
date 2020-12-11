@@ -1062,7 +1062,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (desc.idx >= lastCheckpointPtr.index() // We cannot delete segments needed for binary recovery.
                 || desc.idx >= lastArchived // We cannot delete last segment, it is needed at start of node and avoid gaps.
-                || !segmentAware.incMinReserveIndex(desc.idx)) // We cannot delete reserved segment.
+                || !segmentAware.minReserveIndex(desc.idx)) // We cannot delete reserved segment.
                 return deleted;
 
             if (desc.idx < high.index()) {
@@ -1373,7 +1373,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 FileDescriptor[] walArchiveFiles = walArchiveFiles();
 
-                segmentAware.incMinReserveIndex(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
+                segmentAware.minReserveIndex(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
 
                 if (archiver0 == null)
                     segmentAware.setLastArchivedAbsoluteIndex(absIdx - 1);

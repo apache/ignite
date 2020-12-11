@@ -94,7 +94,7 @@ class SegmentArchivedStorage extends SegmentObservable {
      */
     synchronized void markAsMovedToArchive(long toArchive) throws IgniteInterruptedCheckedException {
         try {
-            while (!segmentLockStorage.incMinLockIndex(toArchive) && !interrupted)
+            while (!segmentLockStorage.minLockIndex(toArchive) && !interrupted)
                 wait();
         }
         catch (InterruptedException e) {

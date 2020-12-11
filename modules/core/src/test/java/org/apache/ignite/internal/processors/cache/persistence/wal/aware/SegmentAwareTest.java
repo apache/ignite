@@ -523,7 +523,7 @@ public class SegmentAwareTest {
 
         // Set limits.
         aware.curAbsWalIdx(10);
-        aware.incMinReserveIndex(0);
+        aware.minReserveIndex(0);
 
         //when: reserve one segment twice and one segment once.
         aware.reserve(5);
@@ -644,13 +644,13 @@ public class SegmentAwareTest {
         assertTrue(aware.reserve(0));
         assertTrue(aware.reserve(1));
 
-        assertFalse(aware.incMinReserveIndex(0));
-        assertFalse(aware.incMinReserveIndex(1));
+        assertFalse(aware.minReserveIndex(0));
+        assertFalse(aware.minReserveIndex(1));
 
         aware.release(0);
 
-        assertTrue(aware.incMinReserveIndex(0));
-        assertFalse(aware.incMinReserveIndex(1));
+        assertTrue(aware.minReserveIndex(0));
+        assertFalse(aware.minReserveIndex(1));
 
         assertFalse(aware.reserve(0));
         assertTrue(aware.reserve(1));
@@ -666,13 +666,13 @@ public class SegmentAwareTest {
         assertTrue(aware.lock(0));
         assertTrue(aware.lock(1));
 
-        assertFalse(aware.incMinLockIndex(0));
-        assertFalse(aware.incMinLockIndex(1));
+        assertFalse(aware.minLockIndex(0));
+        assertFalse(aware.minLockIndex(1));
 
         aware.unlock(0);
 
-        assertTrue(aware.incMinLockIndex(0));
-        assertFalse(aware.incMinLockIndex(1));
+        assertTrue(aware.minLockIndex(0));
+        assertFalse(aware.minLockIndex(1));
 
         assertFalse(aware.lock(0));
         assertTrue(aware.lock(1));

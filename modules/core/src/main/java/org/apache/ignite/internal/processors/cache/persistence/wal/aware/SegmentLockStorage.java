@@ -81,7 +81,7 @@ public class SegmentLockStorage extends SegmentObservable {
      * @param absIdx Absolut segment index.
      * @return {@code True} if update is successful.
      */
-    synchronized boolean incMinLockIndex(long absIdx) {
+    synchronized boolean minLockIndex(long absIdx) {
         if (locked(absIdx))
             return false;
 

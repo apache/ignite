@@ -176,7 +176,7 @@ public class SegmentAware {
 
     /**
      * Segment reservation. It will be successful if segment is {@code >} than
-     * the {@link #incMinReserveIndex minimum}.
+     * the {@link #minReserveIndex minimum}.
      * 
      * @param absIdx Index for reservation.
      * @return {@code True} if the reservation was successful.
@@ -271,8 +271,8 @@ public class SegmentAware {
      * @param absIdx Absolut segment index.
      * @return {@code True} if update is successful.
      */
-    public boolean incMinReserveIndex(long absIdx) {
-        return reservationStorage.incMinReserveIndex(absIdx);
+    public boolean minReserveIndex(long absIdx) {
+        return reservationStorage.minReserveIndex(absIdx);
     }
 
     /**
@@ -283,7 +283,7 @@ public class SegmentAware {
      * @param absIdx Absolut segment index.
      * @return {@code True} if update is successful.
      */
-    public boolean incMinLockIndex(long absIdx) {
-        return segmentLockStorage.incMinLockIndex(absIdx);
+    public boolean minLockIndex(long absIdx) {
+        return segmentLockStorage.minLockIndex(absIdx);
     }
 }

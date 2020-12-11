@@ -80,7 +80,7 @@ class SegmentReservationStorage {
      * @param absIdx Absolut segment index.
      * @return {@code True} if update is successful.
      */
-    synchronized boolean incMinReserveIndex(long absIdx) {
+    synchronized boolean minReserveIndex(long absIdx) {
         if (reserved(absIdx))
             return false;
 
