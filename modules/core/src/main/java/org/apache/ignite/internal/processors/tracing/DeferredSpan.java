@@ -78,6 +78,15 @@ public class DeferredSpan implements Span {
     }
 
     /** {@inheritDoc} */
+    @Override public Span addTagIfSpanIsPresent(
+        String tagName,
+        SpanType directParentSpan,
+        Supplier<String> tagValSupplier)
+    {
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public Span addLog(Supplier<String> logDescSupplier) {
         return this;
     }

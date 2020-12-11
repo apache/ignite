@@ -168,22 +168,10 @@ public enum SpanType {
     CACHE_API_PUT_ALL(Scope.CACHE_API_WRITE, "cache.api.put.all", 47, true),
 
     /** */
-    CACHE_API_PUT_ASYNC(Scope.CACHE_API_WRITE, "cache.api.put.async", 48, true),
-
-    /** */
-    CACHE_API_PUT_ALL_ASYNC(Scope.CACHE_API_WRITE, "cache.api.put.all.async", 49, true),
-
-    /** */
     CACHE_API_REMOVE(Scope.CACHE_API_WRITE, "cache.api.remove", 50, true),
 
     /** */
     CACHE_API_REMOVE_ALL(Scope.CACHE_API_WRITE, "cache.api.remove.all", 51, true),
-
-    /** */
-    CACHE_API_REMOVE_ASYNC(Scope.CACHE_API_WRITE, "cache.api.remove.async", 52, true),
-
-    /** */
-    CACHE_API_REMOVE_ALL_ASYNC(Scope.CACHE_API_WRITE, "cache.api.remove.all.async", 53, true),
 
     /** */
     CACHE_API_NEAR_PROCESS_ATOMIC_UPDATE_REQUEST(Scope.CACHE_API_WRITE,
@@ -231,12 +219,6 @@ public enum SpanType {
 
     /** */
     CACHE_API_GET_ALL(Scope.CACHE_API_READ, "cache.api.get.all", 66, true),
-
-    /** */
-    CACHE_API_GET_ASYNC(Scope.CACHE_API_READ, "cache.api.get.async", 67, true),
-
-    /** */
-    CACHE_API_GET_ALL_ASYNC(Scope.CACHE_API_READ, "cache.api.get.all.async", 68, true),
 
     /** */
     CACHE_API_NEAR_GET_FUTURE(Scope.CACHE_API_READ, "cache.api.near.get.future", 69, false),

@@ -82,9 +82,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     public static final String ALL_PARTITION_OWNERS_LEFT_GRID_MSG =
         "Failed to commit a transaction (all partition owners have left the grid, partition data has been lost)";
 
-    /** Tracing span. */
-    private Span span;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 

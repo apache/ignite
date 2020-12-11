@@ -99,6 +99,18 @@ public class SpanImpl implements Span {
     }
 
     /** {@inheritDoc} */
+    @Override public Span addTagIfSpanIsPresent(
+        String tagName,
+        SpanType directParentSpan,
+        Supplier<String> tagValSupplier)
+    {
+        if (spanType == directParentSpan)
+            spiSpecificSpan.addTag(tagName, tagValSupplier.get());
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public Span addLog(Supplier<String> logDescSupplier) {
         spiSpecificSpan.addLog(logDescSupplier.get());
 

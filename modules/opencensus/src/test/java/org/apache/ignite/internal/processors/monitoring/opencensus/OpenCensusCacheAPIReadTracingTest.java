@@ -35,8 +35,6 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_D
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_DHT_SINGLE_GET_FUTURE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET_ALL;
-import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET_ALL_ASYNC;
-import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET_ASYNC;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET_MAP;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_PROCESS_ATOMIC_GET_REQUEST;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_PROCESS_ATOMIC_GET_RESPONSE;
@@ -323,7 +321,7 @@ public class OpenCensusCacheAPIReadTracingTest extends AbstractTracingTest {
         handler().flush();
 
         List<SpanId> spanIds = checkSpan(
-            CACHE_API_GET_ASYNC,
+            CACHE_API_GET,
             null,
             1,
             ImmutableMap.<String, String>builder()
@@ -332,6 +330,7 @@ public class OpenCensusCacheAPIReadTracingTest extends AbstractTracingTest {
                 .put("node.name", client.name())
                 .put("cache", ATOMIC_CACHE)
                 .put("key", "One")
+                .put("async", "true")
                 .build()
         );
 
@@ -424,7 +423,7 @@ public class OpenCensusCacheAPIReadTracingTest extends AbstractTracingTest {
         handler().flush();
 
         List<SpanId> spanIds = checkSpan(
-            CACHE_API_GET_ALL_ASYNC,
+            CACHE_API_GET_ALL,
             null,
             1,
             ImmutableMap.<String, String>builder()
@@ -433,6 +432,7 @@ public class OpenCensusCacheAPIReadTracingTest extends AbstractTracingTest {
                 .put("node.name", client.name())
                 .put("cache", ATOMIC_CACHE)
                 .put("keys.count", "3")
+                .put("async", "true")
                 .build()
         );
 

@@ -71,6 +71,16 @@ public interface Span {
     Span addTagOrLog(String tagName, SpanType directParentSpan, Supplier<String> tagValSupplier);
 
     /**
+     * Adds tag to the span only if current span type is the same as {@code directParentSpan}.
+     *
+     * @param tagName Tag name.
+     * @param directParentSpan Direct parent span.
+     * @param tagValSupplier Tag value supplier. Supplier is used instead of strict tag value cause of it's lazy nature.
+     *  So that it's possible not to generate String tag value in case of NoopSpan.
+     */
+    Span addTagIfSpanIsPresent(String tagName, SpanType directParentSpan, Supplier<String> tagValSupplier);
+
+    /**
      * Logs work to span.
      *
      * @param logDescSupplier Log description supplier.

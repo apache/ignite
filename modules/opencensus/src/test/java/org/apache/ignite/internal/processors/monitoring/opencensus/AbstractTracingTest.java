@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.monitoring.opencensus;
 
+import io.opencensus.exporter.trace.zipkin.ZipkinExporterConfiguration;
+import io.opencensus.exporter.trace.zipkin.ZipkinTraceExporter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
