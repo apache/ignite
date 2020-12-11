@@ -2441,6 +2441,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (isCancelled())
                         break;
 
+                    if (segmentToDecompress == -1)
+                        continue;
+
                     String segmentFileName = fileName(segmentToDecompress);
 
                     File zip = new File(walArchiveDir, segmentFileName + ZIP_SUFFIX);
@@ -2449,6 +2452,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     long reservedSize = U.uncompressedSize(zip);
                     reservedWalArchiveSize.addAndGet(reservedSize);
+
+                    IgniteCheckedException ex = null;
 
                     try {
                         if (unzip.exists())
@@ -2473,17 +2478,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             U.error(log, "Can't rename temporary unzipped segment: raw segment is already present " +
                                 "[tmp=" + unzipTmp + ", raw=" + unzip + "]", e);
                         }
-                        else {
-                            if (!isCancelled && segmentToDecompress != -1L) {
-                                IgniteCheckedException ex = new IgniteCheckedException("Error during WAL segment " +
-                                    "decompression [segmentIdx=" + segmentToDecompress + "]", e);
-
-                                synchronized (this) {
-                                    decompressionFutures.remove(segmentToDecompress).onDone(ex);
-                                }
-
-                                continue;
-                            }
+                        else if (!isCancelled) {
+                            ex = new IgniteCheckedException("Error during WAL segment decompression [segmentIdx=" +
+                                segmentToDecompress + "]", e);
                         }
                     }
                     finally {
@@ -2493,7 +2490,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     updateHeartbeat();
 
                     synchronized (this) {
-                        decompressionFutures.remove(segmentToDecompress).onDone();
+                        decompressionFutures.remove(segmentToDecompress).onDone(ex);
                     }
                 }
             }
