@@ -21,12 +21,14 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cluster.ClusterNode;
@@ -42,6 +44,7 @@ import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Calendar.AUGUST;
 import static java.util.Calendar.JANUARY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -94,6 +97,9 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
      * Test service.
      */
     public static class PlatformTestService implements Service {
+        @IgniteInstanceResource
+        private Ignite ignite;
+
         /** */
         private boolean isCancelled;
 
@@ -492,6 +498,12 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             m.put(new Key(3), new Value("value3"));
 
             return m;
+        }
+
+        public void testDateInteroperable() {
+            IgniteCache<Integer, Date> dateCache = ignite.cache("net-date-cache");
+
+            assertEquals(new Date(1984, AUGUST, 22, 0, 0, 0), dateCache.get(1));
         }
 
         /** */
