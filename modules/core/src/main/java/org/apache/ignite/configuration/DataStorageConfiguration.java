@@ -601,10 +601,7 @@ public class DataStorageConfiguration implements Serializable {
      * WAL archive size is unlimited).
      */
     public long getMaxWalArchiveSize() {
-        if (maxWalArchiveSize == UNLIMITED_WAL_ARCHIVE)
-            return UNLIMITED_WAL_ARCHIVE;
-
-        return maxWalArchiveSize <= 0 ? DFLT_WAL_ARCHIVE_MAX_SIZE : maxWalArchiveSize;
+        return maxWalArchiveSize;
     }
 
     /**
@@ -616,7 +613,7 @@ public class DataStorageConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setMaxWalArchiveSize(long walArchiveMaxSize) {
-        if (walArchiveMaxSize != 0 && walArchiveMaxSize != UNLIMITED_WAL_ARCHIVE)
+        if (walArchiveMaxSize != UNLIMITED_WAL_ARCHIVE)
             A.ensure(walArchiveMaxSize > 0, "Max WAL archive size can be only greater than 0 " +
                 "or must be equal to " + UNLIMITED_WAL_ARCHIVE + " (to be unlimited)");
 

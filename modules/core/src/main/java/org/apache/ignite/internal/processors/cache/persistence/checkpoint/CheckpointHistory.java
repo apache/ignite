@@ -71,9 +71,6 @@ public class CheckpointHistory {
     /** Should WAL be truncated */
     private final boolean isWalTruncationEnabled;
 
-    /** Maximum size of WAL archive (in bytes) */
-    private final long maxWalArchiveSize;
-
     /** Map stores the earliest checkpoint for each partition from particular group. */
     private final Map<GroupPartitionId, CheckpointEntry> earliestCp = new ConcurrentHashMap<>();
 
@@ -103,9 +100,7 @@ public class CheckpointHistory {
         this.wal = wal;
         this.checkpointInapplicable = inapplicable;
 
-        maxWalArchiveSize = dsCfg.getMaxWalArchiveSize();
-
-        isWalTruncationEnabled = maxWalArchiveSize != DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
+        isWalTruncationEnabled = dsCfg.getMaxWalArchiveSize() != DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 
         maxCpHistMemSize = IgniteSystemProperties.getInteger(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, 100);
 
