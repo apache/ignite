@@ -1058,29 +1058,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @throws IgniteCheckedException If there was an error while sending discovery message.
      */
     private GridFutureAdapter<?> startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
-        GridFutureAdapter<?> validationRes = validateBeforeWrite(key);
-
-        if (validationRes != null)
-            return validationRes;
-
         UUID reqId = UUID.randomUUID();
 
-        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<?> fut = prepareWriteFuture(key, reqId);
 
-        updateFutsStopLock.readLock().lock();
-
-        try {
-            if (stopped) {
-                fut.onDone(nodeStoppingException());
-
-                return fut;
-            }
-
-            updateFuts.put(reqId, fut);
-        }
-        finally {
-            updateFutsStopLock.readLock().unlock();
-        }
+        if (fut.isDone())
+            return fut;
 
         DiscoveryCustomMessage msg = new DistributedMetaStorageUpdateMessage(reqId, key, valBytes);
 
@@ -1094,29 +1077,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      */
     private GridFutureAdapter<Boolean> startCas(String key, byte[] expValBytes, byte[] newValBytes)
         throws IgniteCheckedException {
-        GridFutureAdapter<Boolean> validationRes = validateBeforeWrite(key);
-
-        if (validationRes != null)
-            return validationRes;
-
         UUID reqId = UUID.randomUUID();
 
-        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<Boolean> fut = prepareWriteFuture(key, reqId);
 
-        updateFutsStopLock.readLock().lock();
-
-        try {
-            if (stopped) {
-                fut.onDone(nodeStoppingException());
-
-                return fut;
-            }
-
-            updateFuts.put(reqId, fut);
-        }
-        finally {
-            updateFutsStopLock.readLock().unlock();
-        }
+        if (fut.isDone())
+            return fut;
 
         DiscoveryCustomMessage msg = new DistributedMetaStorageCasMessage(reqId, key, expValBytes, newValBytes);
 
@@ -1127,6 +1093,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /**
      * This method will perform some preliminary checks before starting write or cas operation.
+     * It also updates {@link #updateFuts} in case if everything's ok.
      *
      * Tricky part is exception handling from "isSupported" method. It can be thrown by
      * {@code ZookeeperDiscoveryImpl#checkState()} method, but we can't just leave it as is.
@@ -1135,7 +1102,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @return Future that must be returned immediately or {@code null}.
      * @throws IgniteCheckedException If cluster can't perform this update.
      */
-    private GridFutureAdapter<Boolean> validateBeforeWrite(String key) throws IgniteCheckedException {
+    private GridFutureAdapter<Boolean> prepareWriteFuture(String key, UUID reqId) throws IgniteCheckedException {
         boolean supported;
 
         try {
@@ -1156,7 +1123,24 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (!supported)
             throw new IgniteCheckedException(NOT_SUPPORTED_MSG);
 
-        return null;
+        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+
+        updateFutsStopLock.readLock().lock();
+
+        try {
+            if (stopped) {
+                fut.onDone(nodeStoppingException());
+
+                return fut;
+            }
+
+            updateFuts.put(reqId, fut);
+        }
+        finally {
+            updateFutsStopLock.readLock().unlock();
+        }
+
+        return fut;
     }
 
     /**
@@ -1208,16 +1192,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         ClusterNode node,
         DistributedMetaStorageUpdateAckMessage msg
     ) {
-        GridFutureAdapter<Boolean> fut;
-
-        updateFutsStopLock.readLock().lock();
-
-        try {
-            fut = updateFuts.remove(msg.requestId());
-        }
-        finally {
-            updateFutsStopLock.readLock().unlock();
-        }
+        GridFutureAdapter<Boolean> fut = updateFuts.remove(msg.requestId());
 
         if (fut != null) {
             String errorMsg = msg.errorMessage();
