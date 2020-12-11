@@ -77,7 +77,12 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
             input.getInputs().get(0),
             input.getCollation(),
-            (IndexConditions)input.get("idxCond")
+            new IndexConditions(
+                input.getExpressionList("lower"),
+                input.getExpressionList("upper"),
+                input.getExpressionList("lowerBound"),
+                input.getExpressionList("upperBound")
+            )
         );
     }
 
@@ -121,6 +126,11 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         // TODO: add memory usage to cost
         double rowCount = mq.getRowCount(this);
         rowCount = RelMdUtil.addEpsilon(rowCount);
+
+        // Index spool must not be used without merged filter.
+        // At least while it is used only by the IgniteCorrelatedNestedLoopJoin.
+        if (idxCond == null)
+            return planner.getCostFactory().makeInfiniteCost();
 
         return planner.getCostFactory().makeCost(rowCount, 0, 0).multiplyBy(2);
     }

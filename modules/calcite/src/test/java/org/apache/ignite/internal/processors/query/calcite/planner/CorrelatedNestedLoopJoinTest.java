@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -81,7 +81,7 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
             "from t0 " +
             "join t1 on t0.jid = t1.jid";
 
-        RelNode phys = physicalPlan(sql, publicSchema, "MergeJoinConverter", "NestedLoopJoinConverter");
+        IgniteRel phys = physicalPlan(sql, publicSchema, "MergeJoinConverter", "NestedLoopJoinConverter");
 //        RelNode phys = physicalPlan(sql, publicSchema, "MergeJoinConverter");
 //        RelNode phys = physicalPlan(sql, publicSchema);
 
@@ -94,5 +94,7 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
 //        List<RexNode> lBound = idxScan.lowerBound();
 //
         System.out.println();
+
+        checkSplitAndSerialization(phys, publicSchema);
     }
 }

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -34,6 +35,7 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
@@ -43,6 +45,7 @@ import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.RelShuttle;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -60,15 +63,19 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
@@ -82,6 +89,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -94,6 +102,7 @@ import org.junit.Before;
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
+import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter.toJson;
 
 /**
  *
@@ -314,6 +323,78 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
             return rel;
         }
+    }
+
+    /** */
+    protected void checkSplitAndSerialization(IgniteRel rel, IgniteSchema publicSchema) {
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        List<Fragment> fragments = new Splitter().go(rel);
+        List<String> serialized = new ArrayList<>(fragments.size());
+
+        for (Fragment fragment : fragments)
+            serialized.add(toJson(fragment.root()));
+
+        assertNotNull(serialized);
+
+        RelTraitDef<?>[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE,
+            RewindabilityTraitDef.INSTANCE,
+            CorrelationTraitDef.INSTANCE
+        };
+
+        PlanningContext ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        List<RelNode> deserializedNodes = new ArrayList<>();
+
+        try (IgnitePlanner ignored = ctx.planner()) {
+            for (String s : serialized) {
+                RelJsonReader reader = new RelJsonReader(ctx.cluster(), ctx.catalogReader());
+                deserializedNodes.add(reader.read(s));
+            }
+        }
+
+        List<RelNode> expectedRels = fragments.stream()
+            .map(f -> f.root())
+            .collect(Collectors.toList());
+
+        assertEquals("Invalid deserialization fragments count", expectedRels.size(), deserializedNodes.size());
+
+        for (int i = 0; i < expectedRels.size(); ++i) {
+            RelTraitSet emptyTraits = ctx.planner().getEmptyTraitSet().replace(IgniteConvention.INSTANCE);
+            RelNode expected = enforceTraits(expectedRels.get(i), emptyTraits);
+            RelNode deserialized = enforceTraits(deserializedNodes.get(i), emptyTraits);
+
+            if (!expected.deepEquals(deserialized))
+            assertTrue(
+                "Invalid serialization / deserialization.\n" +
+                    "Expected:\n" + RelOptUtil.toString(expected) +
+                    "Deserialized:\n" + RelOptUtil.toString(deserialized),
+                expected.deepEquals(deserialized));
+        }
+    }
+
+    /** */
+    protected RelNode enforceTraits(RelNode rel, final RelTraitSet traits) {
+        return rel.copy(
+            rel instanceof IgniteSender ? traits.replace(TraitUtils.distribution(rel.getTraitSet())) : traits,
+            rel.getInputs().stream()
+                .map(r -> enforceTraits(r, traits))
+                .collect(Collectors.toList())
+        );
     }
 
     /** */
