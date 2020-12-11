@@ -66,7 +66,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         Starts in async way.
         """
-        super().start()
+        self.exec_on_nodes_async(self.nodes, self.__stop_and_clean_single_node)
+        self.exec_on_nodes_async(self.nodes, lambda srvc, node: srvc.start_node(node))
 
     def start(self):
         self.start_async()
@@ -159,6 +160,18 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         node.account.create_file(self.CONFIG_FILE, node_config)
 
+    @staticmethod
+    def __stop_and_clean_single_node(service, node):
+        try:
+            service.stop_node(node)
+        finally:
+            pass
+
+        try:
+            service.clean_node(node)
+        finally:
+            pass
+
     def _prepare_config(self, node):
         if not self.config.consistent_id:
             config = self.config._replace(consistent_id=node.account.externally_routable_ip)
@@ -232,7 +245,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
     def exec_on_nodes_async(self, nodes, task, simultaneously=True, delay_ms=0, timeout_sec=20):
         """
         Executes given task on the nodes.
-        :param task: a 'lambda: node'.
+        :param nodes: the nodes to launch task on.
+        :param task: a 'lambda: service, node'.
         :param simultaneously: Enables or disables simultaneous start of the task on each node.
         :param delay_ms: delay before task run. Begins with 0, grows by delay_ms for each next node in nodes.
         :param timeout_sec: timeout to wait the task.
