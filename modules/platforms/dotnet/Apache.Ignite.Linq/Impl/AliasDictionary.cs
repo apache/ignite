@@ -44,7 +44,7 @@ namespace Apache.Ignite.Linq.Impl
         private readonly Dictionary<Expression, string> _fieldAliases = new Dictionary<Expression, string>();
 
         /** */
-        private readonly Stack<Dictionary<IQuerySource, string>> _stack 
+        private readonly Stack<Dictionary<IQuerySource, string>> _stack
             = new Stack<Dictionary<IQuerySource, string>>();
 
         /// <summary>
@@ -168,8 +168,16 @@ namespace Apache.Ignite.Linq.Impl
             var subQueryExp = expression as SubQueryExpression;
 
             if (subQueryExp != null)
-                return GetQuerySource(subQueryExp.QueryModel.MainFromClause.FromExpression)
-                    ?? subQueryExp.QueryModel.MainFromClause;
+            {
+                var querySource = GetQuerySource(subQueryExp.QueryModel.MainFromClause.FromExpression);
+
+                if (querySource != null)
+                    return querySource;
+
+                // TODO: subQueryExp.QueryModel may be a JOIN - we need to pick the right part of it
+                // Based on type?
+                return subQueryExp.QueryModel.MainFromClause;
+            }
 
             var srcRefExp = expression as QuerySourceReferenceExpression;
 
