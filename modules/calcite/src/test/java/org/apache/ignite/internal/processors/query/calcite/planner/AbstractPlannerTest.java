@@ -38,6 +38,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
@@ -45,7 +46,6 @@ import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.RelShuttle;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -75,7 +75,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningConte
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
@@ -89,9 +88,9 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
-import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -374,27 +373,26 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         assertEquals("Invalid deserialization fragments count", expectedRels.size(), deserializedNodes.size());
 
         for (int i = 0; i < expectedRels.size(); ++i) {
-            RelTraitSet emptyTraits = ctx.planner().getEmptyTraitSet().replace(IgniteConvention.INSTANCE);
-            RelNode expected = enforceTraits(expectedRels.get(i), emptyTraits);
-            RelNode deserialized = enforceTraits(deserializedNodes.get(i), emptyTraits);
+            RelNode expected = expectedRels.get(i);
+            RelNode deserialized = deserializedNodes.get(i);
+
+            clearTraits(expected);
+            clearTraits(deserialized);
 
             if (!expected.deepEquals(deserialized))
             assertTrue(
                 "Invalid serialization / deserialization.\n" +
                     "Expected:\n" + RelOptUtil.toString(expected) +
                     "Deserialized:\n" + RelOptUtil.toString(deserialized),
-                expected.deepEquals(deserialized));
+                expected.deepEquals(deserialized)
+            );
         }
     }
 
     /** */
-    protected RelNode enforceTraits(RelNode rel, final RelTraitSet traits) {
-        return rel.copy(
-            rel instanceof IgniteSender ? traits.replace(TraitUtils.distribution(rel.getTraitSet())) : traits,
-            rel.getInputs().stream()
-                .map(r -> enforceTraits(r, traits))
-                .collect(Collectors.toList())
-        );
+    protected void clearTraits(RelNode rel) {
+        GridTestUtils.setFieldValue(rel, AbstractRelNode.class, "traitSet", RelTraitSet.createEmpty());
+        rel.getInputs().forEach(this::clearTraits);
     }
 
     /** */
