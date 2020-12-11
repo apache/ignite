@@ -786,13 +786,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** */
     private List<FieldsQueryCursor<List<?>>> querySqlFields(SqlFieldsQueryEx qry, GridQueryCancel cancel) {
         if (experimentalQueryEngine != null) {
-            try {
-                if (!H2_REDIRECTION_RULES.matcher(qry.getSql()).find())
-                    return experimentalQueryEngine.query(QueryContext.of(qry, cancel), qry.getSchema(), qry.getSql(), qry.getArgs());
-            }
-            catch (IgniteSQLException e) {
-                U.warn(log, "Failed to execute SQL query using experimental engine. [qry=" + qry + ']', e);
-            }
+            if (!H2_REDIRECTION_RULES.matcher(qry.getSql()).find())
+                return experimentalQueryEngine.query(QueryContext.of(qry, cancel), qry.getSchema(), qry.getSql(), qry.getArgs());
         }
 
         return connCtx.kernalContext().query().querySqlFields(null, qry,
