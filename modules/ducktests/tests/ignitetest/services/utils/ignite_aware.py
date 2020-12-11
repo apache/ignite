@@ -66,8 +66,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         Starts in async way.
         """
-        self.exec_on_nodes_async(self.nodes, self.__stop_and_clean_single_node)
-        self.exec_on_nodes_async(self.nodes, lambda srvc, node: srvc.start_node(node))
+        self.exec_on_nodes_async(self.nodes, self.__stop_and_clean_single_node, simultaneously=False)
+        self.exec_on_nodes_async(self.nodes, lambda srvc, node: srvc.start_node(node), simultaneously=True)
 
     def start(self):
         self.start_async()
