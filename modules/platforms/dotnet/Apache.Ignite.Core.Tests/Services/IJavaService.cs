@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Tests.Services
         IDictionary testMap(IDictionary<Key, Value> dict);
 
         /** */
-        void testDateInteroperable();
+        DateTime testDate(DateTime date);
         
         /** */
         void sleep(long delayMs);

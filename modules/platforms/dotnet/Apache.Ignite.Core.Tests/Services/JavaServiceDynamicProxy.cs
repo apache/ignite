@@ -332,9 +332,9 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public void testDateInteroperable()
+        public DateTime testDate(DateTime date)
         {
-            _svc.testDateInteroperable();
+            return _svc.testDate(date);
         }
 
         /** <inheritDoc /> */

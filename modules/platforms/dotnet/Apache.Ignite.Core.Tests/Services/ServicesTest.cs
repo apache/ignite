@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
     using System.Collections.Generic;
-    using System.Configuration;
     using System.IO;
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
@@ -957,6 +956,11 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(new[] {11, 12, 13}, binSvc.testBinaryObjectArray(binArr)
                 .Select(x => x.GetField<int>("Field")));
 
+            DateTime input = new DateTime(1982, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            DateTime expected = new DateTime(1991, 10, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
+            Assert.AreEqual(expected, svc.testDate(input));
+
             Services.Cancel(javaSvcName);
         }
 
@@ -1042,30 +1046,6 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests Java service invocation.
-        /// </summary>
-        [Test]
-        public void TestJavaDateInteroperable()
-        {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(Grid1);
-
-            // Verify descriptor
-            var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
-            Assert.AreEqual(javaSvcName, descriptor.Name);
-
-            var svc = Services.GetServiceProxy<IJavaService>(javaSvcName, false);
-            var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(javaSvcName, false);
-
-            var cache = Grid1.CreateCache<int, DateTime>("net-date-cache");
-
-            cache.Put(1, new DateTime(1984, 8, 22, 0, 0, 0, 0));
-
-            svc.testDateInteroperable();
-        }
-
-        /// <summary>
         /// Tests the footer setting.
         /// </summary>
         [Test]
@@ -1148,7 +1128,6 @@ namespace Apache.Ignite.Core.Tests.Services
                     typeof (PlatformComputeBinarizable),
                     typeof (BinarizableObject))
                 {
-                    Serializer = new BinaryReflectiveSerializer() {ForceTimestamp = true},
                     NameMapper = BinaryBasicNameMapper.SimpleNameInstance
                 }
             };
