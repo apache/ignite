@@ -36,7 +36,7 @@ from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
 from ignitetest.utils import ignite_versions, version_if, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST, V_2_8_0, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, LATEST, LATEST_2_7, V_2_8_0, V_2_9_1, IgniteVersion
 from ignitetest.utils.enum import constructible
 
 
@@ -166,6 +166,9 @@ class DiscoveryTest(IgniteTest):
         else:
             discovery_spi = TcpDiscoverySpi()
 
+            if LATEST_2_7 < test_config.version < V_2_9_1:
+                discovery_spi.so_linger = 0
+
         ignite_config = IgniteConfiguration(
             version=test_config.version,
             discovery_spi=discovery_spi,
@@ -202,11 +205,11 @@ class DiscoveryTest(IgniteTest):
             start_load_app(self.test_context, ignite_config=load_config, params=params, modules=modules)
 
         results.update(self._simulate_and_detect_failure(servers, failed_nodes,
-                                                         test_config.failure_detection_timeout * 4))
+                                                         test_config.failure_detection_timeout * 0.004))
 
         return results
 
-    def _simulate_and_detect_failure(self, servers, failed_nodes, timeout):
+    def _simulate_and_detect_failure(self, servers, failed_nodes, event_timeout_sec):
         """
         Perform node failure scenario
         """
@@ -222,12 +225,10 @@ class DiscoveryTest(IgniteTest):
         logged_timestamps = []
         data = {}
 
-        start = monotonic()
-
         for survivor in [n for n in servers.nodes if n not in failed_nodes]:
             for failed_id in ids_to_wait:
                 logged_timestamps.append(get_event_time(servers, survivor, node_failed_event_pattern(failed_id),
-                                                        timeout=start + timeout - monotonic()))
+                                                        timeout=event_timeout_sec))
 
             self._check_failed_number(failed_nodes, survivor)
 

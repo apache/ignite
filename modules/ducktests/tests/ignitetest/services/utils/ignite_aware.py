@@ -66,7 +66,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         Starts in async way.
         """
-        super().start()
+        self.exec_on_nodes_async(self.nodes, self.__stop_and_clean_single_node)
+        self.exec_on_nodes_async(self.nodes, lambda srvc, node: srvc.start_node(node))
 
     def start(self):
         self.start_async()
@@ -159,6 +160,19 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         node.account.create_file(self.CONFIG_FILE, node_config)
 
+    @staticmethod
+    def __stop_and_clean_single_node(service, node):
+        """"""
+        try:
+            service.stop_node(node)
+        finally:
+            pass
+
+        try:
+            service.clean_node(node)
+        finally:
+            pass
+
     def _prepare_config(self, node):
         if not self.config.consistent_id:
             config = self.config._replace(consistent_id=node.account.externally_routable_ip)
@@ -232,7 +246,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
     def exec_on_nodes_async(self, nodes, task, simultaneously=True, delay_ms=0, timeout_sec=20):
         """
         Executes given task on the nodes.
-        :param task: a 'lambda: node'.
+        :param nodes: the nodes to launch task on.
+        :param task: a 'lambda: service, node'.
         :param simultaneously: Enables or disables simultaneous start of the task on each node.
         :param delay_ms: delay before task run. Begins with 0, grows by delay_ms for each next node in nodes.
         :param timeout_sec: timeout to wait the task.
@@ -244,7 +259,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         threads = []
 
         for node in nodes:
-            thread = Thread(target=self.__exec_on_node, args=(node, task, sem, delay, time_holder))
+            thread = Thread(target=self._exec_on_node, args=(node, task, sem, delay, time_holder))
 
             threads.append(thread)
 
@@ -257,8 +272,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         return time_holder.get()
 
-    @staticmethod
-    def __exec_on_node(node, task, start_waiter=None, delay_ms=0, time_holder=None):
+    def _exec_on_node(self, node, task, start_waiter=None, delay_ms=0, time_holder=None):
         if start_waiter:
             start_waiter.count_down()
             start_waiter.wait()
@@ -272,7 +286,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
             time_holder.compare_and_set(None, (mono, timestamp))
 
-        task(node)
+        task(self, node)
 
     def drop_network(self, nodes=None):
         """
@@ -283,7 +297,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
             nodes = self.nodes
 
         for node in nodes:
-            self.logger.info("Disconnecting " + node.account.hostname + ".")
+            self.logger.info("Dropping ignite connections on '" + node.account.hostname + "' ...")
 
         self.__backup_iptables(nodes)
 
@@ -298,12 +312,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         cmd = f"sudo iptables -I %s 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"
 
-        for node in nodes:
-            self.logger.debug("Activating netfilter on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
-
         return self.exec_on_nodes_async(nodes,
-                                        lambda n: (n.account.ssh_client.exec_command(cmd % "INPUT"),
-                                                   n.account.ssh_client.exec_command(cmd % "OUTPUT")))
+                                        lambda srvc, n: (n.account.ssh_client.exec_command(cmd % "INPUT"),
+                                                         n.account.ssh_client.exec_command(cmd % "OUTPUT"),
+                                                         self.logger.debug("Activated netfilter on '%s': %s" %
+                                                                           (n.name, self.__dump_netfilter_settings(n)))
+                                                         )
+                                        )
 
     def __backup_iptables(self, nodes):
         # Store current network filter settings.
