@@ -149,10 +149,12 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
         IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(cacheConfiguration());
 
         //when: put to cache more than 2 MB
-        for (int i = 0; i < 500; i++)
-            cache.put(i, i);
+        for (int i = 0; i < 500; i++) {
+            if (i % 100 == 0)
+                forceCheckpoint();
 
-        forceCheckpoint();
+            cache.put(i, i);
+        }
 
         //then: total archive size less than half of maxWalArchiveSize(by current logic)
         FileWriteAheadLogManager wal = wal(ignite);
