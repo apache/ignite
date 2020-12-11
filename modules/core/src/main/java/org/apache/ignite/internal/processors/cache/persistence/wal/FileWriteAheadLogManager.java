@@ -1274,13 +1274,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (metrics.metricsEnabled())
                 metrics.onWallRollOver();
 
+            long nextArchiveSegmentSize = maxWalSegmentSize;
+
             if (switchSegmentRecordOffset != null) {
                 int idx = (int)(cur.getSegmentId() % dsCfg.getWalSegments());
 
                 switchSegmentRecordOffset.set(idx, hnd.getSwitchSegmentRecordOffset());
+                nextArchiveSegmentSize = hnd.getSwitchSegmentRecordOffset();
             }
 
-            cleanWalArchive();
+            cleanWalArchive(nextArchiveSegmentSize);
 
             FileWriteHandle next;
             try {
@@ -1646,7 +1649,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * Files from archive WAL directory.
      */
-    private FileDescriptor[] walArchiveFiles() {
+    public FileDescriptor[] walArchiveFiles() {
         return scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
     }
 
@@ -3143,11 +3146,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * Clearing WAL archive when reaching the maximum.
      *
+     * @param nextArchiveSegmentSize Size of next segment to be archived in bytes.
      * @throws IgniteCheckedException If failed.
      */
-    private void cleanWalArchive() throws IgniteCheckedException {
-        if (maxWalArchiveSize != Long.MAX_VALUE &&
-            (walArchiveSize.get() + reservedWalArchiveSize.get()) < maxWalArchiveSize)
+    private void cleanWalArchive(long nextArchiveSegmentSize) throws IgniteCheckedException {
+        if (maxWalArchiveSize == Long.MAX_VALUE ||
+            walArchiveSize.get() + reservedWalArchiveSize.get() + nextArchiveSegmentSize < maxWalArchiveSize)
             return;
 
         FileDescriptor[] walArchiveFiles = walArchiveFiles();
@@ -3165,7 +3169,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         if (high != null) {
-            WALPointer highPtr = new WALPointer(high.idx, 0, 0);
+            WALPointer highPtr = new WALPointer(high.idx + 1, 0, 0);
 
             ((GridCacheDatabaseSharedManager)cctx.database()).onWalTruncated(highPtr);
 
