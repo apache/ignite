@@ -41,10 +41,11 @@ public class FindGetCallCheck extends AbstractCheck {
     static {
         BLOCK_CALL_MAP.put("IgniteInternalFuture", "get");
         BLOCK_CALL_MAP.put("CountDownLatch", "await");
+        BLOCK_CALL_MAP.put("CyclicBarrier", "await");
     }
 
     /** */
-    private final Map<String, String> igniteInternalFutureVariable = new HashMap<>();
+    private final Map<String, String> blockMethodVars = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override public int[] getDefaultTokens() {
@@ -65,7 +66,7 @@ public class FindGetCallCheck extends AbstractCheck {
 
     @Override public void visitToken(DetailAST ast) {
         if (ast.getType() == METHOD_DEF) {
-            igniteInternalFutureVariable.clear();
+            blockMethodVars.clear();
         } else if (ast.getType() == VARIABLE_DEF) {
             String type = variableType(ast);
 
@@ -77,24 +78,25 @@ public class FindGetCallCheck extends AbstractCheck {
 
             String varName = ast.findFirstToken(IDENT).getText();
 
-            igniteInternalFutureVariable.put(varName, type);
+            blockMethodVars.put(varName, type);
         }
         else if (ast.getType() == METHOD_CALL) {
             DetailAST dot = ast.findFirstToken(DOT);
+
             if (dot == null)
                 return;
 
-            DetailAST varName = dot.findFirstToken(IDENT);
+            DetailAST var = dot.findFirstToken(IDENT);
 
-            if (varName == null)
+            if (var == null)
                 return;
 
-            if (!igniteInternalFutureVariable.containsKey(varName.getText()))
-                return;
+            DetailAST method = dot.getLastChild();
 
-            DetailAST methodName = dot.getLastChild();
+            boolean isBlockMethod = blockMethodVars.containsKey(var.getText()) &&
+                BLOCK_CALL_MAP.containsValue(method.getText());
 
-            if (!BLOCK_CALL_MAP.containsValue(methodName.getText()))
+            if (!"wait".equals(method.getText()) && !isBlockMethod)
                 return;
 
             DetailAST elist = ast.findFirstToken(ELIST);
@@ -102,10 +104,12 @@ public class FindGetCallCheck extends AbstractCheck {
             if (elist != null && elist.getChildCount() > 0)
                 return;
 
-            String type = igniteInternalFutureVariable.get(varName.getText());
-            String method = BLOCK_CALL_MAP.get(type);
+            String type = blockMethodVars.get(var.getText());
 
-            log(ast.getLineNo(), "Usage of the " + type + "#" + method + "() prohibited");
+            if (type == null)
+                log(ast.getLineNo(), "Usage of the " + var.getText() + ".wait() prohibited");
+            else
+                log(ast.getLineNo(), "Usage of the " + type + "#" + method.getText() + "() prohibited");
         }
     }
 
