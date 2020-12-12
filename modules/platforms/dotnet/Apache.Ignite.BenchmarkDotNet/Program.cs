@@ -30,7 +30,7 @@ namespace Apache.Ignite.BenchmarkDotNet
         /// </summary>
         public static void Main()
         {
-            BenchmarkRunner.Run<ThinClientCachePutBenchmark>();
+            BenchmarkRunner.Run<ThinClientServicesBenchmark>();
         }
     }
 }

@@ -43,19 +43,8 @@ class SegmentArchivedStorage extends SegmentObservable {
     /**
      * @param segmentLockStorage Protects WAL work segments from moving.
      */
-    private SegmentArchivedStorage(SegmentLockStorage segmentLockStorage) {
+    SegmentArchivedStorage(SegmentLockStorage segmentLockStorage) {
         this.segmentLockStorage = segmentLockStorage;
-    }
-
-    /**
-     * @param segmentLockStorage Protects WAL work segments from moving.
-     */
-    static SegmentArchivedStorage buildArchivedStorage(SegmentLockStorage segmentLockStorage) {
-        SegmentArchivedStorage archivedStorage = new SegmentArchivedStorage(segmentLockStorage);
-
-        segmentLockStorage.addObserver(archivedStorage::onSegmentUnlocked);
-
-        return archivedStorage;
     }
 
     /**
@@ -105,7 +94,7 @@ class SegmentArchivedStorage extends SegmentObservable {
      */
     synchronized void markAsMovedToArchive(long toArchive) throws IgniteInterruptedCheckedException {
         try {
-            while (segmentLockStorage.locked(toArchive) && !interrupted)
+            while (!segmentLockStorage.minLockIndex(toArchive) && !interrupted)
                 wait();
         }
         catch (InterruptedException e) {
@@ -145,7 +134,7 @@ class SegmentArchivedStorage extends SegmentObservable {
     /**
      * Callback for waking up waiters of this object when unlocked happened.
      */
-    private synchronized void onSegmentUnlocked(long segmentId) {
+    synchronized void onSegmentUnlocked(long segmentId) {
         notifyAll();
     }
 

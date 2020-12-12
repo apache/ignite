@@ -802,6 +802,11 @@ namespace ignite
                 bool SkipIfNull();
 
                 /**
+                 * Skip next value.
+                 */
+                void Skip();
+
+                /**
                  * Read element.
                  *
                  * @param id Session ID.
@@ -1149,7 +1154,7 @@ namespace ignite
                 /** Object schema type. */
                 BinaryOffsetType::Type schemaType;
 
-                IGNITE_NO_COPY_ASSIGNMENT(BinaryReaderImpl)
+                IGNITE_NO_COPY_ASSIGNMENT(BinaryReaderImpl);
 
                 /**
                  * Deserialize EnumEntry into user type.

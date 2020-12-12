@@ -72,7 +72,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -123,6 +122,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
@@ -235,10 +235,10 @@ public class JdbcThinConnection implements Connection {
     private int netTimeout;
 
     /** Query timeout. */
-    private int qryTimeout;
+    private final @Nullable Integer qryTimeout;
 
     /** Background periodical maintenance: query timeouts and reconnection handler. */
-    private final ScheduledExecutorService maintenanceExecutor = Executors.newScheduledThreadPool(2);
+    private final ScheduledExecutorService maintenanceExecutor;
 
     /** Cancelable future for query timeout task. */
     private ScheduledFuture<?> qryTimeoutScheduledFut;
@@ -275,6 +275,8 @@ public class JdbcThinConnection implements Connection {
         txIsolation = Connection.TRANSACTION_NONE;
         netTimeout = connProps.getConnectionTimeout();
         qryTimeout = connProps.getQueryTimeout();
+        maintenanceExecutor = Executors.newScheduledThreadPool(2,
+            new IgniteThreadFactory(ctx.configuration().getIgniteInstanceName(), "jdbc-maintenance"));
 
         schema = JdbcUtils.normalizeSchema(connProps.getSchema());
 
@@ -366,7 +368,7 @@ public class JdbcThinConnection implements Connection {
                 streamState = new StreamState((SqlSetStreamingCommand)cmd, cliIo);
 
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
-                    schema, 1, 1, autoCommit, sql, null), stmt, cliIo);
+                    schema, 1, 1, autoCommit, stmt.explicitTimeout, sql, null), stmt, cliIo);
 
                 streamState.start();
             }
@@ -408,7 +410,8 @@ public class JdbcThinConnection implements Connection {
 
         JdbcThinStatement stmt = new JdbcThinStatement(this, resSetHoldability, schema);
 
-        stmt.setQueryTimeout(qryTimeout);
+        if (qryTimeout != null)
+            stmt.setQueryTimeout(qryTimeout);
 
         synchronized (stmtsMux) {
             stmts.add(stmt);
@@ -996,7 +999,9 @@ public class JdbcThinConnection implements Connection {
                         stmt.requestTimeout() != NO_TIMEOUT && reqTimeoutTask != null &&
                         reqTimeoutTask.expired.get()) {
 
-                        throw new SQLTimeoutException(QueryCancelledException.ERR_MSG, SqlStateCode.QUERY_CANCELLED,
+                        int qryTimeout = stmt.getQueryTimeout();
+
+                        throw new SQLTimeoutException(getTimeoutDescription(qryTimeout, cliIo), SqlStateCode.QUERY_CANCELLED,
                             IgniteQueryErrorCode.QUERY_CANCELED);
                     }
                     else if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
@@ -1044,6 +1049,29 @@ public class JdbcThinConnection implements Connection {
 
             releaseMutex();
         }
+    }
+
+    /**
+     * Get timeout and node information.
+     * @param timeout - timeout.
+     * @param cliIo - ignite endpoint.
+     * @return Error description.
+     */
+    private String getTimeoutDescription(int timeout, JdbcThinTcpIo cliIo) {
+        String cliIoInfo = "";
+
+        if (cliIo != null) {
+            cliIoInfo = " [";
+
+            if (cliIo.nodeId() != null)
+                cliIoInfo = cliIoInfo + "[Node UUID: " + cliIo.nodeId().toString() + "]";
+
+            if (cliIo.igniteVersion() != null)
+                cliIoInfo = cliIoInfo + "[Ignite version: " + cliIo.igniteVersion().toString() + "]";
+
+            cliIoInfo += "]";
+        }
+        return "The query was cancelled while executing due to timeout. Query timeout was : " + timeout + "." + cliIoInfo;
     }
 
     /**

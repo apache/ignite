@@ -47,7 +47,7 @@ namespace ignite
         const char* IGNITE_NATIVE_TEST_CLASSPATH = "IGNITE_NATIVE_TEST_CLASSPATH";
 
         /** Excluded modules from test classpath. */
-        const char* TEST_EXCLUDED_MODULES[] = { "rest-http", "spring-data" };
+        const char* TEST_EXCLUDED_MODULES[] = { "rest-http" };
 
         /** Key indicating that the thread is attached. */
         static pthread_key_t attachKey;

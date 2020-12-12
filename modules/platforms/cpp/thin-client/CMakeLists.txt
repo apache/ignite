@@ -34,11 +34,17 @@ set(SOURCES src/impl/data_channel.cpp
         src/impl/message.cpp
         src/impl/cache/cache_client_proxy.cpp
         src/impl/cache/cache_client_impl.cpp
+        src/impl/transactions/transactions_impl.cpp
+        src/impl/transactions/transactions_proxy.cpp
         src/ignite_client.cpp)
 
 add_library(${TARGET} SHARED ${SOURCES})
 
 set_target_properties(${TARGET} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
+
+if (WIN32)
+	set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.thin-client")
+endif()
 
 target_link_libraries(${TARGET} ignite-binary ignite-network)
 

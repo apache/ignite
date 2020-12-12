@@ -59,8 +59,6 @@ public class QueryParameters {
      */
     private final int updateBatchSize;
 
-
-
     /**
      * Constructor.
      *
@@ -75,7 +73,8 @@ public class QueryParameters {
      * @param batchedArgs Batched arguments.
      * @param updateBatchSize Update internal batch size.
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType") QueryParameters(
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    QueryParameters(
         Object[] args,
         int[] parts,
         int timeout,

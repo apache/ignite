@@ -57,6 +57,23 @@ public class OptimizedObjectSharedStreamRegistry extends OptimizedObjectStreamRe
     }
 
     /**
+     * Closes and releases not cached input stream.
+     *
+     * @param in Object input stream.
+     */
+    void closeNotCachedIn(OptimizedObjectInputStream in) {
+        U.close(in, null);
+
+        StreamHolder holder = holders.get();
+
+        if (holder != null) {
+            holder.releaseIn();
+
+            holders.set(null);
+        }
+    }
+
+    /**
      * Gets holder from pool or thread local.
      *
      * @return Stream holder.

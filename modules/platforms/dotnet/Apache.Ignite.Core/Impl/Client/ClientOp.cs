@@ -72,6 +72,10 @@ namespace Apache.Ignite.Core.Impl.Client
         BinaryTypeGet = 3002,
         BinaryTypePut = 3003,
 
+        // Transactions
+        TxStart = 4000,
+        TxEnd = 4001,
+
         // Cluster.
         ClusterIsActive = 5000,
         ClusterChangeState = 5001,
@@ -83,6 +87,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
         // Compute.
         ComputeTaskExecute = 6000,
-        ComputeTaskFinished = 6001
+        ComputeTaskFinished = 6001,
+
+        // Services.
+        ServiceInvoke = 7000
     }
 }

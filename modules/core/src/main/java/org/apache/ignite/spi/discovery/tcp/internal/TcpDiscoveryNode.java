@@ -182,7 +182,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         Serializable consistentId)
     {
         assert id != null;
-        assert !F.isEmpty(addrs);
         assert metricsProvider != null;
         assert ver != null;
 

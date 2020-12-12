@@ -129,12 +129,16 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     /** */
     private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
 
+    /** The flag shown, the reader uses class loader cache used or not. */
+    private boolean useCache;
+
     /**
      * @param in Input.
      * @throws IOException In case of error.
      */
     OptimizedObjectInputStream(GridDataInput in) throws IOException {
         this.in = in;
+        this.useCache = true;
     }
 
     /**
@@ -142,17 +146,20 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @param ctx Context.
      * @param mapper ID mapper.
      * @param clsLdr Class loader.
+     * @param useCache True if class loader cache will be used, false otherwise.
      */
     void context(
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper,
-        ClassLoader clsLdr)
+        ClassLoader clsLdr,
+        boolean useCache)
     {
         this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
         this.clsLdr = clsLdr;
+        this.useCache = useCache;
     }
 
     /**
@@ -337,8 +344,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 int typeId = readInt();
 
                 OptimizedClassDescriptor desc = typeId == 0 ?
-                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr, ctx.classNameFilter()), ctx, mapper) :
-                    classDescriptor(clsMap, typeId, clsLdr, ctx, mapper);
+                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr, ctx.classNameFilter()), useCache, ctx, mapper) :
+                    classDescriptor(clsMap, typeId, clsLdr, useCache, ctx, mapper);
 
                 curCls = desc.describedClass();
 
@@ -373,8 +380,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     private Class<?> readClass() throws ClassNotFoundException, IOException {
         int compTypeId = readInt();
 
-        return compTypeId == 0 ? U.forName(readUTF(), clsLdr) :
-            classDescriptor(clsMap, compTypeId, clsLdr, ctx, mapper).describedClass();
+        return compTypeId == 0 ? U.forName(readUTF(), clsLdr, null, useCache) :
+            classDescriptor(clsMap, compTypeId, clsLdr, useCache, ctx, mapper).describedClass();
     }
 
     /**

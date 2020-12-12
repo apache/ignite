@@ -54,7 +54,7 @@ public abstract class AbstractH2LeafIO extends BPlusLeafIO<H2Row> implements H2R
     }
 
     /** {@inheritDoc} */
-    @Override public final H2Row getLookupRow(BPlusTree<H2Row,?> tree, long pageAddr, int idx)
+    @Override public H2Row getLookupRow(BPlusTree<H2Row,?> tree, long pageAddr, int idx)
         throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);
 
@@ -72,5 +72,10 @@ public abstract class AbstractH2LeafIO extends BPlusLeafIO<H2Row> implements H2R
     /** {@inheritDoc} */
     @Override public long getLink(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getPayloadSize() {
+        return 0;
     }
 }

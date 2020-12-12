@@ -144,7 +144,7 @@ public class ClientCacheAffinityMapping {
      * @param ch Input channel.
      */
     public static ClientCacheAffinityMapping readResponse(PayloadInputChannel ch) {
-        try (BinaryReaderExImpl in = new BinaryReaderExImpl(null, ch.in(), null, true)) {
+        try (BinaryReaderExImpl in = ClientUtils.createBinaryReader(null, ch.in())) {
             long topVer = in.readLong();
             int minorTopVer = in.readInt();
 

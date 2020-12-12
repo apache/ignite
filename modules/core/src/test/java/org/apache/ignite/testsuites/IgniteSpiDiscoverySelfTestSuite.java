@@ -39,6 +39,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiMulticastTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryUnresolvedHostTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryClientSuspensionSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryConcurrentStartTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryCoordinatorFailureTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryFailedJoinTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderCleanerTest;
@@ -61,7 +62,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiFailureTimeoutSelfTest
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiMBeanTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiReconnectDelayTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiSslSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiStartStopSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiWildcardSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslParametersTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSecuredUnsecuredTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSelfTest;
@@ -92,9 +95,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     TcpDiscoverySelfTest.class,
     TcpDiscoverySpiSelfTest.class,
-    //TcpDiscoverySpiRandomStartStopTest.class,
-    //TcpDiscoverySpiSslSelfTest.class,
-    //TcpDiscoverySpiWildcardSelfTest.class,
+    TcpDiscoverySpiSslSelfTest.class,
+    TcpDiscoverySpiWildcardSelfTest.class,
     TcpDiscoverySpiFailureTimeoutSelfTest.class,
     TcpDiscoverySpiMBeanTest.class,
     TcpDiscoverySpiStartStopSelfTest.class,
@@ -121,7 +123,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     TcpDiscoveryRestartTest.class,
     TcpDiscoveryMultiThreadedTest.class,
     TcpDiscoveryMetricsWarnLogTest.class,
-    //TcpDiscoveryConcurrentStartTest.class,
+    TcpDiscoveryConcurrentStartTest.class,
 
     TcpDiscoverySegmentationPolicyTest.class,
 

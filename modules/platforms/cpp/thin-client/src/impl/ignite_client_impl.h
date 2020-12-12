@@ -23,6 +23,7 @@
 
 #include "impl/data_router.h"
 #include "impl/cache/cache_client_impl.h"
+#include "impl/transactions/transactions_impl.h"
 
 namespace ignite
 {
@@ -82,6 +83,12 @@ namespace ignite
                  */
                 common::concurrent::SharedPointer<cache::CacheClientImpl> CreateCache(const char* name);
 
+                /** */
+                transactions::SP_TransactionsImpl ClientTransactions() const
+                {
+                    return txImpl;
+                }
+
                 /**
                  * Destroy cache by name.
                  *
@@ -109,6 +116,7 @@ namespace ignite
                  */
                 static common::concurrent::SharedPointer<cache::CacheClientImpl> MakeCacheImpl(
                         const SP_DataRouter& router,
+                        const transactions::SP_TransactionsImpl& tx,
                         const std::string& name,
                         int32_t id);
 
@@ -125,6 +133,9 @@ namespace ignite
 
                 /** Data router. */
                 SP_DataRouter router;
+
+                /** Transactions. */
+                transactions::SP_TransactionsImpl txImpl;
             };
         }
     }

@@ -18,10 +18,12 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.transactions.DepthFirstSearchTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockCauseTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionMessageMarshallingTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionNoHangsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionUnmasrhalErrorsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockOnEntryToStringTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDeadlockDetectionCrossCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionCrossCacheTest;
@@ -39,11 +41,12 @@ import org.junit.runners.Suite;
     TxOptimisticDeadlockDetectionCrossCacheTest.class,
     TxPessimisticDeadlockDetectionTest.class,
     TxPessimisticDeadlockDetectionCrossCacheTest.class,
-    //TxDeadlockCauseTest.class,
+    TxDeadlockCauseTest.class,
     TxDeadlockDetectionTest.class,
     TxDeadlockDetectionNoHangsTest.class,
     TxDeadlockDetectionUnmasrhalErrorsTest.class,
-    TxDeadlockDetectionMessageMarshallingTest.class
+    TxDeadlockDetectionMessageMarshallingTest.class,
+    TxDeadlockOnEntryToStringTest.class
 })
 public class TxDeadlockDetectionTestSuite {
 }

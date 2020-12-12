@@ -16,6 +16,9 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -23,6 +26,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -34,10 +38,14 @@ import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -46,6 +54,13 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -144,6 +159,9 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     private H2TreeIndex.H2TreeFactory regularH2TreeFactory;
 
     /** */
+    private DurableBackgroundTaskTestListener durableBackgroundTaskTestLsnr;
+
+    /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(
@@ -189,6 +207,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         cleanPersistenceDir();
 
+        durableBackgroundTaskTestLsnr = null;
+
         super.afterTest();
     }
 
@@ -217,7 +237,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         int nodeCnt = NODES_COUNT;
 
-        Ignite ignite = prepareAndPopulateCluster(nodeCnt, multicolumn);
+        Ignite ignite = prepareAndPopulateCluster(nodeCnt, multicolumn, false);
 
         Ignite aliveNode = grid(ALWAYS_ALIVE_NODE_NUM);
 
@@ -421,6 +441,59 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     }
 
     /**
+     * Argument list for batch insert.
+     *
+     * @param batchSize Batch size.
+     * @param argCnt Arguments count.
+     * @return List of batch arguments.
+     */
+    private List<Object[]> batchInsertArgs(int batchSize, int argCnt) {
+        List<Object[]> batchArgs = new ArrayList<>(batchSize);
+
+        for (int i = 0; i < batchSize; i++) {
+            Object[] args = new Object[argCnt];
+
+            for (int j = 0; j < argCnt; j++)
+                args[j] = i;
+
+            batchArgs.add(args);
+        }
+
+        return batchArgs;
+    }
+
+    /**
+     * Batch query.
+     *
+     * @param ignite Ignite instance.
+     * @param qry SQL query.
+     * @param batchArgs Batch arguments.
+     * @throws Exception If failed.
+     */
+    private void batchQuery(Ignite ignite, String qry, List<Object[]> batchArgs) throws Exception {
+        String host = ignite.configuration().getLocalHost();
+
+        int port = ignite.configuration().getClientConnectorConfiguration().getPort();
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
+            try (Connection conn = new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
+                PreparedStatement statement = conn.prepareStatement(qry);
+
+                for (Object[] args : batchArgs) {
+                    for (int i = 1; i <= args.length; i++)
+                        statement.setObject(i, args[i - 1]);
+
+                    statement.addBatch();
+
+                    statement.clearParameters();
+                }
+
+                statement.executeBatch();
+            }
+        }
+    }
+
+    /**
      * Starts cluster and populates with data.
      *
      * @param nodeCnt Nodes count.
@@ -428,8 +501,17 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
      * @return Ignite instance.
      * @throws Exception If failed.
      */
-    private IgniteEx prepareAndPopulateCluster(int nodeCnt, boolean multicolumn) throws Exception {
+    private IgniteEx prepareAndPopulateCluster(int nodeCnt, boolean multicolumn, boolean createLsnr) throws Exception {
         IgniteEx ignite = startGrids(nodeCnt);
+
+        if (createLsnr) {
+            GridCacheSharedContext ctx = ignite.context().cache().context();
+
+            durableBackgroundTaskTestLsnr = new DurableBackgroundTaskTestListener(ctx.database().metaStorage());
+
+            ((GridCacheDatabaseSharedManager) ctx.cache().context().database())
+                    .addCheckpointListener(durableBackgroundTaskTestLsnr);
+        }
 
         ignite.cluster().active(true);
 
@@ -441,8 +523,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         createIndex(cache, multicolumn);
 
-        for (int i = 0; i < 5_000; i++)
-            query(cache, "insert into t (id, p, f) values (?, ?, ?)", i, i, i);
+        batchQuery(ignite, "insert into t (id, p, f) values (?, ?, ?)", batchInsertArgs(5_000, 3));
 
         forceCheckpoint();
 
@@ -538,7 +619,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     public void testDestroyTaskLifecycle() throws Exception {
         taskLifecycleListener.reset();
 
-        IgniteEx ignite = prepareAndPopulateCluster(1, false);
+        IgniteEx ignite = prepareAndPopulateCluster(1, false, false);
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -561,6 +642,62 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         awaitLatch(pendingDelLatch, "Test timed out: failed to await for durable background task completion.");
 
         assertTrue(taskLifecycleListener.check());
+    }
+
+    /**
+     * Tests that index is correctly deleted when corresponding SQL table is deleted.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRemoveIndexesOnTableDrop() throws Exception {
+        IgniteEx ignite = startGrids(1);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        query(cache, "create table t1 (id integer primary key, p integer, f integer) with \"BACKUPS=1, CACHE_GROUP=grp_test_table\"");
+
+        query(cache, "create table t2 (id integer primary key, p integer, f integer) with \"BACKUPS=1, CACHE_GROUP=grp_test_table\"");
+
+        query(cache, "create index t2_idx on t2 (p)");
+
+        batchQuery(ignite, "insert into t2 (id, p, f) values (?, ?, ?)", batchInsertArgs(5_000, 3));
+
+        forceCheckpoint();
+
+        CountDownLatch inxDeleteInAsyncTaskLatch = new CountDownLatch(1);
+
+        LogListener lsnr = new CallbackExecutorLogListener(
+            ".*?Execution of durable background task completed: DROP_SQL_INDEX-PUBLIC.T2_IDX-.*",
+            () -> inxDeleteInAsyncTaskLatch.countDown()
+        );
+
+        testLog.registerListener(lsnr);
+
+        ignite.destroyCache("SQL_PUBLIC_T2");
+
+        awaitLatch(
+            inxDeleteInAsyncTaskLatch,
+            "Failed to await for index deletion in async task (either index failed to delete in 1 minute or async task not started)"
+        );
+    }
+
+    /**
+     * Tests that task removed from metastorage in beginning of next checkpoint.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testIndexDeletionTaskRemovedAfterCheckpointFinished() throws Exception {
+        prepareAndPopulateCluster(1, false, true);
+
+        awaitLatch(pendingDelLatch, "Test timed out: failed to await for durable background task completion.");
+
+        forceCheckpoint();
+
+        assertTrue(durableBackgroundTaskTestLsnr.check());
     }
 
     /**
@@ -622,7 +759,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
             IgniteLogger log,
             IoStatisticsHolder stats,
             InlineIndexColumnFactory factory,
-            int configuredInlineSize
+            int configuredInlineSize,
+            PageIoResolver pageIoRslvr
         ) throws IgniteCheckedException {
             super(
                 cctx,
@@ -650,7 +788,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
                 log,
                 stats,
                 factory,
-                configuredInlineSize
+                configuredInlineSize,
+                pageIoRslvr
             );
         }
 
@@ -675,6 +814,68 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
             }
 
             return super.destroyDownPages(bag, pageId, lvl, c, lockHoldStartTime, lockMaxTime, lockedPages);
+        }
+    }
+
+    /**
+     *
+     */
+    private class DurableBackgroundTaskTestListener implements CheckpointListener {
+        /**
+         * Prefix for metastorage keys for durable background tasks.
+         */
+        private static final String STORE_DURABLE_BACKGROUND_TASK_PREFIX = "durable-background-task-";
+
+        /**
+         * Metastorage.
+         */
+        private volatile ReadOnlyMetastorage metastorage;
+
+        /**
+         * Task keys in metastorage.
+         */
+        private List<String> savedTasks = new ArrayList<>();
+
+        /** */
+        public DurableBackgroundTaskTestListener(ReadWriteMetastorage metastorage) {
+            this.metastorage = metastorage;
+        }
+
+        /**
+         * Checks that saved tasks from before checkpoint begin step removed from metastorage.
+         * Сall after the end of the checkpoint.
+         *
+         * @return true if check is successful.
+         */
+        public boolean check() throws IgniteCheckedException {
+            if (savedTasks.isEmpty())
+                return false;
+
+            for (String taskKey : savedTasks) {
+                DurableBackgroundTask task = (DurableBackgroundTask)metastorage.read(taskKey);
+
+                if (task != null)
+                    return false;
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMarkCheckpointBegin(Context ctx) {
+            /* No op. */
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCheckpointBegin(Context ctx) {
+            /* No op. */
+        }
+
+        /** {@inheritDoc} */
+        @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+            metastorage.iterate(STORE_DURABLE_BACKGROUND_TASK_PREFIX,
+                    (key, val) -> savedTasks.add(key),
+                    true);
         }
     }
 }

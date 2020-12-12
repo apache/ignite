@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.collection.ImmutableIntSet;
@@ -182,6 +183,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Number of currently clearing partitions for rebalancing. */
     private final AtomicLongMetric rebalanceClearingPartitions;
 
+    /** Number of currently evicting non-affinity partitions. Not available in the old metrics framework. */
+    private final AtomicLongMetric evictingPartitions;
+
     /** Get time. */
     private final HistogramMetricImpl getTime;
 
@@ -227,6 +231,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** Cache size. */
     private final LongGauge cacheSize;
+
+    /** Number of keys processed during index rebuilding. */
+    private final LongAdderMetric idxRebuildKeyProcessed;
 
     /**
      * Creates cache metrics.
@@ -363,13 +370,13 @@ public class CacheMetricsImpl implements CacheMetrics {
             20);
 
         rebalanceClearingPartitions = mreg.longMetric("RebalanceClearingPartitionsLeft",
-            "Number of partitions need to be cleared before actual rebalance start.");
+            "The number of partitions need to be cleared before actual rebalance start.");
 
-        mreg.register("IsIndexRebuildInProgress", () -> {
-            IgniteInternalFuture fut = cctx.shared().kernalContext().query().indexRebuildFuture(cctx.cacheId());
+        evictingPartitions = mreg.longMetric("EvictingPartitionsLeft",
+            "The number of non-affinity partitions scheduled for eviction.");
 
-            return fut != null && !fut.isDone();
-        }, "True if index rebuild is in progress.");
+        mreg.register("IsIndexRebuildInProgress", this::isIndexRebuildInProgress,
+            "True if index rebuild is in progress.");
 
         getTime = mreg.histogram("GetTime", HISTOGRAM_BUCKETS, "Get time in nanoseconds.");
 
@@ -399,6 +406,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         cacheSize = mreg.register("CacheSize",
             () -> getEntriesStat().cacheSize(), "Local cache size.");
+
+        idxRebuildKeyProcessed = mreg.longAdderMetric("IndexRebuildKeyProcessed",
+            "Number of keys processed during index rebuilding.");
     }
 
     /**
@@ -714,6 +724,8 @@ public class CacheMetricsImpl implements CacheMetrics {
             delegate.clear();
 
         txKeyCollisionInfo = null;
+
+        idxRebuildKeyProcessed.reset();
     }
 
     /** {@inheritDoc} */
@@ -898,7 +910,8 @@ public class CacheMetricsImpl implements CacheMetrics {
             delegate.onRead(isHit);
     }
 
-    /** Set callback for tx key collisions detection.
+    /**
+     * Set callback for tx key collisions detection.
      *
      * @param coll Key collisions info holder.
      */
@@ -1443,12 +1456,29 @@ public class CacheMetricsImpl implements CacheMetrics {
         return rebalanceClearingPartitions.value();
     }
 
-    /**
-     * Sets clearing partitions number.
-     * @param partitions Partitions number.
-     */
-    public void rebalanceClearingPartitions(int partitions) {
-        rebalanceClearingPartitions.value(partitions);
+    /** */
+    public long evictingPartitionsLeft() {
+        return evictingPartitions.value();
+    }
+
+    /** */
+    public void incrementRebalanceClearingPartitions() {
+        rebalanceClearingPartitions.increment();
+    }
+
+    /** */
+    public void decrementRebalanceClearingPartitions() {
+        rebalanceClearingPartitions.decrement();
+    }
+
+    /** */
+    public void incrementEvictingPartitions() {
+        evictingPartitions.increment();
+    }
+
+    /** */
+    public void decrementEvictingPartitions() {
+        evictingPartitions.decrement();
     }
 
     /**
@@ -1541,6 +1571,32 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.onOffHeapEvict();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isIndexRebuildInProgress() {
+        IgniteInternalFuture fut = cctx.shared().kernalContext().query().indexRebuildFuture(cctx.cacheId());
+
+        return fut != null && !fut.isDone();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexRebuildKeysProcessed() {
+        return idxRebuildKeyProcessed.value();
+    }
+
+    /** Reset metric - number of keys processed during index rebuilding. */
+    public void resetIndexRebuildKeyProcessed() {
+        idxRebuildKeyProcessed.reset();
+    }
+
+    /**
+     * Increase number of keys processed during index rebuilding.
+     *
+     * @param val Number of processed keys.
+     */
+    public void addIndexRebuildKeyProcessed(long val) {
+        idxRebuildKeyProcessed.add(val);
     }
 
     /** {@inheritDoc} */

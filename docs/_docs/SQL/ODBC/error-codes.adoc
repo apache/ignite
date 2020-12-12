@@ -1,0 +1,155 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Error Codes
+
+To get an error code, use the `SQLGetDiagRec()` function. It returns a string holding the ANSI SQL error code defined. For example:
+
+[source,c++]
+----
+SQLHENV env;
+SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
+
+SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<void*>(SQL_OV_ODBC3), 0);
+
+SQLHDBC dbc;
+SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
+
+SQLCHAR connectStr[] = "DRIVER={Apache Ignite};SERVER=localhost;PORT=10800;SCHEMA=Person;";
+SQLDriverConnect(dbc, NULL, connectStr, SQL_NTS, 0, 0, 0, SQL_DRIVER_COMPLETE);
+
+SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
+
+SQLCHAR query[] = "SELECT firstName, lastName, resume, salary FROM Person";
+SQLRETURN ret = SQLExecDirect(stmt, query, SQL_NTS);
+
+if (ret != SQL_SUCCESS)
+{
+	SQLCHAR sqlstate[7] = "";
+	SQLINTEGER nativeCode;
+
+	SQLCHAR message[1024];
+	SQLSMALLINT reallen = 0;
+
+	int i = 1;
+	ret = SQLGetDiagRec(SQL_HANDLE_STMT, stmt, i, sqlstate,
+                      &nativeCode, message, sizeof(message), &reallen);
+
+	while (ret != SQL_NO_DATA)
+	{
+		std::cout << sqlstate << ": " << message;
+
+		++i;
+		ret = SQLGetDiagRec(SQL_HANDLE_STMT, stmt, i, sqlstate,
+                        &nativeCode, message, sizeof(message), &reallen);
+	}
+}
+----
+
+The table below lists all the error codes supported by Ignite presently. This list may be extended in the future.
+
+[width="100%",cols="20%,80%"]
+|=======================================================================
+|Code |Description
+
+|01S00
+|Invalid connection string attribute.
+
+|01S02
+|The driver did not support the specified value and substituted a similar value.
+
+|08001
+|The driver failed to open a connection to the cluster.
+
+|08002
+|The connection is already established.
+
+|08003
+|The connection is in the closed state. Happened unexpectedly.
+
+|08004
+|The connection is rejected by the cluster.
+
+|08S01
+|Connection failure.
+
+|22026
+|String length mismatch in data-at-execution dialog.
+
+|23000
+|Integrity constraint violation (e.g. duplicate key, null key and so on).
+
+|24000
+|Invalid cursor state.
+
+|42000
+|Syntax error in request.
+
+|42S01
+|Table already exists.
+
+|42S02
+|Table not found.
+
+|42S11
+|Index already exists.
+
+|42S12
+|Index not found.
+
+|42S21
+|Column already exists.
+
+|42S22
+|Column not found.
+
+|HY000
+|General error. See error message for details.
+
+|HY001
+|Memory allocation error.
+
+|HY003
+|Invalid application buffer type.
+
+|HY004
+|Invalid SQL data type.
+
+|HY009
+|Invalid use of null-pointer.
+
+|HY010
+|Function call sequence error.
+
+|HY090
+|Invalid string or buffer length (e.g. negative or zero length).
+
+|HY092
+|Option type out of range.
+
+|HY097
+|Column type out of range.
+
+|HY105
+|Invalid parameter type.
+
+|HY106
+|Fetch type out of range.
+
+|HYC00
+|Feature is not implemented.
+
+|IM001
+|Function is not supported.
+|=======================================================================

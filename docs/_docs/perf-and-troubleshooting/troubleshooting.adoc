@@ -1,0 +1,164 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Troubleshooting and Debugging
+
+This article covers some common tips and tricks for debugging and troubleshooting Ignite deployments.
+
+== Debugging Tools: Consistency Check Command
+
+The `./control.sh|bat` utility includes a set of link:tools/control-script#consistency-check-commands[consistency check commands]
+that help with verifying internal data consistency invariants.
+
+== Persistence Files Disappear on Restart
+
+On some systems, the default location for Ignite persistence files might be under a `temp` folder. This can lead to situations when persistence files are removed by an operating system whenever a node process is restarted. To avoid this:
+
+* Ensure that `WARN` logging level is enabled for Ignite. You will see a warning if the persistence files are written to the temporary directory.
+* Change the location of all persistence files using the `DataStorageConfiguration` APIs, such as `setStoragePath(...)`,
+`setWalPath(...)`, and `setWalArchivePath(...)`
+
+== Cluster Doesn't Start After Field Type Changes
+
+When developing your application, you may need to change the type of a custom
+object’s field. For instance, let’s say you have object `A` with field `A.range` of
+ `int` type and then you decide to change the type of `A.range` to `long` right in
+ the source code. When you do this, the cluster or the application will fail to
+ restart because Ignite doesn't support field/column type changes.
+
+When this happens _and you are still in development_, you need to go into the
+file system and remove the following directories: `marshaller/`, `db/`, and `wal/`
+located in the Ignite working directory (`db` and `wal` might be located in other
+places if you have redefined their location).
+
+However, if you are _in production_ then instead of changing field types, add a
+new field with a different name to your object model and remove the old one. This operation is fully
+supported. At the same time, the `ALTER TABLE` command can be used to add new
+columns or remove existing ones at run time.
+
+== Debugging GC Issues
+
+The section contains information that may be helpful when you need to debug and
+troubleshoot issues related to Java heap usage or GC pauses.
+
+=== Heap Dumps
+
+If JVM generates `OutOfMemoryException` exceptions then dump the heap automatically the next time the exception occurs.
+This helps if the root cause of this exception is not clear and a deeper look at the heap state at the moment of failure is required:
+
+++++
+<code-tabs>
+<code-tab data-tab="Shell">
+++++
+[source,shell]
+----
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/path/to/heapdump
+-XX:OnOutOfMemoryError=“kill -9 %p”
+-XX:+ExitOnOutOfMemoryError
+----
+++++
+</code-tab>
+</code-tabs>
+++++
+
+=== Detailed GC Logs
+
+In order to capture detailed information about GC related activities, make sure you have the settings below configured
+in the JVM settings of your cluster nodes:
+
+++++
+<code-tabs>
+<code-tab data-tab="Shell">
+++++
+[source,shell]
+----
+-XX:+PrintGCDetails
+-XX:+PrintGCTimeStamps
+-XX:+PrintGCDateStamps
+-XX:+UseGCLogFileRotation
+-XX:NumberOfGCLogFiles=10
+-XX:GCLogFileSize=100M
+-Xloggc:/path/to/gc/logs/log.txt
+----
+++++
+</code-tab>
+</code-tabs>
+++++
+
+Replace `/path/to/gc/logs/` with an actual path on your file system.
+
+In addition, for G1 collector set the property below. It provides many additional details that are
+purposefully not included in the `-XX:+PrintGCDetails` setting:
+
+++++
+<code-tabs>
+<code-tab data-tab="Shell">
+++++
+[source,shell]
+----
+-XX:+PrintAdaptiveSizePolicy
+----
+++++
+</code-tab>
+</code-tabs>
+++++
+
+=== Performance Analysis With Flight Recorder
+
+In cases when you need to debug performance or memory issues you can use Java Flight Recorder to continuously
+collect low level runtime statistics, enabling after-the-fact incident analysis. To enable Java Flight Recorder use the
+following settings:
+
+++++
+<code-tabs>
+<code-tab data-tab="Shell">
+++++
+[source,shell]
+----
+-XX:+UnlockCommercialFeatures
+-XX:+FlightRecorder
+-XX:+UnlockDiagnosticVMOptions
+-XX:+DebugNonSafepoints
+----
+++++
+</code-tab>
+</code-tabs>
+++++
+
+To start recording the state on a particular Ignite node use the following command:
+
+++++
+<code-tabs>
+<code-tab data-tab="Shell">
+++++
+[source,shell]
+----
+jcmd <PID> JFR.start name=<recordcing_name> duration=60s filename=/var/recording/recording.jfr settings=profile
+----
+++++
+</code-tab>
+</code-tabs>
+++++
+
+For Flight Recorder related details refer to Oracle's official documentation.
+
+=== JVM Pauses
+
+Occasionally you may see an warning message about the JVM being paused for too long. It can happen during bulk loading, for example.
+
+Adjusting the `IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD` timeout setting may give the process time to finish without generating the warning. You can set the threshold via an environment variable, or pass it as a JVM argument (`-DIGNITE_JVM_PAUSE_DETECTOR_THRESHOLD=5000`) or as a parameter to ignite.sh (`-J-DIGNITE_JVM_PAUSE_DETECTOR_THRESHOLD=5000`).
+
+The value is in milliseconds.
+

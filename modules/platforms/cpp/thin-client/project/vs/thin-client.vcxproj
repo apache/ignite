@@ -167,6 +167,8 @@
     <ClCompile Include="..\..\src\impl\protocol_version.cpp" />
     <ClCompile Include="..\..\src\impl\remote_type_updater.cpp" />
     <ClCompile Include="..\..\src\impl\utility.cpp" />
+    <ClCompile Include="..\..\src\impl\transactions\transactions_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\transactions\transactions_proxy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\thin\cache\cache_client_proxy.h" />
@@ -194,6 +196,11 @@
     <ClInclude Include="..\..\src\impl\remote_type_updater.h" />
     <ClInclude Include="..\..\src\impl\response_status.h" />
     <ClInclude Include="..\..\src\impl\utility.h" />
+    <ClInclude Include="..\..\include\ignite\thin\transactions\transactions.h" />
+    <ClInclude Include="..\..\include\ignite\thin\transactions\transaction.h" />
+    <ClInclude Include="..\..\include\ignite\thin\transactions\transaction_consts.h" />
+    <ClInclude Include="..\..\include\ignite\thin\transactions\transactions_proxy.h" />
+    <ClInclude Include="..\..\src\impl\transactions\transactions_impl.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\binary\project\vs\binary.vcxproj">

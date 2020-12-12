@@ -66,7 +66,7 @@ class SSLVersionParser(argparse.Action):
 
 @pytest.fixture(scope='module')
 def client(
-    ignite_host, ignite_port, timeout, use_ssl, ssl_keyfile, ssl_certfile,
+    ignite_host, ignite_port, timeout, use_ssl, ssl_keyfile, ssl_keyfile_password, ssl_certfile,
     ssl_ca_certfile, ssl_cert_reqs, ssl_ciphers, ssl_version,
     username, password,
 ):
@@ -74,6 +74,7 @@ def client(
         timeout=timeout,
         use_ssl=use_ssl,
         ssl_keyfile=ssl_keyfile,
+        ssl_keyfile_password=ssl_keyfile_password,
         ssl_certfile=ssl_certfile,
         ssl_ca_certfile=ssl_ca_certfile,
         ssl_cert_reqs=ssl_cert_reqs,
@@ -134,6 +135,13 @@ def pytest_addoption(parser):
         default=None,
         type=str,
         help='a path to SSL key file to identify local party'
+    )
+    parser.addoption(
+        '--ssl-keyfile-password',
+        action='store',
+        default=None,
+        type=str,
+        help='password for SSL key file'
     )
     parser.addoption(
         '--ssl-certfile',
@@ -199,6 +207,7 @@ def pytest_generate_tests(metafunc):
         'timeout': None,
         'use_ssl': False,
         'ssl_keyfile': None,
+        'ssl_keyfile_password': None,
         'ssl_certfile': None,
         'ssl_ca_certfile': None,
         'ssl_cert_reqs': ssl.CERT_NONE,

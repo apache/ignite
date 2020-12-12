@@ -323,6 +323,12 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
     /** Tx key collisions with appropriate queue size string representation. */
     private String txKeyCollisions;
 
+    /** Index rebuilding in progress. */
+    private boolean idxRebuildInProgress;
+
+    /** Number of keys processed during index rebuilding. */
+    private long idxRebuildKeyProcessed;
+
     /**
      * Default constructor.
      */
@@ -433,6 +439,9 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
         rebalanceFinishTime = m.estimateRebalancingFinishTime();
         rebalanceClearingPartitionsLeft = m.getRebalanceClearingPartitionsLeft();
         txKeyCollisions = m.getTxKeyCollisions();
+
+        idxRebuildInProgress = m.isIndexRebuildInProgress();
+        idxRebuildKeyProcessed = m.getIndexRebuildKeysProcessed();
     }
 
     /**
@@ -1051,6 +1060,16 @@ public class CacheMetricsSnapshotV2 extends IgniteDataTransferObject implements 
     /** {@inheritDoc} */
     @Override public String getTxKeyCollisions() {
         return txKeyCollisions;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isIndexRebuildInProgress() {
+        return idxRebuildInProgress;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexRebuildKeysProcessed() {
+        return idxRebuildKeyProcessed;
     }
 
     /** {@inheritDoc} */

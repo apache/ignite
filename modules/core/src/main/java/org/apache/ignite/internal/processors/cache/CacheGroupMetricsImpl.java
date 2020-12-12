@@ -175,6 +175,16 @@ public class CacheGroupMetricsImpl {
         mreg.register("TotalAllocatedSize",
             this::getTotalAllocatedSize,
             "Total size of memory allocated for group, in bytes.");
+
+        if (ctx.config().isEncryptionEnabled()) {
+            mreg.register("ReencryptionFinished",
+                () -> !ctx.shared().kernalContext().encryption().reencryptionInProgress(ctx.groupId()),
+                "The flag indicates whether reencryption is finished or not.");
+
+            mreg.register("ReencryptionBytesLeft",
+                () -> ctx.shared().kernalContext().encryption().getBytesLeftForReencryption(ctx.groupId()),
+                "The number of bytes left for re-ecryption.");
+        }
     }
 
     /** */

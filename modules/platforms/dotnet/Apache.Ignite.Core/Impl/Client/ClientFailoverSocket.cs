@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Client.Cache;
+    using Apache.Ignite.Core.Impl.Client.Transactions;
     using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Log;
 
@@ -53,6 +54,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
+
+        /** Transactions. */
+        private readonly TransactionsClient _transactions;
 
         /** Endpoints with corresponding hosts - from config. */
         private readonly List<SocketEndpoint> _endPoints;
@@ -94,14 +98,20 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Initializes a new instance of the <see cref="ClientFailoverSocket"/> class.
         /// </summary>
         /// <param name="config">The configuration.</param>
-        /// <param name="marsh"></param>
-        public ClientFailoverSocket(IgniteClientConfiguration config, Marshaller marsh)
+        /// <param name="marsh">The marshaller.</param>
+        /// <param name="transactions">The transactions.</param>
+        public ClientFailoverSocket(
+            IgniteClientConfiguration config,
+            Marshaller marsh,
+            TransactionsClient transactions)
         {
             Debug.Assert(config != null);
             Debug.Assert(marsh != null);
+            Debug.Assert(transactions != null);
 
             _config = config;
             _marsh = marsh;
+            _transactions = transactions;
 
 #pragma warning disable 618 // Type or member is obsolete
             if (config.Host == null && (config.Endpoints == null || config.Endpoints.Count == 0))
@@ -247,6 +257,12 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private ClientSocket GetSocket()
         {
+            var tx = _transactions.Tx;
+            if (tx != null)
+            {
+                return tx.Socket;
+            }
+
             lock (_socketLock)
             {
                 ThrowIfDisposed();
@@ -265,6 +281,12 @@ namespace Apache.Ignite.Core.Impl.Client
             ThrowIfDisposed();
             
             if (!_config.EnablePartitionAwareness)
+            {
+                return null;
+            }
+
+            // Transactional operation should be executed on node started the transaction.
+            if (_transactions.Tx != null)
             {
                 return null;
             }

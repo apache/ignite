@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import java.io.File;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -33,6 +32,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -187,47 +187,11 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
             cache.put(i, i);
 
         //then: checkpoint triggered by size limit of wall without checkpoint
-        GridCacheDatabaseSharedManager.Checkpointer checkpointer = dbMgr.getCheckpointer();
+        Checkpointer checkpointer = dbMgr.getCheckpointer();
 
         String checkpointReason = U.field((Object)U.field(checkpointer, "curCpProgress"), "reason");
 
         assertEquals("too big size of WAL without checkpoint", checkpointReason);
-    }
-
-    /**
-     * Test for check deprecated removing checkpoint by deprecated walHistorySize parameter
-     *
-     * @deprecated Test old removing process depends on WalHistorySize.
-     */
-    @Test
-    public void testCheckpointHistoryRemovingByWalHistorySize() throws Exception {
-        //given: configured grid with wal history size = 10
-        int walHistorySize = 10;
-
-        Ignite ignite = startGrid(dbCfg -> {
-            dbCfg.setWalHistorySize(walHistorySize);
-        });
-
-        GridCacheDatabaseSharedManager dbMgr = gridDatabase(ignite);
-
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheConfiguration());
-
-        //when: put to cache and do checkpoint
-        int testNumberOfCheckpoint = walHistorySize * 2;
-
-        for (int i = 0; i < testNumberOfCheckpoint; i++) {
-            cache.put(i, i);
-            //and: wait for checkpoint finished
-            forceCheckpoint();
-        }
-
-        //then: number of checkpoints less or equal than walHistorySize
-        CheckpointHistory hist = dbMgr.checkpointHistory();
-        assertTrue(hist.checkpoints().size() == walHistorySize);
-
-        File[] cpFiles = dbMgr.checkpointDirectory().listFiles();
-
-        assertTrue(cpFiles.length <= (walHistorySize * 2 + 1));// starts & ends + node_start
     }
 
     /**
@@ -239,7 +203,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     public void testCorrectDeletedCheckpointHistoryButKeepWalFiles() throws Exception {
         //given: configured grid with disabled WAL removing.
         Ignite ignite = startGrid(dbCfg -> {
-            dbCfg.setMaxWalArchiveSize(Long.MAX_VALUE);
+            dbCfg.setMaxWalArchiveSize(DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE);
         });
 
         GridCacheDatabaseSharedManager dbMgr = gridDatabase(ignite);

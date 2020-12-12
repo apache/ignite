@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.internal.GridKernalContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -127,12 +128,13 @@ public class CacheObjectContext implements CacheObjectValueContext {
      * @param o Object to unwrap.
      * @param keepBinary Keep binary flag.
      * @param cpy Copy value flag.
+     * @param ldr Class loader, used for deserialization from binary representation.
      * @return Unwrapped object.
      */
-    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, boolean cpy) {
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, boolean cpy, @Nullable ClassLoader ldr) {
         if (o == null)
             return null;
 
-        return CacheObjectUtils.unwrapBinaryIfNeeded(this, o, keepBinary, cpy);
+        return CacheObjectUtils.unwrapBinaryIfNeeded(this, o, keepBinary, cpy, ldr);
     }
 }

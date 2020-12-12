@@ -542,5 +542,15 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         @Override public long getEntryProcessorRemovals() {
             return 78;
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean isIndexRebuildInProgress() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getIndexRebuildKeysProcessed() {
+            return 0;
+        }
     }
 }

@@ -30,7 +30,10 @@ public enum JdbcThinFeature implements ThinProtocolFeature {
     /**
      * Whether to allow sending custom object through Thin JDBC protocol.
      */
-    CUSTOM_OBJECT(1);
+    CUSTOM_OBJECT(2),
+
+    /** Add ability to set explicit query timeout on the cluster node by the JDBC client. */
+    QUERY_TIMEOUT(3);
 
     /** */
     private static final EnumSet<JdbcThinFeature> ALL_FEATURES_AS_ENUM_SET = EnumSet.allOf(JdbcThinFeature.class);

@@ -29,6 +29,7 @@
 
 #include <ignite/thin/ignite_client_configuration.h>
 #include <ignite/thin/cache/cache_client.h>
+#include <ignite/thin/transactions/transactions.h>
 
 namespace ignite
 {
@@ -121,6 +122,14 @@ namespace ignite
              */
             void GetCacheNames(std::vector<std::string>& cacheNames);
 
+            /**
+             * Starts transactions.
+             */
+            transactions::ClientTransactions ClientTransactions()
+            {
+                return transactions::ClientTransactions(InternalTransactions());
+            }
+
         private:
             /**
              * Get cache.
@@ -148,6 +157,9 @@ namespace ignite
              * @return Cache.
              */
             SP_Void InternalCreateCache(const char* name);
+
+            /** */
+            SP_Void InternalTransactions();
 
             /**
              * Constructor.

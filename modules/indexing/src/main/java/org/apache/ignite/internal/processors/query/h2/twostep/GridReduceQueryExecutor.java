@@ -74,6 +74,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CIX2;
@@ -99,6 +101,10 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkAc
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_DML_QRY_RESP;
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_FAIL_RESP;
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_PAGE_RESP;
 
 /**
  * Reduce query executor.
@@ -202,9 +208,11 @@ public class GridReduceQueryExecutor {
      * @param msg Message.
      */
     public void onFail(ClusterNode node, GridQueryFailResponse msg) {
-        ReduceQueryRun r = runs.get(msg.queryRequestId());
+        try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_FAIL_RESP, MTC.span()))) {
+            ReduceQueryRun r = runs.get(msg.queryRequestId());
 
-        fail(r, node.id(), msg.error(), msg.failCode());
+            fail(r, node.id(), msg.error(), msg.failCode());
+        }
     }
 
     /**
@@ -235,62 +243,66 @@ public class GridReduceQueryExecutor {
      * @param msg Message.
      */
     public void onNextPage(final ClusterNode node, final GridQueryNextPageResponse msg) {
-        final long qryReqId = msg.queryRequestId();
-        final int qry = msg.query();
-        final int seg = msg.segmentId();
+        try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_PAGE_RESP, MTC.span()))) {
+            final long qryReqId = msg.queryRequestId();
+            final int qry = msg.query();
+            final int seg = msg.segmentId();
 
-        final ReduceQueryRun r = runs.get(qryReqId);
+            final ReduceQueryRun r = runs.get(qryReqId);
 
-        if (r == null) // Already finished with error or canceled.
-            return;
+            if (r == null) // Already finished with error or canceled.
+                return;
 
-        final int pageSize = r.pageSize();
+            final int pageSize = r.pageSize();
 
-        Reducer idx = r.reducers().get(msg.query());
+            Reducer idx = r.reducers().get(msg.query());
 
-        ReduceResultPage page;
+            ReduceResultPage page;
 
-        try {
-            page = new ReduceResultPage(ctx, node.id(), msg) {
-                @Override public void fetchNextPage() {
-                    if (r.hasErrorOrRetry()) {
-                        if (r.exception() != null)
-                            throw r.exception();
+            try {
+                page = new ReduceResultPage(ctx, node.id(), msg) {
+                    @Override public void fetchNextPage() {
+                        if (r.hasErrorOrRetry()) {
+                            if (r.exception() != null)
+                                throw r.exception();
 
-                        assert r.retryCause() != null;
+                            assert r.retryCause() != null;
 
-                        throw new CacheException(r.retryCause());
+                            throw new CacheException(r.retryCause());
+                        }
+
+                        try {
+                            GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, seg, pageSize,
+                                (byte)GridH2QueryRequest.setDataPageScanEnabled(0, r.isDataPageScanEnabled()));
+
+                            if (node.isLocal())
+                                h2.mapQueryExecutor().onNextPageRequest(node, msg0);
+                            else
+                                ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg0, GridIoPolicy.QUERY_POOL);
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new CacheException("Failed to fetch data from node: " + node.id(), e);
+                        }
                     }
+                };
+            }
+            catch (Exception e) {
+                U.error(log, "Error in message.", e);
 
-                    try {
-                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, seg, pageSize,
-                            (byte)GridH2QueryRequest.setDataPageScanEnabled(0, r.isDataPageScanEnabled()));
+                MTC.span().addTag(ERROR, e::getMessage);
 
-                        if (node.isLocal())
-                            h2.mapQueryExecutor().onNextPageRequest(node, msg0);
-                        else
-                            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg0, GridIoPolicy.QUERY_POOL);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new CacheException("Failed to fetch data from node: " + node.id(), e);
-                    }
-                }
-            };
+                fail(r, node.id(), "Error in message.", GridQueryFailResponse.GENERAL_ERROR);
+
+                return;
+            }
+
+            idx.addPage(page);
+
+            if (msg.retry() != null)
+                r.setStateOnRetry(node.id(), msg.retry(), msg.retryCause());
+            else if (msg.page() == 0) // Count down only on each first page received.
+                r.onFirstPage();
         }
-        catch (Exception e) {
-            U.error(log, "Error in message.", e);
-
-            fail(r, node.id(), "Error in message.", GridQueryFailResponse.GENERAL_ERROR);
-
-            return;
-        }
-
-        idx.addPage(page);
-
-        if (msg.retry() != null)
-            r.setStateOnRetry(node.id(), msg.retry(), msg.retryCause());
-        else if (msg.page() == 0) // Count down only on each first page received.
-            r.onFirstPage();
     }
 
     /**
@@ -430,6 +442,7 @@ public class GridReduceQueryExecutor {
                         .parameters(params)
                         .flags(queryFlags(qry, enforceJoinOrder, lazy, dataPageScanEnabled))
                         .timeout(timeoutMillis)
+                        .explicitTimeout(true)
                         .schemaName(schemaName);
 
                     if (mvccTracker != null)
@@ -479,7 +492,8 @@ public class GridReduceQueryExecutor {
                                 r,
                                 qryReqId,
                                 qry.distributedJoins(),
-                                mvccTracker);
+                                mvccTracker,
+                                ctx.tracing());
 
                             release = false;
 
@@ -519,7 +533,16 @@ public class GridReduceQueryExecutor {
                                 qryInfo
                             );
 
-                            resIter = new H2FieldsIterator(res, mvccTracker, conn, r.pageSize(), log, h2, qryInfo);
+                            resIter = new H2FieldsIterator(
+                                res,
+                                mvccTracker,
+                                conn,
+                                r.pageSize(),
+                                log,
+                                h2,
+                                qryInfo,
+                                ctx.tracing()
+                            );
 
                             conn = null;
 
@@ -870,6 +893,7 @@ public class GridReduceQueryExecutor {
             .pageSize(pageSize)
             .parameters(params)
             .timeout(timeoutMillis)
+            .explicitTimeout(true)
             .flags(flags);
 
         updRuns.put(reqId, r);
@@ -920,7 +944,7 @@ public class GridReduceQueryExecutor {
      * @param msg Message.
      */
     public void onDmlResponse(final ClusterNode node, GridH2DmlResponse msg) {
-        try {
+        try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_DML_QRY_RESP, MTC.span()))) {
             long reqId = msg.requestId();
 
             DmlDistributedUpdateRun r = updRuns.get(reqId);

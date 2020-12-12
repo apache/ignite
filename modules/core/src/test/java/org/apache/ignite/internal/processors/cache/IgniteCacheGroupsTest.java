@@ -99,6 +99,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -4106,10 +4107,14 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                             cacheOperation(rnd, cache);
                                     }
                                     catch (Exception e) {
-                                        if (X.hasCause(e, CacheStoppedException.class)) {
+                                        if (X.hasCause(e, CacheStoppedException.class) ||
+                                            (X.hasCause(e, CacheInvalidStateException.class) &&
+                                                X.hasCause(e, TransactionRollbackException.class))
+                                        ) {
                                             // Cache operation can be blocked on
                                             // awaiting new topology version and cancelled with CacheStoppedException cause.
-
+                                            // Cache operation can failed
+                                            // if a node was stopped during transaction.
                                             continue;
                                         }
 

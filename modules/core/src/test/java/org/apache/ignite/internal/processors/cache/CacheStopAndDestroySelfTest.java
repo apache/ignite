@@ -531,6 +531,28 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test status of closed cache instance
+     *
+     * @throws Exception If failed
+     */
+    @Test
+    public void testServerCacheInstanceClose_isClosedShouldReturnTrue() throws Exception {
+        IgniteCache<String, String> cache = startGrid(0).getOrCreateCache(getDhtConfig());
+
+        assertFalse(cache.isClosed());
+
+        cache.close();
+
+        assertTrue(cache.isClosed());
+
+        IgniteCache<String, String> cacheNew = grid(0).cache(CACHE_NAME_DHT);
+
+        assertNotSame(cache, cacheNew);
+
+        assertFalse(cacheNew.isClosed());
+    }
+
+    /**
      * Test Client close.
      *
      * @throws Exception If failed.

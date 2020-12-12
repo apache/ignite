@@ -26,10 +26,14 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
@@ -43,6 +47,7 @@ import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
@@ -59,6 +64,12 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
     /** Types count. */
     private static final int TYPES_CNT = 10;
+
+    /** */
+    @After
+    public void clear() {
+        crd.binary().types().stream().forEach(type -> crd.context().cacheObjects().removeType(type.typeId()));
+    }
 
     /**
      * Check the command '--meta list'.
@@ -86,6 +97,100 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
         for (int typeNum = 0; typeNum < TYPES_CNT; ++typeNum)
             assertContains(log, out, "typeName=Type_" + typeNum);
+    }
+
+    /**
+     * Checks that command remove when provided with absent type name prints informative message and
+     * returns corresponding error code (invalid argument).
+     *
+     * Test scenario:
+     * <ol>
+     *     <li>
+     *         Execute meta --remove command passing non-existing type name.
+     *     </li>
+     *     <li>
+     *         Verify that invalid argument error code is returned, message is printed to command output.
+     *     </li>
+     *     <li>
+     *         Execute meta --remove command passing non-existing type id.
+     *     </li>
+     *     <li>
+     *         Verify that invalid argument error code is returned, message is printed to command output.
+     *     </li>
+     * </ol>
+     */
+    @Test
+    public void testMetadataRemoveWrongType() {
+        injectTestSystemOut();
+
+        String wrongTypeName = "Type01";
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove", "--typeName", wrongTypeName));
+
+        assertContains(log, testOut.toString(), "Failed to remove binary type, type not found: " + wrongTypeName);
+
+        int wrongTypeId = 42;
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove", "--typeId", Integer.toString(wrongTypeId)));
+
+        assertContains(log, testOut.toString(), "Failed to remove binary type, type not found: ");
+        assertContains(log, testOut.toString(), "0x" +
+            Integer.toHexString(wrongTypeId).toUpperCase() + " (" + wrongTypeId + ")");
+    }
+
+    /**
+     * Checks that commands --meta list and --meta remove don't cause registering system or internal classes
+     * in binary metadata.
+     *
+     * Test scenario:
+     * <ol>
+     *     <li>
+     *         Put a value of a user class to the default cache that requires registering new binary type for that class.
+     *     </li>
+     *     <li>
+     *         Run --meta list command to check that class is registered.
+     *     </li>
+     *     <li>
+     *         Destroy the cache. Remove binary type with --meta remove command.
+     *     </li>
+     *     <li>
+     *         Run --meta list again to check that no additional system or internal classes were registered.
+     *     </li>
+     * </ol>
+     */
+    @Test
+    public void testMetadataForInternalClassesIsNotRegistered() {
+        injectTestSystemOut();
+
+        IgniteCache<Object, Object> dfltCache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        dfltCache.put(1, new TestValue());
+
+        Collection<BinaryType> metadata = crd.context().cacheObjects().metadata();
+
+        assertEquals(EXIT_CODE_OK, execute("--meta", "list"));
+
+        assertEquals(metadata.toString(), 1, metadata.size());
+
+        assertContains(log, testOut.toString(), "typeName=" + TestValue.class.getTypeName());
+
+        grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+        metadata = crd.context().cacheObjects().metadata();
+
+        assertEquals(metadata.toString(), 1, metadata.size());
+
+        assertEquals(EXIT_CODE_OK, execute("--meta", "remove", "--typeName", TestValue.class.getTypeName()));
+
+        metadata = crd.context().cacheObjects().metadata();
+
+        assertEquals("Binary metadata is expected to be empty but the following binary types were found: "
+            + metadata
+                .stream()
+                .map(b -> "BinaryType[typeId=" + b.typeId() + ", typeName=" + b.typeName() + ']')
+                .collect(Collectors.toList()).toString(),
+            0,
+            metadata.size());
     }
 
     /**

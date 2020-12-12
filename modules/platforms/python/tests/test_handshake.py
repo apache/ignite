@@ -21,13 +21,14 @@ from pyignite.connection.handshake import HandshakeRequest, read_response
 
 def test_handshake(
     monkeypatch,
-    ignite_host, ignite_port, use_ssl, ssl_keyfile, ssl_certfile,
+    ignite_host, ignite_port, use_ssl, ssl_keyfile, ssl_keyfile_password, ssl_certfile,
     ssl_ca_certfile, ssl_cert_reqs, ssl_ciphers, ssl_version,
     username, password,
 ):
     client = Client(
         use_ssl=use_ssl,
         ssl_keyfile=ssl_keyfile,
+        ssl_keyfile_password=ssl_keyfile_password,
         ssl_certfile=ssl_certfile,
         ssl_ca_certfile=ssl_ca_certfile,
         ssl_cert_reqs=ssl_cert_reqs,

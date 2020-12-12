@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -122,7 +123,7 @@ public class QueryEntity implements Serializable {
         valueFieldName = other.valueFieldName;
 
         fields = new LinkedHashMap<>(other.fields);
-        keyFields = other.keyFields != null ? new HashSet<>(other.keyFields) : null;
+        keyFields = other.keyFields != null ? new LinkedHashSet<>(other.keyFields) : null;
 
         aliases = new HashMap<>(other.aliases);
         idxs = other.idxs != null ? new ArrayList<>(other.idxs) : null;

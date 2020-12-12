@@ -21,10 +21,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -156,6 +159,14 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
 
                 try {
                     cctx.discovery().localJoin();
+
+                    try {
+                        cctx.exchange().affinityReadyFuture(AffinityTopologyVersion.ZERO).get();
+                    }
+                    catch (IgniteCheckedException ex) {
+                        throw new IgniteException("Failed to wait for initialization topology [err="
+                            + ex.getMessage() + ']', ex);
+                    }
                 }
                 finally {
                     blockingSectionEnd();

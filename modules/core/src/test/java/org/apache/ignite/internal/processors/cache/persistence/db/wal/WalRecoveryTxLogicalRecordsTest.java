@@ -73,6 +73,8 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointStatus.NULL_PTR;
+
 /**
  *
  */
@@ -370,6 +372,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 map = new IgniteDhtDemandedPartitionsMap();
                 map.addHistorical(0, i, entries, PARTS);
 
+                GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", NULL_PTR);
+
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     assertNotNull(it);
 
@@ -386,9 +390,14 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
                     assertFalse(it.hasNext());
                 }
+                finally {
+                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
+                }
 
                 map = new IgniteDhtDemandedPartitionsMap();
                 map.addHistorical(1, i, entries, PARTS);
+
+                GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", NULL_PTR);
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     assertNotNull(it);
@@ -405,6 +414,9 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                     }
 
                     assertFalse(it.hasNext());
+                }
+                finally {
+                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
                 }
             }
 
@@ -424,6 +436,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
                 map = new IgniteDhtDemandedPartitionsMap();
                 map.addHistorical(0, i, entries, PARTS);
+
+                GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", NULL_PTR);
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     long end = System.currentTimeMillis();
@@ -451,9 +465,14 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
                     assertFalse(it.hasNext());
                 }
+                finally {
+                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
+                }
 
                 map = new IgniteDhtDemandedPartitionsMap();
                 map.addHistorical(1, i, entries, PARTS);
+
+                GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", NULL_PTR);
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     assertNotNull(it);
@@ -470,6 +489,9 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                     }
 
                     assertFalse(it.hasNext());
+                }
+                finally {
+                    GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
                 }
             }
         }
@@ -961,11 +983,16 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
         List<CacheDataRow> rows = new ArrayList<>();
 
+        GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", NULL_PTR);
+
         try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
             assertNotNull(it);
 
             while (it.hasNextX())
                 rows.add(it.next());
+        }
+        finally {
+            GridTestUtils.setFieldValue(grp.shared().database(), "reservedForPreloading", null);
         }
 
         return rows;
