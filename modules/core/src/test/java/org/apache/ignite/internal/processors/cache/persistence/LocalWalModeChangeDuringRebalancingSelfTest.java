@@ -30,7 +30,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -739,10 +738,10 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             @Override public void run() {
                 MaintenanceRegistry mntcRegistry = ((IgniteEx) ig).context().maintenanceRegistry();
 
-                List<MaintenanceAction> actions = mntcRegistry
+                List<MaintenanceAction<?>> actions = mntcRegistry
                     .actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
-                Optional<MaintenanceAction> optional = actions
+                Optional<MaintenanceAction<?>> optional = actions
                     .stream()
                     .filter(a -> a.name().equals(CleanCacheStoresMaintenanceAction.ACTION_NAME)).findFirst();
 

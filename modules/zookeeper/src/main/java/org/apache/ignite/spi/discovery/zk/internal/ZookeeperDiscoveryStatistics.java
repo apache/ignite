@@ -16,7 +16,9 @@
  */
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.util.concurrent.atomic.LongAdder;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -24,35 +26,49 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class ZookeeperDiscoveryStatistics {
     /** */
-    private final LongAdder joinedNodesCnt = new LongAdder();
+    private final LongAdderMetric joinedNodesCnt = new LongAdderMetric("JoinedNodes", "Joined nodes count");
 
     /** */
-    private final LongAdder failedNodesCnt = new LongAdder();
+    private final LongAdderMetric failedNodesCnt = new LongAdderMetric("FailedNodes", "Failed nodes count");
 
     /** */
-    private final LongAdder leftNodesCnt = new LongAdder();
+    private final LongAdderMetric leftNodesCnt = new LongAdderMetric("LeftNodes", "Left nodes count");
 
     /** Communication error count. */
-    private final LongAdder commErrCnt = new LongAdder();
+    private final LongAdderMetric commErrCnt = new LongAdderMetric("CommunicationErrors", "Communication errors count");
+
+    /** Current topology version */
+    private final AtomicLongMetric topVer = new AtomicLongMetric("CurrentTopologyVersion", "Current topology version");
+
+    /**
+     * @param discoReg Discovery metric registry.
+     */
+    public void registerMetrics(MetricRegistry discoReg) {
+        discoReg.register(joinedNodesCnt);
+        discoReg.register(failedNodesCnt);
+        discoReg.register(leftNodesCnt);
+        discoReg.register(commErrCnt);
+        discoReg.register(topVer);
+    }
 
     /** */
     public long joinedNodesCnt() {
-        return joinedNodesCnt.longValue();
+        return joinedNodesCnt.value();
     }
 
     /** */
     public long failedNodesCnt() {
-        return failedNodesCnt.longValue();
+        return failedNodesCnt.value();
     }
 
     /** */
     public long leftNodesCnt() {
-        return leftNodesCnt.longValue();
+        return leftNodesCnt.value();
     }
 
     /** */
     public long commErrorCount() {
-        return commErrCnt.longValue();
+        return commErrCnt.value();
     }
 
     /** */
@@ -73,6 +89,11 @@ public class ZookeeperDiscoveryStatistics {
     /** */
     public void onCommunicationError() {
         commErrCnt.increment();
+    }
+
+    /** */
+    public void onTopologyChanged(long topVer) {
+        this.topVer.value(topVer);
     }
 
     /** {@inheritDoc} */

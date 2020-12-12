@@ -68,7 +68,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 // Checkpoint should not remove any WAL archive files.
-                .setMaxWalArchiveSize(Long.MAX_VALUE)
+                .setMaxWalArchiveSize(DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE)
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)

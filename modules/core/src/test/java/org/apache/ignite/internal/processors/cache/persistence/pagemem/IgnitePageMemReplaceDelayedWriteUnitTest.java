@@ -275,7 +275,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
             }
         };
 
-        PageMemoryImpl memory = new PageMemoryImpl(provider, sizes, sctx, pageSize,
+        PageMemoryImpl memory = new PageMemoryImpl(provider, sizes, sctx, sctx.pageStore(), pageSize,
             pageWriter, null, () -> true, memMetrics, PageMemoryImpl.ThrottlingPolicy.DISABLED,
             clo);
 

@@ -72,6 +72,9 @@ public class DataStorageConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Value used for making WAL archive size unlimited */
+    public static final long UNLIMITED_WAL_ARCHIVE = -1;
+
     /** Default data region start size (256 MB). */
     public static final long DFLT_DATA_REGION_INITIAL_SIZE = 256L * 1024 * 1024;
 
@@ -594,21 +597,26 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Gets a max allowed size(in bytes) of WAL archives.
      *
-     * @return max size(in bytes) of WAL archive directory(always greater than 0).
+     * @return max size(in bytes) of WAL archive directory(greater than 0, or {@link #UNLIMITED_WAL_ARCHIVE} if
+     * WAL archive size is unlimited).
      */
     public long getMaxWalArchiveSize() {
-        return maxWalArchiveSize <= 0 ? DFLT_WAL_ARCHIVE_MAX_SIZE : maxWalArchiveSize;
+        return maxWalArchiveSize;
     }
 
     /**
      * Sets a max allowed size(in bytes) of WAL archives.
      *
-     * If value is not positive, {@link #DFLT_WAL_ARCHIVE_MAX_SIZE} will be used.
+     * If value is not positive or {@link #UNLIMITED_WAL_ARCHIVE}, {@link #DFLT_WAL_ARCHIVE_MAX_SIZE} will be used.
      *
      * @param walArchiveMaxSize max size(in bytes) of WAL archive directory.
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setMaxWalArchiveSize(long walArchiveMaxSize) {
+        if (walArchiveMaxSize != UNLIMITED_WAL_ARCHIVE)
+            A.ensure(walArchiveMaxSize > 0, "Max WAL archive size can be only greater than 0 " +
+                "or must be equal to " + UNLIMITED_WAL_ARCHIVE + " (to be unlimited)");
+
         this.maxWalArchiveSize = walArchiveMaxSize;
 
         return this;

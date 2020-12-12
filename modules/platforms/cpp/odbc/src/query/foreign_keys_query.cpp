@@ -28,7 +28,7 @@ namespace ignite
     {
         namespace query
         {
-            ForeignKeysQuery::ForeignKeysQuery(diagnostic::Diagnosable& diag, Connection& connection,
+            ForeignKeysQuery::ForeignKeysQuery(diagnostic::DiagnosableAdapter& diag, Connection& connection,
                 const std::string& primaryCatalog, const std::string& primarySchema,
                 const std::string& primaryTable, const std::string& foreignCatalog,
                 const std::string& foreignSchema, const std::string& foreignTable) :
@@ -81,9 +81,9 @@ namespace ignite
                 return SqlResult::AI_SUCCESS;
             }
 
-            const meta::ColumnMetaVector & ForeignKeysQuery::GetMeta() const
+            const meta::ColumnMetaVector* ForeignKeysQuery::GetMeta()
             {
-                return columnsMeta;
+                return &columnsMeta;
             }
 
             SqlResult::Type ForeignKeysQuery::FetchNextRow(app::ColumnBindingMap&)

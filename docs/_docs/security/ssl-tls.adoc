@@ -32,6 +32,14 @@ To enable SSL/TLS for cluster nodes, configure an `SSLContext` factory in the no
 You can use the `org.apache.ignite.ssl.SslContextFactory`, which is the default factory that uses a configurable keystore to initialize the SSL context.
 //You can also implement your own `SSLContext` factory.
 
+[CAUTION]
+====
+Ensure that your version of the JVM addresses
+link:https://bugs.openjdk.java.net/browse/JDK-8219658[the following issue, window=_blank] that can cause deadlocks
+in SSL connections. If your JVM is affected but can't be updated, then set
+the link:clustering/network-configuration[`TcpDiscoverySpi.soLinger`] parameter to a non-negative value.
+====
+
 Below is an example of `SslContextFactory` configuration:
 
 [tabs]

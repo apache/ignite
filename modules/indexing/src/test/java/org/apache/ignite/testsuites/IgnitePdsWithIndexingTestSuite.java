@@ -21,6 +21,7 @@ import org.apache.ignite.internal.encryption.CacheGroupReencryptionTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.index.ClientReconnectWithSqlTableConfiguredTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsIndexingDefragmentationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteTcBotInitNewPageTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IndexingMultithreadedLoadContinuousRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.LongDestroyDurableBackgroundTaskTest;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.processors.database.IgnitePersistentStoreSchem
 import org.apache.ignite.internal.processors.database.IgniteTwoRegionsRebuildIndexTest;
 import org.apache.ignite.internal.processors.database.RebuildIndexTest;
 import org.apache.ignite.internal.processors.database.RebuildIndexWithHistoricalRebalanceTest;
+import org.apache.ignite.internal.processors.database.RebuildIndexWithMVCCTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -53,10 +55,12 @@ import org.junit.runners.Suite;
     IndexingMultithreadedLoadContinuousRestartTest.class,
     LongDestroyDurableBackgroundTaskTest.class,
     RebuildIndexTest.class,
+    RebuildIndexWithMVCCTest.class,
     IgniteClusterSnapshotWithIndexesTest.class,
     ClientReconnectWithSqlTableConfiguredTest.class,
     MultipleParallelCacheDeleteDeadlockTest.class,
-    CacheGroupReencryptionTest.class
+    CacheGroupReencryptionTest.class,
+    IgnitePdsIndexingDefragmentationTest.class
 })
 public class IgnitePdsWithIndexingTestSuite {
 }

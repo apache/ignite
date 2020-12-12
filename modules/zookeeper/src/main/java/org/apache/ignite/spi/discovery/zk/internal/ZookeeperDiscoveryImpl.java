@@ -54,6 +54,7 @@ import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.events.NodeValidationFailedEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -192,7 +193,7 @@ public class ZookeeperDiscoveryImpl {
     private IgniteThreadPoolExecutor utilityPool;
 
     /** */
-    private ZkRuntimeState rtState;
+    private volatile ZkRuntimeState rtState;
 
     /** */
     private volatile ConnectionState connState = ConnectionState.STARTED;
@@ -297,7 +298,9 @@ public class ZookeeperDiscoveryImpl {
     @Nullable public ZookeeperClusterNode node(UUID nodeId) {
         assert nodeId != null;
 
-        return rtState.top.nodesById.get(nodeId);
+        ZkRuntimeState rtState0 = rtState;
+
+        return rtState0 != null ? rtState0.top.nodesById.get(nodeId) : null;
     }
 
     /**
@@ -307,7 +310,9 @@ public class ZookeeperDiscoveryImpl {
     @Nullable public ZookeeperClusterNode node(long nodeOrder) {
         assert nodeOrder > 0 : nodeOrder;
 
-        return rtState.top.nodesByOrder.get(nodeOrder);
+        ZkRuntimeState rtState0 = rtState;
+
+        return rtState0 != null ? rtState.top.nodesByOrder.get(nodeOrder) : null;
     }
 
     /**
@@ -2088,6 +2093,8 @@ public class ZookeeperDiscoveryImpl {
         }
 
         if (err != null) {
+            spi.getSpiContext().recordEvent(new NodeValidationFailedEvent(locNode, node, err));
+
             LT.warn(log, err.message());
 
             res.err = err.sendMessage();
@@ -2298,8 +2305,6 @@ public class ZookeeperDiscoveryImpl {
         joinCtx.addJoinedNode(nodeEvtData, commonData);
 
         rtState.evtsData.onNodeJoin(joinedNode);
-
-        stats.onNodeJoined();
     }
 
     /**
@@ -2817,8 +2822,11 @@ public class ZookeeperDiscoveryImpl {
             throw e;
         }
 
-        if (rtState.joined)
+        if (rtState.joined) {
             rtState.evtsData = evtsData;
+
+            stats.onTopologyChanged(rtState.evtsData.topVer);
+        }
 
         if (rtState.crd)
             handleProcessedEvents("procEvt");
@@ -3552,6 +3560,8 @@ public class ZookeeperDiscoveryImpl {
                 null
             )
         ).get();
+
+        stats.onNodeJoined();
     }
 
     /**
@@ -4630,7 +4640,12 @@ public class ZookeeperDiscoveryImpl {
 
     /** */
     public UUID getCoordinator() {
-        return rtState.top.nodesByOrder.values().stream()
+        ZkRuntimeState rtState0 = rtState;
+
+        if (rtState0 == null)
+            return null;
+
+        return rtState0.top.nodesByOrder.values().stream()
                 .filter(n -> !n.isClient() && !n.isDaemon())
                 .map(ZookeeperClusterNode::id)
                 .findFirst()
@@ -4639,12 +4654,14 @@ public class ZookeeperDiscoveryImpl {
 
     /** */
     public String getSpiState() {
-        return rtState.zkClient.state();
+        return connState.toString();
     }
 
     /** */
     public String getZkSessionId() {
-        if (rtState.zkClient != null && rtState.zkClient.zk() != null)
+        ZkRuntimeState rtState0 = rtState;
+
+        if (rtState0 != null && rtState0.zkClient != null)
             return Long.toHexString(rtState.zkClient.zk().getSessionId());
         else
             return null;

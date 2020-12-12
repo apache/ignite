@@ -61,6 +61,13 @@ public class GridSqlSelect extends GridSqlQuery {
     /** */
     private boolean isForUpdate;
 
+    /** Used only for SELECT based on UPDATE.
+     * It cannot be lazy when updated columns are used in the conditions.
+     * In this case index based on these columns may be chosen to scan and some rows may be updated
+     * more than once time.
+     */
+    private boolean canBeLazy;
+
     /**
      * @param colIdx Column index as for {@link #column(int)}.
      * @return Child index for {@link #child(int)}.
@@ -436,5 +443,24 @@ public class GridSqlSelect extends GridSqlQuery {
         }
 
         return copy;
+    }
+
+    /**
+     * @param canBeLazy see {@link #canBeLazy()}.
+     */
+    public void canBeLazy(boolean canBeLazy) {
+        this.canBeLazy = canBeLazy;
+    }
+
+    /**
+     * Used only for SELECT based on UPDATE.
+     * It cannot be lazy when updated columns are used in the conditions.
+     * In this case index based on these columns may be chosen to scan and some rows may be updated
+     * more than once time.
+     *
+     * @return {@code true} is lazy flag is applicable.
+     */
+    public boolean canBeLazy() {
+        return canBeLazy;
     }
 }

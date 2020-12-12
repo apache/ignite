@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
@@ -39,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -74,7 +74,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
@@ -105,6 +107,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.checkpoint
 public class CheckpointWorkflow {
     /** @see IgniteSystemProperties#CHECKPOINT_PARALLEL_SORT_THRESHOLD */
     public static final int DFLT_CHECKPOINT_PARALLEL_SORT_THRESHOLD = 512 * 1024;
+
+    /****/
+    private static final DataRegion NO_REGION = new DataRegion(null, null, null, null);
 
     /**
      * Starting from this number of dirty pages in checkpoint, array will be sorted with {@link
@@ -144,7 +149,7 @@ public class CheckpointWorkflow {
     private final CheckpointWriteOrder checkpointWriteOrder;
 
     /** Collections of checkpoint listeners. */
-    private final Collection<CheckpointListener> lsnrs = new CopyOnWriteArrayList<>();
+    private final Map<CheckpointListener, DataRegion> lsnrs = new ConcurrentLinkedHashMap<>();
 
     /** Ignite instance name. */
     private final String igniteInstanceName;
@@ -228,7 +233,9 @@ public class CheckpointWorkflow {
         CheckpointMetricsTracker tracker,
         WorkProgressDispatcher workProgressDispatcher
     ) throws IgniteCheckedException {
-        List<CheckpointListener> dbLsnrs = new ArrayList<>(lsnrs);
+        Collection<DataRegion> checkpointedRegions = dataRegions.get();
+
+        List<CheckpointListener> dbLsnrs = getRelevantCheckpointListeners(checkpointedRegions);
 
         CheckpointRecord cpRec = new CheckpointRecord(memoryRecoveryRecordPtr);
 
@@ -283,7 +290,7 @@ public class CheckpointWorkflow {
             fillCacheGroupState(cpRec);
 
             //There are allowable to replace pages only after checkpoint entry was stored to disk.
-            cpPagesHolder = beginAllCheckpoints(dataRegions.get(), curr.futureFor(MARKER_STORED_TO_DISK));
+            cpPagesHolder = beginAllCheckpoints(checkpointedRegions, curr.futureFor(MARKER_STORED_TO_DISK));
 
             curr.currentCheckpointPagesCount(cpPagesHolder.pagesNum());
 
@@ -293,7 +300,8 @@ public class CheckpointWorkflow {
 
             if (dirtyPagesCount > 0 || curr.nextSnapshot() || hasPartitionsToDestroy) {
                 // No page updates for this checkpoint are allowed from now on.
-                cpPtr = wal.log(cpRec);
+                if (wal != null)
+                    cpPtr = wal.log(cpRec);
 
                 if (cpPtr == null)
                     cpPtr = CheckpointStatus.NULL_PTR;
@@ -326,18 +334,22 @@ public class CheckpointWorkflow {
             tracker.onWalCpRecordFsyncStart();
 
             // Sync log outside the checkpoint write lock.
-            wal.flush(cpPtr, true);
+            if (wal != null)
+                wal.flush(cpPtr, true);
 
             tracker.onWalCpRecordFsyncEnd();
 
-            CheckpointEntry checkpointEntry = checkpointMarkersStorage.writeCheckpointEntry(
-                cpTs,
-                cpRec.checkpointId(),
-                cpPtr,
-                cpRec,
-                CheckpointEntryType.START,
-                skipSync
-            );
+            CheckpointEntry checkpointEntry = null;
+
+            if (checkpointMarkersStorage != null)
+                checkpointEntry = checkpointMarkersStorage.writeCheckpointEntry(
+                    cpTs,
+                    cpRec.checkpointId(),
+                    cpPtr,
+                    cpRec,
+                    CheckpointEntryType.START,
+                    skipSync
+                );
 
             curr.transitTo(MARKER_STORED_TO_DISK);
 
@@ -351,7 +363,7 @@ public class CheckpointWorkflow {
             return new Checkpoint(checkpointEntry, cpPages, curr);
         }
         else {
-            if (curr.nextSnapshot())
+            if (curr.nextSnapshot() && wal != null)
                 wal.flush(null, true);
 
             return new Checkpoint(null, GridConcurrentMultiPairQueue.EMPTY, curr);
@@ -563,28 +575,44 @@ public class CheckpointWorkflow {
         }
 
         if (chp.hasDelta()) {
-            checkpointMarkersStorage.writeCheckpointEntry(
-                chp.cpEntry.timestamp(),
-                chp.cpEntry.checkpointId(),
-                chp.cpEntry.checkpointMark(),
-                null,
-                CheckpointEntryType.END,
-                skipSync
-            );
+            if (checkpointMarkersStorage != null)
+                checkpointMarkersStorage.writeCheckpointEntry(
+                    chp.cpEntry.timestamp(),
+                    chp.cpEntry.checkpointId(),
+                    chp.cpEntry.checkpointMark(),
+                    null,
+                    CheckpointEntryType.END,
+                    skipSync
+                );
 
-            wal.notchLastCheckpointPtr(chp.cpEntry.checkpointMark());
+            if (wal != null)
+                wal.notchLastCheckpointPtr(chp.cpEntry.checkpointMark());
         }
 
-        checkpointMarkersStorage.onCheckpointFinished(chp);
+        if (checkpointMarkersStorage != null)
+            checkpointMarkersStorage.onCheckpointFinished(chp);
 
         CheckpointContextImpl emptyCtx = new CheckpointContextImpl(chp.progress, null, null, null);
 
-        List<CheckpointListener> dbLsnrs = new ArrayList<>(lsnrs);
+        Collection<DataRegion> checkpointedRegions = dataRegions.get();
+
+        List<CheckpointListener> dbLsnrs = getRelevantCheckpointListeners(checkpointedRegions);
 
         for (CheckpointListener lsnr : dbLsnrs)
             lsnr.afterCheckpointEnd(emptyCtx);
 
         chp.progress.transitTo(FINISHED);
+    }
+
+    /**
+     * @param checkpointedRegions Regions which will be checkpointed.
+     * @return Checkpoint listeners which should be handled.
+     */
+    @NotNull private List<CheckpointListener> getRelevantCheckpointListeners(Collection<DataRegion> checkpointedRegions) {
+        return lsnrs.entrySet().stream()
+            .filter(entry -> entry.getValue() == NO_REGION || checkpointedRegions.contains(entry.getValue()))
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -687,10 +715,13 @@ public class CheckpointWorkflow {
     }
 
     /**
+     * Adding the listener which will be called only when given data region will be checkpointed.
+     *
      * @param lsnr Listener.
+     * @param dataRegion Data region for which listener is corresponded to.
      */
-    public void addCheckpointListener(CheckpointListener lsnr) {
-        lsnrs.add(lsnr);
+    public void addCheckpointListener(CheckpointListener lsnr, DataRegion dataRegion) {
+        lsnrs.put(lsnr, dataRegion == null ? NO_REGION : dataRegion);
     }
 
     /**
@@ -720,7 +751,8 @@ public class CheckpointWorkflow {
             checkpointCollectPagesInfoPool = null;
         }
 
-        lsnrs.clear();
+        for (CheckpointListener lsnr : lsnrs.keySet())
+            lsnrs.remove(lsnr);
     }
 
     /**

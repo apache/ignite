@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,24 +15,33 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Client.Cache
-{
-    using System;
+package org.apache.ignite.platform;
 
-    /// <summary>
-    /// Cache operation flags.
-    /// </summary>
-    [Flags]
-    internal enum CacheFlags : byte
-    {
-        /// <summary>
-        /// No flags.
-        /// </summary>
-        None = 0x00,
+/** Test value object. */
+public class Employee {
+    /** */
+    private String fio;
 
-        /// <summary>
-        /// Keep binary.
-        /// </summary>
-        KeepBinary = 0x01
+    /** */
+    private long salary;
+
+    /** */
+    public String getFio() {
+        return fio;
+    }
+
+    /** */
+    public void setFio(String fio) {
+        this.fio = fio;
+    }
+
+    /** */
+    public long getSalary() {
+        return salary;
+    }
+
+    /** */
+    public void setSalary(long salary) {
+        this.salary = salary;
     }
 }
