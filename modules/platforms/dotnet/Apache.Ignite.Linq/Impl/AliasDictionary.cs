@@ -163,26 +163,42 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the query source.
         /// </summary>
-        private static IQuerySource GetQuerySource(Expression expression, Type itemTypeHint = null)
+        private static IQuerySource GetQuerySource(Expression expression, MemberExpression memberHint = null)
         {
             var subQueryExp = expression as SubQueryExpression;
 
             if (subQueryExp != null)
             {
                 var mainFromClause = subQueryExp.QueryModel.MainFromClause;
-                var querySource = GetQuerySource(mainFromClause.FromExpression, itemTypeHint);
+                var querySource = GetQuerySource(mainFromClause.FromExpression, memberHint);
 
                 if (querySource != null)
                     return querySource;
 
-                if (itemTypeHint == null || mainFromClause.ItemType == itemTypeHint)
-                    return mainFromClause;
+                // TODO: find corresponding argument instead.
+                // ((NewExpression) subQueryExp.QueryModel.SelectClause.Selector).Arguments
 
-                foreach (var bodyClause in subQueryExp.QueryModel.BodyClauses)
+                if (memberHint != null)
                 {
-                    var querySourceBodyClause = bodyClause as IQuerySource;
-                    if (querySourceBodyClause != null && querySourceBodyClause.ItemType == itemTypeHint)
-                        return querySourceBodyClause;
+                    var newExpr = subQueryExp.QueryModel.SelectClause.Selector as NewExpression;
+
+                    if (newExpr != null)
+                    {
+                        foreach (var arg in newExpr.Arguments)
+                        {
+                            var argMember = arg as MemberExpression;
+                            if (argMember != null &&
+                                argMember.Member.Name == memberHint.Member.Name &&
+                                argMember.Type == memberHint.Type)
+                            {
+                                // We found the argument to the anonymous type constructor that corresponds
+                                // to the member hint up the stack.
+                                // TODO: Same anonymous type can have multiple properties coming from the same arg?
+                                // e.g. new {Name1 = x.Name, Name2 = x.Name} - check this.
+                                return GetQuerySource(argMember.Expression);
+                            }
+                        }
+                    }
                 }
 
                 return mainFromClause;
@@ -195,12 +211,12 @@ namespace Apache.Ignite.Linq.Impl
                 var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
 
                 if (fromSource != null)
-                    return GetQuerySource(fromSource.FromExpression, itemTypeHint) ?? fromSource;
+                    return GetQuerySource(fromSource.FromExpression, memberHint) ?? fromSource;
 
                 var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
 
                 if (joinSource != null)
-                    return GetQuerySource(joinSource.InnerSequence, itemTypeHint) ?? joinSource;
+                    return GetQuerySource(joinSource.InnerSequence, memberHint) ?? joinSource;
 
                 throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
             }
@@ -208,7 +224,7 @@ namespace Apache.Ignite.Linq.Impl
             var memberExpr = expression as MemberExpression;
 
             if (memberExpr != null)
-                return GetQuerySource(memberExpr.Expression, memberExpr.Type);
+                return GetQuerySource(memberExpr.Expression, memberExpr);
 
             return null;
         }
