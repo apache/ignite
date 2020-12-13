@@ -182,5 +182,35 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             Assert.AreEqual(1001, res[1].OrgId);
             Assert.AreEqual(899, res[1].MaxAge);
         }
+        
+        /// <summary>
+        /// Tests grouping combined with join in a reverse order.
+        /// </summary>
+        [Test]
+        public void TestGroupByWithReverseJoinAndProjection()
+        {
+            var organizations = GetOrgCache().AsCacheQueryable().Select(x => x.Value);
+            var persons = GetPersonCache().AsCacheQueryable().Select(x => x.Value);
+
+            var qry = organizations.Join(
+                    persons,
+                    o => o.Id,
+                    p => p.OrganizationId,
+                    (org, person) => new {person, org})
+                .GroupBy(x => x.person.OrganizationId)
+                .Select(g =>
+                    new {OrgId = g.Key, MaxAge = g.Max(x => x.person.Age)})
+                .OrderBy(x => x.MaxAge);
+
+            var res = qry.ToArray();
+
+            Assert.AreEqual(2, res.Length);
+
+            Assert.AreEqual(1000, res[0].OrgId);
+            Assert.AreEqual(898, res[0].MaxAge);
+
+            Assert.AreEqual(1001, res[1].OrgId);
+            Assert.AreEqual(899, res[1].MaxAge);
+        }
     }
 }
