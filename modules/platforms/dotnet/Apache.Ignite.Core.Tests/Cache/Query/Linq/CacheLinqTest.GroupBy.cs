@@ -189,17 +189,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         [Test]
         public void TestGroupByWithReverseJoinAndProjection()
         {
-            var organizations = GetOrgCache().AsCacheQueryable().Select(x => x.Value);
-            var persons = GetPersonCache().AsCacheQueryable().Select(x => x.Value);
+            var organizations = GetOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
 
             var qry = organizations.Join(
                     persons,
-                    o => o.Id,
-                    p => p.OrganizationId,
-                    (org, person) => new {person, org})
-                .GroupBy(x => x.person.OrganizationId)
-                .Select(g =>
-                    new {OrgId = g.Key, MaxAge = g.Max(x => x.person.Age)})
+                    o => o.Value.Id,
+                    p => p.Value.OrganizationId,
+                    (org, person) => new
+                    {
+                        OrgName = org.Value.Name,
+                        person.Value.Age
+                    })
+                .GroupBy(x => x.OrgName)
+                .Select(g => new {OrgId = g.Key, MaxAge = g.Max(x => x.Age)})
                 .OrderBy(x => x.MaxAge);
 
             var res = qry.ToArray();
