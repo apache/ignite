@@ -93,9 +93,7 @@ public class IgniteMdCumulativeCost implements MetadataHandler<BuiltInMetadata.C
         if (rightCost.isInfinite())
             return rightCost;
 
-        cost.plus(leftCost).plus(rightCost.multiplyBy(left.estimateRowCount(mq) / corIds.size()));
-
-        return cost;
+        return cost.plus(leftCost).plus(rightCost.multiplyBy(left.estimateRowCount(mq) / corIds.size()));
     }
 
     /** */

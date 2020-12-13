@@ -44,7 +44,12 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements S
      */
     public IgniteTableScan(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
-        sourceId = ((Number)input.get("sourceId")).longValue();
+
+        Object srcIdObj = input.get("sourceId");
+        if (srcIdObj != null)
+            sourceId = ((Number)srcIdObj).longValue();
+        else
+            sourceId = -1;
     }
 
     /**

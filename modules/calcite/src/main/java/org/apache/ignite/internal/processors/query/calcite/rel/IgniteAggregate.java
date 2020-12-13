@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTrait;
@@ -76,16 +77,7 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // Aggregate is rewindable if its input is rewindable.
-
-        RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
-
-        return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(inputTraits.get(0).replace(rewindability))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // Distribution propagation is based on next rules:
         // 1) Any aggregation is possible on single or broadcast distribution.
         // 2) hash-distributed aggregation is possible in case it's a simple aggregate having hash distributed input
@@ -151,18 +143,18 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
                 break;
         }
 
-        if (!res.isEmpty())
-            return res;
+        // TODO: fix it
+//        if (!res.isEmpty())
+//            return res;
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
+        return Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single())));
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // Since it's a hash aggregate it erases collation.
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            ImmutableList.of(inputTraits.get(0).replace(RelCollations.EMPTY))));
+        return Pair.of(nodeTraits.replace(RelCollations.EMPTY),
+            ImmutableList.of(inputTraits.get(0).replace(RelCollations.EMPTY)));
     }
 
     /** {@inheritDoc} */
@@ -243,13 +235,6 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
 
         return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
             ImmutableList.of(inputTraits.get(0).replace(RelCollations.EMPTY))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits,
-            ImmutableList.of(inTraits.get(0).replace(TraitUtils.correlation(nodeTraits)))));
     }
 
     /** {@inheritDoc} */

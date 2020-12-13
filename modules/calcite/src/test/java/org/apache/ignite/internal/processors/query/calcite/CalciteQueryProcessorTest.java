@@ -70,6 +70,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     @Test
     public void testCountWithJoin() throws Exception {
         IgniteCache<Integer, RISK> RISK = ignite.getOrCreateCache(new CacheConfiguration<Integer, RISK>()
@@ -485,6 +486,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Ignore
     @Test
     public void aggregate() throws Exception {
         IgniteCache<Integer, Employer> employer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
@@ -515,6 +517,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13849")
     @Test
     public void query() throws Exception {
         IgniteCache<Integer, Developer> developer = grid(1).createCache(new CacheConfiguration<Integer, Developer>()
@@ -583,6 +586,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13849")
     @Test
     public void queryMultiStatement() throws Exception {
         IgniteCache<Integer, Developer> developer = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Developer>()
