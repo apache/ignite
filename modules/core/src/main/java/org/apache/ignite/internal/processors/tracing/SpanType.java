@@ -162,7 +162,7 @@ public enum SpanType {
     CUSTOM_JOB_CALL(Scope.COMMUNICATION, "job.call", 45, true),
 
     /** */
-    CACHE_API_UPDATE(Scope.CACHE_API_WRITE, "cache.api.put", 46, true),
+    CACHE_API_UPDATE(Scope.CACHE_API_WRITE, "cache.api.update", 46, true),
 
     /** */
     CACHE_API_REMOVE(Scope.CACHE_API_WRITE, "cache.api.remove", 50, true),
