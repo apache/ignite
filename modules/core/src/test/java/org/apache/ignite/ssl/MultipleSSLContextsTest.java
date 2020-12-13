@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Test SSL configuration, where certificates for nodes, connectors and client connectors are signed using different
@@ -102,14 +103,31 @@ public class MultipleSSLContextsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return SSL context factory to use in thin clients for check DisabledTrustManager.
+     */
+    private Factory<SSLContext> thinClientDisabledTrustManagerSSLFactory() {
+
+        SslContextFactory factory = (SslContextFactory) GridTestUtils.sslTrustedFactory("thinClient", "trustthree");
+        factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
+
+        return factory;
+    }
+
+    /**
+     * @return Wrong SSL context factory to use in thin clients for check wrong certificate.
+     */
+    private Factory<SSLContext> thinClientSSLFactoryWithWrongCertificate() {
+        return GridTestUtils.sslTrustedFactory("thinClient", "trustone");
+    }
+
+    /**
      * @param addr Address of a node to connect to.
      * @return {@link ClientConfiguration} that can be used to start a thin client.
      */
-    private ClientConfiguration clientConfiguration(String addr) {
+    private ClientConfiguration clientConfiguration(String addr, Factory<SSLContext> thinClientSSLFactory) {
         ClientConfiguration clientCfg = new ClientConfiguration().setAddresses(addr);
-        clientCfg.setSslContextFactory(thinClientSSLFactory());
+        clientCfg.setSslContextFactory(thinClientSSLFactory);
         clientCfg.setSslMode(SslMode.REQUIRED);
-
         return clientCfg;
     }
 
@@ -186,7 +204,87 @@ public class MultipleSSLContextsTest extends GridCommonAbstractTest {
 
         try {
             for (int i = 0; i < clientsNum; i++) {
-                IgniteClient client = Ignition.startClient(clientConfiguration("127.0.0.1:1080" + i));
+                IgniteClient client = Ignition.startClient(clientConfiguration("127.0.0.1:1080" + i,
+                        thinClientSSLFactory()));
+
+                clients.add(client);
+            }
+
+            Map<Integer, Integer> expMap = new HashMap<>();
+
+            for (int i = 0; i < keysNum; i++) {
+                int clientId = keysNum % clientsNum;
+
+                ClientCache<Integer, Integer> cache = clients.get(clientId).getOrCreateCache(cacheName);
+
+                cache.put(i, i);
+                expMap.put(i, i);
+            }
+
+            IgniteCache<Integer, Integer> cache = grid(0).cache(cacheName);
+
+            assertCacheContent(expMap, cache);
+        }
+        catch (ClientException ex) {
+            ex.printStackTrace();
+
+            fail("Failed to start thin Java clients: " + ex.getMessage());
+        }
+        finally {
+            for (IgniteClient client : clients)
+                client.close();
+
+            IgniteCache cache = grid(0).cache(cacheName);
+
+            if (cache != null)
+                cache.destroy();
+        }
+    }
+
+    /**
+     * Checks that thin clients with SSL enabled and wrong trust sertificate can't join the cluster.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testExpectedExceptionThinClientsWithSslClientAuth() throws Exception {
+        List<IgniteClient> clients = new ArrayList<>(1);
+        try {
+            Throwable thrown = assertThrows(org.apache.ignite.client.ClientConnectionException.class,
+                    () -> { clients.add(Ignition.startClient(clientConfiguration("127.0.0.1:10800",
+                            thinClientSSLFactoryWithWrongCertificate()))); });
+            assertNotNull(thrown.getMessage());
+        }
+
+        catch (ClientException ex) {
+            ex.printStackTrace();
+
+            fail("Failed to start thin Java clients: " + ex.getMessage());
+        }
+        finally {
+            for (IgniteClient client : clients)
+                client.close();
+        }
+    }
+
+
+    /**
+     * Checks that thin clients with SSL enabled and DisabledTrustManager can join the cluster.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testThinClientsWithDisabledTrustManager() throws Exception {
+        int clientsNum = 3;
+        int keysNum = 1000;
+        String cacheName = "thinClientCache";
+
+        List<IgniteClient> clients = new ArrayList<>(clientsNum);
+
+        try {
+            for (int i = 0; i < clientsNum; i++) {
+                IgniteClient client = Ignition.startClient(clientConfiguration("127.0.0.1:1080" + i,
+                        thinClientDisabledTrustManagerSSLFactory()));
 
                 clients.add(client);
             }
