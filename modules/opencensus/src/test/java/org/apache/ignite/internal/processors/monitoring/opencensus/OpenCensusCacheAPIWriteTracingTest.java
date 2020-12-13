@@ -42,8 +42,8 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_D
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_PROCESS_ATOMIC_UPDATE_REQUEST;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_PROCESS_ATOMIC_UPDATE_RESPONSE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_UPDATE_FUTURE;
-import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_UPDATE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_REMOVE;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_UPDATE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_UPDATE_MAP;
 import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
 
@@ -1215,7 +1215,7 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
      */
     @Test
     @SuppressWarnings("ThrowableNotThrown")
-    public void testVerifyThatNullKeyDoNotFailTracing() throws Exception {
+    public void testVerifyThatNullKeyDoNotFailTracing() {
         GridTestUtils.assertThrows(
             log,
             () -> client.cache(ATOMIC_CACHE).put(null,1),
