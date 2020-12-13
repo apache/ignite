@@ -167,42 +167,37 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public void removeAll() throws IgniteCheckedException {
-        try (MTC.TraceSurroundings ignored =
-                 MTC.support(ctx.kernalContext().tracing().create(CACHE_API_REMOVE, MTC.span()))) {
-            MTC.span().addTagOrLog("cache", CACHE_API_REMOVE, () -> Objects.toString(cacheCfg.getName()));
+        try {
+            AffinityTopologyVersion topVer;
 
-            try {
-                AffinityTopologyVersion topVer;
+            boolean retry;
 
-                boolean retry;
+            CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-                CacheOperationContext opCtx = ctx.operationContextPerCall();
+            boolean skipStore = opCtx != null && opCtx.skipStore();
 
-                boolean skipStore = opCtx != null && opCtx.skipStore();
+            boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-                boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+            do {
+                retry = false;
 
-                do {
-                    retry = false;
+                topVer = ctx.affinity().affinityTopologyVersion();
 
-                    topVer = ctx.affinity().affinityTopologyVersion();
+                // Send job to all data nodes.
+                Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
-                    // Send job to all data nodes.
-                    Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
+                if (!nodes.isEmpty()) {
+                    ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
 
-                    if (!nodes.isEmpty()) {
-                        ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
-
-                        retry = !ctx.kernalContext().task().execute(
-                            new RemoveAllTask(ctx.name(), topVer, skipStore, keepBinary), null).get();
-                    }
+                    retry = !ctx.kernalContext().task().execute(
+                        new RemoveAllTask(ctx.name(), topVer, skipStore, keepBinary), null).get();
                 }
-                while (ctx.affinity().affinityTopologyVersion().compareTo(topVer) != 0 || retry);
             }
-            catch (ClusterGroupEmptyCheckedException ignore) {
-                if (log.isDebugEnabled())
-                    log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
-            }
+            while (ctx.affinity().affinityTopologyVersion().compareTo(topVer) != 0 || retry);
+        }
+        catch (ClusterGroupEmptyCheckedException ignore) {
+            if (log.isDebugEnabled())
+                log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
         }
     }
 
