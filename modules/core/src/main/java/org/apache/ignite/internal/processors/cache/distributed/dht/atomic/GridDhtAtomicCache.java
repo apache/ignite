@@ -147,8 +147,8 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_G
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_PROCESS_ATOMIC_UPDATE_REQUEST;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_PROCESS_ATOMIC_UPDATE_RESPONSE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_PROCESS_CHECK_UPDATE_REQUEST;
-import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_UPDATE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_REMOVE;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_UPDATE;
 
 /**
  * Non-transactional partitioned cache.
