@@ -44,7 +44,7 @@ namespace Apache.Ignite.Linq.Impl
         private readonly Dictionary<Expression, string> _fieldAliases = new Dictionary<Expression, string>();
 
         /** */
-        private readonly Stack<Dictionary<IQuerySource, string>> _stack
+        private readonly Stack<Dictionary<IQuerySource, string>> _stack 
             = new Stack<Dictionary<IQuerySource, string>>();
 
         /// <summary>
@@ -173,22 +173,16 @@ namespace Apache.Ignite.Linq.Impl
                 var querySource = GetQuerySource(mainFromClause.FromExpression, itemTypeHint);
 
                 if (querySource != null)
-                {
                     return querySource;
-                }
 
                 if (itemTypeHint == null || mainFromClause.ItemType == itemTypeHint)
-                {
                     return mainFromClause;
-                }
 
                 foreach (var bodyClause in subQueryExp.QueryModel.BodyClauses)
                 {
                     var querySourceBodyClause = bodyClause as IQuerySource;
                     if (querySourceBodyClause != null && querySourceBodyClause.ItemType == itemTypeHint)
-                    {
                         return querySourceBodyClause;
-                    }
                 }
 
                 return mainFromClause;
