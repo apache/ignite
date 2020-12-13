@@ -42,10 +42,8 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_D
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_PROCESS_ATOMIC_UPDATE_REQUEST;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_PROCESS_ATOMIC_UPDATE_RESPONSE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_UPDATE_FUTURE;
-import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_PUT;
-import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_PUT_ALL;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_UPDATE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_REMOVE;
-import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_REMOVE_ALL;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_UPDATE_MAP;
 import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
 
@@ -129,7 +127,7 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
         handler().flush();
 
         List<SpanId> spanIds = checkSpan(
-            CACHE_API_PUT,
+            CACHE_API_UPDATE,
             null,
             1,
             ImmutableMap.<String, String>builder()
@@ -138,6 +136,8 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
                 .put("node.name", client.name())
                 .put("cache", ATOMIC_CACHE)
                 .put("key", "AnotherOne")
+                .put("async", "false")
+                .put("filter", "null")
                 .build()
         );
 
@@ -247,7 +247,7 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
         handler().flush();
 
         List<SpanId> spanIds = checkSpan(
-            CACHE_API_PUT_ALL,
+            CACHE_API_UPDATE,
             null,
             1,
             ImmutableMap.<String, String>builder()
@@ -256,6 +256,9 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
                 .put("node.name", client.name())
                 .put("cache", ATOMIC_CACHE)
                 .put("keys.count", "3")
+                .put("invoke.keys.count", "0")
+                .put("async", "false")
+                .put("operation", "UPDATE")
                 .build()
         );
 
@@ -376,12 +379,12 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
      */
     @Test
     public void testCacheAtomicPutAsyncTracing() throws Exception {
-        client.cache(ATOMIC_CACHE).putAsync("One",1);
+        client.cache(ATOMIC_CACHE).putAsync("One",1).get();
 
         handler().flush();
 
         List<SpanId> spanIds = checkSpan(
-            CACHE_API_PUT,
+            CACHE_API_UPDATE,
             null,
             1,
             ImmutableMap.<String, String>builder()
@@ -391,6 +394,7 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
                 .put("cache", ATOMIC_CACHE)
                 .put("key", "One")
                 .put("async", "true")
+                .put("filter", "null")
                 .build()
         );
 
@@ -495,12 +499,12 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
                 put("One", 1);
                 put("Two", 2);
                 put("Three", 3);
-            }});
+            }}).get();
 
         handler().flush();
 
         List<SpanId> spanIds = checkSpan(
-            CACHE_API_PUT_ALL,
+            CACHE_API_UPDATE,
             null,
             1,
             ImmutableMap.<String, String>builder()
@@ -509,7 +513,9 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
                 .put("node.name", client.name())
                 .put("cache", ATOMIC_CACHE)
                 .put("keys.count", "3")
+                .put("invoke.keys.count", "0")
                 .put("async", "true")
+                .put("operation", "UPDATE")
                 .build()
         );
 
@@ -645,6 +651,8 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
                 .put("node.name", client.name())
                 .put("cache", ATOMIC_CACHE)
                 .put("key", "One")
+                .put("async", "false")
+                .put("filter", "null")
                 .build()
         );
 
@@ -761,7 +769,7 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
         handler().flush();
 
         List<SpanId> spanIds = checkSpan(
-            CACHE_API_REMOVE_ALL,
+            CACHE_API_REMOVE,
             null,
             1,
             ImmutableMap.<String, String>builder()
@@ -770,6 +778,7 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
                 .put("node.name", client.name())
                 .put("cache", ATOMIC_CACHE)
                 .put("keys.count", "3")
+                .put("async", "false")
                 .build()
         );
 
@@ -889,9 +898,9 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
      */
     @Test
     public void testCacheAtomicRemoveAsyncTracing() throws Exception {
-        client.cache(ATOMIC_CACHE).putAsync("One",1);
+        client.cache(ATOMIC_CACHE).putAsync("One",1).get();
 
-        client.cache(ATOMIC_CACHE).removeAsync("One");
+        client.cache(ATOMIC_CACHE).removeAsync("One").get();
 
         handler().flush();
 
@@ -906,6 +915,7 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
                 .put("cache", ATOMIC_CACHE)
                 .put("key", "One")
                 .put("async", "true")
+                .put("filter", "null")
                 .build()
         );
 
@@ -1010,19 +1020,19 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
                 put("One", 1);
                 put("Two", 2);
                 put("Three", 3);
-            }});
+            }}).get();
 
         client.cache(ATOMIC_CACHE).removeAllAsync(
             new HashSet<String>() {{
                 add("One");
                 add("Two");
                 add("Three");
-            }});
+            }}).get();
 
         handler().flush();
 
         List<SpanId> spanIds = checkSpan(
-            CACHE_API_REMOVE_ALL,
+            CACHE_API_REMOVE,
             null,
             1,
             ImmutableMap.<String, String>builder()
@@ -1153,6 +1163,8 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
                 .put("node.name", client.name())
                 .put("cache", ATOMIC_CACHE)
                 .put("key", "One")
+                .put("filter", "class org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue")
+                .put("async", "false")
                 .build()
         );
     }
@@ -1174,9 +1186,9 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
      */
     @Test
     public void testCacheAtomicRemoveAsyncWithValidValueTracing() throws Exception {
-        client.cache(ATOMIC_CACHE).putAsync("One",1);
+        client.cache(ATOMIC_CACHE).putAsync("One",1).get();
 
-        client.cache(ATOMIC_CACHE).removeAsync("One", 1);
+        client.cache(ATOMIC_CACHE).removeAsync("One", 1).get();
 
         handler().flush();
 
@@ -1191,6 +1203,7 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
                 .put("cache", ATOMIC_CACHE)
                 .put("key", "One")
                 .put("async", "true")
+                .put("filter", "class org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue")
                 .build()
         );
     }
@@ -1209,40 +1222,10 @@ public class OpenCensusCacheAPIWriteTracingTest extends AbstractTracingTest {
             IgniteException.class,
             "Ouch! Argument cannot be null: key");
 
-        handler().flush();
-
-        checkSpan(
-            CACHE_API_PUT,
-            null,
-            1,
-            ImmutableMap.<String, String>builder()
-                .put("node.id", client.localNode().id().toString())
-                .put("node.consistent.id", client.localNode().consistentId().toString())
-                .put("node.name", client.name())
-                .put("cache", ATOMIC_CACHE)
-                .put("key", "null")
-                .build()
-        );
-
         GridTestUtils.assertThrows(
             log,
             () -> client.cache(ATOMIC_CACHE).remove(null),
             NullPointerException.class,
             "Ouch! Argument cannot be null: key");
-
-        handler().flush();
-
-        checkSpan(
-            CACHE_API_REMOVE,
-            null,
-            1,
-            ImmutableMap.<String, String>builder()
-                .put("node.id", client.localNode().id().toString())
-                .put("node.consistent.id", client.localNode().consistentId().toString())
-                .put("node.name", client.name())
-                .put("cache", ATOMIC_CACHE)
-                .put("key", "null")
-                .build()
-        );
     }
 }

@@ -34,7 +34,6 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_DHT_GET_FUTURE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_DHT_SINGLE_GET_FUTURE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET;
-import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET_ALL;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET_MAP;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_PROCESS_ATOMIC_GET_REQUEST;
 import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_NEAR_PROCESS_ATOMIC_GET_RESPONSE;
@@ -125,7 +124,7 @@ public class OpenCensusCacheAPIReadTracingTest extends AbstractTracingTest {
                 .put("node.consistent.id", client.localNode().consistentId().toString())
                 .put("node.name", client.name())
                 .put("cache", ATOMIC_CACHE)
-                .put("key", "One")
+                .put("key", "UserKeyCacheObjectImpl [part=583, val=One, hasValBytes=false]")
                 .build()
         );
 
@@ -218,7 +217,7 @@ public class OpenCensusCacheAPIReadTracingTest extends AbstractTracingTest {
         handler().flush();
 
         List<SpanId> spanIds = checkSpan(
-            CACHE_API_GET_ALL,
+            CACHE_API_GET,
             null,
             1,
             ImmutableMap.<String, String>builder()
@@ -316,7 +315,7 @@ public class OpenCensusCacheAPIReadTracingTest extends AbstractTracingTest {
     public void testCacheAtomicGetAsyncTracing() throws Exception {
         client.cache(ATOMIC_CACHE).put("One",1);
 
-        client.cache(ATOMIC_CACHE).getAsync("One");
+        client.cache(ATOMIC_CACHE).getAsync("One").get();
 
         handler().flush();
 
@@ -329,8 +328,7 @@ public class OpenCensusCacheAPIReadTracingTest extends AbstractTracingTest {
                 .put("node.consistent.id", client.localNode().consistentId().toString())
                 .put("node.name", client.name())
                 .put("cache", ATOMIC_CACHE)
-                .put("key", "One")
-                .put("async", "true")
+                .put("key", "UserKeyCacheObjectImpl [part=583, val=One, hasValBytes=false]")
                 .build()
         );
 
@@ -418,12 +416,12 @@ public class OpenCensusCacheAPIReadTracingTest extends AbstractTracingTest {
                 add("One");
                 add("Two");
                 add("Three");
-            }});
+            }}).get();
 
         handler().flush();
 
         List<SpanId> spanIds = checkSpan(
-            CACHE_API_GET_ALL,
+            CACHE_API_GET,
             null,
             1,
             ImmutableMap.<String, String>builder()
@@ -432,7 +430,6 @@ public class OpenCensusCacheAPIReadTracingTest extends AbstractTracingTest {
                 .put("node.name", client.name())
                 .put("cache", ATOMIC_CACHE)
                 .put("keys.count", "3")
-                .put("async", "true")
                 .build()
         );
 

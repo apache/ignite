@@ -32,7 +32,7 @@ import org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_PUT;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_UPDATE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_CLOSE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_COLOCATED_LOCK_MAP;
@@ -1178,7 +1178,7 @@ public class OpenCensusTxTracingTest extends AbstractTracingTest {
         );
 
         checkSpan(
-            CACHE_API_PUT,
+            CACHE_API_UPDATE,
             txSpanIds.get(0),
             2,
             null);

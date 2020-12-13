@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -128,6 +129,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_GET;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_UPDATE;
+import static org.apache.ignite.internal.processors.tracing.SpanType.CACHE_API_REMOVE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_ENLIST_READ;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_ENLIST_WRITE;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
@@ -614,130 +618,141 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean retval,
         @Nullable final CacheEntryPredicate filter
     ) {
-        assert key != null;
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(cacheCtx.kernalContext().tracing().create(CACHE_API_UPDATE, MTC.span()))) {
+            MTC.span().addTagOrLog("cache", CACHE_API_UPDATE, () -> Objects.toString(cacheCtx.cache().name()));
 
-        if (cacheCtx.mvccEnabled())
-            return mvccPutAllAsync0(cacheCtx, Collections.singletonMap(key, val),
-                entryProcessor == null ? null : Collections.singletonMap(key, entryProcessor), invokeArgs, retval, filter);
+            MTC.span().addSensitiveTagOrLog("key", CACHE_API_UPDATE, () -> Objects.toString(key));
 
-        try {
-            beforePut(cacheCtx, retval, false);
+            MTC.span().addTagIfSpanIsPresent("filter", CACHE_API_UPDATE,
+                () -> String.valueOf(filter == null ? null : filter.getClass()));
 
-            final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
+            assert key != null;
 
-            CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
-
-            final Byte dataCenterId = opCtx != null ? opCtx.dataCenterId() : null;
-
-            KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(key);
-
-            boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
-
-            final CacheEntryPredicate[] filters = CU.filterArray(filter);
-
-            final IgniteInternalFuture<Void> loadFut = enlistWrite(
-                cacheCtx,
-                entryTopVer,
-                cacheKey,
-                val,
-                opCtx != null ? opCtx.expiry() : null,
-                entryProcessor,
-                invokeArgs,
-                retval,
-                /*lockOnly*/false,
-                filters,
-                ret,
-                opCtx != null && opCtx.skipStore(),
-                /*singleRmv*/false,
-                keepBinary,
-                opCtx != null && opCtx.recovery(),
-                dataCenterId);
+            if (cacheCtx.mvccEnabled())
+                return mvccPutAllAsync0(cacheCtx, Collections.singletonMap(key, val),
+                    entryProcessor == null ?
+                        null :
+                        Collections.singletonMap(key, entryProcessor), invokeArgs, retval, filter);
 
             try {
-                loadFut.get();
+                beforePut(cacheCtx, retval, false);
+
+                final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
+
+                CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
+
+                final Byte dataCenterId = opCtx != null ? opCtx.dataCenterId() : null;
+
+                KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(key);
+
+                boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+
+                final CacheEntryPredicate[] filters = CU.filterArray(filter);
+
+                final IgniteInternalFuture<Void> loadFut = enlistWrite(
+                    cacheCtx,
+                    entryTopVer,
+                    cacheKey,
+                    val,
+                    opCtx != null ? opCtx.expiry() : null,
+                    entryProcessor,
+                    invokeArgs,
+                    retval,
+                    /*lockOnly*/false,
+                    filters,
+                    ret,
+                    opCtx != null && opCtx.skipStore(),
+                    /*singleRmv*/false,
+                    keepBinary,
+                    opCtx != null && opCtx.recovery(),
+                    dataCenterId);
+
+                try {
+                    loadFut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    return new GridFinishedFuture(e);
+                }
+
+                long timeout = remainingTime();
+
+                if (timeout == -1)
+                    return new GridFinishedFuture<>(timeoutException());
+
+                if (isRollbackOnly())
+                    return new GridFinishedFuture<>(rollbackException());
+
+                if (pessimistic()) {
+                    final Collection<KeyCacheObject> enlisted = Collections.singleton(cacheKey);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Before acquiring transaction lock for put on key: " + enlisted);
+
+                    IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
+                        timeout,
+                        this,
+                        /*read*/entryProcessor != null, // Needed to force load from store.
+                        retval,
+                        isolation,
+                        isInvalidate(),
+                        -1L,
+                        -1L);
+
+                    PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
+                        @Override public GridCacheReturn postLock(GridCacheReturn ret)
+                            throws IgniteCheckedException {
+                            if (log.isDebugEnabled())
+                                log.debug("Acquired transaction lock for put on keys: " + enlisted);
+
+                            postLockWrite(cacheCtx,
+                                enlisted,
+                                ret,
+                                /*remove*/false,
+                                retval,
+                                /*read*/false,
+                                -1L,
+                                filters,
+                                /*computeInvoke*/true);
+
+                            return ret;
+                        }
+                    };
+
+                    if (fut.isDone()) {
+                        try {
+                            return nonInterruptable(plc1.apply(fut.get(), null));
+                        }
+                        catch (GridClosureException e) {
+                            return new GridFinishedFuture<>(e.unwrap());
+                        }
+                        catch (IgniteCheckedException e) {
+                            try {
+                                return nonInterruptable(plc1.apply(false, e));
+                            }
+                            catch (Exception e1) {
+                                return new GridFinishedFuture<>(e1);
+                            }
+                        }
+                    }
+                    else {
+                        return nonInterruptable(new GridEmbeddedFuture<>(
+                            fut,
+                            plc1
+                        ));
+                    }
+                }
+                else
+                    return optimisticPutFuture(cacheCtx, loadFut, ret, keepBinary);
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture(e);
             }
+            catch (RuntimeException e) {
+                onException();
 
-            long timeout = remainingTime();
-
-            if (timeout == -1)
-                return new GridFinishedFuture<>(timeoutException());
-
-            if (isRollbackOnly())
-                return new GridFinishedFuture<>(rollbackException());
-
-            if (pessimistic()) {
-                final Collection<KeyCacheObject> enlisted = Collections.singleton(cacheKey);
-
-                if (log.isDebugEnabled())
-                    log.debug("Before acquiring transaction lock for put on key: " + enlisted);
-
-                IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
-                    timeout,
-                    this,
-                    /*read*/entryProcessor != null, // Needed to force load from store.
-                    retval,
-                    isolation,
-                    isInvalidate(),
-                    -1L,
-                    -1L);
-
-                PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
-                    @Override public GridCacheReturn postLock(GridCacheReturn ret)
-                        throws IgniteCheckedException
-                    {
-                        if (log.isDebugEnabled())
-                            log.debug("Acquired transaction lock for put on keys: " + enlisted);
-
-                        postLockWrite(cacheCtx,
-                            enlisted,
-                            ret,
-                            /*remove*/false,
-                            retval,
-                            /*read*/false,
-                            -1L,
-                            filters,
-                            /*computeInvoke*/true);
-
-                        return ret;
-                    }
-                };
-
-                if (fut.isDone()) {
-                    try {
-                        return nonInterruptable(plc1.apply(fut.get(), null));
-                    }
-                    catch (GridClosureException e) {
-                        return new GridFinishedFuture<>(e.unwrap());
-                    }
-                    catch (IgniteCheckedException e) {
-                        try {
-                            return nonInterruptable(plc1.apply(false, e));
-                        }
-                        catch (Exception e1) {
-                            return new GridFinishedFuture<>(e1);
-                        }
-                    }
-                }
-                else {
-                    return nonInterruptable(new GridEmbeddedFuture<>(
-                        fut,
-                        plc1
-                    ));
-                }
+                throw e;
             }
-            else
-                return optimisticPutFuture(cacheCtx, loadFut, ret, keepBinary);
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture(e);
-        }
-        catch (RuntimeException e) {
-            onException();
-
-            throw e;
         }
     }
 
@@ -873,160 +888,170 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable Map<KeyCacheObject, GridCacheDrInfo> drMap,
         final boolean retval
     ) {
-        if (cacheCtx.mvccEnabled())
-            return mvccPutAllAsync0(cacheCtx, map, invokeMap, invokeArgs, retval, null);
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(cacheCtx.kernalContext().tracing().create(CACHE_API_UPDATE, MTC.span()))) {
+            MTC.span().addTagOrLog("cache", CACHE_API_UPDATE, () -> Objects.toString(cacheCtx.cache().name()));
 
-        try {
-            beforePut(cacheCtx, retval, false);
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture(e);
-        }
+            MTC.span().addTagOrLog("keys.count", CACHE_API_UPDATE,
+                () -> map == null ? "0" : String.valueOf(map.size()));
 
-        final CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
+            MTC.span().addTagOrLog("invoke.keys.count", CACHE_API_UPDATE,
+                () -> invokeMap == null ? "0" : String.valueOf(invokeMap.size()));
 
-        final Byte dataCenterId;
-
-        if (opCtx != null && opCtx.hasDataCenterId()) {
-            assert drMap == null : drMap;
-            assert map != null || invokeMap != null;
-
-            dataCenterId = opCtx.dataCenterId();
-        }
-        else
-            dataCenterId = null;
-
-        // Cached entry may be passed only from entry wrapper.
-        final Map<?, ?> map0 = map;
-        final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
-
-        if (log.isDebugEnabled())
-            log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map0 + ", retval=" + retval + "]");
-
-        assert map0 != null || invokeMap0 != null;
-
-        final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
-
-        if (F.isEmpty(map0) && F.isEmpty(invokeMap0)) {
-            if (implicit())
-                try {
-                    commit();
-                }
-                catch (IgniteCheckedException e) {
-                    return new GridFinishedFuture<>(e);
-                }
-
-            return new GridFinishedFuture<>(ret.success(true));
-        }
-
-        try {
-            Set<?> keySet = map0 != null ? map0.keySet() : invokeMap0.keySet();
-
-            final Collection<KeyCacheObject> enlisted = new ArrayList<>(keySet.size());
-
-            final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
-
-            final IgniteInternalFuture<Void> loadFut = enlistWrite(
-                cacheCtx,
-                entryTopVer,
-                keySet,
-                opCtx != null ? opCtx.expiry() : null,
-                map0,
-                invokeMap0,
-                invokeArgs,
-                retval,
-                false,
-                CU.filterArray(null),
-                ret,
-                enlisted,
-                drMap,
-                null,
-                opCtx != null && opCtx.skipStore(),
-                false,
-                keepBinary,
-                opCtx != null && opCtx.recovery(),
-                dataCenterId);
+            if (cacheCtx.mvccEnabled())
+                return mvccPutAllAsync0(cacheCtx, map, invokeMap, invokeArgs, retval, null);
 
             try {
-                loadFut.get();
+                beforePut(cacheCtx, retval, false);
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture(e);
             }
 
-            long timeout = remainingTime();
+            final CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
-            if (timeout == -1)
-                return new GridFinishedFuture<>(timeoutException());
+            final Byte dataCenterId;
 
-            if (isRollbackOnly())
-                return new GridFinishedFuture<>(rollbackException());
+            if (opCtx != null && opCtx.hasDataCenterId()) {
+                assert drMap == null : drMap;
+                assert map != null || invokeMap != null;
 
-            if (pessimistic()) {
-                if (log.isDebugEnabled())
-                    log.debug("Before acquiring transaction lock for put on keys: " + enlisted);
-
-                IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
-                    timeout,
-                    this,
-                    /*read*/invokeMap != null, // Needed to force load from store.
-                    retval,
-                    isolation,
-                    isInvalidate(),
-                    -1L,
-                    -1L);
-
-                PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
-                    @Override public GridCacheReturn postLock(GridCacheReturn ret)
-                        throws IgniteCheckedException
-                    {
-                        if (log.isDebugEnabled())
-                            log.debug("Acquired transaction lock for put on keys: " + enlisted);
-
-                        postLockWrite(cacheCtx,
-                            enlisted,
-                            ret,
-                            /*remove*/false,
-                            retval,
-                            /*read*/false,
-                            -1L,
-                            CU.filterArray(null),
-                            /*computeInvoke*/true);
-
-                        return ret;
-                    }
-                };
-
-                if (fut.isDone()) {
-                    try {
-                        return nonInterruptable(plc1.apply(fut.get(), null));
-                    }
-                    catch (GridClosureException e) {
-                        return new GridFinishedFuture<>(e.unwrap());
-                    }
-                    catch (IgniteCheckedException e) {
-                        try {
-                            return nonInterruptable(plc1.apply(false, e));
-                        }
-                        catch (Exception e1) {
-                            return new GridFinishedFuture<>(e1);
-                        }
-                    }
-                }
-                else {
-                    return nonInterruptable(new GridEmbeddedFuture<>(
-                        fut,
-                        plc1
-                    ));
-                }
+                dataCenterId = opCtx.dataCenterId();
             }
             else
-                return optimisticPutFuture(cacheCtx, loadFut, ret, keepBinary);
-        }
-        catch (RuntimeException e) {
-            onException();
+                dataCenterId = null;
 
-            throw e;
+            // Cached entry may be passed only from entry wrapper.
+            final Map<?, ?> map0 = map;
+            final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
+
+            if (log.isDebugEnabled())
+                log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map0 + ", retval=" + retval + "]");
+
+            assert map0 != null || invokeMap0 != null;
+
+            final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
+
+            if (F.isEmpty(map0) && F.isEmpty(invokeMap0)) {
+                if (implicit())
+                    try {
+                        commit();
+                    }
+                    catch (IgniteCheckedException e) {
+                        return new GridFinishedFuture<>(e);
+                    }
+
+                return new GridFinishedFuture<>(ret.success(true));
+            }
+
+            try {
+                Set<?> keySet = map0 != null ? map0.keySet() : invokeMap0.keySet();
+
+                final Collection<KeyCacheObject> enlisted = new ArrayList<>(keySet.size());
+
+                final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+
+                final IgniteInternalFuture<Void> loadFut = enlistWrite(
+                    cacheCtx,
+                    entryTopVer,
+                    keySet,
+                    opCtx != null ? opCtx.expiry() : null,
+                    map0,
+                    invokeMap0,
+                    invokeArgs,
+                    retval,
+                    false,
+                    CU.filterArray(null),
+                    ret,
+                    enlisted,
+                    drMap,
+                    null,
+                    opCtx != null && opCtx.skipStore(),
+                    false,
+                    keepBinary,
+                    opCtx != null && opCtx.recovery(),
+                    dataCenterId);
+
+                try {
+                    loadFut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    return new GridFinishedFuture(e);
+                }
+
+                long timeout = remainingTime();
+
+                if (timeout == -1)
+                    return new GridFinishedFuture<>(timeoutException());
+
+                if (isRollbackOnly())
+                    return new GridFinishedFuture<>(rollbackException());
+
+                if (pessimistic()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Before acquiring transaction lock for put on keys: " + enlisted);
+
+                    IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
+                        timeout,
+                        this,
+                        /*read*/invokeMap != null, // Needed to force load from store.
+                        retval,
+                        isolation,
+                        isInvalidate(),
+                        -1L,
+                        -1L);
+
+                    PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
+                        @Override public GridCacheReturn postLock(GridCacheReturn ret)
+                            throws IgniteCheckedException {
+                            if (log.isDebugEnabled())
+                                log.debug("Acquired transaction lock for put on keys: " + enlisted);
+
+                            postLockWrite(cacheCtx,
+                                enlisted,
+                                ret,
+                                /*remove*/false,
+                                retval,
+                                /*read*/false,
+                                -1L,
+                                CU.filterArray(null),
+                                /*computeInvoke*/true);
+
+                            return ret;
+                        }
+                    };
+
+                    if (fut.isDone()) {
+                        try {
+                            return nonInterruptable(plc1.apply(fut.get(), null));
+                        }
+                        catch (GridClosureException e) {
+                            return new GridFinishedFuture<>(e.unwrap());
+                        }
+                        catch (IgniteCheckedException e) {
+                            try {
+                                return nonInterruptable(plc1.apply(false, e));
+                            }
+                            catch (Exception e1) {
+                                return new GridFinishedFuture<>(e1);
+                            }
+                        }
+                    }
+                    else {
+                        return nonInterruptable(new GridEmbeddedFuture<>(
+                            fut,
+                            plc1
+                        ));
+                    }
+                }
+                else
+                    return optimisticPutFuture(cacheCtx, loadFut, ret, keepBinary);
+            }
+            catch (RuntimeException e) {
+                onException();
+
+                throw e;
+            }
         }
     }
 
@@ -1733,221 +1758,232 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean retval,
         @Nullable final CacheEntryPredicate filter,
         boolean singleRmv) {
-        if (cacheCtx.mvccEnabled())
-            return mvccRemoveAllAsync0(cacheCtx, keys, retval, filter);
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(cacheCtx.kernalContext().tracing().create(CACHE_API_REMOVE, MTC.span()))) {
+            MTC.span().addTagOrLog("cache", CACHE_API_REMOVE, () -> Objects.toString(cacheCtx.cache().name()));
 
-        try {
-            checkUpdatesAllowed(cacheCtx);
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture(e);
-        }
+            MTC.span().addTagOrLog("keys.count", CACHE_API_REMOVE,
+                () -> keys == null ? "0" : String.valueOf(keys.size()));
 
-        cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+            MTC.span().addTagIfSpanIsPresent("filter", CACHE_API_REMOVE,
+                () -> String.valueOf(filter == null ? null : filter.getClass()));
 
-        if (retval)
-            needReturnValue(true);
+            if (cacheCtx.mvccEnabled())
+                return mvccRemoveAllAsync0(cacheCtx, keys, retval, filter);
 
-        final Collection<?> keys0;
-
-        if (drMap != null) {
-            assert keys == null;
-
-            keys0 = drMap.keySet();
-        }
-        else
-            keys0 = keys;
-
-        CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
-
-        final Byte dataCenterId;
-
-        if (opCtx != null && opCtx.hasDataCenterId()) {
-            assert drMap == null : drMap;
-
-            dataCenterId = opCtx.dataCenterId();
-        }
-        else
-            dataCenterId = null;
-
-        assert keys0 != null;
-
-        if (log.isDebugEnabled())
-            log.debug(S.toString("Called removeAllAsync(...)",
-                "tx", this, false,
-                "keys", keys0, true,
-                "implicit", implicit, false,
-                "retval", retval, false));
-
-        try {
-            checkValid();
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(e);
-        }
-
-        final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
-
-        if (F.isEmpty(keys0)) {
-            if (implicit()) {
-                try {
-                    commit();
-                }
-                catch (IgniteCheckedException e) {
-                    return new GridFinishedFuture<>(e);
-                }
+            try {
+                checkUpdatesAllowed(cacheCtx);
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture(e);
             }
 
-            return new GridFinishedFuture<>(ret.success(true));
-        }
+            cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
-        init();
+            if (retval)
+                needReturnValue(true);
 
-        final Collection<KeyCacheObject> enlisted = new ArrayList<>();
+            final Collection<?> keys0;
 
-        ExpiryPolicy plc;
+            if (drMap != null) {
+                assert keys == null;
 
-        final CacheEntryPredicate[] filters = CU.filterArray(filter);
-
-        if (!F.isEmpty(filters))
-            plc = opCtx != null ? opCtx.expiry() : null;
-        else
-            plc = null;
-
-        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
-
-        final IgniteInternalFuture<Void> loadFut = enlistWrite(
-            cacheCtx,
-            entryTopVer,
-            keys0,
-            plc,
-            /*lookup map*/null,
-            /*invoke map*/null,
-            /*invoke arguments*/null,
-            retval,
-            /*lock only*/false,
-            filters,
-            ret,
-            enlisted,
-            null,
-            drMap,
-            opCtx != null && opCtx.skipStore(),
-            singleRmv,
-            keepBinary,
-            opCtx != null && opCtx.recovery(),
-            dataCenterId
-        );
-
-        try {
-            loadFut.get();
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture(e);
-        }
-
-        long timeout = remainingTime();
-
-        if (timeout == -1)
-            return new GridFinishedFuture<>(timeoutException());
-
-        if (isRollbackOnly())
-            return new GridFinishedFuture<>(rollbackException());
-
-        if (log.isDebugEnabled())
-            log.debug("Remove keys: " + enlisted);
-
-        // Acquire locks only after having added operation to the write set.
-        // Otherwise, during rollback we will not know whether locks need
-        // to be rolled back.
-        if (pessimistic()) {
-            if (log.isDebugEnabled())
-                log.debug("Before acquiring transaction lock for remove on keys: " + enlisted);
-
-            IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
-                timeout,
-                this,
-                false,
-                retval,
-                isolation,
-                isInvalidate(),
-                -1L,
-                -1L);
-
-            PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
-                /** {@inheritDoc} */
-                @Override protected GridCacheReturn postLock(GridCacheReturn ret)
-                    throws IgniteCheckedException {
-                    if (log.isDebugEnabled())
-                        log.debug("Acquired transaction lock for remove on keys: " + enlisted);
-
-                    postLockWrite(cacheCtx,
-                        enlisted,
-                        ret,
-                        /*remove*/true,
-                        retval,
-                        /*read*/false,
-                        -1L,
-                        filters,
-                        /*computeInvoke*/false);
-
-                    return ret;
-                }
-            };
-
-            if (fut.isDone()) {
-                try {
-                    return nonInterruptable(plc1.apply(fut.get(), null));
-                }
-                catch (GridClosureException e) {
-                    return new GridFinishedFuture<>(e.unwrap());
-                }
-                catch (IgniteCheckedException e) {
-                    try {
-                        return nonInterruptable(plc1.apply(false, e));
-                    }
-                    catch (Exception e1) {
-                        return new GridFinishedFuture<>(e1);
-                    }
-                }
+                keys0 = drMap.keySet();
             }
             else
-                return nonInterruptable(new GridEmbeddedFuture<>(
-                    fut,
-                    plc1
-                ));
-        }
-        else {
-            if (implicit()) {
-                // Should never load missing values for implicit transaction as values will be returned
-                // with prepare response, if required.
-                assert loadFut.isDone();
+                keys0 = keys;
 
-                return nonInterruptable(commitNearTxLocalAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn>() {
-                    @Override public GridCacheReturn applyx(IgniteInternalFuture<IgniteInternalTx> txFut)
-                        throws IgniteCheckedException {
-                        try {
-                            txFut.get();
+            CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
-                            return new GridCacheReturn(cacheCtx, true, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
-                                implicitRes.value(), implicitRes.success());
-                        }
-                        catch (IgniteCheckedException | RuntimeException e) {
-                            rollbackNearTxLocalAsync();
+            final Byte dataCenterId;
 
-                            throw e;
-                        }
-                    }
-                }));
+            if (opCtx != null && opCtx.hasDataCenterId()) {
+                assert drMap == null : drMap;
+
+                dataCenterId = opCtx.dataCenterId();
             }
-            else {
-                return nonInterruptable(loadFut.chain(new CX1<IgniteInternalFuture<Void>, GridCacheReturn>() {
-                    @Override public GridCacheReturn applyx(IgniteInternalFuture<Void> f)
+            else
+                dataCenterId = null;
+
+            assert keys0 != null;
+
+            if (log.isDebugEnabled())
+                log.debug(S.toString("Called removeAllAsync(...)",
+                    "tx", this, false,
+                    "keys", keys0, true,
+                    "implicit", implicit, false,
+                    "retval", retval, false));
+
+            try {
+                checkValid();
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture<>(e);
+            }
+
+            final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
+
+            if (F.isEmpty(keys0)) {
+                if (implicit()) {
+                    try {
+                        commit();
+                    }
+                    catch (IgniteCheckedException e) {
+                        return new GridFinishedFuture<>(e);
+                    }
+                }
+
+                return new GridFinishedFuture<>(ret.success(true));
+            }
+
+            init();
+
+            final Collection<KeyCacheObject> enlisted = new ArrayList<>();
+
+            ExpiryPolicy plc;
+
+            final CacheEntryPredicate[] filters = CU.filterArray(filter);
+
+            if (!F.isEmpty(filters))
+                plc = opCtx != null ? opCtx.expiry() : null;
+            else
+                plc = null;
+
+            final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+
+            final IgniteInternalFuture<Void> loadFut = enlistWrite(
+                cacheCtx,
+                entryTopVer,
+                keys0,
+                plc,
+                /*lookup map*/null,
+                /*invoke map*/null,
+                /*invoke arguments*/null,
+                retval,
+                /*lock only*/false,
+                filters,
+                ret,
+                enlisted,
+                null,
+                drMap,
+                opCtx != null && opCtx.skipStore(),
+                singleRmv,
+                keepBinary,
+                opCtx != null && opCtx.recovery(),
+                dataCenterId
+            );
+
+            try {
+                loadFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture(e);
+            }
+
+            long timeout = remainingTime();
+
+            if (timeout == -1)
+                return new GridFinishedFuture<>(timeoutException());
+
+            if (isRollbackOnly())
+                return new GridFinishedFuture<>(rollbackException());
+
+            if (log.isDebugEnabled())
+                log.debug("Remove keys: " + enlisted);
+
+            // Acquire locks only after having added operation to the write set.
+            // Otherwise, during rollback we will not know whether locks need
+            // to be rolled back.
+            if (pessimistic()) {
+                if (log.isDebugEnabled())
+                    log.debug("Before acquiring transaction lock for remove on keys: " + enlisted);
+
+                IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
+                    timeout,
+                    this,
+                    false,
+                    retval,
+                    isolation,
+                    isInvalidate(),
+                    -1L,
+                    -1L);
+
+                PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
+                    /** {@inheritDoc} */
+                    @Override protected GridCacheReturn postLock(GridCacheReturn ret)
                         throws IgniteCheckedException {
-                        f.get();
+                        if (log.isDebugEnabled())
+                            log.debug("Acquired transaction lock for remove on keys: " + enlisted);
+
+                        postLockWrite(cacheCtx,
+                            enlisted,
+                            ret,
+                            /*remove*/true,
+                            retval,
+                            /*read*/false,
+                            -1L,
+                            filters,
+                            /*computeInvoke*/false);
 
                         return ret;
                     }
-                }));
+                };
+
+                if (fut.isDone()) {
+                    try {
+                        return nonInterruptable(plc1.apply(fut.get(), null));
+                    }
+                    catch (GridClosureException e) {
+                        return new GridFinishedFuture<>(e.unwrap());
+                    }
+                    catch (IgniteCheckedException e) {
+                        try {
+                            return nonInterruptable(plc1.apply(false, e));
+                        }
+                        catch (Exception e1) {
+                            return new GridFinishedFuture<>(e1);
+                        }
+                    }
+                }
+                else
+                    return nonInterruptable(new GridEmbeddedFuture<>(
+                        fut,
+                        plc1
+                    ));
+            }
+            else {
+                if (implicit()) {
+                    // Should never load missing values for implicit transaction as values will be returned
+                    // with prepare response, if required.
+                    assert loadFut.isDone();
+
+                    return nonInterruptable(commitNearTxLocalAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn>() {
+                        @Override public GridCacheReturn applyx(IgniteInternalFuture<IgniteInternalTx> txFut)
+                            throws IgniteCheckedException {
+                            try {
+                                txFut.get();
+
+                                return new GridCacheReturn(cacheCtx, true, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
+                                    implicitRes.value(), implicitRes.success());
+                            }
+                            catch (IgniteCheckedException | RuntimeException e) {
+                                rollbackNearTxLocalAsync();
+
+                                throw e;
+                            }
+                        }
+                    }));
+                }
+                else {
+                    return nonInterruptable(loadFut.chain(new CX1<IgniteInternalFuture<Void>, GridCacheReturn>() {
+                        @Override public GridCacheReturn applyx(IgniteInternalFuture<Void> f)
+                            throws IgniteCheckedException {
+                            f.get();
+
+                            return ret;
+                        }
+                    }));
+                }
             }
         }
     }
@@ -2223,365 +2259,374 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean recovery,
         final boolean readRepair,
         final boolean needVer) {
-        if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
+        try (MTC.TraceSurroundings ignored =
+                 MTC.support(cacheCtx.kernalContext().tracing().create(CACHE_API_GET, MTC.span()))) {
+            MTC.span().addTagOrLog("cache", CACHE_API_GET, () -> Objects.toString(cacheCtx.cache().name()));
 
-        if (cacheCtx.mvccEnabled() && !isOperationAllowed(true))
-            return txTypeMismatchFinishFuture();
+            MTC.span().addTagOrLog("keys.count", CACHE_API_GET,
+                () -> keys == null ? "0" : String.valueOf(keys.size()));
 
-        init();
+            if (F.isEmpty(keys))
+                return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
-        int keysCnt = keys.size();
+            if (cacheCtx.mvccEnabled() && !isOperationAllowed(true))
+                return txTypeMismatchFinishFuture();
 
-        boolean single = keysCnt == 1;
+            init();
 
-        try {
-            checkValid();
+            int keysCnt = keys.size();
 
-            GridFutureAdapter<?> enlistFut = new GridFutureAdapter<>();
-
-            if (!updateLockFuture(null, enlistFut))
-                return new GridFinishedFuture<>(timedOut() ? timeoutException() : rollbackException());
-
-            final Map<K, V> retMap = new GridLeanMap<>(keysCnt);
-
-            final Map<KeyCacheObject, GridCacheVersion> missed = new GridLeanMap<>(pessimistic() ? keysCnt : 0);
-
-            CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
-
-            ExpiryPolicy expiryPlc = opCtx != null ? opCtx.expiry() : null;
-
-            final Collection<KeyCacheObject> lockKeys;
+            boolean single = keysCnt == 1;
 
             try {
-                lockKeys = enlistRead(cacheCtx,
-                    entryTopVer,
-                    keys,
-                    expiryPlc,
-                    retMap,
-                    missed,
-                    keysCnt,
-                    deserializeBinary,
-                    skipVals,
-                    keepCacheObjects,
-                    skipStore,
-                    recovery,
-                    readRepair,
-                    needVer);
-            }
-            catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(e);
-            }
-            finally {
-                finishFuture(enlistFut, null, true);
-            }
+                checkValid();
 
-            if (isRollbackOnly())
-                return new GridFinishedFuture<>(timedOut() ? timeoutException() : rollbackException());
+                GridFutureAdapter<?> enlistFut = new GridFutureAdapter<>();
 
-            if (single && missed.isEmpty())
-                return new GridFinishedFuture<>(retMap);
+                if (!updateLockFuture(null, enlistFut))
+                    return new GridFinishedFuture<>(timedOut() ? timeoutException() : rollbackException());
 
-            // Handle locks.
-            if (pessimistic() && !readCommitted() && !skipVals) {
-                if (expiryPlc == null)
-                    expiryPlc = cacheCtx.expiry();
+                final Map<K, V> retMap = new GridLeanMap<>(keysCnt);
 
-                long accessTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForAccess()) : CU.TTL_NOT_CHANGED;
-                long createTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForCreation()) : CU.TTL_NOT_CHANGED;
+                final Map<KeyCacheObject, GridCacheVersion> missed = new GridLeanMap<>(pessimistic() ? keysCnt : 0);
 
-                long timeout = remainingTime();
+                CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
-                if (timeout == -1)
-                    return new GridFinishedFuture<>(timeoutException());
+                ExpiryPolicy expiryPlc = opCtx != null ? opCtx.expiry() : null;
 
-                IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys,
-                    timeout,
-                    this,
-                    true,
-                    true,
-                    isolation,
-                    isInvalidate(),
-                    createTtl,
-                    accessTtl);
+                final Collection<KeyCacheObject> lockKeys;
 
-                final ExpiryPolicy expiryPlc0 = expiryPlc;
-
-                PLC2<Map<K, V>> plc2 = new PLC2<Map<K, V>>() {
-                    @Override public IgniteInternalFuture<Map<K, V>> postLock() throws IgniteCheckedException {
-                        if (log.isDebugEnabled())
-                            log.debug("Acquired transaction lock for read on keys: " + lockKeys);
-
-                        // Load keys only after the locks have been acquired.
-                        for (KeyCacheObject cacheKey : lockKeys) {
-                            K keyVal = (K)
-                                (keepCacheObjects ? cacheKey :
-                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(cacheKey, !deserializeBinary,
-                                        true, null));
-
-                            if (retMap.containsKey(keyVal))
-                                // We already have a return value.
-                                continue;
-
-                            IgniteTxKey txKey = cacheCtx.txKey(cacheKey);
-
-                            IgniteTxEntry txEntry = entry(txKey);
-
-                            assert txEntry != null;
-
-                            // Check if there is cached value.
-                            while (true) {
-                                GridCacheEntryEx cached = txEntry.cached();
-
-                                CacheObject val = null;
-                                GridCacheVersion readVer = null;
-                                EntryGetResult getRes = null;
-
-                                try {
-                                    Object transformClo =
-                                        (!F.isEmpty(txEntry.entryProcessors()) &&
-                                            cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ)) ?
-                                            F.first(txEntry.entryProcessors()) : null;
-
-                                    if (needVer) {
-                                        getRes = cached.innerGetVersioned(
-                                            null,
-                                            GridNearTxLocal.this,
-                                            /*update-metrics*/true,
-                                            /*event*/!skipVals,
-                                            CU.subjectId(GridNearTxLocal.this, cctx),
-                                            transformClo,
-                                            resolveTaskName(),
-                                            null,
-                                            txEntry.keepBinary(),
-                                            null);
-
-                                        if (getRes != null) {
-                                            val = getRes.value();
-                                            readVer = getRes.version();
-                                        }
-                                    }
-                                    else {
-                                        val = cached.innerGet(
-                                            null,
-                                            GridNearTxLocal.this,
-                                            /*read through*/false,
-                                            /*metrics*/true,
-                                            /*events*/!skipVals,
-                                            CU.subjectId(GridNearTxLocal.this, cctx),
-                                            transformClo,
-                                            resolveTaskName(),
-                                            null,
-                                            txEntry.keepBinary());
-                                    }
-
-                                    // If value is in cache and passed the filter.
-                                    if (val != null) {
-                                        missed.remove(cacheKey);
-
-                                        txEntry.setAndMarkValid(val);
-
-                                        if (!F.isEmpty(txEntry.entryProcessors()))
-                                            val = txEntry.applyEntryProcessors(val);
-
-                                        cacheCtx.addResult(retMap,
-                                            cacheKey,
-                                            val,
-                                            skipVals,
-                                            keepCacheObjects,
-                                            deserializeBinary,
-                                            false,
-                                            getRes,
-                                            readVer,
-                                            0,
-                                            0,
-                                            needVer,
-                                            U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
-
-                                        if (readVer != null)
-                                            txEntry.entryReadVersion(readVer);
-                                    }
-
-                                    // Even though we bring the value back from lock acquisition,
-                                    // we still need to recheck primary node for consistent values
-                                    // in case of concurrent transactional locks.
-
-                                    break; // While.
-                                }
-                                catch (GridCacheEntryRemovedException ignore) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Got removed exception in get postLock (will retry): " +
-                                            cached);
-
-                                    txEntry.cached(entryEx(cacheCtx, txKey, topologyVersion()));
-                                }
-                            }
-                        }
-
-                        if (!missed.isEmpty() && cacheCtx.isLocal()) {
-                            AffinityTopologyVersion topVer = topologyVersionSnapshot();
-
-                            if (topVer == null)
-                                topVer = entryTopVer;
-
-                            return checkMissed(cacheCtx,
-                                topVer != null ? topVer : topologyVersion(),
-                                retMap,
-                                missed,
-                                deserializeBinary,
-                                skipVals,
-                                keepCacheObjects,
-                                skipStore,
-                                recovery,
-                                readRepair,
-                                needVer,
-                                expiryPlc0);
-                        }
-
-                        if (readRepair) {
-                            return new GridNearReadRepairFuture(
-                                topVer != null ? topVer : topologyVersion(),
-                                cacheCtx,
-                                keys,
-                                !skipStore,
-                                taskName,
-                                deserializeBinary,
-                                recovery,
-                                cacheCtx.cache().expiryPolicy(expiryPlc0),
-                                GridNearTxLocal.this)
-                                .chain((fut) -> {
-                                        try {
-                                            // For every fixed entry.
-                                            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
-                                                EntryGetResult getRes = entry.getValue();
-
-                                                enlistWrite(
-                                                    cacheCtx,
-                                                    entryTopVer,
-                                                    entry.getKey(),
-                                                    getRes.value(),
-                                                    expiryPlc0,
-                                                    null,
-                                                    null,
-                                                    false,
-                                                    false,
-                                                    null,
-                                                    null,
-                                                    skipStore,
-                                                    false,
-                                                    !deserializeBinary,
-                                                    recovery,
-                                                    null);
-
-                                                // Rewriting fixed, initially filled by explicit lock operation.
-                                                cacheCtx.addResult(retMap,
-                                                    entry.getKey(),
-                                                    getRes.value(),
-                                                    skipVals,
-                                                    keepCacheObjects,
-                                                    deserializeBinary,
-                                                    false,
-                                                    getRes,
-                                                    getRes.version(),
-                                                    0,
-                                                    0,
-                                                    needVer,
-                                                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
-                                            }
-
-                                            return Collections.emptyMap();
-                                        }
-                                        catch (Exception e) {
-                                            throw new GridClosureException(e);
-                                        }
-                                    }
-                                );
-                        }
-
-                        return new GridFinishedFuture<>(Collections.emptyMap());
-                    }
-                };
-
-                FinishClosure<Map<K, V>> finClos = new FinishClosure<Map<K, V>>() {
-                    @Override Map<K, V> finish(Map<K, V> loaded) {
-                        retMap.putAll(loaded);
-
-                        return retMap;
-                    }
-                };
-
-                if (fut.isDone()) {
-                    try {
-                        IgniteInternalFuture<Map<K, V>> fut1 = plc2.apply(fut.get(), null);
-
-                        return nonInterruptable(fut1.isDone() ?
-                            new GridFinishedFuture<>(finClos.apply(fut1.get(), null)) :
-                            new GridEmbeddedFuture<>(finClos, fut1));
-                    }
-                    catch (GridClosureException e) {
-                        return new GridFinishedFuture<>(e.unwrap());
-                    }
-                    catch (IgniteCheckedException e) {
-                        try {
-                            return nonInterruptable(plc2.apply(false, e));
-                        }
-                        catch (Exception e1) {
-                            return new GridFinishedFuture<>(e1);
-                        }
-                    }
-                }
-                else {
-                    return nonInterruptable(new GridEmbeddedFuture<>(
-                        fut,
-                        plc2,
-                        finClos));
-                }
-            }
-            else {
-                assert optimistic() || readCommitted() || skipVals;
-
-                if (!missed.isEmpty()) {
-                    if (!readCommitted())
-                        for (Iterator<KeyCacheObject> it = missed.keySet().iterator(); it.hasNext(); ) {
-                            KeyCacheObject cacheKey = it.next();
-
-                            K keyVal = (K)(keepCacheObjects ? cacheKey
-                                : cacheCtx.cacheObjectContext()
-                                .unwrapBinaryIfNeeded(cacheKey, !deserializeBinary, false, null));
-
-                            if (retMap.containsKey(keyVal))
-                                it.remove();
-                        }
-
-                    if (missed.isEmpty())
-                        return new GridFinishedFuture<>(retMap);
-
-                    AffinityTopologyVersion topVer = topologyVersionSnapshot();
-
-                    if (topVer == null)
-                        topVer = entryTopVer;
-
-                    return checkMissed(cacheCtx,
-                        topVer != null ? topVer : topologyVersion(),
+                try {
+                    lockKeys = enlistRead(cacheCtx,
+                        entryTopVer,
+                        keys,
+                        expiryPlc,
                         retMap,
                         missed,
+                        keysCnt,
                         deserializeBinary,
                         skipVals,
                         keepCacheObjects,
                         skipStore,
                         recovery,
                         readRepair,
-                        needVer,
-                        expiryPlc);
+                        needVer);
+                }
+                catch (IgniteCheckedException e) {
+                    return new GridFinishedFuture<>(e);
+                }
+                finally {
+                    finishFuture(enlistFut, null, true);
                 }
 
-                return new GridFinishedFuture<>(retMap);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            setRollbackOnly();
+                if (isRollbackOnly())
+                    return new GridFinishedFuture<>(timedOut() ? timeoutException() : rollbackException());
 
-            return new GridFinishedFuture<>(e);
+                if (single && missed.isEmpty())
+                    return new GridFinishedFuture<>(retMap);
+
+                // Handle locks.
+                if (pessimistic() && !readCommitted() && !skipVals) {
+                    if (expiryPlc == null)
+                        expiryPlc = cacheCtx.expiry();
+
+                    long accessTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForAccess()) : CU.TTL_NOT_CHANGED;
+                    long createTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForCreation()) : CU.TTL_NOT_CHANGED;
+
+                    long timeout = remainingTime();
+
+                    if (timeout == -1)
+                        return new GridFinishedFuture<>(timeoutException());
+
+                    IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys,
+                        timeout,
+                        this,
+                        true,
+                        true,
+                        isolation,
+                        isInvalidate(),
+                        createTtl,
+                        accessTtl);
+
+                    final ExpiryPolicy expiryPlc0 = expiryPlc;
+
+                    PLC2<Map<K, V>> plc2 = new PLC2<Map<K, V>>() {
+                        @Override public IgniteInternalFuture<Map<K, V>> postLock() throws IgniteCheckedException {
+                            if (log.isDebugEnabled())
+                                log.debug("Acquired transaction lock for read on keys: " + lockKeys);
+
+                            // Load keys only after the locks have been acquired.
+                            for (KeyCacheObject cacheKey : lockKeys) {
+                                K keyVal = (K)
+                                    (keepCacheObjects ? cacheKey :
+                                        cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(cacheKey, !deserializeBinary,
+                                            true, null));
+
+                                if (retMap.containsKey(keyVal))
+                                    // We already have a return value.
+                                    continue;
+
+                                IgniteTxKey txKey = cacheCtx.txKey(cacheKey);
+
+                                IgniteTxEntry txEntry = entry(txKey);
+
+                                assert txEntry != null;
+
+                                // Check if there is cached value.
+                                while (true) {
+                                    GridCacheEntryEx cached = txEntry.cached();
+
+                                    CacheObject val = null;
+                                    GridCacheVersion readVer = null;
+                                    EntryGetResult getRes = null;
+
+                                    try {
+                                        Object transformClo =
+                                            (!F.isEmpty(txEntry.entryProcessors()) &&
+                                                cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ)) ?
+                                                F.first(txEntry.entryProcessors()) : null;
+
+                                        if (needVer) {
+                                            getRes = cached.innerGetVersioned(
+                                                null,
+                                                GridNearTxLocal.this,
+                                                /*update-metrics*/true,
+                                                /*event*/!skipVals,
+                                                CU.subjectId(GridNearTxLocal.this, cctx),
+                                                transformClo,
+                                                resolveTaskName(),
+                                                null,
+                                                txEntry.keepBinary(),
+                                                null);
+
+                                            if (getRes != null) {
+                                                val = getRes.value();
+                                                readVer = getRes.version();
+                                            }
+                                        }
+                                        else {
+                                            val = cached.innerGet(
+                                                null,
+                                                GridNearTxLocal.this,
+                                                /*read through*/false,
+                                                /*metrics*/true,
+                                                /*events*/!skipVals,
+                                                CU.subjectId(GridNearTxLocal.this, cctx),
+                                                transformClo,
+                                                resolveTaskName(),
+                                                null,
+                                                txEntry.keepBinary());
+                                        }
+
+                                        // If value is in cache and passed the filter.
+                                        if (val != null) {
+                                            missed.remove(cacheKey);
+
+                                            txEntry.setAndMarkValid(val);
+
+                                            if (!F.isEmpty(txEntry.entryProcessors()))
+                                                val = txEntry.applyEntryProcessors(val);
+
+                                            cacheCtx.addResult(retMap,
+                                                cacheKey,
+                                                val,
+                                                skipVals,
+                                                keepCacheObjects,
+                                                deserializeBinary,
+                                                false,
+                                                getRes,
+                                                readVer,
+                                                0,
+                                                0,
+                                                needVer,
+                                                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+
+                                            if (readVer != null)
+                                                txEntry.entryReadVersion(readVer);
+                                        }
+
+                                        // Even though we bring the value back from lock acquisition,
+                                        // we still need to recheck primary node for consistent values
+                                        // in case of concurrent transactional locks.
+
+                                        break; // While.
+                                    }
+                                    catch (GridCacheEntryRemovedException ignore) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Got removed exception in get postLock (will retry): " +
+                                                cached);
+
+                                        txEntry.cached(entryEx(cacheCtx, txKey, topologyVersion()));
+                                    }
+                                }
+                            }
+
+                            if (!missed.isEmpty() && cacheCtx.isLocal()) {
+                                AffinityTopologyVersion topVer = topologyVersionSnapshot();
+
+                                if (topVer == null)
+                                    topVer = entryTopVer;
+
+                                return checkMissed(cacheCtx,
+                                    topVer != null ? topVer : topologyVersion(),
+                                    retMap,
+                                    missed,
+                                    deserializeBinary,
+                                    skipVals,
+                                    keepCacheObjects,
+                                    skipStore,
+                                    recovery,
+                                    readRepair,
+                                    needVer,
+                                    expiryPlc0);
+                            }
+
+                            if (readRepair) {
+                                return new GridNearReadRepairFuture(
+                                    topVer != null ? topVer : topologyVersion(),
+                                    cacheCtx,
+                                    keys,
+                                    !skipStore,
+                                    taskName,
+                                    deserializeBinary,
+                                    recovery,
+                                    cacheCtx.cache().expiryPolicy(expiryPlc0),
+                                    GridNearTxLocal.this)
+                                    .chain((fut) -> {
+                                            try {
+                                                // For every fixed entry.
+                                                for (Map.Entry<KeyCacheObject, EntryGetResult> entry :
+                                                    fut.get().entrySet()) {
+                                                    EntryGetResult getRes = entry.getValue();
+
+                                                    enlistWrite(
+                                                        cacheCtx,
+                                                        entryTopVer,
+                                                        entry.getKey(),
+                                                        getRes.value(),
+                                                        expiryPlc0,
+                                                        null,
+                                                        null,
+                                                        false,
+                                                        false,
+                                                        null,
+                                                        null,
+                                                        skipStore,
+                                                        false,
+                                                        !deserializeBinary,
+                                                        recovery,
+                                                        null);
+
+                                                    // Rewriting fixed, initially filled by explicit lock operation.
+                                                    cacheCtx.addResult(retMap,
+                                                        entry.getKey(),
+                                                        getRes.value(),
+                                                        skipVals,
+                                                        keepCacheObjects,
+                                                        deserializeBinary,
+                                                        false,
+                                                        getRes,
+                                                        getRes.version(),
+                                                        0,
+                                                        0,
+                                                        needVer,
+                                                        U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                                                }
+
+                                                return Collections.emptyMap();
+                                            }
+                                            catch (Exception e) {
+                                                throw new GridClosureException(e);
+                                            }
+                                        }
+                                    );
+                            }
+
+                            return new GridFinishedFuture<>(Collections.emptyMap());
+                        }
+                    };
+
+                    FinishClosure<Map<K, V>> finClos = new FinishClosure<Map<K, V>>() {
+                        @Override Map<K, V> finish(Map<K, V> loaded) {
+                            retMap.putAll(loaded);
+
+                            return retMap;
+                        }
+                    };
+
+                    if (fut.isDone()) {
+                        try {
+                            IgniteInternalFuture<Map<K, V>> fut1 = plc2.apply(fut.get(), null);
+
+                            return nonInterruptable(fut1.isDone() ?
+                                new GridFinishedFuture<>(finClos.apply(fut1.get(), null)) :
+                                new GridEmbeddedFuture<>(finClos, fut1));
+                        }
+                        catch (GridClosureException e) {
+                            return new GridFinishedFuture<>(e.unwrap());
+                        }
+                        catch (IgniteCheckedException e) {
+                            try {
+                                return nonInterruptable(plc2.apply(false, e));
+                            }
+                            catch (Exception e1) {
+                                return new GridFinishedFuture<>(e1);
+                            }
+                        }
+                    }
+                    else {
+                        return nonInterruptable(new GridEmbeddedFuture<>(
+                            fut,
+                            plc2,
+                            finClos));
+                    }
+                }
+                else {
+                    assert optimistic() || readCommitted() || skipVals;
+
+                    if (!missed.isEmpty()) {
+                        if (!readCommitted())
+                            for (Iterator<KeyCacheObject> it = missed.keySet().iterator(); it.hasNext(); ) {
+                                KeyCacheObject cacheKey = it.next();
+
+                                K keyVal = (K)(keepCacheObjects ? cacheKey
+                                    : cacheCtx.cacheObjectContext()
+                                    .unwrapBinaryIfNeeded(cacheKey, !deserializeBinary, false, null));
+
+                                if (retMap.containsKey(keyVal))
+                                    it.remove();
+                            }
+
+                        if (missed.isEmpty())
+                            return new GridFinishedFuture<>(retMap);
+
+                        AffinityTopologyVersion topVer = topologyVersionSnapshot();
+
+                        if (topVer == null)
+                            topVer = entryTopVer;
+
+                        return checkMissed(cacheCtx,
+                            topVer != null ? topVer : topologyVersion(),
+                            retMap,
+                            missed,
+                            deserializeBinary,
+                            skipVals,
+                            keepCacheObjects,
+                            skipStore,
+                            recovery,
+                            readRepair,
+                            needVer,
+                            expiryPlc);
+                    }
+
+                    return new GridFinishedFuture<>(retMap);
+                }
+            }
+            catch (IgniteCheckedException e) {
+                setRollbackOnly();
+
+                return new GridFinishedFuture<>(e);
+            }
         }
     }
 

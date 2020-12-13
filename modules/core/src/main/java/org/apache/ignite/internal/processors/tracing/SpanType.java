@@ -162,16 +162,10 @@ public enum SpanType {
     CUSTOM_JOB_CALL(Scope.COMMUNICATION, "job.call", 45, true),
 
     /** */
-    CACHE_API_PUT(Scope.CACHE_API_WRITE, "cache.api.put", 46, true),
-
-    /** */
-    CACHE_API_PUT_ALL(Scope.CACHE_API_WRITE, "cache.api.put.all", 47, true),
+    CACHE_API_UPDATE(Scope.CACHE_API_WRITE, "cache.api.put", 46, true),
 
     /** */
     CACHE_API_REMOVE(Scope.CACHE_API_WRITE, "cache.api.remove", 50, true),
-
-    /** */
-    CACHE_API_REMOVE_ALL(Scope.CACHE_API_WRITE, "cache.api.remove.all", 51, true),
 
     /** */
     CACHE_API_NEAR_PROCESS_ATOMIC_UPDATE_REQUEST(Scope.CACHE_API_WRITE,
@@ -216,9 +210,6 @@ public enum SpanType {
 
     /** */
     CACHE_API_GET(Scope.CACHE_API_READ, "cache.api.get", 65, true),
-
-    /** */
-    CACHE_API_GET_ALL(Scope.CACHE_API_READ, "cache.api.get.all", 66, true),
 
     /** */
     CACHE_API_NEAR_GET_FUTURE(Scope.CACHE_API_READ, "cache.api.near.get.future", 69, false),
