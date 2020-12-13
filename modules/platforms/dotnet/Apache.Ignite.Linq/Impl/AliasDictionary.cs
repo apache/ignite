@@ -163,25 +163,21 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the query source.
         /// </summary>
-        private static IQuerySource GetQuerySource(Expression expression, Type memberExprType = null)
+        private static IQuerySource GetQuerySource(Expression expression, Type itemTypeHint = null)
         {
             var subQueryExp = expression as SubQueryExpression;
 
             if (subQueryExp != null)
             {
                 var mainFromClause = subQueryExp.QueryModel.MainFromClause;
-                var querySource = GetQuerySource(mainFromClause.FromExpression, memberExprType);
+                var querySource = GetQuerySource(mainFromClause.FromExpression, itemTypeHint);
 
                 if (querySource != null)
                 {
-                    // TODO: This is not covered by any test and is probably incorrect -
-                    // we should throw an exception instead?
                     return querySource;
                 }
 
-                // TODO: subQueryExp.QueryModel may be a JOIN - we need to pick the right part of it
-                // Based on type?
-                if (memberExprType == null || mainFromClause.ItemType == memberExprType)
+                if (itemTypeHint == null || mainFromClause.ItemType == itemTypeHint)
                 {
                     return mainFromClause;
                 }
@@ -189,13 +185,13 @@ namespace Apache.Ignite.Linq.Impl
                 foreach (var bodyClause in subQueryExp.QueryModel.BodyClauses)
                 {
                     var querySourceBodyClause = bodyClause as IQuerySource;
-                    if (querySourceBodyClause != null && querySourceBodyClause.ItemType == memberExprType)
+                    if (querySourceBodyClause != null && querySourceBodyClause.ItemType == itemTypeHint)
                     {
                         return querySourceBodyClause;
                     }
                 }
 
-                throw new NotSupportedException("Unexpected query source: " + expression);
+                return mainFromClause;
             }
 
             var srcRefExp = expression as QuerySourceReferenceExpression;
@@ -205,12 +201,12 @@ namespace Apache.Ignite.Linq.Impl
                 var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
 
                 if (fromSource != null)
-                    return GetQuerySource(fromSource.FromExpression, memberExprType) ?? fromSource;
+                    return GetQuerySource(fromSource.FromExpression, itemTypeHint) ?? fromSource;
 
                 var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
 
                 if (joinSource != null)
-                    return GetQuerySource(joinSource.InnerSequence, memberExprType) ?? joinSource;
+                    return GetQuerySource(joinSource.InnerSequence, itemTypeHint) ?? joinSource;
 
                 throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
             }
