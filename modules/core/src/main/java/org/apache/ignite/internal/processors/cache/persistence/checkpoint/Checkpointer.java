@@ -579,6 +579,7 @@ public class Checkpointer extends GridWorker {
             persStoreMetrics.onCheckpoint(
                 tracker.lockWaitDuration(),
                 tracker.markDuration(),
+                tracker.lockHoldDuration(),
                 tracker.pagesWriteDuration(),
                 tracker.fsyncDuration(),
                 tracker.totalDuration(),

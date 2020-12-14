@@ -22,6 +22,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -55,6 +56,9 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
     /** */
     private final AtomicLongMetric lastCpMarkDuration;
+
+    /** */
+    private final AtomicLongMetric lastCpLockHoldDuration;
 
     /** */
     private final AtomicLongMetric lastCpPagesWriteDuration;
@@ -107,6 +111,9 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     /** */
     private final AtomicLongMetric sparseStorageSize;
 
+    /** */
+    private final HistogramMetricImpl cpLockHoldHistogram;
+
     /**
      * @param mmgr Metrics manager.
      * @param metricsEnabled Metrics enabled flag.
@@ -158,7 +165,10 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             "Duration of the checkpoint lock wait in milliseconds.");
 
         lastCpMarkDuration = mreg.longMetric("LastCheckpointMarkDuration",
-            "Duration of the checkpoint lock wait in milliseconds.");
+            "Duration of the checkpoint mark in milliseconds.");
+
+        lastCpLockHoldDuration = mreg.longMetric("LastCheckpointLockHoldDuration",
+            "Duration of the checkpoint lock hold in milliseconds.");
 
         lastCpPagesWriteDuration = mreg.longMetric("LastCheckpointPagesWriteDuration",
             "Duration of the checkpoint pages write in milliseconds.");
@@ -200,6 +210,11 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         mreg.register("WalTotalSize",
             this::getWalTotalSize,
             "Total size in bytes for storage wal files.");
+
+        long[] cpLockHoldBounds = new long[] {100, 500, 1000, 5000, 30000};
+
+        cpLockHoldHistogram = mreg.histogram("CheckpointLockHoldHistogram", cpLockHoldBounds,
+                "Histogram of checkpoint lock hold durations in milliseconds.");
     }
 
     /** {@inheritDoc} */
@@ -598,9 +613,11 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     /**
      * @param lockWaitDuration Lock wait duration.
      * @param markDuration Mark duration.
+     * @param lockHoldDuration Lock hold duration.
      * @param pagesWriteDuration Pages write duration.
      * @param fsyncDuration Total checkpoint fsync duration.
      * @param duration Total checkpoint duration.
+     * @param start Checkpoint start time.
      * @param totalPages Total number of all pages in checkpoint.
      * @param dataPages Total number of data pages in checkpoint.
      * @param cowPages Total number of COW-ed pages in checkpoint.
@@ -608,6 +625,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     public void onCheckpoint(
         long lockWaitDuration,
         long markDuration,
+        long lockHoldDuration,
         long pagesWriteDuration,
         long fsyncDuration,
         long duration,
@@ -619,6 +637,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (metricsEnabled) {
             lastCpLockWaitDuration.value(lockWaitDuration);
             lastCpMarkDuration.value(markDuration);
+            lastCpLockHoldDuration.value(lockHoldDuration);
             lastCpPagesWriteDuration.value(pagesWriteDuration);
             lastCpFsyncDuration.value(fsyncDuration);
             lastCpDuration.value(duration);
@@ -628,6 +647,8 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             lastCpCowPages.value(cowPages);
 
             totalCheckpointTime.add(duration);
+
+            cpLockHoldHistogram.value(lockHoldDuration);
         }
     }
 

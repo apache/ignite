@@ -18,7 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCache;
@@ -33,16 +38,22 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
 
 /**
  *
@@ -53,6 +64,9 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final String NO_PERSISTENCE = "no-persistence";
+
+    /** */
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
@@ -95,6 +109,8 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(
             cacheConfiguration(GROUP1, "cache", PARTITIONED, ATOMIC, 1, null),
             cacheConfiguration(null, "cache-np", PARTITIONED, ATOMIC, 1, NO_PERSISTENCE));
+
+        cfg.setGridLogger(listeningLog);
 
         return cfg;
     }
@@ -188,6 +204,48 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    /** @throws Exception if failed. */
+    @Test
+    public void testCheckpointMetrics() throws Exception {
+        Pattern cpPtrn = Pattern.compile("Checkpoint started .* checkpointLockHoldTime=(\\d+)ms");
+
+        AtomicLong expLastCpLockHoldDuration = new AtomicLong();
+        AtomicInteger cpCnt = new AtomicInteger();
+
+        listeningLog.registerListener(s -> {
+            Matcher matcher = cpPtrn.matcher(s);
+
+            if (!matcher.find())
+                return;
+
+            cpCnt.incrementAndGet();
+            expLastCpLockHoldDuration.set(Long.parseLong(matcher.group(1)));
+        });
+
+        IgniteEx node = startGrid(0);
+
+        node.cluster().state(ACTIVE);
+
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)node.context().cache().context().database();
+
+        db.checkpointReadLock();
+
+        try {
+            assertTrue(cpCnt.get() > 0);
+
+            MetricRegistry mreg = node.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
+
+            AtomicLongMetric lastCpLockHoldDuration = mreg.findMetric("LastCheckpointLockHoldDuration");
+            HistogramMetric cpLockHoldHistogram = mreg.findMetric("CheckpointLockHoldHistogram");
+
+            assertEquals(expLastCpLockHoldDuration.get(), lastCpLockHoldDuration.value());
+            assertEquals(cpCnt.get(), Arrays.stream(cpLockHoldHistogram.value()).sum());
+        }
+        finally {
+            db.checkpointReadUnlock();
         }
     }
 
