@@ -2008,9 +2008,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             reservedWalArchiveSize.addAndGet(reservedSize);
 
             try {
-                // TODO: 11.12.2020 Can be remove after IGNITE-13815
-                deleteArchiveFiles(false, dstTmpFile);
-
                 if (offs > 0 && offs < origLen)
                     GridFileUtils.copy(ioFactory, origFile, ioFactory, dstTmpFile, offs);
                 else
