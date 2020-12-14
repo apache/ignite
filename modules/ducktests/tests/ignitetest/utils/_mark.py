@@ -219,3 +219,22 @@ def cluster(**kwargs):
         return func
 
     return cluster_use_metadata_adder
+
+def versions_pair(*args, version_prefix="ignite_version"):
+    """
+    Decorate test function to inject ignite versions. Versions will be overriden by globals "ignite_versions" param.
+    produce pairs for all possible versions intersections
+    :param args: Can be string, tuple of strings or iterable of them.
+    :param version_prefix: prefix for variable to inject into test function.
+    """
+    res = []
+    for v_arg1 in args:
+        for v_arg2 in args:
+            res.append((v_arg1, v_arg2))
+
+    def parametrizer(func):
+        Mark.mark(func, IgniteVersionParametrize(*res, version_prefix=version_prefix))
+
+        return func
+
+    return parametrizer
