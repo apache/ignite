@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeaf
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.InsertLast;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
@@ -157,6 +156,8 @@ public class IndexingDefragmentation {
 
                 for (int i = 0; i < segments; i++) {
                     H2Tree tree = oldH2Idx.treeForRead(i);
+
+                    newIdx.treeForRead(i).enableSequentialWriteMode();
 
                     treeIterator.iterate(tree, oldCachePageMem, (theTree, io, pageAddr, idx) -> {
                         cancellationChecker.run();
@@ -396,7 +397,7 @@ public class IndexingDefragmentation {
     /**
      * H2CacheRow with stored index values
      */
-    private static class H2CacheRowWithIndex extends H2CacheRow implements InsertLast {
+    private static class H2CacheRowWithIndex extends H2CacheRow {
         /** List of index values. */
         private final List<Value> values;
 
@@ -406,6 +407,7 @@ public class IndexingDefragmentation {
             this.values = values;
         }
 
+        /** */
         public static H2CacheRowWithIndex create(
             GridH2RowDescriptor desc,
             long newLink,

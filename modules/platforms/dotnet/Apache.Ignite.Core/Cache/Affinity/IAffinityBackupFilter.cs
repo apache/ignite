@@ -15,10 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.tree.util;
+namespace Apache.Ignite.Core.Cache.Affinity
+{
+    using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
 
-/**
- * Rows with this marker interface will always be inserted in the very end of the tree.
- */
-public interface InsertLast {
+    /// <summary>
+    /// Represents a backup filter for an affinity function - see
+    /// <see cref="RendezvousAffinityFunction.AffinityBackupFilter"/>.
+    /// <para />
+    /// Only one predefined implementation is supported for now: <see cref="ClusterNodeAttributeAffinityBackupFilter"/>.
+    /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
+    public interface IAffinityBackupFilter
+    {
+        // No-op: custom implementations are not supported.
+    }
 }

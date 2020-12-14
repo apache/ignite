@@ -244,7 +244,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     @WithSystemProperty(key = IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, value = "2")
     public void testCorrectDeletedCheckpointHistoryButKeepWalFiles() throws Exception {
         //given: configured grid with disabled WAL removing.
-        Ignite ignite = startGrid(dbCfg -> dbCfg.setMaxWalArchiveSize(Long.MAX_VALUE));
+        Ignite ignite = startGrid(dbCfg -> dbCfg.setMaxWalArchiveSize(DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE));
 
         GridCacheDatabaseSharedManager dbMgr = gridDatabase(ignite);
 

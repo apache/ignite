@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.preprocessing.encoding;
 
 import java.util.Map;
+import org.apache.ignite.ml.preprocessing.encoding.target.TargetCounter;
 
 /**
  * Partition data used in Encoder preprocessor.
@@ -28,6 +29,9 @@ public class EncoderPartitionData implements AutoCloseable {
 
     /** Frequencies of categories for label presented as strings. */
     private Map<String, Integer> labelFrequencies;
+
+    /** Target encoding meta of categories for label presented as strings. */
+    private TargetCounter[] targetCounters;
 
     /**
      * Constructs a new instance of String Encoder partition data.
@@ -54,6 +58,15 @@ public class EncoderPartitionData implements AutoCloseable {
     }
 
     /**
+     * Gets the map of target encoding meta by value in partition for label.
+     *
+     * @return The target encoding meta.
+     */
+    public TargetCounter[] targetCounters() {
+        return targetCounters;
+    }
+
+    /**
      * Sets the array of maps of frequencies by value in partition for each feature in the dataset.
      *
      * @param categoryFrequencies The given value.
@@ -72,6 +85,12 @@ public class EncoderPartitionData implements AutoCloseable {
      */
     public EncoderPartitionData withLabelFrequencies(Map<String, Integer> labelFrequencies) {
         this.labelFrequencies = labelFrequencies;
+        return this;
+    }
+
+    /** */
+    public EncoderPartitionData withTargetCounters(TargetCounter[] targetCounters) {
+        this.targetCounters = targetCounters;
         return this;
     }
 

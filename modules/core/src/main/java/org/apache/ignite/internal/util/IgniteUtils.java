@@ -10797,7 +10797,8 @@ public abstract class IgniteUtils {
      * @return User-set max WAL archive size of triple size of the maximum checkpoint buffer.
      */
     public static long adjustedWalHistorySize(DataStorageConfiguration dsCfg, @Nullable IgniteLogger log) {
-        if (dsCfg.getMaxWalArchiveSize() != DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE)
+        if (dsCfg.getMaxWalArchiveSize() != DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE &&
+            dsCfg.getMaxWalArchiveSize() != DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE)
             return dsCfg.getMaxWalArchiveSize();
 
         // Find out the maximum checkpoint buffer size.
