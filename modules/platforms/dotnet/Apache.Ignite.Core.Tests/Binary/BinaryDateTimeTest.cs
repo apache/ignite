@@ -138,23 +138,25 @@ namespace Apache.Ignite.Core.Tests.Binary
         private static void AssertTimestampField<T>(Action<T, DateTime> setValue,
             Func<T, DateTime> getValue, string fieldName) where T : new()
         {
-            // Non-UTC DateTime throws.
+            // Non-UTC DateTime works.
             var binary = Ignition.GetIgnite().GetBinary();
 
             var obj = new T();
 
             setValue(obj, DateTime.Now);
-
-            var ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<IBinaryObject>(obj), 
-                "Timestamp fields should throw an error on non-UTC values");
-
-            Assert.AreEqual("DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.",
-                ex.Message);
-
-            // UTC DateTime works.
+            
             setValue(obj, DateTime.UtcNow);
             var bin = binary.ToBinary<IBinaryObject>(obj);
             var res = bin.Deserialize<T>();
+
+            Assert.AreEqual(getValue(obj), getValue(res));
+            Assert.AreEqual(getValue(obj), bin.GetField<DateTime>(fieldName));
+            Assert.AreEqual("Timestamp", bin.GetBinaryType().GetFieldTypeName(fieldName));
+
+            // UTC DateTime works.
+            setValue(obj, DateTime.UtcNow);
+            bin = binary.ToBinary<IBinaryObject>(obj);
+            res = bin.Deserialize<T>();
 
             Assert.AreEqual(getValue(obj), getValue(res));
             Assert.AreEqual(getValue(obj), bin.GetField<DateTime>(fieldName));
