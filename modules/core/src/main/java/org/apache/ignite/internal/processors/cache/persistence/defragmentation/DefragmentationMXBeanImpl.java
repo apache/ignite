@@ -35,8 +35,7 @@ public class DefragmentationMXBeanImpl implements DefragmentationMXBean {
         this.defragmentation = ctx.defragmentation();
     }
 
-    /** {@inheritDoc}
-     * @return*/
+    /** {@inheritDoc} */
     @Override public boolean schedule(String cacheNames) {
         final List<String> caches = Arrays.stream(cacheNames.split(","))
             .filter(s -> !s.isEmpty())
@@ -52,8 +51,7 @@ public class DefragmentationMXBeanImpl implements DefragmentationMXBean {
         }
     }
 
-    /** {@inheritDoc}
-     * @return*/
+    /** {@inheritDoc} */
     @Override public boolean cancel() {
         try {
             defragmentation.cancel();
@@ -65,18 +63,22 @@ public class DefragmentationMXBeanImpl implements DefragmentationMXBean {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public boolean inProgress() {
         return defragmentation.inProgress();
     }
 
+    /** {@inheritDoc} */
     @Override public int processedPartitions() {
         return defragmentation.processedPartitions();
     }
 
+    /** {@inheritDoc} */
     @Override public int totalPartitions() {
         return defragmentation.totalPartitions();
     }
 
+    /** {@inheritDoc} */
     @Override public long startTime() {
         return defragmentation.startTime();
     }
