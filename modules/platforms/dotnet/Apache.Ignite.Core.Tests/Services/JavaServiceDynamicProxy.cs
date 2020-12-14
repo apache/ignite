@@ -344,6 +344,12 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
+        public void testDateFromCache2()
+        {
+            _svc.testDateFromCache2();
+        }
+
+        /** <inheritDoc /> */
         public void sleep(long delayMs)
         {
             _svc.sleep(delayMs);

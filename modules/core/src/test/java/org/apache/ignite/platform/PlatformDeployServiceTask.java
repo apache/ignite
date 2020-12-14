@@ -519,6 +519,16 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             assertEquals(new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()), cache.get(2));
         }
 
+        public void testDateFromCache2() {
+            IgniteCache<Integer, Timestamp> cache = ignite.cache("net-dates");
+
+            cache.put(7, new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()));
+            cache.put(8, new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()));
+
+            assertEquals(new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()), cache.get(5));
+            assertEquals(new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()), cache.get(6));
+        }
+
         /** */
         public void sleep(long delayMs) {
             try {

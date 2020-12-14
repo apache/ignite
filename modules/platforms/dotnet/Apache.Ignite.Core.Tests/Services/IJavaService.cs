@@ -182,6 +182,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         void testDateFromCache();
+
+        /** */
+        void testDateFromCache2();
         
         /** */
         void sleep(long delayMs);
