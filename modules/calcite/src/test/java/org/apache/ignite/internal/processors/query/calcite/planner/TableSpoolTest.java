@@ -24,7 +24,6 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
@@ -33,20 +32,19 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.apache.calcite.tools.Frameworks.createRootSchema;
 
 /**
  *
  */
-//@WithSystemProperty(key = "calcite.debug", value = "true")
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class TableSpoolTest extends AbstractPlannerTest {
     /**
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13744")
     public void tableSpoolDistributed() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
@@ -107,6 +105,7 @@ public class TableSpoolTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13744")
     public void tableSpoolBroadcastNotRewindable() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
@@ -169,6 +168,7 @@ public class TableSpoolTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13744")
     public void indexSpool() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 

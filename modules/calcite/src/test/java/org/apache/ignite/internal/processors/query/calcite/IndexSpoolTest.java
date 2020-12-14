@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -46,7 +47,7 @@ import static org.junit.Assert.assertThat;
  * IndexSpool test.
  */
 @RunWith(Parameterized.class)
-public class TableSpoolTest extends GridCommonAbstractTest {
+public class IndexSpoolTest extends GridCommonAbstractTest {
     /** Rows. */
     private static final int[] ROWS = {1, 10, 512, 513, 2000};
 
@@ -114,14 +115,12 @@ public class TableSpoolTest extends GridCommonAbstractTest {
             .setCacheConfiguration(
                 new CacheConfiguration<>(part0.getTableName())
                     .setAffinity(new RendezvousAffinityFunction(false, 8))
-                    .setCacheMode(CacheMode.REPLICATED)
-//                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setCacheMode(CacheMode.PARTITIONED)
                     .setQueryEntities(singletonList(part0))
                     .setSqlSchema("PUBLIC"),
                 new CacheConfiguration<>(part1.getTableName())
                     .setAffinity(new RendezvousAffinityFunction(false, 8))
-                    .setCacheMode(CacheMode.REPLICATED)
-//                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setCacheMode(CacheMode.PARTITIONED)
                     .setQueryEntities(singletonList(part1))
                     .setSqlSchema("PUBLIC")
             );
@@ -137,7 +136,7 @@ public class TableSpoolTest extends GridCommonAbstractTest {
         List<FieldsQueryCursor<List<?>>> cursors = engine.query(
             null,
             "PUBLIC",
-            "SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter') */" +
+            "SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */" +
                 "T0.val, T1.val FROM TEST0 as T0 " +
                 "JOIN TEST1 as T1 on T0.jid = T1.jid ",
             X.EMPTY_OBJECT_ARRAY

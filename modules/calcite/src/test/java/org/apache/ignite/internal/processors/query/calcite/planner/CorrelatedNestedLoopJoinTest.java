@@ -17,26 +17,32 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import org.apache.calcite.plan.RelOptUtil;
+import java.util.List;
+
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexFieldAccess;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
  *
  */
-//@WithSystemProperty(key = "calcite.debug", value = "true")
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
     /**
-     * @throws Exception If failed.
+     * Check equi-join. CorrelatedNestedLoopJoinTest is applicable for it.
      */
     @Test
     public void testValidIndexExpressions() throws Exception {
@@ -53,7 +59,141 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
                     .build()) {
 
                 @Override public IgniteDistribution distribution() {
-//                    return IgniteDistributions.broadcast();
+                    return IgniteDistributions.broadcast();
+                }
+            }
+                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t0_jid_idx")
+        );
+
+        publicSchema.addTable(
+            "T1",
+            new TestTable(
+                new RelDataTypeFactory.Builder(f)
+                    .add("ID", f.createJavaType(Integer.class))
+                    .add("JID", f.createJavaType(Integer.class))
+                    .add("VAL", f.createJavaType(String.class))
+                    .build()) {
+
+                @Override public IgniteDistribution distribution() {
+                    return IgniteDistributions.broadcast();
+                }
+            }
+                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid_idx")
+        );
+
+        String sql = "select * " +
+            "from t0 " +
+            "join t1 on t0.jid = t1.jid";
+
+        IgniteRel phys = physicalPlan(
+            sql,
+            publicSchema,
+            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule"
+        );
+
+        assertNotNull(phys);
+
+        checkSplitAndSerialization(phys, publicSchema);
+
+        IgniteIndexScan idxScan = findFirstNode(phys, byClass(IgniteIndexScan.class));
+
+        List<RexNode> lBound = idxScan.lowerBound();
+
+        assertNotNull(lBound);
+        assertEquals(3, lBound.size());
+
+        assertTrue(((RexLiteral)lBound.get(0)).isNull());
+        assertTrue(((RexLiteral)lBound.get(2)).isNull());
+        assertTrue(lBound.get(1) instanceof RexFieldAccess);
+
+        List<RexNode> uBound = idxScan.upperBound();
+
+        assertNotNull(uBound);
+        assertEquals(3, uBound.size());
+
+        assertTrue(((RexLiteral)uBound.get(0)).isNull());
+        assertTrue(((RexLiteral)uBound.get(2)).isNull());
+        assertTrue(uBound.get(1) instanceof RexFieldAccess);
+    }
+
+    /**
+     * Check join with not equi condition.
+     * Current implementation of the CorrelatedNestedLoopJoinTest is not applicable for such case.
+     */
+    @Test
+    public void testInvalidIndexExpressions() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        publicSchema.addTable(
+            "T0",
+            new TestTable(
+                new RelDataTypeFactory.Builder(f)
+                    .add("ID", f.createJavaType(Integer.class))
+                    .add("JID", f.createJavaType(Integer.class))
+                    .add("VAL", f.createJavaType(String.class))
+                    .build()) {
+
+                @Override public IgniteDistribution distribution() {
+                    return IgniteDistributions.broadcast();
+                }
+            }
+                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t0_jid_idx")
+        );
+
+        publicSchema.addTable(
+            "T1",
+            new TestTable(
+                new RelDataTypeFactory.Builder(f)
+                    .add("ID", f.createJavaType(Integer.class))
+                    .add("JID", f.createJavaType(Integer.class))
+                    .add("VAL", f.createJavaType(String.class))
+                    .build()) {
+
+                @Override public IgniteDistribution distribution() {
+                    return IgniteDistributions.broadcast();
+                }
+            }
+                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid_idx")
+        );
+
+        String sql = "select * " +
+            "from t0 " +
+            "join t1 on t0" +
+            ".jid > t1.jid";
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> {
+                physicalPlan(
+                    sql,
+                    publicSchema,
+                    "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule"
+                );
+
+                return null;
+            },
+            RelOptPlanner.CannotPlanException.class,
+            "There are not enough rules to produce a node with desired properties");
+    }
+
+    /**
+     * Check equi-join on not collocated fields.
+     * CorrelatedNestedLoopJoinTest isn't applicable for this case without IndexSpool.
+     */
+    @Test
+    public void testInvalidDistribution() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        publicSchema.addTable(
+            "T0",
+            new TestTable(
+                new RelDataTypeFactory.Builder(f)
+                    .add("ID", f.createJavaType(Integer.class))
+                    .add("JID", f.createJavaType(Integer.class))
+                    .add("VAL", f.createJavaType(String.class))
+                    .build()) {
+
+                @Override public IgniteDistribution distribution() {
                     return IgniteDistributions.affinity(0, "T0", "hash");
                 }
             }
@@ -70,7 +210,6 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
                     .build()) {
 
                 @Override public IgniteDistribution distribution() {
-//                    return IgniteDistributions.broadcast();
                     return IgniteDistributions.affinity(0, "T1", "hash");
                 }
             }
@@ -81,20 +220,16 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
             "from t0 " +
             "join t1 on t0.jid = t1.jid";
 
-        IgniteRel phys = physicalPlan(sql, publicSchema, "MergeJoinConverter", "NestedLoopJoinConverter");
-//        RelNode phys = physicalPlan(sql, publicSchema, "MergeJoinConverter");
-//        RelNode phys = physicalPlan(sql, publicSchema);
+        GridTestUtils.assertThrowsAnyCause(log, () -> {
+                physicalPlan(
+                    sql,
+                    publicSchema,
+                    "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule"
+                );
 
-        assertNotNull(phys);
-
-        System.out.println("+++" + RelOptUtil.toString(phys));
-
-//        IgniteIndexScan idxScan = findFirstNode(phys, byClass(IgniteIndexScan.class));
-//
-//        List<RexNode> lBound = idxScan.lowerBound();
-//
-        System.out.println();
-
-        checkSplitAndSerialization(phys, publicSchema);
+                return null;
+            },
+            RelOptPlanner.CannotPlanException.class,
+            "There are not enough rules to produce a node with desired properties");
     }
 }

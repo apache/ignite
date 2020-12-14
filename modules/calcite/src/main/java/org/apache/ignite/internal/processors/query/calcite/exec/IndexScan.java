@@ -56,7 +56,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Scan on index.
  */
-public class IndexScan<Row> extends AbstractIndexScan<Row, H2Row> implements Iterable<Row>, AutoCloseable {
+public class IndexScan<Row> extends AbstractIndexScan<Row, H2Row> {
     /** */
     private final GridKernalContext kctx;
 

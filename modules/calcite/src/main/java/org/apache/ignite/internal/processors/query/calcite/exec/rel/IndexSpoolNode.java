@@ -18,34 +18,28 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Comparator;
-import java.util.TreeMap;
 import java.util.function.Supplier;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeTreeIndex;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Index spool node.
  */
 public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
-    /** How many rows are requested by downstream. */
+    /** Scan. */
+    private ScanNode<Row> scan;
+
+    /** Runtime index */
+    private RuntimeTreeIndex<Row> idx;
+
+    /** */
     private int requested;
 
-    /** How many rows are we waiting for from the upstream. {@code -1} means end of source stream. */
+    /** */
     private int waiting;
-
-    /** Index of the current row to push. */
-    private int rowIdx;
-
-    /** Rows buffer. */
-    private final TreeMap<Row, Boolean> idx;
-
-    /**
-     * Flag indicates that spool pushes row to downstream.
-     * Need to check a case when a downstream produces requests on push.
-     */
-    private boolean inLoop;
 
     /**
      * @param ctx Execution context.
@@ -59,13 +53,29 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     ) {
         super(ctx, rowType);
 
-        idx = new TreeMap<>(comp);
+        idx = new RuntimeTreeIndex<>(ctx, comp);
+
+        scan = new ScanNode<>(
+            ctx,
+            rowType,
+            idx.scan(
+                ctx,
+                rowType,
+                idx,
+                null,
+                lowerIdxConditions,
+                upperIdxConditions
+            )
+        );
+
+        FakeNode fakeNode = new FakeNode(ctx, rowType);
+
+        fakeNode.register(scan);
     }
 
     /** {@inheritDoc} */
     @Override protected void rewindInternal() {
-        requested = 0;
-        rowIdx = 0;
+        scan.rewind();
     }
 
     /** {@inheritDoc} */
@@ -86,64 +96,35 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0;
 
-        try {
-            checkState();
+        if (!indexReady()) {
+            requested = rowsCnt;
 
-            requested += rowsCnt;
-
-            if (waiting == -1 && !inLoop)
-                context().execute(this::doPush);
-            else if (waiting == 0)
-                source().request(waiting = IN_BUFFER_SIZE);
+            requestSource();
         }
-        catch (Exception e) {
-            onError(e);
-        }
+        else
+            scan.request(rowsCnt);
     }
 
     /** */
-    private void doPush() {
-        if (rowIdx >= idx.size() && waiting == -1 && requested > 0) {
-            downstream().end();
+    private void requestSource() {
+        waiting = IN_BUFFER_SIZE;
 
-            return;
-        }
-
-        while (requested > 0 && rowIdx < idx.size())
-            pushToDownstream();
-    }
-
-    /** */
-    private void pushToDownstream() {
-        inLoop = true;
-
-//        downstream().push(idx.get(rowIdx));
-
-        inLoop = false;
-
-        requested--;
-
-//        if (rowIdx >= rows.size() && waiting == -1 && requested > 0)
-//            downstream().end();
+        source().request(IN_BUFFER_SIZE);
     }
 
     /** {@inheritDoc} */
     @Override public void push(Row row) {
         assert downstream() != null;
-        assert waiting > 0;
 
         try {
             checkState();
 
+            idx.push(row);
+
             waiting--;
 
-            idx.put(row, Boolean.FALSE);
-
             if (waiting == 0)
-                source().request(waiting = IN_BUFFER_SIZE);
-
-            if (requested > 0 && rowIdx < idx.size())
-                pushToDownstream();
+                context().execute(this::requestSource);
         }
         catch (Exception e) {
             onError(e);
@@ -153,18 +134,69 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     /** {@inheritDoc} */
     @Override public void end() {
         assert downstream() != null;
-        assert waiting > 0;
 
         try {
             checkState();
 
             waiting = -1;
 
-//            if (rowIdx >= rows.size() && requested > 0)
-//                downstream().end();
+            scan.request(requested);
         }
         catch (Exception e) {
             downstream().onError(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void closeInternal() {
+        try {
+            idx.close();
+        }
+        catch (Exception ex) {
+            onError(ex);
+        }
+
+        super.closeInternal();
+    }
+
+    /** */
+    private boolean indexReady() {
+        return waiting == -1;
+    }
+
+    /** */
+    private class FakeNode extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+        /**
+         * @param ctx Execution context.
+         * @param rowType rowType.
+         */
+        protected FakeNode(ExecutionContext<Row> ctx, RelDataType rowType) {
+            super(ctx, rowType);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void rewindInternal() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Downstream<Row> requestDownstream(int idx) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void push(Row row) {
+            IndexSpoolNode.this.downstream().push(row);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void end() {
+            IndexSpoolNode.this.downstream().end();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void request(int rowsCnt) {
+            throw new UnsupportedOperationException();
         }
     }
 }

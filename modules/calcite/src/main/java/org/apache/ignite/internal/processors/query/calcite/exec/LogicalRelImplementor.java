@@ -371,11 +371,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         assert rel.indexCondition() != null : rel;
 
-        List<RexNode> lowerCond = rel.indexCondition().lowerBound();
-        List<RexNode> upperCond = rel.indexCondition().upperBound();
+        List<RexNode> lowerBound = rel.indexCondition().lowerBound();
+        List<RexNode> upperBound = rel.indexCondition().upperBound();
 
-        Supplier<Row> lower = lowerCond == null ? null : expressionFactory.rowSource(lowerCond);
-        Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
+        Supplier<Row> lower = lowerBound == null ? null : expressionFactory.rowSource(lowerBound);
+        Supplier<Row> upper = upperBound == null ? null : expressionFactory.rowSource(upperBound);
 
         IndexSpoolNode<Row> node = new IndexSpoolNode<>(
             ctx,

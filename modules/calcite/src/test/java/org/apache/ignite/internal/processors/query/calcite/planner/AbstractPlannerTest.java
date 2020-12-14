@@ -260,8 +260,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             try {
                 IgniteRel res = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
-                System.out.println("+++\n" + planner.dump());
-
                 return res;
             }
             catch (Throwable ex) {

@@ -49,12 +49,10 @@ public class IgniteTableSpool extends Spool implements IgniteRel {
      * @param input Serialized representation.
      */
     public IgniteTableSpool(RelInput input) {
-        super(
+        this(
             changeTraits(input, IgniteConvention.INSTANCE).getCluster(),
             changeTraits(input, IgniteConvention.INSTANCE).getTraitSet(),
-            changeTraits(input, IgniteConvention.INSTANCE).getInput(),
-            changeTraits(input, IgniteConvention.INSTANCE).getEnum("readType", Type.class),
-            changeTraits(input, IgniteConvention.INSTANCE).getEnum("writeType", Type.class)
+            changeTraits(input, IgniteConvention.INSTANCE).getInput()
         );
     }
 
