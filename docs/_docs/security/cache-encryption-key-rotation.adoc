@@ -89,7 +89,7 @@ include::{javaCodeDir}/TDE.java[tags=cache-group-key-rotation, indent=0]
 ----
 --
 
-== Managing the re-encryption process
+== Managing re-encryption
 
 Re-encrypting existing data can take a long time. This is a fault-tolerant operation that automatically continues after a node restart.
 The previous encryption key is automatically removed when all local partitions are encrypted with the new key, and the last link:persistence/native-persistence#write-ahead-log[Write-Ahead Log] segment, which may contain entries encrypted with the previous key, is removed from disk.
