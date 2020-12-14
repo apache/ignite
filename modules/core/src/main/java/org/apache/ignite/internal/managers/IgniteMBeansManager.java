@@ -38,6 +38,7 @@ import org.apache.ignite.internal.TransactionMetricsMxBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.managers.encryption.EncryptionMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpMXBeanImpl;
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanImpl;
@@ -51,6 +52,7 @@ import org.apache.ignite.mxbean.BaselineAutoAdjustMXBean;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.mxbean.DataStorageMXBean;
+import org.apache.ignite.mxbean.DefragmentationMXBean;
 import org.apache.ignite.mxbean.EncryptionMXBean;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
@@ -184,6 +186,10 @@ public class IgniteMBeansManager {
         // Snapshot.
         SnapshotMXBean snpMXBean = new SnapshotMXBeanImpl(ctx);
         registerMBean("Snapshot", snpMXBean.getClass().getSimpleName(), snpMXBean, SnapshotMXBean.class);
+
+        // Defragmentation.
+        DefragmentationMXBean defragMXBean = new DefragmentationMXBeanImpl(ctx);
+        registerMBean("Defragmentation", defragMXBean.getClass().getSimpleName(), defragMXBean, DefragmentationMXBean.class);
 
         // Metrics configuration
         MetricsMxBean metricsMxBean = new MetricsMxBeanImpl(ctx.metric(), log);

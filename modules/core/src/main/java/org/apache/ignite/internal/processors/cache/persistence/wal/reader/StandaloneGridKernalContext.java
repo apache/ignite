@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.authentication.IgniteAuthentication
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -487,6 +488,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridEncryptionManager encryption() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteDefragmentation defragmentation() {
         return null;
     }
 

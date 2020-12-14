@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -451,6 +452,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Encryption manager.
      */
     public GridEncryptionManager encryption();
+
+    /**
+     * Gets defragmentation manager.
+     *
+     * @return Defragmentation manager.
+     */
+    public IgniteDefragmentation defragmentation();
 
     /**
      * Gets workers registry.
