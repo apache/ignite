@@ -169,31 +169,46 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     public static final Pattern WAL_TEMP_NAME_PATTERN = Pattern.compile("\\d{16}\\.wal\\.tmp");
 
     /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
-    public static final FileFilter WAL_SEGMENT_FILE_FILTER = file -> !file.isDirectory() &&
-        WAL_NAME_PATTERN.matcher(file.getName()).matches();
+    public static final FileFilter WAL_SEGMENT_FILE_FILTER = new FileFilter() {
+        @Override public boolean accept(File file) {
+            return !file.isDirectory() && WAL_NAME_PATTERN.matcher(file.getName()).matches();
+        }
+    };
 
     /** WAL segment temporary file filter, see {@link #WAL_TEMP_NAME_PATTERN} */
-    private static final FileFilter WAL_SEGMENT_TEMP_FILE_FILTER = file -> !file.isDirectory() &&
-        WAL_TEMP_NAME_PATTERN.matcher(file.getName()).matches();
+    private static final FileFilter WAL_SEGMENT_TEMP_FILE_FILTER = new FileFilter() {
+        @Override public boolean accept(File file) {
+            return !file.isDirectory() && WAL_TEMP_NAME_PATTERN.matcher(file.getName()).matches();
+        }
+    };
 
     /** */
     public static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = Pattern.compile("\\d{16}\\.wal\\.zip");
 
     /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
-    public static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = file -> !file.isDirectory() &&
-        (WAL_NAME_PATTERN.matcher(file.getName()).matches() ||
-            WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
+    public static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = new FileFilter() {
+        @Override public boolean accept(File file) {
+            return !file.isDirectory() && (WAL_NAME_PATTERN.matcher(file.getName()).matches() ||
+                WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
+        }
+    };
 
     /** */
     private static final Pattern WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN = Pattern.compile("\\d{16}\\.wal\\.zip\\.tmp");
 
     /** */
-    private static final FileFilter WAL_SEGMENT_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
-        WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
+    private static final FileFilter WAL_SEGMENT_FILE_COMPACTED_FILTER = new FileFilter() {
+        @Override public boolean accept(File file) {
+            return !file.isDirectory() && WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
+        }
+    };
 
     /** */
-    private static final FileFilter WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
-        WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
+    private static final FileFilter WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER = new FileFilter() {
+        @Override public boolean accept(File file) {
+            return !file.isDirectory() && WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
+        }
+    };
 
     /** Buffer size. */
     private static final int BUF_SIZE = 1024 * 1024;
@@ -3123,7 +3138,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @throws IgniteCheckedException If failed.
      */
     private void cleanWalArchive(long nextArchiveSegmentSize) throws IgniteCheckedException {
-        if (maxWalArchiveSize == Long.MAX_VALUE ||
+        if (maxWalArchiveSize == DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE ||
             walArchiveSize.get() + reservedWalArchiveSize.get() + nextArchiveSegmentSize < maxWalArchiveSize)
             return;
 
