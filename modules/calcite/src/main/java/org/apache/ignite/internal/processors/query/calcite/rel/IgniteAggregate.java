@@ -86,8 +86,6 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
 
         RelTraitSet in = inputTraits.get(0);
 
-        List<Pair<RelTraitSet, List<RelTraitSet>>> res = new ArrayList<>();
-
         IgniteDistribution distribution = TraitUtils.distribution(nodeTraits);
 
         RelDistribution.Type distrType = distribution.getType();
@@ -95,19 +93,17 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
         switch (distrType) {
             case SINGLETON:
             case BROADCAST_DISTRIBUTED:
-                res.add(Pair.of(nodeTraits, ImmutableList.of(in.replace(distribution))));
-
                 if (isSimple(this))
-                    res.add(Pair.of(nodeTraits, ImmutableList.of(in.replace(random())))); // Map-reduce aggregate
+                    return Pair.of(nodeTraits, ImmutableList.of(in.replace(random()))); // Map-reduce aggregate
 
-                break;
+                return Pair.of(nodeTraits, ImmutableList.of(in.replace(distribution)));
 
             case RANDOM_DISTRIBUTED:
                 if (!groupSet.isEmpty() && isSimple(this)) {
                     IgniteDistribution outDistr = hash(range(0, groupSet.cardinality()));
                     IgniteDistribution inDistr = hash(groupSet.asList());
 
-                    res.add(Pair.of(nodeTraits.replace(outDistr), ImmutableList.of(in.replace(inDistr))));
+                    return Pair.of(nodeTraits.replace(outDistr), ImmutableList.of(in.replace(inDistr)));
                 }
 
                 break;
@@ -130,11 +126,8 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
                         srcKeys.add(src);
                     }
 
-                    if (srcKeys.size() == keys.size()) {
-                        res.add(Pair.of(nodeTraits, ImmutableList.of(in.replace(hash(srcKeys, distribution.function())))));
-
-                        break;
-                    }
+                    if (srcKeys.size() == keys.size())
+                        return Pair.of(nodeTraits, ImmutableList.of(in.replace(hash(srcKeys, distribution.function()))));
                 }
 
                 break;
@@ -142,10 +135,6 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
             default:
                 break;
         }
-
-        // TODO: fix it
-//        if (!res.isEmpty())
-//            return res;
 
         return Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single())));
     }
