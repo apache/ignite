@@ -1066,6 +1066,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 return deleted;
 
             if (desc.idx < high.index()) {
+                long len = desc.file.length();
+
                 if (!desc.file.delete()) {
                     U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                         desc.file.getAbsolutePath());
@@ -3147,7 +3149,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             ((GridCacheDatabaseSharedManager)cctx.database()).onWalTruncated(highPtr);
 
-            int truncated = truncate(null, highPtr);
+            int truncated = truncate(highPtr);
 
             if (log.isInfoEnabled()) {
                 log.info("Cleaning WAL archive completed [highIdx=" + high.idx
