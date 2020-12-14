@@ -941,8 +941,8 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc.testNull(null));
 
             // params / varargs
-            Assert.AreEqual(5, svc.testParams(1, 2, 3, 4, "5")); //?
-            Assert.AreEqual(0, svc.testParams()); //?
+            Assert.AreEqual(5, svc.testParams(1, 2, 3, 4, "5"));
+            Assert.AreEqual(0, svc.testParams());
 
             // Overloads
             Assert.AreEqual(3, svc.test(2, "1"));
