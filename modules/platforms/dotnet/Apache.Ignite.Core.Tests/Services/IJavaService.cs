@@ -179,6 +179,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         DateTime testDate(DateTime date);
+
+        /** */
+        void testDateFromCache();
         
         /** */
         void sleep(long delayMs);

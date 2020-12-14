@@ -39,6 +39,11 @@ namespace Apache.Ignite.Core.Binary
         /// Default <see cref="KeepDeserialized"/> setting.
         /// </summary>
         public const bool DefaultKeepDeserialized = true;
+        
+        /// <summary>
+        /// Default <see cref="ForceTimestamp"/> setting.
+        /// </summary>
+        public const bool DefaultForceTimestamp = false;
 
         /** Footer setting. */
         private bool? _compactFooter;
@@ -49,6 +54,7 @@ namespace Apache.Ignite.Core.Binary
         public BinaryConfiguration()
         {
             KeepDeserialized = DefaultKeepDeserialized;
+            ForceTimestamp = DefaultForceTimestamp;
         }
 
         /// <summary>
@@ -72,6 +78,7 @@ namespace Apache.Ignite.Core.Binary
             IdMapper = cfg.IdMapper;
             NameMapper = cfg.NameMapper;
             KeepDeserialized = cfg.KeepDeserialized;
+            ForceTimestamp = cfg.ForceTimestamp;
 
             if (cfg.Serializer != null)
             {
@@ -159,5 +166,10 @@ namespace Apache.Ignite.Core.Binary
         {
             get { return _compactFooter; }
         }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether all DateTime values should be written as Timestamp.
+        /// </summary>
+        public bool ForceTimestamp { get; set; }
     }
 }

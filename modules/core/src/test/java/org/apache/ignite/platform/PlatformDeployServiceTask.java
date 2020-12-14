@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cluster.ClusterNode;
@@ -506,6 +507,16 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             assertEquals(new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()), date);
 
             return new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime());
+        }
+
+        public void testDateFromCache() {
+            IgniteCache<Integer, Timestamp> cache = ignite.cache("net-dates");
+
+            cache.put(3, new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()));
+            cache.put(4, new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()));
+
+            assertEquals(new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()), cache.get(1));
+            assertEquals(new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()), cache.get(2));
         }
 
         /** */

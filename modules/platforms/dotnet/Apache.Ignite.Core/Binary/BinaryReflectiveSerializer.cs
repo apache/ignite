@@ -46,6 +46,7 @@ namespace Apache.Ignite.Core.Binary
         private bool _isInUse;
 
         /** Force timestamp flag. */
+        [Obsolete("Deprecated, use BinaryConfiguration.ForceTimestamp instead.")]
         private bool _forceTimestamp;
 
         /// <summary>

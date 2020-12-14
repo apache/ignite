@@ -702,7 +702,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return new SerializableSerializer(type);
                 }
 
-                serializer = new BinaryReflectiveSerializer();
+                serializer = new BinaryReflectiveSerializer() {ForceTimestamp = cfg.ForceTimestamp};
             }
 
             var refSerializer = serializer as BinaryReflectiveSerializer;
@@ -949,6 +949,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static IBinaryNameMapper GetDefaultNameMapper()
         {
             return BinaryBasicNameMapper.FullNameInstance;
+        }
+
+        /// <summary>
+        /// Gets force timestamp flag value.
+        /// </summary>
+        public bool ForceTimestamp()
+        {
+            return _cfg.ForceTimestamp;
         }
     }
 }

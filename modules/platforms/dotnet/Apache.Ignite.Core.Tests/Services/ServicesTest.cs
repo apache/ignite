@@ -860,11 +860,50 @@ namespace Apache.Ignite.Core.Tests.Services
             var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
                 .GetServiceProxy<IJavaService>(javaSvcName, false);
 
+            DoTestService(svc, binSvc);
+
+            // Binary collections
+            var arr  = new[] {10, 11, 12}.Select(
+                x => new PlatformComputeBinarizable {Field = x}).ToArray();
+
+            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
+
+            // Binary object array.
+            var binArr = arr.Select(Grid1.GetBinary().ToBinary<IBinaryObject>).ToArray();
+
+            Assert.AreEqual(new[] {11, 12, 13}, binSvc.testBinaryObjectArray(binArr)
+                .Select(x => x.GetField<int>("Field")));
+
+            Services.Cancel(javaSvcName);
+        }
+
+        /// <summary>
+        /// Tests Java service invocation with dynamic proxy.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceDynamicProxy()
+        {
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(Grid1);
+            var svc = Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
+
+            // Binary object
+            var binSvc = Services.WithKeepBinary().WithServerKeepBinary().GetDynamicServiceProxy(javaSvcName);
+
+            DoTestService(new JavaServiceDynamicProxy(svc), new JavaServiceDynamicProxy(binSvc));
+        }
+
+        /// <summary>
+        /// Tests java service instance.
+        /// </summary>
+        private void DoTestService(IJavaService svc, IJavaService binSvc)
+        {
             // Basics
             Assert.IsTrue(svc.isInitialized());
             Assert.IsTrue(TestUtils.WaitForCondition(() => svc.isExecuted(), 500));
             Assert.IsFalse(svc.isCancelled());
-
+            
             // Primitives
             Assert.AreEqual(4, svc.test((byte) 3));
             Assert.AreEqual(5, svc.test((short) 4));
@@ -902,8 +941,8 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc.testNull(null));
 
             // params / varargs
-            Assert.AreEqual(5, svc.testParams(1, 2, 3, 4, "5"));
-            Assert.AreEqual(0, svc.testParams());
+            Assert.AreEqual(5, svc.testParams(1, 2, 3, 4, "5")); //?
+            Assert.AreEqual(0, svc.testParams()); //?
 
             // Overloads
             Assert.AreEqual(3, svc.test(2, "1"));
@@ -911,24 +950,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Binary
             Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable {Field = 6}).Field);
-
-            // Binary collections
-            var arr  = new[] {10, 11, 12}.Select(
-                x => new PlatformComputeBinarizable {Field = x}).ToArray();
-            var arrOfObj = arr.ToArray<object>();
-
-            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
-                .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
-
-            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArrayOfObjects(arrOfObj)
-                .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
-
-            Assert.IsNull(svc.testBinarizableArrayOfObjects(null));
-
-            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArray(arr)
-                .Select(x => x.Field));
-
-            Assert.IsNull(svc.testBinarizableArray(null));
 
             // Binary object
             Assert.AreEqual(15,
@@ -950,99 +971,35 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc.testNullUUID(null));
             Assert.AreEqual(guid, svc.testArray(new Guid?[] {guid})[0]);
 
-            // Binary object array.
-            var binArr = arr.Select(Grid1.GetBinary().ToBinary<IBinaryObject>).ToArray();
+            // Binary collections
+            var arr  = new[] {10, 11, 12}.Select(
+                x => new PlatformComputeBinarizable {Field = x}).ToArray();
+            var arrOfObj = arr.ToArray<object>();
 
-            Assert.AreEqual(new[] {11, 12, 13}, binSvc.testBinaryObjectArray(binArr)
-                .Select(x => x.GetField<int>("Field")));
+            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArrayOfObjects(arrOfObj)
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
 
-            DateTime input = new DateTime(1982, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            DateTime expected = new DateTime(1991, 10, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            Assert.IsNull(svc.testBinarizableArrayOfObjects(null));
 
-            Assert.AreEqual(expected, svc.testDate(input));
+            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArray(arr)
+                .Select(x => x.Field));
 
-            Services.Cancel(javaSvcName);
-        }
+            Assert.IsNull(svc.testBinarizableArray(null));
 
-        /// <summary>
-        /// Tests Java service invocation with dynamic proxy.
-        /// </summary>
-        [Test]
-        public void TestCallJavaServiceDynamicProxy()
-        {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(Grid1);
-            var svc = Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
+            DateTime dt1 = new DateTime(1982, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            DateTime dt2 = new DateTime(1991, 10, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
-            // Basics
-            Assert.IsTrue(svc.isInitialized());
-            Assert.IsTrue(TestUtils.WaitForCondition(() => svc.isExecuted(), 500));
-            Assert.IsFalse(svc.isCancelled());
+            Assert.AreEqual(dt2, svc.testDate(dt1));
 
-            // Primitives
-            Assert.AreEqual(4, svc.test((byte)3));
-            Assert.AreEqual(5, svc.test((short)4));
-            Assert.AreEqual(6, svc.test(5));
-            Assert.AreEqual(6, svc.test((long)5));
-            Assert.AreEqual(3.8f, svc.test(2.3f));
-            Assert.AreEqual(5.8, svc.test(3.3));
-            Assert.IsFalse(svc.test(true));
-            Assert.AreEqual('b', svc.test('a'));
-            Assert.AreEqual("Foo!", svc.test("Foo"));
+            var cache = Grid1.GetOrCreateCache<int, DateTime>("net-dates");
 
-            // Nullables (Java wrapper types)
-            Assert.AreEqual(4, svc.testWrapper(3));
-            Assert.AreEqual(5, svc.testWrapper((short?)4));
-            Assert.AreEqual(6, svc.testWrapper((int?)5));
-            Assert.AreEqual(6, svc.testWrapper((long?)5));
-            Assert.AreEqual(3.8f, svc.testWrapper(2.3f));
-            Assert.AreEqual(5.8, svc.testWrapper(3.3));
-            Assert.AreEqual(false, svc.testWrapper(true));
-            Assert.AreEqual('b', svc.testWrapper('a'));
+            cache.Put(1, dt1);
+            cache.Put(2, dt2);
 
-            // Arrays
-            Assert.AreEqual(new byte[] { 2, 3, 4 }, svc.testArray(new byte[] { 1, 2, 3 }));
-            Assert.AreEqual(new short[] { 2, 3, 4 }, svc.testArray(new short[] { 1, 2, 3 }));
-            Assert.AreEqual(new[] { 2, 3, 4 }, svc.testArray(new[] { 1, 2, 3 }));
-            Assert.AreEqual(new long[] { 2, 3, 4 }, svc.testArray(new long[] { 1, 2, 3 }));
-            Assert.AreEqual(new float[] { 2, 3, 4 }, svc.testArray(new float[] { 1, 2, 3 }));
-            Assert.AreEqual(new double[] { 2, 3, 4 }, svc.testArray(new double[] { 1, 2, 3 }));
-            Assert.AreEqual(new[] { "a1", "b1" }, svc.testArray(new[] { "a", "b" }));
-            Assert.AreEqual(new[] { 'c', 'd' }, svc.testArray(new[] { 'b', 'c' }));
-            Assert.AreEqual(new[] { false, true, false }, svc.testArray(new[] { true, false, true }));
+            svc.testDateFromCache();
 
-            // Nulls
-            Assert.AreEqual(9, svc.testNull(8));
-            Assert.IsNull(svc.testNull(null));
-
-            // Overloads
-            Assert.AreEqual(3, svc.test(2, "1"));
-            Assert.AreEqual(3, svc.test("1", 2));
-
-            // Binary
-            Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable { Field = 6 }).Field);
-
-            // Binary object
-            var binSvc = Services.WithKeepBinary().WithServerKeepBinary().GetDynamicServiceProxy(javaSvcName);
-
-            Assert.AreEqual(15,
-                binSvc.testBinaryObject(
-                    Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable { Field = 6 }))
-                    .GetField<int>("Field"));
-
-            DateTime dt = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-
-            Assert.AreEqual(dt, svc.test(dt));
-            Assert.AreEqual(dt, svc.testNullTimestamp(dt));
-            Assert.IsNull(svc.testNullTimestamp(null));
-            Assert.AreEqual(dt, svc.testArray(new DateTime?[] { dt })[0]);
-
-            Guid guid = Guid.NewGuid();
-
-            Assert.AreEqual(guid, svc.test(guid));
-            Assert.AreEqual(guid, svc.testNullUUID(guid));
-            Assert.IsNull(svc.testNullUUID(null));
-            Assert.AreEqual(guid, svc.testArray(new Guid?[] { guid })[0]);
+            Assert.AreEqual(dt1, cache.Get(3));
+            Assert.AreEqual(dt2, cache.Get(4));
         }
 
         /// <summary>
@@ -1119,7 +1076,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 springConfigUrl = Compute.ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
             }
 
-            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = springConfigUrl,
                 BinaryConfiguration = new BinaryConfiguration(
@@ -1128,9 +1085,12 @@ namespace Apache.Ignite.Core.Tests.Services
                     typeof (PlatformComputeBinarizable),
                     typeof (BinarizableObject))
                 {
-                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance,
+                    ForceTimestamp = true
                 }
             };
+
+            return cfg;
         }
 
         /// <summary>
