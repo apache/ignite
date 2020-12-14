@@ -149,7 +149,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.processors.cache.tree.CacheDataTree.asRowData;
-import static org.apache.ignite.internal.util.GridArrays.clearTail;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
@@ -1158,6 +1157,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** */
         int currPageRow = -1;
 
+        /** */
+        int currRowIdx = -1;
+
         /**
          * @param store Store to iterate over.
          */
@@ -1185,17 +1187,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc */
         @Override protected CacheDataRow onNext() throws IgniteCheckedException {
-            return null;
+            if (rows == EMPTY_ROWS || currRowIdx >= rows.length - 1)
+                throw new IgniteCheckedException("Index out of bound [rows=" + Arrays.asList(rows) +
+                    ", rows.len=" + Arrays.asList(rows).size() +
+                    ", currRowIdx=" + currRowIdx + ']');
+
+            return rows[++currRowIdx];
         }
 
         /** {@inheritDoc */
         @Override protected boolean onHasNext() throws IgniteCheckedException {
-            long startPageId = PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, 0);
+            if (rows != EMPTY_ROWS && currRowIdx < rows.length - 1)
+                return true;
+
+            long startPageId = PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, 1);
 
             for (;;) {
-                currPageIdx++;
+                long pageId = startPageId + ++currPageIdx;
 
-                long pageId = startPageId + currPageIdx;
                 boolean skipVer = CacheDataRowStore.getSkipVersion();
 
                 assert !CacheDataRowStore.getSkipVersion();
@@ -1218,19 +1227,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (rowsCnt == 0)
                     continue; // Empty page.
 
-                if (rowsCnt > rows.length)
-                    rows = new CacheDataRow[rowsCnt];
-                else
-                    clearTail(rows, rowsCnt);
+                rows = new CacheDataRow[rowsCnt];
+                currRowIdx = -1;
 
                 int r = 0;
 
                 for (int i = 0; i < rowsCnt; i++) {
                     DataRowPersistenceAdapter row = new DataRowPersistenceAdapter();
 
+                    row.partition(partId);
+
                     row.initFromPageBuffer(
                         new IgniteInClosure2X<Long, ByteBuffer>() {
                             @Override public void applyx(Long nextPageId, ByteBuffer buff) throws IgniteCheckedException {
+                                buff.clear();
+
                                 boolean read = store.read(nextPageId, buff, true);
 
                                 assert read : nextPageId;
@@ -1250,8 +1261,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (r == 0)
                     continue; // No rows fetched in this page.
-
-                currPageIdx = 0;
 
                 return true;
             }

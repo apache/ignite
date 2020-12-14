@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
@@ -42,6 +43,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
  *
  */
 public class DataRowPersistenceAdapter extends DataRow {
+    /**
+     * @param partId Partition id.
+     */
+    public void partition(int partId) {
+        part = partId;
+    }
 
     /**
      * @param incomplete Incomplete object.
@@ -175,6 +182,7 @@ public class DataRowPersistenceAdapter extends DataRow {
         boolean readCacheId,
         boolean skipVer
     ) throws IgniteCheckedException {
+        buff.position(offset);
         int off = offset;
 
 //        off += readHeader(sharedCtx, addr, off, rowData);
@@ -183,7 +191,7 @@ public class DataRowPersistenceAdapter extends DataRow {
             return;
 
         if (readCacheId) {
-            cacheId = buff.getInt(off);
+            cacheId = buff.getInt();
 
             off += 4;
         }
@@ -191,7 +199,7 @@ public class DataRowPersistenceAdapter extends DataRow {
         if (coctx == null)
             coctx = sharedCtx.cacheContext(cacheId).cacheObjectContext();
 
-        int len = buff.getInt(off);
+        int len = buff.getInt();
         off += 4;
 
         if (rowData != RowData.NO_KEY && rowData != RowData.NO_KEY_WITH_HINTS) {
@@ -199,7 +207,7 @@ public class DataRowPersistenceAdapter extends DataRow {
             off++;
 
             byte[] bytes = new byte[len];
-            buff.get(bytes, off, len);
+            buff.get(bytes, 0, len);
 
             off += len;
 
@@ -217,19 +225,47 @@ public class DataRowPersistenceAdapter extends DataRow {
         byte type = buff.get(off);
         off++;
 
+        buff.position(off);
+
         byte[] bytes = new byte[len];
-        buff.get(bytes, off, len);
+        buff.get(bytes, 0, len);
 
         off += len;
 
+        buff.position(off);
+
         val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
 
-        IncompleteObject<?> incomplete = readIncompleteVersion(buff, null, skipVer);
+        int verLen;
 
-        assert skipVer || ver != null || incomplete != null;
+        if (skipVer) {
+            ver = null;
 
-        off += CacheVersionIO.readSize(buff, false);;
+            verLen = CacheVersionIO.readSize(buff, false);
+        }
+        else {
+            ver = CacheVersionIO.read(buff, false);
+
+            verLen = CacheVersionIO.size(ver, false);
+        }
+
+        verReady = true;
+
+        off += verLen;
+
+//        if (!verReady) {
+//            IncompleteObject<?> incomplete = readIncompleteVersion(buff, null, skipVer);
+//
+//            assert skipVer || ver != null || incomplete != null;
+//        }
+//
+//        off += CacheVersionIO.readSize(buff, false);
 
         expireTime = buff.getLong(off);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataRowPersistenceAdapter.class, this, super.toString());
     }
 }
