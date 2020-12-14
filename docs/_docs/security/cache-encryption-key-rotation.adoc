@@ -16,28 +16,28 @@
 
 == Overview
 
-The cache group encryption key is used to encrypt cache data on disk.
-When a new cache starts, a new encryption key is generated and propagated to all server nodes in the cluster. So each node for the same cache group has the same cache encryption key.
-To learn more see the link:security/tde[Transparent Data Encryption] page.
+Cache group encryption key is used to encrypt cache data on disk.
+When a user creates a new encrypted cache, a new encryption key is generated and propagated to all server nodes in the cluster. So, each node for the same cache group has the same cache encryption key.
+See link:security/tde[Transparent Data Encryption] to learn more.
 
 Ignite 2.10 introduces a feature for changing the cache encryption key.
-It allows users to change the encryption key of the cache group and re-encrypt existing data at runtime.
+It allows users to change the cache group encryption key and re-encrypt existing data at runtime.
 
-Rotation of the cache encryption key is required if this key has been compromised or at the end of the crypto period (key validity period).
+Rotation of the cache encryption key is required if this key has been compromised or if the crypto period (key validity period) has ended.
 
-The process of changing the cache encryption key consists of two stages, which are performed sequentially:
+The process of changing the cache encryption key includes two sequential stages:
 
-1. Rotate cache group key, this process adds a new encryption key for the specified cache group(s) on each server node and sets it to write new data.
+1. Rotate cache group key. This process adds a new encryption key for the specified cache group(s) on each server node and sets it to write new data.
 
     Node join during this stage is prohibited and will be rejected.
 
 2. Re-encrypt existing (archived) cache data with the new encryption key.
 
-The second stage can take a long time, which depends on the amount of existing data. During this period the old key will be kept to read the archived data.
-To understand what key the data is encrypted with, each encryption key has an _identifier_. By default it is equal to zero, with each rotation the identifier of the new key is increased.
-The same cache group has the same encryption key (with the same encryption key ID) on all nodes.
+The second stage can take a long time. It depends on the amount of existing data. During this period the old key will be kept to read the archived data.
+To understand what key the data is encrypted with, each encryption key has an _identifier_. By default it is equal to zero. The identifier of the new key increases with each rotation.
+The encryption key (as well as encryption key ID) is the same for all nodes in a cache group.
 
-NOTE: Secondary rotation of the cache encryption key is possible only after a complete change of the encryption key for this cache group (both stages).
+NOTE: Secondary rotation of the cache encryption key is possible only after a complete change of the encryption key for a cache group (both stages).
 
 == Prerequisites
 
@@ -53,12 +53,12 @@ Ignite provides the ability to change the cache encryption key using the followi
 
 === Command line tool
 
-Ignite ships a `control.sh|bat` script, located in the `$IGNITE_HOME/bin` folder, that acts as a tool to manage the
-cache encryption key change process from the command line. The following commands can be used with `control.sh|bat`:
+Ignite shipment includes `control.sh|bat` script, located in the `$IGNITE_HOME/bin` folder, that acts as a tool to manage the
+cache encryption key change process from the command line. The following commands are used with `control.sh|bat`:
 
 [source,shell]
 ----
-# View the encryption key identifiers of the cache group.
+# View the cache group encryption key identifiers.
 control.sh|bat --encryption cache_key_ids cacheGroupName
 
 # Change the cache encryption key.
@@ -77,7 +77,7 @@ You can also change the cache encryption key via the `EncryptionMXBean` interfac
 
 === From code
 
-The cache encryption key change process can be managed programmatically:
+The cache encryption key change process can also be managed programmatically:
 
 [tabs]
 --
@@ -98,7 +98,7 @@ NOTE: Re-encryption uses link:persistence/native-persistence#write-ahead-log[Wri
 
 There are several options to manage the performance impact of re-encryption:
 
-* Limit the rate of re-encryption by using a configuration parameter or by using the CLI at runtime.
+* Limit the re-encryption rate using a configuration parameter or CLI at runtime.
 * Temporarily suspend re-encryption using CLI command.
 
 Ignite 2.10 introduces a new configuration section `EncryptionConfiguration`, that is part of `DatastorageConfiguration`.
@@ -106,24 +106,24 @@ Ignite 2.10 introduces a new configuration section `EncryptionConfiguration`, th
 |===
 |Property | Default value | Description
 |reencryptionRateLimit | 0 (unlimited) | Re-encryption rate limit in megabytes per second.
-|reencryptionBatchSize | 100 | The number of pages that is scanned during re-encryption under checkpoint lock.
+|reencryptionBatchSize | 100 | The number of pages scanned during re-encryption under checkpoint lock.
 |===
 
-=== Using XML configuration to limit re-encryption rate
+=== Using XML configuration to limit the re-encryption rate
 [source, xml]
 ----
 include::code-snippets/xml/tde.xml[tags=ignite-config;!discovery;!encryption;!cache;!discovery, indent=0]
 ----
 
-=== Using CLI to control re-encryption
+=== Using CLI to control re-encryption process
 
-The `control.sh|bat` script provides the ability to change the re-encryption rate, suspend and resume background re-encryption at runtime.
+The `control.sh|bat` script provides the ability to change the re-encryption rate as well as suspend and resume background re-encryption at runtime.
 
-NOTE: After the node restarts, the suspended background re-encryption will continue automatically, and the rate limit will be set from the local XML configuration (if any) or set to unlimited rate (default).
+NOTE: After the node restarts, the suspended background re-encryption will be continued automatically, and the rate limit will be set to 'unlimited' (by default), or taken from the local XML configuration (if any).
 
 [source,shell]
 ----
-# View the re-encryption status of the cache group.
+# View the cache group re-encryption status.
 control.sh|bat --encryption reencryption_status cacheGroupName
 
 # Suspend re-encryption of the cache group.
@@ -138,10 +138,10 @@ control.sh|bat --encryption reencryption_rate_limit
 # Set the re-encryption rate limit to 2.5 MB/s.
 control.sh|bat --encryption reencryption_rate_limit 2.5
 
-# Set re-encryption to an unlimited rate.
+# Set re-encryption rate to 'unlimited' ('0').
 control.sh|bat --encryption reencryption_rate_limit 0
 ----
 
-The re-encryption status can also be obtained using JMX metrics, which are described in the link:monitoring-metrics/new-metrics#cache-groups[Cache group metrics] section.
+The re-encryption status can also be obtained using JMX metrics described in the link:monitoring-metrics/new-metrics#cache-groups[Cache group metrics] section.
 
 
