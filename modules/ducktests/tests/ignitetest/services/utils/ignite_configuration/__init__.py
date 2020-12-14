@@ -41,6 +41,7 @@ class IgniteConfiguration(NamedTuple):
     data_storage: DataStorageConfiguration = None
     caches: list = []
     local_host: str = None
+    metric_exporter: str = None
 
 
 class IgniteClientConfiguration(IgniteConfiguration):

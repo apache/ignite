@@ -62,14 +62,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         self.disconnected_nodes = []
         self.killed = False
 
-    def start_async(self):
+    def start_async(self, clean=True):
         """
         Starts in async way.
         """
-        super().start()
+        super().start(clean=clean)
 
-    def start(self):
-        self.start_async()
+    def start(self, clean=True):
+        self.start_async(clean=clean)
         self.await_started()
 
     def await_started(self):
@@ -351,3 +351,25 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         Reads current netfilter settings on the node for debugging purposes.
         """
         return str(node.account.ssh_client.exec_command("sudo iptables -L -n")[1].read(), sys.getdefaultencoding())
+
+    def restart(self):
+        """
+        Restart ignite cluster without cleaning.
+        """
+        self.stop()
+        self.rotate_log()
+        self.start(clean=False)
+
+    def rotate_log(self):
+        """
+        Rotate log file.
+        """
+        new_log_file = self.STDOUT_STDERR_CAPTURE.replace('.log', '_$N.log')
+
+        for node in self.nodes:
+            node.account.ssh(f'if [ -e {self.STDOUT_STDERR_CAPTURE} ];'
+                             f'then '
+                             f'cd {self.LOGS_DIR};'
+                             f'N=`ls | grep log | wc -l`;'
+                             f'mv {self.STDOUT_STDERR_CAPTURE} {new_log_file};'
+                             f'fi')

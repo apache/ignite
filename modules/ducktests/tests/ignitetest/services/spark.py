@@ -55,8 +55,8 @@ class SparkService(BackgroundThreadService, PersistenceAware):
                 "collect_default": True
             }
 
-    def start(self):
-        BackgroundThreadService.start(self)
+    def start(self, clean=True):
+        BackgroundThreadService.start(self, clean=clean)
 
         self.logger.info("Waiting for Spark to start...")
 

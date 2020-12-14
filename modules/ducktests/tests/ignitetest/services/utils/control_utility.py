@@ -19,10 +19,14 @@ This module contains control utility wrapper.
 
 import random
 import re
+import socket
 import time
+from datetime import datetime, timedelta
 from typing import NamedTuple
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
+
+from ignitetest.services.utils.jmx_utils import JmxClient
 
 
 class ControlUtility:
@@ -126,6 +130,65 @@ class ControlUtility:
         output = self.__run(self.__tx_command(kill=True, **kwargs))
         res = self.__parse_tx_list(output)
         return res if res else output
+
+    def validate_indexes(self):
+        """
+        Validate indexes.
+        """
+        data = self.__run("--cache validate_indexes")
+
+        assert ('no issues found.' in data), data
+
+    def idle_verify(self):
+        """
+        Idle verify.
+        """
+        data = self.__run("--cache idle_verify")
+
+        assert ('idle_verify check has finished, no conflicts have been found.' in data), data
+
+    def idle_verify_dump(self, node=None):
+        """
+        Idle verify dump.
+        """
+        data = self.__run("--cache idle_verify --dump", node=node)
+
+        assert ('VisorIdleVerifyDumpTask successfully' in data), data
+
+        return re.search(r'/.*.txt', data).group(0)
+
+    def snapshot_create(self, snapshot_name: str, sync_mode: bool = True, timeout_sec: int = 60):
+        """
+        Create snapshot.
+        """
+        res = self.__run(f"--snapshot create {snapshot_name}")
+
+        if ("Command [SNAPSHOT] finished with code: 0" in res) & sync_mode:
+            self.await_snapshot(snapshot_name, timeout_sec)
+
+    def await_snapshot(self, snapshot_name: str, timeout_sec=60):
+        """
+        Waiting for the snapshot to complete.
+        """
+        delta_time = datetime.now() + timedelta(seconds=timeout_sec)
+
+        while datetime.now() < delta_time:
+            for node in self._cluster.nodes:
+                mbean = JmxClient(node).find_mbean('snapshot')
+                start_time = int(list(mbean.LastSnapshotStartTime)[0])
+                end_time = int(list(mbean.LastSnapshotEndTime)[0])
+                err_msg = list(mbean.LastSnapshotErrorMessage)[0]
+                name = list(mbean.LastSnapshotName)[0]
+
+                if (snapshot_name == name) and (0 < start_time < end_time) and (err_msg == ''):
+                    return
+
+            time.sleep(1)
+
+        raise TimeoutError(f'LastSnapshotName={name}, '
+                           f'LastSnapshotStartTime={start_time}, '
+                           f'LastSnapshotEndTime={end_time}, '
+                           f'LastSnapshotErrorMessage={err_msg}')
 
     @staticmethod
     def __tx_command(**kwargs):
@@ -248,12 +311,15 @@ class ControlUtility:
 
         return ClusterState(state=state, topology_version=topology, baseline=baseline)
 
-    def __run(self, cmd):
-        node = random.choice(self.__alives())
+    def __run(self, cmd, node=None):
+        if node is None:
+            node = random.choice(self.__alives())
 
         self.logger.debug(f"Run command {cmd} on node {node.name}")
 
-        raw_output = node.account.ssh_capture(self.__form_cmd(node, cmd), allow_fail=True)
+        node_ip = socket.gethostbyname(node.account.hostname)
+
+        raw_output = node.account.ssh_capture(self.__form_cmd(node_ip, cmd), allow_fail=True)
         code, output = self.__parse_output(raw_output)
 
         self.logger.debug(f"Output of command {cmd} on node {node.name}, exited with code {code}, is {output}")
@@ -263,8 +329,8 @@ class ControlUtility:
 
         return output
 
-    def __form_cmd(self, node, cmd):
-        return self._cluster.spec.path.script(f"{self.BASE_COMMAND} --host {node.account.externally_routable_ip} {cmd}")
+    def __form_cmd(self, node_ip, cmd):
+        return self._cluster.spec.path.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd}")
 
     @staticmethod
     def __parse_output(raw_output):

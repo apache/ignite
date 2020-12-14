@@ -28,12 +28,13 @@ class PersistenceAware:
     """
     # Root directory for persistent output
     PERSISTENT_ROOT = "/mnt/service"
-    STDOUT_STDERR_CAPTURE = os.path.join(PERSISTENT_ROOT, "console.log")
     TEMP_DIR = os.path.join(PERSISTENT_ROOT, "tmp")
+    LOGS_DIR = os.path.join(PERSISTENT_ROOT, "logs")
+    STDOUT_STDERR_CAPTURE = os.path.join(LOGS_DIR, "console.log")
 
     logs = {
         "console_log": {
-            "path": STDOUT_STDERR_CAPTURE,
+            "path": LOGS_DIR,
             "collect_default": True
         }
     }
@@ -43,8 +44,7 @@ class PersistenceAware:
         Init persistent directory.
         :param node: Service node.
         """
-        node.account.mkdirs(self.PERSISTENT_ROOT)
-        node.account.mkdirs(self.TEMP_DIR)
+        node.account.mkdirs(f'{self.TEMP_DIR} {self.LOGS_DIR}')
 
 
 class IgnitePersistenceAware(PersistenceAware):
@@ -52,6 +52,7 @@ class IgnitePersistenceAware(PersistenceAware):
     This class contains Ignite persistence artifacts
     """
     WORK_DIR = os.path.join(PersistenceAware.PERSISTENT_ROOT, "work")
+    SNAPSHOTS = os.path.join(WORK_DIR, "snapshots")
     CONFIG_FILE = os.path.join(PersistenceAware.PERSISTENT_ROOT, "ignite-config.xml")
     LOG4J_CONFIG_FILE = os.path.join(PersistenceAware.PERSISTENT_ROOT, "ignite-log4j.xml")
 
