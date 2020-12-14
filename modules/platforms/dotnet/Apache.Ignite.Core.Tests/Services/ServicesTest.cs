@@ -1089,7 +1089,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 springConfigUrl = Compute.ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
             }
 
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = springConfigUrl,
                 BinaryConfiguration = new BinaryConfiguration(
@@ -1102,8 +1102,6 @@ namespace Apache.Ignite.Core.Tests.Services
                     ForceTimestamp = true
                 }
             };
-
-            return cfg;
         }
 
         /// <summary>
