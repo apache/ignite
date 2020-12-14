@@ -44,7 +44,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.metric.HistogramMetric;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -54,6 +53,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
@@ -191,7 +191,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
             ig.context().cache().context().database().waitForCheckpoint("test");
 
-            assertTrue(GridTestUtils.waitForCondition(new PAX() {
+            assertTrue(waitForCondition(new PAX() {
                 @Override public boolean applyx() {
                     DataStorageMetrics pMetrics = ig.dataStorageMetrics();
 
@@ -234,15 +234,16 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         db.checkpointReadLock();
 
         try {
-            assertTrue(cpCnt.get() > 0);
+            waitForCondition(() -> cpCnt.get() > 0, getTestTimeout());
 
             MetricRegistry mreg = node.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
 
             AtomicLongMetric lastCpLockHoldDuration = mreg.findMetric("LastCheckpointLockHoldDuration");
             HistogramMetric cpLockHoldHistogram = mreg.findMetric("CheckpointLockHoldHistogram");
 
+            waitForCondition(() -> cpCnt.get() == Arrays.stream(cpLockHoldHistogram.value()).sum(), getTestTimeout());
+
             assertEquals(expLastCpLockHoldDuration.get(), lastCpLockHoldDuration.value());
-            assertEquals(cpCnt.get(), Arrays.stream(cpLockHoldHistogram.value()).sum());
         }
         finally {
             db.checkpointReadUnlock();
