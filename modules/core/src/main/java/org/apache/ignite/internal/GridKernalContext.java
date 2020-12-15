@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -58,6 +57,7 @@ import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingPro
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
@@ -761,4 +761,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Thread pool for create/rebuild indexes.
      */
     public ExecutorService buildIndexExecutorService();
+
+    /**
+     * Gets Performance statistics processor.
+     *
+     * @return Performance statistics processor.
+     */
+    public PerformanceStatisticsProcessor performanceStatistics();
 }
