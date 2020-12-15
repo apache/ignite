@@ -29,7 +29,10 @@ public class SegmentLockStorage extends SegmentObservable {
      * Maps absolute segment index to locks counter. Lock on segment protects from archiving segment and may come from
      * {@link FileWriteAheadLogManager.RecordsIterator} during WAL replay. Map itself is guarded by <code>this</code>.
      */
-    private Map<Long, Integer> locked = new ConcurrentHashMap<>();
+    private final Map<Long, Integer> locked = new ConcurrentHashMap<>();
+
+    /** Maximum segment index that can be locked. */
+    private volatile long minLockIdx = -1;
 
     /**
      * Check if WAL segment locked (protected from move to archive)
@@ -37,17 +40,22 @@ public class SegmentLockStorage extends SegmentObservable {
      * @param absIdx Index for check reservation.
      * @return {@code True} if index is locked.
      */
-    public boolean locked(long absIdx) {
+    boolean locked(long absIdx) {
         return locked.containsKey(absIdx);
     }
 
     /**
-     * @param absIdx Segment absolute index.
-     * @return <ul><li>{@code True} if can read, no lock is held, </li><li>{@code false} if work segment, need release
-     * segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
+     * Segment lock. It will be successful if segment is {@code >} than the {@link #minLockIdx minimum}.
+     *
+     * @param absIdx Index to lock.
+     * @return {@code True} if the lock was successful.
      */
-    boolean lockWorkSegment(long absIdx) {
-        locked.compute(absIdx, (idx, count) -> count == null ? 1 : count + 1);
+    synchronized boolean lockWorkSegment(long absIdx) {
+        if (absIdx > minLockIdx) {
+            locked.merge(absIdx, 1, Integer::sum);
+
+            return true;
+        }
 
         return false;
     }
@@ -63,5 +71,22 @@ public class SegmentLockStorage extends SegmentObservable {
         });
 
         notifyObservers(absIdx);
+    }
+
+    /**
+     * Increasing minimum segment index that can be locked.
+     * Value will be updated if it is greater than the current one.
+     * If segment is already locked, the update will fail.
+     *
+     * @param absIdx Absolut segment index.
+     * @return {@code True} if update is successful.
+     */
+    synchronized boolean minLockIndex(long absIdx) {
+        if (locked(absIdx))
+            return false;
+
+        minLockIdx = Math.max(minLockIdx, absIdx);
+
+        return true;
     }
 }

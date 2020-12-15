@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
-import org.apache.ignite.internal.commandline.encryption.EncryptionCommand;
+import org.apache.ignite.internal.commandline.encryption.EncryptionCommands;
 import org.apache.ignite.internal.commandline.meta.MetadataCommand;
 import org.apache.ignite.internal.commandline.metric.MetricCommand;
 import org.apache.ignite.internal.commandline.property.PropertyCommand;
@@ -59,7 +59,7 @@ public enum CommandList {
     DIAGNOSTIC("--diagnostic", new DiagnosticCommand()),
 
     /** Encryption features command. */
-    ENCRYPTION("--encryption", new EncryptionCommand()),
+    ENCRYPTION("--encryption", new EncryptionCommands()),
 
     /** Kill command. */
     KILL("--kill", new KillCommand()),
@@ -92,7 +92,10 @@ public enum CommandList {
     METRIC("--metric", new MetricCommand()),
 
     /** */
-    PERSISTENCE("--persistence", new PersistenceCommand());
+    PERSISTENCE("--persistence", new PersistenceCommand()),
+
+    /** Command to manage PDS defragmentation. */
+    DEFRAGMENTATION("--defragmentation", new DefragmentationCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();
