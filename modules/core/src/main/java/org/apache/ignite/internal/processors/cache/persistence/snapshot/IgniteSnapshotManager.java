@@ -1169,13 +1169,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             PageStore store,
             int partId,
             Object flags
-        ) {
+        ) throws IgniteCheckedException {
             this.sctx = sctx;
             this.grp = grp;
             this.store = store;
             this.partId = partId;
 
             rowData = asRowData(flags);
+
+            store.ensure();
             pages = store.pages();
 
             locBuff = ByteBuffer.allocateDirect(store.getPageSize())
@@ -1200,69 +1202,78 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (rows != EMPTY_ROWS && currRowIdx < rows.length - 1)
                 return true;
 
-            long startPageId = PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, 1);
+            try {
+                for (;;) {
+                    long pageId = PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, ++currPageIdx);
 
-            for (;;) {
-                long pageId = startPageId + ++currPageIdx;
+                    boolean skipVer = CacheDataRowStore.getSkipVersion();
 
-                boolean skipVer = CacheDataRowStore.getSkipVersion();
+                    assert !CacheDataRowStore.getSkipVersion();
+                    assert locBuff.capacity() == store.getPageSize();
 
-                assert !CacheDataRowStore.getSkipVersion();
-                assert locBuff.capacity() == store.getPageSize();
+                    locBuff.clear();
 
-                locBuff.clear();
+                    if (currPageIdx > pages - 1)
+                        return false;
 
-                boolean success = store.read(pageId, locBuff, true);
+                    boolean success = store.read(pageId, locBuff, true);
 
-                assert success : pageId;
+                    assert success : pageId;
 
-                // Here we should also exclude fragmented pages that don't contain the head of the entry.
-                if (PageIO.getType(locBuff) != T_DATA)
-                    continue; // Not a data page.
+                    // Here we should also exclude fragmented pages that don't contain the head of the entry.
+                    if (PageIO.getType(locBuff) != T_DATA)
+                        continue; // Not a data page.
 
-                DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(locBuff));
+                    DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(locBuff));
 
-                int rowsCnt = io.getRowsCount(locBuff);
+                    int rowsCnt = io.getRowsCount(locBuff);
 
-                if (rowsCnt == 0)
-                    continue; // Empty page.
+                    if (rowsCnt == 0)
+                        continue; // Empty page.
 
-                rows = new CacheDataRow[rowsCnt];
-                currRowIdx = -1;
+                    rows = new CacheDataRow[rowsCnt];
+                    currRowIdx = -1;
 
-                int r = 0;
+                    int r = 0;
 
-                for (int i = 0; i < rowsCnt; i++) {
-                    DataRowPersistenceAdapter row = new DataRowPersistenceAdapter();
+                    for (int i = 0; i < rowsCnt; i++) {
+                        DataRowPersistenceAdapter row = new DataRowPersistenceAdapter();
 
-                    row.partition(partId);
+                        row.partition(partId);
 
-                    row.initFromPageBuffer(
-                        new IgniteInClosure2X<Long, ByteBuffer>() {
-                            @Override public void applyx(Long nextPageId, ByteBuffer buff) throws IgniteCheckedException {
-                                buff.clear();
+                        row.initFromPageBuffer(
+                            new IgniteInClosure2X<Long, ByteBuffer>() {
+                                @Override public void applyx(Long nextPageId, ByteBuffer buff) throws IgniteCheckedException {
+                                    buff.clear();
 
-                                boolean read = store.read(nextPageId, buff, true);
+                                    boolean read = store.read(nextPageId, buff, true);
 
-                                assert read : nextPageId;
-                            }
-                        },
-                        io,
-                        locBuff,
-                        fragmentBuff,
-                        i,
-                        grp,
-                        sctx,
-                        rowData,
-                        skipVer);
+                                    assert read : nextPageId;
+                                }
+                            },
+                            io,
+                            locBuff,
+                            fragmentBuff,
+                            i,
+                            grp,
+                            sctx,
+                            rowData,
+                            skipVer);
 
-                    rows[r++] = row;
+                        rows[r++] = row;
+                    }
+
+                    if (r == 0)
+                        continue; // No rows fetched in this page.
+
+                    return true;
                 }
+            }
+            catch (AssertionError e) {
+                U.error(null, "currPageIdx=" + currPageIdx +
+                    ", rows=" + Arrays.asList(rows).size(), e);
 
-                if (r == 0)
-                    continue; // No rows fetched in this page.
-
-                return true;
+                throw e;
             }
         }
     }

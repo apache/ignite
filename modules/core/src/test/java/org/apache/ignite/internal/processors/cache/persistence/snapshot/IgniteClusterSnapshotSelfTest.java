@@ -35,6 +35,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.ignite.Ignite;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
@@ -72,6 +74,7 @@ import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1179,13 +1182,44 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         int grpId = ignite.cachex(dfltCacheCfg.getName()).context().groupId();
 
+//        AtomicReference<IgniteCacheOffheapManager.CacheDataStore> store = new AtomicReference<>();
+//
+//        ignite.context().cache().cache(dfltCacheCfg.getName())
+//            .context()
+//            .offheap()
+//            .cacheDataStores()
+//            .forEach(s -> {
+//                if (s.partId() == 0)
+//                    store.set(s);
+//                });
+//
+//        GridCursor<? extends CacheDataRow> cur = store.get().cursor();
+//
+//        int rows = 0;
+//
+//        while (cur.next()) {
+//            CacheDataRow row = cur.get();
+//
+//            System.out.println("offheap row = " + row);
+//
+//            rows++;
+//        }
+//
+//        System.out.println("offheap rows >>>> " + rows);
+//
+        int rows2 = 0;
+
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).getSnapshotDataRows(SNAPSHOT_NAME, grpId, 0)) {
             while (iter.hasNext()) {
                 CacheDataRow row = iter.next();
 
                 System.out.println("row = " + row);
+
+                rows2++;
             }
         }
+
+        System.out.println("rows >>>> " + rows2);
     }
 
     /**

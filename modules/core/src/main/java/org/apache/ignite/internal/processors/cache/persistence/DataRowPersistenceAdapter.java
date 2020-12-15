@@ -206,8 +206,10 @@ public class DataRowPersistenceAdapter extends DataRow {
             byte type = buff.get(off);
             off++;
 
+            buff.position(off);
+
             byte[] bytes = new byte[len];
-            buff.get(bytes, 0, len);
+            buff.get(bytes);
 
             off += len;
 
@@ -228,7 +230,7 @@ public class DataRowPersistenceAdapter extends DataRow {
         buff.position(off);
 
         byte[] bytes = new byte[len];
-        buff.get(bytes, 0, len);
+        buff.get(bytes);
 
         off += len;
 
