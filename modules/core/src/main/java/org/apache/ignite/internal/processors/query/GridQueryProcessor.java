@@ -248,6 +248,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** @see IgniteSystemProperties#IGNITE_EXPERIMENTAL_SQL_ENGINE */
     public static final boolean DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE = false;
 
+    /** Use experimental engine flag. */
+    private final boolean useExperimentalSqlEngine;
+
     /**
      * @param ctx Kernal context.
      */
@@ -286,6 +289,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             break;
         }
+
+        useExperimentalSqlEngine = getBoolean(IGNITE_EXPERIMENTAL_SQL_ENGINE);
     }
 
     /** {@inheritDoc} */
@@ -2787,7 +2792,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (qry.isLocal() && ctx.clientNode() && (cctx == null || cctx.config().getCacheMode() != CacheMode.LOCAL))
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
-        if (experimentalQueryEngine != null && getBoolean(IGNITE_EXPERIMENTAL_SQL_ENGINE)) {
+        if (experimentalQueryEngine != null && useExperimentalSqlEngine) {
             if (!H2_REDIRECTION_RULES.matcher(qry.getSql()).find())
                 return experimentalQueryEngine.query(QueryContext.of(qry), qry.getSchema(), qry.getSql(), X.EMPTY_OBJECT_ARRAY);
         }
