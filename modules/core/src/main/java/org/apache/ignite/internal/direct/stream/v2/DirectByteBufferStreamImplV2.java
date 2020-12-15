@@ -19,14 +19,8 @@ package org.apache.ignite.internal.direct.stream.v2;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.RandomAccess;
-import java.util.UUID;
+import java.util.*;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -300,6 +294,9 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
     /** */
     protected boolean lastFinished;
+
+    /** */
+    private Map<String, byte[]> stringMap = new HashMap<>();
 
     /**
      * @param msgFactory Message factory.
@@ -584,7 +581,22 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
     /** {@inheritDoc} */
     @Override public void writeString(String val) {
-        writeByteArray(val != null ? val.getBytes() : null);
+        if(val != null) {
+            byte[] bytes;
+
+            boolean useMap = buf.capacity() < val.length();
+            if(useMap)
+                bytes = stringMap.computeIfAbsent(val, s -> s.getBytes());
+            else
+                bytes = val.getBytes();
+
+            writeByteArray(bytes);
+
+            if(useMap && lastFinished)
+                stringMap.remove(val);
+        }
+        else
+            writeByteArray(null);
     }
 
     /** {@inheritDoc} */
