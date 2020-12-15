@@ -221,8 +221,8 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             if (!matcher.find())
                 return;
 
-            cpCnt.incrementAndGet();
             expLastCpLockHoldDuration.set(Long.parseLong(matcher.group(1)));
+            cpCnt.incrementAndGet();
         });
 
         IgniteEx node = startGrid(0);
