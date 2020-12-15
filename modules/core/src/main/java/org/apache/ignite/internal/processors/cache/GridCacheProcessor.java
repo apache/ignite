@@ -2293,6 +2293,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         grp.onCacheStarted(cacheCtx);
 
         onKernalStart(cache);
+
+        if (ctx.performanceStatistics().enabled() && U.isLocalNodeCoordinator(ctx.discovery()))
+            ctx.performanceStatistics().cacheStart(cacheCtx.cacheId(), cfg.getName());
     }
 
     /**
