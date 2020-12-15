@@ -93,9 +93,6 @@ public class IgniteAggregate extends Aggregate implements TraitsAwareIgniteRel {
         switch (distrType) {
             case SINGLETON:
             case BROADCAST_DISTRIBUTED:
-                if (isSimple(this))
-                    return Pair.of(nodeTraits, ImmutableList.of(in.replace(random()))); // Map-reduce aggregate
-
                 return Pair.of(nodeTraits, ImmutableList.of(in.replace(distribution)));
 
             case RANDOM_DISTRIBUTED:

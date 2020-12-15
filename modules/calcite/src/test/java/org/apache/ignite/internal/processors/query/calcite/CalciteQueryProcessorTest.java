@@ -418,7 +418,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13727")
     public void testUnionWithDistinct() throws Exception {
         populateTables();
 
@@ -486,7 +485,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Ignore
     @Test
     public void aggregate() throws Exception {
         IgniteCache<Integer, Employer> employer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
@@ -517,7 +515,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13849")
     @Test
     public void query() throws Exception {
         IgniteCache<Integer, Developer> developer = grid(1).createCache(new CacheConfiguration<Integer, Developer>()
