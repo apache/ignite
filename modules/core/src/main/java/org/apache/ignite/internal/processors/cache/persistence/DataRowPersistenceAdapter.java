@@ -183,87 +183,49 @@ public class DataRowPersistenceAdapter extends DataRow {
         boolean skipVer
     ) throws IgniteCheckedException {
         buff.position(offset);
-        int off = offset;
-
-//        off += readHeader(sharedCtx, addr, off, rowData);
 
         if (rowData == LINK_WITH_HEADER)
             return;
 
-        if (readCacheId) {
+        if (readCacheId)
             cacheId = buff.getInt();
-
-            off += 4;
-        }
 
         if (coctx == null)
             coctx = sharedCtx.cacheContext(cacheId).cacheObjectContext();
 
         int len = buff.getInt();
-        off += 4;
+        byte keyType = buff.get();
 
         if (rowData != RowData.NO_KEY && rowData != RowData.NO_KEY_WITH_HINTS) {
-            byte type = buff.get(off);
-            off++;
-
-            buff.position(off);
-
             byte[] bytes = new byte[len];
             buff.get(bytes);
 
-            off += len;
-
-            key = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, type, bytes);
+            key = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, keyType, bytes);
 
             if (rowData == RowData.KEY_ONLY)
                 return;
         }
-        else
-            off += len + 1;
 
-        len = buff.getInt(off);
-        off += 4;
-
-        byte type = buff.get(off);
-        off++;
-
-        buff.position(off);
+        len = buff.getInt();
+        byte valType = buff.get();
 
         byte[] bytes = new byte[len];
         buff.get(bytes);
 
-        off += len;
-
-        buff.position(off);
-
-        val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
-
-        int verLen;
+        val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, valType, bytes);
 
         if (skipVer) {
             ver = null;
 
-            verLen = CacheVersionIO.readSize(buff, false);
+            int verLen = CacheVersionIO.readSize(buff, false);
+            buff.position(buff.position() + verLen);
         }
-        else {
+        else
             ver = CacheVersionIO.read(buff, false);
-
-            verLen = CacheVersionIO.size(ver, false);
-        }
 
         verReady = true;
 
-        off += verLen;
-
-//        if (!verReady) {
-//            IncompleteObject<?> incomplete = readIncompleteVersion(buff, null, skipVer);
-//
-//            assert skipVer || ver != null || incomplete != null;
-//        }
-//
-//        off += CacheVersionIO.readSize(buff, false);
-
-        expireTime = buff.getLong(off);
+        expireTime = buff.getLong();
     }
 
     /** {@inheritDoc} */
