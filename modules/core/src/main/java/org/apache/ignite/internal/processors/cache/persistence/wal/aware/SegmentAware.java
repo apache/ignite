@@ -38,17 +38,23 @@ public class SegmentAware {
     /** Storage of absolute current segment index. */
     private final SegmentCurrentStateStorage segmentCurrStateStorage;
 
+    /** Storage of archive size. */
+    private final SegmentArchiveSizeStorage archiveSizeStorage;
+
     /**
      * Constructor.
      *
      * @param walSegmentsCnt Total WAL segments count.
      * @param compactionEnabled Is wal compaction enabled.
+     * @param maxWalArchiveSize Maximum WAL archive size in bytes.
      */
-    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled) {
+    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled, long maxWalArchiveSize) {
         segmentArchivedStorage = new SegmentArchivedStorage(segmentLockStorage);
 
         segmentCurrStateStorage = new SegmentCurrentStateStorage(walSegmentsCnt);
         segmentCompressStorage = new SegmentCompressStorage(compactionEnabled);
+
+        archiveSizeStorage = new SegmentArchiveSizeStorage(maxWalArchiveSize);
 
         segmentArchivedStorage.addObserver(segmentCurrStateStorage::onSegmentArchived);
         segmentArchivedStorage.addObserver(segmentCompressStorage::onSegmentArchived);
@@ -239,6 +245,8 @@ public class SegmentAware {
         segmentCompressStorage.reset();
 
         segmentCurrStateStorage.reset();
+
+        archiveSizeStorage.reset();
     }
 
     /**
@@ -250,6 +258,8 @@ public class SegmentAware {
         segmentCompressStorage.interrupt();
 
         segmentCurrStateStorage.interrupt();
+
+        archiveSizeStorage.interrupt();
     }
 
     /**
@@ -261,6 +271,8 @@ public class SegmentAware {
         segmentCompressStorage.interrupt();
 
         segmentCurrStateStorage.forceInterrupt();
+
+        archiveSizeStorage.interrupt();
     }
 
     /**
@@ -285,5 +297,39 @@ public class SegmentAware {
      */
     public boolean minLockIndex(long absIdx) {
         return segmentLockStorage.minLockIndex(absIdx);
+    }
+
+    /**
+     * Adding current WAL archive size in bytes.
+     *
+     * @param size Size in bytes.
+     */
+    public void addCurrentWalArchiveSize(long size) {
+        archiveSizeStorage.addCurrentSize(size);
+    }
+
+    /**
+     * Adding reserved WAL archive size in bytes.
+     *
+     * @param size Size in bytes.
+     */
+    public void addReservedWalArchiveSize(long size) {
+        archiveSizeStorage.addReservedSize(size);
+    }
+
+    /**
+     * Reset the current and reserved WAL archive sizes.
+     */
+    public void resetWalArchiveSizes() {
+        archiveSizeStorage.resetSizes();
+    }
+
+    /**
+     * Waiting for exceeding the maximum WAL archive size.
+     *
+     * @throws IgniteInterruptedCheckedException If it was interrupted.
+     */
+    public void awaitExceedMaxArchiveSize() throws IgniteInterruptedCheckedException {
+        archiveSizeStorage.awaitExceedMaxSize();
     }
 }

@@ -26,7 +26,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 /**
  * Storage of actual information about current index of compressed segments.
  */
-public class SegmentCompressStorage {
+class SegmentCompressStorage {
     /** Flag of interrupt waiting on this object. */
     private volatile boolean interrupted;
 
