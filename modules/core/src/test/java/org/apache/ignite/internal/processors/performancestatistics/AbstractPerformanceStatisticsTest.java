@@ -137,7 +137,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     }
 
     /** Test performance statistics handler. */
-    public class TestHandler implements PerformanceStatisticsHandler {
+    public static class TestHandler implements PerformanceStatisticsHandler {
         /** {@inheritDoc} */
         @Override public void cacheStart(UUID nodeId, int cacheId, String name) {
             // No-op.
