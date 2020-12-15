@@ -130,7 +130,7 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         // Index spool must not be used without merged filter.
         // At least while it is used only by the IgniteCorrelatedNestedLoopJoin.
         if (idxCond == null)
-            return planner.getCostFactory().makeInfiniteCost();
+            return planner.getCostFactory().makeCost(rowCount, 0, 0).multiplyBy(20);
 
         return planner.getCostFactory().makeCost(rowCount, 0, 0).multiplyBy(2);
     }
