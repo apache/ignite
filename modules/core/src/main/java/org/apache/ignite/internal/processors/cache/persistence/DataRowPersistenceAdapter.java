@@ -194,25 +194,25 @@ public class DataRowPersistenceAdapter extends DataRow {
             coctx = sharedCtx.cacheContext(cacheId).cacheObjectContext();
 
         int len = buff.getInt();
-        byte keyType = buff.get();
+        byte type = buff.get();
 
         if (rowData != RowData.NO_KEY && rowData != RowData.NO_KEY_WITH_HINTS) {
             byte[] bytes = new byte[len];
             buff.get(bytes);
 
-            key = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, keyType, bytes);
+            key = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, type, bytes);
 
             if (rowData == RowData.KEY_ONLY)
                 return;
         }
 
         len = buff.getInt();
-        byte valType = buff.get();
+        type = buff.get();
 
         byte[] bytes = new byte[len];
         buff.get(bytes);
 
-        val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, valType, bytes);
+        val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
 
         if (skipVer) {
             ver = null;
