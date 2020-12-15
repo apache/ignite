@@ -357,10 +357,10 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         Restart ignite cluster without cleaning.
         """
         self.stop()
-        self.rotate_log()
+        self.__rotate_log()
         self.start(clean=False)
 
-    def rotate_log(self):
+    def __rotate_log(self):
         """
         Rotate log file.
         """
@@ -370,6 +370,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
             node.account.ssh(f'if [ -e {self.STDOUT_STDERR_CAPTURE} ];'
                              f'then '
                              f'cd {self.LOGS_DIR};'
-                             f'N=`ls | grep log | wc -l`;'
+                             f'N=`ls | grep -E "^console_?[0-9]*.log$" | wc -l`;'
                              f'mv {self.STDOUT_STDERR_CAPTURE} {new_log_file};'
                              f'fi')
