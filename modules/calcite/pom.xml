@@ -30,6 +30,8 @@
         <avatica.version>1.17.0</avatica.version>
         <jsonpath.version>2.4.0</jsonpath.version>
         <reflections.version>0.9.10</reflections.version>
+        <javassist.version>3.27.0-GA</javassist.version>
+        <esri.geometry.version>2.2.3</esri.geometry.version>
     </properties>
 
     <parent>
@@ -130,6 +132,18 @@
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
             <version>${reflections.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>${javassist.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.esri.geometry</groupId>
+            <artifactId>esri-geometry-api</artifactId>
+            <version>${esri.geometry.version}</version>
         </dependency>
 
         <dependency>
