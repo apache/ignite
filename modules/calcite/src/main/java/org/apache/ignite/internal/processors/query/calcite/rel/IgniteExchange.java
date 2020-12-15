@@ -86,7 +86,7 @@ public class IgniteExchange extends Exchange implements IgniteRel {
                 break;
 
             case HASH_DISTRIBUTED:
-                mult = 2;
+                mult = 8;
 
                 break;
 

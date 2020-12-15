@@ -27,12 +27,13 @@ import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /**
- * Rule that pushes filter into the scan. This might be useful for index range scans.
+ * Rule that pushes filter into the spool.
  */
 public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
     /** Instance. */
@@ -46,7 +47,10 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
         final IgniteFilter filter = call.rel(0);
-        final IgniteIndexSpool spool = call.rel(1);
+        final IgniteTableSpool spool = call.rel(1);
+
+        if (spool.collation().isDefault())
+            return;
 
         RelOptCluster cluster = spool.getCluster();
 
@@ -81,7 +85,7 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
             .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
             .withDescription("FilterSpoolMergeRule")
             .as(FilterSpoolMergeRule.Config.class)
-            .withOperandFor(IgniteFilter.class, IgniteIndexSpool.class);
+            .withOperandFor(IgniteFilter.class, IgniteTableSpool.class);
 
         /** Defines an operand tree for the given classes. */
         default Config withOperandFor(Class<? extends Filter> filterClass, Class<? extends Spool> spoolClass) {

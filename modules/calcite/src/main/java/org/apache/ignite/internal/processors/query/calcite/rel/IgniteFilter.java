@@ -128,7 +128,7 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
 
         if (corrSet.isEmpty() || TraitUtils.correlation(nodeTraits).correlationIds().containsAll(corrSet))
             return ImmutableList.of(Pair.of(nodeTraits,
-                ImmutableList.of(inTraits.get(0).replace(TraitUtils.correlation(nodeTraits)))));
+                ImmutableList.of(inTraits.get(0))));
 
         return ImmutableList.of();
     }

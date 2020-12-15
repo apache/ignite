@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import java.util.List;
 
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexFieldAccess;
@@ -161,64 +162,6 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
             "from t0 " +
             "join t1 on t0" +
             ".jid > t1.jid";
-
-        GridTestUtils.assertThrowsAnyCause(log, () -> {
-                physicalPlan(
-                    sql,
-                    publicSchema,
-                    "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule"
-                );
-
-                return null;
-            },
-            RelOptPlanner.CannotPlanException.class,
-            "There are not enough rules to produce a node with desired properties");
-    }
-
-    /**
-     * Check equi-join on not collocated fields.
-     * CorrelatedNestedLoopJoinTest isn't applicable for this case without IndexSpool.
-     */
-    @Test
-    public void testInvalidDistribution() throws Exception {
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        publicSchema.addTable(
-            "T0",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .add("JID", f.createJavaType(Integer.class))
-                    .add("VAL", f.createJavaType(String.class))
-                    .build()) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.affinity(0, "T0", "hash");
-                }
-            }
-                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t0_jid_idx")
-        );
-
-        publicSchema.addTable(
-            "T1",
-            new TestTable(
-                new RelDataTypeFactory.Builder(f)
-                    .add("ID", f.createJavaType(Integer.class))
-                    .add("JID", f.createJavaType(Integer.class))
-                    .add("VAL", f.createJavaType(String.class))
-                    .build()) {
-
-                @Override public IgniteDistribution distribution() {
-                    return IgniteDistributions.affinity(0, "T1", "hash");
-                }
-            }
-                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid_idx")
-        );
-
-        String sql = "select * " +
-            "from t0 " +
-            "join t1 on t0.jid = t1.jid";
 
         GridTestUtils.assertThrowsAnyCause(log, () -> {
                 physicalPlan(

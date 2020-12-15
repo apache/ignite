@@ -166,9 +166,6 @@ public class TraitUtils {
         RelTraitSet traits = rel.getTraitSet()
             .replace(toTrait);
 
-        if (!collation(rel).isDefault())
-            return new IgniteIndexSpool(rel.getCluster(), traits, rel, collation(rel));
-
         return new IgniteTableSpool(rel.getCluster(), traits, rel);
     }
 

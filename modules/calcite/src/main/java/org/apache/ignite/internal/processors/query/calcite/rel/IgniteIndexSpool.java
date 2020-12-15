@@ -42,17 +42,7 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
     private final RelCollation collation;
 
     /** Index condition. */
-    private IndexConditions idxCond;
-
-    /** */
-    public IgniteIndexSpool(
-        RelOptCluster cluster,
-        RelTraitSet traits,
-        RelNode input,
-        RelCollation collation
-    ) {
-        this(cluster, traits, input, collation, null);
-    }
+    private final IndexConditions idxCond;
 
     /** */
     public IgniteIndexSpool(
@@ -127,11 +117,6 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         double rowCount = mq.getRowCount(this);
         rowCount = RelMdUtil.addEpsilon(rowCount);
 
-        // Index spool must not be used without merged filter.
-        // At least while it is used only by the IgniteCorrelatedNestedLoopJoin.
-        if (idxCond == null)
-            return planner.getCostFactory().makeCost(rowCount, 0, 0).multiplyBy(20);
-
         return planner.getCostFactory().makeCost(rowCount, 0, 0).multiplyBy(2);
     }
 
@@ -146,7 +131,7 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
     }
 
     /** */
-    public RelCollation collation() {
+    @Override public RelCollation collation() {
         return collation;
     }
 }
