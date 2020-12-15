@@ -134,6 +134,8 @@ import static java.util.Collections.newSetFromMap;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXPERIMENTAL_SQL_ENGINE;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
@@ -242,6 +244,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** h2 redirection stub. */
     public static final Pattern H2_REDIRECTION_RULES =
         Pattern.compile("\\s*(create\\s*table|drop\\s*table|alter\\s*table)", CASE_INSENSITIVE);
+
+    /** @see IgniteSystemProperties#IGNITE_EXPERIMENTAL_SQL_ENGINE */
+    public static final boolean DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE = false;
 
     /**
      * @param ctx Kernal context.
@@ -2782,7 +2787,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (qry.isLocal() && ctx.clientNode() && (cctx == null || cctx.config().getCacheMode() != CacheMode.LOCAL))
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
-        if (experimentalQueryEngine != null) {
+        if (experimentalQueryEngine != null && getBoolean(IGNITE_EXPERIMENTAL_SQL_ENGINE)) {
             if (!H2_REDIRECTION_RULES.matcher(qry.getSql()).find())
                 return experimentalQueryEngine.query(QueryContext.of(qry), qry.getSchema(), qry.getSql(), X.EMPTY_OBJECT_ARRAY);
         }
