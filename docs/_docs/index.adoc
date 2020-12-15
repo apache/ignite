@@ -19,7 +19,7 @@ applications that can process terabytes of data with in-memory speed.
 
 Ignite documentation introduces you to the project's main capabilities, shows how to use certain features, or how to
 approach cluster optimizations and issues troubleshooting. If you are new to Ignite, then start with the
-link:docs/latest/quick-start/java[Quick Start Guides],  and build the first application in a matter of 5-10 minutes.
+link:quick-start/java[Quick Start Guides], and build the first application in a matter of 5-10 minutes.
 Otherwise, select the topic of your interest and have your problems solved, and questions answered.
 Good luck with your Ignite journey!
 

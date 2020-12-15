@@ -27,6 +27,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.file.StandardOpenOption.READ;
+
 /**
  * WAL file descriptor.
  */
@@ -144,8 +146,8 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
     }
 
     /** {@inheritDoc} */
-    @Override public SegmentIO toIO(FileIOFactory fileIOFactory) throws IOException {
-        FileIO fileIO = isCompressed() ? new UnzipFileIO(file()) : fileIOFactory.create(file());
+    @Override public SegmentIO toReadOnlyIO(FileIOFactory fileIOFactory) throws IOException {
+        FileIO fileIO = isCompressed() ? new UnzipFileIO(file()) : fileIOFactory.create(file(), READ);
 
         return new SegmentIO(idx, fileIO);
     }

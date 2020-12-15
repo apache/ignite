@@ -68,7 +68,10 @@ public enum MLSandboxDatasets {
     MIXED_DATASET("examples/src/main/resources/datasets/mixed_dataset.csv", true, ","),
 
     /** A dataset with categorical features and labels. */
-    MUSHROOMS("examples/src/main/resources/datasets/mushrooms.csv", true, ",");
+    MUSHROOMS("examples/src/main/resources/datasets/mushrooms.csv", true, ","),
+
+    /** A dataset with categorical features and labels. */
+    AMAZON_EMPLOYEE_ACCESS("examples/src/main/resources/datasets/amazon-employee-access-challenge_train.csv", true, ",");
 
     /** Filename. */
     private final String filename;

@@ -68,6 +68,21 @@ public class BasicRateLimiterTest {
     }
 
     /**
+     * Check that the rate can be set as unlimited.
+     */
+    @Test
+    public void testUnlimitedRate() throws IgniteInterruptedCheckedException {
+        BasicRateLimiter limiter = new BasicRateLimiter(0);
+        limiter.acquire(Integer.MAX_VALUE);
+
+        limiter.setRate(1);
+        limiter.acquire(1);
+
+        limiter.setRate(0);
+        limiter.acquire(Integer.MAX_VALUE);
+    }
+
+    /**
      * Check rate limit with multiple threads.
      */
     @Test
