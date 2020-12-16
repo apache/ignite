@@ -74,8 +74,9 @@ class IgniteSpec(metaclass=ABCMeta):
             return IgniteClientConfigTemplate()
         return IgniteServerConfigTemplate()
 
+    @property
     @abstractmethod
-    def command(self, stdout_stderr):
+    def command(self):
         """
         :return: string that represents command to run service on a node
         """
@@ -99,13 +100,14 @@ class IgniteNodeSpec(IgniteSpec, IgnitePersistenceAware):
     """
     Spec to run ignite node
     """
-    def command(self, stdout_stderr):
+    @property
+    def command(self):
         cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
               (self._envs(),
                self.path.script("ignite.sh"),
                self._jvm_opts(),
                self.CONFIG_FILE,
-               stdout_stderr)
+               self.STDOUT_STDERR_CAPTURE)
 
         return cmd
 
@@ -121,13 +123,14 @@ class IgniteApplicationSpec(IgniteSpec, IgnitePersistenceAware):
     def _app_args(self):
         return ",".join(self.args)
 
-    def command(self, stdout_stderr):
+    @property
+    def command(self):
         cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
               (self._envs(),
                self.path.script("ignite.sh"),
                self._jvm_opts(),
                self._app_args(),
-               stdout_stderr)
+               self.STDOUT_STDERR_CAPTURE)
 
         return cmd
 
