@@ -591,7 +591,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     @Override public void writeString(String val) {
         if (val != null) {
             if (buf.capacity() < val.length()) {
-                if(stringsMap == null)
+                if (stringsMap == null)
                     stringsMap = new HashMap<>();
 
                 byte[] bytes = stringsMap.computeIfAbsent(val, s -> s.getBytes());
