@@ -38,6 +38,7 @@ import static org.apache.calcite.rel.core.JoinRelType.INNER;
 import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.calcite.rel.core.JoinRelType.SEMI;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 /** */
 @SuppressWarnings("TypeMayBeWeakened")
@@ -374,7 +375,7 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
         while (node.hasNext())
             rows.add(node.next());
 
-        Assert.assertArrayEquals(expRes, rows.toArray(EMPTY));
+        Assert.assertThat(rows.toArray(EMPTY), equalTo(expRes));
     }
 
     /**

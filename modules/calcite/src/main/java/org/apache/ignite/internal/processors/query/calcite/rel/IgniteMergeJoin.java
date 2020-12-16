@@ -293,7 +293,7 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(
         RelTraitSet nodeTraits,
         List<RelTraitSet> inputTraits
     ) {
@@ -361,34 +361,17 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
         RelCollation leftCollation = createCollation(newLeftCollation);
         RelCollation rightCollation = createCollation(newRightCollation);
 
-        return ImmutableList.of(
-            Pair.of(
-                nodeTraits.replace(preserveNodeCollation ? collation : leftCollation),
-                ImmutableList.of(
-                    left.replace(leftCollation),
-                    right.replace(rightCollation)
-                )
+        return Pair.of(
+            nodeTraits.replace(preserveNodeCollation ? collation : leftCollation),
+            ImmutableList.of(
+                left.replace(leftCollation),
+                right.replace(rightCollation)
             )
         );
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(
-        RelTraitSet nodeTraits,
-        List<RelTraitSet> inputTraits
-    ) {
-        // The node is rewindable only if both sources are rewindable.
-
-        RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
-
-        RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(rewindability),
-            ImmutableList.of(left.replace(rewindability), right.replace(rewindability))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(
         RelTraitSet nodeTraits,
         List<RelTraitSet> inputTraits
     ) {
@@ -403,23 +386,14 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
 
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
-        List<Pair<RelTraitSet, List<RelTraitSet>>> res = new ArrayList<>();
-
-        RelTraitSet outTraits, leftTraits, rightTraits;
-
         IgniteDistribution distribution = TraitUtils.distribution(nodeTraits);
 
         RelDistribution.Type distrType = distribution.getType();
         switch (distrType) {
             case BROADCAST_DISTRIBUTED:
             case SINGLETON:
-                outTraits = nodeTraits.replace(distribution);
-                leftTraits = left.replace(distribution);
-                rightTraits = right.replace(distribution);
+                return Pair.of(nodeTraits, Commons.transform(inputTraits, t -> t.replace(distribution)));
 
-                res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-                break;
             case HASH_DISTRIBUTED:
             case RANDOM_DISTRIBUTED:
                 // Such join may be replaced as a cross join with a filter uppon it.
@@ -433,66 +407,18 @@ public class IgniteMergeJoin extends Join implements TraitsAwareIgniteRel {
                     ? distribution.function()
                     : DistributionFunction.hash();
 
-                IgniteDistribution outDistr; // TODO distribution multitrait support
-
-                outDistr = hash(joinInfo.leftKeys, function);
+                IgniteDistribution outDistr = hash(joinInfo.leftKeys, function);
 
                 if (distrType != HASH_DISTRIBUTED || outDistr.satisfies(distribution)) {
-                    outTraits = nodeTraits.replace(outDistr);
-                    leftTraits = left.replace(hash(joinInfo.leftKeys, function));
-                    rightTraits = right.replace(hash(joinInfo.rightKeys, function));
-
-                    res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-                    if (joinType == INNER || joinType == LEFT) {
-                        outTraits = nodeTraits.replace(outDistr);
-                        leftTraits = left.replace(hash(joinInfo.leftKeys, function));
-                        rightTraits = right.replace(broadcast());
-
-                        res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-                    }
+                    return Pair.of(nodeTraits.replace(outDistr),
+                        ImmutableList.of(left.replace(outDistr), right.replace(hash(joinInfo.rightKeys, function))));
                 }
-
-                outDistr = hash(joinInfo.rightKeys, function);
-
-                if (distrType != HASH_DISTRIBUTED || outDistr.satisfies(distribution)) {
-                    outTraits = nodeTraits.replace(outDistr);
-                    leftTraits = left.replace(hash(joinInfo.leftKeys, function));
-                    rightTraits = right.replace(hash(joinInfo.rightKeys, function));
-
-                    res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-                    if (joinType == INNER || joinType == RIGHT) {
-                        outTraits = nodeTraits.replace(outDistr);
-                        leftTraits = left.replace(broadcast());
-                        rightTraits = right.replace(hash(joinInfo.rightKeys, function));
-
-                        res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-                    }
-                }
-
-                break;
 
             default:
-                break;
+                // NO-OP
         }
 
-        if (!res.isEmpty())
-            return res;
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(single()),
-            ImmutableList.of(left.replace(single()), right.replace(single()))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits,
-            ImmutableList.of(
-                inTraits.get(0).replace(TraitUtils.correlation(nodeTraits)),
-                inTraits.get(1).replace(TraitUtils.correlation(nodeTraits))
-            )
-        ));
+        return Pair.of(nodeTraits.replace(single()), Commons.transform(inputTraits, t -> t.replace(single())));
     }
 
     /** {@inheritDoc} */

@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
@@ -89,17 +90,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // The node is rewindable if its input is rewindable.
-
-        RelTraitSet in = inputTraits.get(0);
-        RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
-
-        return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(in.replace(rewindability))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // All distribution types except hash distribution are propagated as is.
         // In case of hash distribution we need to project distribution keys.
         // In case one of distribution keys is erased by projection result distribution
@@ -109,7 +100,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         IgniteDistribution distribution = TraitUtils.distribution(nodeTraits);
 
         if (distribution.getType() != HASH_DISTRIBUTED)
-            return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(in.replace(distribution))));
+            return Pair.of(nodeTraits, ImmutableList.of(in.replace(distribution)));
 
         Mappings.TargetMapping mapping = getPartialMapping(
             input.getRowType().getFieldCount(), getProjects());
@@ -127,13 +118,13 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         }
 
         if (srcKeys.size() == keys.size())
-            return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(in.replace(hash(srcKeys, distribution.function())))));
+            return Pair.of(nodeTraits, ImmutableList.of(in.replace(hash(srcKeys, distribution.function()))));
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single()))));
+        return Pair.of(nodeTraits.replace(single()), ImmutableList.of(in.replace(single())));
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // The code below projects required collation. In case we cannot calculate required source collation
         // (e.g. one of required sorted fields is result of a function call), input and output collations are erased.
 
@@ -142,7 +133,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         List<RelFieldCollation> fieldCollations = TraitUtils.collation(nodeTraits).getFieldCollations();
 
         if (fieldCollations.isEmpty())
-            return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(in.replace(RelCollations.EMPTY))));
+            return Pair.of(nodeTraits, ImmutableList.of(in.replace(RelCollations.EMPTY)));
 
         Map<Integer, Integer> targets = new HashMap<>();
         for (Ord<RexNode> project : Ord.zip(getProjects())) {
@@ -160,9 +151,9 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         }
 
         if (inFieldCollations.size() == fieldCollations.size())
-            return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(in.replace(RelCollations.of(inFieldCollations)))));
+            return Pair.of(nodeTraits, ImmutableList.of(in.replace(RelCollations.of(inFieldCollations))));
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY), ImmutableList.of(in.replace(RelCollations.EMPTY))));
+        return Pair.of(nodeTraits.replace(RelCollations.EMPTY), ImmutableList.of(in.replace(RelCollations.EMPTY)));
     }
 
     /** {@inheritDoc} */
@@ -196,16 +187,15 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
     }
 
     /** */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCorrelation(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
         Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(getProjects());
         Set<CorrelationId> traitCorrIds = TraitUtils.correlation(nodeTraits).correlationIds();
 
         if (!traitCorrIds.containsAll(corrIds))
-            return ImmutableList.of();
+            return null;
 
-        return ImmutableList.of(Pair.of(nodeTraits,
-            ImmutableList.of(inTraits.get(0).replace(TraitUtils.correlation(nodeTraits)))));
+        return Pair.of(nodeTraits, ImmutableList.of(inTraits.get(0).replace(TraitUtils.correlation(nodeTraits))));
     }
 
     /** */
@@ -215,8 +205,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
 
         corrIds.addAll(TraitUtils.correlation(inTraits.get(0)).correlationIds());
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)),
-            inTraits));
+        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
     }
 
     /** {@inheritDoc} */
@@ -226,6 +215,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
         return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteProject(cluster, getTraitSet(), sole(inputs), getProjects(), getRowType());
     }

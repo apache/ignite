@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.List;
+
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.DeriveMode;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -30,18 +32,13 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 /** */
 public interface TraitsAwareIgniteRel extends IgniteRel {
     /** {@inheritDoc} */
-    @Override public default RelNode passThrough(RelTraitSet required) {
-        return TraitUtils.passThrough(this, required);
-    }
-
-    /** {@inheritDoc} */
     @Override public default List<RelNode> derive(List<List<RelTraitSet>> inTraits) {
         return TraitUtils.derive(this, inTraits);
     }
 
     /** {@inheritDoc} */
     @Override default Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
-        throw new RuntimeException(getClass().getName() + "#passThroughTraits() is not implemented.");
+        return TraitUtils.passThrough(this, required);
     }
 
     /** {@inheritDoc} */
@@ -73,7 +70,11 @@ public interface TraitsAwareIgniteRel extends IgniteRel {
      * @param inTraits Relational node input traits.
      * @return List of possible input-output traits combinations.
      */
-    List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inTraits);
+    default Pair<RelTraitSet, List<RelTraitSet>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inTraits) {
+        RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
+
+        return Pair.of(nodeTraits, Commons.transform(inTraits, t -> t.replace(rewindability)));
+    }
 
     /**
      * Propagates distribution trait in up-to-bottom manner.
@@ -82,7 +83,11 @@ public interface TraitsAwareIgniteRel extends IgniteRel {
      * @param inTraits Relational node input traits.
      * @return List of possible input-output traits combinations.
      */
-    List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inTraits);
+    default Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inTraits) {
+        IgniteDistribution distribution = TraitUtils.distribution(nodeTraits);
+
+        return Pair.of(nodeTraits, Commons.transform(inTraits, t -> t.replace(distribution)));
+    }
 
     /**
      * Propagates collation trait in up-to-bottom manner.
@@ -91,7 +96,14 @@ public interface TraitsAwareIgniteRel extends IgniteRel {
      * @param inTraits Relational node input traits.
      * @return List of possible input-output traits combinations.
      */
-    List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inTraits);
+    default Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inTraits) {
+        if (inTraits.size() > 1)
+            throw new RuntimeException(getClass().getName() + "#passThroughCollation() is not implemented.");
+
+        RelCollation collation = TraitUtils.collation(nodeTraits);
+
+        return Pair.of(nodeTraits, Commons.transform(inTraits, t -> t.replace(collation)));
+    }
 
     /**
      * Propagates correlation trait in up-to-bottom manner.
@@ -100,7 +112,11 @@ public interface TraitsAwareIgniteRel extends IgniteRel {
      * @param inTraits Relational node input traits.
      * @return List of possible input-output traits combinations.
      */
-    List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits, List<RelTraitSet> inTraits);
+    default Pair<RelTraitSet, List<RelTraitSet>> passThroughCorrelation(RelTraitSet nodeTraits, List<RelTraitSet> inTraits) {
+        CorrelationTrait correlation = TraitUtils.correlation(nodeTraits);
+
+        return Pair.of(nodeTraits, Commons.transform(inTraits, t -> t.replace(correlation)));
+    }
 
     /**
      * Propagates rewindability trait in bottom-up manner.

@@ -28,6 +28,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
@@ -71,46 +73,8 @@ public class IgniteExchange extends Exchange implements IgniteRel {
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rowCount = mq.getRowCount(this);
-        double bytesPerRow = getRowType().getFieldCount() * 4;
-        double mult;
-
-        // TODO: make dependency the cost on
-        //  - the Exchange's destination distribution;
-        //  - current distribution;
-        //  - cluster size.
-        // Now dummy multiplier is used to make differ cost.
-        switch (distribution().function().type()) {
-            case SINGLETON:
-                mult = 1;
-
-                break;
-
-            case HASH_DISTRIBUTED:
-                mult = 8;
-
-                break;
-
-            case BROADCAST_DISTRIBUTED:
-                mult = 8;
-
-                break;
-
-            case RANDOM_DISTRIBUTED:
-                mult = Double.MAX_VALUE;
-
-                break;
-
-            case RANGE_DISTRIBUTED:
-            case ROUND_ROBIN_DISTRIBUTED:
-            case ANY:
-            default:
-                mult = Double.MAX_VALUE;
-                assert false : "Invalid target distribution: " + distribution();
-
-                break;
-        }
-
-        return planner.getCostFactory().makeCost(rowCount * bytesPerRow, rowCount, 0).multiplyBy(mult);
+        double bytesPerRow = getRowType().getFieldCount() * 4 * (TraitUtils.distribution(this) == IgniteDistributions.broadcast() ? 10 : 1);
+        return planner.getCostFactory().makeCost(rowCount * bytesPerRow, rowCount, 0);
     }
 
     /** {@inheritDoc} */

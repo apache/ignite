@@ -136,42 +136,35 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
         right = right.replace(RelCollations.of(joinInfo.rightKeys));
-        // Requires collation from right input (need index lookup by correlated variables)
 
         // We preserve left edge collation only if batch size == 1
         if (variablesSet.size() == 1) {
+            RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
             RelCollation collation = TraitUtils.collation(nodeTraits);
-
-            if (collation.equals(RelCollations.EMPTY))
-                return ImmutableList.of(Pair.of(nodeTraits,
-                    ImmutableList.of(left.replace(RelCollations.EMPTY), right)));
 
             if (!projectsLeft(collation))
                 collation = RelCollations.EMPTY;
+TODODO
+            return Pair.of(nodeTraits.replace(collation), ImmutableList.of(left, right));
+        }
 
-            return ImmutableList.of(Pair.of(nodeTraits.replace(collation),
-                ImmutableList.of(left.replace(collation), right)));
-        }
-        else {
-            return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-                ImmutableList.of(left.replace(RelCollations.EMPTY), right)));
-        }
+        return Pair.of(nodeTraits.replace(RelCollations.EMPTY),
+            ImmutableList.of(left.replace(RelCollations.EMPTY), right));
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // Correlated nested loop requires rewindable right edge.
-
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
         RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(rewindability),
-            ImmutableList.of(left.replace(rewindability), right.replace(RewindabilityTrait.REWINDABLE))));
+        return Pair.of(nodeTraits.replace(rewindability),
+            ImmutableList.of(left.replace(rewindability), right.replace(RewindabilityTrait.REWINDABLE)));
     }
 
     /** {@inheritDoc} */
@@ -181,19 +174,19 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCorrelation(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
         CorrelationTrait nodeCorr = TraitUtils.correlation(nodeTraits);
 
         Set<CorrelationId> selfCorrIds = new HashSet<>(CorrelationTrait.correlations(variablesSet).correlationIds());
         selfCorrIds.addAll(nodeCorr.correlationIds());
 
-        return ImmutableList.of(Pair.of(nodeTraits,
+        return Pair.of(nodeTraits,
             ImmutableList.of(
                 inTraits.get(0).replace(nodeCorr),
                 inTraits.get(1).replace(CorrelationTrait.correlations(selfCorrIds))
             )
-        ));
+        );
     }
 
     /** {@inheritDoc} */

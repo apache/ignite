@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
@@ -88,17 +89,6 @@ public class IgniteNestedLoopJoin extends AbstractIgniteNestedLoopJoin {
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits,
-            ImmutableList.of(
-                inTraits.get(0).replace(TraitUtils.correlation(nodeTraits)),
-                inTraits.get(1).replace(TraitUtils.correlation(nodeTraits))
-            )
-        ));
     }
 
     /** {@inheritDoc} */

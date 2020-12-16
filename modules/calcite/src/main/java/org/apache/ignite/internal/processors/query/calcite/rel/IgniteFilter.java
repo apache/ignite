@@ -77,27 +77,6 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits,
-            ImmutableList.of(inTraits.get(0).replace(TraitUtils.rewindability(nodeTraits)))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits,
-            ImmutableList.of(inTraits.get(0).replace(TraitUtils.distribution(nodeTraits)))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits,
-            ImmutableList.of(inTraits.get(0).replace(TraitUtils.collation(nodeTraits)))));
-    }
-
-    /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
         if (!TraitUtils.rewindability(inTraits.get(0)).rewindable() && RexUtils.hasCorrelation(getCondition()))
@@ -122,15 +101,16 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
     }
 
     /** */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCorrelation(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
         Set<CorrelationId> corrSet = RexUtils.extractCorrelationIds(getCondition());
 
-        if (corrSet.isEmpty() || TraitUtils.correlation(nodeTraits).correlationIds().containsAll(corrSet))
-            return ImmutableList.of(Pair.of(nodeTraits,
-                ImmutableList.of(inTraits.get(0))));
+        CorrelationTrait correlation = TraitUtils.correlation(nodeTraits);
 
-        return ImmutableList.of();
+        if (corrSet.isEmpty() || correlation.correlationIds().containsAll(corrSet))
+            return Pair.of(nodeTraits, ImmutableList.of(inTraits.get(0)));
+
+        return null;
     }
 
     /** */
