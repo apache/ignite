@@ -66,9 +66,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         Starts in async way.
         """
-        if not clean:
-            self.__rotate_log()
-
         super().start(clean=clean)
 
     def start(self, clean=True):
@@ -191,7 +188,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
     # pylint: disable=W0613
     def _worker(self, idx, node):
-        cmd = self.spec.command
+        cmd = self.spec.command(self.get_log_file(node))
 
         self.logger.debug("Attempting to start Application Service on %s with command: %s" % (str(node.account), cmd))
 
@@ -355,16 +352,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         return str(node.account.ssh_client.exec_command("sudo iptables -L -n")[1].read(), sys.getdefaultencoding())
 
-    def __rotate_log(self):
+    def get_log_file(self, node):
         """
-        Rotate log file.
+        Get log file.
         """
-        new_log_file = self.STDOUT_STDERR_CAPTURE.replace('.log', '_$N.log')
+        cnt = list(node.account.ssh_capture(f'ls {self.LOGS_DIR} | grep -E "^console_?[0-9]*.log$" | wc -l', callback=int))[0]
 
-        for node in self.nodes:
-            node.account.ssh(f'if [ -e {self.STDOUT_STDERR_CAPTURE} ];'
-                             f'then '
-                             f'cd {self.LOGS_DIR};'
-                             f'N=`ls | grep -E "^console_?[0-9]*.log$" | wc -l`;'
-                             f'mv {self.STDOUT_STDERR_CAPTURE} {new_log_file};'
-                             f'fi')
+        if cnt is not 0:
+            return self.STDOUT_STDERR_CAPTURE.replace('.log', f'_{cnt}.log')
+        else:
+            return self.STDOUT_STDERR_CAPTURE
