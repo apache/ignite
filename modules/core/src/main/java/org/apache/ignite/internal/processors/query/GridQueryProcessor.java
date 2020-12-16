@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -58,6 +59,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -113,6 +115,7 @@ import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -130,6 +133,9 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.newSetFromMap;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXPERIMENTAL_SQL_ENGINE;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
@@ -232,6 +238,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Cache name - value typeId pairs for which type mismatch message was logged. */
     private final Set<Long> missedCacheTypes = ConcurrentHashMap.newKeySet();
 
+    /** Experimental calcite query engine. */
+    private QueryEngine experimentalQueryEngine;
+
+    /** h2 redirection stub. */
+    public static final Pattern H2_REDIRECTION_RULES =
+        Pattern.compile("\\s*(create\\s*table|drop\\s*table|alter\\s*table)", CASE_INSENSITIVE);
+
+    /** @see IgniteSystemProperties#IGNITE_EXPERIMENTAL_SQL_ENGINE */
+    public static final boolean DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE = false;
+
+    /** Use experimental engine flag. */
+    private final boolean useExperimentalSqlEngine;
+
     /**
      * @param ctx Kernal context.
      */
@@ -261,6 +280,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     U.warn(log, "Unsupported IO message: " + msg);
             }
         };
+
+        for (GridComponent cmp : ctx.components()) {
+            if (!(cmp instanceof QueryEngine))
+                continue;
+
+            experimentalQueryEngine = (QueryEngine) cmp;
+
+            break;
+        }
+
+        useExperimentalSqlEngine = getBoolean(IGNITE_EXPERIMENTAL_SQL_ENGINE);
     }
 
     /** {@inheritDoc} */
@@ -2761,6 +2791,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (qry.isLocal() && ctx.clientNode() && (cctx == null || cctx.config().getCacheMode() != CacheMode.LOCAL))
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
+
+        if (experimentalQueryEngine != null && useExperimentalSqlEngine) {
+            if (!H2_REDIRECTION_RULES.matcher(qry.getSql()).find())
+                return experimentalQueryEngine.query(QueryContext.of(qry), qry.getSchema(), qry.getSql(), X.EMPTY_OBJECT_ARRAY);
+        }
 
         return executeQuerySafe(cctx, () -> {
             assert idx != null;
