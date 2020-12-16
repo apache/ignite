@@ -394,7 +394,12 @@ public class ExchangeLatchManager {
                 if (log.isDebugEnabled())
                     log.debug("Process final ack [latch=" + latchUid + ", from=" + from + "]");
 
-                assert serverLatches.containsKey(latchUid) || clientLatches.containsKey(latchUid);
+                if (!serverLatches.containsKey(latchUid) && !clientLatches.containsKey(latchUid)) {
+                    log.warning("Latch for this acknowledge is completed or never have existed " +
+                        "[latch=" + latchUid + ", from=" + from + "]");
+
+                    return;
+                }
 
                 if (clientLatches.containsKey(latchUid)) {
                     ClientLatch latch = clientLatches.get(latchUid);
