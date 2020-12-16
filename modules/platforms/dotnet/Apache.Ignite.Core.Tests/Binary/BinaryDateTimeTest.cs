@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             setValue(obj, DateTime.Now);
 
-            var ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<IBinaryObject>(obj),
+            var ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<IBinaryObject>(obj), 
                 "Timestamp fields should throw an error on non-UTC values");
 
             Assert.AreEqual("DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.",
