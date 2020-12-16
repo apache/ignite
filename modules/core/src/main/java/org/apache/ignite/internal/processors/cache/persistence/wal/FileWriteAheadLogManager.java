@@ -3265,7 +3265,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             isCancelled = false;
 
-            new IgniteThread(archiver).start();
+            new IgniteThread(this).start();
         }
     }
 }
