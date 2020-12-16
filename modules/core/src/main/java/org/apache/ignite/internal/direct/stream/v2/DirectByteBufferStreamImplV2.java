@@ -303,7 +303,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** */
     protected boolean lastFinished;
 
-    /** map for cashing byte-array string representations */
+    /** map for cashing byte-array representations of strings */
     private Map<String, byte[]> stringsMap;
 
     /**
