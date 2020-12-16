@@ -310,6 +310,7 @@ public class SegmentAware {
 
     /**
      * Adding reserved WAL archive size in bytes.
+     * Defines a hint to determine if the maximum size is exceeded before a new segment is archived.
      *
      * @param size Size in bytes.
      */
@@ -325,7 +326,8 @@ public class SegmentAware {
     }
 
     /**
-     * Waiting for exceeding the maximum WAL archive size.
+     * Waiting for exceeding the maximum WAL archive size. To track size of WAL archive,
+     * need to use {@link #addCurrentWalArchiveSize} and {@link #addReservedWalArchiveSize}.
      *
      * @throws IgniteInterruptedCheckedException If it was interrupted.
      */
