@@ -75,6 +75,7 @@ public class MultipleSSLContextsTest extends GridCommonAbstractTest {
 
     /**
      * @param addr Address of a node to connect to.
+     * @param thinClientSSLFactory SSL context factory.
      * @return {@link ClientConfiguration} that can be used to start a thin client.
      */
     private ClientConfiguration clientConfiguration(String addr, Factory<SSLContext> thinClientSSLFactory) {
