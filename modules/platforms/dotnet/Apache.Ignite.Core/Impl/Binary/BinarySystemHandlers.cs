@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Find write handler for type.
         /// </summary>
         /// <param name="type">Type.</param>
-        /// <param name="forceTimestamp"></param>
+        /// <param name="forceTimestamp">Force timestamp.</param>
         /// <returns>
         /// Write handler or NULL.
         /// </returns>
