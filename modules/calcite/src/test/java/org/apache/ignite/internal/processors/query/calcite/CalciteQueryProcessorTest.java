@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -66,6 +69,126 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 ((IgniteEx)ign).context(), QueryEngine.class);
 
             qryProc.queryPlanCache().clear();
+        }
+    }
+
+    /** */
+    @Test
+    public void testCountWithJoin() throws Exception {
+        IgniteCache<Integer, RISK> RISK = ignite.getOrCreateCache(new CacheConfiguration<Integer, RISK>()
+            .setName("RISK")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, RISK.class).setTableName("RISK")))
+            .setBackups(1)
+        );
+
+        IgniteCache<Integer, TRADE> TRADE = ignite.getOrCreateCache(new CacheConfiguration<Integer, TRADE>()
+            .setName("TRADE")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, TRADE.class).setTableName("TRADE")))
+            .setBackups(1)
+        );
+
+        IgniteCache<Integer, BATCH> BATCH = ignite.getOrCreateCache(new CacheConfiguration<Integer, BATCH>()
+            .setName("BATCH")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, BATCH.class).setTableName("BATCH")))
+            .setCacheMode(CacheMode.REPLICATED)
+        );
+
+        Map<Integer, RISK> mRisk = new HashMap<>(65000);
+
+        for (int i = 0; i < 65000; i++)
+            mRisk.put(1, new RISK(i));
+
+        RISK.putAll(mRisk);
+
+        Map<Integer, TRADE> mTrade = new HashMap<>(200);
+
+        for (int i = 0; i < 200; i++)
+            mTrade.put(1, new TRADE(i));
+
+        TRADE.putAll(mTrade);
+
+        for (int i = 0; i < 80; i++)
+            BATCH.put(1, new BATCH(i));
+
+        awaitPartitionMapExchange(true, true, null);
+
+        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
+
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT count(*)" +
+                " FROM RISK R," +
+                " TRADE T," +
+                " BATCH B " +
+                "WHERE R.BATCHKEY = B.BATCHKEY " +
+                "AND R.TRADEID = T.TRADEID " +
+                "AND R.TRADEVER = T.TRADEVER " +
+                "AND T.BOOK = 'BOOK' " +
+                "AND B.IS = TRUE");
+
+        System.err.println(query.get(0).getAll());
+    }
+
+    /** */
+    public static class RISK {
+        /** */
+        @QuerySqlField
+        public Integer BATCHKEY;
+
+        /** */
+        @QuerySqlField
+        public Integer TRADEID;
+
+        /** */
+        @QuerySqlField
+        public Integer TRADEVER;
+
+        /** */
+        public RISK(Integer in) {
+            BATCHKEY = in;
+            TRADEID = in;
+            TRADEVER = in;
+        }
+    }
+
+    /** */
+    public static class TRADE {
+        /** */
+        @QuerySqlField
+        public Integer TRADEID;
+
+        /** */
+        @QuerySqlField
+        public Integer TRADEVER;
+
+        /** */
+        @QuerySqlField
+        public String BOOK;
+
+        /** */
+        public TRADE(Integer in) {
+            TRADEID = in;
+            TRADEVER = in;
+            BOOK = ThreadLocalRandom.current().nextBoolean() ? "BOOK" : "";
+        }
+    }
+
+    /** */
+    public static class BATCH {
+        /** */
+        @QuerySqlField
+        public Integer BATCHKEY;
+
+        /** */
+        @QuerySqlField
+        public Boolean IS;
+
+        /** */
+        public BATCH(Integer in) {
+            BATCHKEY = in;
+            IS = ThreadLocalRandom.current().nextBoolean();
         }
     }
 
@@ -297,7 +420,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13727")
     public void testUnionWithDistinct() throws Exception {
         populateTables();
 
@@ -485,6 +607,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13849")
     @Test
     public void queryMultiStatement() throws Exception {
         IgniteCache<Integer, Developer> developer = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Developer>()

@@ -54,6 +54,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchang
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.apache.calcite.plan.RelOptUtil.permutationPushDownProject;
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
@@ -147,7 +149,6 @@ public class TraitUtils {
                 RelOptRule.convert(
                     rel,
                     rel.getTraitSet()
-                        .replace(any())
                         .replace(CorrelationTrait.UNCORRELATED)
                 ),
                 toTrait);
@@ -365,27 +366,23 @@ public class TraitUtils {
     }
 
     /** */
-    public static RelNode passThrough(TraitsAwareIgniteRel rel, RelTraitSet outTraits) {
-        if (outTraits.getConvention() != IgniteConvention.INSTANCE || rel.getInputs().isEmpty())
+    public static Pair<RelTraitSet, List<RelTraitSet>> passThrough(TraitsAwareIgniteRel rel, RelTraitSet requiredTraits) {
+        if (requiredTraits.getConvention() != IgniteConvention.INSTANCE || rel.getInputs().isEmpty())
             return null;
 
         List<RelTraitSet> inTraits = Collections.nCopies(rel.getInputs().size(),
             rel.getCluster().traitSetOf(IgniteConvention.INSTANCE));
 
-        List<RelNode> nodes = new PropagationContext(ImmutableSet.of(Pair.of(outTraits, inTraits)))
-            .propagate(rel::passThroughCollation)
-            .propagate(rel::passThroughDistribution)
-            .propagate(rel::passThroughRewindability)
-            .propagate(rel::passThroughCorrelation)
-            .nodes(rel::createNode);
+        List<Pair<RelTraitSet, List<RelTraitSet>>> traits = new PropagationContext(ImmutableSet.of(Pair.of(requiredTraits, inTraits)))
+            .propagate((in, outs) -> singletonListFromNullable(rel.passThroughCollation(in, outs)))
+            .propagate((in, outs) -> singletonListFromNullable(rel.passThroughDistribution(in, outs)))
+            .propagate((in, outs) -> singletonListFromNullable(rel.passThroughRewindability(in, outs)))
+            .propagate((in, outs) -> singletonListFromNullable(rel.passThroughCorrelation(in, outs)))
+            .combinations();
 
-        if (nodes.isEmpty())
-            return null;
+        assert traits.size() <= 1;
 
-        if (nodes.size() == 1)
-            return F.first(nodes);
-
-        return new RelRegistrar(rel.getCluster(), outTraits, rel, nodes);
+        return F.first(traits);
     }
 
     /** */
@@ -404,6 +401,13 @@ public class TraitUtils {
             .propagate(rel::deriveRewindability)
             .propagate(rel::deriveCorrelation)
             .nodes(rel::createNode);
+    }
+
+    /**
+     * @param elem Elem.
+     */
+    private static <T> List<T> singletonListFromNullable(@Nullable T elem) {
+        return elem == null ? emptyList() : singletonList(elem);
     }
 
     /** */
@@ -466,6 +470,11 @@ public class TraitUtils {
             for (Pair<RelTraitSet, List<RelTraitSet>> variant : combinations)
                 b.add(nodesCreator.create(variant.left, variant.right));
             return b.build();
+        }
+
+        /** */
+        public List<Pair<RelTraitSet, List<RelTraitSet>>> combinations() {
+            return ImmutableList.copyOf(combinations);
         }
     }
 

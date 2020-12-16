@@ -33,7 +33,6 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelNodes;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
@@ -224,7 +223,7 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // We preserve left collation since it's translated into a nested loop join with an outer loop
         // over a left edge. The code below checks whether a desired collation is possible and requires
         // appropriate collation from the left edge.
@@ -234,8 +233,8 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
         if (collation.equals(RelCollations.EMPTY))
-            return ImmutableList.of(Pair.of(nodeTraits,
-                ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(RelCollations.EMPTY))));
+            return Pair.of(nodeTraits,
+                ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(RelCollations.EMPTY)));
 
         if (!projectsLeft(collation))
             collation = RelCollations.EMPTY;
@@ -248,24 +247,12 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
             }
         }
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(collation),
-            ImmutableList.of(left.replace(collation), right.replace(RelCollations.EMPTY))));
+        return Pair.of(nodeTraits.replace(collation),
+            ImmutableList.of(left.replace(collation), right.replace(RelCollations.EMPTY)));
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // The node is rewindable only if both sources are rewindable.
-
-        RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
-
-        RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(rewindability),
-            ImmutableList.of(left.replace(rewindability), right.replace(rewindability))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // Tere are several rules:
         // 1) any join is possible on broadcast or single distribution
         // 2) hash distributed join is possible when join keys equal to source distribution keys
@@ -277,23 +264,14 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
 
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
-        List<Pair<RelTraitSet, List<RelTraitSet>>> res = new ArrayList<>();
-
-        RelTraitSet outTraits, leftTraits, rightTraits;
-
         IgniteDistribution distribution = TraitUtils.distribution(nodeTraits);
 
         RelDistribution.Type distrType = distribution.getType();
         switch (distrType) {
             case BROADCAST_DISTRIBUTED:
             case SINGLETON:
-                outTraits = nodeTraits.replace(distribution);
-                leftTraits = left.replace(distribution);
-                rightTraits = right.replace(distribution);
+                return Pair.of(nodeTraits, Commons.transform(inputTraits, t -> t.replace(distribution)));
 
-                res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-                break;
             case HASH_DISTRIBUTED:
             case RANDOM_DISTRIBUTED:
                 // Such join may be replaced as a cross join with a filter uppon it.
@@ -307,55 +285,18 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
                     ? distribution.function()
                     : DistributionFunction.hash();
 
-                IgniteDistribution outDistr; // TODO distribution multitrait support
-
-                outDistr = hash(joinInfo.leftKeys, function);
+                IgniteDistribution outDistr = hash(joinInfo.leftKeys, function);
 
                 if (distrType != HASH_DISTRIBUTED || outDistr.satisfies(distribution)) {
-                    outTraits = nodeTraits.replace(outDistr);
-                    leftTraits = left.replace(hash(joinInfo.leftKeys, function));
-                    rightTraits = right.replace(hash(joinInfo.rightKeys, function));
-
-                    res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-                    if (joinType == INNER || joinType == LEFT) {
-                        outTraits = nodeTraits.replace(outDistr);
-                        leftTraits = left.replace(hash(joinInfo.leftKeys, function));
-                        rightTraits = right.replace(broadcast());
-
-                        res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-                    }
+                    return Pair.of(nodeTraits.replace(outDistr),
+                        ImmutableList.of(left.replace(outDistr), right.replace(hash(joinInfo.rightKeys, function))));
                 }
-
-                outDistr = hash(joinInfo.rightKeys, function);
-
-                if (distrType != HASH_DISTRIBUTED || outDistr.satisfies(distribution)) {
-                    outTraits = nodeTraits.replace(outDistr);
-                    leftTraits = left.replace(hash(joinInfo.leftKeys, function));
-                    rightTraits = right.replace(hash(joinInfo.rightKeys, function));
-
-                    res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-
-                    if (joinType == INNER || joinType == RIGHT) {
-                        outTraits = nodeTraits.replace(outDistr);
-                        leftTraits = left.replace(broadcast());
-                        rightTraits = right.replace(hash(joinInfo.rightKeys, function));
-
-                        res.add(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-                    }
-                }
-
-                break;
 
             default:
-                break;
+                // NO-OP
         }
 
-        if (!res.isEmpty())
-            return res;
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(single()),
-            ImmutableList.of(left.replace(single()), right.replace(single()))));
+        return Pair.of(nodeTraits.replace(single()), Commons.transform(inputTraits, t -> t.replace(single())));
     }
 
     /** {@inheritDoc} */
@@ -370,18 +311,8 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
         // Joins can be flipped, and for many algorithms, both versions are viable
         // and have the same cost. To make the results stable between versions of
         // the planner, make one of the versions slightly more expensive.
-        switch (joinType) {
-            case SEMI:
-            case ANTI:
-                // SEMI and ANTI join cannot be flipped
-                break;
-            case RIGHT:
-                rowCount = RelMdUtil.addEpsilon(rowCount);
-                break;
-            default:
-                if (RelNodes.COMPARATOR.compare(left, right) > 0)
-                    rowCount = RelMdUtil.addEpsilon(rowCount);
-        }
+        if (joinType == RIGHT)
+            rowCount = RelMdUtil.addEpsilon(rowCount);
 
         final double rightRowCount = right.estimateRowCount(mq);
         final double leftRowCount = left.estimateRowCount(mq);
@@ -391,10 +322,16 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
         if (Double.isInfinite(rightRowCount))
             rowCount = rightRowCount;
 
+        if (!Double.isInfinite(leftRowCount) && !Double.isInfinite(rightRowCount) && leftRowCount > rightRowCount)
+            rowCount = RelMdUtil.addEpsilon(rowCount);
+
         RelDistribution.Type type = distribution().getType();
 
-        if (type == BROADCAST_DISTRIBUTED || type == SINGLETON)
+        if (type == SINGLETON)
             rowCount = RelMdUtil.addEpsilon(rowCount);
+
+        if (type == BROADCAST_DISTRIBUTED)
+            rowCount = RelMdUtil.addEpsilon(RelMdUtil.addEpsilon(rowCount));
 
         return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -67,31 +68,11 @@ public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // Union node requires the same traits from all its inputs.
-
-        RewindabilityTrait rewindability = TraitUtils.rewindability(nodeTraits);
-
-        return ImmutableList.of(Pair.of(nodeTraits,
-            Commons.transform(inputTraits, t -> t.replace(rewindability))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // Union node requires the same traits from all its inputs.
-
-        IgniteDistribution distribution = TraitUtils.distribution(nodeTraits);
-
-        return ImmutableList.of(Pair.of(nodeTraits,
-            Commons.transform(inputTraits, t -> t.replace(distribution))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // Union node erases collation. TODO union all using merge sort algorythm
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY))));
+        return Pair.of(nodeTraits.replace(RelCollations.EMPTY),
+            Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY)));
     }
 
     /** {@inheritDoc} */
@@ -132,13 +113,6 @@ public class IgniteUnionAll extends Union implements TraitsAwareIgniteRel {
 
         return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
             Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY))));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> passThroughCorrelation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        return ImmutableList.of(Pair.of(nodeTraits,
-            Commons.transform(inTraits, t -> t.replace(TraitUtils.correlation(nodeTraits)))));
     }
 
     /** {@inheritDoc} */
