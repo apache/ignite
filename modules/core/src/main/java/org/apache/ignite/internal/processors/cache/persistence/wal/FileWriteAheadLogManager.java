@@ -3120,12 +3120,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Check if WAL archive is unlimited.
+     * Getting last truncated segment.
      *
-     * @return {@code True} if unlimited.
+     * @return Absolut segment index.
      */
-    private boolean walArchiveUnlimited() {
-        return dsCfg.getMaxWalArchiveSize() == DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
+    public long lastTruncatedSegment() {
+        return segmentAware.lastTruncatedArchiveIdx();
     }
 
     /**
@@ -3133,13 +3133,22 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      *
      * @return Size in bytes.
      */
-    private long totalSize(FileDescriptor... fileDescriptors) {
+    public long totalSize(FileDescriptor... fileDescriptors) {
         long len = 0;
 
         for (FileDescriptor descriptor : fileDescriptors)
             len += descriptor.file.length();
 
         return len;
+    }
+
+    /**
+     * Check if WAL archive is unlimited.
+     *
+     * @return {@code True} if unlimited.
+     */
+    private boolean walArchiveUnlimited() {
+        return dsCfg.getMaxWalArchiveSize() == DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
     }
 
     /**
