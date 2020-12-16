@@ -62,15 +62,15 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         self.disconnected_nodes = []
         self.killed = False
 
-    def start_async(self):
+    def start_async(self, clean=True):
         """
         Starts in async way.
         """
         self.exec_on_nodes_async(self.nodes, self.__stop_and_clean_single_node, simultaneously=False)
         self.exec_on_nodes_async(self.nodes, lambda srvc, node: srvc.start_node(node), simultaneously=True)
 
-    def start(self):
-        self.start_async()
+    def start(self, clean=True):
+        self.start_async(clean=clean)
         self.await_started()
 
     def await_started(self):
