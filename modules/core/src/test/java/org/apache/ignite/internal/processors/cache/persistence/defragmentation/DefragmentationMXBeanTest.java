@@ -41,6 +41,9 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 
+/**
+ * Tests for defragmentation JMX bean.
+ */
 public class DefragmentationMXBeanTest extends GridCommonAbstractTest {
     /** */
     private static CountDownLatch blockCdl;
@@ -71,6 +74,15 @@ public class DefragmentationMXBeanTest extends GridCommonAbstractTest {
         return cfg.setDataStorageConfiguration(dsCfg);
     }
 
+    /**
+     * Test that defragmentation won't be scheduled second time, if previously scheduled via maintenance registry.
+     * Description:
+     * 1. Start two nodes.
+     * 2. Register defragmentation maintenance task on the first node.
+     * 3. Restart node.
+     * 3. Scheduling of the defragmentation on the first node via JMX bean should fail.
+     * @throws Exception If failed.
+     */
     @Test
     public void testDefragmentationSchedule() throws Exception {
         Ignite ignite = startGrids(2);
@@ -93,13 +105,19 @@ public class DefragmentationMXBeanTest extends GridCommonAbstractTest {
         assertFalse(mxBean.schedule(""));
     }
 
+    /**
+     * Test that defragmentation can be successfuly cancelled via JMX bean.
+     * @throws Exception If failed.
+     */
     @Test
     public void testDefragmentationCancel() throws Exception {
         Ignite ignite = startGrids(2);
 
         ignite.cluster().state(ACTIVE);
 
-        final DefragmentationMXBean mxBean = defragmentationMXBean(ignite.name());
+        DefragmentationMXBean mxBean = defragmentationMXBean(ignite.name());
+
+        mxBean.schedule("");
 
         assertTrue(mxBean.cancel());
 
@@ -107,6 +125,16 @@ public class DefragmentationMXBeanTest extends GridCommonAbstractTest {
         assertTrue(mxBean.cancel());
     }
 
+    /**
+     * Test that ongong defragmentation can be stopped via JMX bean.
+     * Description:
+     * 1. Start one node.
+     * 2. Put a load of a data on it.
+     * 3. Schedule defragmentation.
+     * 4. Make IO factory slow down after 128 partitions are processed, so we have time to stop the defragmentation.
+     * 5. Stop the defragmentation.
+     * @throws Exception If failed.
+     */
     @Test
     public void testDefragmentationCancelInProgress() throws Exception {
         IgniteEx ig = startGrid(0);
@@ -176,6 +204,18 @@ public class DefragmentationMXBeanTest extends GridCommonAbstractTest {
         assertTrue(mxBean.cancel());
     }
 
+    /**
+     * Test that JMX bean provides correct defragmentation status.
+     * Description:
+     * 1. Start one node,
+     * 2. Put a load of data on it.
+     * 3. Schedule defragmentation.
+     * 4. Completely stop defragmentation when 128 partitions processed.
+     * 5. Check defragmentation status.
+     * 6. Continue defragmentation and wait for it to end.
+     * 7. Check defragmentation finished.
+     * @throws Exception If failed.
+     */
     @Test
     public void testDefragmentationStatus() throws Exception {
         IgniteEx ig = startGrid(0);
@@ -265,6 +305,11 @@ public class DefragmentationMXBeanTest extends GridCommonAbstractTest {
         assertEquals(totalPartitions, mxBean.processedPartitions());
     }
 
+    /**
+     * Get defragmentation JMX bean.
+     * @param name Ignite instance name.
+     * @return Defragmentation JMX bean.
+     */
     private DefragmentationMXBean defragmentationMXBean(String name) {
         return getMxBean(
             name,

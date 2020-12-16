@@ -992,32 +992,33 @@ public class CachePartitionDefragmentationManager {
         private static final long serialVersionUID = 0L;
     }
 
-    /** */
+    /** Defragmentation status. */
     class Status {
-        /** */
+        /** Defragmentation start timestamp. */
         private long startTs;
 
-        /** */
+        /** Defragmentation finish timestamp. */
         private long finishTs;
 
-        /** */
+        /** Total count of partitions. */
         private int totalPartitionCount;
 
-        /** */
+        /** Partitions, that are already defragmented. */
         private int defragmentedPartitionCount;
 
-        /** */
+        /** Cache groups scheduled for defragmentation. */
         private final Set<String> scheduledGroups;
 
-        /** */
+        /** Progress for cache group. */
         private final Map<CacheGroupContext, DefragmentationCacheGroupProgress> progressGroups;
 
-        /** */
+        /** Finished cache groups. */
         private final Map<CacheGroupContext, DefragmentationCacheGroupProgress> finishedGroups;
 
-        /** */
+        /** Skipped cache groups. */
         private final Set<String> skippedGroups;
 
+        /** Constructor. */
         public Status() {
             scheduledGroups = new TreeSet<>();
             progressGroups = new TreeMap<>(comparing(CacheGroupContext::cacheOrGroupName));
@@ -1025,6 +1026,7 @@ public class CachePartitionDefragmentationManager {
             skippedGroups = new TreeSet<>();
         }
 
+        /** Copy constructor. */
         public Status(
             long startTs,
             long finishTs,
@@ -1041,7 +1043,11 @@ public class CachePartitionDefragmentationManager {
             this.skippedGroups = skippedGroups;
         }
 
-        /** */
+        /**
+         * Mark the start of the defragmentation.
+         * @param scheduledGroups Groups scheduled for defragmentation.
+         * @param partitions Total partition count.
+         */
         public synchronized void onStart(Set<CacheGroupContext> scheduledGroups, int partitions) {
             startTs = System.currentTimeMillis();
             totalPartitionCount = partitions;
@@ -1052,26 +1058,43 @@ public class CachePartitionDefragmentationManager {
             log.info("Defragmentation started.");
         }
 
-        /** */
+        /**
+         * Mark the start of the cache group defragmentation.
+         * @param grpCtx Cache group context.
+         * @param parts Partition count.
+         */
         private synchronized void onCacheGroupStart(CacheGroupContext grpCtx, int parts) {
             scheduledGroups.remove(grpCtx.cacheOrGroupName());
 
             progressGroups.put(grpCtx, new DefragmentationCacheGroupProgress(parts));
         }
 
-        /** */
+        /**
+         * Mark the end of the partition defragmentation.
+         * @param grpCtx Cache group context.
+         * @param oldSize Old size.
+         * @param newSize New size;
+         */
         private synchronized void onPartitionDefragmented(CacheGroupContext grpCtx, long oldSize, long newSize) {
             progressGroups.get(grpCtx).onPartitionDefragmented(oldSize, newSize);
 
             defragmentedPartitionCount++;
         }
 
-        /** */
+        /**
+         * Mark the end of the index partition defragmentation.
+         * @param grpCtx Cache group context.
+         * @param oldSize Old size.
+         * @param newSize New size;
+         */
         private synchronized void onIndexDefragmented(CacheGroupContext grpCtx, long oldSize, long newSize) {
             progressGroups.get(grpCtx).onIndexDefragmented(oldSize, newSize);
         }
 
-        /** */
+        /**
+         * Mark the end of the cache group defragmentation.
+         * @param grpCtx Cache group context.
+         */
         private synchronized void onCacheGroupFinish(CacheGroupContext grpCtx) {
             DefragmentationCacheGroupProgress progress = progressGroups.remove(grpCtx);
 
@@ -1080,7 +1103,10 @@ public class CachePartitionDefragmentationManager {
             finishedGroups.put(grpCtx, progress);
         }
 
-        /** */
+        /**
+         * Mark that cache group defragmentation was skipped.
+         * @param grpCtx Cache group context.
+         */
         private synchronized void onCacheGroupSkipped(CacheGroupContext grpCtx, int partitions) {
             scheduledGroups.remove(grpCtx.cacheOrGroupName());
 
@@ -1089,7 +1115,7 @@ public class CachePartitionDefragmentationManager {
             defragmentedPartitionCount += partitions;
         }
 
-        /** */
+        /** Mark the end of the defragmentation. */
         private synchronized void onFinish() {
             finishTs = System.currentTimeMillis();
 
@@ -1100,7 +1126,7 @@ public class CachePartitionDefragmentationManager {
             log.info("Defragmentation process completed. Time: " + (finishTs - startTs) * 1e-3 + "s.");
         }
 
-        /** */
+        /** Copy object.  */
         private synchronized Status copy() {
             return new Status(
                 startTs,
@@ -1153,27 +1179,27 @@ public class CachePartitionDefragmentationManager {
         }
     }
 
-    /** */
+    /** Cache group defragmentation progress. */
     static class DefragmentationCacheGroupProgress {
-        /** */
+        /** Partition count. */
         private final int partsTotal;
 
-        /** */
+        /** Defragmented partitions. */
         private int partsCompleted;
 
-        /** */
+        /** Old cache group size. */
         private long oldSize;
 
-        /** */
+        /** New cache group size. */
         private long newSize;
 
-        /** */
+        /** Start timestamp. */
         private final long startTs;
 
-        /** */
+        /** Finish timestamp. */
         private long finishTs;
 
-        /** */
+        /** Constructor. */
         public DefragmentationCacheGroupProgress(int parts) {
             partsTotal = parts;
 
