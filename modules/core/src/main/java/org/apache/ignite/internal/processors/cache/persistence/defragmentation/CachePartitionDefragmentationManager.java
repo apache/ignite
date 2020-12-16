@@ -19,12 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -46,6 +44,7 @@ import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
@@ -154,7 +153,7 @@ public class CachePartitionDefragmentationManager {
     private final AtomicBoolean cancel = new AtomicBoolean();
 
     /** */
-    private final DefragmentationStatus status = new DefragmentationStatus();
+    private final Status status = new Status();
 
     /** */
     private final GridFutureAdapter<?> completionFut = new GridFutureAdapter<>();
@@ -221,7 +220,30 @@ public class CachePartitionDefragmentationManager {
 
     /** */
     public void executeDefragmentation() throws IgniteCheckedException {
-        status.onStart(cacheGrpCtxsForDefragmentation);
+        Map<Integer, List<CacheDataStore>> oldStores = new HashMap<>();
+
+        for (CacheGroupContext oldGrpCtx : cacheGrpCtxsForDefragmentation) {
+            int grpId = oldGrpCtx.groupId();
+
+            final IgniteCacheOffheapManager offheap = oldGrpCtx.offheap();
+
+            List<CacheDataStore> oldCacheDataStores = stream(offheap.cacheDataStores().spliterator(), false)
+                .filter(store -> {
+                    try {
+                        return filePageStoreMgr.exists(grpId, store.partId());
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                })
+                .collect(Collectors.toList());
+
+            oldStores.put(grpId, oldCacheDataStores);
+        }
+
+        int partitionCount = oldStores.values().stream().mapToInt(List::size).sum();
+
+        status.onStart(cacheGrpCtxsForDefragmentation, partitionCount);
 
         try {
             // Now the actual process starts.
@@ -235,25 +257,16 @@ public class CachePartitionDefragmentationManager {
 
                 File workDir = filePageStoreMgr.cacheWorkDir(oldGrpCtx.sharedGroup(), oldGrpCtx.cacheOrGroupName());
 
+                List<CacheDataStore> oldCacheDataStores = oldStores.get(grpId);
+
                 if (skipAlreadyDefragmentedCacheGroup(workDir, grpId, log)) {
-                    status.onCacheGroupSkipped(oldGrpCtx);
+                    status.onCacheGroupSkipped(oldGrpCtx, oldCacheDataStores.size());
 
                     continue;
                 }
 
                 try {
                     GridCacheOffheapManager offheap = (GridCacheOffheapManager)oldGrpCtx.offheap();
-
-                    List<CacheDataStore> oldCacheDataStores = stream(offheap.cacheDataStores().spliterator(), false)
-                        .filter(store -> {
-                            try {
-                                return filePageStoreMgr.exists(grpId, store.partId());
-                            }
-                            catch (IgniteCheckedException e) {
-                                throw new IgniteException(e);
-                            }
-                        })
-                        .collect(Collectors.toList());
 
                     status.onCacheGroupStart(oldGrpCtx, oldCacheDataStores.size());
 
@@ -609,8 +622,8 @@ public class CachePartitionDefragmentationManager {
     }
 
     /** */
-    public String status() {
-        return status.toString();
+    public Status status() {
+        return status;
     }
 
     /**
@@ -979,58 +992,110 @@ public class CachePartitionDefragmentationManager {
         private static final long serialVersionUID = 0L;
     }
 
-    /** */
-    private class DefragmentationStatus {
-        /** */
+    /** Defragmentation status. */
+    class Status {
+        /** Defragmentation start timestamp. */
         private long startTs;
 
-        /** */
+        /** Defragmentation finish timestamp. */
         private long finishTs;
 
-        /** */
-        private final Set<String> scheduledGroups = new TreeSet<>();
+        /** Total count of partitions. */
+        private int totalPartitionCount;
 
-        /** */
-        private final Map<CacheGroupContext, DefragmentationCacheGroupProgress> progressGroups
-            = new TreeMap<>(comparing(CacheGroupContext::cacheOrGroupName));
+        /** Partitions, that are already defragmented. */
+        private int defragmentedPartitionCount;
 
-        /** */
-        private final Map<CacheGroupContext, DefragmentationCacheGroupProgress> finishedGroups
-            = new TreeMap<>(comparing(CacheGroupContext::cacheOrGroupName));
+        /** Cache groups scheduled for defragmentation. */
+        private final Set<String> scheduledGroups;
 
-        /** */
-        private final Set<String> skippedGroups = new TreeSet<>();
+        /** Progress for cache group. */
+        private final Map<CacheGroupContext, DefragmentationCacheGroupProgress> progressGroups;
 
-        /** */
-        public synchronized void onStart(Set<CacheGroupContext> scheduledGroups) {
+        /** Finished cache groups. */
+        private final Map<CacheGroupContext, DefragmentationCacheGroupProgress> finishedGroups;
+
+        /** Skipped cache groups. */
+        private final Set<String> skippedGroups;
+
+        /** Constructor. */
+        public Status() {
+            scheduledGroups = new TreeSet<>();
+            progressGroups = new TreeMap<>(comparing(CacheGroupContext::cacheOrGroupName));
+            finishedGroups = new TreeMap<>(comparing(CacheGroupContext::cacheOrGroupName));
+            skippedGroups = new TreeSet<>();
+        }
+
+        /** Copy constructor. */
+        public Status(
+            long startTs,
+            long finishTs,
+            Set<String> scheduledGroups,
+            Map<CacheGroupContext, DefragmentationCacheGroupProgress> progressGroups,
+            Map<CacheGroupContext, DefragmentationCacheGroupProgress> finishedGroups,
+            Set<String> skippedGroups
+        ) {
+            this.startTs = startTs;
+            this.finishTs = finishTs;
+            this.scheduledGroups = scheduledGroups;
+            this.progressGroups = progressGroups;
+            this.finishedGroups = finishedGroups;
+            this.skippedGroups = skippedGroups;
+        }
+
+        /**
+         * Mark the start of the defragmentation.
+         * @param scheduledGroups Groups scheduled for defragmentation.
+         * @param partitions Total partition count.
+         */
+        public synchronized void onStart(Set<CacheGroupContext> scheduledGroups, int partitions) {
             startTs = System.currentTimeMillis();
+            totalPartitionCount = partitions;
 
-            for (CacheGroupContext grp : scheduledGroups) {
+            for (CacheGroupContext grp : scheduledGroups)
                 this.scheduledGroups.add(grp.cacheOrGroupName());
-            }
 
             log.info("Defragmentation started.");
         }
 
-        /** */
-        public synchronized void onCacheGroupStart(CacheGroupContext grpCtx, int parts) {
+        /**
+         * Mark the start of the cache group defragmentation.
+         * @param grpCtx Cache group context.
+         * @param parts Partition count.
+         */
+        private synchronized void onCacheGroupStart(CacheGroupContext grpCtx, int parts) {
             scheduledGroups.remove(grpCtx.cacheOrGroupName());
 
             progressGroups.put(grpCtx, new DefragmentationCacheGroupProgress(parts));
         }
 
-        /** */
-        public synchronized void onPartitionDefragmented(CacheGroupContext grpCtx, long oldSize, long newSize) {
+        /**
+         * Mark the end of the partition defragmentation.
+         * @param grpCtx Cache group context.
+         * @param oldSize Old size.
+         * @param newSize New size;
+         */
+        private synchronized void onPartitionDefragmented(CacheGroupContext grpCtx, long oldSize, long newSize) {
             progressGroups.get(grpCtx).onPartitionDefragmented(oldSize, newSize);
+
+            defragmentedPartitionCount++;
         }
 
-        /** */
-        public synchronized void onIndexDefragmented(CacheGroupContext grpCtx, long oldSize, long newSize) {
+        /**
+         * Mark the end of the index partition defragmentation.
+         * @param grpCtx Cache group context.
+         * @param oldSize Old size.
+         * @param newSize New size;
+         */
+        private synchronized void onIndexDefragmented(CacheGroupContext grpCtx, long oldSize, long newSize) {
             progressGroups.get(grpCtx).onIndexDefragmented(oldSize, newSize);
         }
 
-        /** */
-        public synchronized void onCacheGroupFinish(CacheGroupContext grpCtx) {
+        /**
+         * Mark the end of the cache group defragmentation.
+         * @param grpCtx Cache group context.
+         */
+        private synchronized void onCacheGroupFinish(CacheGroupContext grpCtx) {
             DefragmentationCacheGroupProgress progress = progressGroups.remove(grpCtx);
 
             progress.onFinish();
@@ -1038,15 +1103,20 @@ public class CachePartitionDefragmentationManager {
             finishedGroups.put(grpCtx, progress);
         }
 
-        /** */
-        public synchronized void onCacheGroupSkipped(CacheGroupContext grpCtx) {
+        /**
+         * Mark that cache group defragmentation was skipped.
+         * @param grpCtx Cache group context.
+         */
+        private synchronized void onCacheGroupSkipped(CacheGroupContext grpCtx, int partitions) {
             scheduledGroups.remove(grpCtx.cacheOrGroupName());
 
             skippedGroups.add(grpCtx.cacheOrGroupName());
+
+            defragmentedPartitionCount += partitions;
         }
 
-        /** */
-        public synchronized void onFinish() {
+        /** Mark the end of the defragmentation. */
+        private synchronized void onFinish() {
             finishTs = System.currentTimeMillis();
 
             progressGroups.clear();
@@ -1056,67 +1126,80 @@ public class CachePartitionDefragmentationManager {
             log.info("Defragmentation process completed. Time: " + (finishTs - startTs) * 1e-3 + "s.");
         }
 
-        /** {@inheritDoc} */
-        @Override public synchronized String toString() {
-            StringBuilder sb = new StringBuilder();
+        /** Copy object.  */
+        private synchronized Status copy() {
+            return new Status(
+                startTs,
+                finishTs,
+                new HashSet<>(scheduledGroups),
+                new HashMap<>(progressGroups),
+                new HashMap<>(finishedGroups),
+                new HashSet<>(skippedGroups)
+            );
+        }
 
-            if (!finishedGroups.isEmpty()) {
-                sb.append("Defragmentation is completed for cache groups:\n");
+        /** */
+        public long getStartTs() {
+            return startTs;
+        }
 
-                for (Map.Entry<CacheGroupContext, DefragmentationCacheGroupProgress> entry : finishedGroups.entrySet()) {
-                    sb.append("    ").append(entry.getKey().cacheOrGroupName()).append(" - ");
+        /** */
+        public long getFinishTs() {
+            return finishTs;
+        }
 
-                    sb.append(entry.getValue().toString()).append('\n');
-                }
-            }
+        /** */
+        public Set<String> getScheduledGroups() {
+            return scheduledGroups;
+        }
 
-            if (!progressGroups.isEmpty()) {
-                sb.append("Defragmentation is in progress for cache groups:\n");
+        /** */
+        public Map<CacheGroupContext, DefragmentationCacheGroupProgress> getProgressGroups() {
+            return progressGroups;
+        }
 
-                for (Map.Entry<CacheGroupContext, DefragmentationCacheGroupProgress> entry : progressGroups.entrySet()) {
-                    sb.append("    ").append(entry.getKey().cacheOrGroupName()).append(" - ");
+        /** */
+        public Map<CacheGroupContext, DefragmentationCacheGroupProgress> getFinishedGroups() {
+            return finishedGroups;
+        }
 
-                    sb.append(entry.getValue().toString()).append('\n');
-                }
-            }
+        /** */
+        public Set<String> getSkippedGroups() {
+            return skippedGroups;
+        }
 
-            if (!skippedGroups.isEmpty())
-                sb.append("Skipped cache groups: ").append(String.join(", ", skippedGroups)).append('\n');
+        /** */
+        public int getTotalPartitionCount() {
+            return totalPartitionCount;
+        }
 
-            if (!scheduledGroups.isEmpty())
-                sb.append("Awaiting defragmentation: ").append(String.join(", ", scheduledGroups)).append('\n');
-
-            return sb.toString();
+        /** */
+        public int getDefragmentedPartitionCount() {
+            return defragmentedPartitionCount;
         }
     }
 
-    /** */
-    private static class DefragmentationCacheGroupProgress {
-        /** */
-        private static final DecimalFormat MB_FORMAT = new DecimalFormat(
-            "#.##",
-            DecimalFormatSymbols.getInstance(Locale.US)
-        );
-
-        /** */
+    /** Cache group defragmentation progress. */
+    static class DefragmentationCacheGroupProgress {
+        /** Partition count. */
         private final int partsTotal;
 
-        /** */
+        /** Defragmented partitions. */
         private int partsCompleted;
 
-        /** */
+        /** Old cache group size. */
         private long oldSize;
 
-        /** */
+        /** New cache group size. */
         private long newSize;
 
-        /** */
+        /** Start timestamp. */
         private final long startTs;
 
-        /** */
+        /** Finish timestamp. */
         private long finishTs;
 
-        /** */
+        /** Constructor. */
         public DefragmentationCacheGroupProgress(int parts) {
             partsTotal = parts;
 
@@ -1144,43 +1227,38 @@ public class CachePartitionDefragmentationManager {
         }
 
         /** */
-        public void onFinish() {
-            finishTs = System.currentTimeMillis();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            StringBuilder sb = new StringBuilder();
-
-            if (finishTs == 0) {
-                sb.append("partitions processed/all: ").append(partsCompleted).append("/").append(partsTotal);
-
-                sb.append(", time elapsed: ");
-
-                appendDuration(sb, System.currentTimeMillis());
-            }
-            else {
-                double mb = 1024 * 1024;
-
-                sb.append("size before/after: ").append(MB_FORMAT.format(oldSize / mb)).append("MB/");
-                sb.append(MB_FORMAT.format(newSize / mb)).append("MB");
-
-                sb.append(", time took: ");
-
-                appendDuration(sb, finishTs);
-            }
-
-            return sb.toString();
+        public long getOldSize() {
+            return oldSize;
         }
 
         /** */
-        private void appendDuration(StringBuilder sb, long end) {
-            long duration = Math.round((end - startTs) * 1e-3);
+        public long getNewSize() {
+            return newSize;
+        }
 
-            long mins = duration / 60;
-            long secs = duration % 60;
+        /** */
+        public long getStartTs() {
+            return startTs;
+        }
 
-            sb.append(mins).append(" mins ").append(secs).append(" secs");
+        /** */
+        public long getFinishTs() {
+            return finishTs;
+        }
+
+        /** */
+        public int getPartsTotal() {
+            return partsTotal;
+        }
+
+        /** */
+        public int getPartsCompleted() {
+            return partsCompleted;
+        }
+
+        /** */
+        public void onFinish() {
+            finishTs = System.currentTimeMillis();
         }
     }
 }
