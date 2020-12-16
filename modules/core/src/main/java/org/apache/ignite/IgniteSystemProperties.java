@@ -116,6 +116,7 @@ import static org.apache.ignite.internal.processors.failure.FailureProcessor.DFL
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.DFLT_JOBS_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor.DFLT_JOBS_METRICS_CONCURRENCY_LEVEL;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DFLT_MAX_HISTORY_BYTES;
+import static org.apache.ignite.internal.processors.query.GridQueryProcessor.DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TIMEOUT;
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TOKEN_INVALIDATE_INTERVAL;
@@ -1912,6 +1913,10 @@ public final class IgniteSystemProperties {
         "lock queue may rise. This property sets the interval during which statistics are collected", type = Integer.class,
         defaults = "" + DFLT_DUMP_TX_COLLISIONS_INTERVAL)
     public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
+
+    @SystemProperty(value = "Determines whether to use the experimental sql, calcite based, engine.",
+        defaults = "" + DFLT_IGNITE_EXPERIMENTAL_SQL_ENGINE)
+    public static final String IGNITE_EXPERIMENTAL_SQL_ENGINE = "IGNITE_EXPERIMENTAL_SQL_ENGINE";
 
     /**
      * Enforces singleton.
