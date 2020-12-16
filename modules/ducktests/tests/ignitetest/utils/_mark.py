@@ -230,7 +230,8 @@ def versions_pair(*args, version_prefix="ignite_version"):
     res = []
     for v_arg1 in args:
         for v_arg2 in args:
-            res.append((v_arg1, v_arg2))
+            if v_arg1 < v_arg2:
+                res.append((v_arg1, v_arg2))
 
     def parametrizer(func):
         Mark.mark(func, IgniteVersionParametrize(*res, version_prefix=version_prefix))
