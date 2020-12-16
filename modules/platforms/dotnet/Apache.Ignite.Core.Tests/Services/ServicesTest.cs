@@ -1064,7 +1064,7 @@ namespace Apache.Ignite.Core.Tests.Services
             cache.Put(1, dt1);
             cache.Put(2, dt2);
 
-            svc.testDateFromCache();
+            svc.testUTCDateFromCache();
 
             Assert.AreEqual(dt1, cache.Get(3));
             Assert.AreEqual(dt2, cache.Get(4));
