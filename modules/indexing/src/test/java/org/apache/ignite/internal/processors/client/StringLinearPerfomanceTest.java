@@ -42,7 +42,7 @@ public class StringLinearPerfomanceTest extends GridCommonAbstractTest {
     }
 
     private void createTable() throws Exception {
-        try(Ignite client = startClientGrid()){
+        try (Ignite client = startClientGrid()) {
             IgniteCache c = client.getOrCreateCache(cacheName);
 
             c.query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS T1 (ID INT PRIMARY KEY, V VARCHAR)")).getAll();
@@ -68,7 +68,7 @@ public class StringLinearPerfomanceTest extends GridCommonAbstractTest {
     }
 
     public long getTime(int len) throws Exception {
-        try(Ignite client = startClientGrid()) {
+        try (Ignite client = startClientGrid()) {
             IgniteCache c = client.getOrCreateCache("default");
 
             c.query(new SqlFieldsQuery("DELETE FROM T1"));
