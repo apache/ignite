@@ -32,7 +32,7 @@ public class BinaryThreadLocalContext {
     };
 
     /** Memory chunk. */
-    private final BinaryMemoryAllocatorChunk chunk = BinaryMemoryAllocator.INSTANCE.chunk();
+    private final BinaryMemoryAllocatorChunk chunk = BinaryMemoryAllocator.THREAD_LOCAL.chunk();
 
     /** Schema holder. */
     private final BinaryWriterSchemaHolder schema = new BinaryWriterSchemaHolder();

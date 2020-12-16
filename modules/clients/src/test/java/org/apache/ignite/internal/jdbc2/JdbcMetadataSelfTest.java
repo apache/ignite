@@ -347,7 +347,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "CACHE_GROUP_PAGE_LISTS",
             "PARTITION_STATES",
             "BINARY_METADATA",
-            "DISTRIBUTED_METASTORAGE"
+            "DISTRIBUTED_METASTORAGE",
+            "METRICS"
         ));
 
         Set<String> actViews = new HashSet<>();

@@ -24,6 +24,21 @@
     xmlns:mstns="http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection"
     xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
+    <xs:simpleType name="transactionIsolation" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="ReadCommitted" />
+            <xs:enumeration value="RepeatableRead" />
+            <xs:enumeration value="Serializable" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="transactionConcurrency" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Optimistic" />
+            <xs:enumeration value="Pessimistic" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteClientConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite thin client configuration root.</xs:documentation>
@@ -224,6 +239,28 @@
                         <xs:attribute name="type" type="xs:string" use="required">
                             <xs:annotation>
                                 <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="transactionConfiguration" minOccurs="0" maxOccurs="1">
+                    <xs:annotation>
+                        <xs:documentation>Transactions configuration.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="defaultTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Default timeout.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="defaultTransactionConcurrency" type="transactionConcurrency">
+                            <xs:annotation>
+                                <xs:documentation>cache transaction concurrency control.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="defaultTransactionIsolation" type="transactionIsolation">
+                            <xs:annotation>
+                                <xs:documentation>Default cache transaction isolation level.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>

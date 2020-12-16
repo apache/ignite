@@ -19,15 +19,15 @@ package org.apache.ignite.internal.processors.configuration.distributed;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * Implementation of {@link DistributedProperty} for {@link Comparable}.
  */
 public class DistributedComparableProperty<T extends Comparable<T> & Serializable> extends SimpleDistributedProperty<T> {
-
     /** {@inheritDoc} */
-    DistributedComparableProperty(String name) {
-        super(name);
+    DistributedComparableProperty(String name, Function<String, T> parser) {
+        super(name, parser);
     }
 
     /** */

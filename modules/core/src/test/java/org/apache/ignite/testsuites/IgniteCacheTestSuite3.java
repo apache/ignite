@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearPartitionedP2PDisabledByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearPartitionedP2PEnabledByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePutArrayValueSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteTxExceptionNodeFailTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteTxReentryNearSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheDaemonNodeReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedAtomicGetAndTransformStoreSelfTest;
@@ -152,6 +153,7 @@ public class IgniteCacheTestSuite3 {
 
         GridTestUtils.addTestIfNeeded(suite, IgniteTxReentryNearSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteTxReentryColocatedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteTxExceptionNodeFailTest.class, ignoredTests);
 
         // Test for byte array value special case.
         GridTestUtils.addTestIfNeeded(suite, GridCacheLocalByteArrayValuesSelfTest.class, ignoredTests);

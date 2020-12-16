@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CachePeekMode;
@@ -37,12 +36,13 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
+import org.jetbrains.annotations.Nullable;
 
-import static java.util.AbstractMap.SimpleEntry;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
 
@@ -117,6 +117,19 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<V> getAsync(K key) {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_GET,
+                null,
+                this::readObject
+        );
+    }
+
+    /** {@inheritDoc} */
     @Override public void put(K key, V val) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
@@ -129,6 +142,22 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_PUT,
             req -> writeObject(req, val),
             null
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Void> putAsync(K key, V val) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (val == null)
+            throw new NullPointerException("val");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_PUT,
+                req -> writeObject(req, val),
+                null
         );
     }
 
@@ -146,6 +175,19 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Boolean> containsKeyAsync(K key) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_CONTAINS_KEY,
+                null,
+                res -> res.in().readBoolean()
+        );
+    }
+
+    /** {@inheritDoc} */
     @Override public String getName() {
         return name;
     }
@@ -155,14 +197,16 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         return ch.service(
             ClientOperation.CACHE_GET_CONFIGURATION,
             this::writeCacheInfo,
-            res -> {
-                try {
-                    return serDes.cacheConfiguration(res.in(), res.clientChannel().protocolCtx());
-                }
-                catch (IOException e) {
-                    return null;
-                }
-            }
+            this::getClientCacheConfiguration
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<ClientCacheConfiguration> getConfigurationAsync() throws ClientException {
+        return ch.serviceAsync(
+                ClientOperation.CACHE_GET_CONFIGURATION,
+                this::writeCacheInfo,
+                this::getClientCacheConfiguration
         );
     }
 
@@ -179,6 +223,18 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws ClientException {
+        return ch.serviceAsync(
+                ClientOperation.CACHE_GET_SIZE,
+                req -> {
+                    writeCacheInfo(req);
+                    ClientUtils.collection(peekModes, req.out(), (out, m) -> out.writeByte((byte)m.ordinal()));
+                },
+                res -> (int)res.in().readLong()
+        );
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<K, V> getAll(Set<? extends K> keys) throws ClientException {
         if (keys == null)
             throw new NullPointerException("keys");
@@ -186,17 +242,18 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return new HashMap<>();
 
-        return ch.service(
-            ClientOperation.CACHE_GET_ALL,
-            req -> {
-                writeCacheInfo(req);
-                ClientUtils.collection(keys, req.out(), serDes::writeObject);
-            },
-            res -> ClientUtils.collection(
-                res.in(),
-                in -> new SimpleEntry<K, V>(readObject(in), readObject(in))
-            )
-        ).stream().collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
+        return ch.service(ClientOperation.CACHE_GET_ALL, req -> writeKeys(keys, req), this::readEntries);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) throws ClientException {
+        if (keys == null)
+            throw new NullPointerException("keys");
+
+        if (keys.isEmpty())
+            return IgniteClientFutureImpl.completedFuture(new HashMap<>());
+
+        return ch.serviceAsync(ClientOperation.CACHE_GET_ALL, req -> writeKeys(keys, req), this::readEntries);
     }
 
     /** {@inheritDoc} */
@@ -207,19 +264,12 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (map.isEmpty())
             return;
 
-        ch.request(
-            ClientOperation.CACHE_PUT_ALL,
-            req -> {
-                writeCacheInfo(req);
-                ClientUtils.collection(
-                    map.entrySet(),
-                    req.out(),
-                    (out, e) -> {
-                        serDes.writeObject(out, e.getKey());
-                        serDes.writeObject(out, e.getValue());
-                    });
-            }
-        );
+        ch.request(ClientOperation.CACHE_PUT_ALL, req -> writeEntries(map, req));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) throws ClientException {
+        return ch.requestAsync(ClientOperation.CACHE_PUT_ALL, req -> writeEntries(map, req));
     }
 
     /** {@inheritDoc} */
@@ -245,6 +295,28 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (oldVal == null)
+            throw new NullPointerException("oldVal");
+
+        if (newVal == null)
+            throw new NullPointerException("newVal");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_REPLACE_IF_EQUALS,
+                req -> {
+                    writeObject(req, oldVal);
+                    writeObject(req, newVal);
+                },
+                res -> res.in().readBoolean()
+        );
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean replace(K key, V val) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
@@ -261,6 +333,22 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Boolean> replaceAsync(K key, V val) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (val == null)
+            throw new NullPointerException("val");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_REPLACE,
+                req -> writeObject(req, val),
+                res -> res.in().readBoolean()
+        );
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean remove(K key) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
@@ -270,6 +358,19 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_REMOVE_KEY,
             null,
             res -> res.in().readBoolean()
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Boolean> removeAsync(K key) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_REMOVE_KEY,
+                null,
+                res -> res.in().readBoolean()
         );
     }
 
@@ -290,6 +391,22 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Boolean> removeAsync(K key, V oldVal) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (oldVal == null)
+            throw new NullPointerException("oldVal");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_REMOVE_IF_EQUALS,
+                req -> writeObject(req, oldVal),
+                res -> res.in().readBoolean()
+        );
+    }
+
+    /** {@inheritDoc} */
     @Override public void removeAll(Set<? extends K> keys) throws ClientException {
         if (keys == null)
             throw new NullPointerException("keys");
@@ -300,15 +417,35 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         ch.request(
             ClientOperation.CACHE_REMOVE_KEYS,
             req -> {
-                writeCacheInfo(req);
-                ClientUtils.collection(keys, req.out(), serDes::writeObject);
+                writeKeys(keys, req);
             }
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Void> removeAllAsync(Set<? extends K> keys) throws ClientException {
+        if (keys == null)
+            throw new NullPointerException("keys");
+
+        if (keys.isEmpty())
+            return IgniteClientFutureImpl.completedFuture(null);
+
+        return ch.requestAsync(
+                ClientOperation.CACHE_REMOVE_KEYS,
+                req -> {
+                    writeKeys(keys, req);
+                }
         );
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll() throws ClientException {
         ch.request(ClientOperation.CACHE_REMOVE_ALL, this::writeCacheInfo);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Void> removeAllAsync() throws ClientException {
+        return ch.requestAsync(ClientOperation.CACHE_REMOVE_ALL, this::writeCacheInfo);
     }
 
     /** {@inheritDoc} */
@@ -328,6 +465,22 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<V> getAndPutAsync(K key, V val) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (val == null)
+            throw new NullPointerException("val");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_GET_AND_PUT,
+                req -> writeObject(req, val),
+                this::readObject
+        );
+    }
+
+    /** {@inheritDoc} */
     @Override public V getAndRemove(K key) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
@@ -337,6 +490,19 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.CACHE_GET_AND_REMOVE,
             null,
             this::readObject
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<V> getAndRemoveAsync(K key) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_GET_AND_REMOVE,
+                null,
+                this::readObject
         );
     }
 
@@ -357,6 +523,22 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<V> getAndReplaceAsync(K key, V val) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (val == null)
+            throw new NullPointerException("val");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_GET_AND_REPLACE,
+                req -> writeObject(req, val),
+                this::readObject
+        );
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean putIfAbsent(K key, V val) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
@@ -373,8 +555,29 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Boolean> putIfAbsentAsync(K key, V val) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (val == null)
+            throw new NullPointerException("val");
+
+        return cacheSingleKeyOperationAsync(
+                key,
+                ClientOperation.CACHE_PUT_IF_ABSENT,
+                req -> writeObject(req, val),
+                res -> res.in().readBoolean()
+        );
+    }
+
+    /** {@inheritDoc} */
     @Override public void clear() throws ClientException {
         ch.request(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Void> clearAsync() throws ClientException {
+        return ch.requestAsync(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
     }
 
     /** {@inheritDoc} */
@@ -509,6 +712,30 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ch.service(op, payloadWriter, payloadReader);
     }
 
+    /**
+     * Execute cache operation with a single key asynchronously.
+     */
+    private <T> IgniteClientFuture<T> cacheSingleKeyOperationAsync(
+        K key,
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> additionalPayloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
+    ) throws ClientException {
+        Consumer<PayloadOutputChannel> payloadWriter = req -> {
+            writeCacheInfo(req);
+            writeObject(req, key);
+
+            if (additionalPayloadWriter != null)
+                additionalPayloadWriter.accept(req);
+        };
+
+        // Transactional operation cannot be executed on affinity node, it should be executed on node started
+        // the transaction.
+        return transactions.tx() == null
+                ? ch.affinityServiceAsync(cacheId, key, op, payloadWriter, payloadReader)
+                : ch.serviceAsync(op, payloadWriter, payloadReader);
+    }
+
     /** Write cache ID and flags. */
     private void writeCacheInfo(PayloadOutputChannel payloadCh) {
         BinaryOutputStream out = payloadCh.out();
@@ -564,5 +791,46 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** */
     private void writeObject(PayloadOutputChannel payloadCh, Object obj) {
         serDes.writeObject(payloadCh.out(), obj);
+    }
+
+    /** */
+    @Nullable private ClientCacheConfiguration getClientCacheConfiguration(PayloadInputChannel res) {
+        try {
+            return serDes.cacheConfiguration(res.in(), res.clientChannel().protocolCtx());
+        }
+        catch (IOException e) {
+            return null;
+        }
+    }
+
+    /** */
+    private void writeKeys(Set<? extends K> keys, PayloadOutputChannel req) {
+        writeCacheInfo(req);
+        ClientUtils.collection(keys, req.out(), serDes::writeObject);
+    }
+
+    /** */
+    private Map<K, V> readEntries(PayloadInputChannel res) {
+        BinaryInputStream in = res.in();
+
+        int cnt = in.readInt();
+        Map<K, V> map = new HashMap<>();
+
+        for (int i = 0; i < cnt; i++)
+            map.put(readObject(in), readObject(in));
+
+        return map;
+    }
+
+    /** */
+    private void writeEntries(Map<? extends K, ? extends V> map, PayloadOutputChannel req) {
+        writeCacheInfo(req);
+        ClientUtils.collection(
+                map.entrySet(),
+                req.out(),
+                (out, e) -> {
+                    serDes.writeObject(out, e.getKey());
+                    serDes.writeObject(out, e.getValue());
+                });
     }
 }

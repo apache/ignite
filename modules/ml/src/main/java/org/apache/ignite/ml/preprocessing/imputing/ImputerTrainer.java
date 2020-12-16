@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.preprocessing.imputing;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -442,8 +443,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
     private double[] updateTheMins(LabeledVector row, double[] mins) {
         if (mins == null) {
             mins = new double[row.size()];
-            for (int i = 0; i < mins.length; i++)
-                mins[i] = Double.POSITIVE_INFINITY;
+            Arrays.fill(mins, Double.POSITIVE_INFINITY);
         }
 
         else
@@ -468,8 +468,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V> {
     private double[] updateTheMaxs(LabeledVector row, double[] maxs) {
         if (maxs == null) {
             maxs = new double[row.size()];
-            for (int i = 0; i < maxs.length; i++)
-                maxs[i] = Double.NEGATIVE_INFINITY;
+            Arrays.fill(maxs, Double.NEGATIVE_INFINITY);
         }
 
         else

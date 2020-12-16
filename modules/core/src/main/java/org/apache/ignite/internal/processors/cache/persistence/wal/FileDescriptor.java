@@ -25,14 +25,14 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static java.nio.file.StandardOpenOption.READ;
 
 /**
  * WAL file descriptor.
  */
 public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRecordsIterator.AbstractFileDescriptor {
-
     /** file extension of WAL segment. */
     private static final String WAL_SEGMENT_FILE_EXT = ".wal";
 
@@ -50,15 +50,17 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
      *
      * @param file WAL segment file.
      */
-    public FileDescriptor(@NotNull File file) {
+    public FileDescriptor(File file) {
         this(file, null);
     }
 
     /**
+     *  Creates file descriptor.
+     *
      * @param file WAL segment file.
      * @param idx Absolute WAL segment file index. For null value index is restored from file name.
      */
-    public FileDescriptor(@NotNull File file, @Nullable Long idx) {
+    public FileDescriptor(File file, @Nullable Long idx) {
         this.file = file;
 
         String fileName = file.getName();
@@ -69,13 +71,15 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
     }
 
     /**
-     * @param segment Segment index.
+     * Getting segment file name.
+     *
+     * @param idx Segment index.
      * @return Segment file name.
      */
-    public static String fileName(long segment) {
+    public static String fileName(long idx) {
         SB b = new SB();
 
-        String segmentStr = Long.toString(segment);
+        String segmentStr = Long.toString(idx);
 
         for (int i = segmentStr.length(); i < WAL_SEGMENT_FILE_NAME_LENGTH; i++)
             b.a('0');
@@ -86,7 +90,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull FileDescriptor o) {
+    @Override public int compareTo(FileDescriptor o) {
         return Long.compare(idx, o.idx);
     }
 
@@ -109,14 +113,18 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
     }
 
     /**
-     * @return Absolute WAL segment file index
+     * Return absolute WAL segment file index.
+     *
+     * @return Absolute WAL segment file index.
      */
     public long getIdx() {
         return idx;
     }
 
     /**
-     * @return absolute pathname string of this file descriptor pathname.
+     * Return absolute pathname string of this file descriptor pathname.
+     *
+     * @return Absolute pathname string of this file descriptor pathname.
      */
     public String getAbsolutePath() {
         return file.getAbsolutePath();
@@ -138,8 +146,8 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
     }
 
     /** {@inheritDoc} */
-    @Override public SegmentIO toIO(FileIOFactory fileIOFactory) throws IOException {
-        FileIO fileIO = isCompressed() ? new UnzipFileIO(file()) : fileIOFactory.create(file());
+    @Override public SegmentIO toReadOnlyIO(FileIOFactory fileIOFactory) throws IOException {
+        FileIO fileIO = isCompressed() ? new UnzipFileIO(file()) : fileIOFactory.create(file(), READ);
 
         return new SegmentIO(idx, fileIO);
     }

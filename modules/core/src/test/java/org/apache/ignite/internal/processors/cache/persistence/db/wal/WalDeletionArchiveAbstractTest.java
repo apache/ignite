@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import java.io.File;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -196,42 +195,6 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     }
 
     /**
-     * Test for check deprecated removing checkpoint by deprecated walHistorySize parameter
-     *
-     * @deprecated Test old removing process depends on WalHistorySize.
-     */
-    @Test
-    public void testCheckpointHistoryRemovingByWalHistorySize() throws Exception {
-        //given: configured grid with wal history size = 10
-        int walHistorySize = 10;
-
-        Ignite ignite = startGrid(dbCfg -> {
-            dbCfg.setWalHistorySize(walHistorySize);
-        });
-
-        GridCacheDatabaseSharedManager dbMgr = gridDatabase(ignite);
-
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheConfiguration());
-
-        //when: put to cache and do checkpoint
-        int testNumberOfCheckpoint = walHistorySize * 2;
-
-        for (int i = 0; i < testNumberOfCheckpoint; i++) {
-            cache.put(i, i);
-            //and: wait for checkpoint finished
-            forceCheckpoint();
-        }
-
-        //then: number of checkpoints less or equal than walHistorySize
-        CheckpointHistory hist = dbMgr.checkpointHistory();
-        assertTrue(hist.checkpoints().size() == walHistorySize);
-
-        File[] cpFiles = dbMgr.checkpointDirectory().listFiles();
-
-        assertTrue(cpFiles.length <= (walHistorySize * 2 + 1));// starts & ends + node_start
-    }
-
-    /**
      * Correct delete checkpoint history from memory depends on IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE. WAL files
      * doesn't delete because deleting was disabled.
      */
@@ -240,7 +203,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     public void testCorrectDeletedCheckpointHistoryButKeepWalFiles() throws Exception {
         //given: configured grid with disabled WAL removing.
         Ignite ignite = startGrid(dbCfg -> {
-            dbCfg.setMaxWalArchiveSize(Long.MAX_VALUE);
+            dbCfg.setMaxWalArchiveSize(DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE);
         });
 
         GridCacheDatabaseSharedManager dbMgr = gridDatabase(ignite);

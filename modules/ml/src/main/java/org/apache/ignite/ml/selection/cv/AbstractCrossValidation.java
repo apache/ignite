@@ -143,14 +143,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
 
             cvRes.addScores(tr.locScores, tr.paramMap);
 
-            final double locAvgScore = Arrays.stream(tr.locScores).average().orElse(Double.MIN_VALUE);
-
-            if (locAvgScore >= cvRes.getBestAvgScore()) {
-                cvRes.setBestScore(tr.locScores);
-                cvRes.setBestHyperParams(tr.paramMap);
-            }
-
-            return locAvgScore;
+            return Arrays.stream(tr.locScores).average().orElse(Double.MIN_VALUE);
         };
 
         Random rnd = new Random(stgy.getSeed()); //TODO: common seed for shared lambdas can produce the same value on each function call? or sequent?
@@ -167,10 +160,10 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
         GeneticAlgorithm ga = new GeneticAlgorithm(rndParamSets);
         ga.withFitnessFunction(fitnessFunction)
             .withMutationOperator(mutator)
-            .withAmountOfEliteChromosomes(stgy.getAmountOfEliteChromosomes())
+            .withAmountOfEliteChromosomes(stgy.getNumberOfEliteChromosomes())
             .withCrossingoverProbability(stgy.getCrossingoverProbability())
             .withCrossoverStgy(stgy.getCrossoverStgy())
-            .withAmountOfGenerations(stgy.getAmountOfGenerations())
+            .withAmountOfGenerations(stgy.getNumberOfGenerations())
             .withSelectionStgy(stgy.getSelectionStgy())
             .withMutationProbability(stgy.getMutationProbability());
 
@@ -205,16 +198,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
             .map(Promise::unsafeGet)
             .collect(Collectors.toList());
 
-        taskResults.forEach(tr -> {
-            cvRes.addScores(tr.locScores, tr.paramMap);
-
-            final double locAvgScore = Arrays.stream(tr.locScores).average().orElse(Double.MIN_VALUE);
-
-            if (locAvgScore >= cvRes.getBestAvgScore()) {
-                cvRes.setBestScore(tr.locScores);
-                cvRes.setBestHyperParams(tr.paramMap);
-            }
-        });
+        taskResults.forEach(tr -> cvRes.addScores(tr.locScores, tr.paramMap));
 
         return cvRes;
     }
@@ -235,17 +219,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
             .map(Promise::unsafeGet)
             .collect(Collectors.toList());
 
-        taskResults.forEach(tr -> {
-            cvRes.addScores(tr.locScores, tr.paramMap);
-
-            final double locAvgScore = Arrays.stream(tr.locScores).average().orElse(Double.MIN_VALUE);
-
-            if (locAvgScore > cvRes.getBestAvgScore()) {
-                cvRes.setBestScore(tr.locScores);
-                cvRes.setBestHyperParams(tr.paramMap);
-            }
-
-        });
+        taskResults.forEach(tr -> cvRes.addScores(tr.locScores, tr.paramMap));
         return cvRes;
     }
 
@@ -264,22 +238,22 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
          * @param locScores Locale scores.
          */
         public TaskResult(Map<String, Double> paramMap, double[] locScores) {
-            this.paramMap = paramMap;
-            this.locScores = locScores;
+            this.paramMap = Collections.unmodifiableMap(paramMap);
+            this.locScores = locScores.clone();
         }
 
         /**
          * @param paramMap Parameter map.
          */
         public void setParamMap(Map<String, Double> paramMap) {
-            this.paramMap = paramMap;
+            this.paramMap = Collections.unmodifiableMap(paramMap);;
         }
 
         /**
          * @param locScores Local scores.
          */
         public void setLocScores(double[] locScores) {
-            this.locScores = locScores;
+            this.locScores = locScores.clone();
         }
     }
 

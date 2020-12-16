@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Configuration
 
     /// <summary>
     /// Defines custom data region configuration for Apache Ignite page memory
-    /// (see <see cref="DataStorageConfiguration"/>). 
+    /// (see <see cref="DataStorageConfiguration"/>).
     /// <para />
     /// For each configured data region Apache Ignite instantiates respective memory regions with different
     /// parameters like maximum size, eviction policy, swapping options, etc.
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Configuration
         /// The default maximum size, equals to 20% of total RAM.
         /// </summary>
         public static readonly long DefaultMaxSize =
-            (long)((long)MemoryInfo.GetTotalPhysicalMemory(2048L * 1024 * 1024) * 0.2);
+            (long)((long) (MemoryInfo.MemoryLimit ?? 2048L * 1024 * 1024) * 0.2);
 
         /// <summary>
         /// The default sub intervals.
@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Configuration
 
         /// <summary>
         /// Gets or sets the page eviction mode. If <see cref="DataPageEvictionMode.Disabled"/> is used (default)
-        /// then an out of memory exception will be thrown if the memory region usage 
+        /// then an out of memory exception will be thrown if the memory region usage
         /// goes beyond <see cref="MaxSize"/>.
         /// </summary>
         public DataPageEvictionMode PageEvictionMode { get; set; }
@@ -212,7 +212,7 @@ namespace Apache.Ignite.Core.Configuration
         public TimeSpan MetricsRateTimeInterval { get; set; }
 
         /// <summary>
-        /// Gets or sets the number of sub intervals to split <see cref="MetricsRateTimeInterval"/> into to calculate 
+        /// Gets or sets the number of sub intervals to split <see cref="MetricsRateTimeInterval"/> into to calculate
         /// <see cref="IDataRegionMetrics.AllocationRate"/> and <see cref="IDataRegionMetrics.EvictionRate"/>.
         /// <para />
         /// Bigger value results in more accurate metrics.
@@ -228,7 +228,7 @@ namespace Apache.Ignite.Core.Configuration
         /// Default is <c>0</c>: Ignite will choose buffer size automatically.
         /// </summary>
         public long CheckpointPageBufferSize { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the lazy memory allocation flag.
         /// </summary>

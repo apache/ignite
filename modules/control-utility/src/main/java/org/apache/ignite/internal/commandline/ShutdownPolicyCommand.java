@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.commandline.CommandList.SHUTDOWN_POLICY
 /**
  * Command for change or display policy for shutdown.
  */
-public class ShutdownPolicyCommand implements Command<ShutdownPolicyArgument> {
+public class ShutdownPolicyCommand extends AbstractCommand<ShutdownPolicyArgument> {
     /** Arguments. */
     private ShutdownPolicyArgument shutdownPolicyArgument;
 

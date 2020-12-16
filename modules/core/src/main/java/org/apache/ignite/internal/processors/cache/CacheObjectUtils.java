@@ -24,6 +24,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache object utility methods.
@@ -36,16 +37,24 @@ public class CacheObjectUtils {
      * @return Unwrapped object.
      */
     public static Object unwrapBinaryIfNeeded(CacheObjectValueContext ctx, CacheObject o, boolean keepBinary, boolean cpy) {
-        return unwrapBinary(ctx, o, keepBinary, cpy);
+        return unwrapBinary(ctx, o, keepBinary, cpy, null);
     }
 
     /**
+     * @param ctx Cache object context.
      * @param o Object to unwrap.
      * @param keepBinary Keep binary flag.
      * @param cpy Copy value flag.
+     * @param ldr Class loader, used for deserialization from binary representation.
      * @return Unwrapped object.
      */
-    public static Object unwrapBinaryIfNeeded(CacheObjectValueContext ctx, Object o, boolean keepBinary, boolean cpy) {
+    public static Object unwrapBinaryIfNeeded(
+        CacheObjectValueContext ctx,
+        Object o,
+        boolean keepBinary,
+        boolean cpy,
+        @Nullable ClassLoader ldr
+    ) {
         if (o == null)
             return null;
 
@@ -55,16 +64,16 @@ public class CacheObjectUtils {
 
             Object key = entry.getKey();
 
-            Object uKey = unwrapBinary(ctx, key, keepBinary, cpy);
+            Object uKey = unwrapBinary(ctx, key, keepBinary, cpy, ldr);
 
             Object val = entry.getValue();
 
-            Object uVal = unwrapBinary(ctx, val, keepBinary, cpy);
+            Object uVal = unwrapBinary(ctx, val, keepBinary, cpy, ldr);
 
             return (key != uKey || val != uVal) ? F.t(uKey, uVal) : o;
         }
 
-        return unwrapBinary(ctx, o, keepBinary, cpy);
+        return unwrapBinary(ctx, o, keepBinary, cpy, ldr);
     }
 
     /**
@@ -90,7 +99,7 @@ public class CacheObjectUtils {
         assert col0 != null;
 
         for (Object obj : col)
-            col0.add(unwrapBinary(ctx, obj, keepBinary, cpy));
+            col0.add(unwrapBinary(ctx, obj, keepBinary, cpy, null));
 
         return (col0 instanceof MutableSingletonList) ? U.convertToSingletonList(col0) : col0;
     }
@@ -112,8 +121,8 @@ public class CacheObjectUtils {
         for (Map.Entry<Object, Object> e : map.entrySet())
             // TODO why don't we use keepBinary parameter here?
             map0.put(
-                unwrapBinary(ctx, e.getKey(), false, cpy),
-                unwrapBinary(ctx, e.getValue(), false, cpy));
+                unwrapBinary(ctx, e.getKey(), false, cpy, null),
+                unwrapBinary(ctx, e.getValue(), false, cpy, null));
 
         return map0;
     }
@@ -132,7 +141,7 @@ public class CacheObjectUtils {
             col0 = new ArrayList<>(col.size());
 
         for (Object obj : col)
-            col0.add(unwrapBinaryIfNeeded(ctx, obj, keepBinary, cpy));
+            col0.add(unwrapBinaryIfNeeded(ctx, obj, keepBinary, cpy, null));
 
         return col0;
     }
@@ -153,16 +162,28 @@ public class CacheObjectUtils {
         Object[] res = new Object[arr.length];
 
         for (int i = 0; i < arr.length; i++)
-            res[i] = unwrapBinary(ctx, arr[i], keepBinary, cpy);
+            res[i] = unwrapBinary(ctx, arr[i], keepBinary, cpy, null);
 
         return res;
     }
 
     /**
+     * Unwraps an object for end user.
+     *
+     * @param ctx Cache object context.
      * @param o Object to unwrap.
+     * @param keepBinary False when need to deserialize object from a binary one, true otherwise.
+     * @param cpy True means the object will be copied before return, false otherwise.
+     * @param ldr Class loader, used for deserialization from binary representation.
      * @return Unwrapped object.
      */
-    private static Object unwrapBinary(CacheObjectValueContext ctx, Object o, boolean keepBinary, boolean cpy) {
+    private static Object unwrapBinary(
+        CacheObjectValueContext ctx,
+        Object o,
+        boolean keepBinary,
+        boolean cpy,
+        @Nullable ClassLoader ldr
+    ) {
         if (o == null)
             return o;
 
@@ -173,7 +194,7 @@ public class CacheObjectUtils {
                 return o;
 
             // It may be a collection of binaries
-            o = co.value(ctx, cpy);
+            o = co.value(ctx, cpy, ldr);
         }
 
         if (BinaryUtils.knownCollection(o))

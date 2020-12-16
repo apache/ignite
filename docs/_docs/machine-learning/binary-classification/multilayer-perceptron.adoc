@@ -1,0 +1,78 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Multilayer Perceptron
+
+Multiplayer Perceptron (MLP) is the basic form of neural network. It consists of one input layer and 0 or more transformation layers. Each transformation layer depends on the previous layer in the following way:
+
+image::images/333.gif[]
+
+In the above equation, the dot operator is the dot product of two vectors, functions denoted by `sigma` are called activators, vectors denoted by `w` are called weights, and vectors denoted by `b` are called biases. Each transformation layer has associated weights, activator, and optionally biases. The set of all weights and biases of MLP is the set of MLP parameters.
+
+
+== Model
+
+
+Model in case of neural network is represented by class `MultilayerPerceptron`. It allows you to make a prediction for a given vector of features in the following way:
+
+
+[source, java]
+----
+MultilayerPerceptron mlp = ...
+
+Matrix prediction = mlp.apply(observation);
+----
+
+The model is a fully independent object and after the training it can be saved, serialized and restored.
+
+== Trainer
+
+One of the popular ways for supervised model training is batch training. In this approach, training is done in iterations; during each iteration we extract a `subpart(batch)` of labeled data (data consisting of input of approximated function and corresponding values of this function which are often called 'ground truth') on which we train and update model parameters using this subpart. Updates are made to minimize loss function on batches.
+
+Apache Ignite `MLPTrainer` is used for distributed batch training, which works in a map-reduce way. Each iteration (let's call it global iteration) consists of several parallel iterations which in turn consists of several local steps. Each local iteration is executed by its own worker and performs the specified number of local steps (called synchronization period) to compute its update of model parameters. Then all updates are accumulated on the node that started the training, and are transformed to global update which is sent back to all workers. This process continues until stop criteria is reached.
+
+`MLPTrainer` can be parameterized by neural network architecture, loss function, update strategy (`SGD`, `RProp` or `Nesterov`), max number of iterations, batch size, number of local iterations and seed.
+
+
+[source, java]
+----
+// Define a layered architecture.
+MLPArchitecture arch = new MLPArchitecture(2).
+    withAddedLayer(10, true, Activators.RELU).
+    withAddedLayer(1, false, Activators.SIGMOID);
+
+// Define a neural network trainer.
+MLPTrainer<SimpleGDParameterUpdate> trainer = new MLPTrainer<>(
+    arch,
+    LossFunctions.MSE,
+    new UpdatesStrategy<>(
+        new SimpleGDUpdateCalculator(0.1),
+        SimpleGDParameterUpdate::sumLocal,
+        SimpleGDParameterUpdate::avg
+    ),
+    3000,   // Max iterations.
+    4,      // Batch size.
+    50,     // Local iterations.
+    123L    // Random seed.
+);
+
+// Train model.
+MultilayerPerceptron mlp = trainer.fit(ignite, dataCache, vectorizer);
+----
+
+
+== Example
+
+To see how Deep Learning can be used in practice, try link:https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/ml/nn/MLPTrainerExample.java[this example, window=_blank], available on GitHub and delivered with every Apache Ignite distribution.
+

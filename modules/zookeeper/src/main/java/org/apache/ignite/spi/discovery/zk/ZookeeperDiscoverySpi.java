@@ -31,6 +31,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -41,6 +42,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
+import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
@@ -62,6 +64,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 
 /**
  * Zookeeper Discovery Spi.
@@ -490,6 +493,17 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     }
 
     /** {@inheritDoc} */
+    @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
+        super.onContextInitialized0(spiCtx);
+
+        MetricRegistry discoReg = (MetricRegistry)getSpiContext().getOrCreateMetricRegistry(DISCO_METRICS);
+
+        stats.registerMetrics(discoReg);
+
+        discoReg.register("Coordinator", () -> impl.getCoordinator(), UUID.class, "Coordinator ID");
+    }
+
+    /** {@inheritDoc} */
     @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
         if (impl != null)
             impl.internalLsnr = lsnr;
@@ -595,7 +609,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
         /** {@inheritDoc} */
         @Override public long getNodesLeft() {
-            return 0;
+            return stats.leftNodesCnt();
         }
 
         /** {@inheritDoc} */

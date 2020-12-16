@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.encryption;
 
+import java.util.Collections;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.mxbean.EncryptionMXBean;
 
@@ -40,5 +41,10 @@ public class EncryptionMXBeanImpl implements EncryptionMXBean {
     /** {@inheritDoc} */
     @Override public void changeMasterKey(String masterKeyName) {
         encryptionMgr.changeMasterKey(masterKeyName).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void changeCacheGroupKey(String cacheOrGrpName) {
+        encryptionMgr.changeCacheGroupKey(Collections.singleton(cacheOrGrpName)).get();
     }
 }

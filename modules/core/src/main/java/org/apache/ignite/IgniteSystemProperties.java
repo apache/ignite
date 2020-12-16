@@ -36,6 +36,7 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -53,7 +54,8 @@ import static org.apache.ignite.internal.IgniteKernal.DFLT_PERIODIC_STARVATION_C
 import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_PRECISION;
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocatorChunk.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
+import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DFLT_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DFLT_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.affinity.AffinityAssignment.DFLT_AFFINITY_BACKUPS_THRESHOLD;
 import static org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache.DFLT_AFFINITY_HISTORY_SIZE;
@@ -80,9 +82,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.DFLT_MVCC_TX_SIZE_CACHING_THRESHOLD;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory.DFLT_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
-import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer.DFLT_CHECKPOINT_PARALLEL_SORT_THRESHOLD;
+import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWorkflow.DFLT_CHECKPOINT_PARALLEL_SORT_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.DFLT_PAGE_LOCK_TRACKER_CAPACITY;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.HEAP_LOG;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTracker.DFLT_PAGE_LOCK_TRACKER_CHECK_INTERVAL;
@@ -116,6 +119,10 @@ import static org.apache.ignite.internal.processors.failure.FailureProcessor.DFL
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.DFLT_JOBS_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor.DFLT_JOBS_METRICS_CONCURRENCY_LEVEL;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DFLT_MAX_HISTORY_BYTES;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_BUFFER_SIZE;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_CACHED_STRINGS_THRESHOLD;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_FILE_MAX_SIZE;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_FLUSH_SIZE;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TIMEOUT;
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TOKEN_INVALIDATE_INTERVAL;
@@ -503,7 +510,11 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "SSH host name for visor-started nodes", type = String.class)
     public static final String IGNITE_SSH_HOST = "IGNITE_SSH_HOST";
 
-    /** System property to enable experimental commands in control.sh script. */
+    /**
+     * System property to enable experimental commands in control.sh script.
+     * @deprecated Use "--enable-experimental" parameter instead.
+     */
+    @Deprecated
     @SystemProperty("Enables experimental commands in control.sh script")
     public static final String IGNITE_ENABLE_EXPERIMENTAL_COMMAND = "IGNITE_ENABLE_EXPERIMENTAL_COMMAND";
 
@@ -523,6 +534,13 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "How often in milliseconds marshal buffers should be rechecked and potentially trimmed",
         type = Long.class, defaults = "" + DFLT_MARSHAL_BUFFERS_RECHECK)
     public static final String IGNITE_MARSHAL_BUFFERS_RECHECK = "IGNITE_MARSHAL_BUFFERS_RECHECK";
+
+    /**
+     * System property to specify per thread binary allocator chunk pool size. Default value is {@code 32}.
+     */
+    @SystemProperty(value = "Per thread binary allocator chunk pool size",
+        type = Integer.class, defaults = "" + DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE)
+    public static final String IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = "IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE";
 
     /**
      * System property to disable {@link HostnameVerifier} for SSL connections.
@@ -1892,6 +1910,16 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN = "IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN";
 
     /**
+     * Enables subquery rewriting optimization.
+     * If enabled, subquery will be rewritten to JOIN where possible.
+     * Default is {@code true}.
+     */
+    @IgniteExperimental
+    @SystemProperty("Enables subquery rewriting optimization. " +
+        "If enabled, subquery will be rewritten to JOIN where possible")
+    public static final String IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION = "IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION";
+
+    /**
      * Enables setting attribute value of {@link
      * TcpCommunicationSpi#ATTR_HOST_NAMES ATTR_HOST_NAMES} when value {@link
      * IgniteConfiguration#getLocalHost getLocalHost} is ip, for backward
@@ -1912,6 +1940,64 @@ public final class IgniteSystemProperties {
         "lock queue may rise. This property sets the interval during which statistics are collected", type = Integer.class,
         defaults = "" + DFLT_DUMP_TX_COLLISIONS_INTERVAL)
     public static final String IGNITE_DUMP_TX_COLLISIONS_INTERVAL = "IGNITE_DUMP_TX_COLLISIONS_INTERVAL";
+
+    /**
+     * Set to true only during the junit tests.
+     * Signals that the cluster is running in a test environment.
+     *
+     * Can be used for changing behaviour of tightly coupled code pieces during the tests.
+     * Use it as a last resort only, prefer another toolchain like DI, mocks and etc. if possible
+     */
+    @SystemProperty(value = "Set to true only during the junit tests. " +
+        "Can be used for changing behaviour of tightly coupled code pieces during the tests. " +
+        "Use it as a last resort only, prefer another toolchain like DI, mocks and etc. if possible",
+        type = Boolean.class)
+    public static final String IGNITE_TEST_ENV = "IGNITE_TEST_ENV";
+
+    /**
+     * Defragmentation region size percentage of configured region size.
+     * This percentage will be calculated from largest configured region size and then proportionally subtracted
+     * from all configured regions.
+     */
+    @SystemProperty(value = "Defragmentation region size percentage of configured region size. " +
+        "This percentage will be calculated from largest configured region size and then proportionally subtracted " +
+        "from all configured regions",
+        type = Integer.class,
+        defaults = "" + DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE)
+    public static final String IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE =
+        "IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE";
+
+    /**
+     * Performance statistics maximum file size in bytes. Performance statistics will be stopped when the size exceeded.
+     * The default value is {@link FilePerformanceStatisticsWriter#DFLT_FILE_MAX_SIZE}.
+     */
+    @SystemProperty(value = "Performance statistics maximum file size in bytes. Performance statistics will be " +
+        "stopped when the size exceeded", type = Long.class, defaults = "" + DFLT_FILE_MAX_SIZE)
+    public static final String IGNITE_PERF_STAT_FILE_MAX_SIZE = "IGNITE_PERF_STAT_FILE_MAX_SIZE";
+
+    /**
+     * Performance statistics off heap buffer size in bytes. The default value is
+     * {@link FilePerformanceStatisticsWriter#DFLT_BUFFER_SIZE}.
+     */
+    @SystemProperty(value = "Performance statistics off heap buffer size in bytes", type = Integer.class,
+        defaults = "" + DFLT_BUFFER_SIZE)
+    public static final String IGNITE_PERF_STAT_BUFFER_SIZE = "IGNITE_PERF_STAT_BUFFER_SIZE";
+
+    /**
+     * Performance statistics minimal batch size to flush in bytes. The default value is
+     * {@link FilePerformanceStatisticsWriter#DFLT_FLUSH_SIZE}.
+     */
+    @SystemProperty(value = "Performance statistics minimal batch size to flush in bytes", type = Integer.class,
+        defaults = "" + DFLT_FLUSH_SIZE)
+    public static final String IGNITE_PERF_STAT_FLUSH_SIZE = "IGNITE_PERF_STAT_FLUSH_SIZE";
+
+    /**
+     * Performance statistics maximum cached strings threshold. String caching will stop on threshold excess.
+     * The default value is {@link FilePerformanceStatisticsWriter#DFLT_CACHED_STRINGS_THRESHOLD}.
+     */
+    @SystemProperty(value = "Performance statistics maximum cached strings threshold. String caching will stop on " +
+        "threshold excess", type = Integer.class, defaults = "" + DFLT_CACHED_STRINGS_THRESHOLD)
+    public static final String IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD = "IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD";
 
     /**
      * Enforces singleton.

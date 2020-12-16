@@ -411,7 +411,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         [Test]
         public void TestExecuteJavaTaskAsyncMultithreaded()
         {
-            var count = 10000;
+            var count = 5000;
             var compute = Client.GetCompute().WithKeepBinary();
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
             cache[1] = 1;
@@ -513,7 +513,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
         {
             return new IgniteClientConfiguration(base.GetClientConfiguration())
             {
-                SocketTimeout = TimeSpan.FromSeconds(3),
+                SocketTimeout = TimeSpan.FromSeconds(5),
                 EnablePartitionAwareness = false
             };
         }

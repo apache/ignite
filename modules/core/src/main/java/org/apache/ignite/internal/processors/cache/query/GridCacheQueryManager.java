@@ -61,6 +61,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
@@ -1119,6 +1121,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         try {
+            boolean performanceStatsEnabled = cctx.kernalContext().performanceStatistics().enabled();
+
+            if (performanceStatsEnabled)
+                IoStatisticsQueryHelper.startGatheringQueryStatistics();
+
             boolean loc = qryInfo.local();
 
             QueryResult<K, V> res = null;
@@ -1239,8 +1246,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         V val0 = null;
 
                         if (readEvt && cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ)) {
-                            key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false);
-                            val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false);
+                            key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false, null);
+                            val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false, null);
 
                             switch (type) {
                                 case SQL:
@@ -1289,9 +1296,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         if (rdc != null) {
                             if (key0 == null)
-                                key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false);
+                                key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false, null);
                             if (val0 == null)
-                                val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false);
+                                val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false, null);
 
                             Cache.Entry<K, V> entry = new CacheEntryImpl(key0, val0);
 
@@ -1376,6 +1383,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
                 else if (rmvIter)
                     removeQueryResult(qryInfo.senderId(), qryInfo.requestId());
+
+                if (performanceStatsEnabled) {
+                    IoStatisticsHolder stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
+
+                    if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
+                        cctx.kernalContext().performanceStatistics().queryReads(
+                            res.type(),
+                            qryInfo.senderId(),
+                            qryInfo.requestId(),
+                            stat.logicalReads(),
+                            stat.physicalReads());
+                    }
+                }
             }
         }
         finally {

@@ -23,10 +23,12 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeNameGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeNamePutRequest;
@@ -284,10 +286,10 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerRequest decode(byte[] msg) {
+    @Override public ClientListenerRequest decode(ClientMessage msg) {
         assert msg != null;
 
-        BinaryInputStream inStream = new BinaryHeapInputStream(msg);
+        BinaryInputStream inStream = new BinaryHeapInputStream(msg.payload());
 
         // skipHdrCheck must be true (we have 103 op code).
         BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), inStream,
@@ -473,10 +475,10 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encode(ClientListenerResponse resp) {
+    @Override public ClientMessage encode(ClientListenerResponse resp) {
         assert resp != null;
 
-        BinaryHeapOutputStream outStream = new BinaryHeapOutputStream(32);
+        BinaryHeapOutputStream outStream = new BinaryHeapOutputStream(32, BinaryMemoryAllocator.POOLED.chunk());
 
         BinaryRawWriterEx writer = marsh.writer(outStream);
 
@@ -484,20 +486,20 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         ((ClientOutgoingMessage)resp).encode(ctx, writer);
 
-        return outStream.arrayCopy();
+        return new ClientMessage(outStream);
     }
 
     /** {@inheritDoc} */
-    @Override public int decodeCommandType(byte[] msg) {
+    @Override public int decodeCommandType(ClientMessage msg) {
         assert msg != null;
 
-        BinaryInputStream inStream = new BinaryHeapInputStream(msg);
+        BinaryInputStream inStream = new BinaryHeapInputStream(msg.payload());
 
         return inStream.readShort();
     }
 
     /** {@inheritDoc} */
-    @Override public long decodeRequestId(byte[] msg) {
+    @Override public long decodeRequestId(ClientMessage msg) {
         return 0;
     }
 }
