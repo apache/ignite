@@ -643,9 +643,7 @@ import org.junit.runners.Suite;
     SqlMergeOnClientNodeTest.class,
 
     SqlFieldTypeValidationTypesTest.class,
-    SqlFieldTypeValidationOnKeyValueInsertTest.class,
-
-    SqlLongFieldLinearPerfomanceTest.class
+    SqlFieldTypeValidationOnKeyValueInsertTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }
