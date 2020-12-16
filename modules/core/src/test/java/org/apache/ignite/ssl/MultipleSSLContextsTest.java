@@ -34,7 +34,6 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -54,70 +53,24 @@ public class MultipleSSLContextsTest extends GridCommonAbstractTest {
         if (clientMode) {
             igniteCfg.setClientMode(true);
 
-            igniteCfg.setSslContextFactory(clientSSLFactory());
+            igniteCfg.setSslContextFactory(SSLContextFactoryForTests.clientSSLFactory());
         }
         else
-            igniteCfg.setSslContextFactory(serverSSLFactory());
+            igniteCfg.setSslContextFactory(SSLContextFactoryForTests.serverSSLFactory());
 
         ClientConnectorConfiguration clientConnectorCfg = new ClientConnectorConfiguration()
             .setSslEnabled(true)
             .setSslClientAuth(true)
             .setUseIgniteSslContextFactory(false)
-            .setSslContextFactory(clientConnectorSSLFactory());
+            .setSslContextFactory(SSLContextFactoryForTests.clientConnectorSSLFactory());
         igniteCfg.setClientConnectorConfiguration(clientConnectorCfg);
 
         ConnectorConfiguration connectorConfiguration = new ConnectorConfiguration()
             .setSslEnabled(true)
-            .setSslFactory(connectorSSLFactory());
+            .setSslFactory(SSLContextFactoryForTests.connectorSSLFactory());
         igniteCfg.setConnectorConfiguration(connectorConfiguration);
 
         return igniteCfg;
-    }
-
-    /**
-     * @return SSL context factory to use on server nodes for communication between nodes in a cluster.
-     */
-    private Factory<SSLContext> serverSSLFactory() {
-        return GridTestUtils.sslTrustedFactory("server", "trustone");
-    }
-
-    /**
-     * @return SSL context factory to use on client nodes for communication between nodes in a cluster.
-     */
-    private Factory<SSLContext> clientSSLFactory() {
-        return GridTestUtils.sslTrustedFactory("client", "trustone");
-    }
-
-    /**
-     * @return SSL context factory to use in client connectors.
-     */
-    private Factory<SSLContext> clientConnectorSSLFactory() {
-        return GridTestUtils.sslTrustedFactory("thinServer", "trusttwo");
-    }
-
-    /**
-     * @return SSL context factory to use in thin clients.
-     */
-    private Factory<SSLContext> thinClientSSLFactory() {
-        return GridTestUtils.sslTrustedFactory("thinClient", "trusttwo");
-    }
-
-    /**
-     * @return SSL context factory to use in thin clients for check DisabledTrustManager.
-     */
-    private Factory<SSLContext> thinClientDisabledTrustManagerSSLFactory() {
-
-        SslContextFactory factory = (SslContextFactory) GridTestUtils.sslTrustedFactory("thinClient", "trustthree");
-        factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
-
-        return factory;
-    }
-
-    /**
-     * @return Wrong SSL context factory to use in thin clients for check wrong certificate.
-     */
-    private Factory<SSLContext> thinClientSSLFactoryWithWrongCertificate() {
-        return GridTestUtils.sslTrustedFactory("thinClient", "trustone");
     }
 
     /**
@@ -129,13 +82,6 @@ public class MultipleSSLContextsTest extends GridCommonAbstractTest {
         clientCfg.setSslContextFactory(thinClientSSLFactory);
         clientCfg.setSslMode(SslMode.REQUIRED);
         return clientCfg;
-    }
-
-    /**
-     * @return SSL context factory to use in client connectors.
-     */
-    private Factory<SSLContext> connectorSSLFactory() {
-        return GridTestUtils.sslTrustedFactory("connectorServer", "trustthree");
     }
 
     /** {@inheritDoc} */
@@ -205,7 +151,7 @@ public class MultipleSSLContextsTest extends GridCommonAbstractTest {
         try {
             for (int i = 0; i < clientsNum; i++) {
                 IgniteClient client = Ignition.startClient(clientConfiguration("127.0.0.1:1080" + i,
-                        thinClientSSLFactory()));
+                        SSLContextFactoryForTests.thinClientSSLFactory()));
 
                 clients.add(client);
             }
@@ -252,7 +198,7 @@ public class MultipleSSLContextsTest extends GridCommonAbstractTest {
         try {
             Throwable thrown = assertThrows(org.apache.ignite.client.ClientConnectionException.class,
                     () -> { clients.add(Ignition.startClient(clientConfiguration("127.0.0.1:10800",
-                            thinClientSSLFactoryWithWrongCertificate()))); });
+                            SSLContextFactoryForTests.thinClientSSLFactoryWithWrongTrustCertificate()))); });
             assertNotNull(thrown.getMessage());
         }
 
@@ -284,7 +230,7 @@ public class MultipleSSLContextsTest extends GridCommonAbstractTest {
         try {
             for (int i = 0; i < clientsNum; i++) {
                 IgniteClient client = Ignition.startClient(clientConfiguration("127.0.0.1:1080" + i,
-                        thinClientDisabledTrustManagerSSLFactory()));
+                        SSLContextFactoryForTests.thinClientDisabledTrustManagerSSLFactory()));
 
                 clients.add(client);
             }
