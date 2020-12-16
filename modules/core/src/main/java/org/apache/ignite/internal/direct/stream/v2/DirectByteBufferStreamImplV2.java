@@ -304,7 +304,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     protected boolean lastFinished;
 
     /** map for cashing byte-array string representations */
-    private Map<String, byte[]> stringsMap = new HashMap<>();
+    private Map<String, byte[]> stringsMap;
 
     /**
      * @param msgFactory Message factory.
@@ -590,18 +590,19 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeString(String val) {
         if (val != null) {
-            byte[] bytes;
+            if (buf.capacity() < val.length()) {
+                if(stringsMap == null)
+                    stringsMap = new HashMap<>();
 
-            boolean useMap = buf.capacity() < val.length();
-            if (useMap)
-                bytes = stringsMap.computeIfAbsent(val, s -> s.getBytes());
+                byte[] bytes = stringsMap.computeIfAbsent(val, s -> s.getBytes());
+
+                writeByteArray(bytes);
+
+                if (lastFinished)
+                    stringsMap.remove(val);
+            }
             else
-                bytes = val.getBytes();
-
-            writeByteArray(bytes);
-
-            if (useMap && lastFinished)
-                stringsMap.remove(val);
+                writeByteArray(val.getBytes());
         }
         else
             writeByteArray(null);

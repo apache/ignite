@@ -188,6 +188,7 @@ import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentSqlU
 import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentUpdatesTest;
 import org.apache.ignite.internal.processors.cache.transaction.DmlInsideTransactionTest;
 import org.apache.ignite.internal.processors.client.ClientConnectorConfigurationValidationSelfTest;
+import org.apache.ignite.internal.processors.client.StringLinearPerfomanceTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineBinObjFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCachelessQueriesSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
@@ -642,7 +643,9 @@ import org.junit.runners.Suite;
     SqlMergeOnClientNodeTest.class,
 
     SqlFieldTypeValidationTypesTest.class,
-    SqlFieldTypeValidationOnKeyValueInsertTest.class
+    SqlFieldTypeValidationOnKeyValueInsertTest.class,
+
+    StringLinearPerfomanceTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }
