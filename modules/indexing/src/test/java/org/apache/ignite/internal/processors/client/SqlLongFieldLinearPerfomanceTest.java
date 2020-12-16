@@ -26,7 +26,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** Check that increasing column value in 10 times gets increasing select execution time no more then 10 times.  */
-public class StringLinearPerfomanceTest extends GridCommonAbstractTest {
+public class SqlLongFieldLinearPerfomanceTest extends GridCommonAbstractTest {
     /** Ignite instance. */
     private Ignite ignite;
 
@@ -76,7 +76,7 @@ public class StringLinearPerfomanceTest extends GridCommonAbstractTest {
     /** test performance */
     @Test
     public void test() throws Exception {
-        int len = 4_000_000;
+        int len = 400_000;
 
         long t1 = getTime(len);
         long t2 = getTime(len * 10);
