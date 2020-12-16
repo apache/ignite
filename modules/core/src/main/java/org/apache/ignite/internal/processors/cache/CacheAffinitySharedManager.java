@@ -1235,6 +1235,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     public void onClientEvent(final GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
         boolean locJoin = fut.firstEvent().eventNode().isLocal();
 
+        fetchAffinityOnJoin(fut);
+
         if (!locJoin) {
             forAllCacheGroups(new IgniteInClosureX<GridAffinityAssignmentCache>() {
                 @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
@@ -1246,8 +1248,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
             });
         }
-        else
-            fetchAffinityOnJoin(fut);
     }
 
     /**
