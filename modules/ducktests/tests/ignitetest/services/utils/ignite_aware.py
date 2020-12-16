@@ -83,7 +83,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
     def start_node(self, node):
         self.init_persistent(node)
 
-        self.update_log_file_on_node(node)
+        self.__update_node_log_file(node)
 
         super().start_node(node)
 
@@ -355,13 +355,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         return str(node.account.ssh_client.exec_command("sudo iptables -L -n")[1].read(), sys.getdefaultencoding())
 
-    def update_log_file_on_node(self, node):
+    def __update_node_log_file(self, node):
         """
-        Get log file.
+        Update the node log file.
         """
-
         cnt = list(node.account.ssh_capture(f'ls {self.LOGS_DIR} | '
-                                            f'grep -E "^console_?[0-9]*.log$" | '
+                                            f'grep -E "^console_[0-9]*.log$" | '
                                             f'wc -l', callback=int))[0]
 
         node.log_file = self.STDOUT_STDERR_CAPTURE.replace('.log', f'_{cnt + 1}.log')
