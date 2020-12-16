@@ -577,11 +577,16 @@ public class Checkpointer extends GridWorker {
     private void updateMetrics(Checkpoint chp, CheckpointMetricsTracker tracker) {
         if (persStoreMetrics.metricsEnabled()) {
             persStoreMetrics.onCheckpoint(
+                tracker.beforeLockDuration(),
                 tracker.lockWaitDuration(),
+                tracker.listenersExecuteDuration(),
                 tracker.markDuration(),
                 tracker.lockHoldDuration(),
                 tracker.pagesWriteDuration(),
                 tracker.fsyncDuration(),
+                tracker.walCpRecordFsyncDuration(),
+                tracker.writeCheckpointEntryDuration(),
+                tracker.splitAndSortCpPagesDuration(),
                 tracker.totalDuration(),
                 tracker.checkpointStartTime(),
                 chp.pagesSize,

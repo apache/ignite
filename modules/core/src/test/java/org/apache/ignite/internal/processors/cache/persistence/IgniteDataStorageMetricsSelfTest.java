@@ -210,9 +210,22 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     /** @throws Exception if failed. */
     @Test
     public void testCheckpointMetrics() throws Exception {
-        Pattern cpPtrn = Pattern.compile("Checkpoint started .* checkpointLockHoldTime=(\\d+)ms");
+        Pattern cpPtrn = Pattern.compile("^Checkpoint started .*" +
+            "checkpointBeforeLockTime=(\\d+)ms, " +
+            "checkpointLockWait=(\\d+)ms, " +
+            "checkpointListenersExecuteTime=(\\d+)ms, " +
+            "checkpointLockHoldTime=(\\d+)ms, " +
+            "walCpRecordFsyncDuration=(\\d+)ms, " +
+            "writeCheckpointEntryDuration=(\\d+)ms, " +
+            "splitAndSortCpPagesDuration=(\\d+)ms");
 
+        AtomicLong expLastCpBeforeLockDuration = new AtomicLong();
+        AtomicLong expLastCpLockWaitDuration = new AtomicLong();
+        AtomicLong expLastCpListenersExecuteDuration = new AtomicLong();
         AtomicLong expLastCpLockHoldDuration = new AtomicLong();
+        AtomicLong expLastCpWalRecordFsyncDuration = new AtomicLong();
+        AtomicLong expLastCpWriteEntryDuration = new AtomicLong();
+        AtomicLong expLastCpSplitAndSortPagesDuration = new AtomicLong();
         AtomicInteger cpCnt = new AtomicInteger();
 
         listeningLog.registerListener(s -> {
@@ -221,7 +234,13 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             if (!matcher.find())
                 return;
 
-            expLastCpLockHoldDuration.set(Long.parseLong(matcher.group(1)));
+            expLastCpBeforeLockDuration.set(Long.parseLong(matcher.group(1)));
+            expLastCpLockWaitDuration.set(Long.parseLong(matcher.group(2)));
+            expLastCpListenersExecuteDuration.set(Long.parseLong(matcher.group(3)));
+            expLastCpLockHoldDuration.set(Long.parseLong(matcher.group(4)));
+            expLastCpWalRecordFsyncDuration.set(Long.parseLong(matcher.group(5)));
+            expLastCpWriteEntryDuration.set(Long.parseLong(matcher.group(6)));
+            expLastCpSplitAndSortPagesDuration.set(Long.parseLong(matcher.group(7)));
             cpCnt.incrementAndGet();
         });
 
@@ -238,12 +257,47 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
             MetricRegistry mreg = node.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
 
+            AtomicLongMetric lastCpBeforeLockDuration = mreg.findMetric("LastCheckpointBeforeLockDuration");
+            AtomicLongMetric lastCpLockWaitDuration = mreg.findMetric("LastCheckpointLockWaitDuration");
+            AtomicLongMetric lastCpListenersExecuteDuration = mreg.findMetric("LastCheckpointListenersExecuteDuration");
             AtomicLongMetric lastCpLockHoldDuration = mreg.findMetric("LastCheckpointLockHoldDuration");
+            AtomicLongMetric lastCpWalRecordFsyncDuration = mreg.findMetric("LastCheckpointWalRecordFsyncDuration");
+            AtomicLongMetric lastCpWriteEntryDuration = mreg.findMetric("LastCheckpointWriteEntryDuration");
+            AtomicLongMetric lastCpSplitAndSortPagesDuration =
+                mreg.findMetric("LastCheckpointSplitAndSortPagesDuration");
+
+            HistogramMetric cpBeforeLockHistogram = mreg.findMetric("CheckpointBeforeLockHistogram");
+            HistogramMetric cpLockWaitHistogram = mreg.findMetric("CheckpointLockWaitHistogram");
+            HistogramMetric cpListenersExecuteHistogram = mreg.findMetric("CheckpointListenersExecuteHistogram");
+            HistogramMetric cpMarkHistogram = mreg.findMetric("CheckpointMarkHistogram");
             HistogramMetric cpLockHoldHistogram = mreg.findMetric("CheckpointLockHoldHistogram");
+            HistogramMetric cpPagesWriteHistogram = mreg.findMetric("CheckpointPagesWriteHistogram");
+            HistogramMetric cpFsyncHistogram = mreg.findMetric("CheckpointFsyncHistogram");
+            HistogramMetric cpWalRecordFsyncHistogram = mreg.findMetric("CheckpointWalRecordFsyncHistogram");
+            HistogramMetric cpWriteEntryHistogram = mreg.findMetric("CheckpointWriteEntryHistogram");
+            HistogramMetric cpSplitAndSortPagesHistogram = mreg.findMetric("CheckpointSplitAndSortPagesHistogram");
+            HistogramMetric cpHistogram = mreg.findMetric("CheckpointHistogram");
 
-            waitForCondition(() -> cpCnt.get() == Arrays.stream(cpLockHoldHistogram.value()).sum(), getTestTimeout());
+            waitForCondition(() -> cpCnt.get() == Arrays.stream(cpHistogram.value()).sum(), getTestTimeout());
 
+            assertEquals(cpCnt.get(), Arrays.stream(cpBeforeLockHistogram.value()).sum());
+            assertEquals(cpCnt.get(), Arrays.stream(cpLockWaitHistogram.value()).sum());
+            assertEquals(cpCnt.get(), Arrays.stream(cpListenersExecuteHistogram.value()).sum());
+            assertEquals(cpCnt.get(), Arrays.stream(cpMarkHistogram.value()).sum());
+            assertEquals(cpCnt.get(), Arrays.stream(cpLockHoldHistogram.value()).sum());
+            assertEquals(cpCnt.get(), Arrays.stream(cpPagesWriteHistogram.value()).sum());
+            assertEquals(cpCnt.get(), Arrays.stream(cpFsyncHistogram.value()).sum());
+            assertEquals(cpCnt.get(), Arrays.stream(cpWalRecordFsyncHistogram.value()).sum());
+            assertEquals(cpCnt.get(), Arrays.stream(cpWriteEntryHistogram.value()).sum());
+            assertEquals(cpCnt.get(), Arrays.stream(cpSplitAndSortPagesHistogram.value()).sum());
+
+            assertEquals(expLastCpBeforeLockDuration.get(), lastCpBeforeLockDuration.value());
+            assertEquals(expLastCpLockWaitDuration.get(), lastCpLockWaitDuration.value());
+            assertEquals(expLastCpListenersExecuteDuration.get(), lastCpListenersExecuteDuration.value());
             assertEquals(expLastCpLockHoldDuration.get(), lastCpLockHoldDuration.value());
+            assertEquals(expLastCpWalRecordFsyncDuration.get(), lastCpWalRecordFsyncDuration.value());
+            assertEquals(expLastCpWriteEntryDuration.get(), lastCpWriteEntryDuration.value());
+            assertEquals(expLastCpSplitAndSortPagesDuration.get(), lastCpSplitAndSortPagesDuration.value());
         }
         finally {
             db.checkpointReadUnlock();
