@@ -526,27 +526,6 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
-        public void testLocalDateFromCache() {
-            IgniteCache<Integer, Timestamp> cache = ignite.cache("net-dates");
-
-            Timestamp dt1 = timestamp(LocalDateTime.of(1982, APRIL, 1, 0, 0, 0, 0));
-            Timestamp dt2 = timestamp(LocalDateTime.of(1991, OCTOBER, 1, 0, 0, 0));
-
-            cache.put(7, dt1);
-            cache.put(8, dt2);
-
-            assertEquals(dt1, cache.get(5));
-            assertEquals(dt2, cache.get(6));
-        }
-
-        /** */
-        private Timestamp timestamp(LocalDateTime ldt) {
-            Date dt = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
-
-            return new Timestamp(dt.getTime());
-        }
-
-        /** */
         public void sleep(long delayMs) {
             try {
                 U.sleep(delayMs);
