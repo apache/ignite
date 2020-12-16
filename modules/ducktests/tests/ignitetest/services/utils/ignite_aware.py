@@ -66,6 +66,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         Starts in async way.
         """
+        if not clean:
+            self.__rotate_log()
+
         super().start(clean=clean)
 
     def start(self, clean=True):
@@ -351,3 +354,17 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         Reads current netfilter settings on the node for debugging purposes.
         """
         return str(node.account.ssh_client.exec_command("sudo iptables -L -n")[1].read(), sys.getdefaultencoding())
+
+    def __rotate_log(self):
+        """
+        Rotate log file.
+        """
+        new_log_file = self.STDOUT_STDERR_CAPTURE.replace('.log', '_$N.log')
+
+        for node in self.nodes:
+            node.account.ssh(f'if [ -e {self.STDOUT_STDERR_CAPTURE} ];'
+                             f'then '
+                             f'cd {self.LOGS_DIR};'
+                             f'N=`ls | grep -E "^console_?[0-9]*.log$" | wc -l`;'
+                             f'mv {self.STDOUT_STDERR_CAPTURE} {new_log_file};'
+                             f'fi')
