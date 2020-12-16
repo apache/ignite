@@ -677,7 +677,10 @@ public final class IgniteSystemProperties {
 
     /**
      * Flag indicating whether validation of keys put to cache should be disabled.
+     *
+     * @deprecated Since 2.10 Obsolete because of common use of binary marshaller.
      */
+    @Deprecated
     @SystemProperty("Disables validation of keys put to cache")
     public static final String IGNITE_CACHE_KEY_VALIDATION_DISABLED = "IGNITE_CACHE_KEY_VALIDATION_DISABLED";
 
