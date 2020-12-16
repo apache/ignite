@@ -338,13 +338,13 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public void testDateFromCache()
+        public void testUTCDateFromCache()
         {
             _svc.testDateFromCache();
         }
 
         /** <inheritDoc /> */
-        public void testDateFromCache2()
+        public void testLocalDateFromCache()
         {
             _svc.testDateFromCache2();
         }

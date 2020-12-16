@@ -966,7 +966,7 @@ namespace Apache.Ignite.Core.Tests.Services
             cache.Put(1, dt1);
             cache.Put(2, dt2);
 
-            svc.testDateFromCache();
+            svc.testUTCDateFromCache();
 
             Assert.AreEqual(dt1, cache.Get(3));
             Assert.AreEqual(dt2, cache.Get(4));
@@ -974,12 +974,10 @@ namespace Apache.Ignite.Core.Tests.Services
             DateTime dt3 = new DateTime(1982, 4, 1, 0, 0, 0, 0, DateTimeKind.Local);
             DateTime dt4 = new DateTime(1991, 10, 1, 0, 0, 0, 0, DateTimeKind.Local);
 
-            Assert.AreEqual(dt4, svc.testDate(dt3));
-
             cache.Put(5, dt3);
             cache.Put(6, dt4);
 
-            svc.testDateFromCache2();
+            svc.testLocalDateFromCache();
 
             Assert.AreEqual(dt3, cache.Get(7));
             Assert.AreEqual(dt4, cache.Get(8));

@@ -181,10 +181,10 @@ namespace Apache.Ignite.Core.Tests.Services
         DateTime testDate(DateTime date);
 
         /** */
-        void testDateFromCache();
+        void testUTCDateFromCache();
 
         /** */
-        void testDateFromCache2();
+        void testLocalDateFromCache();
         
         /** */
         void sleep(long delayMs);

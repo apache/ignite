@@ -18,6 +18,8 @@
 package org.apache.ignite.platform;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -45,6 +47,8 @@ import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.time.Month.APRIL;
+import static java.time.Month.OCTOBER;
 import static java.util.Calendar.JANUARY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -500,6 +504,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return m;
         }
 
+        /** */
         public Timestamp testDate(Timestamp date) {
             if (date == null)
                 return null;
@@ -509,7 +514,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime());
         }
 
-        public void testDateFromCache() {
+        /** */
+        public void testUTCDateFromCache() {
             IgniteCache<Integer, Timestamp> cache = ignite.cache("net-dates");
 
             cache.put(3, new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()));
@@ -519,14 +525,25 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             assertEquals(new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()), cache.get(2));
         }
 
-        public void testDateFromCache2() {
+        /** */
+        public void testLocalDateFromCache() {
             IgniteCache<Integer, Timestamp> cache = ignite.cache("net-dates");
 
-            cache.put(7, new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()));
-            cache.put(8, new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()));
+            Timestamp dt1 = timestamp(LocalDateTime.of(1982, APRIL, 1, 0, 0, 0, 0));
+            Timestamp dt2 = timestamp(LocalDateTime.of(1991, OCTOBER, 1, 0, 0, 0));
 
-            assertEquals(new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()), cache.get(5));
-            assertEquals(new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()), cache.get(6));
+            cache.put(7, dt1);
+            cache.put(8, dt2);
+
+            assertEquals(dt1, cache.get(5));
+            assertEquals(dt2, cache.get(6));
+        }
+
+        /** */
+        private Timestamp timestamp(LocalDateTime ldt) {
+            Date dt = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
+
+            return new Timestamp(dt.getTime());
         }
 
         /** */
