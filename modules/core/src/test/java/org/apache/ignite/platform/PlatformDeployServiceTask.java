@@ -18,8 +18,6 @@
 package org.apache.ignite.platform;
 
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -47,8 +45,6 @@ import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static java.time.Month.APRIL;
-import static java.time.Month.OCTOBER;
 import static java.util.Calendar.JANUARY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
