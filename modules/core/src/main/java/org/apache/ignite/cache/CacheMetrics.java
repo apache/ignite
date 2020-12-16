@@ -660,7 +660,7 @@ public interface CacheMetrics {
     public boolean isStatisticsEnabled();
 
     /**
-     * Checks whether management is enabled on this cache.
+     * Checks whether cache management via MBean is enabled.
      * <p>
      * The default value is {@code false}.
      *
