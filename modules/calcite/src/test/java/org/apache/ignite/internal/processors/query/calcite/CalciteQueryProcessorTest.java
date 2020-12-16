@@ -122,7 +122,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 " BATCH B " +
                 "WHERE R.BATCHKEY = B.BATCHKEY " +
                 "AND R.TRADEID = T.TRADEID " +
-                "AND R.TRADEVER = T.TRADEVER "  +
+                "AND R.TRADEVER = T.TRADEVER " +
                 "AND T.BOOK = 'BOOK' " +
                 "AND B.IS = TRUE");
 
