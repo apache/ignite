@@ -35,6 +35,22 @@ from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
 
 
+def await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=5):
+    """
+    Await for specific event message in a node's log file.
+    :param evt_message: Event message.
+    :param node: Ignite service node.
+    :param timeout_sec: Number of seconds to check the condition for before failing.
+    :param from_the_beginning: If True, search for message from the beginning of log file.
+    :param backoff_sec: Number of seconds to back off between each failure to meet the condition
+            before checking again.
+    """
+    with monitor_log(node, node.log_file, from_the_beginning) as monitor:
+        monitor.wait_until(evt_message, timeout_sec=timeout_sec, backoff_sec=backoff_sec,
+                           err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
+                                                                                           timeout_sec))
+
+
 class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
@@ -83,7 +99,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
     def start_node(self, node):
         self.init_persistent(node)
 
-        self.__rotate_log(node)
+        self.update_log_file_on_node(node)
 
         super().start_node(node)
 
@@ -190,7 +206,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
     # pylint: disable=W0613
     def _worker(self, idx, node):
-        cmd = self.spec.command
+        cmd = self.spec.command(node.log_file)
 
         self.logger.debug("Attempting to start Application Service on %s with command: %s" % (str(node.account), cmd))
 
@@ -203,21 +219,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         return len(self.pids(node)) > 0
 
-    def await_event_on_node(self, evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=5):
-        """
-        Await for specific event message in a node's log file.
-        :param evt_message: Event message.
-        :param node: Ignite service node.
-        :param timeout_sec: Number of seconds to check the condition for before failing.
-        :param from_the_beginning: If True, search for message from the beginning of log file.
-        :param backoff_sec: Number of seconds to back off between each failure to meet the condition
-                before checking again.
-        """
-        with monitor_log(node, self.STDOUT_STDERR_CAPTURE, from_the_beginning) as monitor:
-            monitor.wait_until(evt_message, timeout_sec=timeout_sec, backoff_sec=backoff_sec,
-                               err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
-                                                                                               timeout_sec))
-
     def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=5):
         """
         Await for specific event messages on all nodes.
@@ -228,8 +229,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
                 before checking again.
         """
         for node in self.nodes:
-            self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
-                                     backoff_sec=backoff_sec)
+            await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
+                                backoff_sec=backoff_sec)
 
     def exec_on_nodes_async(self, nodes, task, simultaneously=True, delay_ms=0, timeout_sec=20):
         """
@@ -354,12 +355,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         return str(node.account.ssh_client.exec_command("sudo iptables -L -n")[1].read(), sys.getdefaultencoding())
 
-    def __rotate_log(self, node):
+    def update_log_file_on_node(self, node):
         """
-        Rotate log file.
+        Get log file.
         """
-        new_log_file = self.STDOUT_STDERR_CAPTURE.replace('.log', '_$(($N+1)).log')
 
-        node.account.ssh(f'cd {self.LOGS_DIR};'
-                         f'N=`ls | grep -E "^console_[0-9]*.log$" | wc -l`;'
-                         f'ln -sf {new_log_file} {self.STDOUT_STDERR_CAPTURE} ;')
+        cnt = list(node.account.ssh_capture(f'ls {self.LOGS_DIR} | '
+                                            f'grep -E "^console_?[0-9]*.log$" | '
+                                            f'wc -l', callback=int))[0]
+
+        node.log_file = self.STDOUT_STDERR_CAPTURE.replace('.log', f'_{cnt + 1}.log')
