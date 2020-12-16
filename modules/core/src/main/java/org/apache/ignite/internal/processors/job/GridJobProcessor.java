@@ -166,7 +166,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final boolean jobAlwaysActivate;
 
     /** */
-    private final ConcurrentMap<IgniteUuid, GridJobWorker> activeJobs;
+    private volatile ConcurrentMap<IgniteUuid, GridJobWorker> activeJobs;
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridJobWorker> passiveJobs;
@@ -377,7 +377,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         // Clear collections.
-        activeJobs.clear();
+        if (jobAlwaysActivate)
+            activeJobs.clear();
+        else
+            activeJobs = new JobsMap(1024, 0.75f, 256);
 
         activeJobsMetric.reset();
 
