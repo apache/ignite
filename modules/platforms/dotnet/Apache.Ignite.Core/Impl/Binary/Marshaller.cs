@@ -78,6 +78,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public Marshaller(BinaryConfiguration cfg, ILogger log = null)
         {
             _cfg = cfg ?? new BinaryConfiguration();
+            ForceTimestamp = _cfg.ForceTimestamp;
 
             _log = log;
 
@@ -954,9 +955,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets force timestamp flag value.
         /// </summary>
-        public bool ForceTimestamp()
-        {
-            return _cfg.ForceTimestamp;
-        }
+        public bool ForceTimestamp { get; }
     }
 }
