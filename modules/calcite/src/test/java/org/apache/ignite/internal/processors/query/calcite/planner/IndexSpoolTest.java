@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.List;
 
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexFieldAccess;

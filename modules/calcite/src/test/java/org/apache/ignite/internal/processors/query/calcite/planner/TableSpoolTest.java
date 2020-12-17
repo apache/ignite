@@ -17,14 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -32,7 +27,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -44,7 +38,6 @@ public class TableSpoolTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13744")
     public void tableSpoolDistributed() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
@@ -81,31 +74,20 @@ public class TableSpoolTest extends AbstractPlannerTest {
             "from t0 " +
             "join t1 on t0.jid = t1.jid";
 
-        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter");
+        RelNode phys = physicalPlan(sql, publicSchema,
+            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule");
 
         assertNotNull(phys);
 
-        AtomicInteger spoolCnt = new AtomicInteger();
+        IgniteTableSpool tblSpool = findFirstNode(phys, byClass(IgniteTableSpool.class));
 
-        phys.childrenAccept(
-            new RelVisitor() {
-                @Override public void visit(RelNode node, int ordinal, RelNode parent) {
-                    if (node instanceof IgniteTableSpool)
-                        spoolCnt.incrementAndGet();
-
-                    super.visit(node, ordinal, parent);
-                }
-            }
-        );
-
-        assertEquals(1, spoolCnt.get());
+        assertNotNull("Invalid plan:\n" + RelOptUtil.toString(phys), tblSpool);
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13744")
     public void tableSpoolBroadcastNotRewindable() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
@@ -144,73 +126,13 @@ public class TableSpoolTest extends AbstractPlannerTest {
             "from t0 " +
             "join t1 on t0.jid = t1.jid";
 
-        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter");
+        RelNode phys = physicalPlan(sql, publicSchema,
+            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule");
 
         assertNotNull(phys);
 
-        AtomicInteger spoolCnt = new AtomicInteger();
+        IgniteTableSpool tblSpool = findFirstNode(phys, byClass(IgniteTableSpool.class));
 
-        phys.childrenAccept(
-            new RelVisitor() {
-                @Override public void visit(RelNode node, int ordinal, RelNode parent) {
-                    if (node instanceof IgniteTableSpool)
-                        spoolCnt.incrementAndGet();
-
-                    super.visit(node, ordinal, parent);
-                }
-            }
-        );
-
-        assertEquals(1, spoolCnt.get());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13744")
-    public void indexSpool() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable t0 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("JID", f.createJavaType(Integer.class))
-                .add("VAL", f.createJavaType(String.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "T0", "hash");
-            }
-        }
-            .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t0_jid_idx");
-
-        TestTable t1 = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("JID", f.createJavaType(Integer.class))
-                .add("VAL", f.createJavaType(String.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "T1", "hash");
-            }
-        }
-            .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid_idx");
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("T0", t0);
-        publicSchema.addTable("T1", t1);
-
-        String sql = "select * " +
-            "from t0 " +
-            "join t1 on t0.id = t1.id";
-
-        RelNode phys = physicalPlan(sql, publicSchema, "NestedLoopJoinConverter", "MergeJoinConverter");
-
-        assertNotNull(phys);
-
-        System.out.println("+++" + RelOptUtil.toString(phys));
+        assertNotNull("Invalid plan:\n" + RelOptUtil.toString(phys), tblSpool);
     }
 }
