@@ -1,31 +1,41 @@
 package org.apache.ignite.internal.ducktest.tests.pds_compatibility_test;
 
+import java.io.Serializable;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
-import java.io.Serializable;
-
 public class Account implements Serializable {
+
     @QuerySqlField(index = true, inlineSize = 48)
-    private String firstName;
+    private final String firstName;
+
     @QuerySqlField(index = true, inlineSize = 48)
-    private String lastName;
+    private final String lastName;
+
     @QuerySqlField(index = true, inlineSize = 48)
-    private String catName;
+    private final String catName;
+
     @QuerySqlField(index = true, inlineSize = 48)
-    private String dogName;
+    private final String dogName;
+
     @QuerySqlField(index = true, inlineSize = 48)
-    private String city;
+    private final String city;
+
     @QuerySqlField(index = true, inlineSize = 48)
-    private String country;
+    private final String country;
+
     @QuerySqlField(index = true, inlineSize = 48)
-    private String eMail;
+    private final String eMail;
+
     @QuerySqlField(index = true, inlineSize = 48)
-    private String phoneNumber;
+    private final String phoneNumber;
+
     @QuerySqlField(index = true, inlineSize = 48)
-    private String socialNumber;
+    private final String socialNumber;
+
     @QuerySqlField(index = true, inlineSize = 48)
-    private Long postIndex;
-    public long balance;
+    private final Long postIndex;
+
+    public final long balance;
 
     public Account(String firstName, String lastName, String catName, String dogName, String city, String country, String eMail, String phoneNumber, String socialNumber, Long postIndex, long balance) {
         this.firstName = firstName;
