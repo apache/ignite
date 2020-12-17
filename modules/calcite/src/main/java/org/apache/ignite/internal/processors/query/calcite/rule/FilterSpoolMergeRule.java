@@ -21,6 +21,8 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.RelFactories;
@@ -30,6 +32,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /**
@@ -60,18 +63,24 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
         if (filterCorr.correlated())
             trait = trait.replace(filterCorr);
 
+        RelNode input = spool.getInput();
+
+        IndexConditions idxCond = RexUtils.buildIndexConditions(
+            cluster,
+            spool.collation(),
+            filter.getCondition(),
+            spool.getRowType(),
+            null
+        );
+
+        RelCollation collation = RelCollations.of(idxCond.keys());
+        
         RelNode res = new IgniteIndexSpool(
             cluster,
-            trait,
-            spool.getInput(),
+            trait.replace(collation),
+            convert(input, input.getTraitSet().replace(collation)),
             spool.collation(),
-            RexUtils.buildIndexConditions(
-                cluster,
-                spool.collation(),
-                filter.getCondition(),
-                spool.getRowType(),
-                null
-            )
+            idxCond
         );
 
         call.transformTo(res);

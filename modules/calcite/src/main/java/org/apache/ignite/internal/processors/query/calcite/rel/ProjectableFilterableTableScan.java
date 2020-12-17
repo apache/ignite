@@ -156,7 +156,7 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         IgniteTypeFactory typeFactory = Commons.typeFactory(getCluster());
         IgniteTable tbl = getTable().unwrap(IgniteTable.class);
 
-        Mappings.TargetMapping mapping = RexUtils.invercePermutation(projects,
+        Mappings.TargetMapping mapping = RexUtils.inversePermutation(projects,
             tbl.getRowType(typeFactory, requiredColumns), true);
 
         RexShuttle shuttle = new RexShuttle() {

@@ -39,9 +39,16 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
         new LogicalScanConverterRule<IgniteLogicalIndexScan>(IgniteLogicalIndexScan.class, "LogicalTableScanConverterRule") {
             /** {@inheritDoc} */
             @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, IgniteLogicalIndexScan rel) {
-                return new IgniteIndexScan(rel.getCluster(), rel.getTraitSet().replace(IgniteConvention.INSTANCE),
-                    rel.getTable(), rel.indexName(), rel.projects(), rel.condition(), rel.lowerCondition(),
-                    rel.upperCondition(), rel.requiredColumns());
+                return new IgniteIndexScan(
+                    rel.getCluster(),
+                    rel.getTraitSet().replace(IgniteConvention.INSTANCE),
+                    rel.getTable(),
+                    rel.indexName(),
+                    rel.projects(),
+                    rel.condition(),
+                    rel.indexConditions(),
+                    rel.requiredColumns()
+                );
             }
         };
 

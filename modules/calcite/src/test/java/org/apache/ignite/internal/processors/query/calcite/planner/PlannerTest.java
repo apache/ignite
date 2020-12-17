@@ -2588,7 +2588,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .replace(CorrelationTrait.UNCORRELATED)
                 .simplify();
 
-            RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+            IgniteRel phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             assertNotNull(phys);
             assertEquals(
@@ -2597,6 +2597,8 @@ public class PlannerTest extends AbstractPlannerTest {
                     "  IgniteTableScan(table=[[PUBLIC, DEPT]], requiredColumns=[{0}])\n" +
                     "  IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor1.DEPTNO, $t0)):INTEGER, 2)], requiredColumns=[{2}])\n",
                 RelOptUtil.toString(phys));
+
+            checkSplitAndSerialization(phys, publicSchema);
         }
     }
 
@@ -2642,7 +2644,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         String sql = "select * from dept d join emp e on d.deptno = e.deptno and e.name = d.name order by e.name, d.deptno";
 
-        RelNode phys = physicalPlan(sql, publicSchema);
+        IgniteRel phys = physicalPlan(sql, publicSchema);
 
         assertNotNull(phys);
         assertEquals("" +
@@ -2650,6 +2652,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 "  IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[dep_idx])\n" +
                 "  IgniteIndexScan(table=[[PUBLIC, EMP]], index=[emp_idx])\n",
             RelOptUtil.toString(phys));
+
+        checkSplitAndSerialization(phys, publicSchema);
     }
 
     /** */
@@ -2729,7 +2733,7 @@ public class PlannerTest extends AbstractPlannerTest {
         String sql = "SELECT * FROM TEST OFFSET 10 ROWS FETCH FIRST 10 ROWS ONLY";
 
         {
-            RelNode phys = physicalPlan(sql, publicSchema);
+            IgniteRel phys = physicalPlan(sql, publicSchema);
 
             assertNotNull(phys);
 
@@ -2747,12 +2751,14 @@ public class PlannerTest extends AbstractPlannerTest {
 
             assertEquals("Invalid plan: \n" + RelOptUtil.toString(phys), 1, limit.get());
             assertFalse("Invalid plan: \n" + RelOptUtil.toString(phys), sort.get());
+
+            checkSplitAndSerialization(phys, publicSchema);
         }
 
         sql = "SELECT * FROM TEST ORDER BY ID OFFSET 10 ROWS FETCH FIRST 10 ROWS ONLY";
 
         {
-            RelNode phys = physicalPlan(sql, publicSchema);
+            IgniteRel phys = physicalPlan(sql, publicSchema);
 
             assertNotNull(phys);
 
@@ -2770,6 +2776,8 @@ public class PlannerTest extends AbstractPlannerTest {
 
             assertEquals("Invalid plan: \n" + RelOptUtil.toString(phys), 1, limit.get());
             assertTrue("Invalid plan: \n" + RelOptUtil.toString(phys), sort.get());
+
+            checkSplitAndSerialization(phys, publicSchema);
         }
     }
 }

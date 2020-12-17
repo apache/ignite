@@ -26,6 +26,7 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
@@ -64,7 +65,7 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
         RelTraitSet traits,
         RelOptTable tbl,
         String idxName) {
-        this(cluster, traits, tbl, idxName, null, null, null, null, null);
+        this(cluster, traits, tbl, idxName, null, null, null, null);
     }
 
     /**
@@ -75,7 +76,7 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
      * @param idxName Index name.
      * @param proj Projects.
      * @param cond Filters.
-     * @param requiredColunms Participating colunms.
+     * @param requiredCols Participating columns.
      */
     public IgniteIndexScan(
         RelOptCluster cluster,
@@ -84,11 +85,10 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
         String idxName,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable List<RexNode> lowerIdxCond,
-        @Nullable List<RexNode> upperIdxCond,
-        @Nullable ImmutableBitSet requiredColunms
+        @Nullable IndexConditions idxCond,
+        @Nullable ImmutableBitSet requiredCols
     ) {
-        this(-1L, cluster, traits, tbl, idxName, proj, cond, lowerIdxCond, upperIdxCond, requiredColunms);
+        this(-1L, cluster, traits, tbl, idxName, proj, cond, idxCond, requiredCols);
     }
 
     /**
@@ -99,7 +99,7 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
      * @param idxName Index name.
      * @param proj Projects.
      * @param cond Filters.
-     * @param requiredColunms Participating colunms.
+     * @param requiredCols Participating colunms.
      */
     private IgniteIndexScan(
         long sourceId,
@@ -109,11 +109,10 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
         String idxName,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable List<RexNode> lowerIdxCond,
-        @Nullable List<RexNode> upperIdxCond,
-        @Nullable ImmutableBitSet requiredColunms
+        @Nullable IndexConditions idxCond,
+        @Nullable ImmutableBitSet requiredCols
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, lowerIdxCond, upperIdxCond, requiredColunms);
+        super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, idxCond, requiredCols);
 
         this.sourceId = sourceId;
     }
@@ -137,12 +136,12 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
         return new IgniteIndexScan(sourceId, getCluster(), getTraitSet(), getTable(),
-            idxName, projects, condition, lowerCond, upperCond, requiredColumns);
+            idxName, projects, condition, idxCond, requiredColumns);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteIndexScan(sourceId, cluster, getTraitSet(), getTable(),
-            idxName, projects, condition, lowerCond, upperCond, requiredColumns);
+            idxName, projects, condition, idxCond, requiredColumns);
     }
 }

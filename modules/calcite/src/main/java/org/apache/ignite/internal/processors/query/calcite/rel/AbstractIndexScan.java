@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -27,12 +28,9 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.mapping.Mappings;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,16 +42,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     protected final String idxName;
 
     /** */
-    protected List<RexNode> lowerCond;
-
-    /** */
-    protected List<RexNode> upperCond;
-
-    /** */
-    protected List<RexNode> lowerBound;
-
-    /** */
-    protected List<RexNode> upperBound;
+    protected final IndexConditions idxCond;
 
     /**
      * Constructor used for deserialization.
@@ -63,8 +52,12 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     protected AbstractIndexScan(RelInput input) {
         super(input);
         idxName = input.getString("index");
-        lowerBound = input.get("lower") == null ? null : input.getExpressionList("lower");
-        upperBound = input.get("upper") == null ? null : input.getExpressionList("upper");
+        idxCond = new IndexConditions(
+            null,
+            null,
+            input.get("lower") == null ? null : input.getExpressionList("lower"),
+            input.get("upper") == null ? null : input.getExpressionList("upper")
+        );
     }
 
     /** */
@@ -76,23 +69,23 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         String idxName,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable List<RexNode> lowerCond,
-        @Nullable List<RexNode> upperCond,
-        @Nullable ImmutableBitSet reqColunms
+        @Nullable IndexConditions idxCond,
+        @Nullable ImmutableBitSet reqColumns
     ) {
-        super(cluster, traitSet, hints, table, proj, cond, reqColunms);
+        super(cluster, traitSet, hints, table, proj, cond, reqColumns);
+
         this.idxName = idxName;
-        this.lowerCond = lowerCond;
-        this.upperCond = upperCond;
+        this.idxCond = idxCond;
     }
 
     /** {@inheritDoc} */
     @Override protected RelWriter explainTerms0(RelWriter pw) {
         pw = pw.item("index", idxName);
         pw = super.explainTerms0(pw);
+
         return pw
-            .itemIf("lower", lowerBound, !F.isEmpty(lowerBound()))
-            .itemIf("upper", upperBound, !F.isEmpty(upperBound()));
+            .itemIf("lower", idxCond.lowerBound(), idxCond != null && !F.isEmpty(idxCond.lowerBound()))
+            .itemIf("upper", idxCond.upperBound(), idxCond != null && !F.isEmpty(idxCond.upperBound()));
     }
 
     /**
@@ -106,48 +99,37 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
      * @return Lower index condition.
      */
     public List<RexNode> lowerCondition() {
-        return lowerCond;
+        return idxCond == null ? null : idxCond.lowerCondition();
     }
 
     /**
      * @return Lower index condition.
      */
     public List<RexNode> lowerBound() {
-        if (lowerBound == null && lowerCond != null) {
-            RelDataType rowType = getTable().getRowType();
-            Mappings.TargetMapping mapping = null;
-            if (requiredColumns() != null)
-                mapping = Commons.inverseMapping(requiredColumns(), rowType.getFieldCount());
-            lowerBound = RexUtils.asBound(getCluster(), lowerCond, rowType, mapping);
-        }
-
-        return lowerBound;
+        return idxCond == null ? null : idxCond.lowerBound();
     }
 
     /**
      * @return Upper index condition.
      */
     public List<RexNode> upperCondition() {
-        return upperCond;
+        return idxCond == null ? null : idxCond.upperCondition();
     }
 
     /**
      * @return Upper index condition.
      */
     public List<RexNode> upperBound() {
-        if (upperBound == null && upperCond != null) {
-            RelDataType rowType = getTable().getRowType();
-            Mappings.TargetMapping mapping = null;
-            if (requiredColumns() != null)
-                mapping = Commons.inverseMapping(requiredColumns(), rowType.getFieldCount());
-            upperBound = RexUtils.asBound(getCluster(), upperCond, rowType, mapping);
-        }
-
-        return upperBound;
+        return idxCond == null ? null : idxCond.upperBound();
     }
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         return super.computeSelfCost(planner, mq).plus(planner.getCostFactory().makeTinyCost());
+    }
+
+    /** */
+    public IndexConditions indexConditions() {
+        return idxCond;
     }
 }

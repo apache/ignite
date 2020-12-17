@@ -92,8 +92,6 @@ public class IndexSpoolTest extends AbstractPlannerTest {
             "MergeJoinConverter", "NestedLoopJoinConverter"
         );
 
-        System.out.println("+++\n" + RelOptUtil.toString(phys));
-
         checkSplitAndSerialization(phys, publicSchema);
 
         IgniteIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteIndexSpool.class));

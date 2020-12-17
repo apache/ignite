@@ -76,8 +76,7 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
             idxName,
             proj,
             cond,
-            idxCond.lowerCondition(),
-            idxCond.upperCondition(),
+            idxCond,
             requiredColumns);
     }
 
@@ -89,9 +88,8 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
      * @param idxName Index name.
      * @param proj Projects.
      * @param cond Filters.
-     * @param lowerCond Lower condition.
-     * @param upperCond Upper condition.
-     * @param requiredColumns Participating colunms.
+     * @param idxCond Index conditions.
+     * @param requiredCols Participating columns.
      */
     private IgniteLogicalIndexScan(
         RelOptCluster cluster,
@@ -100,10 +98,9 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         String idxName,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable List<RexNode> lowerCond,
-        @Nullable List<RexNode> upperCond,
-        @Nullable ImmutableBitSet requiredColumns
+        @Nullable IndexConditions idxCond,
+        @Nullable ImmutableBitSet requiredCols
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, lowerCond, upperCond, requiredColumns);
+        super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, idxCond, requiredCols);
     }
 }

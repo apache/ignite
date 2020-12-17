@@ -349,6 +349,14 @@ public class RexUtils {
     }
 
     /** */
+    public static boolean isNotNull(RexNode op) {
+        if (op == null)
+            return false;
+
+        return !(op instanceof RexLiteral) || !((RexLiteral)op).isNull();
+    }
+
+    /** */
     public static List<RexNode> asBound(RelOptCluster cluster, Iterable<RexNode> idxCond, RelDataType rowType, @Nullable Mappings.TargetMapping mapping) {
         if (F.isEmpty(idxCond))
             return null;
@@ -391,7 +399,7 @@ public class RexUtils {
     }
 
     /** */
-    public static Mappings.TargetMapping invercePermutation(List<RexNode> nodes, RelDataType inputRowType, boolean local) {
+    public static Mappings.TargetMapping inversePermutation(List<RexNode> nodes, RelDataType inputRowType, boolean local) {
         final Mappings.TargetMapping mapping =
             Mappings.create(MappingType.INVERSE_FUNCTION, nodes.size(), inputRowType.getFieldCount());
 

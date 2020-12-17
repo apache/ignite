@@ -160,19 +160,18 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
 
         String sql = "select * " +
             "from t0 " +
-            "join t1 on t0" +
-            ".jid > t1.jid";
+            "join t1 on t0.jid + 2 > t1.jid * 2";
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> {
-                physicalPlan(
-                    sql,
-                    publicSchema,
-                    "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule"
-                );
+        IgniteRel phys = physicalPlan(
+            sql,
+            publicSchema,
+            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeRule"
+        );
 
-                return null;
-            },
-            RelOptPlanner.CannotPlanException.class,
-            "There are not enough rules to produce a node with desired properties");
+        assertNotNull(phys);
+
+        checkSplitAndSerialization(phys, publicSchema);
+
+        System.out.println("+++\n" + RelOptUtil.toString(phys));
     }
 }

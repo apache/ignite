@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -86,6 +91,24 @@ public class IndexConditions {
      */
     public List<RexNode> upperBound() {
         return upperBound;
+    }
+
+    /** */
+    public ImmutableIntList keys() {
+        if (upperBound == null && lowerBound == null)
+            return ImmutableIntList.of();
+
+        List<Integer> keys = new ArrayList<>();
+
+        int cols = lowerBound != null ? lowerBound.size() : upperBound.size();
+
+        for (int i = 0; i < cols; ++i ) {
+            if (upperBound != null && RexUtils.isNotNull(upperBound.get(i))
+                || lowerBound != null && RexUtils.isNotNull(lowerBound.get(i)))
+                keys.add(i);
+        }
+
+        return ImmutableIntList.copyOf(keys);
     }
 
     /** */
