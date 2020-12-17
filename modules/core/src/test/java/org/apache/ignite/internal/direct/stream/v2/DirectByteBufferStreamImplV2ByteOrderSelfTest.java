@@ -345,7 +345,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
      * */
     @Test
     public void testLinearPerformanceForWriteString() {
-        int len = 400_000;
+        int len = 40_000;
 
         long t1 = getWriteStringExecutionTime(len);
         long t2 = getWriteStringExecutionTime(len * 10);
