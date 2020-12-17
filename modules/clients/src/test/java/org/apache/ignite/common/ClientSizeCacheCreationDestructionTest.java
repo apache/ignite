@@ -37,13 +37,13 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -469,7 +469,7 @@ public class ClientSizeCacheCreationDestructionTest extends GridCommonAbstractTe
      * <ol>
      *     <li>Start server node, create 4 different caches without cache groups.</li>
      *     <li>Start <b>Thin</b> client node, try to create cache with cache group with a name == first cache name.</li>
-     *     <li>{@code ClientServerError} expected with message:
+     *     <li>{@code ClientException} expected with message:
      *     'Failed to start cache. Cache group name conflict with existing cache (change group name)'.</li>
      * </ol>
      * @throws Exception If failed.
@@ -486,7 +486,7 @@ public class ClientSizeCacheCreationDestructionTest extends GridCommonAbstractTe
 
                 return null;
             },
-            ClientServerError.class,
+            ClientException.class,
             "Failed to start cache. Cache group name conflict with existing cache (change group name)");
     }
 
@@ -574,7 +574,7 @@ public class ClientSizeCacheCreationDestructionTest extends GridCommonAbstractTe
      *     <li>Start server node, create 4 different caches with cache groups.</li>
      *     <li>Start <b>Thin</b> client node, try to create extra cache within same cache group but with different
      *     config.</li>
-     *     <li>{@code ClientServerError} expected
+     *     <li>{@code ClientException} expected
      *     with message 'Backups mismatch for caches related to the same group'.</li>
      * </ol>
      * @throws Exception If failed.
@@ -591,7 +591,7 @@ public class ClientSizeCacheCreationDestructionTest extends GridCommonAbstractTe
 
                 return null;
             },
-            ClientServerError.class,
+            ClientException.class,
             "Backups mismatch for caches related to the same group");
     }
 
