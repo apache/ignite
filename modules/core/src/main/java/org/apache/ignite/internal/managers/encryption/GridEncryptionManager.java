@@ -924,6 +924,16 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param segmentIdx WAL segment index.
      */
     public void onWalSegmentRemoved(long segmentIdx) {
+        if (grpKeys.isReleaseWalKeysRequired(segmentIdx))
+            ctx.getSystemExecutorService().submit(() -> releaseWalKeys(segmentIdx));
+    }
+
+    /**
+     * Cleanup keys reserved for WAL reading.
+     *
+     * @param segmentIdx WAL segment index.
+     */
+    private void releaseWalKeys(long segmentIdx) {
         withMasterKeyChangeReadLock(() -> {
             synchronized (metaStorageMux) {
                 Map<Integer, Set<Integer>> rmvKeys = grpKeys.releaseWalKeys(segmentIdx);
