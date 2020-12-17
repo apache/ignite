@@ -36,4 +36,9 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <modules>
+        <module>modules/configuration</module>
+        <module>modules/configuration-annotation-processor</module>
+    </modules>
 </project>
