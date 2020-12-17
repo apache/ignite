@@ -156,29 +156,30 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
         double cost = rows * IgniteCost.ROW_PASS_THROUGH_COST;
 
-        RexBuilder builder = getCluster().getRexBuilder();
+        if (condition != null) {
+            RexBuilder builder = getCluster().getRexBuilder();
 
-        double selectivity = 1;
+            double selectivity = 1;
 
-        if (lowerCond != null) {
-            double selectivity0 = mq.getSelectivity(this, RexUtil.composeDisjunction(builder, lowerCond));
+            if (lowerCond != null) {
+                double selectivity0 = mq.getSelectivity(this, RexUtil.composeDisjunction(builder, lowerCond));
 
-            selectivity -= 1 - selectivity0;
+                selectivity -= 1 - selectivity0;
+            }
+
+            if (upperCond != null) {
+                double selectivity0 = mq.getSelectivity(this, RexUtil.composeDisjunction(builder, upperCond));
+
+                selectivity -= 1 - selectivity0;
+            }
+
+            double rangedRows = rows * selectivity;
+
+            if (rangedRows <= 0)
+                rangedRows = 1;
+
+            cost += rangedRows * IgniteCost.ROW_COMPARISON_COST;
         }
-
-        if (upperCond != null) {
-            double selectivity0 = mq.getSelectivity(this, RexUtil.composeDisjunction(builder, upperCond));
-
-            selectivity -= 1 - selectivity0;
-        }
-
-        double rangedRows = rows * selectivity;
-
-        if (rangedRows <= 0)
-            rangedRows = 1;
-
-        if (condition != null)
-            cost += rangedRows * 4;
 
         return planner.getCostFactory().makeCost(rows, cost, 0);
     }

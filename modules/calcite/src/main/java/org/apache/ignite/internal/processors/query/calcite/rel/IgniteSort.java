@@ -109,7 +109,7 @@ public class IgniteSort extends Sort implements IgniteRel {
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rows = mq.getRowCount(getInput());
 
-        double cost = Util.nLogN(rows) * IgniteCost.ROW_COMPARISON_COST;
+        double cost = rows * IgniteCost.ROW_PASS_THROUGH_COST + Util.nLogN(rows) * IgniteCost.ROW_COMPARISON_COST;
         double memory = rows * getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
 
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();

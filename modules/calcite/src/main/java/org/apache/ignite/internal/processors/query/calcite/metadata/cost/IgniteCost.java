@@ -33,8 +33,8 @@ public class IgniteCost implements RelOptCost {
     /** Size of a particular field. */
     public static final double AVERAGE_FIELD_SIZE = 4; // such accuracy should be enough for an estimate
 
-    /** Cost of a comparison of one row. It includes a cost for a row passing through a node. */
-    public static final double ROW_COMPARISON_COST = ROW_PASS_THROUGH_COST + 3;
+    /** Cost of a comparison of one row. */
+    public static final double ROW_COMPARISON_COST = 3;
 
     /** */
     static final IgniteCost ZERO = new IgniteCost(0, 0, 0, 0, 0);
