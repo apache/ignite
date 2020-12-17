@@ -61,12 +61,10 @@ public class SqlLongFieldLinearPerfomanceTest extends GridCommonAbstractTest {
     }
 
     /** create table */
-    private void createTable() throws Exception {
-        try (Ignite client = startClientGrid()) {
-            IgniteCache c = client.getOrCreateCache(cacheName);
+    private void createTable() {
+        IgniteCache c = ignite.getOrCreateCache(cacheName);
 
-            c.query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS T1 (ID INT PRIMARY KEY, V VARCHAR)")).getAll();
-        }
+        c.query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS T1 (ID INT PRIMARY KEY, V VARCHAR)")).getAll();
     }
 
     private IgniteConfiguration getClientConfuguration() throws Exception {
@@ -76,21 +74,22 @@ public class SqlLongFieldLinearPerfomanceTest extends GridCommonAbstractTest {
     /** test performance */
     @Test
     public void test() throws Exception {
-        int len = 400_000;
+        try (Ignite client = startClientGrid()) {
+            int len = 400_000;
 
-        long t1 = getTime(len);
-        long t2 = getTime(len * 10);
-        long t3 = getTime(len * 100);
-        long t4 = getTime(len * 1000);
+            long t1 = getTime(client, len);
+            long t2 = getTime(client, len * 10);
+            long t3 = getTime(client, len * 100);
+            long t4 = getTime(client, len * 1000);
 
-        assertTrue(t2 <= t1 * 10);
-        assertTrue(t3 <= t1 * 100);
-        assertTrue(t4 <= t1 * 1000);
+            assertTrue(t2 <= t1 * 10);
+            assertTrue(t3 <= t1 * 100);
+            assertTrue(t4 <= t1 * 1000);
+        }
     }
 
     /** get time of select execution by string value length */
-    public long getTime(int len) throws Exception {
-        try (Ignite client = startClientGrid()) {
+    public long getTime(Ignite client, int len) throws Exception {
             IgniteCache c = client.getOrCreateCache("default");
 
             c.query(new SqlFieldsQuery("DELETE FROM T1"));
@@ -104,6 +103,5 @@ public class SqlLongFieldLinearPerfomanceTest extends GridCommonAbstractTest {
             long d2 = System.currentTimeMillis();
 
             return d2 - d1;
-        }
     }
 }
