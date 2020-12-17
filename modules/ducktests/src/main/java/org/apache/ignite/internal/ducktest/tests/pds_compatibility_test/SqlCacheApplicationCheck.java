@@ -32,7 +32,7 @@ public class SqlCacheApplicationCheck extends IgniteAwareApplication {
             e.printStackTrace();
         }
 
-        log.info("SELECT COUNT(*) FROM ACCOUNT return: {}", count);
+        log.info("SELECT COUNT(*) FROM ACCOUNT return: " + count);
 
         assert count.equals(jsonNode.get("range").asText());
 
@@ -47,7 +47,7 @@ public class SqlCacheApplicationCheck extends IgniteAwareApplication {
             e.printStackTrace();
         }
 
-        log.info("SQL Execution Plan: {}", explain);
+        log.info("SQL Execution Plan: " + explain);
 
         assert explain.contains("_IDX");
 
