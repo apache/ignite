@@ -989,7 +989,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         assertEquals(1, jcache(1).get(key));
 
-
         assertEquals(1, jcache(2).withExpiryPolicy(
             new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE)).get(key));
 
