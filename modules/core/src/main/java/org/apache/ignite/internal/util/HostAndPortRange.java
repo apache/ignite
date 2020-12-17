@@ -53,60 +53,89 @@ public class HostAndPortRange implements Serializable {
 
         String host;
 
+        String portStr;
         int portFrom;
         int portTo;
 
         if (F.isEmpty(addrStr))
             throw createParseError(addrStr, errMsgPrefix, "Address is empty");
 
-        final int colIdx = addrStr.indexOf(':');
-
-        if (colIdx > 0) {
-            String portFromStr;
-            String portToStr;
-
-            host = addrStr.substring(0, colIdx);
-
-            String portStr = addrStr.substring(colIdx + 1, addrStr.length());
-
-            if (F.isEmpty(portStr))
-                throw createParseError(addrStr, errMsgPrefix, "port range is not specified");
-
-            int portRangeIdx = portStr.indexOf("..");
-
-            if (portRangeIdx >= 0) {
-                // Port range is specified.
-                portFromStr = portStr.substring(0, portRangeIdx);
-                portToStr = portStr.substring(portRangeIdx + 2, portStr.length());
+        if (addrStr.contains("[")) { // IPv6
+            int hostEndIdx = addrStr.indexOf(']');
+            if (hostEndIdx == -1) {
+                throw createParseError(addrStr, errMsgPrefix, "IPv6 host is incorrect");
             }
-            else {
-                // Single port is specified.
-                portFromStr = portStr;
-                portToStr = portStr;
+            host = addrStr.substring(0, hostEndIdx + 1);
+            if (hostEndIdx == addrStr.length() - 1) { // no port specified, using default
+                portFrom = dfltPortFrom;
+                portTo = dfltPortTo;
+            } else { // port specified
+                portStr = addrStr.substring(hostEndIdx + 2);
+
+                int[] ports = verifyPortStr(addrStr, errMsgPrefix, portStr);
+                portFrom = ports[0];
+                portTo = ports[1];
             }
 
-            portFrom = parsePort(portFromStr, addrStr, errMsgPrefix);
-            portTo = parsePort(portToStr, addrStr, errMsgPrefix);
+        } else { //IPv4 or empty host
+            final int colIdx = addrStr.indexOf(':');
+            if (colIdx > 0) {
+                host = addrStr.substring(0, colIdx);
+                portStr = addrStr.substring(colIdx + 1);
+                int[] ports = verifyPortStr(addrStr, errMsgPrefix, portStr);
+                portFrom = ports[0];
+                portTo = ports[1];
 
-            if (portFrom > portTo)
-                throw createParseError(addrStr, errMsgPrefix, "start port cannot be less than end port");
-        }
-        else {
-            // Host name not specified.
-            if (colIdx == 0)
+            } else if (colIdx == 0) {
                 throw createParseError(addrStr, errMsgPrefix, "Host name is empty");
+            }
+            else { // Port is not specified, use defaults.
+                host = addrStr;
 
-            // Port is not specified, use defaults.
-            host = addrStr;
-
-            portFrom = dfltPortFrom;
-            portTo = dfltPortTo;
+                portFrom = dfltPortFrom;
+                portTo = dfltPortTo;
+            }
         }
-
-        if (F.isEmpty(host))
-            throw createParseError(addrStr, errMsgPrefix, "Host name is empty");
 
         return new HostAndPortRange(host, portFrom, portTo);
+    }
+
+    /**
+     *
+     * @param addrStr Address String.
+     * @param errMsgPrefix Error message prefix.
+     * @param portStr Port or port range string.
+     * @return Array of int[portFrom, portTo].
+     * @throws IgniteCheckedException If failed.
+     */
+
+    private static int[] verifyPortStr(String addrStr, String errMsgPrefix, String portStr) throws IgniteCheckedException {
+        String portFromStr;
+        String portToStr;
+
+        if (F.isEmpty(portStr))
+            throw createParseError(addrStr, errMsgPrefix, "port range is not specified");
+
+        int portRangeIdx = portStr.indexOf("..");
+
+        if (portRangeIdx >= 0) {
+            // Port range is specified.
+            portFromStr = portStr.substring(0, portRangeIdx);
+            portToStr = portStr.substring(portRangeIdx + 2);
+        }
+        else {
+            // Single port is specified.
+            portFromStr = portStr;
+            portToStr = portStr;
+        }
+
+        int portFrom = parsePort(portFromStr, addrStr, errMsgPrefix);
+        int portTo = parsePort(portToStr, addrStr, errMsgPrefix);
+
+        if (portFrom > portTo)
+            throw createParseError(addrStr, errMsgPrefix, "start port cannot be less than end port");
+
+        return new int[]{portFrom, portTo};
     }
 
     /**
