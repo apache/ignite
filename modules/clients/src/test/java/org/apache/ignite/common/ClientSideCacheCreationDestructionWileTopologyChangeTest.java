@@ -17,11 +17,10 @@
 
 package org.apache.ignite.common;
 
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.testframework.GridTestUtils;
-
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * {@inheritDoc} With topology events in parallel

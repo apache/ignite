@@ -1064,7 +1064,7 @@ public class ClientSizeCacheCreationDestructionTest extends GridCommonAbstractTe
      *      <b>Expected:</b> Only one cache, initially created within server node is expected.
      */
     @Test
-    public void testCreateOnThinClientSrvDestroyOnRestClient() throws Exception{
+    public void testCreateOnThinClientSrvDestroyOnRestClient() throws Exception {
         srv.createCache(cacheConfig().setName(ANOTHER_CACHE_NAME));
 
         thinClient.createCache(clientCacheConfig());
