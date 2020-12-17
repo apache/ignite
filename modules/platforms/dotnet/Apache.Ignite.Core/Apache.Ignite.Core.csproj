@@ -52,6 +52,8 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryBasicNameMapper.cs" />
     <Compile Include="Binary\TimestampAttribute.cs" />
+    <Compile Include="Cache\Affinity\IAffinityBackupFilter.cs" />
+    <Compile Include="Cache\Affinity\Rendezvous\ClusterNodeAttributeAffinityBackupFilter.cs" />
     <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Cache\Configuration\PlatformCacheConfiguration.cs" />
@@ -101,6 +103,7 @@
     <Compile Include="IIgniteLock.cs" />
     <Compile Include="Impl\Binary\BinaryHashCodeUtils.cs" />
     <Compile Include="Impl\Binary\IgniteBiTuple.cs" />
+    <Compile Include="Impl\Cache\CacheAffinityManager.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryExpireEvent.cs" />
     <Compile Include="Impl\Cache\Platform\IPlatformCache.cs" />
     <Compile Include="Impl\Cache\Platform\PlatformCache.cs" />
@@ -161,7 +164,6 @@
     <Compile Include="Impl\Binary\MultidimensionalArrayHolder.cs" />
     <Compile Include="Impl\Binary\MultidimensionalArraySerializer.cs" />
     <Compile Include="Impl\Binary\OptimizedMarshallerObject.cs" />
-    <Compile Include="Impl\Client\Cache\CacheFlags.cs" />
     <Compile Include="Impl\Client\Cache\ClientCacheConfigurationSerializer.cs" />
     <Compile Include="Impl\Client\Cache\Query\ClientFieldsQueryCursor.cs" />
     <Compile Include="Impl\Client\Cache\Query\ClientQueryCursor.cs" />

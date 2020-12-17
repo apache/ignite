@@ -111,7 +111,7 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexSearchRow>
 
         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
-        CacheGroupContext ctx = ((InlineIndexTree) tree).getContext();
+        CacheGroupContext ctx = ((InlineIndexTree) tree).getContext().group();
 
         row.initFromLink(ctx, CacheDataRowAdapter.RowData.FULL, true);
 
@@ -136,6 +136,11 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexSearchRow>
     /** {@inheritDoc} */
     @Override public long getLink(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + inlineSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getInlineSize() {
+        return inlineSize;
     }
 
     /**

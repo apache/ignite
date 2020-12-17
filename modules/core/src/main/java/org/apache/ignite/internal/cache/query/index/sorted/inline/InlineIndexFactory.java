@@ -21,10 +21,10 @@ import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.cache.query.index.IndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 
 /**
  * Factory to create {@link InlineIndex}.
@@ -39,28 +39,29 @@ public class InlineIndexFactory implements IndexFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public Index createIndex(IndexDefinition def) {
+    @Override public Index createIndex(GridCacheContext cctx, IndexDefinition def) {
         SortedIndexDefinition sdef = (SortedIndexDefinition) def;
 
         InlineIndexTree[] trees = new InlineIndexTree[sdef.getSegments()];
-        InlineRecommender recommender = new InlineRecommender(sdef);
+        InlineRecommender recommender = new InlineRecommender(cctx, sdef);
 
         try {
             for (int i = 0; i < sdef.getSegments(); ++i) {
                 // Required for persistence.
-                IgniteCacheDatabaseSharedManager db = def.getContext().shared().database();
+                IgniteCacheDatabaseSharedManager db = cctx.shared().database();
                 db.checkpointReadLock();
 
                 try {
-                    RootPage page = getRootPage(def.getContext(), sdef.getTreeName(), i);
-                    trees[i] = createIndexSegment(sdef, page, recommender);
+                    RootPage page = getRootPage(cctx, sdef.getTreeName(), i);
+
+                    trees[i] = createIndexSegment(cctx, sdef, page, recommender);
 
                 } finally {
                     db.checkpointReadUnlock();
                 }
             }
 
-            return new InlineIndexImpl(sdef, trees);
+            return new InlineIndexImpl(cctx, sdef, trees);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -68,16 +69,17 @@ public class InlineIndexFactory implements IndexFactory {
     }
 
     /** */
-    private InlineIndexTree createIndexSegment(SortedIndexDefinition def, RootPage rootPage,
+    private InlineIndexTree createIndexSegment(GridCacheContext cctx, SortedIndexDefinition def, RootPage rootPage,
         InlineRecommender recommender) throws Exception {
-
-        CacheGroupContext gctx = def.getContext().group();
 
         return new InlineIndexTree(
             def,
-            gctx,
+            cctx,
             def.getTreeName(),
-            def.getContext().offheap().reuseListForIndex(def.getTreeName()),
+            cctx.offheap(),
+            cctx.offheap().reuseListForIndex(def.getTreeName()),
+            cctx.dataRegion().pageMemory(),
+            PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
             rootPage.pageId().pageId(),
             rootPage.isAllocated(),
             def.getInlineSize(),

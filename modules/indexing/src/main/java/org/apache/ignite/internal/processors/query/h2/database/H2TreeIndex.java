@@ -101,7 +101,7 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
  */
 @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
 public class H2TreeIndex extends H2TreeIndexBase {
-
+    /** Underlying Ignite index. */
     private InlineIndex queryIndex;
 
     /** Kernal context. */
@@ -197,7 +197,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             QueryContext qctx = ses != null ? H2Utils.context(ses) : null;
 
-            GridCursor<IndexSearchRow> cursor = queryIndex.find(key.get1(), key.get2(), qctx.segment(), qctx.filter());
+            GridCursor<IndexSearchRow> cursor = queryIndex.find(key.get1(), key.get2(), segment(qctx), filter(qctx));
 
             GridCursor<H2Row> h2cursor = new IndexValueCursor<>(cursor, this::mapIndexRow);
 
@@ -210,6 +210,13 @@ public class H2TreeIndex extends H2TreeIndexBase {
         finally {
             ThreadLocalSessionHolder.removeSession();
         }
+    }
+
+    /** */
+    private IndexingQueryFilter filter(QueryContext qctx) {
+        assert qctx != null || !cctx.mvccEnabled();
+
+        return qctx != null ? qctx.filter() : null;
     }
 
     /** */
@@ -252,7 +259,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         try {
             QueryContext qctx = H2Utils.context(ses);
 
-            return queryIndex.count(qctx.segment(), qctx.filter());
+            return queryIndex.count(segment(qctx), filter(qctx));
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -264,7 +271,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         try {
             QueryContext qctx = H2Utils.context(ses);
 
-            GridCursor<IndexSearchRow> cursor = queryIndex.findFirstOrLast(b, qctx.segment(), qctx.filter());
+            GridCursor<IndexSearchRow> cursor = queryIndex.findFirstOrLast(b, segment(qctx), filter(qctx));
 
             return new H2Cursor(new IndexValueCursor<>(cursor, this::mapIndexRow));
         }
@@ -406,7 +413,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
                         // This is the first request containing all the search rows.
                         assert !msg.bounds().isEmpty() : "empty bounds";
 
-                        src = new RangeSource(this, msg.bounds(), msg.segment(), qctx.filter());
+                        src = new RangeSource(this, msg.bounds(), msg.segment(), filter(qctx));
                     }
                     else {
                         // This is request to fetch next portion of data.

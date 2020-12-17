@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.index.Index;
@@ -29,6 +30,7 @@ import org.apache.ignite.cache.query.index.IndexFactory;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.SkipDaemon;
+import org.apache.ignite.internal.cache.query.index.sorted.defragmentation.IndexingDefragmentation;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
@@ -36,9 +38,13 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearch
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
@@ -48,6 +54,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisito
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -129,7 +136,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      *
      * @throws IgniteCheckedException In case of error.
      */
-    public void store(Collection<Index> idxs, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+    public void store(Collection<? extends Index> idxs, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
         boolean prevRowAvailable)
         throws IgniteCheckedException {
         assert enabled();
@@ -148,16 +155,18 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     /**
      * Creates a new index.
      *
+     * @param cctx Cache context.
      * @param factory Index factory.
      * @param definition Description of an index to create.
      * @param cacheVisitor Enable to cancel dynamic index populating.
      */
-    public Index createIndexDynamically(IndexFactory factory, IndexDefinition definition, SchemaIndexCacheVisitor cacheVisitor) {
+    public Index createIndexDynamically(GridCacheContext cctx, IndexFactory factory, IndexDefinition definition,
+        SchemaIndexCacheVisitor cacheVisitor) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to write to index (grid is stopping).");
 
         try {
-            Index idx = getSpi().createIndex(factory, definition);
+            Index idx = getSpi().createIndex(cctx, factory, definition);
 
             // Populate index with cache rows.
             cacheVisitor.visit(idx::putx);
@@ -189,12 +198,12 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * @param factory Index factory.
      * @param definition Description of an index to create.
      */
-    public Index createIndex(IndexFactory factory, IndexDefinition definition) {
+    public Index createIndex(GridCacheContext cctx, IndexFactory factory, IndexDefinition definition) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to write to index (grid is stopping).");
 
         try {
-            return getSpi().createIndex(factory, definition);
+            return getSpi().createIndex(cctx, factory, definition);
 
         } finally {
             busyLock.leaveBusy();
@@ -207,12 +216,12 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * @param def Index definition.
      * @param softDelete Soft delete flag.
      */
-    public void removeIndex(IndexDefinition def, boolean softDelete) {
+    public void removeIndex(GridCacheContext cctx, IndexDefinition def, boolean softDelete) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to write to index (grid is stopping).");
 
         try {
-            getSpi().removeIndex(def, softDelete);
+            getSpi().removeIndex(cctx, def, softDelete);
 
         } finally {
             busyLock.leaveBusy();
@@ -384,22 +393,58 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
 
     /**
      * Collect indexes for rebuild.
+     *
+     * @param createdOnly Get only created indexes (not restored from dick).
      */
-    public List<Index> collectIndexesForPartialRebuild(GridCacheContext cctx) {
+    public List<InlineIndex> getTreeIndexes(GridCacheContext cctx, boolean createdOnly) {
         Collection<Index> idxs = getSpi().getIndexes(cctx);
 
-        List<Index> toRebuild = new ArrayList<>();
+        List<InlineIndex> treeIdxs = new ArrayList<>();
 
         for (Index idx: idxs) {
             if (idx instanceof InlineIndex) {
                 InlineIndex idx0 = (InlineIndex)idx;
 
-                if (idx0.isCreated())
-                    toRebuild.add(idx);
+                if (!createdOnly || idx0.isCreated())
+                    treeIdxs.add(idx0);
             }
         }
 
-        return toRebuild;
+        return treeIdxs;
+    }
+
+    /**
+     * Defragment index partition.
+     *
+     * @param grpCtx Old group context.
+     * @param newCtx New group context.
+     * @param partPageMem Partition page memory.
+     * @param mappingByPart Mapping page memory.
+     * @param cpLock Defragmentation checkpoint read lock.
+     * @param cancellationChecker Cancellation checker.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void defragment(
+        CacheGroupContext grpCtx,
+        CacheGroupContext newCtx,
+        PageMemoryEx partPageMem,
+        IntMap<LinkMap> mappingByPart,
+        CheckpointTimeoutLock cpLock,
+        Runnable cancellationChecker
+    ) throws IgniteCheckedException {
+        new IndexingDefragmentation(this)
+            .defragment(grpCtx, newCtx, partPageMem, mappingByPart, cpLock, cancellationChecker, log);
+    }
+
+    /**
+     * Returns IndexDefinition used for creating index specified id.
+     *
+     * @param idxId UUID of index.
+     * @return IndexDefinition used for creating index with id {@code idxId}.
+     */
+    public IndexDefinition getIndexDefition(UUID idxId) {
+        return getSpi().getIndexDefinition(idxId);
     }
 
     /**

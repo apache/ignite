@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.index.client;
 
 import org.apache.ignite.cache.query.index.IndexDefinition;
+import org.apache.ignite.cache.query.index.IndexName;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexSchema;
 import org.jetbrains.annotations.Nullable;
@@ -33,27 +34,13 @@ public class ClientIndexDefinition implements IndexDefinition {
     private final int cfgInlineSize;
 
     /** */
-    private final String idxName;
+    private final IndexName idxName;
 
     /** */
-    private final String cacheName;
-
-    /** */
-    private final String tableName;
-
-    /** */
-    private final String schemaName;
-
-    /** */
-    public ClientIndexDefinition(String cacheName, String idxName, QueryIndexSchema schema,
-        int cfgInlineSize, String tableName, String schemaName) {
-
-        this.cacheName = cacheName;
+    public ClientIndexDefinition(IndexName idxName, QueryIndexSchema schema, int cfgInlineSize) {
         this.idxName = idxName;
         this.schema = schema;
         this.cfgInlineSize = cfgInlineSize;
-        this.tableName = tableName;
-        this.schemaName = schemaName;
     }
 
     /** */
@@ -66,28 +53,8 @@ public class ClientIndexDefinition implements IndexDefinition {
         return schema;
     }
 
-    /** For non-affinity node GridCacheContext is null. */
-    @Override public GridCacheContext getContext() {
-        return null;
-    }
-
     /** {@inheritDoc} */
-    @Override public String getIdxName() {
+    @Override public IndexName getIdxName() {
         return idxName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getCacheName() {
-        return cacheName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable String getTableName() {
-        return tableName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable String getSchemaName() {
-        return schemaName;
     }
 }

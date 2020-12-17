@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.index.client;
 import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.cache.query.index.IndexFactory;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 
 /**
  * Factory fot client index.
@@ -32,13 +33,13 @@ public class ClientIndexFactory implements IndexFactory {
     private ClientIndexFactory() {}
 
     /** {@inheritDoc} */
-    @Override public Index createIndex(IndexDefinition definition) {
+    @Override public Index createIndex(GridCacheContext cctx, IndexDefinition definition) {
         ClientIndexDefinition def = (ClientIndexDefinition) definition;
 
-        int maxInlineSize = def.getContext() != null ? def.getContext().config().getSqlIndexMaxInlineSize() : -1;
+        int maxInlineSize = cctx != null ? cctx.config().getSqlIndexMaxInlineSize() : -1;
 
         return new ClientInlineIndex(
-            def.getIdxName(),
+            def.getIdxName().idxName(),
             def.getSchema().getKeyDefinitions(),
             def.getCfgInlineSize(),
             maxInlineSize);

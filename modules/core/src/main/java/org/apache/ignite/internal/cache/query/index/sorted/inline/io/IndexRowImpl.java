@@ -37,9 +37,16 @@ public class IndexRowImpl implements IndexSearchRow {
 
     /** Constructor. */
     public IndexRowImpl(SortedIndexSchema schema, CacheDataRow row) {
-        cacheRow = row;
-        keyCache = new Object[schema.getKeyDefinitions().length];
+        this(schema, row, new Object[schema.getKeyDefinitions().length]);
+    }
+
+    /**
+     * Constructor with prefilling of keys cache.
+     */
+    public IndexRowImpl(SortedIndexSchema schema, CacheDataRow row, Object[] keys) {
         this.schema = schema;
+        cacheRow = row;
+        keyCache = keys;
     }
 
     /**
@@ -47,6 +54,13 @@ public class IndexRowImpl implements IndexSearchRow {
      */
     public CacheObject value() {
         return cacheRow.value();
+    }
+
+    /**
+     * Get cached keys.
+     */
+    public Object[] keys() {
+        return keyCache;
     }
 
     /** {@inheritDoc} */
@@ -86,6 +100,4 @@ public class IndexRowImpl implements IndexSearchRow {
     @Override public boolean isFullSchemaSearch() {
         return true;
     }
-
-    // TODO: MVCC
 }

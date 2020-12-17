@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.index;
 
+import org.apache.ignite.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Define H2 query index.
@@ -30,11 +31,19 @@ public class QueryIndexDefinition extends SortedIndexDefinition {
     /** H2 query index schema. */
     private final QueryIndexSchema schema;
 
+    /** Cache context. */
+    private final GridCacheContext cctx;
+
     /** */
     public QueryIndexDefinition(GridH2Table tbl, String idxName, QueryIndexSchema schema, int cfgInlineSize) {
-        super(tbl.cacheContext(), idxName, tbl.rowDescriptor().context().config().getQueryParallelism(),
-            schema, new H2RowComparator(schema.getTable()), cfgInlineSize, tbl.getName(), tbl.getSchema().getName());
+        super(
+            new IndexName(tbl.getSchema().getName(), tbl.getName(), idxName),
+            schema,
+            tbl.rowDescriptor().context().config().getQueryParallelism(),
+            cfgInlineSize,
+            new H2RowComparator(schema.getTable()));
 
+        cctx = tbl.cacheContext();
         this.schema = schema;
     }
 
@@ -42,15 +51,10 @@ public class QueryIndexDefinition extends SortedIndexDefinition {
     @Override public String getTreeName() {
         GridQueryTypeDescriptor typeDesc = schema.getTable().rowDescriptor().type();
 
-        int typeId = getContext().binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
+        int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
 
         // Legacy in treeName from H2Tree.
-        return BPlusTree.treeName((schema.getTable().rowDescriptor() == null ? "" : typeId + "_") + getIdxName(),
-            "H2Tree");
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable String getTableName() {
-        return schema.getTable().getName();
+        return BPlusTree.treeName((schema.getTable().rowDescriptor() == null ? "" : typeId + "_") +
+                getIdxName().idxName(), "H2Tree");
     }
 }

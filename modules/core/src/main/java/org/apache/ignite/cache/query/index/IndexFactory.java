@@ -17,12 +17,16 @@
 
 package org.apache.ignite.cache.query.index;
 
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+
 /**
  * Base interface for Ignite index factories.
  */
 public interface IndexFactory {
     /**
      * Creates index.
+     *
+     * @param cctx Cache context.
      */
-    public Index createIndex(IndexDefinition definition);
+    public Index createIndex(GridCacheContext cctx, IndexDefinition definition);
 }

@@ -29,7 +29,13 @@ public interface InlineIndex extends SortedIndex {
     public int inlineSize();
 
     /**
-     * Whether the index created during node lifecycle or was restored from disk.
+     * {@code true} if index is created and {@code false} if it is restored from disk.
      */
     public boolean isCreated();
+
+    /**
+     * @param segment Number of tree segment.
+     * @return Tree segment for specified number.
+     */
+    public InlineIndexTree getSegment(int segment);
 }

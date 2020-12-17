@@ -29,10 +29,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -143,11 +142,11 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 1));
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 2));
 
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
         IgniteEx ignite1 = startGrid(GRIDS_NUM - 1);
+        ignite1.context().indexing().setRebuild(new BlockingIndexing());
 
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
         IgniteEx ignite2 = startGrid(GRIDS_NUM - 2);
+        ignite2.context().indexing().setRebuild(new BlockingIndexing());
 
         final UUID id1 = ignite1.localNode().id();
         final UUID id2 = ignite2.localNode().id();
@@ -178,11 +177,11 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 1));
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 2));
 
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
         IgniteEx ignite1 = startGrid(GRIDS_NUM - 1);
+        ignite1.context().indexing().setRebuild(new BlockingIndexing());
 
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
-        startGrid(GRIDS_NUM - 2);
+        IgniteEx ignite2 = startGrid(GRIDS_NUM - 2);
+        ignite2.context().indexing().setRebuild(new BlockingIndexing());
 
         final UUID id1 = ignite1.localNode().id();
 
@@ -240,18 +239,14 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
     /**
      * Indexing that blocks index rebuild until status request is completed.
      */
-    private static class BlockingIndexing extends IgniteH2Indexing {
-        /** {@inheritDoc} */
-        @Override protected void rebuildIndexesFromHash0(
-            GridCacheContext cctx,
-            SchemaIndexCacheVisitorClosure clo,
-            GridFutureAdapter<Void> rebuildIdxFut)
-        {
+    private static class BlockingIndexing extends IndexesRebuildTask {
+        @Override protected void startRebuild(GridCacheContext cctx, GridFutureAdapter<Void> fut,
+            SchemaIndexCacheVisitorClosure clo) {
             idxRebuildsStartedNum.incrementAndGet();
 
-            rebuildIdxFut.listen((CI1<IgniteInternalFuture<?>>)f -> idxRebuildsStartedNum.decrementAndGet());
+            fut.listen((CI1<IgniteInternalFuture<?>>)f -> idxRebuildsStartedNum.decrementAndGet());
 
-            super.rebuildIndexesFromHash0(cctx, new BlockingSchemaIndexCacheVisitorClosure(clo), rebuildIdxFut);
+            super.startRebuild(cctx, fut, new BlockingSchemaIndexCacheVisitorClosure(clo));
         }
     }
 

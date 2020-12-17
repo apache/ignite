@@ -60,7 +60,7 @@ public interface SortedIndex extends Index {
     public long count(int segment, IndexingQueryFilter filter) throws IgniteCheckedException;
 
     /**
-     * @return amount of index segmnets.
+     * @return amount of index segments.
      */
     public int segmentsCount();
 }

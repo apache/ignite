@@ -27,4 +27,9 @@ public interface InlineIO {
      * @return Row link.
      */
     public long getLink(long pageAddr, int idx);
+
+    /**
+     * @return Number of bytes stored in the inline payload.
+     */
+    public int getInlineSize();
 }

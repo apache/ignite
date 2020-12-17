@@ -18,17 +18,13 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.cache.query.index.IndexDefinition;
+import org.apache.ignite.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexRowComparator;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a definition of sorted index.
  */
 public class SortedIndexDefinition implements IndexDefinition {
-    /** Cache context index is created for. */
-    private GridCacheContext ctx;
-
     /** Schema of index. */
     private final SortedIndexSchema schema;
 
@@ -36,7 +32,7 @@ public class SortedIndexDefinition implements IndexDefinition {
     private final IndexRowComparator rowComparator;
 
     /** Unique index name. */
-    private final String idxName;
+    private final IndexName idxName;
 
     /** Configured inline size. */
     private final int inlineSize;
@@ -44,55 +40,29 @@ public class SortedIndexDefinition implements IndexDefinition {
     /** Segments. */
     private final int segments;
 
-    /** Table name. */
-    private final String tableName;
-
-    /** Schema name. */
-    private final String schemaName;
-
     /** Constructor. */
-    public SortedIndexDefinition(GridCacheContext ctx, String idxName, int segments,
-        SortedIndexSchema schema, IndexRowComparator rowComparator, int inlineSize,
-        String tableName, String schemaName) {
+    public SortedIndexDefinition(
+        IndexName idxName,
+        SortedIndexSchema schema,
+        int segments,
+        int inlineSize,
+        IndexRowComparator rowComparator) {
 
-        this.ctx = ctx;
         this.idxName = idxName;
         this.segments = segments;
         this.schema = schema;
         this.rowComparator = rowComparator;
         this.inlineSize = inlineSize;
-        this.tableName = tableName;
-        this.schemaName = schemaName;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheContext getContext() {
-        return ctx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getIdxName() {
+    @Override public IndexName getIdxName() {
         return idxName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getCacheName() {
-        return ctx.name();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable String getTableName() {
-        return tableName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable String getSchemaName() {
-        return schemaName;
     }
 
     /** */
     public String getTreeName() {
-        return idxName;
+        return null;
     }
 
     /** */

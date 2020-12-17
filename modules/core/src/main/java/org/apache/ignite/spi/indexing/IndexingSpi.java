@@ -20,6 +20,7 @@ package org.apache.ignite.spi.indexing;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.IndexDefinition;
@@ -114,7 +115,7 @@ public interface IndexingSpi extends IgniteSpi {
      * @param newRow cache row to store in index.
      * @param prevRow optional cache row that will be replaced with new row.
      */
-    public default void store(Collection<Index> idxs, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+    public default void store(Collection<? extends Index> idxs, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
         boolean prevRowAvailable)
         throws IgniteSpiException {
         // No-Op.
@@ -123,20 +124,22 @@ public interface IndexingSpi extends IgniteSpi {
     /**
      * Creates a new index.
      *
+     * @param cctx Cache context.
      * @param factory Index factory.
      * @param def Description of an index to create.
      */
-    public default Index createIndex(IndexFactory factory, IndexDefinition def) {
+    public default Index createIndex(GridCacheContext cctx, IndexFactory factory, IndexDefinition def) {
         throw new IllegalStateException();
     }
 
     /**
      * Removes an index.
      *
+     * @param cctx Cache context.
      * @param def Index definition.
      * @param softDelete whether it's required to delete underlying structures.
      */
-    public default void removeIndex(IndexDefinition def, boolean softDelete) {
+    public default void removeIndex(GridCacheContext cctx, IndexDefinition def, boolean softDelete) {
         // No-op.
     }
 
@@ -174,5 +177,15 @@ public interface IndexingSpi extends IgniteSpi {
      */
     public default Collection<Index> getIndexes(GridCacheContext cctx) {
         return Collections.emptyList();
+    }
+
+    /**
+     * Returns IndexDefinition used for creating index specified id.
+     *
+     * @param idxId UUID of index.
+     * @return IndexDefinition used for creating index with id {@code idxId}.
+     */
+    public default IndexDefinition getIndexDefinition(UUID idxId) {
+        return null;
     }
 }

@@ -39,7 +39,8 @@ public class ObjectHashInlineIndexKeyType extends NullableInlineIndexKeyType<Obj
 
     /** {@inheritDoc} */
     @Override protected Object get0(long pageAddr, int off) {
-        return null;
+        // Returns hash code of object.
+        return PageUtils.getInt(pageAddr, off + 1);
     }
 
     /** {@inheritDoc} */

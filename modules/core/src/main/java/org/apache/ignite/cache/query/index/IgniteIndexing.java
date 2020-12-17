@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.Cache;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -60,6 +62,11 @@ public class IgniteIndexing implements IndexingSpi {
      * Registry of all indexes. High key is a cache name, lower key is an unique index name.
      */
     private final Map<String, Map<String, Index>> cacheToIdx = new ConcurrentHashMap<>();
+
+    /**
+     * Registry of all index definitions. Key is {@link Index#id()}, value is IndexDefinition used for creating index.
+     */
+    private final Map<UUID, IndexDefinition> idxDefs = new ConcurrentHashMap<>();
 
     /** Exclusive lock for DDL operations. */
     private final ReentrantReadWriteLock ddlLock = new ReentrantReadWriteLock();
@@ -89,7 +96,7 @@ public class IgniteIndexing implements IndexingSpi {
     }
 
     /** {@inheritDoc} */
-    @Override public void store(Collection<Index> idxs, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+    @Override public void store(Collection<? extends Index> idxs, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
         boolean prevRowAvailable) throws IgniteSpiException {
         IgniteCheckedException err = null;
 
@@ -126,22 +133,24 @@ public class IgniteIndexing implements IndexingSpi {
     }
 
     /** {@inheritDoc} */
-    @Override public Index createIndex(IndexFactory factory, IndexDefinition definition) {
+    @Override public Index createIndex(GridCacheContext cctx, IndexFactory factory, IndexDefinition definition) {
         ddlLock.writeLock().lock();
 
         try {
-            String cacheName = definition.getCacheName();
+            String cacheName = cctx.name();
 
             cacheToIdx.putIfAbsent(cacheName, new ConcurrentHashMap<>());
 
-            String uniqIdxName = uniqIdxName(definition);
+            String uniqIdxName = definition.getIdxName().fqdnIdxName();
 
             // GridQueryProcessor already checked schema operation for index duplication.
             assert cacheToIdx.get(cacheName).get(uniqIdxName) == null : "Duplicated index name " + uniqIdxName;
 
-            Index idx = factory.createIndex(definition);
+            Index idx = factory.createIndex(cctx, definition);
 
             cacheToIdx.get(cacheName).put(uniqIdxName, idx);
+
+            idxDefs.put(idx.id(), definition);
 
             return idx;
 
@@ -151,13 +160,13 @@ public class IgniteIndexing implements IndexingSpi {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeIndex(IndexDefinition def, boolean softDelete) {
+    @Override public void removeIndex(GridCacheContext cctx, IndexDefinition def, boolean softDelete) {
         ddlLock.writeLock().lock();
 
         try {
-            Map<String, Index> idxs = cacheToIdx.get(def.getCacheName());
+            Map<String, Index> idxs = cacheToIdx.get(cctx.name());
 
-            Index idx = idxs.remove(uniqIdxName(def));
+            Index idx = idxs.remove(def.getIdxName().fqdnIdxName());
 
             if (idx != null)
                 idx.destroy(softDelete);
@@ -177,7 +186,7 @@ public class IgniteIndexing implements IndexingSpi {
         try {
             Map<String, Index> indexes = cacheToIdx.get(cacheName);
 
-            if (indexes == null)
+            if (F.isEmpty(indexes))
                 return;
 
             for (Index idx: indexes.values())
@@ -196,10 +205,15 @@ public class IgniteIndexing implements IndexingSpi {
         ddlLock.readLock().lock();
 
         try {
+            if (!cacheToIdx.containsKey(cctx.name()))
+                return;
+
             Collection<Index> idxs = cacheToIdx.get(cctx.name()).values();
 
-            for (Index idx: idxs)
-                ((AbstractIndex) idx).markIndexRebuild(val);
+            for (Index idx: idxs) {
+                if (idx instanceof AbstractIndex)
+                    ((AbstractIndex) idx).markIndexRebuild(val);
+            }
 
         } finally {
             ddlLock.readLock().unlock();
@@ -214,6 +228,11 @@ public class IgniteIndexing implements IndexingSpi {
             return Collections.emptyList();
 
         return idxs.values();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexDefinition getIndexDefinition(UUID idxId) {
+        return idxDefs.get(idxId);
     }
 
     /**
@@ -247,13 +266,6 @@ public class IgniteIndexing implements IndexingSpi {
             else
                 throw t;
         }
-    }
-
-    /**
-     * @return Unique name of index within cache.
-     */
-    private static String uniqIdxName(IndexDefinition def) {
-        return def.getTableName() == null ? def.getIdxName() : def.getTableName() + "." + def.getIdxName();
     }
 
     /** {@inheritDoc} */

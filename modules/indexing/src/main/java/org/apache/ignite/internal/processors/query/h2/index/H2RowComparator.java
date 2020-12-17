@@ -27,8 +27,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearch
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.NullableInlineIndexKeyType;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.processors.query.h2.database.ThreadLocalSessionHolder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.h2.engine.SessionInterface;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 
@@ -45,10 +45,15 @@ public class H2RowComparator implements IndexRowComparator {
     /** Table. */
     private final GridH2Table table;
 
+    /** Ignite H2 indexing handler. */
+    private final SessionInterface ses;
+
     /** */
     public H2RowComparator(GridH2Table table) {
         this.table = table;
         coctx = table.rowDescriptor().context().cacheObjectContext();
+
+        ses = table.rowDescriptor().indexing().connections().jdbcConnection().getSession();
     }
 
     /** {@inheritDoc} */
@@ -66,7 +71,7 @@ public class H2RowComparator implements IndexRowComparator {
 
         // H2 supports comparison between different types after casting them to single type.
         if (type != objType && type == curType) {
-            Value va = DataType.convertToValue(ThreadLocalSessionHolder.getSession(), v, type);
+            Value va = DataType.convertToValue(ses, v, type);
             va = va.convertTo(type);
 
             // The only way to invoke inline comparation again.

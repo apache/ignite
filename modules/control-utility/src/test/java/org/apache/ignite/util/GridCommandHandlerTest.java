@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -101,8 +102,10 @@ import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
@@ -139,6 +142,12 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
+import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.CACHE_GROUP_KEY_IDS;
+import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.CHANGE_CACHE_GROUP_KEY;
+import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_RATE;
+import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_RESUME;
+import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_STATUS;
+import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_SUSPEND;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
@@ -2226,7 +2235,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testDiagnosticPageLocksTracker() throws Exception {
-        Ignite ignite = startGrids(4);
+        Ignite ignite = startGrid(0, (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setConsistentId("node0/dump"));
+        startGrid(1, (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setConsistentId("node1/dump"));
+        startGrid(2, (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setConsistentId("node2/dump"));
+        startGrid(3, (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setConsistentId("node3/dump"));
 
         Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
@@ -2626,7 +2638,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** @throws Exception If failed. */
     @Test
     public void testMasterKeyChange() throws Exception {
-        encriptionEnabled = true;
+        encryptionEnabled = true;
 
         injectTestSystemOut();
 
@@ -2663,8 +2675,187 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** @throws Exception If failed. */
     @Test
+    public void testCacheGroupKeyChange() throws Exception {
+        encryptionEnabled = true;
+
+        injectTestSystemOut();
+
+        int srvNodes = 2;
+
+        IgniteEx ignite = startGrids(srvNodes);
+
+        startGrid(CLIENT_NODE_NAME_PREFIX);
+        startGrid(DAEMON_NODE_NAME_PREFIX);
+
+        ignite.cluster().state(ACTIVE);
+
+        List<Ignite> srvGrids = GridFunc.asList(grid(0), grid(1));
+
+        enableCheckpoints(srvGrids, false);
+
+        createCacheAndPreload(ignite, 1000);
+
+        int ret = execute("--encryption", CACHE_GROUP_KEY_IDS.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertContains(log, testOut.toString(), "Encryption key identifiers for cache: " + DEFAULT_CACHE_NAME);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(), "0 (active)"));
+
+        ret = execute("--encryption", CHANGE_CACHE_GROUP_KEY.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertContains(log, testOut.toString(),
+            "The encryption key has been changed for the cache group \"" + DEFAULT_CACHE_NAME + '"');
+
+        ret = execute("--encryption", CACHE_GROUP_KEY_IDS.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(testOut.toString(), EXIT_CODE_OK, ret);
+        assertContains(log, testOut.toString(), "Encryption key identifiers for cache: " + DEFAULT_CACHE_NAME);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(), "1 (active)"));
+
+        GridTestUtils.waitForCondition(() -> {
+            execute("--encryption", REENCRYPTION_STATUS.toString(), DEFAULT_CACHE_NAME);
+
+            return srvNodes == countSubstrs(testOut.toString(),
+                "re-encryption will be completed after the next checkpoint");
+        }, getTestTimeout());
+
+        enableCheckpoints(srvGrids, true);
+        forceCheckpoint(srvGrids);
+
+        GridTestUtils.waitForCondition(() -> {
+            execute("--encryption", REENCRYPTION_STATUS.toString(), DEFAULT_CACHE_NAME);
+
+            return srvNodes == countSubstrs(testOut.toString(), "re-encryption completed or not required");
+        }, getTestTimeout());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testChangeReencryptionRate() throws Exception {
+        int srvNodes = 2;
+
+        IgniteEx ignite = startGrids(srvNodes);
+
+        ignite.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
+
+        int ret = execute("--encryption", REENCRYPTION_RATE.toString());
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(), "re-encryption rate is not limited."));
+
+        double newRate = 0.01;
+
+        ret = execute("--encryption", REENCRYPTION_RATE.toString(), Double.toString(newRate));
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(),
+            String.format("re-encryption rate has been limited to %.2f MB/s.", newRate)));
+
+        ret = execute("--encryption", REENCRYPTION_RATE.toString());
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(),
+            String.format("re-encryption rate is limited to %.2f MB/s.", newRate)));
+
+        ret = execute("--encryption", REENCRYPTION_RATE.toString(), "0");
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(), "re-encryption rate is not limited."));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testReencryptionSuspendAndResume() throws Exception {
+        encryptionEnabled = true;
+        reencryptSpeed = 0.01;
+        reencryptBatchSize = 1;
+
+        int srvNodes = 2;
+
+        IgniteEx ignite = startGrids(srvNodes);
+
+        ignite.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
+
+        createCacheAndPreload(ignite, 10_000);
+
+        ignite.encryption().changeCacheGroupKey(Collections.singleton(DEFAULT_CACHE_NAME)).get();
+
+        assertTrue(isReencryptionStarted(DEFAULT_CACHE_NAME));
+
+        int ret = execute("--encryption", REENCRYPTION_STATUS.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, ret);
+
+        Pattern ptrn = Pattern.compile("(?m)Node [-0-9a-f]{36}:\n\\s+(?<left>\\d+) KB of data.+");
+        Matcher matcher = ptrn.matcher(testOut.toString());
+        int matchesCnt = 0;
+
+        while (matcher.find()) {
+            assertEquals(1, matcher.groupCount());
+
+            int pagesLeft = Integer.parseInt(matcher.group("left"));
+
+            assertTrue(pagesLeft > 0);
+
+            matchesCnt++;
+        }
+
+        assertEquals(srvNodes, matchesCnt);
+
+        ret = execute("--encryption", REENCRYPTION_SUSPEND.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(),
+            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has been suspended."));
+        assertFalse(isReencryptionStarted(DEFAULT_CACHE_NAME));
+
+        ret = execute("--encryption", REENCRYPTION_SUSPEND.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(),
+            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has already been suspended."));
+
+        ret = execute("--encryption", REENCRYPTION_RESUME.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(),
+            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has been resumed."));
+        assertTrue(isReencryptionStarted(DEFAULT_CACHE_NAME));
+
+        ret = execute("--encryption", REENCRYPTION_RESUME.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(),
+            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has already been resumed."));
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if re-encryption of the specified cache is started on all server nodes.
+     */
+    private boolean isReencryptionStarted(String cacheName) {
+        for (Ignite grid : G.allGrids()) {
+            ClusterNode locNode = grid.cluster().localNode();
+
+            if (locNode.isClient() || locNode.isDaemon())
+                continue;
+
+            if (((IgniteEx)grid).context().encryption().reencryptionFuture(CU.cacheId(cacheName)).isDone())
+                return false;
+        }
+
+        return true;
+    }
+
+    /** @throws Exception If failed. */
+    @Test
     public void testMasterKeyChangeOnInactiveCluster() throws Exception {
-        encriptionEnabled = true;
+        encryptionEnabled = true;
 
         injectTestSystemOut();
 
@@ -2833,5 +3024,19 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         hnd.execute(args);
 
         return hnd.getLastOperationResult();
+    }
+
+    /**
+     * @param str String.
+     * @param substr Substring to find in the specified string.
+     * @return The number of substrings found in the specified string.
+     */
+    private int countSubstrs(String str, String substr) {
+        int cnt = 0;
+
+        for (int off = 0; (off = str.indexOf(substr, off)) != -1; off++)
+            ++cnt;
+
+        return cnt;
     }
 }

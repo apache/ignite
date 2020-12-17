@@ -30,8 +30,10 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.ThreadLocalSchemaHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
@@ -55,44 +57,45 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
     private final int inlineSize;
 
     /** */
-    private final CacheGroupContext grp;
-
-    /** */
     private final InlineRecommender recommender;
 
     /** */
     private final boolean created;
 
-    // As it used to instantiate the tree in BackgroundTask, so use reference to get access
-    // for schema and row comparator.
     /** */
     private final SortedIndexDefinition def;
+
+    /** */
+    private final GridCacheContext cctx;
 
     /**
      * Constructor.
      */
     public InlineIndexTree(
         SortedIndexDefinition def,
-        CacheGroupContext grp,
+        GridCacheContext cctx,
         String treeName,
+        IgniteCacheOffheapManager offheap,
         ReuseList reuseList,
+        PageMemory pageMemory,
+        PageIoResolver pageIoResolver,
         long metaPageId,
         boolean initNew,
         int configuredInlineSize,
         InlineRecommender recommender) throws IgniteCheckedException {
         super(
             treeName,
-            grp.groupId(),
-            grp.name(),
-            grp.dataRegion().pageMemory(),
-            grp.dataRegion().config().isPersistenceEnabled() ? grp.shared().wal() : null,
-            grp.offheap().globalRemoveId(),
+            cctx.groupId(),
+            cctx.group().name(),
+            pageMemory,
+            cctx.shared().wal(),
+            offheap.globalRemoveId(),
             metaPageId,
             reuseList,
             PageIdAllocator.FLAG_IDX,
-            grp.shared().kernalContext().failure(),
+            cctx.shared().kernalContext().failure(),
             null,
-            PageIoResolver.DEFAULT_PAGE_IO_RESOLVER
+            pageIoResolver
         );
         created = initNew;
 
@@ -120,7 +123,7 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
 
         } else {
             inlineSize = computeInlineSize(
-                def.getSchema().getKeyDefinitions(), configuredInlineSize, grp.config().getSqlIndexMaxInlineSize());
+                def.getSchema().getKeyDefinitions(), configuredInlineSize, cctx.config().getSqlIndexMaxInlineSize());
         }
 
         if (inlineSize == 0)
@@ -133,9 +136,9 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
 
         initTree(initNew, inlineSize);
 
-        this.grp = grp;
-
         this.recommender = recommender;
+
+        this.cctx = cctx;
     }
 
     /** {@inheritDoc} */
@@ -196,9 +199,15 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
                 }
 
                 // Try compare stored values for inlined keys with different approach?
+                // TODO: what to do if compare unsupported returns from row comparator?
                 if (cmp == COMPARE_UNSUPPORTED)
                     cmp = def.getRowComparator().compareKey(
                         pageAddr, off + fieldOff, maxSize, row.getKey(i), keyType.type());
+
+                if (cmp == CANT_BE_COMPARE) {
+                    lastIdxUsed = i;
+                    break;
+                }
 
                 if (cmp != 0)
                     return applySortOrder(cmp, schema.getKeyDefinitions()[i].getOrder().getSortOrder());
@@ -331,8 +340,8 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
     }
 
     /** */
-    public CacheGroupContext getContext() {
-        return grp;
+    public GridCacheContext getContext() {
+        return cctx;
     }
 
     /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */

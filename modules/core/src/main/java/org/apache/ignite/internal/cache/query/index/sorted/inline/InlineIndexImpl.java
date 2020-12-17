@@ -28,6 +28,7 @@ import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.SingleCursor;
 import org.apache.ignite.cache.query.index.sorted.IndexKey;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
@@ -59,8 +60,12 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     /** Name of underlying tree name. */
     private final String treeName;
 
+    /** Cache context. */
+    private final GridCacheContext cctx;
+
     /** Constructor. */
-    public InlineIndexImpl(SortedIndexDefinition def, InlineIndexTree[] segments) {
+    public InlineIndexImpl(GridCacheContext cctx, SortedIndexDefinition def, InlineIndexTree[] segments) {
+        this.cctx = cctx;
         this.segments = segments.clone();
         this.def = def;
         treeName = def.getTreeName();
@@ -77,15 +82,15 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
         InlineTreeFilterClosure closure = getFilterClosure(filter);
 
+        IndexSearchRowImpl rlower = lower == null ? null : new IndexSearchRowImpl(lower.keys(), def.getSchema());
+        IndexSearchRowImpl rupper = upper == null ? null : new IndexSearchRowImpl(upper.keys(), def.getSchema());
+
         // If it is known that only one row will be returned an optimization is employed
-        if (isSingleRowLookup(lower, upper)) {
+        if (isSingleRowLookup(rlower, rupper)) {
             try {
                 ThreadLocalSchemaHolder.setSchema(def.getSchema());
 
-                IndexRow row = segments[segment].findOne(
-                    new IndexSearchRowImpl(lower.keys(), def.getSchema(), false),
-                    closure,
-                    null);
+                IndexRow row = segments[segment].findOne(rlower, closure, null);
 
                 if (row == null)  // TODO isExpired(row))
                     return IndexValueCursor.EMPTY;
@@ -99,14 +104,6 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
         try {
             ThreadLocalSchemaHolder.setSchema(def.getSchema());
-
-            IndexSearchRowImpl rlower = lower == null
-                ? null
-                : new IndexSearchRowImpl(lower.keys(), def.getSchema(), false);
-
-            IndexSearchRowImpl rupper = upper == null
-                ? null
-                : new IndexSearchRowImpl(upper.keys(), def.getSchema(), false);
 
             return segments[segment].find(rlower, rupper, closure, null);
 
@@ -141,16 +138,39 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** */
-    private boolean isSingleRowLookup(IndexKey lower, IndexKey upper) {
-        return lower != null && lower.equals(upper) && hasAllIndexColumns(lower);
+    private boolean isSingleRowLookup(IndexSearchRowImpl lower, IndexSearchRowImpl upper) throws IgniteCheckedException {
+        return lower != null && lower.isFullSchemaSearch() && checkRowsTheSame(lower, upper);
     }
 
-    /** */
-    private boolean hasAllIndexColumns(IndexKey key) {
-        for (int i = 0; i < def.getSchema().getKeyDefinitions().length; i++) {
-            // TODO: Special null?
-            // Java null means that column is not specified in a search row, for SQL NULL a special constant is used
-            if (key.keys()[i] == null)
+    /**
+     * Checks both rows are the same. <p/>
+     * Primarly used to verify both search rows are the same and we can apply
+     * the single row lookup optimization.
+     *
+     * @param r1 The first row.
+     * @param r2 Another row.
+     * @return {@code true} in case both rows are efficiently the same, {@code false} otherwise.
+     */
+    private boolean checkRowsTheSame(IndexSearchRowImpl r1, IndexSearchRowImpl r2) throws IgniteCheckedException {
+        if (r1 == r2)
+            return true;
+
+        if (!(r1 != null && r2 != null))
+            return false;
+
+        IndexKeyDefinition[] keys = def.getSchema().getKeyDefinitions();
+
+        for (int i = 0, len = keys.length; i < len; i++) {
+            Object v1 = r1.keys()[i];
+            Object v2 = r2.keys()[i];
+
+            if (v1 == null && v2 == null)
+                continue;
+
+            if (!(v1 != null && v2 != null))
+                return false;
+
+            if (def.getRowComparator().compareKey(r1, r2, i) != 0)
                 return false;
         }
 
@@ -188,7 +208,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return def.getIdxName();
+        return def.getIdxName().idxName();
     }
 
     /** {@inheritDoc} */
@@ -317,7 +337,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     /** */
     public InlineTreeFilterClosure getFilterClosure(IndexingQueryFilter filter) {
         if (filter != null) {
-            IndexingQueryCacheFilter f = filter.forCache(def.getContext().cache().name());
+            IndexingQueryCacheFilter f = filter.forCache(cctx.cache().name());
             if (f != null)
                 return new InlineTreeFilterClosure(f);
         }
@@ -338,12 +358,17 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             }
             catch (Exception e) {
                 throw new IgniteException("Failed to check index tree root page existence [cacheName=" +
-                    def.getCacheName() + ", tblName=" + def.getTableName() + ", idxName=" + def.getIdxName() +
+                    cctx.name() + ", tblName=" + def.getIdxName().tableName() + ", idxName=" + def.getIdxName().idxName() +
                     ", segment=" + i + ']');
             }
         }
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public InlineIndexTree getSegment(int segment) {
+        return segments[segment];
     }
 
     /** If {code true} then this index is already marked as destroyed. */
@@ -355,7 +380,6 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         if (!destroyed.compareAndSet(false, true))
             return;
 
-        GridCacheContext cctx = def.getContext();
         GridKernalContext ctx = cctx.kernalContext();
 
         try {
@@ -390,7 +414,6 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                     trees,
                     cctx.group().name(),
                     cctx.cache().name(),
-                    def.getSchemaName(),
                     def.getIdxName()
                 );
 
@@ -407,7 +430,6 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
      * @throws IgniteCheckedException If failed.
      */
     private void dropMetaPage(int segIdx) throws IgniteCheckedException {
-        GridCacheContext cctx = def.getContext();
         cctx.offheap().dropRootPageForIndex(cctx.cacheId(), treeName, segIdx);
     }
 }

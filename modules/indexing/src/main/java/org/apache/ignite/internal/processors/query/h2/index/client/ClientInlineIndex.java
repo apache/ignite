@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.index.Index;
+import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.cache.query.index.sorted.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
@@ -55,6 +56,10 @@ public class ClientInlineIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public boolean isCreated() {
+        throw unsupported();
+    }
+
+    @Override public InlineIndexTree getSegment(int segment) {
         throw unsupported();
     }
 

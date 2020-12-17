@@ -308,11 +308,6 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public long indexSize(String schemaName, String tblName, String idxName) throws IgniteCheckedException {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public Map<String, Integer> secondaryIndexesInlineSize() {
         return null;
     }

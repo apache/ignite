@@ -19,13 +19,14 @@ package org.apache.ignite.internal.managers.indexing;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -56,7 +57,10 @@ public class IndexesRebuildTask {
             clo = row -> cctx.queries().store(row, null, mvccEnabled);
         }
         else {
-            Collection<Index> toRebuild = cctx.kernalContext().indexing().collectIndexesForPartialRebuild(cctx);
+            Collection<InlineIndex> toRebuild = cctx.kernalContext().indexing().getTreeIndexes(cctx, true);
+
+            if (F.isEmpty(toRebuild))
+                return null;
 
             clo = row -> cctx.kernalContext().indexing().store(toRebuild, row, null, false);
         }

@@ -21,10 +21,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
+import org.apache.ignite.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRowImpl;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -57,13 +59,13 @@ public class InlineRecommender {
     private final String cacheName;
 
     /** Index name. */
-    private final String idxName;
+    private final IndexName idxName;
 
     /** Constructor. */
-    public InlineRecommender(SortedIndexDefinition def) {
-        cacheName = def.getContext().name();
+    public InlineRecommender(GridCacheContext cctx, SortedIndexDefinition def) {
+        cacheName = cctx.name();
         idxName = def.getIdxName();
-        log = def.getContext().kernalContext().indexing().getLogger();
+        log = cctx.kernalContext().indexing().getLogger();
     }
 
     /**
@@ -121,7 +123,7 @@ public class InlineRecommender {
                 "what may lead to slowdown due to additional data page reads, increase index inline size if needed " +
                 "(" + recommendation + ") " +
                 "[cacheName=" + cacheName +
-                ", idxName=" + idxName +
+                ", idxName=" + idxName.fqdnIdxName() +
                 ", curSize=" + currInlineSize +
                 ", recommendedInlineSize=" + newSize + "]";
 

@@ -27,10 +27,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -128,8 +127,10 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     /** */
     private void startupTestCluster() throws Exception {
         for (int i = 0; i < GRIDS_NUM; i++ ) {
-            GridQueryProcessor.idxCls = BlockingIndexing.class;
-            startGrid(i);
+            IgniteEx node = startGrid(i);
+            // TODO: new instance for every node?
+            node.context().indexing().setRebuild(new BlockingIndexing());
+
         }
 
         IgniteEx ignite = grid(0);
@@ -484,8 +485,8 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         GridTestUtils.deleteIndexBin(getTestIgniteInstanceName(2));
 
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
         final IgniteEx ignite = startGrid(igniteIdx);
+        ignite.context().indexing().setRebuild(new BlockingIndexing());
 
         resetBaselineTopology();
         awaitPartitionMapExchange();
@@ -558,11 +559,11 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     /**
      * Indexing that blocks index rebuild until status request is completed.
      */
-    private static class BlockingIndexing extends IgniteH2Indexing {
+    private static class BlockingIndexing extends IndexesRebuildTask {
         /** {@inheritDoc} */
-        @Override protected void rebuildIndexesFromHash0(GridCacheContext cctx, SchemaIndexCacheVisitorClosure clo, GridFutureAdapter<Void> rebuildIdxFut)
-        {
-            super.rebuildIndexesFromHash0(cctx, clo, new BlockingRebuildIdxFuture(rebuildIdxFut, cctx));
+        @Override protected void startRebuild(GridCacheContext cctx, GridFutureAdapter<Void> fut,
+            SchemaIndexCacheVisitorClosure clo) {
+            super.startRebuild(cctx, new BlockingRebuildIdxFuture(fut, cctx), clo);
         }
     }
 

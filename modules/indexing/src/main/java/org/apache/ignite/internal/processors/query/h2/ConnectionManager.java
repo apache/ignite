@@ -329,4 +329,11 @@ public class ConnectionManager {
         if (dataNhd != null && dataNhd instanceof Database)
             DB_JOBJ_SERIALIZER.set((Database)dataNhd, serializer);
     }
+
+    /**
+     * @return H2 connection.
+     */
+    public JdbcConnection jdbcConnection() {
+        return (JdbcConnection) sysConn;
+    }
 }

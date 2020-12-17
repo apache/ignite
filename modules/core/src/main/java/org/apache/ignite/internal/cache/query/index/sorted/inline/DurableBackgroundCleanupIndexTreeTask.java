@@ -21,11 +21,13 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.index.IndexName;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -51,10 +53,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     private final String cacheName;
 
     /** */
-    private final String schemaName;
-
-    /** */
-    private final String idxName;
+    private final IndexName idxName;
 
     /** */
     private final String id;
@@ -65,21 +64,19 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
         List<InlineIndexTree> trees,
         String cacheGrpName,
         String cacheName,
-        String schemaName,
-        String idxName
+        IndexName idxName
     ) {
         this.rootPages = rootPages;
         this.trees = trees;
         this.completed = false;
         this.cacheName = cacheName;
-        this.schemaName = schemaName;
-        this.idxName = idxName;
         this.id = UUID.randomUUID().toString();
+        this.idxName = idxName;
     }
 
     /** {@inheritDoc} */
     @Override public String shortName() {
-        return "DROP_SQL_INDEX-" + schemaName + "." + idxName + "-" + id;
+        return "DROP_SQL_INDEX-" + idxName.fqdnIdxName() + "-" + id;
     }
 
     /** {@inheritDoc} */
@@ -94,7 +91,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
             IoStatisticsHolderIndex stats = new IoStatisticsHolderIndex(
                 SORTED_INDEX,
                 cctx.name(),
-                idxName,
+                idxName.idxName(),
                 cctx.kernalContext().metric()
             );
 
@@ -109,7 +106,8 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                     String treeName = "deletedTree_" + i + "_" + shortName();
 
                     InlineIndexTree tree = new InlineIndexTree(
-                        null, cctx.group(), treeName, cctx.offheap().reuseListForIndex(treeName),
+                        null, cctx, treeName, cctx.offheap(), cctx.offheap().reuseListForIndex(treeName),
+                        cctx.dataRegion().pageMemory(), PageIoResolver.DEFAULT_PAGE_IO_RESOLVER,
                         rootPage, false, 0, null);
 
                     trees0.add(tree);

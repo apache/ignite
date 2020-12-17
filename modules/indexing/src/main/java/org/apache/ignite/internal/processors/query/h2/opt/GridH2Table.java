@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cache.query.index.IndexDefinition;
+import org.apache.ignite.cache.query.index.IndexName;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -722,28 +723,13 @@ public class GridH2Table extends TableBase {
 
             // Destroy underlying Ignite index.
             IndexDefinition deleteDef = new IndexDefinition() {
-                @Override public @Nullable GridCacheContext getContext() {
-                    return null;
-                }
-
-                @Override public String getIdxName() {
-                    return idx.getName();
-                }
-
-                @Override public String getCacheName() {
-                    return cacheName();
-                }
-
-                @Override public @Nullable String getTableName() {
-                    return tableName;
-                }
-
-                @Override public @Nullable String getSchemaName() {
-                    return null;
+                /** {@inheritDoc} */
+                @Override public IndexName getIdxName() {
+                    return new IndexName(getSchema().getName(), tableName, idx.getName());
                 }
             };
 
-            idxMgr.removeIndex(deleteDef, false);
+            idxMgr.removeIndex(cacheContext(), deleteDef, false);
 
             // Call it too, if H2 index stores some state.
             h2idx.destroy(rmIndex);

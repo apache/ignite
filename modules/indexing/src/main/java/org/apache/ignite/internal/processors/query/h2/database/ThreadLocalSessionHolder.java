@@ -22,6 +22,7 @@ import org.h2.engine.Session;
 /**
  * Holds H2 Session during work with index tree.
  */
+// TODO: remove?
 public class ThreadLocalSessionHolder {
     /** */
     private static final ThreadLocal<Session> session = new ThreadLocal<>();
