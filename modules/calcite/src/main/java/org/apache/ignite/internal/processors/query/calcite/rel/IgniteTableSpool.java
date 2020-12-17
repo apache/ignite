@@ -86,6 +86,7 @@ public class IgniteTableSpool extends Spool implements IgniteRel {
 
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
-        return costFactory.makeCost(rowCount, totalBytes, 0, totalBytes, 0);
+        return costFactory.makeCost(rowCount,
+            rowCount * IgniteCost.ROW_PASS_THROUGH_COST, 0, totalBytes, 0);
     }
 }
