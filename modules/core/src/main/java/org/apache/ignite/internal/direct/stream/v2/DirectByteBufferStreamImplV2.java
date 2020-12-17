@@ -596,7 +596,13 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
                 byte[] bytes = stringsMap.computeIfAbsent(val, s -> s.getBytes());
 
-                writeByteArray(bytes);
+                try {
+                    writeByteArray(bytes);
+                }
+                catch (Exception e) {
+                    stringsMap.remove(val);
+                    throw e;
+                }
 
                 if (lastFinished)
                     stringsMap.remove(val);
