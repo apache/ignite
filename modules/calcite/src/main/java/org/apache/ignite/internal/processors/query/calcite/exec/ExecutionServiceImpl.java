@@ -613,9 +613,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 .replace(root.collation == null ? RelCollations.EMPTY : root.collation)
                 .simplify();
 
-            IgniteRel res = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
-
-            return res;
+            return planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
         }
         catch (Throwable ex) {
             log.error("Unexpected error at query optimizer.", ex);

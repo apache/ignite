@@ -134,8 +134,6 @@
 
     <!-- Disable all open source debugging. -->
     <category name="org">
-<!--        <level value="TRACE"/>-->
-<!--        <level value="DEBUG"/>-->
         <level value="INFO"/>
     </category>
 

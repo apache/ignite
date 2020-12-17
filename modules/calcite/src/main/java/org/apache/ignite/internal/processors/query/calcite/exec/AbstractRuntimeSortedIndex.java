@@ -16,9 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
