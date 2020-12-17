@@ -90,7 +90,7 @@ class PdsCompatibilityTest(IgniteTest):
                                                    ))
         ignite = IgniteService(self.test_context, server_configuration, num_nodes=num_nodes)
 
-        # TODO: Remove after merge: Start on the same nodes fix
+        # Remove after merge: Start on the same nodes fix
         running_nodes_tmp = ignite.nodes.copy()
 
         ignite.start(True)
@@ -136,7 +136,7 @@ class PdsCompatibilityTest(IgniteTest):
 
         ignite.start(False)
 
-        # # TODO: Remove after merge: IGNITE-13829: Added log rotation to ducktape-tests
+        # Remove after merge: IGNITE-13829: Added log rotation to ducktape-tests
         time.sleep(2)
 
         control_utility = ControlUtility(ignite, self.test_context)

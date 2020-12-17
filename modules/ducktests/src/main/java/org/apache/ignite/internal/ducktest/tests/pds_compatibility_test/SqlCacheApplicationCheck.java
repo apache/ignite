@@ -1,19 +1,17 @@
 package org.apache.ignite.internal.ducktest.tests.pds_compatibility_test;
 
+import java.util.List;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-import com.fasterxml.jackson.databind.JsonNode;
-
-import java.util.List;
 
 public class SqlCacheApplicationCheck extends IgniteAwareApplication {
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected void run(JsonNode jsonNode) {
+    @Override protected void run(JsonNode jsonNode) {
         String count = null;
 
         log.info("Open cache...");
