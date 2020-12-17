@@ -346,6 +346,20 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param node Ignite node.
+     * @param grpId Cache group ID.
+     * @param keysCnt Expected keys count.
+     */
+    protected void checkKeysCount(IgniteEx node, int grpId, int keysCnt, long timeout)
+        throws IgniteInterruptedCheckedException {
+        GridEncryptionManager encMgr = node.context().encryption();
+
+        waitForCondition(() -> encMgr.groupKeyIds(grpId).size() == keysCnt, timeout);
+
+        assertEquals(keysCnt, encMgr.groupKeyIds(grpId).size());
+    }
+
+    /**
      * Ensures that all pages of page store have expected encryption key identifier.
      *
      * @param grpId Cache group ID.

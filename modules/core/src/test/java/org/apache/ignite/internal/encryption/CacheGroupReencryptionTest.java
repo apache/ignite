@@ -518,13 +518,11 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         for (long segment = startIdx1; segment <= endIdx1; segment++)
             grid(GRID_0).context().encryption().onWalSegmentRemoved(segment);
 
-        // TODO: Fix will be in IGNITE-13847
         checkKeysCount(grid(GRID_0), grpId, 1, MAX_AWAIT_MILLIS);
 
         for (long segment = startIdx2; segment <= endIdx2; segment++)
             grid(GRID_1).context().encryption().onWalSegmentRemoved(segment);
 
-        // TODO: Fix will be in IGNITE-13847
         checkKeysCount(grid(GRID_1), grpId, 1, MAX_AWAIT_MILLIS);
     }
 

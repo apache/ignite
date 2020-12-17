@@ -531,7 +531,6 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         }
 
         // Make sure the previous key has been removed.
-        // TODO: Fix will be in IGNITE-13847
         checkKeysCount(node0, grpId, 1, MAX_AWAIT_MILLIS);
         assertEquals(encrMgr1.groupKeyIds(grpId), encrMgr0.groupKeyIds(grpId));
     }
@@ -931,7 +930,6 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
             encrMgr1.onWalSegmentRemoved(maxWalIdx);
         }
 
-        // TODO: Fix will be in IGNITE-13847
         checkKeysCount(grid(GRID_1), grpId, 1, MAX_AWAIT_MILLIS);
         checkKeysCount(grid(GRID_0), grpId, 1, MAX_AWAIT_MILLIS);
 

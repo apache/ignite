@@ -924,8 +924,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param segmentIdx WAL segment index.
      */
     public void onWalSegmentRemoved(long segmentIdx) {
-        // TODO: Fix will be in IGNITE-13847
-        ctx.getSystemExecutorService().submit(() -> releaseWalKeys(segmentIdx));
+        if (grpKeys.isReleaseWalKeysRequired(segmentIdx))
+            ctx.getSystemExecutorService().submit(() -> releaseWalKeys(segmentIdx));
     }
 
     /**
