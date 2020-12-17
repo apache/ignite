@@ -169,46 +169,31 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     public static final Pattern WAL_TEMP_NAME_PATTERN = Pattern.compile("\\d{16}\\.wal\\.tmp");
 
     /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
-    public static final FileFilter WAL_SEGMENT_FILE_FILTER = new FileFilter() {
-        @Override public boolean accept(File file) {
-            return !file.isDirectory() && WAL_NAME_PATTERN.matcher(file.getName()).matches();
-        }
-    };
+    public static final FileFilter WAL_SEGMENT_FILE_FILTER = file -> !file.isDirectory() &&
+        WAL_NAME_PATTERN.matcher(file.getName()).matches();
 
     /** WAL segment temporary file filter, see {@link #WAL_TEMP_NAME_PATTERN} */
-    private static final FileFilter WAL_SEGMENT_TEMP_FILE_FILTER = new FileFilter() {
-        @Override public boolean accept(File file) {
-            return !file.isDirectory() && WAL_TEMP_NAME_PATTERN.matcher(file.getName()).matches();
-        }
-    };
+    private static final FileFilter WAL_SEGMENT_TEMP_FILE_FILTER = file -> !file.isDirectory() &&
+        WAL_TEMP_NAME_PATTERN.matcher(file.getName()).matches();
 
     /** */
     public static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = Pattern.compile("\\d{16}\\.wal\\.zip");
 
     /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
-    public static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = new FileFilter() {
-        @Override public boolean accept(File file) {
-            return !file.isDirectory() && (WAL_NAME_PATTERN.matcher(file.getName()).matches() ||
-                WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
-        }
-    };
+    public static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = file -> !file.isDirectory() &&
+        (WAL_NAME_PATTERN.matcher(file.getName()).matches() ||
+            WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
 
     /** */
     private static final Pattern WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN = Pattern.compile("\\d{16}\\.wal\\.zip\\.tmp");
 
     /** */
-    private static final FileFilter WAL_SEGMENT_FILE_COMPACTED_FILTER = new FileFilter() {
-        @Override public boolean accept(File file) {
-            return !file.isDirectory() && WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
-        }
-    };
+    private static final FileFilter WAL_SEGMENT_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
+        WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
 
     /** */
-    private static final FileFilter WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER = new FileFilter() {
-        @Override public boolean accept(File file) {
-            return !file.isDirectory() && WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
-        }
-    };
+    private static final FileFilter WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
+        WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
 
     /** Buffer size. */
     private static final int BUF_SIZE = 1024 * 1024;
@@ -497,7 +482,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 });
             }
 
-            segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
+            segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled(), log);
 
             // We have to initialize compressor before archiver in order to setup already compressed segments.
             // Otherwise, FileArchiver initialization will trigger redundant work for FileCompressor.
@@ -1062,26 +1047,25 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (desc.idx >= lastCheckpointPtr.index() // We cannot delete segments needed for binary recovery.
                 || desc.idx >= lastArchived // We cannot delete last segment, it is needed at start of node and avoid gaps.
+                || desc.idx >= high.index() // We cannot delete segments larger than the border.
                 || !segmentAware.minReserveIndex(desc.idx)) // We cannot delete reserved segment.
                 return deleted;
 
-            if (desc.idx < high.index()) {
-                if (!desc.file.delete()) {
-                    U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
-                        desc.file.getAbsolutePath());
-                }
-                else {
-                    deleted++;
-
-                    segmentSize.remove(desc.idx());
-                }
-
-                // Bump up the oldest archive segment index.
-                if (segmentAware.lastTruncatedArchiveIdx() < desc.idx)
-                    segmentAware.lastTruncatedArchiveIdx(desc.idx);
-
-                cctx.kernalContext().encryption().onWalSegmentRemoved(desc.idx);
+            if (!desc.file.delete()) {
+                U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
+                    desc.file.getAbsolutePath());
             }
+            else {
+                deleted++;
+
+                segmentSize.remove(desc.idx());
+            }
+
+            // Bump up the oldest archive segment index.
+            if (segmentAware.lastTruncatedArchiveIdx() < desc.idx)
+                segmentAware.lastTruncatedArchiveIdx(desc.idx);
+
+            cctx.kernalContext().encryption().onWalSegmentRemoved(desc.idx);
         }
 
         return deleted;
