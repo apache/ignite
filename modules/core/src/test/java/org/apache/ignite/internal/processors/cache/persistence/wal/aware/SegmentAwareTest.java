@@ -686,7 +686,7 @@ public class SegmentAwareTest {
      */
     @Test
     public void testWalArchiveSize() throws Exception {
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         IgniteInternalFuture<?> fut = awaitThread(() -> aware.awaitExceedMaxArchiveSize(10));
 
@@ -734,7 +734,7 @@ public class SegmentAwareTest {
      */
     @Test
     public void testTruncate() throws Exception {
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         IgniteInternalFuture<?> fut = awaitThread(aware::awaitAvailableTruncateArchive);
 
