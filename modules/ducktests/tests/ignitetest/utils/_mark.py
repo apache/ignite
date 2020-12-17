@@ -220,6 +220,7 @@ def cluster(**kwargs):
 
     return cluster_use_metadata_adder
 
+
 def versions_pair(*args, version_prefix="ignite_version"):
     """
     Decorate test function to inject ignite versions. Versions will be overriden by globals "ignite_versions" param.
