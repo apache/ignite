@@ -80,11 +80,11 @@ public class SqlLongFieldLinearPerfomanceTest extends GridCommonAbstractTest {
             long t1 = getTime(client, len);
             long t2 = getTime(client, len * 10);
             long t3 = getTime(client, len * 100);
-            long t4 = getTime(client, len * 1000);
+            //long t4 = getTime(client, len * 1000);
 
             assertTrue(t2 <= t1 * 10);
             assertTrue(t3 <= t1 * 100);
-            assertTrue(t4 <= t1 * 1000);
+            //assertTrue(t4 <= t1 * 1000);
         }
     }
 
