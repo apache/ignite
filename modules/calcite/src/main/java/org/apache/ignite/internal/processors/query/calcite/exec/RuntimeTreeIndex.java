@@ -68,7 +68,7 @@ public class RuntimeTreeIndex<Row> extends AbstractRuntimeSortedIndex<Row> {
 
     /** */
     private GridCursor<Row> find(Row lower, Row upper) {
-        return new Cursor(rows.subMap(lower, upper));
+        return new Cursor(rows.subMap(lower, true, upper, true));
     }
 
     /**
@@ -92,7 +92,7 @@ public class RuntimeTreeIndex<Row> extends AbstractRuntimeSortedIndex<Row> {
 
         /** {@inheritDoc} */
         @Override public boolean next() throws IgniteCheckedException {
-            if (hasNext())
+            if (!hasNext())
                 return false;
 
             next0();

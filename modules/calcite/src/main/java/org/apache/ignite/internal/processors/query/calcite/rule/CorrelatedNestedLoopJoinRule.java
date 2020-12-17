@@ -129,7 +129,10 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
         RelTraitSet filterInTraits = logicalJoin.getRight().getTraitSet().replace(RewindabilityTrait.REWINDABLE);
 
         // Push a filter with batchSize disjunctions
-        relBuilder.push(logicalJoin.getRight().copy(filterInTraits, rel.getRight().getInputs())).filter(relBuilder.or(conditionList));
+        relBuilder
+            .push(logicalJoin.getRight().copy(filterInTraits, logicalJoin.getRight().getInputs()))
+            .filter(relBuilder.or(conditionList));
+
         RelNode right = relBuilder.build();
 
         CorrelationTrait corrTrait = CorrelationTrait.correlations(correlationIds);

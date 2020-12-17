@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.ignite.IgniteCache;
@@ -31,7 +33,9 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeTreeIndex;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -50,6 +54,7 @@ import static org.junit.Assert.assertThat;
 public class IndexSpoolTest extends GridCommonAbstractTest {
     /** Rows. */
     private static final int[] ROWS = {1, 10, 512, 513, 2000};
+//    private static final int[] ROWS = {10};
 
     /** */
     @Parameterized.Parameter(0)
@@ -124,6 +129,24 @@ public class IndexSpoolTest extends GridCommonAbstractTest {
                     .setQueryEntities(singletonList(part1))
                     .setSqlSchema("PUBLIC")
             );
+    }
+
+    @Test
+    public void testDbg() throws Exception {
+        RuntimeTreeIndex<Object[]> idx = new RuntimeTreeIndex<>(null, new Comparator<Object[]>() {
+            @Override public int compare(Object[] o1, Object[] o2) {
+                return ((Comparable)o1[0]).compareTo(o2[0]);
+            }
+        });
+
+        for (int i = 0; i < rows; ++i)
+            idx.push(new Object[] {i, "val " + i});
+
+        GridCursor<Object[]> c = idx.find(new Object[]{0, null}, new Object[] {0, null}, null);
+
+        while (c.next())
+            System.out.println("+++ " + Arrays.toString(c.get()));
+
     }
 
     /**

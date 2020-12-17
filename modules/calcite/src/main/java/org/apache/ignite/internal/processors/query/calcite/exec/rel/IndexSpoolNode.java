@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.function.Supplier;
 
@@ -97,12 +98,16 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         assert rowsCnt > 0;
 
         if (!indexReady()) {
+            System.out.println("+++ request to source ");
+
             requested = rowsCnt;
 
             requestSource();
         }
-        else
+        else {
+            System.out.println("+++ request to scan ");
             scan.request(rowsCnt);
+        }
     }
 
     /** */
@@ -115,6 +120,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     /** {@inheritDoc} */
     @Override public void push(Row row) {
         assert downstream() != null;
+        System.out.println("+++ push " + Arrays.toString((Object[])row));
 
         try {
             checkState();
@@ -139,6 +145,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
             checkState();
 
             waiting = -1;
+            System.out.println("+++ end ");
 
             scan.request(requested);
         }
@@ -181,16 +188,21 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
         /** {@inheritDoc} */
         @Override protected Downstream<Row> requestDownstream(int idx) {
-            throw new UnsupportedOperationException();
+            if (idx != 0)
+                throw new IndexOutOfBoundsException();
+
+            return this;
         }
 
         /** {@inheritDoc} */
         @Override public void push(Row row) {
+            System.out.println("+++ push upper " + Arrays.toString((Object[])row));
             IndexSpoolNode.this.downstream().push(row);
         }
 
         /** {@inheritDoc} */
         @Override public void end() {
+            System.out.println("+++ end upper ");
             IndexSpoolNode.this.downstream().end();
         }
 
