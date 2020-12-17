@@ -168,7 +168,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
         long totalSize = wal.totalSize(files);
 
         assertTrue(files.length >= 1);
-        assertTrue(totalSize <= maxWalArchiveSize && totalSize >= allowedThresholdWalArchiveSize);
+        assertTrue(totalSize <= maxWalArchiveSize);
         assertFalse(Stream.of(files).anyMatch(desc -> desc.file().getName().endsWith("00001.wal")));
 
         assertTrue(!hist.checkpoints().isEmpty());

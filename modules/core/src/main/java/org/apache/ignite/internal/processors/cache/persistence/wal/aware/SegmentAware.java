@@ -49,15 +49,14 @@ public class SegmentAware {
      *
      * @param walSegmentsCnt Total WAL segments count.
      * @param compactionEnabled Is wal compaction enabled.
-     * @param maxWalArchiveSize Maximum WAL archive size in bytes.
      */
-    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled, long maxWalArchiveSize) {
+    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled) {
         segmentArchivedStorage = new SegmentArchivedStorage(segmentLockStorage);
 
         segmentCurrStateStorage = new SegmentCurrentStateStorage(walSegmentsCnt);
         segmentCompressStorage = new SegmentCompressStorage(compactionEnabled);
 
-        archiveSizeStorage = new SegmentArchiveSizeStorage(maxWalArchiveSize);
+        archiveSizeStorage = new SegmentArchiveSizeStorage();
         truncateStorage = new SegmentTruncateStorage();
 
         segmentArchivedStorage.addObserver(segmentCurrStateStorage::onSegmentArchived);
@@ -346,10 +345,11 @@ public class SegmentAware {
      * Waiting for exceeding the maximum WAL archive size. To track size of WAL archive,
      * need to use {@link #addCurrentWalArchiveSize} and {@link #addReservedWalArchiveSize}.
      *
+     * @param max Maximum WAL archive size in bytes.
      * @throws IgniteInterruptedCheckedException If it was interrupted.
      */
-    public void awaitExceedMaxArchiveSize() throws IgniteInterruptedCheckedException {
-        archiveSizeStorage.awaitExceedMaxSize();
+    public void awaitExceedMaxArchiveSize(long max) throws IgniteInterruptedCheckedException {
+        archiveSizeStorage.awaitExceedMaxSize(max);
     }
 
     /**

@@ -239,7 +239,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             DFLT_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE);
 
     /**
-     * Percentage of WAL archive size to calculate threshold to which old segments will be deleted when maximum is reached.
+     * Percentage of WAL archive size to calculate threshold since which removing of old archive should be started.
      */
     private static final double THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =
         IgniteSystemProperties.getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE,
@@ -271,7 +271,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private final long maxSegCountWithoutCheckpoint;
 
-    /** Size of wal archive since which removing of old archive should be started */
+    /** Size of wal archive since which removing of old archive should be started. */
     private final long allowedThresholdWalArchiveSize;
 
     /** */
@@ -502,11 +502,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 });
             }
 
-            segmentAware = new SegmentAware(
-                dsCfg.getWalSegments(),
-                dsCfg.isWalCompactionEnabled(),
-                dsCfg.getMaxWalArchiveSize()
-            );
+            segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
 
             // We have to initialize compressor before archiver in order to setup already compressed segments.
             // Otherwise, FileArchiver initialization will trigger redundant work for FileCompressor.
@@ -3192,7 +3188,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             try {
                 while (!isCancelled()) {
-                    segmentAware.awaitExceedMaxArchiveSize();
+                    segmentAware.awaitExceedMaxArchiveSize(allowedThresholdWalArchiveSize);
                     segmentAware.awaitAvailableTruncateArchive();
 
                     FileDescriptor[] walArchiveFiles = walArchiveFiles();
@@ -3224,12 +3220,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         int truncated = truncate(highPtr);
 
                         if (log.isInfoEnabled()) {
-                            FileDescriptor[] newWalArchiveFiles = walArchiveFiles();
-                            long cleanSize = totalSize(walArchiveFiles) - totalSize(newWalArchiveFiles);
-
                             log.info("Finish clean WAL archive [cleanCnt=" + truncated
-                                + ", currSize=" + U.humanReadableByteCount(totalSize(newWalArchiveFiles))
-                                + ", cleanSize=" + U.humanReadableByteCount(cleanSize)
+                                + ", currSize=" + U.humanReadableByteCount(totalSize(walArchiveFiles()))
                                 + ", maxSize=" + U.humanReadableByteCount(dsCfg.getMaxWalArchiveSize()) + ']');
                         }
                     }

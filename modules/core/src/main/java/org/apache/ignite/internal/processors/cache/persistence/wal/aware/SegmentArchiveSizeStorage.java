@@ -24,9 +24,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
  * Allows to track the exceeding of the maximum archive size.
  */
 class SegmentArchiveSizeStorage {
-    /** Maximum WAL archive size in bytes. */
-    private final long max;
-
     /** Current WAL archive size in bytes. */
     private long curr;
 
@@ -35,15 +32,6 @@ class SegmentArchiveSizeStorage {
 
     /** Flag of interrupt waiting on this object. */
     private volatile boolean interrupted;
-
-    /**
-     * Constructor.
-     *
-     * @param max Maximum WAL archive size in bytes.
-     */
-    SegmentArchiveSizeStorage(long max) {
-        this.max = max;
-    }
 
     /**
      * Adding current WAL archive size in bytes.
@@ -82,9 +70,10 @@ class SegmentArchiveSizeStorage {
      * Waiting for exceeding the maximum WAL archive size.
      * To track size of WAL archive, need to use {@link #addCurrentSize} and {@link #addReservedSize}.
      *
+     * @param max Maximum WAL archive size in bytes.
      * @throws IgniteInterruptedCheckedException If it was interrupted.
      */
-    synchronized void awaitExceedMaxSize() throws IgniteInterruptedCheckedException {
+    synchronized void awaitExceedMaxSize(long max) throws IgniteInterruptedCheckedException {
         try {
             while (max - (curr + reserved) > 0 && !interrupted)
                 wait();
