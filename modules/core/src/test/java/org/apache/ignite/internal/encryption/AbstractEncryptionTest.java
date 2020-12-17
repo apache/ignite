@@ -231,7 +231,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         IgniteCache<Long, Object> cache = grid0.createCache(cacheConfiguration(cacheName, cacheGroup));
 
         if (grid1 != null)
-            waitForCondition(() -> grid1.cachex(cacheName()) != null, 2_000L);
+            GridTestUtils.waitForCondition(() -> grid1.cachex(cacheName()) != null, 2_000L);
 
         if (putData) {
             for (long i = 0; i < 100; i++)
@@ -394,7 +394,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             // The future will be completed after the checkpoint, forcecheckpoint does nothing
             // if the checkpoint has already been scheduled.
-            waitForCondition(() -> {
+            GridTestUtils.waitForCondition(() -> {
                 if (fut.isDone())
                     return true;
 
@@ -495,7 +495,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<Void> fut0 = GridTestUtils.runAsync(() -> {
                 boolean success =
-                    waitForCondition(() -> !isReencryptionInProgress(grid, grpId), timeout);
+                    GridTestUtils.waitForCondition(() -> !isReencryptionInProgress(grid, grpId), timeout);
 
                 assertTrue(success);
 
@@ -531,24 +531,5 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         long state = node.context().encryption().getEncryptionState(grpId, INDEX_PARTITION);
 
         return ReencryptStateUtils.pageIndex(state) != ReencryptStateUtils.pageCount(state);
-    }
-
-    /**
-     * // TODO: Fix will be in IGNITE-13847
-     * @param node Ignite node.
-     * @param grpId Cache group ID.
-     * @param keysCnt Expected keys count.
-     */
-    protected void checkKeysCount(
-        IgniteEx node,
-        int grpId,
-        int keysCnt,
-        long timeout
-    ) throws IgniteInterruptedCheckedException {
-        GridEncryptionManager encMgr = node.context().encryption();
-
-        waitForCondition(() -> encMgr.groupKeyIds(grpId).size() == keysCnt, timeout);
-
-        assertEquals(keysCnt, encMgr.groupKeyIds(grpId).size());
     }
 }
