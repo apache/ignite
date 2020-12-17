@@ -34,7 +34,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -112,7 +111,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -918,11 +916,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param topVer Topology version.
      * @param node Failed node.
-     * @param filter Recovery filter.
      * @return Future that will be completed when all affected transactions are recovered.
      */
-    public IgniteInternalFuture<Boolean> recoverLocalTxs(AffinityTopologyVersion topVer, ClusterNode node,
-        IgnitePredicate<IgniteInternalTx> filter) {
+    public IgniteInternalFuture<Boolean> recoverLocalTxs(AffinityTopologyVersion topVer, ClusterNode node) {
 
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
             new CacheObjectsReleaseFuture<>(
@@ -939,11 +935,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 });
 
         for (IgniteInternalTx tx : activeTransactions()) {
-            if (tx.dht() && !tx.local() && tx.originatingNodeId().equals(node.id())) {
+            if (tx.state() == PREPARED && tx.transactionNodes().containsKey(node.id())) {
                 assert needWaitTransaction(tx, topVer);
 
-                if (filter == null || filter.apply(tx))
-                    res.add(tx.finishFuture());
+                res.add(tx.finishFuture());
             }
         }
 

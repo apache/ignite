@@ -102,8 +102,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
@@ -129,7 +127,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
@@ -392,8 +389,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Partitions scheduled for clearing before rebalancing for this topology version. */
     private Map<Integer, Set<Integer>> clearingPartitions;
 
-    /** Specified only in case of 'cluster is fully rebalanced' state achieved. */
-    private volatile RebalancedInfo rebalancedInfo;
+    /** This future finished with 'cluster is fully rebalanced' state. */
+    private volatile boolean rebalanced;
 
     /** Some of owned by affinity partitions were changed state to moving on this exchange. */
     private volatile boolean affinityReassign;
@@ -1632,41 +1629,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         boolean skipWaitOnLocalJoin = localJoinExchange()
             && cctx.exchange().latch().canSkipJoiningNodes(initialVersion());
 
-        if (context().exchangeFreeSwitch() && isBaselineNodeFailed()) {
-            // Currently MVCC does not support operations on partially switched cluster.
-            if (cctx.kernalContext().coordinators().mvccEnabled())
-                waitPartitionRelease(EXCHANGE_FREE_LATCH_ID, true, false, null);
-            else {
-                boolean partitionedRecoveryRequired = rebalancedInfo.primaryNodes.contains(firstDiscoEvt.eventNode());
-
-                IgnitePredicate<IgniteInternalTx> replicatedOnly = tx -> {
-                    Collection<IgniteTxEntry> entries = tx.writeEntries();
-                    for (IgniteTxEntry entry : entries)
-                        if (cctx.cacheContext(entry.cacheId()).isReplicated())
-                            return true;
-
-                    // Checks only affected nodes contain replicated-free txs with failed primaries.
-                    assert partitionedRecoveryRequired;
-
-                    return false;
-                };
-
-                // Assuming that replicated transactions are absent, non-affected nodes will wait only this short sync.
-                waitPartitionRelease(EXCHANGE_FREE_LATCH_ID + "-replicated", true, false, replicatedOnly);
-
-                String partitionedLatchId = EXCHANGE_FREE_LATCH_ID + "-partitioned";
-
-                if (partitionedRecoveryRequired)
-                    // This node contain backup partitions for failed partitioned caches primaries. Waiting for recovery.
-                    waitPartitionRelease(partitionedLatchId, true, false, null);
-                else {
-                    // This node contain no backup partitions for failed partitioned caches primaries. Recovery is not needed.
-                    Latch releaseLatch = cctx.exchange().latch().getOrCreate(partitionedLatchId, initialVersion());
-
-                    releaseLatch.countDown(); // Await-free confirmation.
-                }
-            }
-        }
+        if (context().exchangeFreeSwitch() && isBaselineNodeFailed())
+            waitPartitionRelease(EXCHANGE_FREE_LATCH_ID, true, false);
         else if (!skipWaitOnLocalJoin) { // Skip partition release if node has locally joined (it doesn't have any updates to be finished).
             boolean distributed = true;
 
@@ -1675,11 +1639,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 distributed = false;
 
             // On first phase we wait for finishing all local tx updates, atomic updates and lock releases on all nodes.
-            waitPartitionRelease(EXCHANGE_LATCH_ID, distributed, true, null);
+            waitPartitionRelease(EXCHANGE_LATCH_ID, distributed, true);
 
             // Second phase is needed to wait for finishing all tx updates from primary to backup nodes remaining after first phase.
             if (distributed)
-                waitPartitionRelease(EXCHANGE_LATCH_ID, false, false, null);
+                waitPartitionRelease(EXCHANGE_LATCH_ID, false, false);
         }
         else {
             if (log.isInfoEnabled())
@@ -1890,17 +1854,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param distributed If {@code true} then node should wait for partition release completion on all other nodes.
      * @param doRollback If {@code true} tries to rollback transactions which lock partitions. Avoids unnecessary calls
      *      of {@link org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager#rollbackOnTopologyChange}
-     * @param filter Recovery filter.
      *
      * @throws IgniteCheckedException If failed.
      */
     private void waitPartitionRelease(
         String latchId,
         boolean distributed,
-        boolean doRollback,
-        IgnitePredicate<IgniteInternalTx> filter) throws IgniteCheckedException {
-        assert context().exchangeFreeSwitch() || filter == null;
-
+        boolean doRollback) throws IgniteCheckedException {
         Latch releaseLatch = null;
 
         IgniteInternalFuture<?> partReleaseFut;
@@ -1913,7 +1873,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 releaseLatch = cctx.exchange().latch().getOrCreate(latchId, initialVersion());
 
             partReleaseFut = context().exchangeFreeSwitch() && isBaselineNodeFailed() ?
-                cctx.partitionRecoveryFuture(initialVersion(), firstDiscoEvt.eventNode(), filter) :
+                cctx.partitionRecoveryFuture(initialVersion(), firstDiscoEvt.eventNode()) :
                 cctx.partitionReleaseFuture(initialVersion());
 
             // Assign to class variable so it will be included into toString() method.
@@ -5452,7 +5412,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code True} if cluster fully rebalanced.
      */
     public boolean rebalanced() {
-        return rebalancedInfo != null;
+        return rebalanced;
     }
 
     /**
@@ -5472,16 +5432,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void markRebalanced() {
         assert !rebalanced();
 
-        rebalancedInfo = new RebalancedInfo(cctx.affinity().idealPrimaryNodesForLocalBackups());
+        rebalanced = true;
     }
 
     /**
      * Keeps cluster fully rebalanced flag.
      */
     private void keepRebalanced() {
-        assert !rebalanced() && wasRebalanced();
+        assert wasRebalanced();
 
-        rebalancedInfo = sharedContext().exchange().lastFinishedFuture().rebalancedInfo;
+        markRebalanced();
     }
 
     /**
@@ -5779,20 +5739,5 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         /** This exchange was merged with another one. */
         MERGED
-    }
-
-    /**
-     *
-     */
-    private static class RebalancedInfo {
-        /** Primary nodes for local backups for all registered partitioned caches. */
-        private Set<ClusterNode> primaryNodes;
-
-        /**
-         * @param primaryNodes Primary nodes for local backups.
-         */
-        public RebalancedInfo(Set<ClusterNode> primaryNodes) {
-            this.primaryNodes = primaryNodes;
-        }
     }
 }

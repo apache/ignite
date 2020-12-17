@@ -2637,36 +2637,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @return Primary nodes for local backups.
-     */
-    public Set<ClusterNode> idealPrimaryNodesForLocalBackups() {
-        Set<ClusterNode> res = new GridConcurrentHashSet<>();
-
-        ClusterNode loc = cctx.localNode();
-
-        forAllCacheGroups(new IgniteInClosureX<GridAffinityAssignmentCache>() {
-            @Override public void applyx(GridAffinityAssignmentCache aff) {
-                CacheGroupDescriptor desc = cachesRegistry.group(aff.groupId());
-
-                if (desc.config().getCacheMode() == PARTITIONED) {
-                    List<List<ClusterNode>> assignment = aff.idealAssignmentRaw();
-
-                    HashSet<ClusterNode> primaries = new HashSet<>();
-
-                    for (List<ClusterNode> nodes : assignment) {
-                        if (nodes.indexOf(loc) > 0)
-                            primaries.add(nodes.get(0));
-                    }
-
-                    res.addAll(primaries);
-                }
-            }
-        });
-
-        return res;
-    }
-
-    /**
      *
      */
     abstract class CacheGroupHolder {
