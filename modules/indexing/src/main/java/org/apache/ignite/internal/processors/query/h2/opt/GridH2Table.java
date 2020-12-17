@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -1237,9 +1238,16 @@ public class GridH2Table extends TableBase {
         if (!localQuery(QueryContext.threadLocal()))
             return 10_000; // Fallback to the previous behaviour.
 
+        return getRowCountApproximationNoCheck();
+    }
+
+    public long getRowCountApproximationNoCheck() {
         refreshStatsIfNeeded();
 
-        return tblStats.primaryRowCount();
+        GridQueryProcessor qryProc = cacheInfo.cacheContext().kernalContext().query();
+        boolean experimental = qryProc.useExperimentalEngine();
+
+        return /*experimental ? tblStats.totalRowCount() : */tblStats.primaryRowCount();
     }
 
     /**
@@ -1262,8 +1270,11 @@ public class GridH2Table extends TableBase {
         long statsTotalRowCnt = stats.totalRowCount();
         long curTotalRowCnt = size.sum();
 
+        GridQueryProcessor qryProc = cacheInfo.cacheContext().kernalContext().query();
+        boolean experimental = qryProc.useExperimentalEngine();
+
         // Update stats if total table size changed significantly since the last stats update.
-        if (needRefreshStats(statsTotalRowCnt, curTotalRowCnt) && cacheInfo.affinityNode()) {
+        if (experimental || (needRefreshStats(statsTotalRowCnt, curTotalRowCnt) && cacheInfo.affinityNode())) {
             long primaryRowCnt = cacheSize(CachePeekMode.PRIMARY);
             long totalRowCnt = cacheSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP);
 

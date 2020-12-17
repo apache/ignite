@@ -2871,6 +2871,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         });
     }
 
+    public boolean useExperimentalEngine() {
+        return experimentalQueryEngine != null/* && useExperimentalSqlEngine*/;
+    }
+
     /**
      * @param cctx Cache context.
      * @param qry Query.

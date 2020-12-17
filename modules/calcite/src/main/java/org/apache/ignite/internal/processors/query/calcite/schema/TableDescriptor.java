@@ -27,6 +27,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -142,4 +143,9 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @return Column descriptor
      */
     ColumnDescriptor columnDescriptor(String fieldName);
+
+    /**
+     * @return Type descriptor.
+     */
+    GridQueryTypeDescriptor typeDescription();
 }

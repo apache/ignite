@@ -45,6 +45,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -56,6 +58,9 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
 
     /** */
     private final Statistic statistic;
+
+    /** */
+    private volatile GridH2Table tbl;
 
     /** */
     private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
@@ -75,6 +80,15 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
 
     /** {@inheritDoc} */
     @Override public Statistic getStatistic() {
+        if (tbl == null) {
+            IgniteH2Indexing idx = (IgniteH2Indexing) desc.cacheContext().kernalContext().query().getIndexing();
+
+            final String tblName = desc.typeDescription().tableName();
+            final String schemaName = desc.typeDescription().schemaName();
+
+            tbl = idx.schemaManager().dataTable(schemaName, tblName);
+        }
+
         return statistic;
     }
 
@@ -158,7 +172,9 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
     private class StatisticsImpl implements Statistic {
         /** {@inheritDoc} */
         @Override public Double getRowCount() {
-            return 1000d;  // TODO
+            long rows = tbl.getRowCountApproximationNoCheck();
+
+            return (double)rows;
         }
 
         /** {@inheritDoc} */
