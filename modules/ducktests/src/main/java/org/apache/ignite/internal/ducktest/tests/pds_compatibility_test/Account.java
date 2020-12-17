@@ -24,10 +24,10 @@ public class Account implements Serializable {
     @QuerySqlField(index = true, inlineSize = 48)
     private String socialNumber;
     @QuerySqlField(index = true, inlineSize = 48)
-    private String postIndex;
+    private Long postIndex;
     public long balance;
 
-    public Account(String firstName, String lastName, String catName, String dogName, String city, String country, String eMail, String phoneNumber, String socialNumber, String postIndex, long balance) {
+    public Account(String firstName, String lastName, String catName, String dogName, String city, String country, String eMail, String phoneNumber, String socialNumber, Long postIndex, long balance) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.catName = catName;

@@ -1,9 +1,6 @@
 package org.apache.ignite.internal.ducktest.tests.pds_compatibility_test;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,7 +31,7 @@ public class SqlCacheApplication extends IgniteAwareApplication {
             String uuid = UUID.randomUUID().toString();
             cache.put(i, new Account(
                     uuid, uuid, uuid, uuid, uuid, uuid,
-                    uuid, uuid, uuid, uuid, i));
+                    uuid, uuid, uuid, i, i));
         }
 
         log.info("Cache created");
