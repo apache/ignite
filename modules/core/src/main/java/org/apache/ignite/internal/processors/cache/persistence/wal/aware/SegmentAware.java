@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
 /**
@@ -49,12 +50,13 @@ public class SegmentAware {
      *
      * @param walSegmentsCnt Total WAL segments count.
      * @param compactionEnabled Is wal compaction enabled.
+     * @param log Logger.
      */
-    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled) {
+    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled, IgniteLogger log) {
         segmentArchivedStorage = new SegmentArchivedStorage(segmentLockStorage);
 
         segmentCurrStateStorage = new SegmentCurrentStateStorage(walSegmentsCnt);
-        segmentCompressStorage = new SegmentCompressStorage(compactionEnabled);
+        segmentCompressStorage = new SegmentCompressStorage(log, compactionEnabled);
 
         archiveSizeStorage = new SegmentArchiveSizeStorage();
         truncateStorage = new SegmentTruncateStorage();

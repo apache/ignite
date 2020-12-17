@@ -21,12 +21,16 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
 /**
  * Storage of actual information about current index of compressed segments.
  */
 class SegmentCompressStorage {
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Flag of interrupt waiting on this object. */
     private volatile boolean interrupted;
 
@@ -51,9 +55,11 @@ class SegmentCompressStorage {
     /**
      * Constructor.
      *
+     * @param log Logger.
      * @param compactionEnabled If WAL compaction enabled.
      */
-    SegmentCompressStorage(boolean compactionEnabled) {
+    SegmentCompressStorage(IgniteLogger log, boolean compactionEnabled) {
+        this.log = log;
         this.compactionEnabled = compactionEnabled;
     }
 
@@ -63,6 +69,9 @@ class SegmentCompressStorage {
      * @param compressedIdx Index of compressed segment.
      */
     synchronized void onSegmentCompressed(long compressedIdx) {
+        if (log.isInfoEnabled())
+            log.info("Segment compressed notification [idx=" + compressedIdx + ']');
+
         if (compressedIdx > lastMaxCompressedIdx)
             lastMaxCompressedIdx = compressedIdx;
 
@@ -129,8 +138,12 @@ class SegmentCompressStorage {
      * Callback for waking up compressor when new segment is archived.
      */
     synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
-        while (lastEnqueuedToCompressIdx < lastAbsArchivedIdx && compactionEnabled)
+        while (lastEnqueuedToCompressIdx < lastAbsArchivedIdx && compactionEnabled) {
+            if (log.isInfoEnabled())
+                log.info("Enqueuing segment for compression [idx=" + (lastEnqueuedToCompressIdx + 1) + ']');
+
             segmentsToCompress.add(++lastEnqueuedToCompressIdx);
+        }
 
         notifyAll();
     }
