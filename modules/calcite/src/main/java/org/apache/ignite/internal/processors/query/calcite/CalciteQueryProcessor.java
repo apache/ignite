@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
+
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
