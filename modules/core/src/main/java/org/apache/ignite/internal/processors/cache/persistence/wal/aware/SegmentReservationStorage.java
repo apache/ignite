@@ -16,13 +16,17 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
+import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.TreeMap;
+import java.util.function.Consumer;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Segment reservations storage: Protects WAL segments from deletion during WAL log cleanup.
  */
-class SegmentReservationStorage {
+class SegmentReservationStorage extends SegmentObservable {
     /**
      * Maps absolute segment index to reservation counter. If counter > 0 then we wouldn't delete all segments which has
      * index >= reserved segment index. Guarded by {@code this}.
@@ -38,14 +42,22 @@ class SegmentReservationStorage {
      * @param absIdx Index for reservation.
      * @return {@code True} if the reservation was successful.
      */
-    synchronized boolean reserve(long absIdx) {
-        if (absIdx > minReserveIdx) {
-            reserved.merge(absIdx, 1, Integer::sum);
+    boolean reserve(long absIdx) {
+        boolean res = false;
+        Long minReservedIdx = null;
 
-            return true;
+        synchronized (this) {
+            if (absIdx > minReserveIdx) {
+                minReservedIdx = trackingMinReservedIdx(reserved -> reserved.merge(absIdx, 1, Integer::sum));
+
+                res = true;
+            }
         }
 
-        return false;
+        if (minReservedIdx != null)
+            notifyObservers(minReservedIdx);
+
+        return res;
     }
 
     /**
@@ -61,15 +73,24 @@ class SegmentReservationStorage {
     /**
      * @param absIdx Reserved index.
      */
-    synchronized void release(long absIdx) {
-        Integer cur = reserved.get(absIdx);
+    void release(long absIdx) {
+        Long minReservedIdx;
 
-        assert cur != null && cur >= 1 : "cur=" + cur + ", absIdx=" + absIdx;
+        synchronized (this) {
+            minReservedIdx = trackingMinReservedIdx(reserved -> {
+                Integer cur = reserved.get(absIdx);
 
-        if (cur == 1)
-            reserved.remove(absIdx);
-        else
-            reserved.put(absIdx, cur - 1);
+                assert cur != null && cur >= 1 : "cur=" + cur + ", absIdx=" + absIdx;
+
+                if (cur == 1)
+                    reserved.remove(absIdx);
+                else
+                    reserved.put(absIdx, cur - 1);
+            });
+        }
+
+        if (minReservedIdx != null)
+            notifyObservers(minReservedIdx);
     }
 
     /**
@@ -87,5 +108,25 @@ class SegmentReservationStorage {
         minReserveIdx = Math.max(minReserveIdx, absIdx);
 
         return true;
+    }
+
+    /**
+     * Updating {@link #reserved} with tracking changes of minimum reserved segment.
+     *
+     * @param updateFun {@link #reserved} update function.
+     * @return New minimum reserved segment, {@code null} if there are no changes,
+     *      {@code -1} if there are no reserved segments.
+     */
+    @Nullable private synchronized Long trackingMinReservedIdx(Consumer<NavigableMap<Long, Integer>> updateFun) {
+        Map.Entry<Long, Integer> oldMinE = reserved.firstEntry();
+
+        updateFun.accept(reserved);
+
+        Map.Entry<Long, Integer> newMinE = reserved.firstEntry();
+
+        Long oldMin = oldMinE == null ? null : oldMinE.getKey();
+        Long newMin = newMinE == null ? null : newMinE.getKey();
+
+        return Objects.equals(oldMin, newMin) ? null : newMin == null ? -1 : newMin;
     }
 }

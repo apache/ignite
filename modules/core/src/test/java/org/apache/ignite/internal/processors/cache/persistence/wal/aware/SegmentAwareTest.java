@@ -727,6 +727,53 @@ public class SegmentAwareTest {
     }
 
     /**
+     * Checking the correctness of truncate logic.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTruncate() throws Exception {
+        SegmentAware aware = new SegmentAware(10, false, 0);
+
+        IgniteInternalFuture<?> fut = awaitThread(aware::awaitAvailableTruncateArchive);
+
+        aware.lastCheckpointIdx(5);
+
+        fut.get(20);
+        assertEquals(5, aware.awaitAvailableTruncateArchive());
+
+        aware.reserve(4);
+        assertEquals(4, aware.awaitAvailableTruncateArchive());
+
+        aware.setLastArchivedAbsoluteIndex(3);
+        assertEquals(3, aware.awaitAvailableTruncateArchive());
+
+        aware.lastTruncatedArchiveIdx(0);
+        assertEquals(2, aware.awaitAvailableTruncateArchive());
+        assertEquals(0, aware.lastTruncatedArchiveIdx());
+
+        aware.reserve(0);
+        fut = awaitThread(aware::awaitAvailableTruncateArchive);
+
+        aware.release(0);
+
+        fut.get(20);
+        assertEquals(2, aware.awaitAvailableTruncateArchive());
+
+        aware.setLastArchivedAbsoluteIndex(4);
+        assertEquals(3, aware.awaitAvailableTruncateArchive());
+
+        aware.release(4);
+        assertEquals(3, aware.awaitAvailableTruncateArchive());
+
+        aware.lastCheckpointIdx(6);
+        assertEquals(3, aware.awaitAvailableTruncateArchive());
+
+        aware.setLastArchivedAbsoluteIndex(6);
+        assertEquals(5, aware.awaitAvailableTruncateArchive());
+    }
+
+    /**
      * Assert that future is still not finished.
      *
      * @param future Future to check.

@@ -1128,6 +1128,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public void notchLastCheckpointPtr(WALPointer ptr) {
         lastCheckpointPtr = ptr;
+
+        segmentAware.lastCheckpointIdx(ptr.index());
     }
 
     /** {@inheritDoc} */
@@ -1333,7 +1335,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     segmentAware.addReservedWalArchiveSize(-maxWalSegmentSize);
             }
 
-            if (next.getSegmentId() - lashCheckpointFileIdx() >= maxSegCountWithoutCheckpoint)
+            if (next.getSegmentId() - lastCheckpointPtr.index() >= maxSegCountWithoutCheckpoint)
                 cctx.database().forceCheckpoint("too big size of WAL without checkpoint");
 
             boolean updated = updateCurrentHandle(next, hnd);
@@ -1350,15 +1352,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             hnd.awaitNext();
 
         return currentHandle();
-    }
-
-    /**
-     * Give last checkpoint file idx.
-     */
-    private long lashCheckpointFileIdx() {
-        WALPointer lastCheckpointMark = cctx.database().lastCheckpointMarkWalPointer();
-
-        return lastCheckpointMark == null ? 0 : lastCheckpointMark.index();
     }
 
     /**
@@ -1413,6 +1406,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 FileDescriptor[] walArchiveFiles = walArchiveFiles();
 
                 segmentAware.minReserveIndex(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
+                segmentAware.lastTruncatedArchiveIdx(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
 
                 if (archiver0 == null)
                     segmentAware.setLastArchivedAbsoluteIndex(absIdx - 1);
@@ -3199,6 +3193,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             try {
                 while (!isCancelled()) {
                     segmentAware.awaitExceedMaxArchiveSize();
+                    segmentAware.awaitAvailableTruncateArchive();
 
                     FileDescriptor[] walArchiveFiles = walArchiveFiles();
 
@@ -3207,7 +3202,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     long size = 0;
 
                     for (FileDescriptor fileDesc : walArchiveFiles) {
-                        if (fileDesc.idx >= lashCheckpointFileIdx() ||
+                        if (fileDesc.idx >= lastCheckpointPtr.index() ||
                             segmentAware.reserved(fileDesc.idx) ||
                             (size += fileDesc.file.length()) > allowedThresholdWalArchiveSize)
                             break;
@@ -3229,8 +3224,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         int truncated = truncate(highPtr);
 
                         if (log.isInfoEnabled()) {
+                            FileDescriptor[] newWalArchiveFiles = walArchiveFiles();
+                            long cleanSize = totalSize(walArchiveFiles) - totalSize(newWalArchiveFiles);
+
                             log.info("Finish clean WAL archive [cleanCnt=" + truncated
-                                + ", currSize=" + U.humanReadableByteCount(totalSize(walArchiveFiles()))
+                                + ", currSize=" + U.humanReadableByteCount(totalSize(newWalArchiveFiles))
+                                + ", cleanSize=" + U.humanReadableByteCount(cleanSize)
                                 + ", maxSize=" + U.humanReadableByteCount(dsCfg.getMaxWalArchiveSize()) + ']');
                         }
                     }

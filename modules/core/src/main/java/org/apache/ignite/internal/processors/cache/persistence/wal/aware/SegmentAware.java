@@ -41,6 +41,9 @@ public class SegmentAware {
     /** Storage of archive size. */
     private final SegmentArchiveSizeStorage archiveSizeStorage;
 
+    /** Storage of truncated segments. */
+    private final SegmentTruncateStorage truncateStorage;
+
     /**
      * Constructor.
      *
@@ -55,11 +58,15 @@ public class SegmentAware {
         segmentCompressStorage = new SegmentCompressStorage(compactionEnabled);
 
         archiveSizeStorage = new SegmentArchiveSizeStorage(maxWalArchiveSize);
+        truncateStorage = new SegmentTruncateStorage();
 
         segmentArchivedStorage.addObserver(segmentCurrStateStorage::onSegmentArchived);
         segmentArchivedStorage.addObserver(segmentCompressStorage::onSegmentArchived);
+        segmentArchivedStorage.addObserver(truncateStorage::lastArchivedIdx);
 
         segmentLockStorage.addObserver(segmentArchivedStorage::onSegmentUnlocked);
+
+        reservationStorage.addObserver(truncateStorage::minReservedIdx);
     }
 
     /**
@@ -153,17 +160,21 @@ public class SegmentAware {
     }
 
     /**
-     * @param lastTruncatedArchiveIdx Last truncated segment;
+     * Update last truncated segment.
+     *
+     * @param absIdx Absolut segment index.
      */
-    public void lastTruncatedArchiveIdx(long lastTruncatedArchiveIdx) {
-        segmentArchivedStorage.lastTruncatedArchiveIdx(lastTruncatedArchiveIdx);
+    public void lastTruncatedArchiveIdx(long absIdx) {
+        truncateStorage.lastTruncatedIdx(absIdx);
     }
 
     /**
-     * @return Last truncated segment.
+     * Getting last truncated segment.
+     *
+     * @return Absolut segment index.
      */
     public long lastTruncatedArchiveIdx() {
-        return segmentArchivedStorage.lastTruncatedArchiveIdx();
+        return truncateStorage.lastTruncatedIdx();
     }
 
     /**
@@ -247,6 +258,8 @@ public class SegmentAware {
         segmentCurrStateStorage.reset();
 
         archiveSizeStorage.reset();
+
+        truncateStorage.reset();
     }
 
     /**
@@ -260,6 +273,8 @@ public class SegmentAware {
         segmentCurrStateStorage.interrupt();
 
         archiveSizeStorage.interrupt();
+
+        truncateStorage.interrupt();
     }
 
     /**
@@ -273,6 +288,8 @@ public class SegmentAware {
         segmentCurrStateStorage.forceInterrupt();
 
         archiveSizeStorage.interrupt();
+
+        truncateStorage.interrupt();
     }
 
     /**
@@ -333,5 +350,28 @@ public class SegmentAware {
      */
     public void awaitExceedMaxArchiveSize() throws IgniteInterruptedCheckedException {
         archiveSizeStorage.awaitExceedMaxSize();
+    }
+
+    /**
+     * Update segment of last completed checkpoint.
+     * Required for binary recovery.
+     *
+     * @param absIdx Absolut segment index.
+     */
+    public void lastCheckpointIdx(long absIdx) {
+        truncateStorage.lastCheckpointIdx(absIdx);
+    }
+
+    /**
+     * Waiting for segment truncation to be available. To get the number of segments available for truncation, use
+     * {@link #lastTruncatedArchiveIdx}, {@link #lastCheckpointIdx}, {@link #reserve} and
+     * {@link #lastArchivedAbsoluteIndex} (to restart the node correctly) and is calculated as
+     * {@code lastTruncatedArchiveIdx} - {@code min(lastCheckpointIdx, reserve, lastArchivedAbsoluteIndex)}.
+     *
+     * @return Number of segments available to truncate.
+     * @throws IgniteInterruptedCheckedException If it was interrupted.
+     */
+    public long awaitAvailableTruncateArchive() throws IgniteInterruptedCheckedException {
+        return truncateStorage.awaitAvailableTruncate();
     }
 }
