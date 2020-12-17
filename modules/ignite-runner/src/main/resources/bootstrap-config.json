@@ -1,0 +1,1 @@
+{"local":{"rest":{"port":8080,"portRange":100},"baseline":{"autoAdjust":{"timeout":10000,"enabled":true}},"dataStorage": {"pageSize":4096,"storagePath":"db/data","walPath":"db/wal"}}}

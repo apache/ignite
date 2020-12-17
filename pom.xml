@@ -40,5 +40,6 @@
     <modules>
         <module>modules/configuration</module>
         <module>modules/configuration-annotation-processor</module>
+        <module>modules/ignite-runner</module>
     </modules>
 </project>
