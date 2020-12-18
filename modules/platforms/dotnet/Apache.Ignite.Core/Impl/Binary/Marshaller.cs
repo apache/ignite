@@ -703,7 +703,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return new SerializableSerializer(type);
                 }
 
-                serializer = new BinaryReflectiveSerializer() {ForceTimestamp = cfg.ForceTimestamp};
+                serializer = new BinaryReflectiveSerializer
+                {
+                    ForceTimestamp = cfg != null ? cfg.ForceTimestamp : BinaryConfiguration.DefaultForceTimestamp
+                };
             }
 
             var refSerializer = serializer as BinaryReflectiveSerializer;
