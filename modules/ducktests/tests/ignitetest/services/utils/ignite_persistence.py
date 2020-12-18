@@ -44,7 +44,9 @@ class PersistenceAware:
         Init persistent directory.
         :param node: Service node.
         """
-        node.account.mkdirs(f'{self.TEMP_DIR} {self.LOGS_DIR}')
+        node.account.mkdirs(self.PERSISTENT_ROOT)
+        node.account.mkdirs(self.TEMP_DIR)
+        node.account.mkdirs(self.LOGS_DIR)
 
 
 class IgnitePersistenceAware(PersistenceAware):
