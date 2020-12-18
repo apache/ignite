@@ -65,7 +65,7 @@ public class HostAndPortRange implements Serializable {
             if (hostEndIdx == -1) {
                 throw createParseError(addrStr, errMsgPrefix, "IPv6 host is incorrect");
             }
-            host = addrStr.substring(0, hostEndIdx + 1);
+            host = addrStr.substring(1, hostEndIdx);
             if (hostEndIdx == addrStr.length() - 1) { // no port specified, using default
                 portFrom = dfltPortFrom;
                 portTo = dfltPortTo;

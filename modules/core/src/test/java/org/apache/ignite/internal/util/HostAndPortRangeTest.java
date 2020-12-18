@@ -48,35 +48,35 @@ public class HostAndPortRangeTest {
         int dfltPortFrom = 18360;
         int dfltPortTo = 18362;
         HostAndPortRange actual = HostAndPortRange.parse(addrStr, dfltPortFrom, dfltPortTo, errMsgPrefix);
-        HostAndPortRange expected = new HostAndPortRange("[::1]", 8080, 8090);
+        HostAndPortRange expected = new HostAndPortRange("::1", 8080, 8090);
         assertEquals(expected, actual);
     }
 
     @Test
     public void testParseIPv6WithSinglePort() throws IgniteCheckedException {
-        String addrStr = "[::1]:8080";
+        String addrStr = "[3ffe:2a00:100:7031::]:8080";
         String errMsgPrefix = "";
         int dfltPortFrom = 18360;
         int dfltPortTo = 18362;
         HostAndPortRange actual = HostAndPortRange.parse(addrStr, dfltPortFrom, dfltPortTo, errMsgPrefix);
-        HostAndPortRange expected = new HostAndPortRange("[::1]", 8080, 8080);
+        HostAndPortRange expected = new HostAndPortRange("3ffe:2a00:100:7031::", 8080, 8080);
         assertEquals(expected, actual);
     }
 
     @Test
     public void testParseIPv6NoPort() throws IgniteCheckedException {
-        String addrStr = "[::1]";
+        String addrStr = "[::FFFF:129.144.52.38]";
         String errMsgPrefix = "";
         int dfltPortFrom = 18360;
         int dfltPortTo = 18362;
         HostAndPortRange actual = HostAndPortRange.parse(addrStr, dfltPortFrom, dfltPortTo, errMsgPrefix);
-        HostAndPortRange expected = new HostAndPortRange("[::1]", 18360, 18362);
+        HostAndPortRange expected = new HostAndPortRange("::FFFF:129.144.52.38", 18360, 18362);
         assertEquals(expected, actual);
     }
 
     @Test(expected = IgniteCheckedException.class)
     public void testParseIPv6IncorrectHost() throws IgniteCheckedException {
-        String addrStr = "1::1:8080";
+        String addrStr = "3ffe:2a00:100:7031:::8080";
         String errMsgPrefix = "";
         int dfltPortFrom = 18360;
         int dfltPortTo = 18362;
