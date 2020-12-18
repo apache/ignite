@@ -679,7 +679,7 @@ This view exposes information about the distribution of cache group partitions a
 
 == BINARY_METADATA
 
-This view exposes information all available binary types.
+This view exposes information about all available binary types.
 
 [{table_opts}]
 |===
