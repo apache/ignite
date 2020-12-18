@@ -19,14 +19,17 @@ package org.apache.ignite.platform;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cluster.ClusterNode;
@@ -92,6 +95,9 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
      * Test service.
      */
     public static class PlatformTestService implements Service {
+        @IgniteInstanceResource
+        private Ignite ignite;
+
         /** */
         private boolean isCancelled;
 
@@ -490,6 +496,35 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             m.put(new Key(3), new Value("value3"));
 
             return m;
+        }
+
+        /** */
+        public void testDateArray(Timestamp[] dates) {
+            assert dates != null;
+            assert 2 == dates.length;
+            assert new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()).equals(dates[0]);
+            assert new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()).equals(dates[1]);
+        }
+
+        /** */
+        public Timestamp testDate(Timestamp date) {
+            if (date == null)
+                return null;
+
+            assert new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()).equals(date);
+
+            return new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime());
+        }
+
+        /** */
+        public void testUTCDateFromCache() {
+            IgniteCache<Integer, Timestamp> cache = ignite.cache("net-dates");
+
+            cache.put(3, new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()));
+            cache.put(4, new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()));
+
+            assert new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()).equals(cache.get(1));
+            assert new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()).equals(cache.get(2));
         }
 
         /** */
