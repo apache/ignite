@@ -126,26 +126,30 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns></returns>
         public static IBinarySystemWriteHandler GetWriteHandler(Type type, bool forceTimestamp)
         {
-            if (forceTimestamp && (type == typeof(DateTime) || type == typeof(DateTime?[])))
+            if (!forceTimestamp)
             {
-                return FindWriteHandler(type, true);
+                return WriteHandlers.GetOrAdd(type, t =>
+                {
+                    return FindWriteHandler(t);
+                });
             }
 
-            return WriteHandlers.GetOrAdd(type, t =>
-            {
-                return FindWriteHandler(t, forceTimestamp);
-            });
+            if (type == typeof(DateTime))
+                return new BinarySystemWriteHandler<DateTime>(WriteTimestamp, false);
+            if (type == typeof(DateTime?[]))
+                return new BinarySystemWriteHandler<DateTime?[]>(WriteTimestampArray, true);
+
+            return null;
         }
 
         /// <summary>
         /// Find write handler for type.
         /// </summary>
         /// <param name="type">Type.</param>
-        /// <param name="forceTimestamp">Force timestamp.</param>
         /// <returns>
         /// Write handler or NULL.
         /// </returns>
-        private static IBinarySystemWriteHandler FindWriteHandler(Type type, bool forceTimestamp)
+        private static IBinarySystemWriteHandler FindWriteHandler(Type type)
         {
             // 1. Well-known types.
             if (type == typeof(string))
@@ -154,8 +158,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return new BinarySystemWriteHandler<decimal>(WriteDecimal, false);
             if (type == typeof(Guid))
                 return new BinarySystemWriteHandler<Guid>(WriteGuid, false);
-            if (type == typeof(DateTime) && forceTimestamp)
-                return new BinarySystemWriteHandler<DateTime>(WriteTimestamp, false);
             if (type == typeof (BinaryObject))
                 return new BinarySystemWriteHandler<BinaryObject>(WriteBinary, false);
             if (type == typeof (BinaryEnum))
@@ -233,8 +235,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return new BinarySystemWriteHandler<string[]>(WriteStringArray, true);
                 if (elemType == typeof(Guid?))
                     return new BinarySystemWriteHandler<Guid?[]>(WriteGuidArray, true);
-                if (elemType == typeof(DateTime?) && forceTimestamp)
-                    return new BinarySystemWriteHandler<DateTime?[]>(WriteTimestampArray, true);
                 // Enums.
                 if (BinaryUtils.IsIgniteEnum(elemType) || elemType == typeof(BinaryEnum))
                     return new BinarySystemWriteHandler<object>(WriteEnumArray, true);
