@@ -185,6 +185,11 @@
                                 <xs:documentation>Compact footer flag.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="forceTimestamp" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Force timestamp flag.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="endpoints" minOccurs="0" maxOccurs="1">
