@@ -676,3 +676,30 @@ This view exposes information about the distribution of cache group partitions a
 |STATE | string | Partition state. Possible states: MOVING - partition is being loaded from another node to this node; OWNING - this node is either a primary or backup owner; RENTING - this node is neither primary nor back up owner (is being currently evicted); EVICTED - partition has been evicted; LOST - partition state is invalid, the partition should not be used.
 |IS_PRIMARY | boolean  | Primary partition flag
 |===
+
+== BINARY_METADATA
+
+This view exposes information all available binary types.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|TYPE_ID | int | Type ID
+|TYPE_NAME | string | Type name
+|AFF_KEY_FIELD_NAME | string | Affinity key field name
+|FIELDS_COUNT | int | Fields count
+|FIELDS | string | Recorded object fields
+|SCHEMAS_IDS | string | Schema IDs registered for this type
+|IS_ENUM | boolean | Whether this is enum type
+|===
+
+== METASTORAGE
+
+This view exposes the contents of the metastorage cache.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Name
+|VALUE | string | String or raw binary (if data could not be deserialized for some reason) representation of an element
+|===
