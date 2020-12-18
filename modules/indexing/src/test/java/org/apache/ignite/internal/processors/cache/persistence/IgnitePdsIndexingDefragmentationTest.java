@@ -175,6 +175,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
      */
     private static void validateIndexes(IgniteEx node) throws Exception {
         ValidateIndexesClosure clo = new ValidateIndexesClosure(
+            () -> false,
             Collections.singleton(DEFAULT_CACHE_NAME),
             0,
             0,
