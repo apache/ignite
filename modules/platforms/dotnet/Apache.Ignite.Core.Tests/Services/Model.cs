@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable once CheckNamespace
 namespace org.apache.ignite.platform
 {
     /// <summary>
@@ -28,7 +29,7 @@ namespace org.apache.ignite.platform
         /** */
         public string Addr { get; set; }
     }
-    
+
     /// <summary>
     /// A class is a clone of Java class Department with the same namespace.
     /// </summary>
@@ -37,7 +38,7 @@ namespace org.apache.ignite.platform
         /** */
         public string Name { get; set; }
     }
-    
+
     /// <summary>
     /// A class is a clone of Java class Employee with the same namespace.
     /// </summary>
@@ -72,6 +73,7 @@ namespace org.apache.ignite.platform
 
         public override int GetHashCode()
         {
+            // ReSharper disable once NonReadonlyMemberInGetHashCode
             return Id.GetHashCode();
         }
     }

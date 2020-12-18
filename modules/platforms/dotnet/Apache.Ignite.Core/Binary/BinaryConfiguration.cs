@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Binary
         /// Default <see cref="KeepDeserialized"/> setting.
         /// </summary>
         public const bool DefaultKeepDeserialized = true;
-        
+
         /// <summary>
         /// Default <see cref="ForceTimestamp"/> setting.
         /// </summary>
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Binary
         public ICollection<BinaryTypeConfiguration> TypeConfigurations { get; set; }
 
         /// <summary>
-        /// Gets or sets a collection of assembly-qualified type names 
+        /// Gets or sets a collection of assembly-qualified type names
         /// (the result of <see cref="Type.AssemblyQualifiedName"/>) for binarizable types.
         /// <para />
         /// Shorthand for creating <see cref="BinaryTypeConfiguration"/>.
@@ -144,12 +144,12 @@ namespace Apache.Ignite.Core.Binary
 
         /// <summary>
         /// Gets or sets a value indicating whether to write footers in compact form.
-        /// When enabled, Ignite will not write fields metadata when serializing objects, 
+        /// When enabled, Ignite will not write fields metadata when serializing objects,
         /// because internally metadata is distributed inside cluster.
         /// This increases serialization performance.
         /// <para/>
         /// <b>WARNING!</b> This mode should be disabled when already serialized data can be taken from some external
-        /// sources (e.g.cache store which stores data in binary form, data center replication, etc.). 
+        /// sources (e.g.cache store which stores data in binary form, data center replication, etc.).
         /// Otherwise binary objects without any associated metadata could could not be deserialized.
         /// </summary>
         [DefaultValue(DefaultCompactFooter)]
@@ -160,16 +160,26 @@ namespace Apache.Ignite.Core.Binary
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether all DateTime keys, values and object fields
+        /// should be written as a Timestamp.
+        /// <para />
+        /// Timestamp format is required for values used in SQL and for interoperation with other platforms.
+        /// Only UTC values are supported in Timestamp format. Other values will cause an exception on write.
+        /// <para />
+        /// Normally Ignite serializer uses <see cref="IBinaryWriter.WriteObject{T}"/> for DateTime fields,
+        /// keys and values.
+        /// This attribute changes the behavior to <see cref="IBinaryWriter.WriteTimestamp"/>.
+        /// <para />
+        /// See also <see cref="TimestampAttribute"/>, <see cref="BinaryReflectiveSerializer.ForceTimestamp"/>.
+        /// </summary>
+        public bool ForceTimestamp { get; set; }
+
+        /// <summary>
         /// Gets the compact footer internal nullable value.
         /// </summary>
         internal bool? CompactFooterInternal
         {
             get { return _compactFooter; }
         }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether all DateTime values should be written as Timestamp.
-        /// </summary>
-        public bool ForceTimestamp { get; set; }
     }
 }
