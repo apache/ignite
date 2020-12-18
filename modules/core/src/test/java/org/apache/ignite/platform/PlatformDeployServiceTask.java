@@ -47,6 +47,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Calendar.JANUARY;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -498,6 +499,14 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             m.put(new Key(3), new Value("value3"));
 
             return m;
+        }
+
+        /** */
+        public void testDateArray(Timestamp[] dates) {
+            assertNotNull(dates);
+            assertEquals(2, dates.length);
+            assertEquals(new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()), dates[0]);
+            assertEquals(new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()), dates[1]);
         }
 
         /** */

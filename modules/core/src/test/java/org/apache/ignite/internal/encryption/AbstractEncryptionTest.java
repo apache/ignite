@@ -69,6 +69,7 @@ import static org.apache.ignite.configuration.WALMode.FSYNC;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.CIPHER_ALGO;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Abstract encryption test.
@@ -342,6 +343,20 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         }
 
         info("Load data finished");
+    }
+
+    /**
+     * @param node Ignite node.
+     * @param grpId Cache group ID.
+     * @param keysCnt Expected keys count.
+     */
+    protected void checkKeysCount(IgniteEx node, int grpId, int keysCnt, long timeout)
+        throws IgniteInterruptedCheckedException {
+        GridEncryptionManager encMgr = node.context().encryption();
+
+        waitForCondition(() -> encMgr.groupKeyIds(grpId).size() == keysCnt, timeout);
+
+        assertEquals(keysCnt, encMgr.groupKeyIds(grpId).size());
     }
 
     /**

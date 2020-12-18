@@ -181,6 +181,9 @@ namespace Apache.Ignite.Core.Tests.Services
         DateTime testDate(DateTime date);
 
         /** */
+        void testDateArray(DateTime?[] dates);
+
+        /** */
         void testUTCDateFromCache();
 
         /** */

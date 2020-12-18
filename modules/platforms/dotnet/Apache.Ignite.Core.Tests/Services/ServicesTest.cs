@@ -961,6 +961,8 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual(dt2, svc.testDate(dt1));
 
+            svc.testDateArray(new DateTime?[] {dt1, dt2});
+
             var cache = Grid1.GetOrCreateCache<int, DateTime>("net-dates");
 
             cache.Put(1, dt1);
