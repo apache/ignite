@@ -332,6 +332,12 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
+        public void testDateArray(DateTime?[] dates)
+        {
+            _svc.testDateArray(dates);
+        }
+
+        /** <inheritDoc /> */
         public DateTime testDate(DateTime date)
         {
             return _svc.testDate(date);

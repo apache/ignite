@@ -126,6 +126,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns></returns>
         public static IBinarySystemWriteHandler GetWriteHandler(Type type, bool forceTimestamp)
         {
+            if (forceTimestamp && (type == typeof(DateTime) || type == typeof(DateTime?[])))
+            {
+                return FindWriteHandler(type, true);
+            }
+
             return WriteHandlers.GetOrAdd(type, t =>
             {
                 return FindWriteHandler(t, forceTimestamp);
