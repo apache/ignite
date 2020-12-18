@@ -178,10 +178,10 @@ namespace Apache.Ignite.Core.Tests.Services
         IDictionary testMap(IDictionary<Key, Value> dict);
 
         /** */
-        DateTime testDate(DateTime date);
+        void testDateArray(DateTime?[] dates);
 
         /** */
-        void testDateArray(DateTime?[] dates);
+        DateTime testDate(DateTime date);
 
         /** */
         void testUTCDateFromCache();

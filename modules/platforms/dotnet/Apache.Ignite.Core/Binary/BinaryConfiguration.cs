@@ -39,11 +39,6 @@ namespace Apache.Ignite.Core.Binary
         /// Default <see cref="KeepDeserialized"/> setting.
         /// </summary>
         public const bool DefaultKeepDeserialized = true;
-        
-        /// <summary>
-        /// Default <see cref="ForceTimestamp"/> setting.
-        /// </summary>
-        public const bool DefaultForceTimestamp = false;
 
         /// <summary>
         /// Default <see cref="ForceTimestamp"/> setting.
@@ -186,10 +181,5 @@ namespace Apache.Ignite.Core.Binary
         {
             get { return _compactFooter; }
         }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether all DateTime values should be written as Timestamp.
-        /// </summary>
-        public bool ForceTimestamp { get; set; }
     }
 }
