@@ -20,18 +20,17 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelFieldCollation;
-import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelInput;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Index conditions and bounds holder.
+ * Conditions are not printed to terms (serialized). Its are used only to calculate selectivity.
  */
 public class IndexConditions {
     /** */
@@ -63,6 +62,14 @@ public class IndexConditions {
         this.upperCond = upperCond;
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
+    }
+
+    /** */
+    public IndexConditions(RelInput input) {
+        lowerCond = null;
+        upperCond = null;
+        lowerBound = input.get("lower") == null ? null : input.getExpressionList("lower");
+        upperBound = input.get("upper") == null ? null : input.getExpressionList("upper");
     }
 
     /**
@@ -109,6 +116,18 @@ public class IndexConditions {
         }
 
         return ImmutableIntList.copyOf(keys);
+    }
+
+    /**
+     * Describes index bounds.
+     *
+     * @param pw Plan writer
+     * @return Plan writer for fluent-explain pattern
+     */
+    public RelWriter explainTerms(RelWriter pw) {
+        return pw
+            .itemIf("lower", lowerBound, !F.isEmpty(lowerBound))
+            .itemIf("upper", upperBound, !F.isEmpty(upperBound));
     }
 
     /** */

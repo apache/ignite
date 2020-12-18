@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -31,11 +32,10 @@ import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Relational operator that returns the sorted contents of a table
- * and allow to lookup rows by specified keys.
+ * and allow to lookup rows by specified bounds.
  */
 public class IgniteIndexSpool extends Spool implements IgniteRel {
     /** */
@@ -50,9 +50,12 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         RelTraitSet traits,
         RelNode input,
         RelCollation collation,
-        @Nullable IndexConditions idxCond
+        IndexConditions idxCond
     ) {
         super(cluster, traits, input, Type.LAZY, Type.EAGER);
+
+        assert Objects.nonNull(idxCond);
+
         this.idxCond = idxCond;
         this.collation = collation;
     }
@@ -67,12 +70,7 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
             input.getInputs().get(0),
             input.getCollation(),
-            new IndexConditions(
-                input.getExpressionList("lower"),
-                input.getExpressionList("upper"),
-                input.getExpressionList("lowerBound"),
-                input.getExpressionList("upperBound")
-            )
+            new IndexConditions(input)
         );
     }
 
@@ -100,15 +98,7 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
     @Override public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
 
-        if (idxCond != null) {
-            writer
-                .item("lower", idxCond.lowerCondition())
-                .item("upper", idxCond.upperCondition())
-                .item("lowerBound", idxCond.lowerBound())
-                .item("upperBound", idxCond.upperBound());
-        }
-
-        return writer;
+        return idxCond.explainTerms(writer);
     }
 
     /** {@inheritDoc} */

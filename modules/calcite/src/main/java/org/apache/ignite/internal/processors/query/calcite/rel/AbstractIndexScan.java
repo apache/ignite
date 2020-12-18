@@ -31,7 +31,6 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
-import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -52,12 +51,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     protected AbstractIndexScan(RelInput input) {
         super(input);
         idxName = input.getString("index");
-        idxCond = new IndexConditions(
-            null,
-            null,
-            input.get("lower") == null ? null : input.getExpressionList("lower"),
-            input.get("upper") == null ? null : input.getExpressionList("upper")
-        );
+        idxCond = new IndexConditions(input);
     }
 
     /** */
@@ -83,9 +77,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         pw = pw.item("index", idxName);
         pw = super.explainTerms0(pw);
 
-        return pw
-            .itemIf("lower", idxCond.lowerBound(), idxCond != null && !F.isEmpty(idxCond.lowerBound()))
-            .itemIf("upper", idxCond.upperBound(), idxCond != null && !F.isEmpty(idxCond.upperBound()));
+        return idxCond.explainTerms(pw);
     }
 
     /**

@@ -50,10 +50,22 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             "ProjectIndexScanMergeRule"
         ) {
             /** {@inheritDoc} */
-            @Override protected IgniteLogicalIndexScan createNode(RelOptCluster cluster, IgniteLogicalIndexScan scan,
-                RelTraitSet traits, List<RexNode> projections, RexNode cond, ImmutableBitSet requiredColumns) {
-                return IgniteLogicalIndexScan.create(cluster, traits, scan.getTable(), scan.indexName(), projections,
-                    cond, requiredColumns);
+            @Override protected IgniteLogicalIndexScan createNode(
+                RelOptCluster cluster,
+                IgniteLogicalIndexScan scan,
+                RelTraitSet traits,
+                List<RexNode> projections,
+                RexNode cond,
+                ImmutableBitSet requiredColumns
+            ) {
+                return IgniteLogicalIndexScan.create(
+                    cluster,
+                    traits,
+                    scan.getTable(),
+                    scan.indexName(),
+                    projections,
+                    cond, requiredColumns
+                );
             }
         };
 
@@ -65,15 +77,34 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             "ProjectTableScanMergeRule"
         ) {
             /** {@inheritDoc} */
-            @Override protected IgniteLogicalTableScan createNode(RelOptCluster cluster, IgniteLogicalTableScan scan,
-                RelTraitSet traits, List<RexNode> projections, RexNode cond, ImmutableBitSet requiredColumns) {
-                return IgniteLogicalTableScan.create(cluster, traits, scan.getTable(), projections, cond, requiredColumns);
+            @Override protected IgniteLogicalTableScan createNode(
+                RelOptCluster cluster,
+                IgniteLogicalTableScan scan,
+                RelTraitSet traits,
+                List<RexNode> projections,
+                RexNode cond,
+                ImmutableBitSet requiredColumns
+            ) {
+                return IgniteLogicalTableScan.create(
+                    cluster,
+                    traits,
+                    scan.getTable(),
+                    projections,
+                    cond,
+                    requiredColumns
+                );
             }
         };
 
     /** */
-    protected abstract T createNode(RelOptCluster cluster, T scan, RelTraitSet traits, List<RexNode> projections,
-                                    RexNode cond, ImmutableBitSet requiredColumns);
+    protected abstract T createNode(
+        RelOptCluster cluster,
+        T scan,
+        RelTraitSet traits,
+        List<RexNode> projections,
+        RexNode cond,
+        ImmutableBitSet requiredColumns
+    );
 
     /**
      * Constructor.

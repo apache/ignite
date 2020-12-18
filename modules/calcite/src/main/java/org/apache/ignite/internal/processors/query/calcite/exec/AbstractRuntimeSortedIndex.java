@@ -35,9 +35,7 @@ public abstract class AbstractRuntimeSortedIndex<Row> implements GridIndex<Row>,
     /** */
     protected final Comparator<Row> comp;
 
-    /**
-     *
-     */
+    /** */
     protected AbstractRuntimeSortedIndex(
         ExecutionContext<Row> ectx,
         Comparator<Row> comp

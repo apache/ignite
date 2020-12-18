@@ -38,7 +38,11 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
     public static final LogicalScanConverterRule<IgniteLogicalIndexScan> INDEX_SCAN =
         new LogicalScanConverterRule<IgniteLogicalIndexScan>(IgniteLogicalIndexScan.class, "LogicalTableScanConverterRule") {
             /** {@inheritDoc} */
-            @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, IgniteLogicalIndexScan rel) {
+            @Override protected PhysicalNode convert(
+                RelOptPlanner planner,
+                RelMetadataQuery mq,
+                IgniteLogicalIndexScan rel
+            ) {
                 return new IgniteIndexScan(
                     rel.getCluster(),
                     rel.getTraitSet().replace(IgniteConvention.INSTANCE),
@@ -56,7 +60,11 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
     public static final LogicalScanConverterRule<IgniteLogicalTableScan> TABLE_SCAN =
         new LogicalScanConverterRule<IgniteLogicalTableScan>(IgniteLogicalTableScan.class, "LogicalIndexScanConverterRule") {
             /** {@inheritDoc} */
-            @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, IgniteLogicalTableScan rel) {
+            @Override protected PhysicalNode convert(
+                RelOptPlanner planner,
+                RelMetadataQuery mq,
+                IgniteLogicalTableScan rel
+            ) {
                 RelTraitSet traits = rel.getTraitSet().replace(IgniteConvention.INSTANCE);
 
                 Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.condition());

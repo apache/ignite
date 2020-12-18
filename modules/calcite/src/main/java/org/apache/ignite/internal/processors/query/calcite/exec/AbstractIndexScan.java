@@ -99,6 +99,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
 
     /** */
     @Override public void close() {
+        // No-op.
     }
 
     /** */
