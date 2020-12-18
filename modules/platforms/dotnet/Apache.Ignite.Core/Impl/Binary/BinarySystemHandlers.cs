@@ -122,9 +122,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Try getting write handler for type.
         /// </summary>
         /// <param name="type"></param>
+        /// <param name="forceTimestamp"></param>
         /// <returns></returns>
-        public static IBinarySystemWriteHandler GetWriteHandler(Type type)
+        public static IBinarySystemWriteHandler GetWriteHandler(Type type, bool forceTimestamp)
         {
+            if (forceTimestamp)
+            {
+                if (type == typeof(DateTime))
+                    return new BinarySystemWriteHandler<DateTime>(WriteTimestamp, false);
+                if (type == typeof(DateTime?[]))
+                    return new BinarySystemWriteHandler<DateTime?[]>(WriteTimestampArray, true);
+            }
+
             return WriteHandlers.GetOrAdd(type, t =>
             {
                 return FindWriteHandler(t);
@@ -294,6 +303,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Write Date.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
+        private static void WriteTimestamp(BinaryWriter ctx, DateTime obj)
+        {
+            ctx.Stream.WriteByte(BinaryTypeId.Timestamp);
+
+            BinaryUtils.WriteTimestamp(obj, ctx.Stream);
+        }
+
+        /// <summary>
         /// Write boolaen array.
         /// </summary>
         /// <param name="ctx">Context.</param>
@@ -423,6 +444,18 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.Stream.WriteByte(BinaryTypeId.ArrayGuid);
 
             BinaryUtils.WriteGuidArray(obj, ctx.Stream);
+        }
+
+        /// <summary>
+        /// Write nullable Date array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
+        private static void WriteTimestampArray(BinaryWriter ctx, DateTime?[] obj)
+        {
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayTimestamp);
+
+            BinaryUtils.WriteTimestampArray(obj, ctx.Stream);
         }
 
         /// <summary>
