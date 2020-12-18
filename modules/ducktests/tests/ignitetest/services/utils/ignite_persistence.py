@@ -28,12 +28,13 @@ class PersistenceAware:
     """
     # Root directory for persistent output
     PERSISTENT_ROOT = "/mnt/service"
-    STDOUT_STDERR_CAPTURE = os.path.join(PERSISTENT_ROOT, "console.log")
     TEMP_DIR = os.path.join(PERSISTENT_ROOT, "tmp")
+    LOGS_DIR = os.path.join(PERSISTENT_ROOT, "logs")
+    STDOUT_STDERR_CAPTURE = os.path.join(LOGS_DIR, "console.log")
 
     logs = {
         "console_log": {
-            "path": STDOUT_STDERR_CAPTURE,
+            "path": LOGS_DIR,
             "collect_default": True
         }
     }
@@ -45,6 +46,7 @@ class PersistenceAware:
         """
         node.account.mkdirs(self.PERSISTENT_ROOT)
         node.account.mkdirs(self.TEMP_DIR)
+        node.account.mkdirs(self.LOGS_DIR)
 
 
 class IgnitePersistenceAware(PersistenceAware):
