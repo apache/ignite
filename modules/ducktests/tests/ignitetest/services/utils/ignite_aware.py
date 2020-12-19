@@ -83,6 +83,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
     def start_node(self, node):
         self.init_persistent(node)
 
+        self.__update_node_log_file(node)
+
         super().start_node(node)
 
         wait_until(lambda: self.alive(node), timeout_sec=10)
@@ -188,7 +190,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
     # pylint: disable=W0613
     def _worker(self, idx, node):
-        cmd = self.spec.command
+        cmd = self.spec.command(node.log_file)
 
         self.logger.debug("Attempting to start Application Service on %s with command: %s" % (str(node.account), cmd))
 
@@ -201,7 +203,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         return len(self.pids(node)) > 0
 
-    def await_event_on_node(self, evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=5):
+    @staticmethod
+    def await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=5):
         """
         Await for specific event message in a node's log file.
         :param evt_message: Event message.
@@ -211,7 +214,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         :param backoff_sec: Number of seconds to back off between each failure to meet the condition
                 before checking again.
         """
-        with monitor_log(node, self.STDOUT_STDERR_CAPTURE, from_the_beginning) as monitor:
+        with monitor_log(node, node.log_file, from_the_beginning) as monitor:
             monitor.wait_until(evt_message, timeout_sec=timeout_sec, backoff_sec=backoff_sec,
                                err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
                                                                                                timeout_sec))
@@ -352,24 +355,19 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         return str(node.account.ssh_client.exec_command("sudo iptables -L -n")[1].read(), sys.getdefaultencoding())
 
+    def __update_node_log_file(self, node):
+        """
+        Update the node log file.
+        """
+        cnt = list(node.account.ssh_capture(f'ls {self.LOGS_DIR} | '
+                                            f'grep -E "^console_[0-9]*.log$" | '
+                                            f'wc -l', callback=int))[0]
+
+        node.log_file = self.STDOUT_STDERR_CAPTURE.replace('.log', f'_{cnt + 1}.log')
+
     def restart(self):
         """
         Restart ignite cluster without cleaning.
         """
         self.stop()
-        self.__rotate_log()
         self.start(clean=False)
-
-    def __rotate_log(self):
-        """
-        Rotate log file.
-        """
-        new_log_file = self.STDOUT_STDERR_CAPTURE.replace('.log', '_$N.log')
-
-        for node in self.nodes:
-            node.account.ssh(f'if [ -e {self.STDOUT_STDERR_CAPTURE} ];'
-                             f'then '
-                             f'cd {self.LOGS_DIR};'
-                             f'N=`ls | grep -E "^console_?[0-9]*.log$" | wc -l`;'
-                             f'mv {self.STDOUT_STDERR_CAPTURE} {new_log_file};'
-                             f'fi')
