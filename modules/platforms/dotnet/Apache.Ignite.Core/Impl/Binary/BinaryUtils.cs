@@ -1616,8 +1616,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (date.Kind != DateTimeKind.Utc)
             {
-                throw new BinaryObjectException(
-                    "DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.");
+                date = date.ToUniversalTime();
             }
 
             long diff = date.Ticks - JavaDateTicks;

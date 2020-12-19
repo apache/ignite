@@ -973,6 +973,20 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(dt1, cache.Get(3));
             Assert.AreEqual(dt2, cache.Get(4));
 
+            //This Date in Europe/Moscow have offset +4.
+            DateTime dt3 = new DateTime(1982, 4, 1, 1, 0, 0, 0, DateTimeKind.Local);
+            //This Date in Europe/Moscow have offset +3.
+            DateTime dt4 = new DateTime(1982, 3, 31, 22, 0, 0, 0, DateTimeKind.Local);
+
+            cache.Put(5, dt3);
+            cache.Put(6, dt4);
+
+            svc.testLocalDateFromCache();
+
+            Console.WriteLine(dt3);
+            Assert.AreEqual(dt3, cache.Get(7).ToLocalTime());
+            Assert.AreEqual(dt4, cache.Get(8).ToLocalTime());
+
             Services.Cancel(javaSvcName);
         }
 
