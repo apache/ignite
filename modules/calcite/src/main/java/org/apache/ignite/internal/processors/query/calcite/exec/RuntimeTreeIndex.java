@@ -68,6 +68,9 @@ public class RuntimeTreeIndex<Row> extends AbstractRuntimeSortedIndex<Row> {
 
     /** */
     private GridCursor<Row> find(Row lower, Row upper) {
+        System.out.println("+++ row " + rows.size());
+        System.out.println("+++ find " + rows.subMap(lower, true, upper, true).size());
+
         return new Cursor(rows.subMap(lower, true, upper, true));
     }
 

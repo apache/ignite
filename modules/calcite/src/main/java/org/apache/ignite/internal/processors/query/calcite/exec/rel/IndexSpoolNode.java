@@ -74,6 +74,11 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         scan.onRegister(downstream);
     }
 
+    /** */
+    @Override public Downstream<Row> downstream() {
+        return scan.downstream();
+    }
+
     /** {@inheritDoc} */
     @Override protected void rewindInternal() {
         scan.rewind();
@@ -97,13 +102,20 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0;
 
-        if (!indexReady()) {
-            requested = rowsCnt;
+        try {
+            checkState();
 
-            requestSource();
+            if (!indexReady()) {
+                requested = rowsCnt;
+
+                requestSource();
+            }
+            else
+                scan.request(rowsCnt);
         }
-        else
-            scan.request(rowsCnt);
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** */
