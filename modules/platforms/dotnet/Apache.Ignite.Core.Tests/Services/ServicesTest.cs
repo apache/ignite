@@ -981,11 +981,17 @@ namespace Apache.Ignite.Core.Tests.Services
             cache.Put(5, dt3);
             cache.Put(6, dt4);
 
+            Assert.AreEqual(dt3.ToUniversalTime(), cache.Get(5).ToUniversalTime());
+            Assert.AreEqual(dt4.ToUniversalTime(), cache.Get(6).ToUniversalTime());
+
             svc.testLocalDateFromCache();
 
-            Console.WriteLine(dt3);
             Assert.AreEqual(dt3, cache.Get(7).ToLocalTime());
             Assert.AreEqual(dt4, cache.Get(8).ToLocalTime());
+
+            var now = DateTime.Now;
+            cache.Put(9, now);
+            Assert.AreEqual(now.ToUniversalTime(), cache.Get(9).ToUniversalTime());
 
             Services.Cancel(javaSvcName);
         }
