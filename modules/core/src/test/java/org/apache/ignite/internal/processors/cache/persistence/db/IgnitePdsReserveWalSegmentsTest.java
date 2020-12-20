@@ -28,13 +28,14 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -181,6 +182,29 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Check that the minimum reserved index will not be greater than the actual deleted segment.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMinReserveIdx() throws Exception {
+        IgniteEx n = prepareGrid(1);
+
+        forceCheckpoint();
+
+        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)n.context().cache().context().wal();
+        assertNotNull(wal);
+
+        if (compactionEnabled(n))
+            assertTrue(waitForCondition(() -> wal.lastCompactedSegment() >= 1, 10_000));
+
+        assertEquals(1, wal.truncate(new WALPointer(1, 0, 0)));
+
+        Long minReserveIdx = getFieldValueHierarchy(wal, "segmentAware", "reservationStorage", "minReserveIdx");
+        assertEquals(0L, minReserveIdx.longValue());
+    }
+
+    /**
      * Starts grid and populates test data.
      *
      * @param cnt Grid count.
@@ -211,7 +235,7 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
      * @param dbMgr Database shared manager.
      */
     private long getReservedWalSegmentIndex(IgniteWriteAheadLogManager dbMgr) {
-        return ((WALPointer)GridTestUtils.getFieldValueHierarchy(dbMgr, "lastCheckpointPtr")).index();
+        return ((WALPointer)getFieldValueHierarchy(dbMgr, "lastCheckpointPtr")).index();
     }
 
     /**

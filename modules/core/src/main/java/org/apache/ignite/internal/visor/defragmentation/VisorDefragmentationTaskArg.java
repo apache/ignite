@@ -34,9 +34,6 @@ public class VisorDefragmentationTaskArg extends IgniteDataTransferObject {
     private VisorDefragmentationOperation operation;
 
     /** */
-    private List<String> nodeIds;
-
-    /** */
     private List<String> cacheNames;
 
     /** Empty constructor for serialization. */
@@ -47,23 +44,16 @@ public class VisorDefragmentationTaskArg extends IgniteDataTransferObject {
     /** */
     public VisorDefragmentationTaskArg(
         VisorDefragmentationOperation operation,
-        List<String> nodeIds,
         List<String> cacheNames
     ) {
 
         this.operation = operation;
-        this.nodeIds = nodeIds;
         this.cacheNames = cacheNames;
     }
 
     /** */
     public VisorDefragmentationOperation operation() {
         return operation;
-    }
-
-    /** */
-    public List<String> nodeIds() {
-        return nodeIds;
     }
 
     /** */
@@ -75,16 +65,12 @@ public class VisorDefragmentationTaskArg extends IgniteDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeEnum(out, operation);
 
-        U.writeCollection(out, nodeIds);
-
         U.writeCollection(out, cacheNames);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         operation = U.readEnum(in, VisorDefragmentationOperation.class);
-
-        nodeIds = U.readList(in);
 
         cacheNames = U.readList(in);
     }
