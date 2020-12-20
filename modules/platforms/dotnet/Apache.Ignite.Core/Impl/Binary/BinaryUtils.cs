@@ -388,13 +388,14 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <summary>Write date.</summary>
          * <param name="val">Date.</param>
          * <param name="stream">Stream.</param>
+         * <param name="allowLocal">True if non UTC dates supported</param>
          */
-        public static void WriteTimestamp(DateTime val, IBinaryStream stream)
+        public static void WriteTimestamp(DateTime val, IBinaryStream stream, bool allowLocal)
         {
             long high;
             int low;
 
-            ToJavaDate(val, out high, out low);
+            ToJavaDate(val, out high, out low, allowLocal);
 
             stream.WriteLong(high);
             stream.WriteInt(low);
@@ -438,7 +439,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="vals">Values.</param>
         /// <param name="stream">Stream.</param>
-        public static void WriteTimestampArray(DateTime?[] vals, IBinaryStream stream)
+        /// <param name="allowLocal">True if non UTC dates supported</param>
+        public static void WriteTimestampArray(DateTime?[] vals, IBinaryStream stream, bool allowLocal)
         {
             stream.WriteInt(vals.Length);
 
@@ -448,7 +450,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     stream.WriteByte(BinaryTypeId.Timestamp);
 
-                    WriteTimestamp(val.Value, stream);
+                    WriteTimestamp(val.Value, stream, allowLocal);
                 }
                 else
                     stream.WriteByte(HdrNull);
@@ -1611,9 +1613,16 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="date">Date</param>
          * <param name="high">High part (milliseconds).</param>
          * <param name="low">Low part (nanoseconds)</param>
+         * <param name="allowLocal">True if non UTC dates supported</param>
          */
-        private static void ToJavaDate(DateTime date, out long high, out int low)
+        private static void ToJavaDate(DateTime date, out long high, out int low, bool allowLocal)
         {
+            if (date.Kind != DateTimeKind.Utc && !allowLocal)
+            {
+                throw new BinaryObjectException(
+                    "DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.");
+            }
+
             if (date.Kind != DateTimeKind.Utc)
             {
                 date = date.ToUniversalTime();

@@ -538,7 +538,9 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
             ZoneId msk = ZoneId.of("Europe/Moscow");
 
+            //This Date in Europe/Moscow have offset +4.
             Timestamp ts1 = new Timestamp(ZonedDateTime.of(1982, 4, 1, 1, 0, 0, 0, msk).toInstant().toEpochMilli());
+            //This Date in Europe/Moscow have offset +3.
             Timestamp ts2 = new Timestamp(ZonedDateTime.of(1982, 3, 31, 22, 0, 0, 0, msk).toInstant().toEpochMilli());
 
             assertEquals(ts1, cache.get(5));
