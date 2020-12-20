@@ -973,6 +973,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(dt1, cache.Get(3));
             Assert.AreEqual(dt2, cache.Get(4));
 
+#if NETCOREAPP
             //This Date in Europe/Moscow have offset +4.
             DateTime dt3 = new DateTime(1982, 4, 1, 1, 0, 0, 0, DateTimeKind.Local);
             //This Date in Europe/Moscow have offset +3.
@@ -992,6 +993,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var now = DateTime.Now;
             cache.Put(9, now);
             Assert.AreEqual(now.ToUniversalTime(), cache.Get(9).ToUniversalTime());
+#endif
 
             Services.Cancel(javaSvcName);
         }

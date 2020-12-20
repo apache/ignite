@@ -311,7 +311,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.Timestamp);
 
-            BinaryUtils.WriteTimestamp(obj, ctx.Stream, true);
+            BinaryUtils.WriteTimestamp(obj, ctx.Stream);
         }
 
         /// <summary>
@@ -455,7 +455,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.ArrayTimestamp);
 
-            BinaryUtils.WriteTimestampArray(obj, ctx.Stream, true);
+            BinaryUtils.WriteTimestampArray(obj, ctx.Stream);
         }
 
         /// <summary>
