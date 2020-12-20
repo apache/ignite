@@ -15,10 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.tree.util;
+package org.apache.ignite.platform;
 
-/**
- * Rows with this marker interface will always be inserted in the very end of the tree.
- */
-public interface InsertLast {
+/** Test value object. */
+public class Employee {
+    /** */
+    private String fio;
+
+    /** */
+    private long salary;
+
+    /** */
+    public String getFio() {
+        return fio;
+    }
+
+    /** */
+    public void setFio(String fio) {
+        this.fio = fio;
+    }
+
+    /** */
+    public long getSalary() {
+        return salary;
+    }
+
+    /** */
+    public void setSalary(long salary) {
+        this.salary = salary;
+    }
 }

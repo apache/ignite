@@ -256,7 +256,7 @@ public class OdbcUtils {
      * @return Odbc query field metadata.
      */
     public static Collection<OdbcColumnMeta> convertMetadata(Collection<GridQueryFieldMetadata> meta,
-                                                              ClientListenerProtocolVersion ver) {
+        ClientListenerProtocolVersion ver) {
         List<OdbcColumnMeta> res = new ArrayList<>();
 
         if (meta != null) {

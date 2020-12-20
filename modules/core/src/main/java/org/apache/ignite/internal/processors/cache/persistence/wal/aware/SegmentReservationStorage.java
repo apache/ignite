@@ -27,13 +27,25 @@ class SegmentReservationStorage {
      * Maps absolute segment index to reservation counter. If counter > 0 then we wouldn't delete all segments which has
      * index >= reserved segment index. Guarded by {@code this}.
      */
-    private NavigableMap<Long, Integer> reserved = new TreeMap<>();
+    private final NavigableMap<Long, Integer> reserved = new TreeMap<>();
+
+    /** Maximum segment index that can be reserved. */
+    private long minReserveIdx = -1;
 
     /**
+     * Segment reservation. It will be successful if segment is {@code >} than the {@link #minReserveIdx minimum}.
+     *
      * @param absIdx Index for reservation.
+     * @return {@code True} if the reservation was successful.
      */
-    synchronized void reserve(long absIdx) {
-        reserved.merge(absIdx, 1, (a, b) -> a + b);
+    synchronized boolean reserve(long absIdx) {
+        if (absIdx > minReserveIdx) {
+            reserved.merge(absIdx, 1, Integer::sum);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -58,5 +70,22 @@ class SegmentReservationStorage {
             reserved.remove(absIdx);
         else
             reserved.put(absIdx, cur - 1);
+    }
+
+    /**
+     * Increasing minimum segment index that can be reserved.
+     * Value will be updated if it is greater than the current one.
+     * If segment is already reserved, the update will fail.
+     *
+     * @param absIdx Absolut segment index.
+     * @return {@code True} if update is successful.
+     */
+    synchronized boolean minReserveIndex(long absIdx) {
+        if (reserved(absIdx))
+            return false;
+
+        minReserveIdx = Math.max(minReserveIdx, absIdx);
+
+        return true;
     }
 }

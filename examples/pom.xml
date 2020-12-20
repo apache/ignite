@@ -106,11 +106,23 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-ml</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-ml-xgboost-model-parser</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-ml-catboost-model-parser</artifactId>
             <version>${project.version}</version>
         </dependency>
 
