@@ -956,6 +956,23 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(new[] {11, 12, 13}, binSvc.testBinaryObjectArray(binArr)
                 .Select(x => x.GetField<int>("Field")));
 
+            DateTime dt1 = new DateTime(1982, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            DateTime dt2 = new DateTime(1991, 10, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
+            Assert.AreEqual(dt2, svc.testDate(dt1));
+
+            svc.testDateArray(new DateTime?[] {dt1, dt2});
+
+            var cache = Grid1.GetOrCreateCache<int, DateTime>("net-dates");
+
+            cache.Put(1, dt1);
+            cache.Put(2, dt2);
+
+            svc.testUTCDateFromCache();
+
+            Assert.AreEqual(dt1, cache.Get(3));
+            Assert.AreEqual(dt2, cache.Get(4));
+
             Services.Cancel(javaSvcName);
         }
 
@@ -1038,6 +1055,21 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(guid, svc.testNullUUID(guid));
             Assert.IsNull(svc.testNullUUID(null));
             Assert.AreEqual(guid, svc.testArray(new Guid?[] { guid })[0]);
+
+            DateTime dt1 = new DateTime(1982, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            DateTime dt2 = new DateTime(1991, 10, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
+            Assert.AreEqual(dt2, svc.testDate(dt1));
+
+            var cache = Grid1.GetOrCreateCache<int, DateTime>("net-dates");
+
+            cache.Put(1, dt1);
+            cache.Put(2, dt2);
+
+            svc.testUTCDateFromCache();
+
+            Assert.AreEqual(dt1, cache.Get(3));
+            Assert.AreEqual(dt2, cache.Get(4));
         }
 
         /// <summary>
@@ -1123,7 +1155,8 @@ namespace Apache.Ignite.Core.Tests.Services
                     typeof (PlatformComputeBinarizable),
                     typeof (BinarizableObject))
                 {
-                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance,
+                    ForceTimestamp = true
                 }
             };
         }
