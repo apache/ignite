@@ -670,10 +670,12 @@ namespace Apache.Ignite.Core.Tests.Binary
             var timeUtc = DateTime.UtcNow;
             Assert.AreEqual(_marsh.Unmarshal<DateTime>(_marsh.Marshal(timeUtc)), timeUtc);
 
+#if !NETCOREAPP
             // Check exception with non-UTC date
             var stream = new BinaryHeapStream(128);
             var writer = _marsh.StartMarshal(stream);
             Assert.Throws<BinaryObjectException>(() => writer.WriteTimestamp(DateTime.Now));
+#endif
         }
 
         /**
