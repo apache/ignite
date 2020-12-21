@@ -84,4 +84,13 @@ public class SortedIndexDefinition implements IndexDefinition {
     public int getInlineSize() {
         return inlineSize;
     }
+
+    /**
+     * For backward compatibility.
+     *
+     * Prior some Ignite version complex key column was handled as regular object. Currently complex column is splitted
+     * on multiple keys (if it possible) and then every key is handled separately. Information how to work with such
+     * column is stored in the tree meta page info.
+     */
+    public void setUseUnwrappedPk(boolean useUnwrappedPk) {}
 }

@@ -145,16 +145,14 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexSearchRow>
 
     /**
      * @param payload Payload size.
-     * @param mvccEnabled Mvcc flag.
      * @return IOVersions for given payload.
      */
-    public static IOVersions<? extends BPlusInnerIO<IndexSearchRow>> getVersions(int payload, boolean mvccEnabled) {
+    public static IOVersions<? extends BPlusInnerIO<IndexSearchRow>> getVersions(int payload) {
         assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
 
-        // TODO: mvcc
         if (payload == 0)
-            return mvccEnabled ? null : InnerIO.VERSIONS;
+            return InnerIO.VERSIONS;
         else
-            return (IOVersions<BPlusInnerIO<IndexSearchRow>>)PageIO.getInnerVersions((short)(payload - 1), mvccEnabled);
+            return (IOVersions<BPlusInnerIO<IndexSearchRow>>)PageIO.getInnerVersions((short)(payload - 1), false);
     }
 }

@@ -109,7 +109,6 @@ public class IndexingDefragmentation {
 
                 List<InlineIndex> indexes = indexing.getTreeIndexes(cctx, false);
 
-                // TODO: H2TreeIndex oldH2Idx = (H2TreeIndex)indexes.get(2);
                 for (InlineIndex oldIdx: indexes) {
                     SortedIndexDefinition idxDef = (SortedIndexDefinition) indexing.getIndexDefition(oldIdx.id());
 
@@ -124,8 +123,6 @@ public class IndexingDefragmentation {
                         //noinspection unchecked,rawtypes,rawtypes
                         return wrap((BPlusIO)io, idxDef.getSchema());
                     };
-// TODO
-//                    ThreadLocalSchemaHolder.setSchema(idxDef.getSchema());
 
                     for (int i = 0; i < segments; ++i) {
                         RootPage rootPage = newCtx.offheap().rootPageForIndex(cctx.cacheId(), idxDef.getTreeName(), i);
@@ -181,7 +178,6 @@ public class IndexingDefragmentation {
                                 IndexRowImpl newRow = new IndexRowImpl(
                                     idxDef.getSchema(), new CacheDataRowAdapter(newLink), r.keys());
 
-                                // TODO: was newIdx.putx
                                 newTree.putx(newRow);
                             }
 

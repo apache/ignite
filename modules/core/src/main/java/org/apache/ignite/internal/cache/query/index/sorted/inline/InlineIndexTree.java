@@ -108,13 +108,7 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
             // Page is ready - read meta information.
             MetaPageInfo metaInfo = getMetaInfo();
 
-            // TODO: if key column is complex (PK + AffinityColumn)
-            //          before some moment (version=3?) index stores for inline key as object (store hash)
-            //          but in one momemnt starts to unwrap it (decomplex on 2 columns and store values)
-            //          This info how to compare values is set with the flag.
-//        unwrappedPk = metaInfo.useUnwrappedPk();
-
-//        cols = (unwrappedPk ? unwrappedCols : wrappedCols).toArray(H2Utils.EMPTY_COLUMNS);
+            this.def.setUseUnwrappedPk(metaInfo.useUnwrappedPk());
 
             inlineSize = metaInfo.inlineSize();
 
@@ -124,6 +118,8 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
                 upgradeMetaPage(inlineObjSupported);
 
         } else {
+            this.def.setUseUnwrappedPk(true);
+
             inlineSize = computeInlineSize(
                 def.getSchema().getKeyDefinitions(), configuredInlineSize, cctx.config().getSqlIndexMaxInlineSize());
         }

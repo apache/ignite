@@ -308,7 +308,6 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * @param pageMemory Page memory to work with.
      * @param removeId Global remove id.
      * @param reuseList Reuse list where free pages should be stored.
-     * @param mvccEnabled Is mvcc enabled for group or not.
      * @throws IgniteCheckedException If failed.
      */
     public void destroyOrphanIndex(
@@ -318,8 +317,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
         int grpId,
         PageMemory pageMemory,
         final GridAtomicLong removeId,
-        final ReuseList reuseList,
-        boolean mvccEnabled) throws IgniteCheckedException {
+        final ReuseList reuseList) throws IgniteCheckedException {
 
         assert ctx.cache().context().database().checkpointLockIsHeldByThread();
 
@@ -341,8 +339,8 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
             removeId,
             metaPageId,
             reuseList,
-            AbstractInlineInnerIO.getVersions(inlineSize, mvccEnabled),
-            AbstractInlineLeafIO.getVersions(inlineSize, mvccEnabled),
+            AbstractInlineInnerIO.getVersions(inlineSize),
+            AbstractInlineLeafIO.getVersions(inlineSize),
             PageIdAllocator.FLAG_IDX,
             ctx.failure(),
             lockLsnr

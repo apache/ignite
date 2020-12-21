@@ -145,16 +145,14 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexSearchRow> i
 
     /**
      * @param payload Payload size.
-     * @param mvccEnabled Mvcc flag.
      * @return IOVersions for given payload.
      */
-    public static IOVersions<? extends BPlusLeafIO<IndexSearchRow>> getVersions(int payload, boolean mvccEnabled) {
+    public static IOVersions<? extends BPlusLeafIO<IndexSearchRow>> getVersions(int payload) {
         assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
 
-        // TODO: mvcc
         if (payload == 0)
-            return mvccEnabled ? null : LeafIO.VERSIONS;
+            return LeafIO.VERSIONS;
         else
-            return (IOVersions<BPlusLeafIO<IndexSearchRow>>)PageIO.getLeafVersions((short)(payload - 1), mvccEnabled);
+            return (IOVersions<BPlusLeafIO<IndexSearchRow>>)PageIO.getLeafVersions((short)(payload - 1), false);
     }
 }

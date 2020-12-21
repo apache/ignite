@@ -426,15 +426,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Creating cache index [cacheId=" + cacheInfo.cacheId() + ", idxName=" + name + ']');
 
-        // TODO: backward compatibility for wrapped cols
-        QueryIndexSchema schema = new QueryIndexSchema(
+        QueryIndexSchema schemaUnwrapped = new QueryIndexSchema(
             tbl, unwrappedCols.toArray(new IndexColumn[0]));
 
+        QueryIndexSchema schemaWrapped = new QueryIndexSchema(
+            tbl, wrappedCols.toArray(new IndexColumn[0]));
+
         if (cacheInfo.affinityNode()) {
-            SortedIndexDefinition d = new QueryIndexDefinition(
+            SortedIndexDefinition idxDef = new QueryIndexDefinition(
                 tbl,
                 name,
-                schema,
+                schemaUnwrapped,
+                schemaWrapped,
                 inlineSize
             );
 
@@ -442,9 +445,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (cacheVisitor != null)
                 index = ctx.indexing().createIndexDynamically(
-                    tbl.cacheContext(), InlineIndexFactory.INSTANCE, d, cacheVisitor);
+                    tbl.cacheContext(), InlineIndexFactory.INSTANCE, idxDef, cacheVisitor);
             else
-                index = ctx.indexing().createIndex(tbl.cacheContext(), InlineIndexFactory.INSTANCE, d);
+                index = ctx.indexing().createIndex(tbl.cacheContext(), InlineIndexFactory.INSTANCE, idxDef);
 
             InlineIndex queryIndex = index.unwrap(InlineIndex.class);
 
@@ -452,7 +455,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         else {
             ClientIndexDefinition d = new ClientIndexDefinition(
-                new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), name), schema, inlineSize);
+                new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), name), schemaUnwrapped, inlineSize);
 
             org.apache.ignite.cache.query.index.Index index =
                 ctx.indexing().createIndex(tbl.cacheContext(), ClientIndexFactory.INSTANCE, d);

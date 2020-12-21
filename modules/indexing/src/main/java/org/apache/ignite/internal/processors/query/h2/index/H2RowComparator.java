@@ -47,7 +47,7 @@ public class H2RowComparator implements IndexRowComparator {
     /** Table. */
     private final GridH2Table table;
 
-    /** Ignite H2 indexing handler. */
+    /** Ignite H2 session. */
     private final SessionInterface ses;
 
     /** */

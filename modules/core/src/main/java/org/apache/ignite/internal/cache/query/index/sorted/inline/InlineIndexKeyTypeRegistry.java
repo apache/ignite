@@ -80,7 +80,6 @@ public class InlineIndexKeyTypeRegistry {
      * Get key type for a class. Used for user queries, where getting type from class.
      */
     public static InlineIndexKeyType get(Class<?> clazz) {
-        // TODO: more keys?
         if (clazz == BinaryObjectImpl.class)
             return objectType;
 
@@ -103,12 +102,12 @@ public class InlineIndexKeyTypeRegistry {
      * Get key type for a specified type. Should check {@link #supportInline(int)} before invoke it.
      */
     public static InlineIndexKeyType get(int type) {
-        InlineIndexKeyType indexKeyType = typeMapping.get(type);
+        InlineIndexKeyType idxKeyType = typeMapping.get(type);
 
-        if (indexKeyType == null)
+        if (idxKeyType == null)
             throw new IgniteException("Type does not support inlining: " + type);
 
-        return indexKeyType;
+        return idxKeyType;
     }
 
     /**
