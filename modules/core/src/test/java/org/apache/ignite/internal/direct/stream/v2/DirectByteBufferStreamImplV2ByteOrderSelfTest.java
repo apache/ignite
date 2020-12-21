@@ -348,15 +348,15 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
         int len = 400_000;
 
         int trues = 0;
-        for(int i = 0; i < 10; i++) {
+        for (int i = 0; i < 10; i++) {
             long t1 = getWriteStringExecutionTime(len);
             long t2 = getWriteStringExecutionTime(len * 10);
             long t3 = getWriteStringExecutionTime(len * 10);
 
-            if(t2 <= t1 * 10)
+            if (t2 <= t1 * 10)
                 trues++;
 
-            if(t3 <= t1 * 100)
+            if (t3 <= t1 * 100)
                 trues++;
         }
 
