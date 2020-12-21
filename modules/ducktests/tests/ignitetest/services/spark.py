@@ -22,21 +22,16 @@ import os.path
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.services.background_thread import BackgroundThreadService
 
-from ignitetest.services.utils.ignite_persistence import PersistenceAware
+from ignitetest.services.utils.path import PathAware
 from ignitetest.services.utils.log_utils import monitor_log
 
 
-class SparkService(BackgroundThreadService, PersistenceAware):
+class SparkService(BackgroundThreadService, PathAware):
     """
     Start a spark node.
     """
-    INSTALL_DIR = "/opt/spark-{version}".format(version="2.3.4")
-    SPARK_PERSISTENT_ROOT = "/mnt/spark"
-
-    logs = {}
-
     # pylint: disable=R0913
-    def __init__(self, context, num_nodes=3):
+    def __init__(self, context, num_nodes=3, version="2.3.4"):
         """
         :param context: test context
         :param num_nodes: number of Ignite nodes.
@@ -44,6 +39,7 @@ class SparkService(BackgroundThreadService, PersistenceAware):
         super().__init__(context, num_nodes)
 
         self.log_level = "DEBUG"
+        self.version = version
 
         for node in self.nodes:
             self.logs["master_logs" + node.account.hostname] = {
@@ -54,6 +50,12 @@ class SparkService(BackgroundThreadService, PersistenceAware):
                 "path": self.slave_log_path(node),
                 "collect_default": True
             }
+
+    @property
+    def install_dir(self):
+        globals = self.context.globals
+        install_root = globals.get("install_root", "/opt")
+        return os.path.join(install_root, f"spark-{self.version}")
 
     def start(self, clean=True):
         BackgroundThreadService.start(self, clean=clean)
@@ -69,10 +71,10 @@ class SparkService(BackgroundThreadService, PersistenceAware):
         else:
             script = "start-slave.sh spark://{spark_master}:7077".format(spark_master=self.nodes[0].account.hostname)
 
-        start_script = os.path.join(SparkService.INSTALL_DIR, "sbin", script)
+        start_script = os.path.join(self.install_dir, "sbin", script)
 
-        cmd = "export SPARK_LOG_DIR={spark_dir}; ".format(spark_dir=SparkService.SPARK_PERSISTENT_ROOT)
-        cmd += "export SPARK_WORKER_DIR={spark_dir}; ".format(spark_dir=SparkService.SPARK_PERSISTENT_ROOT)
+        cmd = "export SPARK_LOG_DIR={spark_dir}; ".format(spark_dir=self.persistent_root)
+        cmd += "export SPARK_WORKER_DIR={spark_dir}; ".format(spark_dir=self.persistent_root)
         cmd += "{start_script} &".format(start_script=start_script)
 
         return cmd
@@ -103,9 +105,9 @@ class SparkService(BackgroundThreadService, PersistenceAware):
 
     def stop_node(self, node):
         if node == self.nodes[0]:
-            node.account.ssh(os.path.join(SparkService.INSTALL_DIR, "sbin", "stop-master.sh"))
+            node.account.ssh(os.path.join(self.install_dir, "sbin", "stop-master.sh"))
         else:
-            node.account.ssh(os.path.join(SparkService.INSTALL_DIR, "sbin", "stop-slave.sh"))
+            node.account.ssh(os.path.join(self.install_dir, "sbin", "stop-slave.sh"))
 
     def clean_node(self, node):
         """
@@ -113,7 +115,7 @@ class SparkService(BackgroundThreadService, PersistenceAware):
         """
         node.account.kill_java_processes(self.java_class_name(node),
                                          clean_shutdown=False, allow_fail=True)
-        node.account.ssh("sudo rm -rf -- %s" % SparkService.SPARK_PERSISTENT_ROOT, allow_fail=False)
+        node.account.ssh("sudo rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
     def pids(self, node):
         """
@@ -135,26 +137,24 @@ class SparkService(BackgroundThreadService, PersistenceAware):
 
         return "org.apache.spark.deploy.worker.Worker"
 
-    @staticmethod
-    def master_log_path(node):
+    def master_log_path(self, node):
         """
         :param node: Spark master node.
         :return: Path to log file.
         """
         return "{SPARK_LOG_DIR}/spark-{userID}-org.apache.spark.deploy.master.Master-{instance}-{host}.out".format(
-            SPARK_LOG_DIR=SparkService.SPARK_PERSISTENT_ROOT,
+            SPARK_LOG_DIR=self.persistent_root,
             userID=node.account.user,
             instance=1,
             host=node.account.hostname)
 
-    @staticmethod
-    def slave_log_path(node):
+    def slave_log_path(self, node):
         """
         :param node: Spark slave node.
         :return: Path to log file.
         """
         return "{SPARK_LOG_DIR}/spark-{userID}-org.apache.spark.deploy.worker.Worker-{instance}-{host}.out".format(
-            SPARK_LOG_DIR=SparkService.SPARK_PERSISTENT_ROOT,
+            SPARK_LOG_DIR=self.persistent_root,
             userID=node.account.user,
             instance=1,
             host=node.account.hostname)

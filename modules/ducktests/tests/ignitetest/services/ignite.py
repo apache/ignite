@@ -32,7 +32,6 @@ class IgniteService(IgniteAwareService):
     Ignite node service.
     """
     APP_SERVICE_CLASS = "org.apache.ignite.startup.cmdline.CommandLineStartup"
-    HEAP_DUMP_FILE = os.path.join(IgniteAwareService.PERSISTENT_ROOT, "ignite-heap.bin")
 
     # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, jvm_opts=None, startup_timeout_sec=60, shutdown_timeout_sec=10,
@@ -42,7 +41,7 @@ class IgniteService(IgniteAwareService):
 
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
-        node.account.ssh("sudo rm -rf -- %s" % self.PERSISTENT_ROOT, allow_fail=False)
+        node.account.ssh("sudo rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
     def thread_dump(self, node):
         """
@@ -83,7 +82,7 @@ def get_event_time(service, log_node, log_pattern, from_the_beginning=True, time
                                 backoff_sec=0.3)
 
     _, stdout, _ = log_node.account.ssh_client.exec_command(
-        "grep '%s' %s" % (log_pattern, IgniteAwareService.STDOUT_STDERR_CAPTURE))
+        "grep '%s' %s" % (log_pattern, service.log_path))
 
     return datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
                              "[%Y-%m-%d %H:%M:%S,%f]")
