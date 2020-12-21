@@ -29,6 +29,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearch
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.ThreadLocalSchemaHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -70,6 +71,9 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
     /** */
     private final GridCacheContext cctx;
 
+    /** */
+    private final IoStatisticsHolder stats;
+
     /**
      * Constructor.
      */
@@ -84,6 +88,7 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
         long metaPageId,
         boolean initNew,
         int configuredInlineSize,
+        IoStatisticsHolder stats,
         InlineRecommender recommender) throws IgniteCheckedException {
         super(
             treeName,
@@ -99,6 +104,9 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
             null,
             pageIoResolver
         );
+
+        this.stats = stats;
+
         created = initNew;
 
         this.def = def;
@@ -425,5 +433,10 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
         processFailure(FailureType.CRITICAL_ERROR, e);
 
         return e;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IoStatisticsHolder statisticsHolder() {
+        return stats;
     }
 }

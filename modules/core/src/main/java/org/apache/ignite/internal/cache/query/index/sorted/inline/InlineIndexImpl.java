@@ -37,6 +37,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRowImp
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.ThreadLocalSchemaHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
@@ -66,12 +67,17 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     /** Cache context. */
     private final GridCacheContext cctx;
 
+    /** */
+    private final IoStatisticsHolderIndex stats;
+
     /** Constructor. */
-    public InlineIndexImpl(GridCacheContext cctx, SortedIndexDefinition def, InlineIndexTree[] segments) {
+    public InlineIndexImpl(GridCacheContext cctx, SortedIndexDefinition def, InlineIndexTree[] segments,
+        IoStatisticsHolderIndex stats) {
         this.cctx = cctx;
         this.segments = segments.clone();
         this.def = def;
         treeName = def.getTreeName();
+        this.stats = stats;
     }
 
     /** {@inheritDoc} */
@@ -237,8 +243,6 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                     replaced = prevRow0 != null;
                 }
             }
-
-            // TODO: statistic. Is it used? StatsHolder
 
             // Delete.
             if (!replaced && oldRow != null && belongsToIndex(oldRow)) {
@@ -427,8 +431,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                     cctx.shared().database().checkpointReadUnlock();
                 }
 
-//                ctx.metric().remove(stats.metricRegistryName()); // TODO
-//
+                cctx.kernalContext().metric().remove(stats.metricRegistryName());
+
                 // Actual destroy index task.
                 DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTask(
                     rootPages,

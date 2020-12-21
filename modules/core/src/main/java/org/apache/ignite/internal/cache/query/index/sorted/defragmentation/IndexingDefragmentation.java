@@ -138,6 +138,7 @@ public class IndexingDefragmentation {
                             rootPage.pageId().pageId(),
                             rootPage.isAllocated(),
                             oldIdx.inlineSize(),
+                            null,
                             null
                         );
 

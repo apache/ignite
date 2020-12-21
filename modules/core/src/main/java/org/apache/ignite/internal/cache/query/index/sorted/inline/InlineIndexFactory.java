@@ -21,10 +21,14 @@ import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.cache.query.index.IndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
+
+import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
 
 /**
  * Factory to create {@link InlineIndex}.
@@ -45,6 +49,13 @@ public class InlineIndexFactory implements IndexFactory {
         InlineIndexTree[] trees = new InlineIndexTree[sdef.getSegments()];
         InlineRecommender recommender = new InlineRecommender(cctx, sdef);
 
+        IoStatisticsHolderIndex stats = new IoStatisticsHolderIndex(
+            SORTED_INDEX,
+            cctx.name(),
+            sdef.getIdxName().idxName(),
+            cctx.kernalContext().metric()
+        );
+
         try {
             for (int i = 0; i < sdef.getSegments(); ++i) {
                 // Required for persistence.
@@ -54,14 +65,14 @@ public class InlineIndexFactory implements IndexFactory {
                 try {
                     RootPage page = getRootPage(cctx, sdef.getTreeName(), i);
 
-                    trees[i] = createIndexSegment(cctx, sdef, page, recommender);
+                    trees[i] = createIndexSegment(cctx, sdef, page, stats, recommender);
 
                 } finally {
                     db.checkpointReadUnlock();
                 }
             }
 
-            return new InlineIndexImpl(cctx, sdef, trees);
+            return new InlineIndexImpl(cctx, sdef, trees, stats);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -70,7 +81,7 @@ public class InlineIndexFactory implements IndexFactory {
 
     /** */
     private InlineIndexTree createIndexSegment(GridCacheContext cctx, SortedIndexDefinition def, RootPage rootPage,
-        InlineRecommender recommender) throws Exception {
+        IoStatisticsHolder stats, InlineRecommender recommender) throws Exception {
 
         return new InlineIndexTree(
             def,
@@ -83,6 +94,7 @@ public class InlineIndexFactory implements IndexFactory {
             rootPage.pageId().pageId(),
             rootPage.isAllocated(),
             def.getInlineSize(),
+            stats,
             recommender);
     }
 
