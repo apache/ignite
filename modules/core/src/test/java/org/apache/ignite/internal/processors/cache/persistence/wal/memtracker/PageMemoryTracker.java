@@ -266,7 +266,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         memoryRegion = memoryProvider.nextRegion();
 
-        GridUnsafe.setMemory(memoryRegion.address(), memoryRegion.size(), (byte)0);
+        //GridUnsafe.setMemory(memoryRegion.address(), memoryRegion.size(), (byte)0);
 
         maxPages = (int)(maxMemorySize / pageSize);
 
