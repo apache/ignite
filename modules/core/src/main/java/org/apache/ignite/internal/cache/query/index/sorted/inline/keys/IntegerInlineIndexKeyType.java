@@ -35,7 +35,7 @@ public class IntegerInlineIndexKeyType extends NullableInlineIndexKeyType<Intege
         // +1 shift after type
         PageUtils.putInt(pageAddr, off + 1, val);
 
-        return keySize() + 1;
+        return keySize + 1;
     }
 
     /** {@inheritDoc} */
@@ -53,6 +53,6 @@ public class IntegerInlineIndexKeyType extends NullableInlineIndexKeyType<Intege
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(Integer key) {
-        return keySize() + 1;
+        return keySize + 1;
     }
 }

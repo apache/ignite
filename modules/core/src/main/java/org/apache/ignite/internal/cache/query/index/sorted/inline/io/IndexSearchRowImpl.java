@@ -57,7 +57,6 @@ public class IndexSearchRowImpl extends IndexRowImpl {
             return false;
 
         for (int i = 0; i < schemaLength; i++) {
-            // TODO: Special null?
             // Java null means that column is not specified in a search row, for SQL NULL a special constant is used
             if (idxKeys[i] == null)
                 return false;

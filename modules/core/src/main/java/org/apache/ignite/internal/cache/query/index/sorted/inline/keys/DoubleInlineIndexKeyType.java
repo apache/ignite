@@ -41,7 +41,7 @@ public class DoubleInlineIndexKeyType extends NullableInlineIndexKeyType<Double>
         PageUtils.putByte(pageAddr, off, (byte) type());
         PageUtils.putLong(pageAddr, off + 1, Double.doubleToLongBits(val));
 
-        return keySize() + 1;
+        return keySize + 1;
     }
 
     /** {@inheritDoc} */
@@ -51,6 +51,6 @@ public class DoubleInlineIndexKeyType extends NullableInlineIndexKeyType<Double>
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(Double val) {
-        return keySize() + 1;
+        return keySize + 1;
     }
 }

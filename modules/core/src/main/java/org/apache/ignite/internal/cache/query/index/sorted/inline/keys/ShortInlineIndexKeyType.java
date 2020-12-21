@@ -41,7 +41,7 @@ public class ShortInlineIndexKeyType extends NullableInlineIndexKeyType<Short> {
         PageUtils.putByte(pageAddr, off, (byte) type());
         PageUtils.putShort(pageAddr, off + 1, val);
 
-        return keySize() + 1;
+        return keySize + 1;
     }
 
     /** {@inheritDoc} */
@@ -51,6 +51,6 @@ public class ShortInlineIndexKeyType extends NullableInlineIndexKeyType<Short> {
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(Short val) {
-        return keySize() + 1;
+        return keySize + 1;
     }
 }

@@ -41,7 +41,7 @@ public class ByteInlineIndexKeyType extends NullableInlineIndexKeyType<Byte> {
         PageUtils.putByte(pageAddr, off, (byte) type());
         PageUtils.putByte(pageAddr, off + 1, val);
 
-        return keySize() + 1;
+        return keySize + 1;
     }
 
     /** {@inheritDoc} */
@@ -51,6 +51,6 @@ public class ByteInlineIndexKeyType extends NullableInlineIndexKeyType<Byte> {
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(Byte key) {
-        return keySize() + 1;
+        return keySize + 1;
     }
 }

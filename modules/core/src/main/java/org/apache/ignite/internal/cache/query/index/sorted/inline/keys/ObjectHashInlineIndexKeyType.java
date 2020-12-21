@@ -34,7 +34,7 @@ public class ObjectHashInlineIndexKeyType extends NullableInlineIndexKeyType<Obj
         PageUtils.putByte(pageAddr, off, (byte) type());
         PageUtils.putInt(pageAddr, off + 1, val.hashCode());
 
-        return keySize() + 1;
+        return keySize + 1;
     }
 
     /** {@inheritDoc} */
@@ -48,8 +48,6 @@ public class ObjectHashInlineIndexKeyType extends NullableInlineIndexKeyType<Obj
         int val1 = PageUtils.getInt(pageAddr, off + 1);
         int val2 = v.hashCode();
 
-        // TODO: BAD! not a perfect function? Split it on complex objects?
-        //      Mayve of as _KEY used only for deduplication of rows in non-unique index.
         int res = Integer.signum(Integer.compare(val1, val2));
 
         return res == 0 ? CANT_BE_COMPARE : res;
@@ -57,6 +55,6 @@ public class ObjectHashInlineIndexKeyType extends NullableInlineIndexKeyType<Obj
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(Object key) {
-        return keySize() + 1;
+        return keySize + 1;
     }
 }

@@ -35,7 +35,7 @@ public class LongInlineIndexKeyType extends NullableInlineIndexKeyType<Long> {
         // +1 shift after type
         PageUtils.putLong(pageAddr, off + 1, val);
 
-        return keySize() + 1;
+        return keySize + 1;
     }
 
     /** {@inheritDoc} */
@@ -53,6 +53,6 @@ public class LongInlineIndexKeyType extends NullableInlineIndexKeyType<Long> {
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(Long key) {
-        return keySize() + 1;
+        return keySize + 1;
     }
 }

@@ -43,7 +43,7 @@ public class TimeInlineIndexKeyType extends NullableInlineIndexKeyType<Time> {
         PageUtils.putByte(pageAddr, off, (byte) type());
         PageUtils.putLong(pageAddr, off + 1, val.getTime());
 
-        return keySize() + 1;
+        return keySize + 1;
     }
 
     /** {@inheritDoc} */
@@ -53,6 +53,6 @@ public class TimeInlineIndexKeyType extends NullableInlineIndexKeyType<Time> {
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(Time val) {
-        return keySize() + 1;
+        return keySize + 1;
     }
 }

@@ -70,7 +70,7 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Time
 //            return fromDateValueAndNanos(var5, var3);
 //        }
 
-        return keySize() + 1;
+        return keySize + 1;
     }
 
     /** {@inheritDoc} */
@@ -84,6 +84,6 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Time
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(Timestamp key) {
-        return keySize() + 1;
+        return keySize + 1;
     }
 }

@@ -44,7 +44,7 @@ public class DateInlineIndexKeyType extends NullableInlineIndexKeyType<Date> {
         PageUtils.putByte(pageAddr, off, (byte) type());
         PageUtils.putLong(pageAddr, off + 1, val.getTime());
 
-        return keySize() + 1;
+        return keySize + 1;
     }
 
     /** {@inheritDoc} */
@@ -54,6 +54,6 @@ public class DateInlineIndexKeyType extends NullableInlineIndexKeyType<Date> {
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(Date val) {
-        return keySize() + 1;
+        return keySize + 1;
     }
 }

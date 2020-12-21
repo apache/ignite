@@ -34,7 +34,7 @@ public class BooleanInlineIndexKeyType extends NullableInlineIndexKeyType<Boolea
         PageUtils.putByte(pageAddr, off, (byte) type());
         PageUtils.putByte(pageAddr, off + 1, (byte)(val ? 1 : 0));
 
-        return keySize() + 1;
+        return keySize + 1;
     }
 
     /** {@inheritDoc} */
@@ -51,6 +51,6 @@ public class BooleanInlineIndexKeyType extends NullableInlineIndexKeyType<Boolea
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(Boolean key) {
-        return keySize() + 1;
+        return keySize + 1;
     }
 }

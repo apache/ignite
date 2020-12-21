@@ -38,7 +38,7 @@ public abstract class NullableInlineIndexKeyType<T> implements InlineIndexKeyTyp
     private final int type;
 
     /** Actual size of a key without type field. */
-    private final short keySize;
+    protected final short keySize;
 
     /**
      * @param type Index key type.
@@ -52,12 +52,6 @@ public abstract class NullableInlineIndexKeyType<T> implements InlineIndexKeyTyp
     /** {@inheritDoc} */
     @Override public int type() {
         return type;
-    }
-
-    /** {@inheritDoc} */
-    // TODO: used only for types implementations.
-    @Override public short keySize() {
-        return keySize;
     }
 
     /** {@inheritDoc} */

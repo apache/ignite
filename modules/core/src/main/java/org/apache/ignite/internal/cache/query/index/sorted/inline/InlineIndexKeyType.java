@@ -31,14 +31,6 @@ public interface InlineIndexKeyType {
     public int type();
 
     /**
-     * Size required to inline value of type {@link #type()}.
-     *
-     * @return Amount of bytes required for fixed-size types or {@code -1}
-     * for types with variable length.
-     */
-    public short keySize();
-
-    /**
      * Returns size of inlined key. It contains system fields too (type, length).
      */
     public int inlineSize();

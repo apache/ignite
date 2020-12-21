@@ -41,7 +41,7 @@ public class FloatInlineIndexKeyType extends NullableInlineIndexKeyType<Float> {
         PageUtils.putByte(pageAddr, off, (byte) type());
         PageUtils.putInt(pageAddr, off + 1, Float.floatToIntBits(val));
 
-        return keySize() + 1;
+        return keySize + 1;
     }
 
     /** {@inheritDoc} */
@@ -51,6 +51,6 @@ public class FloatInlineIndexKeyType extends NullableInlineIndexKeyType<Float> {
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(Float val) {
-        return keySize() + 1;
+        return keySize + 1;
     }
 }

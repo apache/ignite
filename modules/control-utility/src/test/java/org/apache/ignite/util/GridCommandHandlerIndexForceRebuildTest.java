@@ -128,9 +128,8 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     private void startupTestCluster() throws Exception {
         for (int i = 0; i < GRIDS_NUM; i++ ) {
             IgniteEx node = startGrid(i);
-            // TODO: new instance for every node?
-            node.context().indexing().setRebuild(new BlockingIndexing());
 
+            node.context().indexing().setRebuild(new BlockingIndexing());
         }
 
         IgniteEx ignite = grid(0);

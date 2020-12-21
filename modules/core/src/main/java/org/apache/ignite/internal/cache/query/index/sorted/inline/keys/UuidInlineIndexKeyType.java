@@ -35,7 +35,6 @@ public class UuidInlineIndexKeyType extends NullableInlineIndexKeyType<UUID> {
     @Override public int compare0(long pageAddr, int off, UUID v) {
         long part1 = PageUtils.getLong(pageAddr, off + 1);
 
-        // TODO: high?
         int c = Integer.signum(Long.compare(part1, v.getMostSignificantBits()));
 
         if (c != 0)
@@ -52,7 +51,7 @@ public class UuidInlineIndexKeyType extends NullableInlineIndexKeyType<UUID> {
         PageUtils.putLong(pageAddr, off + 1, val.getMostSignificantBits());
         PageUtils.putLong(pageAddr, off + 9, val.getLeastSignificantBits());
 
-        return keySize() + 1;
+        return keySize + 1;
     }
 
     /** {@inheritDoc} */
@@ -65,6 +64,6 @@ public class UuidInlineIndexKeyType extends NullableInlineIndexKeyType<UUID> {
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(UUID val) {
-        return keySize() + 1;
+        return keySize + 1;
     }
 }
