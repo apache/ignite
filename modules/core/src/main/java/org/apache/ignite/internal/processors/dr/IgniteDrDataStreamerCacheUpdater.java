@@ -23,14 +23,11 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.CacheOperationContext;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProxyImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -49,33 +46,32 @@ import org.apache.ignite.stream.StreamReceiver;
  */
 public class IgniteDrDataStreamerCacheUpdater implements StreamReceiver<KeyCacheObject, CacheObject>,
     DataStreamerCacheUpdaters.InternalUpdater {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override public void receive(IgniteCache<KeyCacheObject, CacheObject> cache0,
         Collection<Map.Entry<KeyCacheObject, CacheObject>> col) {
         try {
-            String cacheName = cache0.getConfiguration(CacheConfiguration.class).getName();
-
             GridKernalContext ctx = ((IgniteKernal)cache0.unwrap(Ignite.class)).context();
-            IgniteLogger log = ctx.log(IgniteDrDataStreamerCacheUpdater.class);
-            GridCacheAdapter internalCache = ctx.cache().internalCache(cacheName);
 
-            CacheOperationContext opCtx = ((IgniteCacheProxy)cache0).context().operationContextPerCall();
+            IgniteInternalCache<KeyCacheObject, CacheObject> cache;
 
-            IgniteInternalCache cache =
-                opCtx != null ? new GridCacheProxyImpl(internalCache.context(), internalCache, opCtx) : internalCache;
+            if (cache0 instanceof IgniteCacheProxy)
+                cache = ((IgniteCacheProxy<KeyCacheObject, CacheObject>)cache0).internalProxy().proxyNoGate();
+            else {
+                final IgniteInternalCache<KeyCacheObject, CacheObject> internalCache = ctx.cache().cache(cache0.getName());
+                final GridCacheContext<KeyCacheObject, CacheObject> cctx = internalCache.context();
+
+                cache = new GridCacheProxyImpl<>(cctx, internalCache, cctx.operationContextPerCall(), false);
+            }
 
             assert !F.isEmpty(col);
-
-            if (log.isDebugEnabled())
-                log.debug("Running DR put job [nodeId=" + ctx.localNodeId() + ", cacheName=" + cacheName + ']');
 
             CacheObjectContext cacheObjCtx = cache.context().cacheObjectContext();
 
             for (Map.Entry<KeyCacheObject, CacheObject> entry0 : col) {
-                GridCacheRawVersionedEntry entry = (GridCacheRawVersionedEntry)entry0;
+                GridCacheRawVersionedEntry<KeyCacheObject, CacheObject> entry = (GridCacheRawVersionedEntry<KeyCacheObject, CacheObject>)entry0;
 
                 entry.unmarshal(cacheObjCtx, ctx.config().getMarshaller());
 
@@ -96,9 +92,6 @@ public class IgniteDrDataStreamerCacheUpdater implements StreamReceiver<KeyCache
                 else
                     cache.putAllConflict(Collections.singletonMap(key, val));
             }
-
-            if (log.isDebugEnabled())
-                log.debug("DR put job finished [nodeId=" + ctx.localNodeId() + ", cacheName=" + cacheName + ']');
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
