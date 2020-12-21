@@ -46,14 +46,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             var roles = GetRoleCache().AsCacheQueryable();
             var persons = GetPersonCache().AsCacheQueryable();
 
-#if !NETCOREAPP
             // Invalid dateTime
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
             var ex = Assert.Throws<BinaryObjectException>(() =>
                 roles.Where(x => x.Value.Date > DateTime.Now).ToArray());
             Assert.AreEqual("DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.",
                 ex.Message);
-#endif
 
             // Test retrieval
             var dates = roles.OrderBy(x => x.Value.Date).Select(x => x.Value.Date);

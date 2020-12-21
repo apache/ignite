@@ -143,7 +143,6 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var obj = new T();
 
-#if !NETCOREAPP
             setValue(obj, DateTime.Now);
 
             var ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<IBinaryObject>(obj), 
@@ -151,7 +150,6 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual("DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.",
                 ex.Message);
-#endif
 
             // UTC DateTime works.
             setValue(obj, DateTime.UtcNow);

@@ -1584,5 +1584,4 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 #endif
     }
-    
 }
