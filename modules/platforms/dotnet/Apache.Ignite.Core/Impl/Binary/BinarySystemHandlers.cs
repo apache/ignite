@@ -54,9 +54,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             ReadHandlers[BinaryTypeId.Double] = new BinarySystemReader<double>(s => s.ReadDouble());
             ReadHandlers[BinaryTypeId.Decimal] = new BinarySystemReader<decimal?>(BinaryUtils.ReadDecimal);
 
-            // 2. Date.
-            ReadHandlers[BinaryTypeId.Timestamp] = new BinarySystemReader<DateTime?>(BinaryUtils.ReadTimestamp);
-
             // 3. String.
             ReadHandlers[BinaryTypeId.String] = new BinarySystemReader<string>(BinaryUtils.ReadString);
 
@@ -258,8 +255,16 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (handler == null)
             {
-                res = default(T);
-                return false;
+                if (typeId == BinaryTypeId.Timestamp)
+                {
+                    // Date.
+                    handler = new BinarySystemReader<DateTime?>(stream => BinaryUtils.ReadTimestamp(stream, ctx.Marshaller.DateTimeConverter));
+                }
+                else
+                {
+                    res = default(T);
+                    return false;
+                }
             }
 
             res = handler.Read<T>(ctx);
@@ -311,7 +316,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.Timestamp);
 
-            BinaryUtils.WriteTimestamp(obj, ctx.Stream);
+            BinaryUtils.WriteTimestamp(obj, ctx.Stream, ctx.Marshaller.DateTimeConverter);
         }
 
         /// <summary>

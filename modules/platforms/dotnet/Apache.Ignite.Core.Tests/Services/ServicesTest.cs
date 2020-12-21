@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
@@ -1179,6 +1180,9 @@ namespace Apache.Ignite.Core.Tests.Services
                 {
                     NameMapper = BinaryBasicNameMapper.SimpleNameInstance,
                     ForceTimestamp = true
+#if NETCOREAPP
+                    , DateTimeConverter = new DateTimeConverter()
+#endif
                 }
             };
         }
@@ -1561,5 +1565,24 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             public int Field { get; set; }
         }
+        
+#if NETCOREAPP
+        class DateTimeConverter : IDateTimeConverter
+        {
+            public void ToJavaTicks(DateTime date, out long high, out int low)
+            {
+                if (date.Kind == DateTimeKind.Local)
+                    date = date.ToUniversalTime();
+
+                BinaryUtils.ToJavaDate(date, out high, out low);
+            }
+
+            public DateTime FromJavaTicks(long high, int low)
+            {
+                return new DateTime(BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
+            }
+        }
+#endif
     }
+    
 }

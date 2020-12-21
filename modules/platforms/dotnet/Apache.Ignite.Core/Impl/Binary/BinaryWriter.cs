@@ -657,7 +657,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.Timestamp);
-                BinaryUtils.WriteTimestamp(val.Value, _stream);
+                BinaryUtils.WriteTimestamp(val.Value, _stream, _marsh.DateTimeConverter);
             }
         }
         
@@ -672,7 +672,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.Timestamp);
-                BinaryUtils.WriteTimestamp(val.Value, _stream);
+                BinaryUtils.WriteTimestamp(val.Value, _stream, _marsh.DateTimeConverter);
             }
         }
 

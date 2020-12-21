@@ -79,6 +79,7 @@ namespace Apache.Ignite.Core.Binary
             NameMapper = cfg.NameMapper;
             KeepDeserialized = cfg.KeepDeserialized;
             ForceTimestamp = cfg.ForceTimestamp;
+            DateTimeConverter = cfg.DateTimeConverter;
 
             if (cfg.Serializer != null)
             {
@@ -135,6 +136,11 @@ namespace Apache.Ignite.Core.Binary
         /// Default serializer.
         /// </summary>
         public IBinarySerializer Serializer { get; set; }
+
+        /// <summary>
+        /// Default date time converter.
+        /// </summary>
+        public IDateTimeConverter DateTimeConverter { get; set; }
 
         /// <summary>
         /// Default keep deserialized flag.
