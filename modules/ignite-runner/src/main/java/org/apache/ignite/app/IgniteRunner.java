@@ -32,6 +32,21 @@ import org.slf4j.LoggerFactory;
  */
 public class IgniteRunner {
     /** */
+    private static final String BANNER = "\n" +
+        "                       ___                         __\n" +
+        "                      /   |   ____   ____ _ _____ / /_   ___\n" +
+        "        ⣠⣶⣿          / /| |  / __ \\ / __ `// ___// __ \\ / _ \\\n" +
+        "       ⣿⣿⣿⣿         / ___ | / /_/ // /_/ // /__ / / / //  __/\n" +
+        "   ⢠⣿⡏⠈⣿⣿⣿⣿⣷       /_/  |_|/ .___/ \\__,_/ \\___//_/ /_/ \\___/\n" +
+        "  ⢰⣿⣿⣿⣧⠈⢿⣿⣿⣿⣿⣦            /_/\n" +
+        "  ⠘⣿⣿⣿⣿⣿⣦⠈⠛⢿⣿⣿⣿⡄       ____               _  __           _____\n" +
+        "   ⠈⠛⣿⣿⣿⣿⣿⣿⣦⠉⢿⣿⡟      /  _/____ _ ____   (_)/ /_ ___     |__  /\n" +
+        "  ⢰⣿⣶⣀⠈⠙⠿⣿⣿⣿⣿ ⠟⠁      / / / __ `// __ \\ / // __// _ \\     /_ <\n" +
+        "  ⠈⠻⣿⣿⣿⣿⣷⣤⠙⢿⡟       _/ / / /_/ // / / // // /_ /  __/   ___/ /\n" +
+        "        ⠉⠉⠛⠏⠉      /___/ \\__, //_/ /_//_/ \\__/ \\___/   /____/\n" +
+        "                        /____/\n\n";
+
+    /** */
     private static final String CONF_PARAM_NAME = "--config";
 
     /** */
@@ -51,7 +66,7 @@ public class IgniteRunner {
      * @param args Empty or providing path to custom configuration file after marker parameter "--config".
      */
     public static void main(String[] args) throws IOException {
-        ackVersion();
+        ackBanner();
 
         ConfigurationModule confModule = new ConfigurationModule();
 
@@ -89,13 +104,13 @@ public class IgniteRunner {
 
     /** */
     private static void ackSuccessStart() {
-        log.info("Ignite application started successfully");
+        log.info("Apache Ignite started successfully!");
     }
 
     /** */
-    private static void ackVersion() {
+    private static void ackBanner() {
         String ver = IgniteProperties.get(VER_KEY);
 
-        log.info("Starting Ignite of version " + ver);
+        log.info(BANNER + "Apache Ignite ver. " + ver + "\n");
     }
 }

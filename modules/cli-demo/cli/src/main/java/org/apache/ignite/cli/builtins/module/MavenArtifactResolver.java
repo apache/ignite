@@ -29,10 +29,15 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.ignite.cli.IgniteCLIException;
+import org.apache.ignite.cli.IgniteProgressBar;
 import org.apache.ignite.cli.builtins.SystemPathResolver;
 import org.apache.ivy.Ivy;
 import org.apache.ivy.core.IvyContext;
 import org.apache.ivy.core.event.EventManager;
+import org.apache.ivy.core.event.download.EndArtifactDownloadEvent;
+import org.apache.ivy.core.event.resolve.EndResolveDependencyEvent;
+import org.apache.ivy.core.event.resolve.EndResolveEvent;
+import org.apache.ivy.core.event.retrieve.EndRetrieveArtifactEvent;
 import org.apache.ivy.core.module.descriptor.DefaultDependencyDescriptor;
 import org.apache.ivy.core.module.descriptor.DefaultModuleDescriptor;
 import org.apache.ivy.core.module.descriptor.ModuleDescriptor;
@@ -75,49 +80,61 @@ public class MavenArtifactResolver {
         List<URL> customRepositories
     ) throws IOException {
         Ivy ivy = ivyInstance(customRepositories); // needed for init right output logger before any operations
-        out.print("Resolve artifact " + grpId + ":" +
-            artifactId + ":" + version);
-        ModuleDescriptor md = rootModuleDescriptor(grpId, artifactId, version);
 
-        // Step 1: you always need to resolve before you can retrieve
-        //
-        ResolveOptions ro = new ResolveOptions();
-        // this seems to have no impact, if you resolve by module descriptor
-        //
-        // (in contrast to resolve by ModuleRevisionId)
-        ro.setTransitive(true);
-        // if set to false, nothing will be downloaded
-        ro.setDownload(true);
+        try (IgniteProgressBar bar = new IgniteProgressBar(100)) {
+            ivy.getEventManager().addIvyListener(event -> {
+                if (event instanceof EndResolveEvent) {
+                    int count = ((EndResolveEvent)event).getReport().getArtifacts().size();
 
-        try {
-            // now resolve
-            ResolveReport rr = ivy.resolve(md,ro);
+                    bar.setMax(count * 3);
+                }
+                else if (event instanceof EndArtifactDownloadEvent ||
+                         event instanceof EndResolveDependencyEvent ||
+                         event instanceof EndRetrieveArtifactEvent) {
+                    bar.step();
+                }
+            });
 
-            if (rr.hasError())
-                throw new IgniteCLIException(rr.getAllProblemMessages().toString());
+            //out.print("Resolve artifact " + grpId + ":" + artifactId + ":" + version);
 
-            // Step 2: retrieve
-            ModuleDescriptor m = rr.getModuleDescriptor();
+            ModuleDescriptor md = rootModuleDescriptor(grpId, artifactId, version);
 
-            RetrieveReport retrieveReport = ivy.retrieve(
-                m.getModuleRevisionId(),
-                new RetrieveOptions()
-                    // this is from the envelop module
-                    .setConfs(new String[] {"default"})
-                    .setDestArtifactPattern(mavenRoot.toFile().getAbsolutePath() + "/[artifact](-[classifier]).[revision].[ext]")
-            );
+            // Step 1: you always need to resolve before you can retrieve
+            //
+            ResolveOptions ro = new ResolveOptions();
+            // this seems to have no impact, if you resolve by module descriptor
+            //
+            // (in contrast to resolve by ModuleRevisionId)
+            ro.setTransitive(true);
+            // if set to false, nothing will be downloaded
+            ro.setDownload(true);
 
+            try {
+                // now resolve
+                ResolveReport rr = ivy.resolve(md, ro);
 
-            return new ResolveResult(
-                retrieveReport.getRetrievedFiles().stream().map(File::toPath).collect(Collectors.toList())
-            );
-        }
-        catch (ParseException e) {
-            // TOOD
-            throw new IOException(e);
-        }
-        finally {
-            out.println();
+                if (rr.hasError())
+                    throw new IgniteCLIException(rr.getAllProblemMessages().toString());
+
+                // Step 2: retrieve
+                ModuleDescriptor m = rr.getModuleDescriptor();
+
+                RetrieveReport retrieveReport = ivy.retrieve(
+                        m.getModuleRevisionId(),
+                        new RetrieveOptions()
+                                // this is from the envelop module
+                                .setConfs(new String[]{"default"})
+                                .setDestArtifactPattern(mavenRoot.toFile().getAbsolutePath() + "/[artifact](-[classifier]).[revision].[ext]")
+                );
+
+                return new ResolveResult(
+                    retrieveReport.getRetrievedFiles().stream().map(File::toPath).collect(Collectors.toList())
+                );
+            }
+            catch (ParseException e) {
+                // TOOD
+                throw new IOException(e);
+            }
         }
     }
 
@@ -132,10 +149,10 @@ public class MavenArtifactResolver {
         tmpDir.deleteOnExit();
 
         EventManager eventManager = new EventManager();
-        eventManager.addIvyListener(event -> {
-            out.print(".");
-            out.flush();
-        });
+//        eventManager.addIvyListener(event -> {
+//            out.print(".");
+//            out.flush();
+//        });
 
         IvySettings ivySettings = new IvySettings();
         ivySettings.setDefaultCache(tmpDir);

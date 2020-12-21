@@ -22,6 +22,9 @@ import java.util.Collection;
 import picocli.CommandLine.Help.Ansi.Text;
 import picocli.CommandLine.Help.ColorScheme;
 
+/**
+ * Basic implementation of an ascii table. Supports styling via {@link ColorScheme}.
+ */
 public class Table {
     private final int indent;
 
@@ -31,6 +34,13 @@ public class Table {
 
     private int[] lengths;
 
+    /**
+     * Creates a new table.
+     *
+     * @param indent Left-side indentation (i.e. the provided
+     *               number of spaces will be added to every line in the output).
+     * @param colorScheme Color scheme.
+     */
     public Table(int indent, ColorScheme colorScheme) {
         if (indent < 0)
             throw new IllegalArgumentException("Indent can't be negative.");
@@ -39,6 +49,13 @@ public class Table {
         this.colorScheme = colorScheme;
     }
 
+    /**
+     * Adds a row.
+     *
+     * @param items List of items in the row. Every item is converted to a string
+     *              and styled based on the provided {@link ColorScheme}.
+     *              If an instance of {@link Text} is provided, it is added as-is.
+     */
     public void addRow(Object... items) {
         if (lengths == null) {
             lengths = new int[items.length];
@@ -50,16 +67,23 @@ public class Table {
         Text[] row = new Text[items.length];
 
         for (int i = 0; i < items.length; i++) {
-            Text item = colorScheme.text(items[i].toString());
+            Object item = items[i];
 
-            row[i] = item;
+            Text text = item instanceof Text ? (Text)item : colorScheme.text(item.toString());
 
-            lengths[i] = Math.max(lengths[i], item.getCJKAdjustedLength());
+            row[i] = text;
+
+            lengths[i] = Math.max(lengths[i], text.getCJKAdjustedLength());
         }
 
         data.add(row);
     }
 
+    /**
+     * Converts the table to a string.
+     *
+     * @return String representation of this table.
+     */
     @Override public String toString() {
         String indentStr = " ".repeat(indent);
 

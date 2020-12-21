@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import javax.inject.Inject;
-import io.micronaut.context.ApplicationContext;
 import org.apache.ignite.cli.CliPathsConfigLoader;
 import org.apache.ignite.cli.IgniteCLIException;
 import org.apache.ignite.cli.IgnitePaths;
@@ -55,7 +54,7 @@ public class NodeCommandSpec extends AbstractCommandSpec {
         @CommandLine.Parameters(paramLabel = "consistent-id", description = "ConsistentId for new node")
         public String consistentId;
 
-        @CommandLine.Option(names = {"--config"}, required = true,
+        @CommandLine.Option(names = {"--config"},
             description = "path to configuration file")
         public Path configPath;
 

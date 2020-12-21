@@ -26,7 +26,7 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchService;
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -35,8 +35,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.ignite.cli.builtins.module.ModuleStorage;
 import org.apache.ignite.cli.IgniteCLIException;
+import org.apache.ignite.cli.IgniteProgressBar;
+import org.apache.ignite.cli.builtins.module.ModuleStorage;
 
 @Singleton
 public class NodeManager {
@@ -64,19 +65,30 @@ public class NodeManager {
 
             Files.createFile(logFile);
 
-            var commandArgs = Arrays.asList(
-                "java", "-cp", classpath(), MAIN_CLASS,
-                "--config", serverConfig.toAbsolutePath().toString()
-            );
+            var commandArgs = new ArrayList<String>();
+
+            commandArgs.add("java");
+            commandArgs.add("-cp");
+            commandArgs.add(classpath());
+            commandArgs.add(MAIN_CLASS);
+
+            if (serverConfig != null) {
+                commandArgs.add("--config");
+                commandArgs.add(serverConfig.toAbsolutePath().toString());
+            }
 
             ProcessBuilder pb = new ProcessBuilder(
                 commandArgs
             )
                 .redirectError(logFile.toFile())
                 .redirectOutput(logFile.toFile());
+
             Process p = pb.start();
-            try {
-                if (!waitForStart("Ignite application started successfully", logFile, NODE_START_TIMEOUT)) {
+
+            try (var bar = new IgniteProgressBar(100)) {
+                bar.stepPeriodically(300);
+
+                if (!waitForStart("Apache Ignite started successfully!", logFile, NODE_START_TIMEOUT)) {
                     p.destroyForcibly();
                     throw new IgniteCLIException("Node wasn't started during timeout period "
                         + NODE_START_TIMEOUT.toMillis() + "ms");
@@ -85,7 +97,9 @@ public class NodeManager {
             catch (InterruptedException|IOException e) {
                 throw new IgniteCLIException("Waiting for node start was failed", e);
             }
+
             createPidFile(consistentId, p.pid(), pidsDir);
+
             return new RunningNode(p.pid(), consistentId, logFile);
         }
         catch (IOException e) {
@@ -211,7 +225,7 @@ public class NodeManager {
             .map(ProcessHandle::destroy)
             .orElse(false);
     }
-    
+
     private static Path logFile(Path workDir, String consistentId) {
           return workDir.resolve(consistentId + ".log");
     }
