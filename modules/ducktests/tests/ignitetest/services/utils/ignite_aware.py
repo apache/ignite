@@ -364,10 +364,3 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
                                             f'wc -l', callback=int))[0]
 
         node.log_file = self.STDOUT_STDERR_CAPTURE.replace('.log', f'_{cnt + 1}.log')
-
-    def restart(self):
-        """
-        Restart ignite cluster without cleaning.
-        """
-        self.stop()
-        self.start(clean=False)
