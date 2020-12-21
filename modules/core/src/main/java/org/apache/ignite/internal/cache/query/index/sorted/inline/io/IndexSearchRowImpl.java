@@ -23,31 +23,27 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
  * Represents a search row that used to find a place in a tree.
  */
 public class IndexSearchRowImpl extends IndexRowImpl {
-    /** Keys of search row. */
-    private final Object[] idxKeys;
-
     /**
-     * If {@code true} then length of {@link #idxKeys} must be equal to length of schema, so use full
+     * If {@code true} then length of {@link #keys()} must be equal to length of schema, so use full
      * schema to search. If {@code false} then it's possible to use only part of schema for search. Only first
      */
     private final boolean fullSchemaSearch;
 
     /** Constructor. */
     public IndexSearchRowImpl(Object[] idxKeys, SortedIndexSchema schema) {
-        super(schema, null);
+        super(schema, null, idxKeys);
 
-        this.idxKeys = idxKeys;
         fullSchemaSearch = isFullSchemaSearch(idxKeys, schema.getKeyDefinitions().length);
     }
 
     /** {@inheritDoc} */
     @Override public Object getKey(int idx) {
-        return idxKeys[idx];
+        return keys()[idx];
     }
 
     /** {@inheritDoc} */
     @Override public int getSearchKeysCount() {
-        return idxKeys.length;
+        return keys().length;
     }
 
     /** {@inheritDoc} */

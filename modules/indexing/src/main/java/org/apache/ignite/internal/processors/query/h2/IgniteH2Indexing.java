@@ -452,7 +452,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         else {
             ClientIndexDefinition d = new ClientIndexDefinition(
-                new IndexName(tbl.getSchema().getName(), tbl.getName(), name), schema, inlineSize);
+                new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), name), schema, inlineSize);
 
             org.apache.ignite.cache.query.index.Index index =
                 ctx.indexing().createIndex(tbl.cacheContext(), ClientIndexFactory.INSTANCE, d);

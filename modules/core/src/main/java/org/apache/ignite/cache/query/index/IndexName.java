@@ -17,23 +17,28 @@
 
 package org.apache.ignite.cache.query.index;
 
+import java.io.Serializable;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents index FQDN.
  */
-public class IndexName {
+public class IndexName implements Serializable {
     /** Schema name of {@code null} if index is not related to SQL schema. */
     private final @Nullable String schemaName;
 
     /** Schema name of {@code null} if index is not related to SQL table. */
     private final @Nullable String tableName;
 
+    /** Cache name. */
+    private final String cacheName;
+
     /** Index name. */
     private final String idxName;
 
     /** */
-    public IndexName(@Nullable String schemaName, @Nullable String tableName, String idxName) {
+    public IndexName(String cacheName, @Nullable String schemaName, @Nullable String tableName, String idxName) {
+        this.cacheName = cacheName;
         this.schemaName = schemaName;
         this.tableName = tableName;
         this.idxName = idxName;
@@ -47,6 +52,9 @@ public class IndexName {
 
         if (schemaName != null)
             bld.append(schemaName).append(".");
+
+        if (tableName != null)
+            bld.append(tableName).append(".");
 
         return bld.append(idxName).toString();
     }
@@ -70,5 +78,12 @@ public class IndexName {
      */
     public String schemaName() {
         return schemaName;
+    }
+
+    /**
+     * @return Cache name.
+     */
+    public String cacheName() {
+        return cacheName;
     }
 }

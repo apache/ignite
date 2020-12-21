@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.keys;
 
+import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
@@ -26,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Abstract inline key. Store base logic for work with inlined keys. Handle NULL values.
  */
-public abstract class NullableInlineIndexKeyType<K> implements InlineIndexKeyType<K> {
+public abstract class NullableInlineIndexKeyType<T> implements InlineIndexKeyType {
     /** Value for comparison meaning 'Not enough information to compare'. */
     public static final int CANT_BE_COMPARE = -2;
 
@@ -54,6 +55,7 @@ public abstract class NullableInlineIndexKeyType<K> implements InlineIndexKeyTyp
     }
 
     /** {@inheritDoc} */
+    // TODO: used only for types implementations.
     @Override public short keySize() {
         return keySize;
     }
@@ -83,11 +85,13 @@ public abstract class NullableInlineIndexKeyType<K> implements InlineIndexKeyTyp
     }
 
     /** {@inheritDoc} */
-    @Override public int inlineSize(K key) {
-        if (key == null)
+    @Override public int inlineSize(Object key) {
+        if (key == NullKey.INSTANCE)
             return 1;
 
-        return inlineSize0(key);
+        ensureKeyType(key);
+
+        return inlineSize0((T) key);
     }
 
     /**
@@ -99,7 +103,7 @@ public abstract class NullableInlineIndexKeyType<K> implements InlineIndexKeyTyp
      *
      * @return Restored value or {@code null} if value can't be restored.
      */
-    @Override public K get(long pageAddr, int off, int maxSize) {
+    @Override public Object get(long pageAddr, int off, int maxSize) {
         if (keySize > 0 && keySize + 1 > maxSize)
             return null;
 
@@ -111,17 +115,21 @@ public abstract class NullableInlineIndexKeyType<K> implements InlineIndexKeyTyp
         if (type == IndexKeyTypes.UNKNOWN)
             return null;
 
-        // TODO: how to differ all nulls?
         if (type == IndexKeyTypes.NULL)
-            return null;
+            return NullKey.INSTANCE;
 
-        checkValueType(type);
+        ensureKeyType(type);
 
-        return get0(pageAddr, off);
+        Object o = get0(pageAddr, off);
+
+        if (o == null)
+            return NullKey.INSTANCE;
+
+        return o;
     }
 
     /** {@inheritDoc} */
-    @Override public int put(long pageAddr, int off, K val, int maxSize) {
+    @Override public int put(long pageAddr, int off, Object val, int maxSize) {
         // +1 is a length of the type byte.
         if (keySize > 0 && keySize + 1 > maxSize)
             return 0;
@@ -132,22 +140,14 @@ public abstract class NullableInlineIndexKeyType<K> implements InlineIndexKeyTyp
             return 0;
         }
 
-        if (val == null) {
+        if (val == NullKey.INSTANCE) {
             PageUtils.putByte(pageAddr, off, (byte) IndexKeyTypes.NULL);
             return 1;
         }
 
-        return put0(pageAddr, off, val, maxSize);
-    }
+        ensureKeyType(val);
 
-    /**
-     * Checks whether specified valType corresponds to this key type.
-     *
-     * @param valType Value type.
-     */
-    private void checkValueType(int valType) {
-        if (valType != type)
-            throw new UnsupportedOperationException("Value type doesn't match: exp=" + type + ", act=" + valType);
+        return put0(pageAddr, off, (T) val, maxSize);
     }
 
     /**
@@ -160,7 +160,7 @@ public abstract class NullableInlineIndexKeyType<K> implements InlineIndexKeyTyp
      *
      * @return Amount of bytes actually stored.
      */
-    protected abstract int put0(long pageAddr, int off, K val, int maxSize);
+    protected abstract int put0(long pageAddr, int off, T val, int maxSize);
 
     /**
      * Restores value from inline.
@@ -170,7 +170,7 @@ public abstract class NullableInlineIndexKeyType<K> implements InlineIndexKeyTyp
      *
      * @return Inline value or {@code null} if value can't be restored.
      */
-    protected abstract @Nullable K get0(long pageAddr, int off);
+    protected abstract @Nullable T get0(long pageAddr, int off);
 
     /** Read variable length bytearray */
     protected byte[] readBytes(long pageAddr, int off) {
@@ -179,7 +179,7 @@ public abstract class NullableInlineIndexKeyType<K> implements InlineIndexKeyTyp
     }
 
     /** {@inheritDoc} */
-    @Override public int compare(long pageAddr, int off, int maxSize, K v) {
+    @Override public int compare(long pageAddr, int off, int maxSize, Object v) {
         int type;
 
         if ((keySize > 0 && keySize + 1 > maxSize)
@@ -190,21 +190,26 @@ public abstract class NullableInlineIndexKeyType<K> implements InlineIndexKeyTyp
         if (type() != type)
             return COMPARE_UNSUPPORTED;
 
-        // TODO: Nulls LAST / FIRST?
-//        if (v == null)
-//            return -1;
-
-//        if (type == InlineIndexKeyType.NULL.getType())
-//            return Integer.signum(comp.compare(ValueNull.INSTANCE, v));
-
-//        if (v == ValueNull.INSTANCE)
-//            return 1;
+        if (v == NullKey.INSTANCE)
+            return 1;
 
         // Value can be set up by user in query with different data type.
         if (type != IndexKeyTypes.JAVA_OBJECT && type != InlineIndexKeyTypeRegistry.get(v.getClass()).type())
             return COMPARE_UNSUPPORTED;
 
-        return compare0(pageAddr, off, v);
+        ensureKeyType(v);
+
+        return compare0(pageAddr, off, (T) v);
+    }
+
+    /**
+     * Checks whether specified val corresponds to this key type.
+     */
+    private void ensureKeyType(Object val) {
+        int valType = InlineIndexKeyTypeRegistry.get(val.getClass()).type();
+
+        if (valType != type)
+            throw new UnsupportedOperationException("Value type doesn't match: exp=" + type + ", act=" + valType);
     }
 
     /**
@@ -219,8 +224,8 @@ public abstract class NullableInlineIndexKeyType<K> implements InlineIndexKeyTyp
      * is not enough to compare, or {@link #COMPARE_UNSUPPORTED} if given value
      * can't be compared with inlined part at all.
      */
-    public abstract int compare0(long pageAddr, int off, K v);
+    public abstract int compare0(long pageAddr, int off, T v);
 
     /** Return inlined size for specified key. */
-    protected abstract int inlineSize0(K key);
+    protected abstract int inlineSize0(T key);
 }

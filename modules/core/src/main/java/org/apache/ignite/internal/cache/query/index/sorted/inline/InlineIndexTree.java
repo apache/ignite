@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.index.sorted.SortOrder;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
@@ -409,5 +411,23 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
     /** */
     public boolean isCreated() {
         return created;
+    }
+
+    /**
+     * Construct the exception and invoke failure processor.
+     *
+     * @param msg Message.
+     * @param cause Cause.
+     * @param grpId Group id.
+     * @param pageIds Pages ids.
+     * @return New CorruptedTreeException instance.
+     */
+    @Override protected CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
+        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpId, grpName, def.getIdxName().cacheName(),
+            def.getIdxName().idxName(), pageIds);
+
+        processFailure(FailureType.CRITICAL_ERROR, e);
+
+        return e;
     }
 }

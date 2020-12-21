@@ -22,7 +22,9 @@ import org.apache.ignite.cache.query.index.sorted.Order;
 import org.apache.ignite.cache.query.index.sorted.SortOrder;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -113,7 +115,12 @@ public class QueryIndexSchema implements SortedIndexSchema {
                     return value(row);
 
                 // columnValue ignores default columns (_KEY, _VAL), so make this shift.
-                return cacheDesc.columnValue(row.key(), row.value(), cacheIdx - QueryUtils.DEFAULT_COLUMNS_COUNT);
+                Object res = cacheDesc.columnValue(row.key(), row.value(), cacheIdx - QueryUtils.DEFAULT_COLUMNS_COUNT);
+
+                if (res == null)
+                    return NullKey.INSTANCE;
+
+                return res;
         }
     }
 
@@ -122,6 +129,16 @@ public class QueryIndexSchema implements SortedIndexSchema {
         Object key = key(row);
 
         return cacheDesc.context().affinity().partition(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object getCacheKey(CacheDataRow row) {
+        return key(row);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object getCacheValue(CacheDataRow row) {
+        return value(row);
     }
 
     /** */
@@ -133,12 +150,10 @@ public class QueryIndexSchema implements SortedIndexSchema {
     private Object key(CacheDataRow row) {
         KeyCacheObject key = row.key();
 
-        if (key instanceof BinaryObjectImpl) {
-            // TODO: check column is JAVA_OBJECT?
-            ((BinaryObjectImpl)key).detachAllowed(true);
-            key = ((BinaryObjectImpl)key).detach();
-            return key;
-        }
+        Object o = getBinaryObject(key);
+
+        if (o != null)
+            return o;
 
         CacheObjectContext coctx = cacheDesc.context().cacheObjectContext();
 
@@ -147,8 +162,27 @@ public class QueryIndexSchema implements SortedIndexSchema {
 
     /** */
     private Object value(CacheDataRow row) {
+        CacheObject val = row.value();
+
+        Object o = getBinaryObject(val);
+
+        if (o != null)
+            return o;
+
         CacheObjectContext coctx = cacheDesc.context().cacheObjectContext();
 
         return row.value().value(coctx, false);
+    }
+
+    /** */
+    private Object getBinaryObject(CacheObject o) {
+        if (o instanceof BinaryObjectImpl) {
+            // TODO: check column is JAVA_OBJECT?
+            ((BinaryObjectImpl)o).detachAllowed(true);
+            o = ((BinaryObjectImpl)o).detach();
+            return o;
+        }
+
+        return null;
     }
 }

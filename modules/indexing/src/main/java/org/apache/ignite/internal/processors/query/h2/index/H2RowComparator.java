@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.index;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexRowComparator;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.engine.SessionInterface;
+import org.h2.message.DbException;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 
@@ -62,6 +64,9 @@ public class H2RowComparator implements IndexRowComparator {
 
         if (curType == IndexKeyTypes.UNKNOWN)
             return CANT_BE_COMPARE;
+
+        if (v == NullKey.INSTANCE)
+            return 1;
 
         int objType = InlineIndexKeyTypeRegistry.get(v.getClass()).type();
 
@@ -124,7 +129,12 @@ public class H2RowComparator implements IndexRowComparator {
      * @param v2 Second value.
      * @return Comparison result.
      */
-    public int compareValues(Value v1, Value v2) {
-        return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
+    public int compareValues(Value v1, Value v2) throws IgniteCheckedException {
+        try {
+            return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
+
+        } catch (DbException ex) {
+            throw new IgniteCheckedException("Rows cannot be compared", ex);
+        }
     }
 }

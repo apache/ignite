@@ -39,4 +39,16 @@ public interface SortedIndexSchema {
      * @return parition for specified row.
      */
     public int partition(CacheDataRow row);
+
+    /**
+     * @param row Cache row.
+     * @return Cache key.
+     */
+    public Object getCacheKey(CacheDataRow row);
+
+    /**
+     * @param row Cache row.
+     * @return Cache value.
+     */
+    public Object getCacheValue(CacheDataRow row);
 }

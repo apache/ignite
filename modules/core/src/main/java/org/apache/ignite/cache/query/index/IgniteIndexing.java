@@ -137,7 +137,7 @@ public class IgniteIndexing implements IndexingSpi {
         ddlLock.writeLock().lock();
 
         try {
-            String cacheName = cctx.name();
+            String cacheName = definition.getIdxName().cacheName();
 
             cacheToIdx.putIfAbsent(cacheName, new ConcurrentHashMap<>());
 
@@ -164,7 +164,11 @@ public class IgniteIndexing implements IndexingSpi {
         ddlLock.writeLock().lock();
 
         try {
-            Map<String, Index> idxs = cacheToIdx.get(cctx.name());
+            String cacheName = def.getIdxName().cacheName();
+
+            Map<String, Index> idxs = cacheToIdx.get(cacheName);
+
+            assert idxs != null: "Try remove index for non registered cache " + cacheName;
 
             Index idx = idxs.remove(def.getIdxName().fqdnIdxName());
 
@@ -177,8 +181,8 @@ public class IgniteIndexing implements IndexingSpi {
     }
 
     /** */
-    private void updateIndexes(String cacheName, CacheDataRow newRow, CacheDataRow prevRow, boolean prevRowAvailable)
-        throws IgniteCheckedException {
+    private void updateIndexes(String cacheName, CacheDataRow newRow, CacheDataRow prevRow,
+        boolean prevRowAvailable) throws IgniteCheckedException {
         IgniteCheckedException err = null;
 
         ddlLock.readLock().lock();

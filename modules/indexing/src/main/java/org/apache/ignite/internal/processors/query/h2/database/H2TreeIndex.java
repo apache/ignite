@@ -32,6 +32,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
+import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
@@ -82,6 +83,7 @@ import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
+import org.h2.value.ValueNull;
 import org.jetbrains.annotations.NotNull;
 
 import static java.util.Collections.singletonList;
@@ -191,8 +193,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
         assert upper == null || upper instanceof H2Row : upper;
 
         try {
-            ThreadLocalSessionHolder.setSession(ses);
-
             T2<IndexKey, IndexKey> key = prepareIndexKeys(lower, upper);
 
             QueryContext qctx = ses != null ? H2Utils.context(ses) : null;
@@ -202,13 +202,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
             GridCursor<H2Row> h2cursor = new IndexValueCursor<>(cursor, this::mapIndexRow);
 
             return new H2Cursor(h2cursor);
-
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
-        }
-        finally {
-            ThreadLocalSessionHolder.removeSession();
         }
     }
 
@@ -234,12 +230,20 @@ public class H2TreeIndex extends H2TreeIndexBase {
                 Value vu = upper != null ? upper.getValue(colId) : null;
 
                 if (left != null)
-                    left[i] = vl != null ? vl.getObject() : null;
+                    if (vl == null)
+                        left[i] = null;
+                    else if (vl == ValueNull.INSTANCE)
+                        left[i] = NullKey.INSTANCE;
+                    else
+                        left[i] = vl.getObject();
 
                 if (right != null)
-                    right[i] = vu != null ? vu.getObject() : null;
-
-                // TODO: what to do with condition null, null for PK?
+                    if (vu == null)
+                        right[i] = null;
+                    else if (vl == ValueNull.INSTANCE)
+                        right[i] = NullKey.INSTANCE;
+                    else
+                        right[i] = vu.getObject();
             }
         }
 

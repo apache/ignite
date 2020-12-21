@@ -32,7 +32,7 @@ public interface Index {
     public UUID id();
 
     /**
-     * Unique name.
+     * Index name.
      */
     public String name();
 

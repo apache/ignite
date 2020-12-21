@@ -27,6 +27,7 @@ import org.apache.ignite.cache.query.index.AbstractIndex;
 import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.SingleCursor;
 import org.apache.ignite.cache.query.index.sorted.IndexKey;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
@@ -43,6 +44,8 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 
 /**
  * Sorted index implementation.
@@ -90,12 +93,12 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             try {
                 ThreadLocalSchemaHolder.setSchema(def.getSchema());
 
-                IndexRow row = segments[segment].findOne(rlower, closure, null);
+                IndexSearchRow row = segments[segment].findOne(rlower, closure, null);
 
                 if (row == null)  // TODO isExpired(row))
                     return IndexValueCursor.EMPTY;
 
-                return new SingleCursor(row);
+                return new SingleCursor<>(row);
 
             } finally {
                 ThreadLocalSchemaHolder.cleanSchema();
@@ -186,9 +189,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
             InlineTreeFilterClosure closure = getFilterClosure(filter);
 
-            IndexRow found = firstOrLast ?
-                segments[segment].findFirst(closure)
-                : segments[segment].findLast(closure);
+            IndexRow found = firstOrLast ? segments[segment].findFirst(closure) : segments[segment].findLast(closure);
 
             // TODO: expiration
             if (found == null) // || isExpired(found))
@@ -223,7 +224,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             boolean replaced = false;
 
             // Create or Update.
-            if (newRow != null) {
+            if (newRow != null && belongsToIndex(newRow)) {
                 int segment = segmentForRow(newRow);
 
                 IndexRowImpl row0 = new IndexRowImpl(def.getSchema(), newRow);
@@ -240,7 +241,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             // TODO: statistic. Is it used? StatsHolder
 
             // Delete.
-            if (!replaced && oldRow != null) {
+            if (!replaced && oldRow != null && belongsToIndex(oldRow)) {
                 int segment = segmentForRow(oldRow);
 
                 segments[segment].remove(new IndexRowImpl(def.getSchema(), oldRow));
@@ -253,6 +254,9 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public CacheDataRow put(CacheDataRow row) throws IgniteCheckedException {
+        if (!belongsToIndex(row))
+            return null;
+
         int segment = segmentForRow(row);
 
         try {
@@ -272,20 +276,37 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public boolean putx(CacheDataRow row) throws IgniteCheckedException {
+        if (!belongsToIndex(row))
+            return false;
+
         int segment = segmentForRow(row);
 
         try {
             ThreadLocalSchemaHolder.setSchema(def.getSchema());
 
-            return segments[segment].putx(new IndexRowImpl(def.getSchema(), row));
+            IndexRowImpl r = new IndexRowImpl(def.getSchema(), row);
 
-        } finally {
+            // Validate all keys.
+            for (int i = 0; i < def.getSchema().getKeyDefinitions().length; ++i)
+                r.getKey(i);
+
+            return segments[segment].putx(r);
+        }
+        catch (Throwable t) {
+            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
+
+            throw t;
+        }
+        finally {
             ThreadLocalSchemaHolder.cleanSchema();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean removex(CacheDataRow row) throws IgniteCheckedException {
+        if (!belongsToIndex(row))
+            return false;
+
         int segment = segmentForRow(row);
 
         return segments[segment].removex(new IndexRowImpl(def.getSchema(), row));
@@ -431,5 +452,13 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
      */
     private void dropMetaPage(int segIdx) throws IgniteCheckedException {
         cctx.offheap().dropRootPageForIndex(cctx.cacheId(), treeName, segIdx);
+    }
+
+    /**
+     * @return whether cache row belongs to this index.
+     */
+    private boolean belongsToIndex(CacheDataRow row) throws IgniteCheckedException {
+        return cctx.kernalContext().query().belongsToTable(
+            cctx, def.getIdxName().cacheName(), def.getIdxName().tableName(), row.key(), row.value());
     }
 }

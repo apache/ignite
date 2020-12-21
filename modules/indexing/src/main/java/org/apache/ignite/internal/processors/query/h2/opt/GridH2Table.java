@@ -725,7 +725,7 @@ public class GridH2Table extends TableBase {
             IndexDefinition deleteDef = new IndexDefinition() {
                 /** {@inheritDoc} */
                 @Override public IndexName getIdxName() {
-                    return new IndexName(getSchema().getName(), tableName, idx.getName());
+                    return new IndexName(cacheName(), getSchema().getName(), tableName, idx.getName());
                 }
             };
 

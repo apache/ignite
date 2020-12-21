@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.query.index;
 
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base interface for Ignite index factories.
@@ -28,5 +29,5 @@ public interface IndexFactory {
      *
      * @param cctx Cache context.
      */
-    public Index createIndex(GridCacheContext cctx, IndexDefinition definition);
+    public Index createIndex(@Nullable GridCacheContext cctx, IndexDefinition definition);
 }

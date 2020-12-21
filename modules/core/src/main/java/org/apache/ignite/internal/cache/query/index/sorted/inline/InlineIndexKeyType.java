@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Basic interface for inlined index columns. It's not a generic to provide opportunity compare different types.
  */
-public interface InlineIndexKeyType<K> {
+public interface InlineIndexKeyType {
     /**
      * Returns type of inlined column.
      *
@@ -46,7 +46,7 @@ public interface InlineIndexKeyType<K> {
     /**
      * Returns required inline size for specified key.
      */
-    public int inlineSize(K key);
+    public int inlineSize(Object key);
 
     /**
      * Actual size of inline value. It returns keySize() + 1 for values with
@@ -70,11 +70,11 @@ public interface InlineIndexKeyType<K> {
      *
      * @return Amount of bytes actually stored.
      */
-    public int put(long pageAddr, int off, K val, int maxSize);
+    public int put(long pageAddr, int off, Object val, int maxSize);
 
     /**
      */
-    @Nullable public K get(long pageAddr, int off, int maxSize);
+    @Nullable public Object get(long pageAddr, int off, int maxSize);
 
     /**
      * Compares inlined and given value.
@@ -87,5 +87,5 @@ public interface InlineIndexKeyType<K> {
      * @return -1, 0 or 1 if inlined value less, equal or greater
      * than given respectively, or -2 if inlined part is not enough to compare.
      */
-    public int compare(long pageAddr, int off, int maxSize, K v);
+    public int compare(long pageAddr, int off, int maxSize, Object v);
 }

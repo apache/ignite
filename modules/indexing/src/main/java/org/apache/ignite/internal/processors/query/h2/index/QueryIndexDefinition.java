@@ -37,7 +37,7 @@ public class QueryIndexDefinition extends SortedIndexDefinition {
     /** */
     public QueryIndexDefinition(GridH2Table tbl, String idxName, QueryIndexSchema schema, int cfgInlineSize) {
         super(
-            new IndexName(tbl.getSchema().getName(), tbl.getName(), idxName),
+            new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), idxName),
             schema,
             tbl.rowDescriptor().context().config().getQueryParallelism(),
             cfgInlineSize,

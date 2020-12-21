@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.BooleanInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.ByteInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.BytesInlineIndexKeyType;
@@ -72,7 +73,7 @@ public class InlineIndexKeyTypeRegistry {
         for (InlineIndexKeyType cm: classMapping.values())
             typeMapping.put(cm.type(), cm);
 
-        typeMapping.put(IndexKeyTypes.JAVA_OBJECT, new ObjectHashInlineIndexKeyType());
+        typeMapping.put(IndexKeyTypes.JAVA_OBJECT, objectType);
     }
 
     /**
@@ -114,6 +115,9 @@ public class InlineIndexKeyTypeRegistry {
      * Validates that specified type and specified class are the same InlineIndexKeyType.
      */
     public static boolean validate(int type, Class<?> clazz) {
-        return typeMapping.get(type) == classMapping.get(clazz);
+        if (clazz == NullKey.class)
+            return true;
+
+        return typeMapping.get(type) == get(clazz);
     }
 }

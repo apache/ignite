@@ -1440,6 +1440,10 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     private void checkSelectAll(IgniteCache<Key, Val> cache) {
         List<List<?>> data = cache.query(new SqlFieldsQuery("select _key, _val from Val")).getAll();
 
+        for (List<?> d: data) {
+            System.out.println(d);
+        }
+
         assertEquals(100, data.size());
 
         for (List<?> row : data) {
