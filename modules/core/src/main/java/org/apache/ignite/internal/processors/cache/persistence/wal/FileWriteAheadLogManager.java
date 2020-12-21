@@ -3182,12 +3182,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     long size = 0;
 
                     for (FileDescriptor fileDesc : walArchiveFiles) {
-                        if (fileDesc.idx >= lastCheckpointPtr.index() ||
-                            segmentAware.reserved(fileDesc.idx) ||
-                            (size += fileDesc.file.length()) > allowedThresholdWalArchiveSize)
+                        if (fileDesc.idx >= lastCheckpointPtr.index() || segmentAware.reserved(fileDesc.idx))
                             break;
-                        else
+                        else {
                             high = fileDesc;
+
+                            // Ensure that there will be exactly removed at least one segment.
+                            if ((size += fileDesc.file.length()) > allowedThresholdWalArchiveSize)
+                                break;
+                        }
                     }
 
                     if (high != null) {

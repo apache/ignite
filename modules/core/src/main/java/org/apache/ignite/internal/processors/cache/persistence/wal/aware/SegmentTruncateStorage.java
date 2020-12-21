@@ -106,7 +106,7 @@ class SegmentTruncateStorage {
      */
     synchronized long awaitAvailableTruncate() throws IgniteInterruptedCheckedException {
         try {
-            while (availableTruncateCnt() <= 0 && !interrupted)
+            while (availableTruncateCnt() == 0 && !interrupted)
                 wait();
         }
         catch (InterruptedException e) {
@@ -143,8 +143,9 @@ class SegmentTruncateStorage {
     private synchronized long availableTruncateCnt() {
         long highIdx = minReservedIdx == -1 ? lastCpIdx : Math.min(minReservedIdx, lastCpIdx);
 
+        // Protection against deleting the last segment from WAL archive for correct restart the node.
         highIdx = lastArchivedIdx == -1 ? highIdx : Math.min(lastArchivedIdx, highIdx);
 
-        return highIdx == -1 ? 0 : highIdx - (lastTruncatedIdx + 1);
+        return Math.max(0, highIdx == -1 ? 0 : highIdx - (lastTruncatedIdx + 1));
     }
 }
