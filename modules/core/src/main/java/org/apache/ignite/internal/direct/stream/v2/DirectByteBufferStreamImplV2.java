@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -302,8 +301,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** */
     protected boolean lastFinished;
 
-    /** map for cashing byte-array representations of strings */
-    private Map<String, byte[]> stringsMap;
+    /** byte-array representation of string */
+    private byte[] byteArr;
 
     /**
      * @param msgFactory Message factory.
@@ -590,21 +589,13 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     @Override public void writeString(String val) {
         if (val != null) {
             if (buf.capacity() < val.length()) {
-                if (stringsMap == null)
-                    stringsMap = new HashMap<>();
+                if (byteArr == null)
+                    byteArr = val.getBytes();
 
-                byte[] bytes = stringsMap.computeIfAbsent(val, s -> s.getBytes());
-
-                try {
-                    writeByteArray(bytes);
-                }
-                catch (Exception e) {
-                    stringsMap.remove(val);
-                    throw e;
-                }
+                writeByteArray(byteArr);
 
                 if (lastFinished)
-                    stringsMap.remove(val);
+                    byteArr = null;
             }
             else
                 writeByteArray(val.getBytes());
