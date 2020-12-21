@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.Comparator;
 import java.util.function.Supplier;
 
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeTreeIndex;
@@ -47,13 +48,14 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     public IndexSpoolNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
+        RelCollation collation,
         Comparator<Row> comp,
         Supplier<Row> lowerIdxConditions,
         Supplier<Row> upperIdxConditions
     ) {
         super(ctx, rowType);
 
-        idx = new RuntimeTreeIndex<>(ctx, comp);
+        idx = new RuntimeTreeIndex<>(ctx, collation, comp);
 
         scan = new ScanNode<>(
             ctx,

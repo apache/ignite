@@ -393,4 +393,18 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             };
         }
     }
+
+    /** */
+    public static class RootRewindable<Row> extends RootNode<Row> {
+        /** */
+        public RootRewindable(ExecutionContext<Row> ctx, RelDataType rowType) {
+            super(ctx, rowType);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void rewindInternal() {
+            GridTestUtils.setFieldValue(this, RootNode.class, "waiting", 0);
+            GridTestUtils.setFieldValue(this, RootNode.class, "closed", false);
+        }
+    }
 }

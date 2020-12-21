@@ -21,21 +21,16 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.UUID;
 
-import com.google.common.collect.ImmutableSet;
-import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
-
-import static java.lang.Math.min;
 
 /**
  *
@@ -63,61 +58,45 @@ public class TableSpoolTest extends AbstractExecutionTest {
 
         int inBufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
 
-        int[] leftSizes = {1, inBufSize / 2 - 1, inBufSize / 2, inBufSize / 2 + 1, inBufSize, inBufSize + 1, inBufSize * 4};
-        int[] rightSizes = {1, inBufSize / 2 - 1, inBufSize / 2, inBufSize / 2 + 1, inBufSize, inBufSize + 1, inBufSize * 4};
-        int[] rightBufSizes = {1, inBufSize / 4, inBufSize};
+        int[] sizes = {1, inBufSize / 2 - 1, inBufSize / 2, inBufSize / 2 + 1, inBufSize, inBufSize + 1, inBufSize * 4};
+        int rewindCnts = 32;
 
-        for (int rightBufSize : rightBufSizes) {
-            for (int leftSize : leftSizes) {
-                for (int rightSize : rightSizes) {
-                    log.info("Check: rightBufSize=" + rightBufSize + ", leftSize=" + leftSize + ", rightSize=" + rightSize);
+        for (int size : sizes) {
+            log.info("Check: size=" + size);
 
-                    ScanNode<Object[]> left = new ScanNode<>(ctx, rowType, new TestTable(leftSize, rowType));
-                    ScanNode<Object[]> right = new ScanNode<>(ctx, rowType, new TestTable(rightSize, rowType) {
-                        boolean first = true;
+            ScanNode<Object[]> right = new ScanNode<>(ctx, rowType, new TestTable(size, rowType) {
+                boolean first = true;
 
-                        @Override public @NotNull Iterator<Object[]> iterator() {
-                            assertTrue("Rewind right", first);
+                @Override public @NotNull Iterator<Object[]> iterator() {
+                    assertTrue("Rewind table", first);
 
-                            first = false;
-                            return super.iterator();
-                        }
-                    });
-
-                    TableSpoolNode<Object[]> rightSpool = new TableSpoolNode<>(ctx, rowType);
-
-                    rightSpool.register(Arrays.asList(right));
-
-                    RelDataType joinRowType = TypeUtils.createRowType(
-                        tf,
-                        int.class, String.class, int.class,
-                        int.class, String.class, int.class);
-
-                    CorrelatedNestedLoopJoinNode<Object[]> join = new CorrelatedNestedLoopJoinNode<>(
-                        ctx,
-                        joinRowType,
-                        r -> r[0].equals(r[3]),
-                        ImmutableSet.of(new CorrelationId(0)));
-
-                    GridTestUtils.setFieldValue(join, "rightInBufferSize", rightBufSize);
-
-                    join.register(Arrays.asList(left, rightSpool));
-
-                    RootNode<Object[]> root = new RootNode<>(ctx, joinRowType);
-                    root.register(join);
-
-                    int cnt = 0;
-                    while (root.hasNext()) {
-                        root.next();
-
-                        cnt++;
-                    }
-
-                    assertEquals(
-                        "Invalid result size. [left=" + leftSize + ", right=" + rightSize + ", results=" + cnt,
-                        min(leftSize, rightSize),
-                        cnt);
+                    first = false;
+                    return super.iterator();
                 }
+            });
+
+            TableSpoolNode<Object[]> spool = new TableSpoolNode<>(ctx, rowType);
+
+            spool.register(Arrays.asList(right));
+
+            RootNode<Object[]> root = new RootRewindable<>(ctx, rowType);
+            root.register(spool);
+
+            for (int i = 0; i < rewindCnts; ++i) {
+                int cnt = 0;
+
+                while (root.hasNext()) {
+                    root.next();
+
+                    cnt++;
+                }
+
+                assertEquals(
+                    "Invalid result size",
+                    size,
+                    cnt);
+
+                root.rewind();
             }
         }
     }

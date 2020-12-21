@@ -21,13 +21,15 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.UUID;
 
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
@@ -59,77 +61,98 @@ public class IndexSpoolTest extends AbstractExecutionTest {
 
         int inBufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
 
-//        int[] bufSizes = {1, inBufSize / 4, inBufSize};
-//        int[] sizes = {1, inBufSize / 2 - 1, inBufSize / 2, inBufSize / 2 + 1, inBufSize, inBufSize + 1, inBufSize * 4};
-        int[] bufSizes = {1};
-        int[] sizes = {255};
+        int[] sizes = {1, inBufSize / 2 - 1, inBufSize / 2, inBufSize / 2 + 1, inBufSize, inBufSize + 1, inBufSize * 4};
 
         for (int size : sizes) {
-            for (int bufSize : bufSizes) {
-                log.info("Check: bufSize=" + bufSize + ", size=" + size);
+            // (lower, upper, expected result size)
+            GridTuple3<Object[], Object[], Integer>[] testBounds;
 
-                ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, new TestTable(size, rowType) {
-                    boolean first = true;
-
-                    @Override public @NotNull Iterator<Object[]> iterator() {
-                        assertTrue("Rewind right", first);
-
-                        first = false;
-                        return super.iterator();
-                    }
-                });
-
-                final Object[] lower = {Integer.MIN_VALUE, null, null};
-                final Object[] upper = {Integer.MAX_VALUE, null, null};
-
-                IndexSpoolNode<Object[]> spool = new IndexSpoolNode<>(
-                    ctx,
-                    rowType,
-                    (o1, o2) -> o1[0] != null ? ((Comparable)o1[0]).compareTo(o2[0]) : 0,
-                    () -> lower,
-                    () -> upper
-                );
-
-                spool.register(Arrays.asList(scan));
-
-                RootRewindable<Object[]> root = new RootRewindable<>(ctx, rowType);
-                root.register(spool);
-
-                for (int rewind = 0; rewind < 10; ++rewind) {
-                    int cnt = 0;
-
-                    while (root.hasNext()) {
-                        root.next();
-
-                        cnt++;
-                    }
-
-                    assertEquals(
-                        "Invalid result size. " +
-                            "[size=" + size +
-                            ", bufSize=" + bufSize +
-                            ", rewind=" + rewind +
-                            ", results=" + cnt,
-                        size,
-                        cnt);
-
-                    root.rewind();
-                }
+            if (size == 1) {
+                testBounds = new GridTuple3[] {
+                    new GridTuple3(new Object[] {null, null, null}, new Object[] {null, null, null}, 1),
+                    new GridTuple3(new Object[] {0, null, null}, new Object[] {0, null, null}, 1)
+                };
             }
-        }
-    }
+            else {
+                testBounds = new GridTuple3[] {
+                    new GridTuple3(
+                        new Object[] {null, null, null},
+                        new Object[] {null, null, null},
+                        size
+                    ),
+                    new GridTuple3(
+                        new Object[] {size / 2, null, null},
+                        new Object[] {size / 2, null, null},
+                        1
+                    ),
+                    new GridTuple3(
+                        new Object[] {size / 2 + 1, null, null},
+                        new Object[] {size / 2 + 1, null, null},
+                        1
+                    ),
+                    new GridTuple3(
+                        new Object[] {size / 2, null, null},
+                        new Object[] {null, null, null},
+                        size - size / 2
+                    ),
+                    new GridTuple3(
+                        new Object[] {null, null, null},
+                        new Object[] {size / 2, null, null},
+                        size / 2 + 1
+                    ),
+                };
+            }
 
-    /** */
-    private static class RootRewindable<Row> extends RootNode<Row> {
-        /** */
-        public RootRewindable(ExecutionContext<Row> ctx, RelDataType rowType) {
-            super(ctx, rowType);
-        }
+            log.info("Check: size=" + size);
 
-        /** {@inheritDoc} */
-        @Override protected void rewindInternal() {
-            GridTestUtils.setFieldValue(this, RootNode.class, "waiting", 0);
-            GridTestUtils.setFieldValue(this, RootNode.class, "closed", false);
+            ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, new TestTable(size, rowType) {
+                boolean first = true;
+
+                @Override public @NotNull Iterator<Object[]> iterator() {
+                    assertTrue("Rewind right", first);
+
+                    first = false;
+                    return super.iterator();
+                }
+            });
+
+            Object[] lower = new Object[3];
+            Object[] upper = new Object[3];
+
+            IndexSpoolNode<Object[]> spool = new IndexSpoolNode<>(
+                ctx,
+                rowType,
+                RelCollations.of(ImmutableIntList.of(0)),
+                (o1, o2) -> o1[0] != null ? ((Comparable)o1[0]).compareTo(o2[0]) : 0,
+                () -> lower,
+                () -> upper
+            );
+
+            spool.register(Arrays.asList(scan));
+
+            RootRewindable<Object[]> root = new RootRewindable<>(ctx, rowType);
+            root.register(spool);
+
+            for (GridTuple3<Object[], Object[], Integer> bound : testBounds) {
+                // Set up bounds
+                System.arraycopy(bound.get1(), 0, lower, 0, lower.length);
+                System.arraycopy(bound.get2(), 0, upper, 0, lower.length);
+
+                int cnt = 0;
+
+                while (root.hasNext()) {
+                    root.next();
+
+                    cnt++;
+                }
+
+                assertEquals(
+                    "Invalid result size",
+                    (int)bound.get3(),
+                    cnt);
+
+                root.rewind();
+            }
         }
     }
 }

@@ -22,17 +22,23 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.calcite.rel.RelCollation;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Runtime sorted index based on on-heap tree.
  */
 public class RuntimeTreeIndex<Row> extends AbstractRuntimeSortedIndex<Row> {
+    /** Collation. */
+    private final RelCollation collation;
+
     /** Rows. */
     private TreeMap<Row, List<Row>> rows;
 
@@ -41,10 +47,14 @@ public class RuntimeTreeIndex<Row> extends AbstractRuntimeSortedIndex<Row> {
      */
     public RuntimeTreeIndex(
         ExecutionContext<Row> ectx,
+        RelCollation collation,
         Comparator<Row> comp
     ) {
         super(ectx, comp);
 
+        assert Objects.nonNull(collation);
+
+        this.collation = collation;
         rows = new TreeMap<>(comp);
     }
 
@@ -68,10 +78,16 @@ public class RuntimeTreeIndex<Row> extends AbstractRuntimeSortedIndex<Row> {
 
     /** */
     private GridCursor<Row> find(Row lower, Row upper) {
-        System.out.println("+++ row " + rows.size());
-        System.out.println("+++ find " + rows.subMap(lower, true, upper, true).size());
+        int firstCol = F.first(collation.getKeys());
 
-        return new Cursor(rows.subMap(lower, true, upper, true));
+        if (ectx.rowHandler().get(firstCol, lower) != null && ectx.rowHandler().get(firstCol, upper) != null)
+            return new Cursor(rows.subMap(lower, true, upper, true));
+        else if (ectx.rowHandler().get(firstCol, lower) == null && ectx.rowHandler().get(firstCol, upper) != null)
+            return new Cursor(rows.headMap(upper, true));
+        else if (ectx.rowHandler().get(firstCol, lower) != null && ectx.rowHandler().get(firstCol, upper) == null)
+            return new Cursor(rows.tailMap(lower, true));
+        else
+            return new Cursor(rows);
     }
 
     /**

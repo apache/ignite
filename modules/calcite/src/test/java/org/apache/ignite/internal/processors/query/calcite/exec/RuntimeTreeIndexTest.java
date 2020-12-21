@@ -26,10 +26,12 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -58,6 +60,9 @@ public class RuntimeTreeIndexTest extends GridCommonAbstractTest {
             ImmutableIntList.of(1, 2, 3, 4))
     };
 
+    /** Search count. */
+    private static final int SEARCH_CNT = UNIQUE_GROUPS / 100;
+
     /** */
     @Test
     public void test() throws Exception {
@@ -74,38 +79,51 @@ public class RuntimeTreeIndexTest extends GridCommonAbstractTest {
                 int rowIdLow = ThreadLocalRandom.current().nextInt(UNIQUE_GROUPS * notUnique);
                 int rowIdUp = rowIdLow + ThreadLocalRandom.current().nextInt(UNIQUE_GROUPS * notUnique - rowIdLow);
 
-                Object[] lower = generateFindRow(rowIdLow, testIdx.getKey(), notUnique, testIdx.getValue());
-                Object[] upper = generateFindRow(rowIdUp, testIdx.getKey(), notUnique, testIdx.getValue());
+                for (int searchNum = 0; searchNum < SEARCH_CNT; ++searchNum) {
+                    Object[] lower = generateFindRow(rowIdLow, testIdx.getKey(), notUnique, testIdx.getValue());
+                    Object[] upper = generateFindRow(rowIdUp, testIdx.getKey(), notUnique, testIdx.getValue());
 
-                GridCursor<Object[]> cur = idx0.find(lower, upper, null);
+                    GridCursor<Object[]> cur = idx0.find(lower, upper, null);
 
-                int rows = 0;
-                while (cur.next()) {
-                    cur.get();
+                    int rows = 0;
+                    while (cur.next()) {
+                        cur.get();
 
-                    rows++;
+                        rows++;
+                    }
+
+                    assertEquals("Invalid results [rowType=" + testIdx.getKey() + ", notUnique=" + notUnique +
+                            ", rowIdLow=" + rowIdLow + ", rowIdUp=" + rowIdUp,
+                        (rowIdUp / notUnique - rowIdLow / notUnique + 1) * notUnique,
+                        rows);
                 }
-
-                assertEquals("Invalid results [rowType=" + testIdx.getKey() + ", notUnique=" + notUnique +
-                        ", rowIdLow=" + rowIdLow + ", rowIdUp=" + rowIdUp,
-                    (rowIdUp / notUnique - rowIdLow / notUnique + 1) * notUnique,
-                    rows);
             }
         }
     }
 
     /** */
     private RuntimeTreeIndex<Object[]> generate(RelDataType rowType, final List<Integer> idxCols, int notUnique) {
-        RuntimeTreeIndex<Object[]> idx = new RuntimeTreeIndex<>(null, (o1, o2) -> {
-            for (int colIdx : idxCols) {
-                int res = ((Comparable)o1[colIdx]).compareTo(o2[colIdx]);
+        RuntimeTreeIndex<Object[]> idx = new RuntimeTreeIndex<>(
+            new ExecutionContext<>(
+                null,
+                PlanningContext.builder()
+                    .logger(log())
+                    .build(),
+                null,
+                null,
+                ArrayRowHandler.INSTANCE,
+                null),
+            RelCollations.of(ImmutableIntList.copyOf(idxCols)),
+            (o1, o2) -> {
+                for (int colIdx : idxCols) {
+                    int res = ((Comparable)o1[colIdx]).compareTo(o2[colIdx]);
 
-                if (res != 0)
-                    return res;
-            }
+                    if (res != 0)
+                        return res;
+                }
 
-            return 0;
-        });
+                return 0;
+            });
 
         BitSet rowIds = new BitSet(UNIQUE_GROUPS);
 

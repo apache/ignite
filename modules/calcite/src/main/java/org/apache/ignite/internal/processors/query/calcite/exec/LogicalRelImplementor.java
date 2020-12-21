@@ -380,6 +380,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IndexSpoolNode<Row> node = new IndexSpoolNode<>(
             ctx,
             rel.getRowType(),
+            collation,
             expressionFactory.comparator(collation),
             lower,
             upper
