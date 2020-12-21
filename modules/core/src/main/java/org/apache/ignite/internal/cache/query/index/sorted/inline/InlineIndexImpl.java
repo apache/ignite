@@ -42,8 +42,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -99,9 +101,9 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             try {
                 ThreadLocalSchemaHolder.setSchema(def.getSchema());
 
-                IndexSearchRow row = segments[segment].findOne(rlower, closure, null);
+                IndexRowImpl row = segments[segment].findOne(rlower, closure, null);
 
-                if (row == null)  // TODO isExpired(row))
+                if (row == null || isExpired(row))
                     return IndexValueCursor.EMPTY;
 
                 return new SingleCursor<>(row);
@@ -195,10 +197,9 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
             InlineTreeFilterClosure closure = getFilterClosure(filter);
 
-            IndexRow found = firstOrLast ? segments[segment].findFirst(closure) : segments[segment].findLast(closure);
+            IndexSearchRow found = firstOrLast ? segments[segment].findFirst(closure) : segments[segment].findLast(closure);
 
-            // TODO: expiration
-            if (found == null) // || isExpired(found))
+            if (found == null || isExpired(found))
                 return IndexValueCursor.EMPTY;
 
             return new SingleCursor(found);
@@ -394,6 +395,16 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     /** {@inheritDoc} */
     @Override public InlineIndexTree getSegment(int segment) {
         return segments[segment];
+    }
+
+    /**
+     * Determines if provided row can be treated as expired at the current moment.
+     *
+     * @param row row to check.
+     * @throws NullPointerException if provided row is {@code null}.
+     */
+    private static boolean isExpired(@NotNull IndexRow row) {
+        return row.getCacheDataRow().expireTime() > 0 && row.getCacheDataRow().expireTime() <= U.currentTimeMillis();
     }
 
     /** If {code true} then this index is already marked as destroyed. */
