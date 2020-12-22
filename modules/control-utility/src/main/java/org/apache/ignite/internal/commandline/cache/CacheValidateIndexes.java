@@ -208,7 +208,7 @@ public class CacheValidateIndexes extends AbstractCommand<CacheValidateIndexes.A
 
         try (GridClient client = Command.startClient(clientCfg)) {
             VisorValidateIndexesTaskResult taskRes = executeTaskByNameOnNode(
-                client, "org.apache.ignite.internal.visor.cache.index.VisorValidateIndexesTask", taskArg, null, clientCfg);
+                client, "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask", taskArg, null, clientCfg);
 
             boolean errors = CommandLogger.printErrors(taskRes.exceptions(), "Index validation failed on nodes:", logger);
 
