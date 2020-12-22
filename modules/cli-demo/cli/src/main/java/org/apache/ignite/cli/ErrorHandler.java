@@ -19,7 +19,7 @@ package org.apache.ignite.cli;
 
 import javax.inject.Inject;
 import io.micronaut.context.ApplicationContext;
-import org.apache.ignite.cli.spec.IgniteCliSpec;
+import org.apache.ignite.cli.spec.CategorySpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -45,9 +45,15 @@ public class ErrorHandler implements CommandLine.IExecutionExceptionHandler, Com
     @Override public int handleParseException(CommandLine.ParameterException ex, String[] args) {
         CommandLine cli = ex.getCommandLine();
 
-        cli.getErr().println(cli.getColorScheme().errorText("ERROR: ") + ex.getMessage() + '\n');
+        if (cli.getCommand() instanceof CategorySpec) {
+            ((Runnable)cli.getCommand()).run();
+        }
+        else {
+            cli.getErr().println(cli.getColorScheme().errorText("[ERROR] ") + ex.getMessage() +
+                ". Please see usage information below.\n");
 
-        cli.usage(cli.getOut());
+            cli.usage(cli.getOut());
+        }
 
         return cli.getCommandSpec().exitCodeOnInvalidInput();
     }

@@ -38,14 +38,9 @@ import picocli.CommandLine;
         NodeCommandSpec.ListNodesCommandSpec.class
     }
 )
-public class NodeCommandSpec extends AbstractCommandSpec {
-
-    @Override public void run() {
-        spec.commandLine().usage(spec.commandLine().getOut());
-    }
-
+public class NodeCommandSpec extends CategorySpec {
     @CommandLine.Command(name = "start", description = "Start an Ignite node locally.")
-    public static class StartNodeCommandSpec extends AbstractCommandSpec {
+    public static class StartNodeCommandSpec extends CommandSpec {
 
         @Inject private CliPathsConfigLoader cliPathsConfigLoader;
 
@@ -71,7 +66,7 @@ public class NodeCommandSpec extends AbstractCommandSpec {
     }
 
     @CommandLine.Command(name = "stop", description = "Stop a locally running Ignite node.")
-    public static class StopNodeCommandSpec extends AbstractCommandSpec {
+    public static class StopNodeCommandSpec extends CommandSpec {
 
         @Inject private NodeManager nodeManager;
         @Inject private CliPathsConfigLoader cliPathsConfigLoader;
@@ -93,7 +88,7 @@ public class NodeCommandSpec extends AbstractCommandSpec {
     }
 
     @CommandLine.Command(name = "list", description = "Show the list of currently running local Ignite nodes.")
-    public static class ListNodesCommandSpec extends AbstractCommandSpec {
+    public static class ListNodesCommandSpec extends CommandSpec {
 
         @Inject private NodeManager nodeManager;
         @Inject private CliPathsConfigLoader cliPathsConfigLoader;
@@ -121,7 +116,7 @@ public class NodeCommandSpec extends AbstractCommandSpec {
     }
 
     @CommandLine.Command(name = "classpath", description = "Show the current classpath used by the Ignite nodes.")
-    public static class NodesClasspathCommandSpec extends AbstractCommandSpec {
+    public static class NodesClasspathCommandSpec extends CommandSpec {
 
         @Inject private NodeManager nodeManager;
 

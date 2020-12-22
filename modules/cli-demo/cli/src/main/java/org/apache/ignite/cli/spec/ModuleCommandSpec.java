@@ -25,7 +25,6 @@ import javax.inject.Inject;
 import com.github.freva.asciitable.AsciiTable;
 import com.github.freva.asciitable.Column;
 import com.github.freva.asciitable.HorizontalAlign;
-import io.micronaut.context.ApplicationContext;
 import org.apache.ignite.cli.CliPathsConfigLoader;
 import org.apache.ignite.cli.builtins.module.ModuleManager;
 import org.apache.ignite.cli.common.IgniteCommand;
@@ -40,14 +39,9 @@ import picocli.CommandLine;
         ModuleCommandSpec.RemoveModuleCommandSpec.class
     }
 )
-public class ModuleCommandSpec extends AbstractCommandSpec implements IgniteCommand {
-
-    @Override public void run() {
-        spec.commandLine().usage(spec.commandLine().getOut());
-    }
-
+public class ModuleCommandSpec extends CategorySpec implements IgniteCommand {
     @CommandLine.Command(name = "add", description = "Add an optional Ignite module or an external artifact.")
-    public static class AddModuleCommandSpec extends AbstractCommandSpec {
+    public static class AddModuleCommandSpec extends CommandSpec {
 
         @Inject private ModuleManager moduleManager;
 
@@ -72,7 +66,7 @@ public class ModuleCommandSpec extends AbstractCommandSpec implements IgniteComm
     }
 
     @CommandLine.Command(name = "remove", description = "Add an optional Ignite module or an external artifact.")
-    public static class RemoveModuleCommandSpec extends AbstractCommandSpec {
+    public static class RemoveModuleCommandSpec extends CommandSpec {
 
         @Inject private ModuleManager moduleManager;
 
@@ -89,7 +83,7 @@ public class ModuleCommandSpec extends AbstractCommandSpec implements IgniteComm
     }
 
     @CommandLine.Command(name = "list", description = "Show the list of available optional Ignite modules.")
-    public static class ListModuleCommandSpec extends AbstractCommandSpec {
+    public static class ListModuleCommandSpec extends CommandSpec {
 
         @Inject private ModuleManager moduleManager;
 

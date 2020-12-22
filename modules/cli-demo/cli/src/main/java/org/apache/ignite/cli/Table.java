@@ -18,6 +18,7 @@
 package org.apache.ignite.cli;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import picocli.CommandLine.Help.Ansi.Text;
 import picocli.CommandLine.Help.ColorScheme;
@@ -30,7 +31,7 @@ public class Table {
 
     private final ColorScheme colorScheme;
 
-    private final Collection<Text[]> data = new ArrayList<>();
+    private final Collection<Row> data = new ArrayList<>();
 
     private int[] lengths;
 
@@ -76,7 +77,18 @@ public class Table {
             lengths[i] = Math.max(lengths[i], text.getCJKAdjustedLength());
         }
 
-        data.add(row);
+        data.add(new DataRow(row));
+    }
+
+    /**
+     * Adds a section. Title spans all columns in the table.
+     *
+     * @param title Section title.
+     */
+    public void addSection(Object title) {
+        Text text = title instanceof Text ? (Text)title : colorScheme.text(title.toString());
+
+        data.add(new SectionTitle(text));
     }
 
     /**
@@ -85,13 +97,12 @@ public class Table {
      * @return String representation of this table.
      */
     @Override public String toString() {
-        String indentStr = " ".repeat(indent);
+        if (data.isEmpty())
+            return "";
 
         StringBuilder sb = new StringBuilder();
 
-        for (Text[] row : data) {
-            sb.append(indentStr);
-
+        for (Row row : data) {
             appendLine(sb);
             appendRow(sb, row);
         }
@@ -102,6 +113,8 @@ public class Table {
     }
 
     private void appendLine(StringBuilder sb) {
+        sb.append(" ".repeat(indent));
+
         for (int length : lengths) {
             sb.append('+').append("-".repeat(length + 2));
         }
@@ -109,15 +122,53 @@ public class Table {
         sb.append("+\n");
     }
 
-    private void appendRow(StringBuilder sb, Text[] row) {
-        assert row.length == lengths.length;
+    private void appendRow(StringBuilder sb, Row row) {
+        sb.append(" ".repeat(indent))
+          .append(row.render())
+          .append('\n');
+    }
 
-        for (int i = 0; i < row.length; i++) {
-            Text item = row[i];
+    private interface Row {
+        String render();
+    }
 
-            sb.append("| ").append(item.toString()).append(" ".repeat(lengths[i] + 1 - item.getCJKAdjustedLength()));
+    private class DataRow implements Row {
+        private final Text[] row;
+
+        DataRow(Text[] row) {
+            this.row = row;
         }
 
-        sb.append("|\n");
+        @Override public String render() {
+            assert row.length == lengths.length;
+
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = 0; i < row.length; i++) {
+                Text item = row[i];
+
+                sb.append("| ")
+                  .append(item.toString())
+                  .append(" ".repeat(lengths[i] + 1 - item.getCJKAdjustedLength()));
+            }
+
+            sb.append("|");
+
+            return sb.toString();
+        }
+    }
+
+    private class SectionTitle implements Row {
+        private final Text title;
+
+        SectionTitle(Text title) {
+            this.title = title;
+        }
+
+        @Override public String render() {
+            int totalLen = Arrays.stream(lengths).sum() + 3 * (lengths.length - 1);
+
+            return "| " + title.toString() + " ".repeat(totalLen - title.getCJKAdjustedLength()) + " |";
+        }
     }
 }

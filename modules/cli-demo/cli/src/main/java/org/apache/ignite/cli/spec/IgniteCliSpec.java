@@ -36,14 +36,12 @@ import org.apache.ignite.cli.builtins.module.ModuleStorage;
 import org.apache.ignite.cli.common.IgniteCommand;
 import picocli.CommandLine;
 
-import static org.apache.ignite.cli.HelpFactoryImpl.SECTION_KEY_SYNOPSIS_EXTENSION;
-
 /**
  *
  */
 @CommandLine.Command(
     name = "ignite",
-    description = "Entry point.",
+    description = "Type @|green ignite <COMMAND>|@ @|yellow --help|@ to get help for any command.",
     subcommands = {
         InitIgniteCommandSpec.class,
         ModuleCommandSpec.class,
@@ -51,17 +49,14 @@ import static org.apache.ignite.cli.HelpFactoryImpl.SECTION_KEY_SYNOPSIS_EXTENSI
         ConfigCommandSpec.class,
     }
 )
-public class IgniteCliSpec extends AbstractCommandSpec {
-
+public class IgniteCliSpec extends CommandSpec {
     @CommandLine.Option(names = "-i", hidden = true, required = false)
     boolean interactive;
 
     @Override public void run() {
-        spec.usageMessage().sectionMap().put(SECTION_KEY_SYNOPSIS_EXTENSION,
-            help -> " Or type " + help.colorScheme().commandText(spec.qualifiedName()) +
-                    ' ' + help.colorScheme().parameterText("-i") + " to enter interactive mode.\n\n");
-
         CommandLine cli = spec.commandLine();
+
+        cli.getOut().print(banner());
 
         if (interactive)
             new InteractiveWrapper().run(cli);

@@ -17,12 +17,17 @@
 
 package org.apache.ignite.cli.spec;
 
-import org.apache.ignite.cli.VersionProvider;
-import picocli.CommandLine;
-import picocli.CommandLine.Model.CommandSpec;
+import java.io.PrintWriter;
+import picocli.CommandLine.Help.ColorScheme;
 
-@CommandLine.Command(versionProvider = VersionProvider.class)
-public abstract class AbstractCommandSpec implements Runnable {
-    @CommandLine.Spec
-    protected CommandSpec spec;
+public abstract class CategorySpec extends SpecAdapter {
+    @Override public void run() {
+        PrintWriter out = spec.commandLine().getOut();
+        ColorScheme cs = spec.commandLine().getColorScheme();
+
+        out.println(cs.errorText("[ERROR] ") + "Unknown command: " +
+            cs.commandText(spec.qualifiedName()) + ". See the list of available commands below.\n");
+
+        spec.parent().commandLine().usage(out);
+    }
 }

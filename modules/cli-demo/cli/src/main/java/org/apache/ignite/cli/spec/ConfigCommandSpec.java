@@ -18,7 +18,6 @@
 package org.apache.ignite.cli.spec;
 
 import javax.inject.Inject;
-import io.micronaut.context.ApplicationContext;
 import org.apache.ignite.cli.IgniteCLIException;
 import org.apache.ignite.cli.builtins.config.ConfigurationClient;
 import picocli.CommandLine;
@@ -31,14 +30,9 @@ import picocli.CommandLine;
         ConfigCommandSpec.SetConfigCommandSpec.class
     }
 )
-public class ConfigCommandSpec extends AbstractCommandSpec {
-
-    @Override public void run() {
-        spec.commandLine().usage(spec.commandLine().getOut());
-    }
-
+public class ConfigCommandSpec extends CategorySpec {
     @CommandLine.Command(name = "get", description = "Get current Ignite cluster configuration values.")
-    public static class GetConfigCommandSpec extends AbstractCommandSpec {
+    public static class GetConfigCommandSpec extends CommandSpec {
 
         @Inject private ConfigurationClient configurationClient;
 
@@ -59,7 +53,7 @@ public class ConfigCommandSpec extends AbstractCommandSpec {
         name = "set",
         description = "Update Ignite cluster configuration values."
     )
-    public static class SetConfigCommandSpec extends AbstractCommandSpec {
+    public static class SetConfigCommandSpec extends CommandSpec {
 
         @Inject private ConfigurationClient configurationClient;
 
