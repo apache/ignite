@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.util;
 
 import java.io.Serializable;
+import java.net.Inet6Address;
+import java.net.UnknownHostException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -60,10 +62,10 @@ public class HostAndPortRange implements Serializable {
         if (F.isEmpty(addrStr))
             throw createParseError(addrStr, errMsgPrefix, "Address is empty");
 
-        if (addrStr.contains("[")) { // IPv6
+        if (addrStr.charAt(0) == '[') { // IPv6 with port(s)
             int hostEndIdx = addrStr.indexOf(']');
             if (hostEndIdx == -1) {
-                throw createParseError(addrStr, errMsgPrefix, "IPv6 host is incorrect");
+                throw createParseError(addrStr, errMsgPrefix, "IPv6 is incorrect");
             }
             host = addrStr.substring(1, hostEndIdx);
             if (hostEndIdx == addrStr.length() - 1) { // no port specified, using default
@@ -76,20 +78,30 @@ public class HostAndPortRange implements Serializable {
                 portFrom = ports[0];
                 portTo = ports[1];
             }
-
-        } else { //IPv4 or empty host
-            final int colIdx = addrStr.indexOf(':');
+        } else { //IPv4 || IPv6 without port || empty host
+            final int colIdx = addrStr.lastIndexOf(':');
             if (colIdx > 0) {
-                host = addrStr.substring(0, colIdx);
-                portStr = addrStr.substring(colIdx + 1);
-                int[] ports = verifyPortStr(addrStr, errMsgPrefix, portStr);
-                portFrom = ports[0];
-                portTo = ports[1];
-
+                if (addrStr.substring(0, colIdx).contains(":")) { // IPv6 without [] and port
+                    try {
+                        Inet6Address.getByName(addrStr);
+                        host = addrStr;
+                        portFrom = dfltPortFrom;
+                        portTo = dfltPortTo;
+                    }
+                    catch (UnknownHostException e) {
+                        throw createParseError(addrStr, errMsgPrefix, "IPv6 is incorrect");
+                    }
+                }
+                else {
+                    host = addrStr.substring(0, colIdx);
+                    portStr = addrStr.substring(colIdx + 1);
+                    int[] ports = verifyPortStr(addrStr, errMsgPrefix, portStr);
+                    portFrom = ports[0];
+                    portTo = ports[1];
+                }
             } else if (colIdx == 0) {
                 throw createParseError(addrStr, errMsgPrefix, "Host name is empty");
-            }
-            else { // Port is not specified, use defaults.
+            } else { // Port is not specified, use defaults.
                 host = addrStr;
 
                 portFrom = dfltPortFrom;
