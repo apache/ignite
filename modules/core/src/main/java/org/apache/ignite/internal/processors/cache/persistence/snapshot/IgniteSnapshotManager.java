@@ -1177,14 +1177,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             rowData = asRowData(flags);
 
-            store.ensure();
+            store.sync();
             pages = store.pages();
 
             locBuff = ByteBuffer.allocateDirect(store.getPageSize())
                 .order(ByteOrder.nativeOrder());
             fragmentBuff = ByteBuffer.allocateDirect(store.getPageSize())
                 .order(ByteOrder.nativeOrder());
-
         }
 
         /** {@inheritDoc */
@@ -1213,7 +1212,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     locBuff.clear();
 
-                    if (currPageIdx > pages - 1)
+                    if (currPageIdx >= pages)
                         return false;
 
                     boolean success = store.read(pageId, locBuff, true);

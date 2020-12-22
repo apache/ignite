@@ -1182,36 +1182,15 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         int grpId = ignite.cachex(dfltCacheCfg.getName()).context().groupId();
 
-//        AtomicReference<IgniteCacheOffheapManager.CacheDataStore> store = new AtomicReference<>();
-//
-//        ignite.context().cache().cache(dfltCacheCfg.getName())
-//            .context()
-//            .offheap()
-//            .cacheDataStores()
-//            .forEach(s -> {
-//                if (s.partId() == 0)
-//                    store.set(s);
-//                });
-//
-//        GridCursor<? extends CacheDataRow> cur = store.get().cursor();
-//
-//        int rows = 0;
-//
-//        while (cur.next()) {
-//            CacheDataRow row = cur.get();
-//
-//            System.out.println("offheap row = " + row);
-//
-//            rows++;
-//        }
-//
-//        System.out.println("offheap rows >>>> " + rows);
-//
         int rows2 = 0;
 
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).getSnapshotDataRows(SNAPSHOT_NAME, grpId, 0)) {
             while (iter.hasNext()) {
                 CacheDataRow row = iter.next();
+
+                row.value().finishUnmarshal(ignite.context()
+                        .cache().cache(dfltCacheCfg.getName()).context().cacheObjectContext(),
+                    U.resolveClassLoader(ignite.configuration()));
 
                 System.out.println("row = " + row);
 
@@ -1220,6 +1199,71 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         }
 
         System.out.println("rows >>>> " + rows2);
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testClusterSnapshotIteratorLargeRows() throws Exception {
+        CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+        IgniteEx ignite = startGridsWithoutCache(2);
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[4096]));
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        int grpId = ignite.cachex(DEFAULT_CACHE_NAME).context().groupId();
+
+        AtomicReference<IgniteCacheOffheapManager.CacheDataStore> store = new AtomicReference<>();
+
+        ignite.context().cache().cache(dfltCacheCfg.getName())
+            .context()
+            .offheap()
+            .cacheDataStores()
+            .forEach(s -> {
+                if (s.partId() == 0)
+                    store.set(s);
+            });
+
+        GridCursor<? extends CacheDataRow> cur = store.get().cursor();
+
+        int rows = 0;
+
+        while (cur.next()) {
+            CacheDataRow row = cur.get();
+
+            System.out.println("offheap row = " + row);
+
+            rows++;
+        }
+
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).getSnapshotDataRows(SNAPSHOT_NAME, grpId, 0)) {
+            while (iter.hasNext()) {
+                CacheDataRow row = iter.next();
+
+                row.value().finishUnmarshal(ignite.context()
+                        .cache().cache(DEFAULT_CACHE_NAME).context().cacheObjectContext(),
+                    U.resolveClassLoader(ignite.configuration()));
+
+                System.out.println("row = " + row);
+            }
+        }
+    }
+
+    /** */
+    private static class Value {
+        /** */
+        private final byte[] arr;
+
+        /**
+         * @param arr Test array.
+         */
+        public Value(byte[] arr) {
+            this.arr = arr;
+        }
     }
 
     /**
