@@ -23,8 +23,8 @@
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="{{ cache.name }}"/>
                     <property name="cacheMode" value="{{ cache.cache_mode }}"/>
-                    <property name="backups" value="{{ cache.backups or 0 }}"/>
                     <property name="atomicityMode" value="{{ cache.atomicity_mode }}"/>
+                    <property name="backups" value="{{ cache.backups }}"/>
                     {% if cache.indexed_types %}
                     <property name="indexedTypes">
                         <list>
