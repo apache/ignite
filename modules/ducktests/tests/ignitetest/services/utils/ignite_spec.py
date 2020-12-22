@@ -121,14 +121,13 @@ class IgniteNodeSpec(IgniteSpec):
     """
     Spec to run ignite node
     """
-    @property
-    def command(self):
+    def command(self, log_file):
         cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
               (self._envs(),
                self.script("ignite.sh"),
                self._jvm_opts(),
                self.path_aware.config_file,
-               self.path_aware.log_path)
+               log_file)
 
         return cmd
 
@@ -144,14 +143,14 @@ class IgniteApplicationSpec(IgniteSpec):
     def _app_args(self):
         return ",".join(self.args)
 
-    @property
-    def command(self):
+    # pylint: disable=W0221
+    def command(self, log_file):
         cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
               (self._envs(),
                self.script("ignite.sh"),
                self._jvm_opts(),
                self._app_args(),
-               self.path_aware.log_path)
+               log_file)
 
         return cmd
 
