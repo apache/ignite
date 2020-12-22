@@ -1567,8 +1567,12 @@ namespace Apache.Ignite.Core.Tests.Services
         }
         
 #if NETCOREAPP
+        /// <summary>
+        /// Adds support of the local dates to the Ignite timestamp serialization.
+        /// </summary>
         class TimestampConverter : ITimestampConverter
         {
+            /** <inheritdoc /> */
             public void ToJavaTicks(DateTime date, out long high, out int low)
             {
                 if (date.Kind == DateTimeKind.Local)
@@ -1577,6 +1581,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 BinaryUtils.ToJavaDate(date, out high, out low);
             }
 
+            /** <inheritdoc /> */
             public DateTime FromJavaTicks(long high, int low)
             {
                 return new DateTime(BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);

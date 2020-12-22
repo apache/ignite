@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -80,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .Select(x => x.Serializer)
                 .OfType<BinaryReflectiveSerializer>()
                 .Single();
-            
+
             Assert.IsTrue(ser.ForceTimestamp);
 
             AssertTimestampField<DateTimeObj2>((o, d) => o.Value = d, o => o.Value, "Value");
@@ -109,6 +110,34 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             AssertTimestampField<DateTimeClassAttribute2>((o, d) => o.Value = d, o => o.Value, "Value");
         }
+
+#if NETCOREAPP
+        /// <summary>
+        /// Tests custom timestamp converter.
+        /// </summary>
+        [Test]
+        public void TestCustomTimestampConverter()
+        {
+            var cfg =  new IgniteConfiguration(TestUtils.GetTestConfiguration(name: "ignite-1"))
+            {
+                BinaryConfiguration = new BinaryConfiguration()
+                {
+                    ForceTimestamp = true, 
+                    TimestampConverter = new TimestampConverter()
+                }
+            };
+            var ignite = Ignition.Start(cfg);
+            var binary = ignite.GetBinary();
+ 
+            // Check config.
+            Assert.NotNull(ignite.GetConfiguration().BinaryConfiguration.TimestampConverter);
+
+            AssertTimestampField<DateTimeObj2>((o, d) => o.Value = d, o => o.Value, "Value");
+
+            var ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<IBinaryObject>(new DateTime(1997, 8, 29)), 
+                "Converter Error!");
+        }
+#endif
 
         /// <summary>
         /// Asserts that specified field is serialized as DateTime object.
@@ -201,4 +230,27 @@ namespace Apache.Ignite.Core.Tests.Binary
             public DateTime Value;
         }
     }
+
+#if NETCOREAPP
+    /// <summary>
+    /// Adds support of the local dates to the Ignite timestamp serialization.
+    /// </summary>
+    class TimestampConverter : ITimestampConverter
+    {
+        /** <inheritdoc /> */
+        public void ToJavaTicks(DateTime date, out long high, out int low)
+        {
+            if (date.Year == 1997 && date.Month == 8 && date.Day == 29)
+                throw new BinaryObjectException("Converter Error!");
+
+            BinaryUtils.ToJavaDate(date, out high, out low);
+        }
+
+        /** <inheritdoc /> */
+        public DateTime FromJavaTicks(long high, int low)
+        {
+            return new DateTime(BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
+        }
+    }
+#endif
 }
