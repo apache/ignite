@@ -115,7 +115,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
+        QueryEngine engine = Commons.lookupComponent(ignite.context(), QueryEngine.class);
 
         List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
             "SELECT count(*)" +

@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -160,6 +161,9 @@ public class Fragment {
 
             if (rootFragment())
                 mapping = FragmentMapping.create(ctx.localNodeId()).colocate(mapping);
+
+            if (single())
+                mapping = FragmentMapping.create(F.first(nodesSource.get())).colocate(mapping);
 
             return mapping.finalize(nodesSource);
         }
