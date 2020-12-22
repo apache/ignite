@@ -258,7 +258,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (typeId == BinaryTypeId.Timestamp)
                 {
                     // Date.
-                    handler = new BinarySystemReader<DateTime?>(stream => BinaryUtils.ReadTimestamp(stream, ctx.Marshaller.DateTimeConverter));
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestamp(ctx.Stream, ctx.Marshaller.TimestampConverter));
+                    return true;
                 }
                 else
                 {
@@ -316,7 +317,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryTypeId.Timestamp);
 
-            BinaryUtils.WriteTimestamp(obj, ctx.Stream, ctx.Marshaller.DateTimeConverter);
+            BinaryUtils.WriteTimestamp(obj, ctx.Stream, ctx.Marshaller.TimestampConverter);
         }
 
         /// <summary>

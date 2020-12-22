@@ -390,7 +390,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <param name="converter">DateTime Converter.</param>
          */
-        public static void WriteTimestamp(DateTime val, IBinaryStream stream, IDateTimeConverter converter)
+        public static void WriteTimestamp(DateTime val, IBinaryStream stream, ITimestampConverter converter)
         {
             long high;
             int low;
@@ -410,7 +410,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="converter">DateTime Converter.</param>
          * <returns>Date</returns>
          */
-        public static DateTime? ReadTimestamp(IBinaryStream stream, IDateTimeConverter converter)
+        public static DateTime? ReadTimestamp(IBinaryStream stream, ITimestampConverter converter)
         {
             long high = stream.ReadLong();
             int low = stream.ReadInt();
@@ -456,7 +456,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     stream.WriteByte(BinaryTypeId.Timestamp);
 
-                    WriteTimestamp(val.Value, stream, Marsh.DateTimeConverter);
+                    WriteTimestamp(val.Value, stream, Marsh.TimestampConverter);
                 }
                 else
                     stream.WriteByte(HdrNull);
@@ -1181,7 +1181,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             DateTime?[] vals = new DateTime?[len];
 
             for (int i = 0; i < len; i++)
-                vals[i] = stream.ReadByte() == HdrNull ? null : ReadTimestamp(stream, Marshaller.DateTimeConverter);
+                vals[i] = stream.ReadByte() == HdrNull ? null : ReadTimestamp(stream, Marshaller.TimestampConverter);
 
             return vals;
         }

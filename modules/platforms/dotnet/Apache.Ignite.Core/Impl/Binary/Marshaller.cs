@@ -147,9 +147,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets date time converter.
         /// </summary>
-        public IDateTimeConverter DateTimeConverter
+        public ITimestampConverter TimestampConverter
         {
-            get { return _cfg.DateTimeConverter; }
+            get { return _cfg.TimestampConverter; }
         }
 
         /// <summary>

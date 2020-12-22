@@ -20,17 +20,17 @@ namespace Apache.Ignite.Core.Binary
     using System;
 
     /// <summary>
-    /// Converter for DateTime objects.
+    /// Converts <see cref="DateTime"/> values to Java Timestamp and back.
     /// </summary>
-    public interface IDateTimeConverter
+    public interface ITimestampConverter
     {
-        /// <summary>Convert date to Java ticks.</summary>
+        /// <summary>Converts date to Java ticks.</summary>
         /// <param name="date">Date</param>
         /// <param name="high">High part (milliseconds).</param>
         /// <param name="low">Low part (nanoseconds)</param>
         void ToJavaTicks(DateTime date, out long high, out int low);
 
-        /// <summary>Convert date from Java ticks.</summary>
+        /// <summary>Converts date from Java ticks.</summary>
         /// <param name="high">High part (milliseconds).</param>
         /// <param name="low">Low part (nanoseconds)</param>
         DateTime FromJavaTicks(long high, int low);

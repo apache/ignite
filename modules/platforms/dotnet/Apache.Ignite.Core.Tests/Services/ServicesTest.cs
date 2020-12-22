@@ -1181,7 +1181,7 @@ namespace Apache.Ignite.Core.Tests.Services
                     NameMapper = BinaryBasicNameMapper.SimpleNameInstance,
                     ForceTimestamp = true
 #if NETCOREAPP
-                    , DateTimeConverter = new DateTimeConverter()
+                    , TimestampConverter = new TimestampConverter()
 #endif
                 }
             };
@@ -1567,7 +1567,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
         
 #if NETCOREAPP
-        class DateTimeConverter : IDateTimeConverter
+        class TimestampConverter : ITimestampConverter
         {
             public void ToJavaTicks(DateTime date, out long high, out int low)
             {
