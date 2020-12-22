@@ -31,11 +31,11 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.processors.cache.CacheClusterMetricsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.CacheLocalMetricsMXBeanImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
@@ -76,7 +76,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         cleanPersistenceDir();
 
-        GridQueryProcessor.idxCls = null;
+        GridIndexingManager.idxRebuildCls = null;
     }
 
     /**
@@ -137,11 +137,9 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         idxPaths.forEach(idxPath -> assertTrue(U.delete(idxPath)));
 
-        BlockingIndexesRebuildTask blkRebuild = new BlockingIndexesRebuildTask();
+        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
 
         n = startGrid(0);
-
-        n.context().indexing().setRebuild(blkRebuild);
 
         BooleanMetric idxRebuildInProgress1 = indexRebuildMetric(n, cacheName1, "IsIndexRebuildInProgress");
         BooleanMetric idxRebuildInProgress2 = indexRebuildMetric(n, cacheName2, "IsIndexRebuildInProgress");
@@ -206,7 +204,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         assertEquals(0, idxRebuildKeyProcessedCache2);
         assertEquals(0, idxRebuildKeyProcessedCluster);
 
-        blkRebuild.stopBlock(cacheName1);
+        ((BlockingIndexesRebuildTask)n.context().indexing().getIdxRebuild()).stopBlock(cacheName1);
 
         n.cache(cacheName1).indexReadyFuture().get(30_000);
 
@@ -218,7 +216,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         assertEquals(0, idxRebuildKeyProcessedCache2);
         assertEquals(0, idxRebuildKeyProcessedCluster);
 
-        blkRebuild.stopBlock(cacheName2);
+        ((BlockingIndexesRebuildTask)n.context().indexing().getIdxRebuild()).stopBlock(cacheName2);
 
         n.cache(cacheName2).indexReadyFuture().get(30_000);
 

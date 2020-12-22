@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.index.sorted.SortOrder;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
@@ -173,6 +174,9 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
                 if (row.getKey(i) == null)
                     return 0;
 
+                if (row.getKey(i) == NullKey.INSTANCE)
+                    return 1;
+
                 // Other keys are not inlined. Should compare as rows.
                 if (i >= schema.getKeyDefinitions().length) {
                     lastIdxUsed = i;
@@ -235,6 +239,9 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
                 // possible keys for that comparison).
                 if (row.getKey(i) == null)
                     return 0;
+
+                if (row.getKey(i) == NullKey.INSTANCE)
+                    return 1;
 
                 int c = def.getRowComparator().compareKey(currRow, row, i);
 
@@ -437,6 +444,6 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
 
     /** {@inheritDoc} */
     @Override protected IoStatisticsHolder statisticsHolder() {
-        return stats;
+        return stats != null ? stats : super.statisticsHolder();
     }
 }

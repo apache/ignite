@@ -48,10 +48,10 @@ import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
+import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
@@ -80,7 +80,6 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
         CacheAtomicityMode[] atomicityModes = new CacheAtomicityMode[] {
             CacheAtomicityMode.ATOMIC,
             CacheAtomicityMode.TRANSACTIONAL
-//            CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT
         };
 
         List<Object[]> res = new ArrayList<>();
@@ -117,7 +116,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        GridQueryProcessor.idxCls = null;
+        GridIndexingManager.idxRebuildCls = null;
 
         for (T2<CountDownLatch, CountDownLatch> block : BLOCKS.values())
             block.get1().countDown();
@@ -604,9 +603,9 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
      * @throws Exception If failed.
      */
     private IgniteEx ignitionStart(IgniteConfiguration cfg, final CountDownLatch latch) throws Exception {
-        IgniteEx node = startGrid(cfg);
+        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
 
-        node.context().indexing().setRebuild(new BlockingIndexesRebuildTask());
+        IgniteEx node = startGrid(cfg);
 
         if (latch != null) {
             node.context().discovery().setCustomEventListener(SchemaFinishDiscoveryMessage.class,

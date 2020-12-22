@@ -306,9 +306,4 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         String colNamePtrn) {
         return null;
     }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, Integer> secondaryIndexesInlineSize() {
-        return null;
-    }
 }

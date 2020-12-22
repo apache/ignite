@@ -24,6 +24,9 @@ import org.jetbrains.annotations.Nullable;
  * Represents index FQDN.
  */
 public class IndexName implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Schema name of {@code null} if index is not related to SQL schema. */
     private final @Nullable String schemaName;
 

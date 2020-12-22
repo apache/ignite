@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -127,9 +128,8 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     /** */
     private void startupTestCluster() throws Exception {
         for (int i = 0; i < GRIDS_NUM; i++ ) {
-            IgniteEx node = startGrid(i);
-
-            node.context().indexing().setRebuild(new BlockingIndexing());
+            GridIndexingManager.idxRebuildCls = BlockingIndexing.class;
+            startGrid(i);
         }
 
         IgniteEx ignite = grid(0);
@@ -484,8 +484,8 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         GridTestUtils.deleteIndexBin(getTestIgniteInstanceName(2));
 
+        GridIndexingManager.idxRebuildCls = BlockingIndexing.class;
         final IgniteEx ignite = startGrid(igniteIdx);
-        ignite.context().indexing().setRebuild(new BlockingIndexing());
 
         resetBaselineTopology();
         awaitPartitionMapExchange();

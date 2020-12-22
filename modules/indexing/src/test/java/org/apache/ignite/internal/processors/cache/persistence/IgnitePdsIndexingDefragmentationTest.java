@@ -30,12 +30,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
@@ -94,7 +94,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        GridQueryProcessor.idxCls = null;
+        GridIndexingManager.idxRebuildCls = null;
     }
 
     /**
@@ -139,12 +139,13 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         IgniteEx node = startGrid(0);
 
-        CaptureRebuildGridQueryIndexing rebuild = new CaptureRebuildGridQueryIndexing();
-        node.context().indexing().setRebuild(rebuild);
+        GridIndexingManager.idxRebuildCls = CaptureRebuildGridQueryIndexing.class;
 
         awaitPartitionMapExchange();
 
-        assertFalse(rebuild.didRebuildIndexes());
+        CaptureRebuildGridQueryIndexing idxRebuild = (CaptureRebuildGridQueryIndexing) node.context().indexing().getIdxRebuild();
+
+        assertFalse(idxRebuild.didRebuildIndexes());
 
         IgniteCache<Object, Object> cache = node.cache(DEFAULT_CACHE_NAME);
 

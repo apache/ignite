@@ -63,6 +63,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.ClusterMetricsImpl;
+import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest;
@@ -111,7 +112,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         isPersistenceEnabled = false;
 
-        GridQueryProcessor.idxCls = null;
+        GridIndexingManager.idxRebuildCls = null;
     }
 
     /** @return System schema name. */
@@ -360,25 +361,23 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         idxPaths.forEach(idxPath -> assertTrue(U.delete(idxPath)));
 
-        BlockingIndexesRebuildTask blkRebuild = new BlockingIndexesRebuildTask();
+        GridIndexingManager.idxRebuildCls = BlockingIndexesRebuildTask.class;
 
         srv = startGrid(getConfiguration());
-
-        srv.context().indexing().setRebuild(blkRebuild);
 
         srv.cluster().active(true);
 
         checkIndexRebuild(cacheName1, true);
         checkIndexRebuild(cacheName2, true);
 
-        blkRebuild.stopBlock(cacheSqlName1);
+        ((BlockingIndexesRebuildTask)srv.context().indexing().getIdxRebuild()).stopBlock(cacheSqlName1);
 
         srv.cache(cacheSqlName1).indexReadyFuture().get(30_000);
 
         checkIndexRebuild(cacheName1, false);
         checkIndexRebuild(cacheName2, true);
 
-        blkRebuild.stopBlock(cacheSqlName2);
+        ((BlockingIndexesRebuildTask)srv.context().indexing().getIdxRebuild()).stopBlock(cacheSqlName2);
 
         srv.cache(cacheSqlName2).indexReadyFuture().get(30_000);
 

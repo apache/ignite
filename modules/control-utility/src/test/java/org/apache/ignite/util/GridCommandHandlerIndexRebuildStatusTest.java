@@ -29,6 +29,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -142,11 +143,11 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 1));
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 2));
 
+        GridIndexingManager.idxRebuildCls = BlockingIndexing.class;
         IgniteEx ignite1 = startGrid(GRIDS_NUM - 1);
-        ignite1.context().indexing().setRebuild(new BlockingIndexing());
 
+        GridIndexingManager.idxRebuildCls = BlockingIndexing.class;
         IgniteEx ignite2 = startGrid(GRIDS_NUM - 2);
-        ignite2.context().indexing().setRebuild(new BlockingIndexing());
 
         final UUID id1 = ignite1.localNode().id();
         final UUID id2 = ignite2.localNode().id();
@@ -177,11 +178,11 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 1));
         deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 2));
 
+        GridIndexingManager.idxRebuildCls = BlockingIndexing.class;
         IgniteEx ignite1 = startGrid(GRIDS_NUM - 1);
-        ignite1.context().indexing().setRebuild(new BlockingIndexing());
 
-        IgniteEx ignite2 = startGrid(GRIDS_NUM - 2);
-        ignite2.context().indexing().setRebuild(new BlockingIndexing());
+        GridIndexingManager.idxRebuildCls = BlockingIndexing.class;
+        startGrid(GRIDS_NUM - 2);
 
         final UUID id1 = ignite1.localNode().id();
 

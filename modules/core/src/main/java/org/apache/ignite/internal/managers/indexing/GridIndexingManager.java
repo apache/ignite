@@ -69,14 +69,25 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
+    /** For tests to emulate long rebuild process. */
+    public static Class<? extends IndexesRebuildTask> idxRebuildCls;
+
     /** Indexes rebuild job. */
-    private IndexesRebuildTask rebuild = new IndexesRebuildTask();
+    private final IndexesRebuildTask idxRebuild;
 
     /**
      * @param ctx  Kernal context.
      */
-    public GridIndexingManager(GridKernalContext ctx) {
+    public GridIndexingManager(GridKernalContext ctx) throws IgniteCheckedException {
         super(ctx, ctx.config().getIndexingSpi());
+
+        if (idxRebuildCls != null) {
+            idxRebuild = U.newInstance(idxRebuildCls);
+
+            idxRebuildCls = null;
+        }
+        else
+            idxRebuild = new IndexesRebuildTask();
     }
 
     /**
@@ -182,7 +193,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * Start rebuild of indexes for specified cache.
      */
     public IgniteInternalFuture<?> rebuildIndexesForCache(GridCacheContext cctx) {
-        return rebuild.rebuild(cctx);
+        return idxRebuild.rebuild(cctx);
     }
 
     /**
@@ -452,8 +463,8 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
         return log;
     }
 
-    /** Set custom rebuild indexes job. For test purposes only. */
-    public void setRebuild(IndexesRebuildTask rebuild) {
-        this.rebuild = rebuild;
+    /** For tests purposes. */
+    public IndexesRebuildTask getIdxRebuild() {
+        return idxRebuild;
     }
 }

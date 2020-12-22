@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -69,6 +69,9 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     /** Thread pool size for build index. */
     private Integer buildIdxThreadPoolSize;
 
+    /** GridQueryIndexing class. */
+    private Class<? extends IndexesRebuildTask> blkIndexingCls = BlockingIndexesRebuildTask.class;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg = super.commonConfiguration(idx);
@@ -86,6 +89,9 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration serverConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg = super.serverConfiguration(idx);
+
+        if (nonNull(blkIndexingCls))
+            GridIndexingManager.idxRebuildCls = blkIndexingCls;
 
         return cfg;
     }
@@ -110,7 +116,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         stopAllGrids();
 
         cleanPersistenceDir();
-        GridQueryProcessor.idxCls = null;
+        GridIndexingManager.idxRebuildCls = null;
     }
 
     /** {@inheritDoc} */
@@ -145,7 +151,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      */
     @Test
     public void testIndexRebuild() throws Exception {
-        IgniteEx srv = startServer(true);
+        IgniteEx srv = startServer();
 
         IgniteInternalCache cc = createAndFillTableWithIndex(srv);
 
@@ -157,7 +163,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         assertTrue(delete(idxPath));
 
-        srv = startServer(true);
+        srv = startServer();
 
         putData(srv, true);
 
@@ -200,7 +206,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      */
     @Test
     public void testDataRaceWhenMarkIdxRebuild() throws Exception {
-        IgniteEx srv = startServer(true);
+        IgniteEx srv = startServer();
 
         IgniteInternalCache internalCache = createAndFillTableWithIndex(srv);
 
@@ -212,7 +218,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         BlockingIndexesRebuildTask.slowRebuildIdxFut = true;
 
-        srv = startServer(true);
+        srv = startServer();
 
         srv.cache(CACHE_NAME).indexReadyFuture().get();
 
@@ -234,7 +240,9 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      * @throws Exception if failed.
      */
     private void checkCntThreadForRebuildIdx(int buildIdxThreadCnt) throws Exception {
-        IgniteEx srv = startServer(false);
+        blkIndexingCls = null;
+
+        IgniteEx srv = startServer();
 
         IgniteInternalCache internalCache = createAndFillTableWithIndex(srv);
 
@@ -250,7 +258,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         buildIdxThreadPoolSize = buildIdxThreadCnt;
 
-        srv = startServer(true);
+        srv = startServer();
         srv.cache(CACHE_NAME).indexReadyFuture().get();
 
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
@@ -362,23 +370,15 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         }
     }
 
-    protected IgniteEx startServer() throws Exception {
-        return startServer(false);
-    }
-
     /**
      * Start server node.
      *
      * @return Started node.
      * @throws Exception if failed.
      */
-    protected IgniteEx startServer(boolean setRebuild) throws Exception {
+    protected IgniteEx startServer() throws Exception {
         IgniteEx srvNode = startGrid(serverConfiguration(0));
         srvNode.active(true);
-
-        if (setRebuild)
-            srvNode.context().indexing().setRebuild(new BlockingIndexesRebuildTask());
-
         return srvNode;
     }
 
