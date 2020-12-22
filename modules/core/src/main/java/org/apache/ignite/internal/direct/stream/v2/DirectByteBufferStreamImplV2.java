@@ -588,17 +588,13 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeString(String val) {
         if (val != null) {
-            if (buf.capacity() < val.length()) {
-                if (byteArr == null)
-                    byteArr = val.getBytes();
+            if (byteArr == null)
+                byteArr = val.getBytes();
 
-                writeByteArray(byteArr);
+            writeByteArray(byteArr);
 
-                if (lastFinished)
-                    byteArr = null;
-            }
-            else
-                writeByteArray(val.getBytes());
+            if (lastFinished)
+                byteArr = null;
         }
         else
             writeByteArray(null);
