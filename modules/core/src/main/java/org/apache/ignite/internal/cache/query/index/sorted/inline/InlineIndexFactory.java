@@ -37,13 +37,8 @@ public class InlineIndexFactory implements IndexFactory {
     /** Instance of factory. */
     public static final InlineIndexFactory INSTANCE = new InlineIndexFactory();
 
-    /** No-op constructor. */
-    private InlineIndexFactory() {
-        // No-op.
-    }
-
     /** {@inheritDoc} */
-    @Override public Index createIndex(GridCacheContext cctx, IndexDefinition def) {
+    @Override public Index createIndex(GridCacheContext<?, ?> cctx, IndexDefinition def) {
         SortedIndexDefinition sdef = (SortedIndexDefinition) def;
 
         InlineIndexTree[] trees = new InlineIndexTree[sdef.getSegments()];
@@ -80,9 +75,8 @@ public class InlineIndexFactory implements IndexFactory {
     }
 
     /** */
-    private InlineIndexTree createIndexSegment(GridCacheContext cctx, SortedIndexDefinition def, RootPage rootPage,
-        IoStatisticsHolder stats, InlineRecommender recommender) throws Exception {
-
+    protected InlineIndexTree createIndexSegment(GridCacheContext<?, ?> cctx, SortedIndexDefinition def,
+        RootPage rootPage, IoStatisticsHolder stats, InlineRecommender recommender) throws Exception {
         return new InlineIndexTree(
             def,
             cctx,
@@ -99,7 +93,7 @@ public class InlineIndexFactory implements IndexFactory {
     }
 
     /** */
-    private RootPage getRootPage(GridCacheContext ctx, String treeName, int segment) throws Exception {
+    protected RootPage getRootPage(GridCacheContext<?, ?> ctx, String treeName, int segment) throws Exception {
         return ctx.offheap().rootPageForIndex(ctx.cacheId(), treeName, segment);
     }
 }

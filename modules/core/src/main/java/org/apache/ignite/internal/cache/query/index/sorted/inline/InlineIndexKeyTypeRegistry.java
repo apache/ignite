@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.JavaObjectKey;
 import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.BooleanInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.keys.ByteInlineIndexKeyType;
@@ -80,7 +81,7 @@ public class InlineIndexKeyTypeRegistry {
      * Get key type for a class. Used for user queries, where getting type from class.
      */
     public static InlineIndexKeyType get(Class<?> clazz) {
-        if (clazz == BinaryObjectImpl.class)
+        if (clazz == BinaryObjectImpl.class || clazz == JavaObjectKey.class)
             return objectType;
 
         InlineIndexKeyType key = classMapping.get(clazz);

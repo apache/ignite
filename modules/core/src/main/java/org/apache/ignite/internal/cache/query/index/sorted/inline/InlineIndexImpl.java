@@ -28,7 +28,6 @@ import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.cache.query.index.SingleCursor;
 import org.apache.ignite.cache.query.index.sorted.IndexKey;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
@@ -231,7 +230,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             boolean replaced = false;
 
             // Create or Update.
-            if (newRow != null && belongsToIndex(newRow)) {
+            if (newRow != null) {
                 int segment = segmentForRow(newRow);
 
                 IndexRowImpl row0 = new IndexRowImpl(def.getSchema(), newRow);
@@ -246,7 +245,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             }
 
             // Delete.
-            if (!replaced && oldRow != null && belongsToIndex(oldRow)) {
+            if (!replaced && oldRow != null) {
                 int segment = segmentForRow(oldRow);
 
                 segments[segment].remove(new IndexRowImpl(def.getSchema(), oldRow));
@@ -259,9 +258,6 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public CacheDataRow put(CacheDataRow row) throws IgniteCheckedException {
-        if (!belongsToIndex(row))
-            return null;
-
         int segment = segmentForRow(row);
 
         try {
@@ -281,21 +277,24 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public boolean putx(CacheDataRow row) throws IgniteCheckedException {
-        if (!belongsToIndex(row))
-            return false;
+        IndexRowImpl r = new IndexRowImpl(def.getSchema(), row);
 
-        int segment = segmentForRow(row);
+        return putx(r);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public boolean putx(IndexSearchRow row) throws IgniteCheckedException {
+        int segment = segmentForRow(row.getCacheDataRow());
 
         try {
             ThreadLocalSchemaHolder.setSchema(def.getSchema());
 
-            IndexRowImpl r = new IndexRowImpl(def.getSchema(), row);
-
             // Validate all keys.
             for (int i = 0; i < def.getSchema().getKeyDefinitions().length; ++i)
-                r.getKey(i);
+                row.getKey(i);
 
-            return segments[segment].putx(r);
+            return segments[segment].putx(row);
         }
         catch (Throwable t) {
             cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
@@ -309,9 +308,6 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public boolean removex(CacheDataRow row) throws IgniteCheckedException {
-        if (!belongsToIndex(row))
-            return false;
-
         int segment = segmentForRow(row);
 
         return segments[segment].removex(new IndexRowImpl(def.getSchema(), row));
@@ -416,8 +412,6 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         if (!destroyed.compareAndSet(false, true))
             return;
 
-        GridKernalContext ctx = cctx.kernalContext();
-
         try {
             if (cctx.affinityNode() && !softDelete) {
                 List<Long> rootPages = new ArrayList<>(segments.length);
@@ -469,10 +463,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         cctx.offheap().dropRootPageForIndex(cctx.cacheId(), treeName, segIdx);
     }
 
-    /**
-     * @return whether cache row belongs to this index.
-     */
-    private boolean belongsToIndex(CacheDataRow row) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public boolean belongsToIndex(CacheDataRow row) throws IgniteCheckedException {
         return cctx.kernalContext().query().belongsToTable(
             cctx, def.getIdxName().cacheName(), def.getIdxName().tableName(), row.key(), row.value());
     }

@@ -33,7 +33,7 @@ public class ClientIndexFactory implements IndexFactory {
     private ClientIndexFactory() {}
 
     /** {@inheritDoc} */
-    @Override public Index createIndex(GridCacheContext cctx, IndexDefinition definition) {
+    @Override public Index createIndex(GridCacheContext<?, ?> cctx, IndexDefinition definition) {
         ClientIndexDefinition def = (ClientIndexDefinition) definition;
 
         int maxInlineSize = cctx != null ? cctx.config().getSqlIndexMaxInlineSize() : -1;

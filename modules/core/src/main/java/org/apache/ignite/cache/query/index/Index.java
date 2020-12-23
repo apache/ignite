@@ -37,6 +37,14 @@ public interface Index {
     public String name();
 
     /**
+     * Checks whether index handles specified cache row.
+     *
+     * @param row Cache row.
+     * @return Whether index handles specified cache row
+     */
+    public boolean belongsToIndex(CacheDataRow row) throws IgniteCheckedException;
+
+    /**
      * Callback that runs when the underlying cache is updated.
      *
      * @param oldRow Cache row that was replaced with newRow.

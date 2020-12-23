@@ -101,11 +101,14 @@ public class H2RowComparator implements IndexRowComparator {
         Object robject = right.getKey(idx);
         Object lobject = left.getKey(idx);
 
-        int ltype = left.getSchema().getKeyDefinitions()[idx].getIdxType();
+        int ltype, rtype;
 
-        int rtype;
+        // Side of comparison can be set by user in query with type that different for specified schema.
+        if (left instanceof IndexSearchRowImpl)
+            ltype = DataType.getTypeFromClass(lobject.getClass());
+        else
+            ltype = left.getSchema().getKeyDefinitions()[idx].getIdxType();
 
-        // Right side of comparison can be set by user in query with type that different for specified schema.
         if (right instanceof IndexSearchRowImpl)
             rtype = DataType.getTypeFromClass(robject.getClass());
         else

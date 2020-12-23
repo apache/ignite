@@ -199,11 +199,17 @@ public abstract class NullableInlineIndexKeyType<T> implements InlineIndexKeyTyp
     /**
      * Checks whether specified val corresponds to this key type.
      */
+    private void ensureKeyType(int type) {
+        if (this.type != type)
+            throw new UnsupportedOperationException("Value type doesn't match: exp=" + this.type + ", act=" + type);
+    }
+
+    /**
+     * Checks whether specified val corresponds to this key type.
+     */
     private void ensureKeyType(Object val) {
         int valType = InlineIndexKeyTypeRegistry.get(val.getClass()).type();
-
-        if (valType != type)
-            throw new UnsupportedOperationException("Value type doesn't match: exp=" + type + ", act=" + valType);
+        ensureKeyType(valType);
     }
 
     /**

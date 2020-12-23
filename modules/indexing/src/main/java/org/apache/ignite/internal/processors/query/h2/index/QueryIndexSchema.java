@@ -22,8 +22,10 @@ import org.apache.ignite.cache.query.index.sorted.Order;
 import org.apache.ignite.cache.query.index.sorted.SortOrder;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.JavaObjectKey;
 import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -98,6 +100,16 @@ public class QueryIndexSchema implements SortedIndexSchema {
 
     /** {@inheritDoc} */
     @Override public Object getIndexKey(int idx, CacheDataRow row) {
+        Object o = getKey(idx, row);
+
+        if (idxKeyDefinitions[idx].getIdxType() == IndexKeyTypes.JAVA_OBJECT && o != null && o != NullKey.INSTANCE)
+            return new JavaObjectKey(o);
+
+        return o;
+    }
+
+    /** */
+    private Object getKey(int idx, CacheDataRow row) {
         int cacheIdx = h2IdxColumns[idx].column.getColumnId();
 
         switch (cacheIdx) {

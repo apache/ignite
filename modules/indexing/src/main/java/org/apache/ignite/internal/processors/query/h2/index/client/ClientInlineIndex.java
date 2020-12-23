@@ -67,6 +67,11 @@ public class ClientInlineIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean putx(IndexSearchRow row) throws IgniteCheckedException {
+        throw unsupported();
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCursor<IndexSearchRow> find(IndexKey lower, IndexKey upper, int segment) throws IgniteCheckedException {
         throw unsupported();
     }
@@ -111,6 +116,11 @@ public class ClientInlineIndex implements InlineIndex {
     /** {@inheritDoc} */
     @Override public String name() {
         return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean belongsToIndex(CacheDataRow row) throws IgniteCheckedException {
+        throw unsupported();
     }
 
     /** {@inheritDoc} */

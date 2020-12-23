@@ -22,37 +22,20 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineInnerIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineLeafIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.ThreadLocalSchemaHolder;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.TreeIterator;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.util.collection.IntMap;
 
 /**
@@ -112,38 +95,13 @@ public class IndexingDefragmentation {
                 for (InlineIndex oldIdx: indexes) {
                     SortedIndexDefinition idxDef = (SortedIndexDefinition) indexing.getIndexDefition(oldIdx.id());
 
+                    InlineIndex newIdx = new DefragIndexFactory(newCtx.offheap(), newCachePageMemory, oldIdx.inlineSize())
+                        .createIndex(cctx, idxDef)
+                        .unwrap(InlineIndex.class);
+
                     int segments = oldIdx.segmentsCount();
 
-                    PageIoResolver pageIoRslvr = pageAddr -> {
-                        PageIO io = PageIoResolver.DEFAULT_PAGE_IO_RESOLVER.resolve(pageAddr);
-
-                        if (io instanceof BPlusMetaIO)
-                            return io;
-
-                        //noinspection unchecked,rawtypes,rawtypes
-                        return wrap((BPlusIO)io, idxDef.getSchema());
-                    };
-
                     for (int i = 0; i < segments; ++i) {
-                        RootPage rootPage = newCtx.offheap().rootPageForIndex(cctx.cacheId(), idxDef.getTreeName(), i);
-
-                        InlineIndexTree newTree = new InlineIndexTree(
-                            idxDef,
-                            cctx,
-                            idxDef.getTreeName(),
-                            newCtx.offheap(),
-                            newCtx.offheap().reuseListForIndex(idxDef.getTreeName()),
-                            newCachePageMemory,
-                            pageIoRslvr,
-                            rootPage.pageId().pageId(),
-                            rootPage.isAllocated(),
-                            oldIdx.inlineSize(),
-                            null,
-                            null
-                        );
-
-                        newTree.enableSequentialWriteMode();
-
                         treeIterator.iterate(oldIdx.getSegment(i), oldCachePageMem, (theTree, io, pageAddr, idx) -> {
                             cancellationChecker.run();
 
@@ -159,7 +117,7 @@ public class IndexingDefragmentation {
                                 : "IO version " + io.getVersion() + " is not supported by current defragmentation algorithm." +
                                 " Please implement copying of tree in a new format.";
 
-                            BPlusIO<IndexSearchRow> h2IO = wrap(io, idxDef.getSchema());
+                            BPlusIO<IndexSearchRow> h2IO = DefragIndexFactory.wrap(io, idxDef.getSchema());
 
                             IndexSearchRow row = theTree.getRow(h2IO, pageAddr, idx);
 
@@ -179,7 +137,7 @@ public class IndexingDefragmentation {
                                 IndexRowImpl newRow = new IndexRowImpl(
                                     idxDef.getSchema(), new CacheDataRowAdapter(newLink), r.keys());
 
-                                newTree.putx(newRow);
+                                newIdx.putx(newRow);
                             }
 
                             return true;
@@ -190,156 +148,6 @@ public class IndexingDefragmentation {
         }
         finally {
             cpLock.checkpointReadUnlock();
-        }
-    }
-
-    /** */
-    private static <T extends BPlusIO<IndexSearchRow> & InlineIO> IndexSearchRow lookupRow(
-        SortedIndexSchema schema,
-        long pageAddr,
-        int idx,
-        T io
-    ) throws IgniteCheckedException {
-        long link = io.getLink(pageAddr, idx);
-
-        int off = io.offset(idx);
-
-        Object[] keys = new Object[schema.getKeyDefinitions().length];
-
-        int fieldOff = 0;
-
-        for (int i = 0; i < schema.getKeyDefinitions().length; i++) {
-            int type = schema.getKeyDefinitions()[i].getIdxType();
-
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(type);
-
-            Object key = keyType.get(pageAddr, off + fieldOff, io.getInlineSize() - fieldOff);
-
-            fieldOff += keyType.inlineSize(key);
-
-            keys[i] = key;
-        }
-
-        return new IndexRowImpl(schema, new CacheDataRowAdapter(link), keys);
-    }
-
-    /** */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static BPlusIO<IndexSearchRow> wrap(BPlusIO<IndexSearchRow> io, SortedIndexSchema schema) {
-        assert io instanceof InlineIO;
-
-        if (io instanceof BPlusInnerIO) {
-            assert io instanceof AbstractInlineInnerIO
-                || io instanceof InlineInnerIO;
-
-            return new BPlusInnerIoDelegate((BPlusInnerIO<IndexSearchRow>)io, schema);
-        }
-        else {
-            assert io instanceof AbstractInlineLeafIO
-                || io instanceof InlineLeafIO;
-
-            return new BPlusLeafIoDelegate((BPlusLeafIO<IndexSearchRow>)io, schema);
-        }
-    }
-
-    /** */
-    private static class BPlusInnerIoDelegate<IO extends BPlusInnerIO<IndexSearchRow> & InlineIO>
-        extends BPlusInnerIO<IndexSearchRow> implements InlineIO {
-        /** */
-        private final IO io;
-
-        /** */
-        private final SortedIndexSchema schema;
-
-        /** */
-        public BPlusInnerIoDelegate(IO io, SortedIndexSchema schema) {
-            super(io.getType(), io.getVersion(), io.canGetRow(), io.getItemSize());
-            this.io = io;
-            this.schema = schema;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void storeByOffset(long pageAddr, int off, IndexSearchRow row) throws IgniteCheckedException {
-            ThreadLocalSchemaHolder.setSchema(schema);
-
-            try {
-                io.storeByOffset(pageAddr, off, row);
-
-            } finally {
-                ThreadLocalSchemaHolder.cleanSchema();
-            }        }
-
-        /** {@inheritDoc} */
-        @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexSearchRow> srcIo, long srcPageAddr, int srcIdx)
-            throws IgniteCheckedException
-        {
-            io.store(dstPageAddr, dstIdx, srcIo, srcPageAddr, srcIdx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public IndexSearchRow getLookupRow(BPlusTree<IndexSearchRow, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
-            return lookupRow(schema, pageAddr, idx, this);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getLink(long pageAddr, int idx) {
-            return io.getLink(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getInlineSize() {
-            return io.getInlineSize();
-        }
-    }
-
-    /** */
-    private static class BPlusLeafIoDelegate<IO extends BPlusLeafIO<IndexSearchRow> & InlineIO>
-        extends BPlusLeafIO<IndexSearchRow> implements InlineIO {
-        /** */
-        private final IO io;
-
-        /** */
-        private final SortedIndexSchema schema;
-
-        /** */
-        public BPlusLeafIoDelegate(IO io, SortedIndexSchema schema) {
-            super(io.getType(), io.getVersion(), io.getItemSize());
-            this.io = io;
-            this.schema = schema;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void storeByOffset(long pageAddr, int off, IndexSearchRow row) throws IgniteCheckedException {
-            ThreadLocalSchemaHolder.setSchema(schema);
-
-            try {
-                io.storeByOffset(pageAddr, off, row);
-
-            } finally {
-                ThreadLocalSchemaHolder.cleanSchema();
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexSearchRow> srcIo, long srcPageAddr, int srcIdx)
-            throws IgniteCheckedException
-        {
-            io.store(dstPageAddr, dstIdx, srcIo, srcPageAddr, srcIdx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public IndexSearchRow getLookupRow(BPlusTree<IndexSearchRow, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
-            return lookupRow(schema, pageAddr, idx, this);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getLink(long pageAddr, int idx) {
-            return io.getLink(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getInlineSize() {
-            return io.getInlineSize();
         }
     }
 }

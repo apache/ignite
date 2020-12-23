@@ -30,21 +30,27 @@ import org.apache.ignite.cache.query.index.sorted.IndexKey;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.cache.query.index.sorted.CacheIndexKeyImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
+import org.apache.ignite.internal.cache.query.index.sorted.JavaObjectKey;
 import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
@@ -217,40 +223,47 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** */
     private T2<IndexKey, IndexKey> prepareIndexKeys(SearchRow lower, SearchRow upper) {
+        SortedIndexDefinition def = (SortedIndexDefinition) ctx.indexing().getIndexDefition(queryIndex.id());
+
+        SortedIndexSchema schema = def.getSchema();
+
+        return new T2<>(prepareIndexKey(lower, schema), prepareIndexKey(upper, schema));
+    }
+
+    /** */
+    private IndexKey prepareIndexKey(SearchRow row, SortedIndexSchema schema) {
+        if (row == null)
+            return null;
+
+        else if (row instanceof H2CacheRow)
+            return new CacheIndexKeyImpl(schema, (CacheDataRow) row);
+
+        else
+            return preparePlainIndexKey(row);
+    }
+
+    /** */
+    private IndexKey preparePlainIndexKey(SearchRow row) {
         int idxColsLen = indexColumns.length;
 
-        Object[] left = lower == null ? null : new Object[idxColsLen];
-        Object[] right = upper == null ? null : new Object[idxColsLen];
+        Object[] keys = row == null ? null : new Object[idxColsLen];
 
-        if (lower != null || upper != null) {
-            for (int i = 0; i < idxColsLen; ++i) {
-                int colId = indexColumns[i].column.getColumnId();
+        for (int i = 0; i < idxColsLen; ++i) {
+            int colId = indexColumns[i].column.getColumnId();
 
-                Value vl = lower != null ? lower.getValue(colId) : null;
-                Value vu = upper != null ? upper.getValue(colId) : null;
+            Value v = row.getValue(colId);
 
-                if (left != null)
-                    if (vl == null)
-                        left[i] = null;
-                    else if (vl == ValueNull.INSTANCE)
-                        left[i] = NullKey.INSTANCE;
-                    else
-                        left[i] = vl.getObject();
-
-                if (right != null)
-                    if (vu == null)
-                        right[i] = null;
-                    else if (vl == ValueNull.INSTANCE)
-                        right[i] = NullKey.INSTANCE;
-                    else
-                        right[i] = vu.getObject();
-            }
+            if (v == null)
+                keys[i] = null;
+            else if (v == ValueNull.INSTANCE)
+                keys[i] = NullKey.INSTANCE;
+            else if (v instanceof GridH2ValueCacheObject)
+                keys[i] = new JavaObjectKey(v.getObject());
+            else
+                keys[i] = v.getObject();
         }
 
-        IndexKey key_left = left == null ? null : new IndexKeyImpl(left);
-        IndexKey key_right = right == null ? null : new IndexKeyImpl(right);
-
-        return new T2<>(key_left, key_right);
+        return new IndexKeyImpl(keys);
     }
 
     /** */

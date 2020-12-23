@@ -180,7 +180,10 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
             Index idx = getSpi().createIndex(cctx, factory, definition);
 
             // Populate index with cache rows.
-            cacheVisitor.visit(idx::putx);
+            cacheVisitor.visit(row -> {
+                if (idx.belongsToIndex(row))
+                    idx.putx(row);
+            });
 
             return idx;
         }

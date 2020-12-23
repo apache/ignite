@@ -29,5 +29,5 @@ public interface IndexFactory {
      *
      * @param cctx Cache context.
      */
-    public Index createIndex(@Nullable GridCacheContext cctx, IndexDefinition definition);
+    public Index createIndex(@Nullable GridCacheContext<?, ?> cctx, IndexDefinition definition);
 }

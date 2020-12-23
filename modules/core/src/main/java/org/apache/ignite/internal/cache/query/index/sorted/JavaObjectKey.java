@@ -18,12 +18,24 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 /**
- * Represents null value that used to explicitly set up null value in index query.
+ * Represents an index key as explicit Java Object.
  */
-public class NullKey {
-    /** Instance. */
-    public static final NullKey INSTANCE = new NullKey();
+public class JavaObjectKey {
+    /** Actual key that is used for indexing. */
+    private final Object key;
 
-    /** Private constructor. */
-    private NullKey() {}
+    /** */
+    public JavaObjectKey(Object o) {
+        key = o;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return key.hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        return key.equals(obj);
+    }
 }

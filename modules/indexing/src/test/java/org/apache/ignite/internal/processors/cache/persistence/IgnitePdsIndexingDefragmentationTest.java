@@ -137,9 +137,9 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         stopGrid(0);
 
-        IgniteEx node = startGrid(0);
-
         GridIndexingManager.idxRebuildCls = CaptureRebuildGridQueryIndexing.class;
+
+        IgniteEx node = startGrid(0);
 
         awaitPartitionMapExchange();
 
