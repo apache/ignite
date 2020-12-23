@@ -19,7 +19,6 @@ github:
   labels:
     - distributed-sql-database
     - iot
-    - osgi
     - network-client
     - ignite
     - data-management-platform
@@ -27,7 +26,6 @@ github:
     - cloud
     - database
     - network-server
-    - hadoop
     - sql
     - cache
     - in-memory-computing
