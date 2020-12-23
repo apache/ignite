@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.DistributedProcessCoordinatorLeftTest;
 import org.apache.ignite.internal.util.GridArraysSelfTest;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueueTest;
 import org.apache.ignite.internal.util.GridCountDownCallbackTest;
+import org.apache.ignite.internal.util.HostAndPortRangeTest;
 import org.apache.ignite.internal.util.IgniteDevOnlyLogTest;
 import org.apache.ignite.internal.util.IgniteExceptionRegistrySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
@@ -140,7 +141,9 @@ import org.junit.runners.Suite;
 
     DistributedProcessCoordinatorLeftTest.class,
 
-    BasicRateLimiterTest.class
+    BasicRateLimiterTest.class,
+
+    HostAndPortRangeTest.class
 })
 public class IgniteUtilSelfTestSuite {
 }
