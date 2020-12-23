@@ -97,11 +97,11 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             // Deploy Java service
             var javaSvcName = TestUtils.DeployJavaService(_grid1);
-            
+
             var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
 
             doTestService(svc);
-            
+
             Assert.IsNull(svc.testDepartments(null));
 
             var arr  = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToArray();
@@ -153,6 +153,15 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.NotNull(res);
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual("value3", ((Value)res[new Key() {Id = 3}]).Val);
+
+            var accs = svc.testAccounts();
+
+            Assert.NotNull(accs);
+            Assert.AreEqual(2, accs.Length);
+            Assert.AreEqual("123", accs[0].Id);
+            Assert.AreEqual("321", accs[1].Id);
+            Assert.AreEqual(42, accs[0].Amount);
+            Assert.AreEqual(0, accs[1].Amount);
         }
 
         /// <summary>

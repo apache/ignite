@@ -319,6 +319,11 @@ namespace Apache.Ignite.Core.Tests.Services
             return _svc.testEmployees(emps);
         }
 
+        public Account[] testAccounts()
+        {
+            return _svc.testAccounts();
+        }
+
         /** <inheritDoc /> */
         public ICollection testDepartments(ICollection deps)
         {

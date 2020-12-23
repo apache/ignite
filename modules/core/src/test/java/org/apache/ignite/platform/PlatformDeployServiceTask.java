@@ -502,6 +502,14 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
+        public Account[] testAccounts() {
+            return new Account[] {
+                new Account("123", 42),
+                new Account("321", 0)
+            };
+        }
+
+        /** */
         public void testDateArray(Timestamp[] dates) {
             assertNotNull(dates);
             assertEquals(2, dates.length);

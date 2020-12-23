@@ -18,6 +18,8 @@
 // ReSharper disable once CheckNamespace
 namespace org.apache.ignite.platform
 {
+    using System;
+
     /// <summary>
     /// A class is a clone of Java class Address with the same namespace.
     /// </summary>
@@ -84,5 +86,34 @@ namespace org.apache.ignite.platform
     public class Value
     {
         public string Val { get; set; }
+    }
+
+    /// <summary>
+    /// A class is a clone of Java class Account with the same namespace.
+    /// </summary>
+    public class Account
+    {
+        public String Id { get; set; }
+        
+        public int Amount { get; set; }
+
+        protected bool Equals(Account other)
+        {
+            return Id == other.Id;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((Account) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            // ReSharper disable once NonReadonlyMemberInGetHashCode
+            return Id.GetHashCode();
+        }
     }
 }

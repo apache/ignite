@@ -170,6 +170,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         Employee[] testEmployees(Employee[] emps);
+        
+        /** */
+        Account[] testAccounts();
 
         /** */
         ICollection testDepartments(ICollection deps);
