@@ -201,4 +201,10 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw).item("correlationVariables", getVariablesSet());
     }
+
+    /** {@inheritDoc} */
+    @Override public double estimateRowCount(RelMetadataQuery mq) {
+        // condition selectivity already counted within the external filter
+        return super.estimateRowCount(mq) / mq.getSelectivity(this, getCondition());
+    }
 }

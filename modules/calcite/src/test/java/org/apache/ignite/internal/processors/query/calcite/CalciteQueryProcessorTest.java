@@ -115,8 +115,12 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        List<List<?>> res = grid().context().query().querySqlFields(new SqlFieldsQuery(
-            "SELECT count(*)" +
+        QueryEngine engine = Commons.lookupComponent(ignite.context(), QueryEngine.class);
+
+        // TODO: https://issues.apache.org/jira/browse/IGNITE-13849
+        // we have a problem with serialization/deserialization of MergeJoin
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ count(*)" +
                 " FROM RISK R," +
                 " TRADE T," +
                 " BATCH B " +
@@ -124,7 +128,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 "AND R.TRADEID = T.TRADEID " +
                 "AND R.TRADEVER = T.TRADEVER " +
                 "AND T.BOOK = 'BOOK' " +
-                "AND B.\"IS\" = TRUE"), false).getAll();
+                "AND B.IS = TRUE");
+
+        List<List<?>> res = query.get(0).getAll();
 
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());

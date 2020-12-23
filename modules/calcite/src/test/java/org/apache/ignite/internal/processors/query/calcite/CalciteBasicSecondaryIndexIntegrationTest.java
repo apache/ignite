@@ -121,6 +121,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .check();
     }
 
+    /** */
     @Test
     public void testMergeJoin() {
         assertQuery("" +
