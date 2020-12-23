@@ -189,6 +189,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.engine.Session;
@@ -3210,8 +3211,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         PageMemoryEx partPageMem,
         IntMap<LinkMap> mappingByPart,
         CheckpointTimeoutLock cpLock,
-        Runnable cancellationChecker
+        Runnable cancellationChecker,
+        IgniteThreadPoolExecutor defragmentationThreadPool
     ) throws IgniteCheckedException {
-        defragmentation.defragment(grpCtx, newCtx, partPageMem, mappingByPart, cpLock, cancellationChecker, log);
+        defragmentation.defragment(
+            grpCtx,
+            newCtx,
+            partPageMem,
+            mappingByPart,
+            cpLock,
+            cancellationChecker,
+            log,
+            defragmentationThreadPool
+        );
     }
 }

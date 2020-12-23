@@ -49,6 +49,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -346,7 +347,8 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         PageMemoryEx partPageMem,
         IntMap<LinkMap> mappingByPart,
         CheckpointTimeoutLock cpLock,
-        Runnable cancellationChecker
+        Runnable cancellationChecker,
+        IgniteThreadPoolExecutor defragmentationThreadPool
     ) throws IgniteCheckedException {
         // No-op.
     }
