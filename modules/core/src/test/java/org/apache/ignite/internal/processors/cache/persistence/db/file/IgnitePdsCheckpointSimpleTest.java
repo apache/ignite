@@ -32,7 +32,6 @@ import org.junit.Test;
  * Puts data into grid, waits for checkpoint to start and then verifies data
  */
 public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);

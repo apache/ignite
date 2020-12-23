@@ -53,7 +53,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Client message listener.
  */
-public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte[]> {
+public class ClientListenerNioListener extends GridNioServerListenerAdapter<ClientMessage> {
     /** ODBC driver handshake code. */
     public static final byte ODBC_CLIENT = 0;
 
@@ -139,7 +139,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     }
 
     /** {@inheritDoc} */
-    @Override public void onMessage(GridNioSession ses, byte[] msg) {
+    @Override public void onMessage(GridNioSession ses, ClientMessage msg) {
         assert msg != null;
 
         ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
@@ -214,9 +214,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                         ", resp=" + resp.status() + ']');
                 }
 
-                byte[] outMsg = parser.encode(resp);
-
-                GridNioFuture<?> fut = ses.send(outMsg);
+                    GridNioFuture<?> fut = ses.send(parser.encode(resp));
 
                 fut.listen(f -> {
                     if (f.error() == null)
@@ -289,7 +287,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
      * @param ses Session.
      * @param msg Message bytes.
      */
-    private void onHandshake(GridNioSession ses, byte[] msg) {
+    private void onHandshake(GridNioSession ses, ClientMessage msg) {
         BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
@@ -298,7 +296,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
         ctx.configure(marsh);
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, new BinaryHeapInputStream(msg), null, true);
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, new BinaryHeapInputStream(msg.payload()), null, true);
 
         byte cmd = reader.readByte();
 
@@ -373,7 +371,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                 writer.writeInt(ClientStatus.FAILED);
         }
 
-        ses.send(writer.array());
+        ses.send(new ClientMessage(writer.array()));
     }
 
     /**

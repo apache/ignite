@@ -154,7 +154,7 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         IgniteEx snp = startGridsFromSnapshot(grids, SNAPSHOT_NAME);
 
         List<String> currIdxNames = executeSql(snp, "SELECT * FROM SYS.INDEXES").stream().
-            map(l -> (String)l.get(0))
+            map(l -> (String)l.get(6))
             .collect(Collectors.toList());
 
         assertTrue("Concurrently created indexes must not exist in the snapshot: " + currIdxNames,

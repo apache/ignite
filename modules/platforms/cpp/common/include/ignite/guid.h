@@ -191,7 +191,7 @@ namespace ignite
         uint16_t part2 = static_cast<uint16_t>(guid.GetMostSignificantBits() >> 16);
         uint16_t part3 = static_cast<uint16_t>(guid.GetMostSignificantBits());
         uint16_t part4 = static_cast<uint16_t>(guid.GetLeastSignificantBits() >> 48);
-        uint64_t part5 = guid.GetLeastSignificantBits() & 0x0000FFFFFFFFFFFFULL;
+        uint64_t part5 = guid.GetLeastSignificantBits() & 0x0000FFFFFFFFFFFFU;
 
         os  << std::hex 
             << std::setfill<C>('0') << std::setw(8)  << part1 << '-'

@@ -1,0 +1,37 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+Your Ignite installation includes additional examples. These examples are shipped together with the primary Ignite package you downloaded as part of the Ignite installation above.
+
+To run the examples project please follow these steps (which are provided for IntelliJ IDEA IDE, but should apply to similar IDEs such as Eclipse):
+
+. Start IntelliJ IDEA, click the "Import Project" button:
++
+image::images/ijimport.png[Importing a Project in IntelliJ]
+
+. Navigate to the `{IGNITE_HOME}/examples` folder and select the `{IGNITE}/examples/pom.xml` file. Click "OK".
+
+. Click "Next" on each of the following screens and apply the suggested defaults to the project. Click "Finish".
+
+. Wait while IntelliJ IDEA finishes setting up Maven, resolving dependencies, and loading modules.
+
+. Set up JDK if needed.
+
+. Run `src/main/java/org/apache/ignite/examples/datagrid/CacheApiExample`:
++
+image::images/ijrun.png[Run a project in IntelliJ]
++
+. Make sure that the example has been started and executed successfully, as shown in the image below.
++
+image::images/ijfull.png[Project in IntelliJ]

@@ -1,0 +1,94 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Understanding Schemas
+
+== Overview
+
+Ignite has a number of default schemas and supports creating custom schemas.
+
+There are two schemas that are available by default:
+
+- The SYS schema, which contains a number of system views with information about cluster nodes. You can't create tables in this schema. Refer to the link:monitoring-metrics/system-views[System Views] page for further information.
+- The <<PUBLIC Schema,PUBLIC schema>>, which is used by default whenever a schema is not specified.
+
+Custom schemas are created in the following cases:
+
+- You can specify custom schemas in the cluster configuration. See <<Custom Schemas>>.
+- Ignite creates a schema for each cache created via one of the programming interfaces or XML configuration. See <<Cache and Schema Names>>.
+
+
+== PUBLIC Schema
+
+The PUBLIC schema is used by default whenever a schema is required and is not specified. For example, when you connect to the cluster via JDBC without setting the schema explicitly, you will connect to the PUBLIC schema.
+
+
+== Custom Schemas
+Custom schemas can be set via the `sqlSchemas` property of `IgniteConfiguration`. You can specify a list of schemas in the configuration before starting your cluster and then create objects in these schemas at runtime.
+
+Below is a configuration example with two custom schemas.
+
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/schemas.xml[tags=ignite-config;!discovery, indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/Schemas.java[tags=custom-schemas, indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/UnderstandingSchemas.cs[tag=schemas,indent=0]
+----
+
+tab:C++[unsupported]
+--
+
+To connect to a specific schema via, for example, a JDBC driver, provide the schema name in the connection string:
+
+[source,text]
+----
+jdbc:ignite:thin://127.0.0.1/MY_SCHEMA
+----
+
+== Cache and Schema Names
+When you create a cache with link:SQL/sql-api#configuring-queryable-fields[queryable fields], you can manipulate the cached data using the link:SQL/sql-api[SQL API]. In SQL terms, each such cache corresponds to a separate schema whose name equals the name of the cache.
+
+Similarly, when you create a table via a DDL statement, you can access it as a key-value cache via Ignite's supported programming interfaces. The name of the corresponding cache can be specified by providing the `CACHE_NAME` parameter in the `WITH` part of the `CREATE TABLE` statement.
+
+[source,sql]
+----
+CREATE TABLE City (
+  ID INT(11),
+  Name CHAR(35),
+  CountryCode CHAR(3),
+  District CHAR(20),
+  Population INT(11),
+  PRIMARY KEY (ID, CountryCode)
+) WITH "backups=1, CACHE_NAME=City";
+----
+
+See the link:sql-reference/ddl#create-table[CREATE TABLE] page for more details.
+
+If you do not use this parameter, the cache name is defined in the following format (in capital letters):
+
+....
+SQL_<SCHEMA_NAME>_<TABLE_NAME>
+....

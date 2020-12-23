@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-
-import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentArchivedStorage.buildArchivedStorage;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentCompressStorage.buildCompressStorage;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentCurrentStateStorage.buildCurrentStateStorage;
 
 /**
  * Holder of actual information of latest manipulation on WAL segments.
@@ -34,7 +31,7 @@ public class SegmentAware {
     private final SegmentLockStorage segmentLockStorage = new SegmentLockStorage();
 
     /** Manages last archived index, emulates archivation in no-archiver mode. */
-    private final SegmentArchivedStorage segmentArchivedStorage = buildArchivedStorage(segmentLockStorage);
+    private final SegmentArchivedStorage segmentArchivedStorage;
 
     /** Storage of actual information about current index of compressed segments. */
     private final SegmentCompressStorage segmentCompressStorage;
@@ -42,13 +39,35 @@ public class SegmentAware {
     /** Storage of absolute current segment index. */
     private final SegmentCurrentStateStorage segmentCurrStateStorage;
 
+    /** Storage of archive size. */
+    private final SegmentArchiveSizeStorage archiveSizeStorage;
+
+    /** Storage of truncated segments. */
+    private final SegmentTruncateStorage truncateStorage;
+
     /**
+     * Constructor.
+     *
      * @param walSegmentsCnt Total WAL segments count.
      * @param compactionEnabled Is wal compaction enabled.
+     * @param log Logger.
      */
-    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled) {
-        segmentCurrStateStorage = buildCurrentStateStorage(walSegmentsCnt, segmentArchivedStorage);
-        segmentCompressStorage = buildCompressStorage(segmentArchivedStorage, compactionEnabled);
+    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled, IgniteLogger log) {
+        segmentArchivedStorage = new SegmentArchivedStorage(segmentLockStorage);
+
+        segmentCurrStateStorage = new SegmentCurrentStateStorage(walSegmentsCnt);
+        segmentCompressStorage = new SegmentCompressStorage(log, compactionEnabled);
+
+        archiveSizeStorage = new SegmentArchiveSizeStorage();
+        truncateStorage = new SegmentTruncateStorage();
+
+        segmentArchivedStorage.addObserver(segmentCurrStateStorage::onSegmentArchived);
+        segmentArchivedStorage.addObserver(segmentCompressStorage::onSegmentArchived);
+        segmentArchivedStorage.addObserver(truncateStorage::lastArchivedIdx);
+
+        segmentLockStorage.addObserver(segmentArchivedStorage::onSegmentUnlocked);
+
+        reservationStorage.addObserver(truncateStorage::minReservedIdx);
     }
 
     /**
@@ -133,20 +152,6 @@ public class SegmentAware {
     }
 
     /**
-     * @param idx Minimum raw segment index that should be preserved from deletion.
-     */
-    public void keepUncompressedIdxFrom(long idx) {
-        segmentCompressStorage.keepUncompressedIdxFrom(idx);
-    }
-
-    /**
-     * @return  Minimum raw segment index that should be preserved from deletion.
-     */
-    public long keepUncompressedIdxFrom() {
-        return segmentCompressStorage.keepUncompressedIdxFrom();
-    }
-
-    /**
      * Update current WAL index.
      *
      * @param curAbsWalIdx New current WAL index.
@@ -156,17 +161,21 @@ public class SegmentAware {
     }
 
     /**
-     * @param lastTruncatedArchiveIdx Last truncated segment;
+     * Update last truncated segment.
+     *
+     * @param absIdx Absolut segment index.
      */
-    public void lastTruncatedArchiveIdx(long lastTruncatedArchiveIdx) {
-        segmentArchivedStorage.lastTruncatedArchiveIdx(lastTruncatedArchiveIdx);
+    public void lastTruncatedArchiveIdx(long absIdx) {
+        truncateStorage.lastTruncatedIdx(absIdx);
     }
 
     /**
-     * @return Last truncated segment.
+     * Getting last truncated segment.
+     *
+     * @return Absolut segment index.
      */
     public long lastTruncatedArchiveIdx() {
-        return segmentArchivedStorage.lastTruncatedArchiveIdx();
+        return truncateStorage.lastTruncatedIdx();
     }
 
     /**
@@ -184,10 +193,14 @@ public class SegmentAware {
     }
 
     /**
+     * Segment reservation. It will be successful if segment is {@code >} than
+     * the {@link #minReserveIndex minimum}.
+     * 
      * @param absIdx Index for reservation.
+     * @return {@code True} if the reservation was successful.
      */
-    public void reserve(long absIdx) {
-        reservationStorage.reserve(absIdx);
+    public boolean reserve(long absIdx) {
+        return reservationStorage.reserve(absIdx);
     }
 
     /**
@@ -208,9 +221,9 @@ public class SegmentAware {
     }
 
     /**
-     * Check if WAL segment locked (protected from move to archive)
+     * Check if WAL segment locked (protected from move to archive).
      *
-     * @param absIdx Index for check reservation.
+     * @param absIdx Index for check locking.
      * @return {@code True} if index is locked.
      */
     public boolean locked(long absIdx) {
@@ -218,27 +231,20 @@ public class SegmentAware {
     }
 
     /**
-     * @param absIdx Segment absolute index.
-     * @return <ul><li>{@code True} if can read, no lock is held, </li><li>{@code false} if work segment, need release
-     * segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
-     */
-    public boolean checkCanReadArchiveOrReserveWorkSegment(long absIdx) {
-        return lastArchivedAbsoluteIndex() >= absIdx || segmentLockStorage.lockWorkSegment(absIdx);
-    }
-
-    /**
-     * Visible for test.
+     * Segment lock. It will be successful if segment is {@code >} than
+     * the {@link #lastArchivedAbsoluteIndex last archived}.
      *
-     * @param absIdx Segment absolute index. segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
+     * @param absIdx Index to lock.
+     * @return {@code True} if the lock was successful.
      */
-    void lockWorkSegment(long absIdx) {
-        segmentLockStorage.lockWorkSegment(absIdx);
+    public boolean lock(long absIdx) {
+        return segmentLockStorage.lockWorkSegment(absIdx);
     }
 
     /**
-     * @param absIdx Segment absolute index.
+     * @param absIdx Index to unlock.
      */
-    public void releaseWorkSegment(long absIdx) {
+    public void unlock(long absIdx) {
         segmentLockStorage.releaseWorkSegment(absIdx);
     }
 
@@ -251,6 +257,10 @@ public class SegmentAware {
         segmentCompressStorage.reset();
 
         segmentCurrStateStorage.reset();
+
+        archiveSizeStorage.reset();
+
+        truncateStorage.reset();
     }
 
     /**
@@ -262,6 +272,10 @@ public class SegmentAware {
         segmentCompressStorage.interrupt();
 
         segmentCurrStateStorage.interrupt();
+
+        archiveSizeStorage.interrupt();
+
+        truncateStorage.interrupt();
     }
 
     /**
@@ -273,5 +287,93 @@ public class SegmentAware {
         segmentCompressStorage.interrupt();
 
         segmentCurrStateStorage.forceInterrupt();
+
+        archiveSizeStorage.interrupt();
+
+        truncateStorage.interrupt();
+    }
+
+    /**
+     * Increasing minimum segment index after that can be reserved.
+     * Value will be updated if it is greater than the current one.
+     * If segment is already reserved, the update will fail.
+     *
+     * @param absIdx Absolut segment index.
+     * @return {@code True} if update is successful.
+     */
+    public boolean minReserveIndex(long absIdx) {
+        return reservationStorage.minReserveIndex(absIdx);
+    }
+
+    /**
+     * Increasing minimum segment index after that can be locked.
+     * Value will be updated if it is greater than the current one.
+     * If segment is already reserved, the update will fail.
+     *
+     * @param absIdx Absolut segment index.
+     * @return {@code True} if update is successful.
+     */
+    public boolean minLockIndex(long absIdx) {
+        return segmentLockStorage.minLockIndex(absIdx);
+    }
+
+    /**
+     * Adding current WAL archive size in bytes.
+     *
+     * @param size Size in bytes.
+     */
+    public void addCurrentWalArchiveSize(long size) {
+        archiveSizeStorage.addCurrentSize(size);
+    }
+
+    /**
+     * Adding reserved WAL archive size in bytes.
+     * Defines a hint to determine if the maximum size is exceeded before a new segment is archived.
+     *
+     * @param size Size in bytes.
+     */
+    public void addReservedWalArchiveSize(long size) {
+        archiveSizeStorage.addReservedSize(size);
+    }
+
+    /**
+     * Reset the current and reserved WAL archive sizes.
+     */
+    public void resetWalArchiveSizes() {
+        archiveSizeStorage.resetSizes();
+    }
+
+    /**
+     * Waiting for exceeding the maximum WAL archive size. To track size of WAL archive,
+     * need to use {@link #addCurrentWalArchiveSize} and {@link #addReservedWalArchiveSize}.
+     *
+     * @param max Maximum WAL archive size in bytes.
+     * @throws IgniteInterruptedCheckedException If it was interrupted.
+     */
+    public void awaitExceedMaxArchiveSize(long max) throws IgniteInterruptedCheckedException {
+        archiveSizeStorage.awaitExceedMaxSize(max);
+    }
+
+    /**
+     * Update segment of last completed checkpoint.
+     * Required for binary recovery.
+     *
+     * @param absIdx Absolut segment index.
+     */
+    public void lastCheckpointIdx(long absIdx) {
+        truncateStorage.lastCheckpointIdx(absIdx);
+    }
+
+    /**
+     * Waiting for segment truncation to be available. To get the number of segments available for truncation, use
+     * {@link #lastTruncatedArchiveIdx}, {@link #lastCheckpointIdx}, {@link #reserve} and
+     * {@link #lastArchivedAbsoluteIndex} (to restart the node correctly) and is calculated as
+     * {@code lastTruncatedArchiveIdx} - {@code min(lastCheckpointIdx, reserve, lastArchivedAbsoluteIndex)}.
+     *
+     * @return Number of segments available to truncate.
+     * @throws IgniteInterruptedCheckedException If it was interrupted.
+     */
+    public long awaitAvailableTruncateArchive() throws IgniteInterruptedCheckedException {
+        return truncateStorage.awaitAvailableTruncate();
     }
 }

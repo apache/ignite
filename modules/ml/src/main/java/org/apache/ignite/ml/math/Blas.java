@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.math;
 
+import java.io.Serializable;
 import java.util.Set;
 import com.github.fommil.netlib.BLAS;
 import com.github.fommil.netlib.F2jBLAS;
@@ -35,7 +36,10 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  * Useful subset of BLAS operations.
  * This class is based on 'BLAS' class from Apache Spark MLlib.
  */
-public class Blas {
+public class Blas implements Serializable {
+    /** */
+    private static final long serialVersionUID = 124309657712638021L;
+
     /** F2J implementation of BLAS. */
     private static transient BLAS f2jBlas = new F2jBLAS();
 

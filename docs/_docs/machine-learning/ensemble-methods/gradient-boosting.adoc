@@ -1,0 +1,99 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Gradient Boosting
+
+In machine learning, boosting is an ensemble meta-algorithm for primarily reducing bias, and also variance in supervised learning, and a family of machine learning algorithms that convert weak learners to strong ones.
+
+[NOTE]
+====
+[discrete]
+=== Question posed by Kearns and Valiant (1988, 1989)
+"Can a set of weak learners create a single strong learner?"
+
+ A weak learner is defined to be a classifier that is only slightly correlated with the true classification (it can label examples better than random guessing). In contrast, a strong learner is a classifier that is arbitrarily well-correlated with the true classification.
+====
+
+Later, in 1990 it was demonstrated by Robert Schapire and led to the boosting technique development.
+
+The boosing is presented in Ignite ML library as a Gradient Boosting (the most popular boosting implementation).
+
+== Overview
+
+
+Gradient boosting is a machine learning technique that produces a prediction model in the form of an https://en.wikipedia.org/wiki/Ensemble_learning[ensemble] of weak prediction models. A gradient boosting algorithm tries to solve the minimization error problem on learning samples in a functional space where each function is a model. Each model in this composition tries to predict a gradient of error for points in a feature space and these predictions will be summed with some weight to model an answer. This algorithm may be used for regression and classification problems. For more information please see https://en.wikipedia.org/wiki/Gradient_boosting[Wikipedia].
+
+In Ignite ML there is an implementation of a general GDB algorithm and GDB-on-trees algorithm. General GDB (GDBRegressionTrainer and GDBBinaryClassifierTrainer) allows any trainer for training each model in composition. GDB on trees uses some optimizations specific for trees, such as indexes, for avoiding sorting during the decision tree build phase.
+
+
+== Model
+
+Apache Ignite ML purposes all implementations of the GDB algorithm to use GDBModel, wrapping ModelsComposition for representing the composition of a few models. ModelsComposition implements a common Model interface and can be used as follows:
+
+
+[source, java]
+----
+GDBModel model = ...;
+
+double prediction = model.predict(observation);
+----
+
+GDBModel uses WeightedPredictionsAggregator as the model answer reducer. This aggregator computes an answer of a meta-model, since “result = bias + p1*w1 + p2*w2 + ...” where
+
+ * `pi` - answer of i-th model.
+ * `wi` - weight of model in composition.
+
+GDB uses the mean value of labels for the bias-parameter in the aggregator.
+
+== Trainer
+
+Training of GDB is represented by `GDBRegressionTrainer`, `GDBBinaryClassificationTrainer` and `GDBRegressionOnTreesTrainer`, `GDBBinaryClassificationOnTreesTrainer` for general GDB and GDB on trees respectively. All trainers have the following parameters:
+
+  * `gradStepSize` - sets the constant weight of each model in composition; in future versions of Ignite ML this parameter may be computed dynamically.
+  * `cntOfIterations` - sets the maximum of models in the composition after training.
+  * `checkConvergenceFactory` - sets factory for construction of convergence checker used for preventing overfitting and learning of many useless models while training.
+
+For classifier trainers there is addition parameter:
+
+  * `loss` - sets loss computer on some learning example from a training dataset.
+
+There are several factories for convergence checkers:
+
+  * `ConvergenceCheckerStubFactory` creates a checker that always returns false for a convergence check. So in this case, model composition size will have cntOfIterations models.
+  * `MeanAbsValueConvergenceCheckerFactory` creates a checker that compute a mean value of the absolute gradient values on each example from a dataset and returns true if this it is less than the used-defined threshold.
+  * `MedianOfMedianConvergenceCheckerFactory` creates a checker that computes the median of median absolute gradient values on each data partition. This method is less sensitive for anomalies in the learning dataset, but GDB may converge longer.
+
+Example of training:
+
+
+
+[source, java]
+----
+// Set up trainer
+GDBTrainer trainer = new GDBBinaryClassifierOnTreesTrainer(
+  learningRate, countOfIterations, new LogLoss()
+).withCheckConvergenceStgyFactory(new MedianOfMedianConvergenceCheckFactory(precision));
+
+// Build the model
+GDBModel mdl = trainer.fit(
+  ignite,
+  dataCache,
+  vectorizer
+);
+----
+
+
+== Example
+
+To see how GDB Classifier can be used in practice, try this https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/ml/tree/boosting/GDBOnTreesClassificationTrainerExample.java[example] that is available on GitHub and delivered with every Apache Ignite distribution.

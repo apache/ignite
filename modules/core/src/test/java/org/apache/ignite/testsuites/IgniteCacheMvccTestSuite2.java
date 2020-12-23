@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.IgniteNearClientCacheCloseTes
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitNearReadersTest;
 import org.apache.ignite.internal.processors.cache.MemoryPolicyConfigValidationTest;
+import org.apache.ignite.internal.processors.cache.NoPresentCacheInterceptorOnClientTest;
 import org.apache.ignite.internal.processors.cache.NonAffinityCoordinatorDynamicStartStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTestAllowOverwrite;
@@ -219,6 +220,7 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(IgniteCacheContainsKeyNearSelfTest.class);
         ignoredTests.add(IgniteCacheContainsKeyColocatedAtomicSelfTest.class);
         ignoredTests.add(IgniteCacheContainsKeyNearAtomicSelfTest.class);
+        ignoredTests.add(NoPresentCacheInterceptorOnClientTest.class);
 
         List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite2.suite(ignoredTests));
 

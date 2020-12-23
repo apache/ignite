@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.preprocessing.maxabsscaling;
 
+import java.util.Arrays;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
@@ -50,8 +51,7 @@ public class MaxAbsScalerTrainer<K, V> implements PreprocessingTrainer<K, V> {
 
                     if (maxAbs == null) {
                         maxAbs = new double[row.size()];
-                        for (int i = 0; i < maxAbs.length; i++)
-                            maxAbs[i] = .0;
+                        Arrays.fill(maxAbs, .0);
                     }
                     else
                         assert maxAbs.length == row.size() : "Base preprocessor must return exactly " + maxAbs.length

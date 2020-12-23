@@ -163,7 +163,7 @@ namespace ignite
                     OP_TX_START = 4000,
 
                     /** Commit transaction. */
-                    OP_TX_END = 4001,
+                    OP_TX_END = 4001
                 };
             };
 
@@ -199,7 +199,7 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+                virtual void Write(binary::BinaryWriterImpl&, const ProtocolVersion&) const
                 {
                     // No-op.
                 }
@@ -628,13 +628,15 @@ namespace ignite
                 /**
                  * Constructor.
                  */
-                TxStartRequest(ignite::thin::transactions::TransactionConcurrency::Type conc,
-                               ignite::thin::transactions::TransactionIsolation::Type isolationLvl,
-                               int64_t tmOut, int32_t sz, ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > lbl) :
+                TxStartRequest(
+                    ignite::thin::transactions::TransactionConcurrency::Type conc,
+                    ignite::thin::transactions::TransactionIsolation::Type isolationLvl,
+                    int64_t tmOut,
+                    ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > lbl
+                ) :
                     concurrency(conc),
                     isolation(isolationLvl),
                     timeout(tmOut),
-                    size(sz),
                     label(lbl)
                 {
                     // No-op.
@@ -670,9 +672,6 @@ namespace ignite
                 /** Timeout. */
                 const int64_t timeout;
 
-                /** Size. */
-                const int32_t size;
-
                 /** Tx label. */
                 ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > label;
             };
@@ -690,9 +689,10 @@ namespace ignite
                  * @param comm Need to commit flag.
                  */
                 TxEndRequest(int32_t id, bool comm) :
-                    commited(comm),
-                    txId(id)
+                    txId(id),
+                    commited(comm)
                 {
+                    // No-op.
                 }
 
                 /**

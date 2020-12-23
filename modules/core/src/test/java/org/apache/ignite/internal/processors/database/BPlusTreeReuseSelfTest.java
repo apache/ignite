@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -83,7 +84,7 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
             boolean initNew,
             GridKernalContext ctx
         ) throws IgniteCheckedException {
-            super(cacheId, name, pageMem, wal, metaPageId, initNew, new TestPageLockListener(), ctx, null);
+            super(cacheId, name, pageMem, wal, metaPageId, initNew, new TestPageLockListener(), ctx, null, PageIdAllocator.FLAG_IDX);
         }
 
         /**

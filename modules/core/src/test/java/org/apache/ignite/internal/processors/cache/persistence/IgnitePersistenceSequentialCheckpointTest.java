@@ -36,6 +36,6 @@ public class IgnitePersistenceSequentialCheckpointTest extends IgnitePersistentS
 
     /** {@inheritDoc} */
     @Override protected int entriesCount() {
-        return 1000;
+        return 100;
     }
 }

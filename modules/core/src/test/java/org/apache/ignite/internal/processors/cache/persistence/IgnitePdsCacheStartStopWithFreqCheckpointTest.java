@@ -184,6 +184,6 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
     private void interruptCheckpointer(IgniteEx node) {
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager) node.context().cache().context().database();
 
-        dbMgr.checkpointerThread().interrupt();
+        dbMgr.getCheckpointer().runner().interrupt();
     }
 }

@@ -521,7 +521,7 @@ public class ConnectionClientPool {
                     msgFormatterSupplier.get());
             }
             catch (IgniteCheckedException e) {
-                if (connectAttempts == 1 && timeoutHelper.checkFailureTimeoutReached(e))
+                if (timeoutHelper.checkFailureTimeoutReached(e))
                     throw e;
 
                 // Reconnect for the second time, if connection is not established.

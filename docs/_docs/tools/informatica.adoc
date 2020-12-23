@@ -1,0 +1,304 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Using Informatica With Apache Ignite
+
+== Overview
+
+Informatica is a cloud data management and data integration tool. You can connect Informatica to Ignite through the ODBC driver.
+
+== Connecting from Informatica PowerCenter Designer
+
+You need to install the 32-bit Ignite OBDC driver to connect an Ignite cluster with the Power Center Designer. Use the
+following links to build and install the driver:
+
+* link:SQL/ODBC/odbc-driver#installing-on-windows[Install the driver on Windows]
+* link:SQL/ODBC/connection-string-dsn#configuring-dsn[Configure DSN]
+
+Then do the following:
+
+. Select the `Sources` or `Targets` menu and choose `Import from Database...` to import tables from Ignite.
+. Connect to the cluster by choosing `Apache Ignite DSN` as the ODBC data source.
+
+image::images/tools/informatica-import-tables.png[Informatica Import Tables]
+
+== Installing Ignite ODBC on an Informatica Service Node
+
+Refer to the link:SQL/ODBC/odbc-driver#building-on-linux[Building on Linux] and
+link:SQL/ODBC/odbc-driver#installing-on-linux[Installing on Linux] instructions to install the Ignite ODBC on an Ignite service node.
+
+Informatica uses configuration files referenced by the `$ODBCINI` and `$ODBCISTINI` environment variables
+(https://kb.informatica.com/howto/6/Pages/19/499306.aspx[Configure the UNIX environment for ODBC, window=_blank]). Configure
+the Ignite ODBC driver and create a new DSN as shown below:
+
+[tabs]
+--
+tab:odbc.ini[]
+[source,text]
+----
+[ApacheIgnite]
+Driver      = /usr/local/lib/libignite-odbc.so
+Description = Apache Ignite ODBC
+Address = 192.168.0.105
+User = ignite
+Password = ignite
+Schema = PUBLIC
+----
+tab:odbcinst.ini[]
+[source,text]
+----
+[ApacheIgnite]
+Driver  = /usr/local/lib/libignite-odbc.so
+----
+--
+
+To check the ODBC connection, use the `ssgodbc.linux64` utility included in the Informatica deployment, as show below:
+
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+<INFORMATICA_HOME>/tools/debugtools/ssgodbc/linux64/ssgodbc.linux64 -d ApacheIgnite -u ignite -p ignite -v
+----
+--
+
+If the unixODBC or Ignite ODBC libraries are not installed in the default directory - `/usr/local/lib`, add them to `LD_LIBRARY_PATH`
+and then check the connection, like so:
+
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+UNIXODBC_LIB=/opt/unixodbc/lib/
+IGNITE_ODBC_LIB=/opt/igniteodbc/lib
+LD_LIBRARY_PATH=<UNIXODBC_LIB>:<IGNITE_ODBC_LIB>
+
+<INFORMATICA_HOME>/tools/debugtools/ssgodbc/linux64/ssgodbc.linux64 -d ApacheIgnite -u ignite -p ignite -v
+----
+--
+
+== Configuring Relation Connection
+
+Choose `Connections > Relational..` to show the Relational Connection Browser.
+
+Select the ODBC type and create a new connection.
+
+image::images/tools/informatica-rel-connection.png[Informatica Relational Connection]
+
+
+== Installing Ignite ODBC on Suse 11.4
+
+Follow the steps below to build and install Ignite with the Ignite ODBC driver on Suse 11.4:
+
+. Add repositories - `oss`, `non-oss`, `openSUSE_Factory`, `devel_gcc`
++
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+sudo zypper ar http://download.opensuse.org/distribution/11.4/repo/oss/ oss
+sudo zypper ar http://download.opensuse.org/distribution/11.4/repo/non-oss/ non-oss
+sudo zypper ar https://download.opensuse.org/repositories/devel:/tools:/building/openSUSE_Factory/ openSUSE_Factory
+sudo zypper ar http://download.opensuse.org/repositories/devel:/gcc/SLE-11/  devel_gcc
+----
+--
+
+. Install `automake` and `autoconf`
++
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+sudo zypper install autoconf automake
+----
+--
+
+. Install `libtool`
++
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+sudo zypper install libtool-2.4.6-7.1.x86_64
+
+Loading repository data...
+Reading installed packages...
+Resolving package dependencies...
+
+Problem: nothing provides m4 >= 1.4.16 needed by libtool-2.4.6-7.1.x86_64
+ Solution 1: do not install libtool-2.4.6-7.1.x86_64
+ Solution 2: break libtool-2.4.6-7.1.x86_64 by ignoring some of its dependencies
+
+Choose from above solutions by number or cancel [1/2/c] (c): 2
+----
+--
+
+. Install OpenSSL
++
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+sudo zypper install openssl openssl-devel
+
+Loading repository data...
+Reading installed packages...
+'openssl-devel' not found in package names. Trying capabilities.
+Resolving package dependencies...
+
+Problem: libopenssl-devel-1.0.0c-17.1.x86_64 requires zlib-devel, but this requirement cannot be provided
+  uninstallable providers: zlib-devel-1.2.5-8.1.i586[oss]
+                   zlib-devel-1.2.5-8.1.x86_64[oss]
+ Solution 1: downgrade of zlib-1.2.7-0.12.3.x86_64 to zlib-1.2.5-8.1.x86_64
+ Solution 2: do not ask to install a solvable providing openssl-devel
+ Solution 3: do not ask to install a solvable providing openssl-devel
+ Solution 4: break libopenssl-devel-1.0.0c-17.1.x86_64 by ignoring some of its dependencies
+
+Choose from above solutions by number or cancel [1/2/3/4/c] (c): 1
+----
+--
+
+. Install the GCC Compiler
++
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+sudo zypper install gcc5 gcc5-c++
+
+Loading repository data...
+Reading installed packages...
+Resolving package dependencies...
+2 Problems:
+Problem: gcc5-5.5.0+r253576-1.1.x86_64 requires libgcc_s1 >= 5.5.0+r253576-1.1, but this requirement cannot be provided
+Problem: gcc5-c++-5.5.0+r253576-1.1.x86_64 requires gcc5 = 5.5.0+r253576-1.1, but this requirement cannot be provided
+
+Problem: gcc5-5.5.0+r253576-1.1.x86_64 requires libgcc_s1 >= 5.5.0+r253576-1.1, but this requirement cannot be provided
+  uninstallable providers: libgcc_s1-5.5.0+r253576-1.1.i586[devel_gcc]
+                   libgcc_s1-5.5.0+r253576-1.1.x86_64[devel_gcc]
+                   libgcc_s1-6.4.1+r251631-80.1.i586[devel_gcc]
+                   libgcc_s1-6.4.1+r251631-80.1.x86_64[devel_gcc]
+                   libgcc_s1-7.3.1+r258812-103.1.i586[devel_gcc]
+                   libgcc_s1-7.3.1+r258812-103.1.x86_64[devel_gcc]
+                   libgcc_s1-8.1.1+r260570-32.1.i586[devel_gcc]
+                   libgcc_s1-8.1.1+r260570-32.1.x86_64[devel_gcc]
+ Solution 1: install libgcc_s1-8.1.1+r260570-32.1.x86_64 (with vendor change)
+  SUSE LINUX Products GmbH, Nuernberg, Germany  -->  obs://build.opensuse.org/devel:gcc
+ Solution 2: do not install gcc5-5.5.0+r253576-1.1.x86_64
+ Solution 3: do not install gcc5-5.5.0+r253576-1.1.x86_64
+ Solution 4: break gcc5-5.5.0+r253576-1.1.x86_64 by ignoring some of its dependencies
+
+Choose from above solutions by number or skip, retry or cancel [1/2/3/4/s/r/c] (c): 1
+
+Problem: gcc5-c++-5.5.0+r253576-1.1.x86_64 requires gcc5 = 5.5.0+r253576-1.1, but this requirement cannot be provided
+  uninstallable providers: gcc5-5.5.0+r253576-1.1.i586[devel_gcc]
+                   gcc5-5.5.0+r253576-1.1.x86_64[devel_gcc]
+ Solution 1: install libgomp1-8.1.1+r260570-32.1.x86_64 (with vendor change)
+  SUSE LINUX Products GmbH, Nuernberg, Germany  -->  obs://build.opensuse.org/devel:gcc
+ Solution 2: do not install gcc5-c++-5.5.0+r253576-1.1.x86_64
+ Solution 3: do not install gcc5-c++-5.5.0+r253576-1.1.x86_64
+ Solution 4: break gcc5-c++-5.5.0+r253576-1.1.x86_64 by ignoring some of its dependencies
+
+Choose from above solutions by number or skip, retry or cancel [1/2/3/4/s/r/c] (c): 1
+Resolving dependencies...
+Resolving package dependencies...
+
+Problem: gcc5-c++-5.5.0+r253576-1.1.x86_64 requires libstdc++6-devel-gcc5 = 5.5.0+r253576-1.1, but this requirement cannot be provided
+  uninstallable providers: libstdc++6-devel-gcc5-5.5.0+r253576-1.1.i586[devel_gcc]
+                   libstdc++6-devel-gcc5-5.5.0+r253576-1.1.x86_64[devel_gcc]
+ Solution 1: install libstdc++6-8.1.1+r260570-32.1.x86_64 (with vendor change)
+  SUSE LINUX Products GmbH, Nuernberg, Germany  -->  obs://build.opensuse.org/devel:gcc
+ Solution 2: do not install gcc5-c++-5.5.0+r253576-1.1.x86_64
+ Solution 3: do not install gcc5-c++-5.5.0+r253576-1.1.x86_64
+ Solution 4: break gcc5-c++-5.5.0+r253576-1.1.x86_64 by ignoring some of its dependencies
+
+Choose from above solutions by number or cancel [1/2/3/4/c] (c): 1
+----
+--
+
+. Provide symlinks to compiler executables.
++
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+sudo rm /usr/bin/gcc
+sudo rm /usr/bin/g++
+
+sudo ln -s /usr/bin/g++-5 /usr/bin/g++
+sudo ln -s /usr/bin/gcc-5 /usr/bin/gcc
+----
+--
+
+. Install unixODBC from sources. Download and install the latest unixODBC(2.3.6 or later) library from http://www.unixodbc.org/.
+
+. Check that all required libraries and tools are installed with specified versions.
++
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+1. libtool --version
+libtool (GNU libtool) 2.4.6
+2. m4 --version
+m4 (GNU M4) 1.4.12
+3. autoconf --version
+autoconf (GNU Autoconf) 2.69
+4. automake --version
+automake (GNU automake) 1.16.1
+5. openssl version
+OpenSSL 1.0.0c 2 Dec 2010
+6. g++ --version
+g++ (SUSE Linux) 5.5.0 20171010 [gcc-5-branch revision 253640]
+7. JDK 1.8
+----
+--
+
+. Check if the environment variable `JAVA_HOME` is set. Then issue the following commands:
++
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+cd $IGNITE_HOME/platforms/cpp
+export LDFLAGS=-lrt
+
+libtoolize && aclocal && autoheader && automake --add-missing && autoreconf
+./configure --enable-odbc
+make
+sudo make install
+----
+--
+. Reboot the system.
+
+. Install the ODBC driver
++
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+sudo odbcinst -i -d -f $IGNITE_HOME/platforms/cpp/odbc/install/ignite-odbc-install.ini
+----
+--

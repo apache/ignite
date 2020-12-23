@@ -49,7 +49,6 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -82,9 +81,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setSqlConfiguration(new SqlConfiguration()
-                .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2")
-            )
-            .setMetricExporterSpi(new SqlViewMetricExporterSpi());
+                .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2"));
     }
 
     /**
@@ -723,6 +720,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHE_GROUPS.REBALANCE_DELAY.null.19",
                 "SYS.CACHE_GROUPS.REBALANCE_ORDER.null.10",
                 "SYS.CACHE_GROUPS.BACKUPS.null.10",
+                "SYS.INDEXES.CACHE_GROUP_ID.null.10",
+                "SYS.INDEXES.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.INDEXES.CACHE_ID.null.10",
                 "SYS.INDEXES.CACHE_NAME.null.2147483647",
                 "SYS.INDEXES.SCHEMA_NAME.null.2147483647",
@@ -839,6 +838,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODE_METRICS.RECEIVED_MESSAGES_COUNT.null.10",
                 "SYS.NODE_METRICS.RECEIVED_BYTES_COUNT.null.19",
                 "SYS.NODE_METRICS.OUTBOUND_MESSAGES_QUEUE.null.10",
+                "SYS.TABLES.CACHE_GROUP_ID.null.10",
+                "SYS.TABLES.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.TABLES.CACHE_ID.null.10",
                 "SYS.TABLES.CACHE_NAME.null.2147483647",
                 "SYS.TABLES.SCHEMA_NAME.null.2147483647",
@@ -923,7 +924,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TRANSACTIONS.TOP_VER.null.2147483647",
                 "SYS.TRANSACTIONS.KEYS_COUNT.null.10",
                 "SYS.TRANSACTIONS.CACHE_IDS.null.2147483647",
-                "SYS.SCHEMAS.NAME.null.2147483647",
+                "SYS.SCHEMAS.SCHEMA_NAME.null.2147483647",
                 "SYS.SCHEMAS.PREDEFINED.null.1",
                 "SYS.VIEWS.NAME.null.2147483647",
                 "SYS.VIEWS.DESCRIPTION.null.2147483647",
@@ -1366,6 +1367,21 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 conn.getMetaData().getDatabaseProductVersion(), IgniteVersionUtils.VER.toString());
             assertEquals("Unexpected ignite driver version.",
                 conn.getMetaData().getDriverVersion(), IgniteVersionUtils.VER.toString());
+        }
+    }
+
+    /**
+     * Check JDBC support flags.
+     */
+    @Test
+    public void testCheckSupports() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            assertTrue(meta.supportsANSI92EntryLevelSQL());
+            assertTrue(meta.supportsAlterTableWithAddColumn());
+            assertTrue(meta.supportsAlterTableWithDropColumn());
+            assertTrue(meta.nullPlusNonNullIsNull());
         }
     }
 
