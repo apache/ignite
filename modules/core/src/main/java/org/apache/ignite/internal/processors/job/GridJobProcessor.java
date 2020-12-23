@@ -306,8 +306,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         metricsUpdateFreq = ctx.config().getMetricsUpdateFrequency();
 
-        activeJobs = jobAlwaysActivate ? new ConcurrentHashMap<IgniteUuid, GridJobWorker>() :
-            new JobsMap(1024, 0.75f, 256);
+        activeJobs = initJobsMap(jobAlwaysActivate);
 
         passiveJobs = jobAlwaysActivate ? null : new JobsMap(1024, 0.75f, 256);
 
@@ -377,10 +376,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         // Clear collections.
-        if (jobAlwaysActivate)
-            activeJobs.clear();
-        else
-            activeJobs = new JobsMap(1024, 0.75f, 256);
+        activeJobs = initJobsMap(jobAlwaysActivate);
 
         activeJobsMetric.reset();
 
@@ -508,6 +504,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         if (dep.obsolete())
             ctx.resource().onUndeployed(dep);
+    }
+
+    /**
+     * @param collisionsDisabled If collision SPI is disabled.
+     */
+    private ConcurrentMap<IgniteUuid, GridJobWorker> initJobsMap(boolean collisionsDisabled) {
+        return collisionsDisabled ? new ConcurrentHashMap<IgniteUuid, GridJobWorker>() :
+            new JobsMap(1024, 0.75f, 256);
     }
 
     /**
