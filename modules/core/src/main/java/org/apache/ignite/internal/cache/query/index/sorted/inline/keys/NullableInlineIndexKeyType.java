@@ -181,6 +181,13 @@ public abstract class NullableInlineIndexKeyType<T> implements InlineIndexKeyTyp
             || (type = PageUtils.getByte(pageAddr, off)) == (byte) IndexKeyTypes.UNKNOWN)
             return CANT_BE_COMPARE;
 
+        if (type == IndexKeyTypes.NULL) {
+            if (v == NullKey.INSTANCE)
+                return 0;
+            else
+                return -1;
+        }
+
         if (type() != type)
             return COMPARE_UNSUPPORTED;
 
