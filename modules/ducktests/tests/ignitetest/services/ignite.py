@@ -17,7 +17,6 @@
 This module contains class to start ignite cluster node.
 """
 
-import os
 import re
 import signal
 from datetime import datetime

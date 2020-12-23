@@ -35,6 +35,7 @@ from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
 
 
+# pylint: disable=too-many-public-methods
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
@@ -56,9 +57,22 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.shutdown_timeout_sec = shutdown_timeout_sec
 
         self.spec = resolve_spec(self, context, config, **kwargs)
+        self.init_logs_attribute()
 
         self.disconnected_nodes = []
         self.killed = False
+
+    @property
+    def version(self):
+        return self.config.version
+
+    @property
+    def project(self):
+        return self.spec.project
+
+    @property
+    def globals(self):
+        return self.context.globals
 
     def start_async(self, clean=True):
         """
@@ -87,7 +101,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         wait_until(lambda: self.alive(node), timeout_sec=10)
 
-        ignite_jmx_mixin(node, self.context, self.pids(node))
+        ignite_jmx_mixin(node, self.spec, self.pids(node))
 
     def stop_async(self):
         """
@@ -188,7 +202,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
     # pylint: disable=W0613
     def _worker(self, idx, node):
-        cmd = self.spec.command(node.log_file)
+        cmd = self.spec.command(node)
 
         self.logger.debug("Attempting to start Application Service on %s with command: %s" % (str(node.account), cmd))
 
@@ -277,6 +291,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
     @property
     def netfilter_store_path(self):
+        """
+        :return: path to store backup of iptables filter
+        """
         return os.path.join(self.temp_dir, "iptables.bak")
 
     def drop_network(self, nodes=None):
@@ -361,8 +378,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Update the node log file.
         """
-        cnt = list(node.account.ssh_capture(f'ls {self.LOGS_DIR} | '
-                                            f'grep -E "^console_[0-9]*.log$" | '
+        cnt = list(node.account.ssh_capture(f'ls {self.log_dir} | '
+                                            f'grep -E "^console(_[0-9]+){0,1}.log$" | '
                                             f'wc -l', callback=int))[0]
 
-        node.log_file = self.STDOUT_STDERR_CAPTURE.replace('.log', f'_{cnt + 1}.log')
+        node.log_file = os.path.join(self.log_dir, f"console{'_' + str(cnt) if cnt > 0 else ''}.log")

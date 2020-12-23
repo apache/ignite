@@ -18,6 +18,7 @@ This module contains spark service class.
 """
 
 import os.path
+from distutils.version import LooseVersion
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.services.background_thread import BackgroundThreadService
@@ -26,12 +27,13 @@ from ignitetest.services.utils.path import PathAware
 from ignitetest.services.utils.log_utils import monitor_log
 
 
+# pylint: disable=abstract-method
 class SparkService(BackgroundThreadService, PathAware):
     """
     Start a spark node.
     """
     # pylint: disable=R0913
-    def __init__(self, context, num_nodes=3, version="2.3.4"):
+    def __init__(self, context, num_nodes=3, version=LooseVersion("2.3.4")):
         """
         :param context: test context
         :param num_nodes: number of Ignite nodes.
@@ -39,23 +41,20 @@ class SparkService(BackgroundThreadService, PathAware):
         super().__init__(context, num_nodes)
 
         self.log_level = "DEBUG"
-        self.version = version
-
-        for node in self.nodes:
-            self.logs["master_logs" + node.account.hostname] = {
-                "path": self.master_log_path(node),
-                "collect_default": True
-            }
-            self.logs["worker_logs" + node.account.hostname] = {
-                "path": self.slave_log_path(node),
-                "collect_default": True
-            }
+        self._version = version
+        self.init_logs_attribute()
 
     @property
-    def install_dir(self):
-        globals = self.context.globals
-        install_root = globals.get("install_root", "/opt")
-        return os.path.join(install_root, f"spark-{self.version}")
+    def project(self):
+        return "spark"
+
+    @property
+    def version(self):
+        return self._version
+
+    @property
+    def globals(self):
+        return self.context.globals
 
     def start(self, clean=True):
         BackgroundThreadService.start(self, clean=clean)
@@ -71,13 +70,24 @@ class SparkService(BackgroundThreadService, PathAware):
         else:
             script = "start-slave.sh spark://{spark_master}:7077".format(spark_master=self.nodes[0].account.hostname)
 
-        start_script = os.path.join(self.install_dir, "sbin", script)
+        start_script = os.path.join(self.home_dir, "sbin", script)
 
         cmd = "export SPARK_LOG_DIR={spark_dir}; ".format(spark_dir=self.persistent_root)
         cmd += "export SPARK_WORKER_DIR={spark_dir}; ".format(spark_dir=self.persistent_root)
         cmd += "{start_script} &".format(start_script=start_script)
 
         return cmd
+
+    def init_logs_attribute(self):
+        for node in self.nodes:
+            self.logs["master_logs" + node.account.hostname] = {
+                "path": self.master_log_path(node),
+                "collect_default": True
+            }
+            self.logs["worker_logs" + node.account.hostname] = {
+                "path": self.slave_log_path(node),
+                "collect_default": True
+            }
 
     def start_node(self, node):
         self.init_persistent(node)
@@ -105,9 +115,9 @@ class SparkService(BackgroundThreadService, PathAware):
 
     def stop_node(self, node):
         if node == self.nodes[0]:
-            node.account.ssh(os.path.join(self.install_dir, "sbin", "stop-master.sh"))
+            node.account.ssh(os.path.join(self.home_dir, "sbin", "stop-master.sh"))
         else:
-            node.account.ssh(os.path.join(self.install_dir, "sbin", "stop-slave.sh"))
+            node.account.ssh(os.path.join(self.home_dir, "sbin", "stop-slave.sh"))
 
     def clean_node(self, node):
         """

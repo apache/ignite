@@ -18,9 +18,28 @@ This module contains classes that represent persistent artifacts of tests
 """
 
 import os
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 
 from ignitetest.services.utils.config_template import IgniteLoggerConfigTemplate
+
+
+def get_home_dir(install_root, project, version):
+    """
+    Get path to binary release (home) directory depending on version.
+    """
+    return os.path.join(install_root, f"{project}-{version}")
+
+
+def get_module_path(project_dir, module_name, version):
+    """
+    Get absolute path to the specified module.
+    """
+    if version.is_dev:
+        module_path = os.path.join("modules", module_name, "target")
+    else:
+        module_path = os.path.join("libs", "optional", "ignite-%s" % module_name)
+
+    return os.path.join(project_dir, module_path)
 
 
 class PathAware:
@@ -32,38 +51,99 @@ class PathAware:
         Init persistent directory.
         :param node: Service node.
         """
-        node.account.mkdirs(self.persistent_root)
-        node.account.mkdirs(self.temp_dir)
+        node.account.mkdirs(f"{self.persistent_root} {self.temp_dir} {self.work_dir} {self.log_dir}")
 
-    @property
-    @abstractmethod
-    def log_path(self):
-        pass
+    def init_logs_attribute(self):
+        """
+        Initialize logs attribute for collecting logs by ducktape.
+        After changing to property based logs, will be removed.
+        """
+        setattr(self, 'logs', {
+            "logs": {
+                "path": self.log_dir,
+                "collect_default": True
+            }
+        })
 
     @property
     @abstractmethod
     def config_file(self):
-        pass
+        """
+        :return: path to project configuration file
+        """
 
     @property
     @abstractmethod
-    def log4j_config_file(self):
-        pass
+    def log_config_file(self):
+        """
+        :return: path to logger configuration file
+        """
+
+    @property
+    def work_dir(self):
+        """
+        :return: path to work directory
+        """
+        return os.path.join(self.persistent_root, "work")
+
+    @property
+    def log_dir(self):
+        """
+        :return: path to log directory
+        """
+        return os.path.join(self.persistent_root, "logs")
+
+    @property
+    @abstractmethod
+    def project(self):
+        """
+        :return: project name, for example 'zookeeper' for Apache Zookeeper.
+        """
+
+    @property
+    @abstractmethod
+    def version(self):
+        """
+        :return: version of project.
+        """
+
+    @property
+    @abstractmethod
+    def globals(self):
+        """
+        :return: dictionary of globals variable (usually from test context).
+        """
+
+    @property
+    def home_dir(self):
+        """
+        :return: path to binary release (home) directory
+        """
+        return get_home_dir(self.install_root, self.project, self.version)
 
     @property
     def temp_dir(self):
+        """
+        :return: path to temp directory
+        """
         return os.path.join(self.persistent_root, "tmp")
 
     @property
     def persistent_root(self):
-        return self.context.globals.get("persistent_root", "/mnt/service")
+        """
+        :return: path to persistent root
+        """
+        return self.globals.get("persistent_root", "/mnt/service")
 
     @property
     def install_root(self):
-        return self.context.globals.get("install_root", "/opt")
+        """
+        :return: path to distributive installation root
+        """
+        return self.globals.get("install_root", "/opt")
 
 
-class IgnitePathAware(PathAware):
+class IgnitePathAware(PathAware, metaclass=ABCMeta):
     """
     This class contains Ignite path configs.
     """
@@ -75,35 +155,19 @@ class IgnitePathAware(PathAware):
         super().init_persistent(node)
 
         logger_config = IgniteLoggerConfigTemplate().render(work_dir=self.work_dir)
-        node.account.create_file(self.log4j_config_file, logger_config)
-
-        setattr(self, 'logs', {
-            "console_log": {
-                "path": self.log_path,
-                "collect_default": True
-            }
-        })
+        node.account.create_file(self.log_config_file, logger_config)
 
     @property
     def config_file(self):
         return os.path.join(self.persistent_root, "ignite-config.xml")
 
     @property
-    def log4j_config_file(self):
+    def log_config_file(self):
         return os.path.join(self.persistent_root, "ignite-log4j.xml")
-
-    @property
-    def log_path(self):
-        return os.path.join(self.persistent_root, "console.log")
-
-    @property
-    def work_dir(self):
-        return os.path.join(self.persistent_root, "work")
-
 
     def script(self, script_name):
         """
         :param script_name: name of Ignite script
         :return: absolute path to the specified script
         """
-        return os.path.join(self.home, "bin", script_name)
+        return os.path.join(self.home_dir, "bin", script_name)
