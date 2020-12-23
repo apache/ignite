@@ -388,7 +388,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <summary>Write date.</summary>
          * <param name="val">Date.</param>
          * <param name="stream">Stream.</param>
-         * <param name="converter">DateTime Converter.</param>
+         * <param name="converter">Timestamp Converter.</param>
          */
         public static void WriteTimestamp(DateTime val, IBinaryStream stream, ITimestampConverter converter)
         {
@@ -407,7 +407,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /**
          * <summary>Read date.</summary>
          * <param name="stream">Stream.</param>
-         * <param name="converter">DateTime Converter.</param>
+         * <param name="converter">Timestamp Converter.</param>
          * <returns>Date</returns>
          */
         public static DateTime? ReadTimestamp(IBinaryStream stream, ITimestampConverter converter)
@@ -446,7 +446,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="vals">Values.</param>
         /// <param name="stream">Stream.</param>
-        public static void WriteTimestampArray(DateTime?[] vals, IBinaryStream stream)
+        /// <param name="converter">Timestamp Converter.</param>
+        public static void WriteTimestampArray(DateTime?[] vals, IBinaryStream stream, ITimestampConverter converter)
         {
             stream.WriteInt(vals.Length);
 
@@ -456,7 +457,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     stream.WriteByte(BinaryTypeId.Timestamp);
 
-                    WriteTimestamp(val.Value, stream, Marsh.TimestampConverter);
+                    WriteTimestamp(val.Value, stream, converter);
                 }
                 else
                     stream.WriteByte(HdrNull);
@@ -1173,15 +1174,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Read timestamp array.
         /// </summary>
         /// <param name="stream">Stream.</param>
+        /// <param name="converter">Timestamp Converter.</param>
         /// <returns>Timestamp array.</returns>
-        public static DateTime?[] ReadTimestampArray(IBinaryStream stream)
+        public static DateTime?[] ReadTimestampArray(IBinaryStream stream, ITimestampConverter converter)
         {
             int len = stream.ReadInt();
 
             DateTime?[] vals = new DateTime?[len];
 
             for (int i = 0; i < len; i++)
-                vals[i] = stream.ReadByte() == HdrNull ? null : ReadTimestamp(stream, Marshaller.TimestampConverter);
+                vals[i] = stream.ReadByte() == HdrNull ? null : ReadTimestamp(stream, converter);
 
             return vals;
         }

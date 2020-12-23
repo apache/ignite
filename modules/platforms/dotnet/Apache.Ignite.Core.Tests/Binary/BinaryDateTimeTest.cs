@@ -111,7 +111,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             AssertTimestampField<DateTimeClassAttribute2>((o, d) => o.Value = d, o => o.Value, "Value");
         }
 
-#if NETCOREAPP
         /// <summary>
         /// Tests custom timestamp converter.
         /// </summary>
@@ -134,10 +133,22 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             AssertTimestampField<DateTimeObj2>((o, d) => o.Value = d, o => o.Value, "Value");
 
-            var ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<IBinaryObject>(new DateTime(1997, 8, 29)), 
-                "Converter Error!");
+            var dt1 = new DateTime(1997, 8, 29, 0, 0, 0, DateTimeKind.Utc);
+
+            var ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<DateTime>(dt1));
+            Assert.AreEqual("ToJavaTicks Error!", ex.Message);
+
+            ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<DateTime?[]>(new DateTime?[] {dt1}));
+            Assert.AreEqual("ToJavaTicks Error!", ex.Message);
+
+            var dt2 = new DateTime(1997, 8, 4, 0, 0, 0, DateTimeKind.Utc);
+
+            ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<DateTime>(dt2));
+            Assert.AreEqual("FromJavaTicks Error!", ex.Message);
+
+            ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<DateTime?[]>(new DateTime?[] {dt2}));
+            Assert.AreEqual("FromJavaTicks Error!", ex.Message);
         }
-#endif
 
         /// <summary>
         /// Asserts that specified field is serialized as DateTime object.
@@ -231,7 +242,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
     }
 
-#if NETCOREAPP
     /// <summary>
     /// Adds support of the local dates to the Ignite timestamp serialization.
     /// </summary>
@@ -241,7 +251,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void ToJavaTicks(DateTime date, out long high, out int low)
         {
             if (date.Year == 1997 && date.Month == 8 && date.Day == 29)
-                throw new BinaryObjectException("Converter Error!");
+                throw new BinaryObjectException("ToJavaTicks Error!");
 
             BinaryUtils.ToJavaDate(date, out high, out low);
         }
@@ -249,8 +259,13 @@ namespace Apache.Ignite.Core.Tests.Binary
         /** <inheritdoc /> */
         public DateTime FromJavaTicks(long high, int low)
         {
-            return new DateTime(BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
+            var date = new DateTime(BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100,
+                DateTimeKind.Utc);
+
+            if (date.Year == 1997 && date.Month == 8 && date.Day == 4)
+                throw new BinaryObjectException("FromJavaTicks Error!");
+
+            return date;
         }
     }
-#endif
 }

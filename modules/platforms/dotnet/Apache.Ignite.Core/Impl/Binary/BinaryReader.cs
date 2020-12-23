@@ -327,13 +327,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public DateTime?[] ReadTimestampArray(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadTimestampArray, BinaryTypeId.ArrayTimestamp);
+            return ReadField(fieldName, stream => BinaryUtils.ReadTimestampArray(stream, _marsh.TimestampConverter), BinaryTypeId.ArrayTimestamp);
         }
         
         /** <inheritdoc /> */
         public DateTime?[] ReadTimestampArray()
         {
-            return Read(BinaryUtils.ReadTimestampArray, BinaryTypeId.ArrayTimestamp);
+            return Read(stream => BinaryUtils.ReadTimestampArray(stream, _marsh.TimestampConverter), BinaryTypeId.ArrayTimestamp);
         }
         
         /** <inheritdoc /> */
