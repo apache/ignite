@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
@@ -140,10 +141,13 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         long newIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
 
-        assertTrue(newIdxFileLen <= oldIdxFileLen);
+        assertTrue(
+            "newIdxFileLen=" + newIdxFileLen + ", oldIdxFileLen=" + oldIdxFileLen,
+            newIdxFileLen <= oldIdxFileLen
+        );
 
         File completionMarkerFile = DefragmentationFileUtils.defragmentationCompletionMarkerFile(workDir);
-        assertTrue(completionMarkerFile.exists());
+        assertTrue(Arrays.toString(workDir.listFiles()), completionMarkerFile.exists());
 
         stopGrid(0);
 
