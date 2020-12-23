@@ -125,7 +125,7 @@ class SparkService(BackgroundThreadService, PathAware):
         """
         node.account.kill_java_processes(self.java_class_name(node),
                                          clean_shutdown=False, allow_fail=True)
-        node.account.ssh("sudo rm -rf -- %s" % self.persistent_root, allow_fail=False)
+        node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
     def pids(self, node):
         """

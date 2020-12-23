@@ -40,7 +40,7 @@ class IgniteService(IgniteAwareService):
 
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
-        node.account.ssh("sudo rm -rf -- %s" % self.persistent_root, allow_fail=False)
+        node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
     def thread_dump(self, node):
         """
