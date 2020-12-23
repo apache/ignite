@@ -29,6 +29,12 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// </summary>
     public class BinaryDateTimeTest
     {
+        /** */
+        internal const String FromErrMsg = "FromJavaTicks Error!";
+
+        /** */
+        internal const String ToErrMsg = "ToJavaTicks Error!";
+
         /// <summary>
         /// Sets up the test fixture.
         /// </summary>
@@ -131,23 +137,23 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Check config.
             Assert.NotNull(ignite.GetConfiguration().BinaryConfiguration.TimestampConverter);
 
-            AssertTimestampField<DateTimeObj2>((o, d) => o.Value = d, o => o.Value, "Value");
+            AssertTimestampField<DateTimeObj2>((o, d) => o.Value = d, o => o.Value, "Value", ignite);
 
             var dt1 = new DateTime(1997, 8, 29, 0, 0, 0, DateTimeKind.Utc);
 
             var ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<DateTime>(dt1));
-            Assert.AreEqual("ToJavaTicks Error!", ex.Message);
+            Assert.AreEqual(ToErrMsg, ex.Message);
 
             ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<DateTime?[]>(new DateTime?[] {dt1}));
-            Assert.AreEqual("ToJavaTicks Error!", ex.Message);
+            Assert.AreEqual(ToErrMsg, ex.Message);
 
             var dt2 = new DateTime(1997, 8, 4, 0, 0, 0, DateTimeKind.Utc);
 
             ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<DateTime>(dt2));
-            Assert.AreEqual("FromJavaTicks Error!", ex.Message);
+            Assert.AreEqual(FromErrMsg, ex.Message);
 
             ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<DateTime?[]>(new DateTime?[] {dt2}));
-            Assert.AreEqual("FromJavaTicks Error!", ex.Message);
+            Assert.AreEqual(FromErrMsg, ex.Message);
         }
 
         /// <summary>
@@ -176,10 +182,10 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Asserts that specified field is serialized as Timestamp.
         /// </summary>
         private static void AssertTimestampField<T>(Action<T, DateTime> setValue,
-            Func<T, DateTime> getValue, string fieldName) where T : new()
+            Func<T, DateTime> getValue, string fieldName, IIgnite ignite = null) where T : new()
         {
             // Non-UTC DateTime throws.
-            var binary = Ignition.GetIgnite().GetBinary();
+            var binary = ignite != null ? ignite.GetBinary() : Ignition.GetIgnite().GetBinary();
 
             var obj = new T();
 
@@ -251,7 +257,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void ToJavaTicks(DateTime date, out long high, out int low)
         {
             if (date.Year == 1997 && date.Month == 8 && date.Day == 29)
-                throw new BinaryObjectException("ToJavaTicks Error!");
+                throw new BinaryObjectException(BinaryDateTimeTest.ToErrMsg);
 
             BinaryUtils.ToJavaDate(date, out high, out low);
         }
@@ -263,7 +269,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 DateTimeKind.Utc);
 
             if (date.Year == 1997 && date.Month == 8 && date.Day == 4)
-                throw new BinaryObjectException("FromJavaTicks Error!");
+                throw new BinaryObjectException(BinaryDateTimeTest.FromErrMsg);
 
             return date;
         }
