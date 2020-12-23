@@ -20,6 +20,7 @@ package org.apache.ignite.cli.spec;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import com.github.freva.asciitable.AsciiTable;
@@ -27,6 +28,8 @@ import com.github.freva.asciitable.Column;
 import com.github.freva.asciitable.HorizontalAlign;
 import org.apache.ignite.cli.CliPathsConfigLoader;
 import org.apache.ignite.cli.builtins.module.ModuleManager;
+import org.apache.ignite.cli.builtins.module.ModuleStorage;
+import org.apache.ignite.cli.builtins.module.StandardModuleDefinition;
 import org.apache.ignite.cli.common.IgniteCommand;
 import picocli.CommandLine;
 
@@ -86,16 +89,54 @@ public class ModuleCommandSpec extends CategorySpec implements IgniteCommand {
     public static class ListModuleCommandSpec extends CommandSpec {
 
         @Inject private ModuleManager moduleManager;
+        @Inject private ModuleStorage moduleStorage;
 
         @Override public void run() {
+            var installedModules = new LinkedHashMap<String, ModuleStorage.ModuleDefinition>();
+
+            for (var m: moduleStorage
+                .listInstalled()
+                .modules
+            ) {
+                installedModules.put(m.name, m);
+            }
+
             var builtinModules = moduleManager.builtinModules()
                 .stream()
-                .filter(m -> !m.name.startsWith(ModuleManager.INTERNAL_MODULE_PREFIX));
+                .filter(m -> !m.name.startsWith(ModuleManager.INTERNAL_MODULE_PREFIX))
+                .map(m -> new StandardModuleView(m, installedModules.containsKey(m.name)));
+
             String table = AsciiTable.getTable(builtinModules.collect(Collectors.toList()), Arrays.asList(
-                new Column().header("Name").dataAlign(HorizontalAlign.LEFT).with(m -> m.name),
-                new Column().header("Description").dataAlign(HorizontalAlign.LEFT).with(m -> m.description)
+                new Column().header("Name").dataAlign(HorizontalAlign.LEFT).with(m -> m.standardModuleDefinition.name),
+                new Column().header("Description").dataAlign(HorizontalAlign.LEFT).with(m -> m.standardModuleDefinition.description),
+                new Column().header("Installed").dataAlign(HorizontalAlign.LEFT).with(m -> (m.installed) ? "+":"-")
             ));
+            spec.commandLine().getOut().println("Official Ignite modules:");
             spec.commandLine().getOut().println(table);
+
+            var externalInstalledModules = installedModules.values().stream()
+                .filter(m -> !(m.type == ModuleStorage.SourceType.Standard))
+                .collect(Collectors.toList());
+            if (!externalInstalledModules.isEmpty()) {
+                String externalModulesTable = AsciiTable.getTable(
+                    externalInstalledModules,
+                    Arrays.asList(
+                        new Column().header("Name").dataAlign(HorizontalAlign.LEFT).with(m -> m.name)
+                    ));
+                spec.commandLine().getOut().println();
+                spec.commandLine().getOut().println("External modules:");
+                spec.commandLine().getOut().println(externalModulesTable);
+            }
+        }
+
+        private static class StandardModuleView {
+            public final StandardModuleDefinition standardModuleDefinition;
+            public final boolean installed;
+
+            public StandardModuleView(StandardModuleDefinition standardModuleDefinition, boolean installed) {
+                this.standardModuleDefinition = standardModuleDefinition;
+                this.installed = installed;
+            }
         }
     }
 

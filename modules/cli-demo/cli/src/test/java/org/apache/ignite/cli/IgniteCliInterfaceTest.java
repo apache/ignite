@@ -15,6 +15,7 @@ import io.micronaut.context.ApplicationContext;
 import io.micronaut.context.env.Environment;
 import org.apache.ignite.cli.builtins.init.InitIgniteCommand;
 import org.apache.ignite.cli.builtins.module.ModuleManager;
+import org.apache.ignite.cli.builtins.module.ModuleStorage;
 import org.apache.ignite.cli.builtins.module.StandardModuleDefinition;
 import org.apache.ignite.cli.builtins.node.NodeManager;
 import org.apache.ignite.cli.spec.IgniteCliSpec;
@@ -79,10 +80,12 @@ public class IgniteCliInterfaceTest {
     class Module {
 
         @Mock ModuleManager moduleManager;
+        @Mock ModuleStorage moduleStorage;
 
         @BeforeEach
         void setUp() {
             applicationContext.registerSingleton(moduleManager);
+            applicationContext.registerSingleton(moduleStorage);
         }
 
         @Test
@@ -159,25 +162,46 @@ public class IgniteCliInterfaceTest {
         @Test
         @DisplayName("list")
         void list() {
-           when(moduleManager.builtinModules()).thenReturn(Arrays.asList(
-               new StandardModuleDefinition("module1", "description1", Arrays.asList("artifact1"), Arrays.asList("cli-artifact1") ),
-               new StandardModuleDefinition("module2", "description2", Arrays.asList("artifact2"), Arrays.asList("cli-artifact2") )
-           ));
 
-           var exitCode =
-               commandLine(applicationContext).execute("module list".split(" "));
-           verify(moduleManager).builtinModules();
-           assertEquals(0, exitCode);
+            var module1 = new StandardModuleDefinition("module1", "description1", Collections.singletonList("artifact1"), Collections.singletonList("cli-artifact1"));
+            var module2 = new StandardModuleDefinition("module2", "description2", Collections.singletonList("artifact2"), Collections.singletonList("cli-artifact2"));
+            when(moduleManager.builtinModules()).thenReturn(Arrays.asList(module1, module2));
 
-           var expectedOutput =
-               "+---------+--------------+\n" +
-               "| Name    | Description  |\n" +
-               "+---------+--------------+\n" +
-               "| module1 | description1 |\n" +
-               "+---------+--------------+\n" +
-               "| module2 | description2 |\n" +
-               "+---------+--------------+\n";
-           assertEquals(expectedOutput, out.toString());
+            var externalModule = new ModuleStorage.ModuleDefinition(
+                "org.apache.ignite:snapshot:2.9.0",
+                Collections.emptyList(),
+                Collections.emptyList(),
+                ModuleStorage.SourceType.Maven, "mvn:org.apache.ignite:snapshot:2.9.0");
+            when(moduleStorage.listInstalled()).thenReturn(
+                new ModuleStorage.ModuleDefinitionsRegistry(
+                    Arrays.asList(
+                        new ModuleStorage.ModuleDefinition(
+                            module1.name,
+                            Collections.emptyList(),
+                            Collections.emptyList(),
+                            ModuleStorage.SourceType.Standard, ""), externalModule)));
+
+            var exitCode =
+                commandLine(applicationContext).execute("module list".split(" "));
+            verify(moduleManager).builtinModules();
+            assertEquals(0, exitCode);
+
+            var expectedOutput = "Official Ignite modules:\n" +
+                "+---------+--------------+-----------+\n" +
+                "| Name    | Description  | Installed |\n" +
+                "+---------+--------------+-----------+\n" +
+                "| module1 | description1 | +         |\n" +
+                "+---------+--------------+-----------+\n" +
+                "| module2 | description2 | -         |\n" +
+                "+---------+--------------+-----------+\n" +
+                "\n" +
+                "External modules:\n" +
+                "+----------------------------------+\n" +
+                "| Name                             |\n" +
+                "+----------------------------------+\n" +
+                "| org.apache.ignite:snapshot:2.9.0 |\n" +
+                "+----------------------------------+\n";
+            assertEquals(expectedOutput, out.toString());
         }
     }
 

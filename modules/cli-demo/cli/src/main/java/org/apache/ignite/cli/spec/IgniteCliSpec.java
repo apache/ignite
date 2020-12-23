@@ -83,21 +83,14 @@ public class IgniteCliSpec extends CommandSpec {
         applicationContext.createBean(CliPathsConfigLoader.class)
             .loadIgnitePathsConfig()
             .ifPresent(ignitePaths ->
-                {
-                    try {
-                        loadSubcommands(
-                            cli,
-                            applicationContext.createBean(ModuleStorage.class)
-                                .listInstalled()
-                                .modules
-                                .stream()
-                                .flatMap(m -> m.cliArtifacts.stream())
-                                .collect(Collectors.toList()));
-                    }
-                    catch (IOException e) {
-                        throw new IgniteCLIException("Can't load cli modules due to IO error");
-                    }
-                }
+                loadSubcommands(
+                    cli,
+                    applicationContext.createBean(ModuleStorage.class)
+                        .listInstalled()
+                        .modules
+                        .stream()
+                        .flatMap(m -> m.cliArtifacts.stream())
+                        .collect(Collectors.toList()))
             );
         return cli;
     }
