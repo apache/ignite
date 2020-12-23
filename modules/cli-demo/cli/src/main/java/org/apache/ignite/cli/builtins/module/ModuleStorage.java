@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.cli.CliPathsConfigLoader;
+import org.apache.ignite.cli.IgnitePaths;
 
 @Singleton
 public class ModuleStorage {
@@ -62,7 +63,11 @@ public class ModuleStorage {
     }
 
     public ModuleDefinitionsRegistry listInstalled() throws IOException {
-        if (!moduleFile().toFile().exists())
+        var moduleFileAvailable =
+            cliPathsConfigLoader.loadIgnitePathsConfig()
+                .map(p -> p.installedModulesFile().toFile().exists())
+                .orElse(false);
+        if (!moduleFileAvailable)
             return new ModuleDefinitionsRegistry(new ArrayList<>());
         else {
             ObjectMapper objectMapper = new ObjectMapper();

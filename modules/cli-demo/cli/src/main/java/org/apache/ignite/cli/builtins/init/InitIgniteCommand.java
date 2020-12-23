@@ -55,57 +55,34 @@ public class InitIgniteCommand {
         moduleManager.setOut(out);
         Optional<IgnitePaths> ignitePathsOpt = cliPathsConfigLoader.loadIgnitePathsConfig();
         if (ignitePathsOpt.isEmpty()) {
-            out.println("Init ignite directories...");
-            IgnitePaths ignitePaths = initDirectories(out);
-            out.println("Download and install current ignite version...");
-            installIgnite(ignitePaths);
-            out.println("Init default Ignite configs");
-            initDefaultServerConfigs();
-            out.println();
-            out.println("Apache Ignite version " + cliVersionInfo.version + " sucessfully installed");
-        } else {
-            IgnitePaths cfg = ignitePathsOpt.get();
-            out.println("Apache Ignite was initialized earlier\n" +
-                "Configuration file: " + cliPathsConfigLoader.searchConfigPathsFile().get() + "\n" +
-                "Ignite binaries dir: " + cfg.binDir + "\n" +
-                "Ignite work dir: " + cfg.workDir);
+            File cfgFile = initConfigFile();
+            out.println("Configuration file initialized: " + cfgFile);
         }
+        IgnitePaths cfg = cliPathsConfigLoader.loadIgnitePathsConfig().get();
+        out.println("Init ignite directories...");
+        cfg.initOrRecover();
+        out.println("Download and install current ignite version...");
+        installIgnite(cfg);
+        out.println("Init default Ignite configs");
+        initDefaultServerConfigs(cfg.serverDefaultConfigFile());
+        out.println();
+        out.println("Apache Ignite version " + cliVersionInfo.version + " successfully installed");
+        out.println(
+            "Configuration file: " + cliPathsConfigLoader.configFilePath() + "\n" +
+            "Ignite binaries dir: " + cfg.binDir + "\n" +
+            "Ignite work dir: " + cfg.workDir);
     }
 
-    private void initDefaultServerConfigs() {
-        Path serverCfgFile = cliPathsConfigLoader.loadIgnitePathsOrThrowError().serverDefaultConfigFile();
+    private void initDefaultServerConfigs(Path serverCfgFile) {
         try {
-            Files.copy(InitIgniteCommand.class.getResourceAsStream("/default-config.xml"), serverCfgFile);
+            if (!serverCfgFile.toFile().exists())
+                Files.copy(
+                    InitIgniteCommand.class
+                        .getResourceAsStream("/default-config.xml"), serverCfgFile);
         }
         catch (IOException e) {
-            throw new IgniteCLIException("Can't create default config file for server");
+            throw new IgniteCLIException("Can't create default config file for server", e);
         }
-    }
-
-    private IgnitePaths initDirectories(PrintWriter out) {
-        File cfgFile = initConfigFile();
-        out.println("Configuration file initialized: " + cfgFile);
-        IgnitePaths cfg = cliPathsConfigLoader.loadIgnitePathsOrThrowError();
-        out.println("Ignite binaries dir: " + cfg.binDir);
-        out.println("Ignite work dir: " + cfg.workDir);
-
-        File igniteWork = cfg.workDir.toFile();
-        if (!(igniteWork.exists() || igniteWork.mkdirs()))
-            throw new IgniteCLIException("Can't create working directory: " + cfg.workDir);
-
-        File igniteBin = cfg.libsDir().toFile();
-        if (!(igniteBin.exists() || igniteBin.mkdirs()))
-            throw new IgniteCLIException("Can't create a directory for ignite modules: " + cfg.libsDir());
-
-        File igniteBinCli = cfg.cliLibsDir().toFile();
-        if (!(igniteBinCli.exists() || igniteBinCli.mkdirs()))
-            throw new IgniteCLIException("Can't create a directory for cli modules: " + cfg.cliLibsDir());
-
-        File serverConfig = cfg.serverConfigDir().toFile();
-        if (!(serverConfig.exists() || serverConfig.mkdirs()))
-            throw new IgniteCLIException("Can't create a directory for server configs: " + cfg.serverConfigDir());
-
-        return cfg;
     }
 
     private void installIgnite(IgnitePaths ignitePaths) {

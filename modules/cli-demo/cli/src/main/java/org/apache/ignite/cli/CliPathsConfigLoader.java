@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cli;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,28 +41,30 @@ public class CliPathsConfigLoader {
     }
 
     public Optional<IgnitePaths> loadIgnitePathsConfig() {
-        return searchConfigPathsFile()
-            .map(f -> CliPathsConfigLoader.readConfigFile(f, version));
-    }
-
-    public IgnitePaths loadIgnitePathsOrThrowError() {
-        Optional<IgnitePaths> ignitePaths = loadIgnitePathsConfig();
-        if (ignitePaths.isPresent())
-            return ignitePaths.get();
-        else
-            throw new IgniteCLIException("To execute node module/node management commands you must run 'init' first");
-    }
-
-    public Optional<File> searchConfigPathsFile() {
-        File homeDirCfg = pathResolver.osHomeDirectoryPath().resolve(".ignitecfg").toFile();
-        if (homeDirCfg.exists())
-            return Optional.of(homeDirCfg);
+        if (configFilePath().toFile().exists())
+            return Optional.of(CliPathsConfigLoader.readConfigFile(configFilePath(), version));
 
         return Optional.empty();
     }
 
-    private static IgnitePaths readConfigFile(File configFile, String version) {
-        try (InputStream inputStream = new FileInputStream(configFile)) {
+    public IgnitePaths loadIgnitePathsOrThrowError() {
+        Optional<IgnitePaths> ignitePaths = loadIgnitePathsConfig();
+        if (ignitePaths.isPresent()) {
+            if (!ignitePaths.get().validateDirs())
+                throw new IgniteCLIException("Some required directories are absent. " +
+                    "Try to run 'init' command to fix the issue.");
+            return ignitePaths.get();
+        }
+        else
+            throw new IgniteCLIException("To execute node module/node management commands you must run 'init' first");
+    }
+
+    public Path configFilePath() {
+        return pathResolver.osHomeDirectoryPath().resolve(".ignitecfg");
+    }
+
+    private static IgnitePaths readConfigFile(Path configPath, String version) {
+        try (InputStream inputStream = new FileInputStream(configPath.toFile())) {
             Properties properties = new Properties();
             properties.load(inputStream);
             if ((properties.getProperty("bin") == null) || (properties.getProperty("work") == null))

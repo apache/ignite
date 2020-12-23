@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cli;
 
+import java.io.File;
 import java.nio.file.Path;
 
 public class IgnitePaths {
@@ -56,5 +57,28 @@ public class IgnitePaths {
         return serverConfigDir().resolve("default-config.xml");
     }
 
+    public void initOrRecover() {
+        File igniteWork = workDir.toFile();
+        if (!(igniteWork.exists() || igniteWork.mkdirs()))
+            throw new IgniteCLIException("Can't create working directory: " + workDir);
 
+        File igniteBin = libsDir().toFile();
+        if (!(igniteBin.exists() || igniteBin.mkdirs()))
+            throw new IgniteCLIException("Can't create a directory for ignite modules: " + libsDir());
+
+        File igniteBinCli = cliLibsDir().toFile();
+        if (!(igniteBinCli.exists() || igniteBinCli.mkdirs()))
+            throw new IgniteCLIException("Can't create a directory for cli modules: " + cliLibsDir());
+
+        File serverConfig = serverConfigDir().toFile();
+        if (!(serverConfig.exists() || serverConfig.mkdirs()))
+            throw new IgniteCLIException("Can't create a directory for server configs: " + serverConfigDir());
+    }
+
+    public boolean validateDirs() {
+        return workDir.toFile().exists() &&
+                libsDir().toFile().exists() &&
+                cliLibsDir().toFile().exists() &&
+                serverConfigDir().toFile().exists();
+    }
 }
