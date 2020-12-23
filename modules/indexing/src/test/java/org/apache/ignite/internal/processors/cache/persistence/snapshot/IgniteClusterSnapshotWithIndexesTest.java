@@ -109,7 +109,8 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         forceCheckpoint();
 
         // Validate indexes on start.
-        ValidateIndexesClosure clo = new ValidateIndexesClosure(new HashSet<>(Arrays.asList(indexedCcfg.getName(), tblName)),
+        ValidateIndexesClosure clo = new ValidateIndexesClosure(() -> false,
+            new HashSet<>(Arrays.asList(indexedCcfg.getName(), tblName)),
             0, 0, false, true);
 
         for (Ignite node : G.allGrids()) {
