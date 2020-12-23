@@ -379,7 +379,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         Update the node log file.
         """
         cnt = list(node.account.ssh_capture(f'ls {self.log_dir} | '
-                                            f'grep -E "^console(_[0-9]+){0,1}.log$" | '
+                                            f'grep -E "^console(_[0-9]+){{0,1}}.log$" | '
                                             f'wc -l', callback=int))[0]
 
         node.log_file = os.path.join(self.log_dir, f"console{'_' + str(cnt) if cnt > 0 else ''}.log")
+
+        if cnt > 0:
+            self.logger.debug(f"rotating logs, now logging to {node.log_file} on {node.name}")
+        else:
+            self.logger.debug(f"logging to {node.log_file} on {node.name}")

@@ -16,6 +16,7 @@
 """
 This module contains smoke tests that checks that ducktape works as expected
 """
+import os
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
@@ -93,3 +94,40 @@ class SelfTest(IgniteTest):
         client.stop()
 
         ignites.stop()
+
+    @cluster(num_nodes=1)
+    @ignite_versions(str(DEV_BRANCH))
+    def test_logs_rotation(self, ignite_version):
+        """
+        Test logs rotation after ignite service restart.
+        """
+        def get_log_lines_count(service, filename):
+            node = service.nodes[0]
+            log_file = os.path.join(service.log_dir, filename)
+            log_cnt = list(node.account.ssh_capture(f'cat {log_file} | wc -l', callback=int))[0]
+            return log_cnt
+
+        def check_log_filename(service, filename):
+            node = service.nodes[0]
+            assert node.log_file.endswith(filename)
+
+        ignites = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(ignite_version)),
+                                num_nodes=1)
+
+        ignites.start()
+        ignites.stop()
+
+        # check logging after stop
+        check_log_filename(ignites, "console.log")
+        old_cnt = get_log_lines_count(ignites, "console.log")
+        assert old_cnt > 0
+
+        ignites.start(clean=False)
+
+        # check logging after restart
+        check_log_filename(ignites, "console_1.log")
+        new_cnt = get_log_lines_count(ignites, "console_1.log")
+        assert new_cnt > 0
+
+        # check that there is no new entry in old file
+        assert old_cnt == get_log_lines_count(ignites, "console.log")
