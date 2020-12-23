@@ -28,10 +28,10 @@ namespace Apache.Ignite.Core.Impl.Binary
     internal class BinaryProcessor : PlatformTargetAdapter, IBinaryProcessor
     {
         /** Java platform id. See org.apache.ignite.internal.MarshallerPlatformIds in Java. */
-        private const byte JavaPlatformId = 0;
+        public const byte JavaPlatformId = 0;
 
         /** Type registry platform id. See org.apache.ignite.internal.MarshallerPlatformIds in Java. */
-        private const byte DotNetPlatformId = 1;
+        public const byte DotNetPlatformId = 1;
 
         /// <summary>
         /// Op codes.
