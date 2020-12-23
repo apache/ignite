@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a search row that used to find a place in a tree.
@@ -30,8 +32,8 @@ public class IndexSearchRowImpl extends IndexRowImpl {
     private final boolean fullSchemaSearch;
 
     /** Constructor. */
-    public IndexSearchRowImpl(Object[] idxKeys, SortedIndexSchema schema) {
-        super(schema, null, idxKeys);
+    public IndexSearchRowImpl(Object[] idxKeys, @Nullable CacheDataRow row, SortedIndexSchema schema) {
+        super(schema, row, idxKeys);
 
         fullSchemaSearch = isFullSchemaSearch(idxKeys, schema.getKeyDefinitions().length);
     }

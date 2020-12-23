@@ -101,6 +101,11 @@ public class H2RowComparator implements IndexRowComparator {
         Object robject = right.getKey(idx);
         Object lobject = left.getKey(idx);
 
+        if (lobject == NullKey.INSTANCE)
+            return ((NullKey) lobject).compareTo(robject);
+        else if (robject == NullKey.INSTANCE)
+            return 1;
+
         int ltype, rtype;
 
         // Side of comparison can be set by user in query with type that different for specified schema.

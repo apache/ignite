@@ -43,14 +43,12 @@ public class QueryIndexDefinition extends SortedIndexDefinition {
     private final GridH2Table table;
 
     /** */
-    public QueryIndexDefinition(GridH2Table tbl, String idxName, QueryIndexSchema unwrappedSchema,
+    public QueryIndexDefinition(GridH2Table tbl, String idxName, boolean isPrimary, QueryIndexSchema unwrappedSchema,
         QueryIndexSchema wrappedSchema, int cfgInlineSize) {
         super(
             new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), idxName),
-            null,
-            tbl.rowDescriptor().context().config().getQueryParallelism(),
-            cfgInlineSize,
-            new H2RowComparator(unwrappedSchema.getTable()));
+            isPrimary, null, tbl.rowDescriptor().context().config().getQueryParallelism(),
+            cfgInlineSize, new H2RowComparator(unwrappedSchema.getTable()));
 
         cctx = tbl.cacheContext();
 

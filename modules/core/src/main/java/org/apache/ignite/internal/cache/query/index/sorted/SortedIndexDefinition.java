@@ -40,9 +40,13 @@ public class SortedIndexDefinition implements IndexDefinition {
     /** Segments. */
     private final int segments;
 
+    /** Whether this index is primary key (unique) or not. */
+    private final boolean isPrimary;
+
     /** Constructor. */
     public SortedIndexDefinition(
         IndexName idxName,
+        boolean isPrimary,
         SortedIndexSchema schema,
         int segments,
         int inlineSize,
@@ -53,6 +57,7 @@ public class SortedIndexDefinition implements IndexDefinition {
         this.schema = schema;
         this.rowComparator = rowComparator;
         this.inlineSize = inlineSize;
+        this.isPrimary = isPrimary;
     }
 
     /** {@inheritDoc} */
@@ -93,4 +98,9 @@ public class SortedIndexDefinition implements IndexDefinition {
      * column is stored in the tree meta page info.
      */
     public void setUseUnwrappedPk(boolean useUnwrappedPk) {}
+
+    /** */
+    public boolean isPrimary() {
+        return isPrimary;
+    }
 }

@@ -26,7 +26,10 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
  */
 public class CacheIndexKeyImpl implements IndexKey {
     /** */
-    private Object[] keys;
+    private final Object[] keys;
+
+    /** */
+    private final CacheDataRow row;
 
     /** */
     public CacheIndexKeyImpl(SortedIndexSchema schema, CacheDataRow row) {
@@ -34,6 +37,8 @@ public class CacheIndexKeyImpl implements IndexKey {
 
         for (int i = 0; i< schema.getKeyDefinitions().length; ++i)
             keys[i] = schema.getIndexKey(i, row);
+
+        this.row = row;
     }
 
     /** {@inheritDoc} */
@@ -57,5 +62,10 @@ public class CacheIndexKeyImpl implements IndexKey {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Arrays.hashCode(keys);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheDataRow cacheRow() {
+        return row;
     }
 }

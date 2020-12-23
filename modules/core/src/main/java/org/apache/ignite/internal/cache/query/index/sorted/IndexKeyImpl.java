@@ -19,6 +19,8 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.util.Arrays;
 import org.apache.ignite.cache.query.index.sorted.IndexKey;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of IndexKey.
@@ -35,6 +37,11 @@ public class IndexKeyImpl implements IndexKey {
     /** {@inheritDoc} */
     @Override public Object[] keys() {
         return keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable CacheDataRow cacheRow() {
+        return null;
     }
 
     /** {@inheritDoc} */

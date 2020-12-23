@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Represents null value that used to explicitly set up null value in index query.
  */
-public class NullKey {
+public class NullKey implements Comparable<Object> {
     /** Instance. */
     public static final NullKey INSTANCE = new NullKey();
 
     /** Private constructor. */
     private NullKey() {}
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(@NotNull Object o) {
+        return o == INSTANCE ? 0 : -1;
+    }
 }

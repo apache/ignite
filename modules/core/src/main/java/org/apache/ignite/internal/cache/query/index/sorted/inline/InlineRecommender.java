@@ -111,6 +111,8 @@ public class InlineRecommender {
                     break;
             }
 
+            // TODO: add recommendation for primary / affinity key
+
             String recommendation = "For PK index: set system property "
                     + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " with recommended size " +
                     "(be aware it will be used by default for all indexes without explicit inline size)";

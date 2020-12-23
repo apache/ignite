@@ -436,6 +436,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SortedIndexDefinition idxDef = new QueryIndexDefinition(
                 tbl,
                 name,
+                pk,
                 schemaUnwrapped,
                 schemaWrapped,
                 inlineSize

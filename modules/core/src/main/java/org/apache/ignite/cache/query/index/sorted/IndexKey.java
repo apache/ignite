@@ -17,6 +17,9 @@
 
 package org.apache.ignite.cache.query.index.sorted;
 
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Represents a complex index key.
  */
@@ -25,4 +28,9 @@ public interface IndexKey {
      * @return underlying keys.
      */
     public Object[] keys();
+
+    /**
+     * @return Cache row if index key represents an existing row or {@code null} if it is only a user query.
+     */
+    public @Nullable CacheDataRow cacheRow();
 }
