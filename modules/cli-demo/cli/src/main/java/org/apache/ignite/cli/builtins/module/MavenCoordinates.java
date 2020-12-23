@@ -30,7 +30,7 @@ public class MavenCoordinates {
         this.version = version;
     }
 
-    static MavenCoordinates of(String mvnString) {
+    public static MavenCoordinates of(String mvnString) {
         String[] coords = mvnString.split(":");
 
         if (coords.length == 4)

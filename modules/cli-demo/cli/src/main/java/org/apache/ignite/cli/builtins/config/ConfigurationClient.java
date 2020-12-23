@@ -18,6 +18,7 @@
 package org.apache.ignite.cli.builtins.config;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -32,6 +33,7 @@ import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
 import org.apache.ignite.cli.IgniteCLIException;
 import org.jetbrains.annotations.Nullable;
+import picocli.CommandLine.Help.ColorScheme;
 
 @Singleton
 public class ConfigurationClient {
@@ -75,7 +77,7 @@ public class ConfigurationClient {
         }
     }
 
-    public String set(String host, int port, String rawHoconData) {
+    public void set(String host, int port, String rawHoconData, PrintWriter out, ColorScheme cs) {
         var request = HttpRequest
             .newBuilder()
             .POST(HttpRequest.BodyPublishers.ofString(renderJsonFromHocon(rawHoconData)))
@@ -85,8 +87,12 @@ public class ConfigurationClient {
 
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() == HttpURLConnection.HTTP_OK)
-                return "";
+            if (response.statusCode() == HttpURLConnection.HTTP_OK) {
+                out.println("Configuration was updated successfully.");
+                out.println();
+                out.println("Use the " + cs.commandText("ignite config get") +
+                    " command to view the updated configuration.");
+            }
             else
                 throw error("Fail to set configuration", response);
         }

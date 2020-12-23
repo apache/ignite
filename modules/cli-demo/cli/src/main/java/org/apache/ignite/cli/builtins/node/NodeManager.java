@@ -139,6 +139,13 @@ public class NodeManager {
             .collect(Collectors.joining(":"));
     }
 
+    public List<String> classpathItems() throws IOException {
+        return moduleStorage.listInstalled().modules.stream()
+            .flatMap(m -> m.artifacts.stream())
+            .map(m -> m.getFileName().toString())
+            .collect(Collectors.toList());
+    }
+
     public void createPidFile(String consistentId, long pid,Path pidsDir) {
         if (!Files.exists(pidsDir)) {
             if (!pidsDir.toFile().mkdirs())

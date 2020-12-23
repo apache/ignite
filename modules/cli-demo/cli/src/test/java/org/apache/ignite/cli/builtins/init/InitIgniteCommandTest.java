@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.junit.jupiter.MockitoExtension;
+import picocli.CommandLine.Help.ColorScheme;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -48,7 +49,7 @@ public class InitIgniteCommandTest {
             .thenReturn(new ResolveResult(Arrays.asList()));
 
         var out = new ByteArrayOutputStream();
-        initIgniteCommand.init(new PrintWriter(System.out, true));
+        initIgniteCommand.init(new PrintWriter(System.out, true), new ColorScheme.Builder().build());
 
         var ignitePaths = cliPathsConfigLoader.loadIgnitePathsConfig().get();
         assertTrue(ignitePaths.validateDirs());
@@ -63,14 +64,14 @@ public class InitIgniteCommandTest {
             .thenReturn(new ResolveResult(Collections.emptyList()));
 
         var out = new PrintWriter(System.out, true);
-        initIgniteCommand.init(out);
+        initIgniteCommand.init(out, new ColorScheme.Builder().build());
 
         var ignitePaths = cliPathsConfigLoader.loadIgnitePathsOrThrowError();
         recursiveDirRemove(ignitePaths.binDir);
 
         assertFalse(ignitePaths::validateDirs);
 
-        initIgniteCommand.init(out);
+        initIgniteCommand.init(out, new ColorScheme.Builder().build());
         assertTrue(ignitePaths::validateDirs);
     }
 

@@ -17,6 +17,8 @@
 
 package me.tongfei.progressbar;
 
+import picocli.CommandLine.Help.Ansi;
+
 /**
  * Custom renderer for the {@link ProgressBar}.
  *
@@ -31,13 +33,22 @@ public class IgniteProgressBarRenderer implements ProgressBarRenderer {
 
         sb.append("=".repeat(completed));
 
-        if (completed < 100)
+        String percentage;
+        int percentageLen;
+
+        if (completed < 100) {
             sb.append('>').append(" ".repeat(99 - completed));
 
-        String percentage = completed + "%";
+            percentage = completed + "%";
+            percentageLen = percentage.length();
+        }
+        else {
+            percentage = "@|green,bold Done!|@";
+            percentageLen = 5;//percentageText.getCJKAdjustedLength();
+        }
 
-        sb.append("|").append(" ".repeat(5 - percentage.length())).append(percentage);
+        sb.append("|").append(" ".repeat(6 - percentageLen)).append(percentage);
 
-        return sb.toString();
+        return Ansi.AUTO.string(sb.toString());
     }
 }

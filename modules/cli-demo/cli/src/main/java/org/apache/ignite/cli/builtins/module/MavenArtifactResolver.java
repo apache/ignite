@@ -81,6 +81,8 @@ public class MavenArtifactResolver {
     ) throws IOException {
         Ivy ivy = ivyInstance(customRepositories); // needed for init right output logger before any operations
 
+        out.println("Installing " + String.join(":", grpId, artifactId, version) + "...");
+
         try (IgniteProgressBar bar = new IgniteProgressBar(100)) {
             ivy.getEventManager().addIvyListener(event -> {
                 if (event instanceof EndResolveEvent) {

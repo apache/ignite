@@ -30,9 +30,10 @@ import javax.inject.Singleton;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigValue;
-import org.apache.ignite.cli.IgnitePaths;
-import org.apache.ignite.cli.IgniteCLIException;
 import org.apache.ignite.cli.CliVersionInfo;
+import org.apache.ignite.cli.IgniteCLIException;
+import org.apache.ignite.cli.IgnitePaths;
+import picocli.CommandLine.Help.ColorScheme;
 
 @Singleton
 public class ModuleManager {
@@ -43,6 +44,9 @@ public class ModuleManager {
     private final List<StandardModuleDefinition> modules;
 
     public static final String INTERNAL_MODULE_PREFIX = "_";
+
+    private PrintWriter out;
+    private ColorScheme cs;
 
     @Inject
     public ModuleManager(
@@ -55,7 +59,13 @@ public class ModuleManager {
     }
 
     public void setOut(PrintWriter out) {
+        this.out = out;
+
         mavenArtifactResolver.setOut(out);
+    }
+
+    public void setColorScheme(ColorScheme cs) {
+        this.cs = cs;
     }
 
     public void addModule(String name, IgnitePaths ignitePaths, List<URL> repositories) {
@@ -71,21 +81,26 @@ public class ModuleManager {
                     mavenCoordinates.version,
                     repositories
                 );
+
+                String mvnName = String.join(":", mavenCoordinates.groupId,
+                    mavenCoordinates.artifactId, mavenCoordinates.version);
+
                 moduleStorage.saveModule(new ModuleStorage.ModuleDefinition(
-                    mavenCoordinates.groupId + ":" + mavenCoordinates.artifactId + ":" + mavenCoordinates.version,
+                    mvnName,
                     resolveResult.artifacts(),
                     new ArrayList<>(),
                     ModuleStorage.SourceType.Maven,
                     name
                 ));
+
+                out.println();
+                out.println("New Maven dependency successfully added. To remove, type: " +
+                    cs.commandText("ignite module remove ") + cs.parameterText(mvnName));
             }
             catch (IOException e) {
-                throw new IgniteCLIException("Error during resolving maven module " + name, e);
+                throw new IgniteCLIException("\nFailed to install " + name, e);
             }
-
         }
-        else if (name.startsWith("file://"))
-            throw new RuntimeException("File urls is not implemented yet");
         else if (isStandardModuleName(name)) {
             StandardModuleDefinition moduleDescription = readBuiltinModules()
                 .stream()
@@ -104,7 +119,7 @@ public class ModuleManager {
                     ));
                 }
                 catch (IOException e) {
-                    throw new IgniteCLIException("Error during resolving standard module " + name, e);
+                    throw new IgniteCLIException("\nFailed to install an Ignite module: " + name, e);
                 }
             }
 
@@ -121,7 +136,7 @@ public class ModuleManager {
                     ));
                 }
                 catch (IOException e) {
-                    throw new IgniteCLIException("Error during resolving module " + name, e);
+                    throw new IgniteCLIException("\nFailed to install a module " + name, e);
                 }
             }
 

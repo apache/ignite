@@ -109,7 +109,7 @@ public class Table {
 
         appendLine(sb);
 
-        return sb.toString();
+        return sb.toString().stripTrailing();
     }
 
     private void appendLine(StringBuilder sb) {

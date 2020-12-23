@@ -47,7 +47,7 @@ public class IgniteProgressBar implements AutoCloseable {
             0,
             Duration.ZERO,
             new IgniteProgressBarRenderer(),
-            new ConsoleProgressBarConsumer(System.out, 107)
+            new ConsoleProgressBarConsumer(System.out, 150)
         );
     }
 

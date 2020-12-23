@@ -99,7 +99,7 @@ public class HelpFactoryImpl implements CommandLine.IHelpFactory {
                     }
                 }
 
-                return table.toString();
+                return table.toString() + "\n";
             });
         }
         else if (hasParameters || hasOptions) {
@@ -136,7 +136,7 @@ public class HelpFactoryImpl implements CommandLine.IHelpFactory {
                     }
                 }
 
-                return table.toString();
+                return table.toString() + "\n";
             });
         }
 

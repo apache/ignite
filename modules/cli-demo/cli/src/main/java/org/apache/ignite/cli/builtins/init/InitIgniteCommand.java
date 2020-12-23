@@ -31,9 +31,12 @@ import org.apache.ignite.cli.CliPathsConfigLoader;
 import org.apache.ignite.cli.CliVersionInfo;
 import org.apache.ignite.cli.IgniteCLIException;
 import org.apache.ignite.cli.IgnitePaths;
+import org.apache.ignite.cli.Table;
 import org.apache.ignite.cli.builtins.SystemPathResolver;
 import org.apache.ignite.cli.builtins.module.ModuleManager;
 import org.jetbrains.annotations.NotNull;
+import picocli.CommandLine.Help.Ansi;
+import picocli.CommandLine.Help.ColorScheme;
 
 public class InitIgniteCommand {
 
@@ -51,26 +54,30 @@ public class InitIgniteCommand {
         this.cliPathsConfigLoader = cliPathsConfigLoader;
     }
 
-    public void init(PrintWriter out) {
+    public void init(PrintWriter out, ColorScheme cs) {
         moduleManager.setOut(out);
         Optional<IgnitePaths> ignitePathsOpt = cliPathsConfigLoader.loadIgnitePathsConfig();
         if (ignitePathsOpt.isEmpty()) {
-            File cfgFile = initConfigFile();
-            out.println("Configuration file initialized: " + cfgFile);
+            initConfigFile();
         }
         IgnitePaths cfg = cliPathsConfigLoader.loadIgnitePathsConfig().get();
-        out.println("Init ignite directories...");
+        out.print("Creating directories... ");
         cfg.initOrRecover();
-        out.println("Download and install current ignite version...");
+        out.println(Ansi.AUTO.string("@|green,bold Done!|@"));
+
+        Table table = new Table(0, cs);
+
+        table.addRow("@|bold Binaries Directory|@", cfg.binDir);
+        table.addRow("@|bold Work Directory|@", cfg.workDir);
+
+        out.println(table);
+        out.println();
+
         installIgnite(cfg);
-        out.println("Init default Ignite configs");
         initDefaultServerConfigs(cfg.serverDefaultConfigFile());
         out.println();
-        out.println("Apache Ignite version " + cliVersionInfo.version + " successfully installed");
-        out.println(
-            "Configuration file: " + cliPathsConfigLoader.configFilePath() + "\n" +
-            "Ignite binaries dir: " + cfg.binDir + "\n" +
-            "Ignite work dir: " + cfg.workDir);
+        out.println("Apache Ignite is successfully initialized. Use the " +
+            cs.commandText("ignite node start") + " command to start a new local node.");
     }
 
     private void initDefaultServerConfigs(Path serverCfgFile) {

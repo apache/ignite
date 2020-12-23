@@ -22,14 +22,14 @@ import org.apache.ignite.cli.common.IgniteCommand;
 import org.apache.ignite.cli.builtins.init.InitIgniteCommand;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "init", description = "Install Ignite core modules locally.")
+@CommandLine.Command(name = "init", description = "Installs Ignite core modules locally.")
 public class InitIgniteCommandSpec extends CommandSpec implements IgniteCommand {
 
     @Inject
     InitIgniteCommand command;
 
     @Override public void run() {
-        command.init(spec.commandLine().getOut());
+        command.init(spec.commandLine().getOut(), spec.commandLine().getColorScheme());
     }
 
 }
