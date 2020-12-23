@@ -15,20 +15,53 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+package org.apache.ignite.platform.model;
 
 /** Test value object. */
-public class Department {
+public class User {
     /** */
-    private String name;
+    private int id;
 
     /** */
-    public String getName() {
-        return name;
+    private ACL acl;
+
+    /** */
+    private Role role;
+
+    /** */
+    public User(int id, ACL acl, Role role) {
+        this.id = id;
+        this.acl = acl;
+        this.role = role;
     }
 
     /** */
-    public void setName(String name) {
-        this.name = name;
+    public int getId() {
+        return id;
+    }
+
+    /** */
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    /** */
+    public ACL getAcl() {
+        return acl;
+    }
+
+    /** */
+    public void setAcl(ACL acl) {
+        this.acl = acl;
+    }
+
+    /** */
+    public Role getRole() {
+        return role;
+    }
+
+    /** */
+    public void setRole(Role role) {
+        this.role = role;
     }
 }

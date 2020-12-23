@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
-    using org.apache.ignite.platform;
+    using org.apache.ignite.platform.model;
 
     /// <summary>
     /// Java service proxy interface.
@@ -173,6 +173,9 @@ namespace Apache.Ignite.Core.Tests.Services
         
         /** */
         Account[] testAccounts();
+
+        /** */
+        User[] testUsers();
 
         /** */
         ICollection testDepartments(ICollection deps);

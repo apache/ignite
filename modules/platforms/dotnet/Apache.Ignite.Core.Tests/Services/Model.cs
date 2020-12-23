@@ -16,7 +16,7 @@
  */
 
 // ReSharper disable once CheckNamespace
-namespace org.apache.ignite.platform
+namespace org.apache.ignite.platform.model
 {
     using System;
 
@@ -116,4 +116,32 @@ namespace org.apache.ignite.platform
             return Id.GetHashCode();
         }
     }
+
+    /// <summary>
+    /// A enum is a clone of Java class User with the same namespace.
+    /// </summary>
+    public enum ACL
+    {
+        Allow, Deny
+    }
+
+    /// <summary>
+    /// A class is a clone of Java class Role with the same namespace.
+    /// </summary>
+    public class Role
+    {
+        public String Name { get; set; }
+    }
+
+    /// <summary>
+    /// A class is a clone of Java class User with the same namespace.
+    /// </summary>
+    public class User
+    {
+        public int Id { get; set; }
+        
+        public ACL Acl { get; set; }
+        
+        public Role Role { get; set; }
+    }    
 }

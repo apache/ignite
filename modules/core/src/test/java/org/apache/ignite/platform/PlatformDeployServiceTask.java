@@ -39,6 +39,15 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.platform.model.ACL;
+import org.apache.ignite.platform.model.Account;
+import org.apache.ignite.platform.model.Address;
+import org.apache.ignite.platform.model.Department;
+import org.apache.ignite.platform.model.Employee;
+import org.apache.ignite.platform.model.Key;
+import org.apache.ignite.platform.model.Role;
+import org.apache.ignite.platform.model.User;
+import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
@@ -506,6 +515,14 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return new Account[] {
                 new Account("123", 42),
                 new Account("321", 0)
+            };
+        }
+
+        /** */
+        public User[] testUsers() {
+            return new User[] {
+                new User(1, ACL.ALLOW, new Role("admin")),
+                new User(2, ACL.DENY, new Role("user"))
             };
         }
 

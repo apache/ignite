@@ -15,57 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+package org.apache.ignite.platform.model;
 
 import java.util.Objects;
 
-/** */
-public class Account {
+/** Test value object. */
+public class Value {
     /** */
-    private String id;
+    private String val;
 
     /** */
-    private int amount;
-
-    /** */
-    public Account() {
-    }
-
-    public Account(String id, int amount) {
-        this.id = id;
-        this.amount = amount;
+    public Value(String val) {
+        this.val = val;
     }
 
     /** */
-    public String getId() {
-        return id;
+    public String getVal() {
+        return val;
     }
 
-    /** */
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    /** */
-    public int getAmount() {
-        return amount;
-    }
-
-    /** */
-    public void setAmount(int amount) {
-        this.amount = amount;
-    }
-
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        Account account = (Account)o;
-        return Objects.equals(id, account.id);
+        Value value = (Value)o;
+        return Objects.equals(val, value.val);
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(val);
     }
 }

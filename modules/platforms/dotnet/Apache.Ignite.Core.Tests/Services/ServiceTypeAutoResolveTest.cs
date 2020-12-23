@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.IO;
     using System.Linq;
     using NUnit.Framework;
-    using org.apache.ignite.platform;
+    using org.apache.ignite.platform.model;
 
     /// <summary>
     /// Tests checks ability to execute service method without explicit registration of parameter type.
@@ -162,6 +162,17 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("321", accs[1].Id);
             Assert.AreEqual(42, accs[0].Amount);
             Assert.AreEqual(0, accs[1].Amount);
+
+            var users = svc.testUsers();
+
+            Assert.NotNull(users);
+            Assert.AreEqual(2, users.Length);
+            Assert.AreEqual(1, users[0].Id);
+            Assert.AreEqual(ACL.Allow, users[0].Acl);
+            Assert.AreEqual("admin", users[0].Role.Name);
+            Assert.AreEqual(2, users[1].Id);
+            Assert.AreEqual(ACL.Deny, users[1].Acl);
+            Assert.AreEqual("user", users[1].Role.Name);
         }
 
         /// <summary>
