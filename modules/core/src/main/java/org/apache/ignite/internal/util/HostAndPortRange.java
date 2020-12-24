@@ -64,10 +64,12 @@ public class HostAndPortRange implements Serializable {
 
         if (addrStr.charAt(0) == '[') { // IPv6 with port(s)
             int hostEndIdx = addrStr.indexOf(']');
+            
             if (hostEndIdx == -1)
                 throw createParseError(addrStr, errMsgPrefix, "Failed to parse IPv6 address, missing ']'");
 
             host = addrStr.substring(1, hostEndIdx);
+            
             if (hostEndIdx == addrStr.length() - 1) { // no port specified, using default
                 portFrom = dfltPortFrom;
                 portTo = dfltPortTo;
@@ -80,9 +82,9 @@ public class HostAndPortRange implements Serializable {
                 portTo = ports[1];
             }
         }
-
         else { // IPv4 || IPv6 without port || empty host
             final int colIdx = addrStr.lastIndexOf(':');
+            
             if (colIdx > 0) {
                 if (addrStr.lastIndexOf(':', colIdx - 1) != -1) { // IPv6 without [] and port
                     try {
