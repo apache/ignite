@@ -33,10 +33,13 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -91,9 +94,9 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadO
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -110,6 +113,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -961,7 +965,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 val -> {
                 });
 
-        return new SerialPageStoreIterator(cctx, grp, pageStore, partId, CacheDataRowAdapter.RowData.FULL);
+        return new SerialPageStoreIterator(cctx, grp, pageStore, partId);
     }
 
     /**
@@ -1124,61 +1128,72 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** */
     private static class SerialPageStoreIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
-        /** */
+        /** Shared context. */
+        @GridToStringExclude
         private final GridCacheSharedContext<?, ?> sctx;
 
         /** */
+        @GridToStringExclude
         private final CacheGroupContext grp;
 
-        /** */
+        /** Page store to iterate over. */
+        @GridToStringExclude
         private final PageStore store;
 
-        /** */
+        /** Page store partition id. */
         private final int partId;
 
-        /** */
-        private final CacheDataRowAdapter.RowData rowData;
+        /** Read FULL row by default. */
+        @GridToStringExclude
+        private final CacheDataRowAdapter.RowData flags = asRowData(null);
 
-        /** */
+        /** Buffer to read pages. */
         private final ByteBuffer locBuff;
 
-        /** */
+        /** Buffer to read the rest part of fragmented rows. */
         private final ByteBuffer fragmentBuff;
 
-        /** */
+        /** Total pages in the page store. */
         private final int pages;
 
-        /** */
-        int currPageIdx = -1;
+        /** Pages which must be skipped at the second iteration. */
+        private final AtomicBitSet skipPages;
 
-        /** */
-        CacheDataRow[] rows = EMPTY_ROWS;
+        /** Batch of rows read through iteration. */
+        private final Deque<CacheDataRow> rows = new LinkedList<>();
 
-        /** */
-        int currPageRow = -1;
-
-        /** */
-        int currRowIdx = -1;
+        /** {@code true} if the iteration reached its end. */
+        private boolean finished;
 
         /**
-         * @param store Store to iterate over.
+         * Current partition page index for read. Due to we read the partition twice it
+         * can't be greater that 2 * store.size().
+         */
+        private int currIdx = -1;
+
+        /**
+         * @param sctx Shared context.
+         * @param grp Group context.
+         * @param store Page store to read.
+         * @param partId Partition id.
+         * @throws IgniteCheckedException If fails.
          */
         public SerialPageStoreIterator(
             GridCacheSharedContext<?, ?> sctx,
             CacheGroupContext grp,
             PageStore store,
-            int partId,
-            Object flags
+            int partId
         ) throws IgniteCheckedException {
+            assert flags == CacheDataRowAdapter.RowData.FULL;
+
             this.sctx = sctx;
             this.grp = grp;
             this.store = store;
             this.partId = partId;
 
-            rowData = asRowData(flags);
-
             store.sync();
             pages = store.pages();
+            skipPages = new AtomicBitSet(pages);
 
             locBuff = ByteBuffer.allocateDirect(store.getPageSize())
                 .order(ByteOrder.nativeOrder());
@@ -1188,54 +1203,66 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc */
         @Override protected CacheDataRow onNext() throws IgniteCheckedException {
-            if (rows == EMPTY_ROWS || currRowIdx >= rows.length - 1)
-                throw new IgniteCheckedException("Index out of bound [rows=" + Arrays.asList(rows) +
-                    ", rows.len=" + Arrays.asList(rows).size() +
-                    ", currRowIdx=" + currRowIdx + ']');
+            if (finished && rows.isEmpty())
+                throw new NoSuchElementException("[partId=" + partId + ", store=" + store + ", skipPages=" + skipPages + ']');
 
-            return rows[++currRowIdx];
+            return rows.poll();
         }
 
         /** {@inheritDoc */
         @Override protected boolean onHasNext() throws IgniteCheckedException {
-            if (rows != EMPTY_ROWS && currRowIdx < rows.length - 1)
-                return true;
+            if (finished && rows.isEmpty())
+                return false;
 
             try {
-                for (;;) {
-                    long pageId = PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, ++currPageIdx);
+                while (rows.isEmpty() && ++currIdx < 2 * pages) {
+                    int pageIdx = currIdx % pages;
+                    boolean firstScan = currIdx < pages;
 
-                    boolean skipVer = CacheDataRowStore.getSkipVersion();
-
-                    assert !CacheDataRowStore.getSkipVersion();
-                    assert locBuff.capacity() == store.getPageSize();
+                    if (skipPages.check(pageIdx))
+                        continue;
 
                     locBuff.clear();
 
-                    if (currPageIdx >= pages)
-                        return false;
-
+                    long pageId = PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, pageIdx);
                     boolean success = store.read(pageId, locBuff, true);
 
-                    assert success : pageId;
+                    assert success : PageIdUtils.toDetailString(pageId);
 
-                    // Here we should also exclude fragmented pages that don't contain the head of the entry.
-                    if (PageIO.getType(locBuff) != T_DATA)
-                        continue; // Not a data page.
+                    // Skip not data pages.
+                    if (firstScan && PageIO.getType(locBuff) != T_DATA) {
+                        skipPages.touch(pageIdx);
+
+                        continue;
+                    }
 
                     DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(locBuff));
+                    int freeSpace = io.getFreeSpace(locBuff);
+                    int rowsCnt = io.getDirectCount(locBuff);
 
-                    int rowsCnt = io.getRowsCount(locBuff);
+                    if (firstScan && rowsCnt == 0) {
+                        skipPages.touch(pageIdx);
 
-                    if (rowsCnt == 0)
-                        continue; // Empty page.
+                        continue;
+                    }
 
-                    rows = new CacheDataRow[rowsCnt];
-                    currRowIdx = -1;
+                    // For pages which contains only the incomplete fragment of a data row
+                    // the rowsCnt will always be equal to 1. Skip such pages and read them
+                    // on the second iteration.
+                    if (firstScan && freeSpace == 0 && rowsCnt == 1) {
+                        DataPagePayload payload = io.readPayload(locBuff, 0);
 
-                    int r = 0;
+                        long link = payload.nextLink();
 
-                    for (int i = 0; i < rowsCnt; i++) {
+                        if (link != 0)
+                            skipPages.touch(PageIdUtils.pageIndex(PageIdUtils.pageId(link)));
+
+                        continue;
+                    }
+
+                    skipPages.touch(pageIdx);
+
+                    for (int itemId = 0; itemId < rowsCnt; itemId++) {
                         DataRowPersistenceAdapter row = new DataRowPersistenceAdapter();
 
                         row.partition(partId);
@@ -1248,32 +1275,45 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                     boolean read = store.read(nextPageId, buff, true);
 
                                     assert read : nextPageId;
+
+                                    // Fragment of page has been read, might be skipped further.
+                                    skipPages.touch(PageIdUtils.pageIndex(nextPageId));
                                 }
                             },
                             io,
                             locBuff,
                             fragmentBuff,
-                            i,
+                            itemId,
                             grp,
                             sctx,
-                            rowData,
-                            skipVer);
+                            flags,
+                            false);
 
-                        rows[r++] = row;
+                        rows.add(row);
                     }
-
-                    if (r == 0)
-                        continue; // No rows fetched in this page.
-
-                    return true;
                 }
-            }
-            catch (AssertionError e) {
-                U.error(null, "currPageIdx=" + currPageIdx +
-                    ", rows=" + Arrays.asList(rows).size(), e);
 
-                throw e;
+                if (currIdx == 2 * pages) {
+                    finished = true;
+
+                    boolean set = true;
+
+                    for (int j = 0; j < skipPages.size(); j++)
+                        set &= skipPages.check(j);
+
+                    assert set : skipPages;
+                }
+
+                return !rows.isEmpty();
             }
+            catch (IgniteCheckedException e) {
+                throw new IgniteCheckedException("Error during iteration through page store: " + this, e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SerialPageStoreIterator.class, this, super.toString());
         }
     }
 

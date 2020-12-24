@@ -35,7 +35,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.ignite.Ignite;
@@ -56,14 +55,12 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -73,8 +70,6 @@ import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
-import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1169,101 +1164,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             fut::get,
             IgniteException.class,
             "Snapshots on an in-memory clusters are not allowed.");
-    }
-
-    /**
-     * @throws Exception If fails.
-     */
-    @Test
-    public void testClusterSnapshotIterator() throws Exception {
-        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
-
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
-
-        int grpId = ignite.cachex(dfltCacheCfg.getName()).context().groupId();
-
-        int rows2 = 0;
-
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).getSnapshotDataRows(SNAPSHOT_NAME, grpId, 0)) {
-            while (iter.hasNext()) {
-                CacheDataRow row = iter.next();
-
-                row.value().finishUnmarshal(ignite.context()
-                        .cache().cache(dfltCacheCfg.getName()).context().cacheObjectContext(),
-                    U.resolveClassLoader(ignite.configuration()));
-
-                System.out.println("row = " + row);
-
-                rows2++;
-            }
-        }
-
-        System.out.println("rows >>>> " + rows2);
-    }
-
-    /**
-     * @throws Exception If fails.
-     */
-    @Test
-    public void testClusterSnapshotIteratorLargeRows() throws Exception {
-        CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
-
-        IgniteEx ignite = startGridsWithoutCache(2);
-
-        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-            ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[4096]));
-
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
-
-        int grpId = ignite.cachex(DEFAULT_CACHE_NAME).context().groupId();
-
-        AtomicReference<IgniteCacheOffheapManager.CacheDataStore> store = new AtomicReference<>();
-
-        ignite.context().cache().cache(dfltCacheCfg.getName())
-            .context()
-            .offheap()
-            .cacheDataStores()
-            .forEach(s -> {
-                if (s.partId() == 0)
-                    store.set(s);
-            });
-
-        GridCursor<? extends CacheDataRow> cur = store.get().cursor();
-
-        int rows = 0;
-
-        while (cur.next()) {
-            CacheDataRow row = cur.get();
-
-            System.out.println("offheap row = " + row);
-
-            rows++;
-        }
-
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).getSnapshotDataRows(SNAPSHOT_NAME, grpId, 0)) {
-            while (iter.hasNext()) {
-                CacheDataRow row = iter.next();
-
-                row.value().finishUnmarshal(ignite.context()
-                        .cache().cache(DEFAULT_CACHE_NAME).context().cacheObjectContext(),
-                    U.resolveClassLoader(ignite.configuration()));
-
-                System.out.println("row = " + row);
-            }
-        }
-    }
-
-    /** */
-    private static class Value {
-        /** */
-        private final byte[] arr;
-
-        /**
-         * @param arr Test array.
-         */
-        public Value(byte[] arr) {
-            this.arr = arr;
-        }
     }
 
     /**

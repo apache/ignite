@@ -225,15 +225,35 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         if (getFreeItemSlots(pageAddr) == 0)
             return 0;
 
-        int freeSpace = getRealFreeSpace(pageAddr);
+        return getFreeSpaceWithoutOverhead(getRealFreeSpace(pageAddr));
+    }
 
+    /**
+     * @param buff Page buffer.
+     * @return Page free space.
+     */
+    public int getFreeSpace(ByteBuffer buff) {
+        if (getFreeItemSlots(buff) == 0)
+            return 0;
+
+        return getFreeSpaceWithoutOverhead(getRealFreeSpace(buff));
+    }
+
+    /**
+     * Free space refers to a "max row size (without any data page specific overhead) which is guaranteed to fit into
+     * this data page".
+     *
+     * @param freeSpace Free space obtained from page.
+     * @return Free space without overhead.
+     */
+    private static int getFreeSpaceWithoutOverhead(int freeSpace) {
         // We reserve size here because of getFreeSpace() method semantics (see method javadoc).
         // It means that we must be able to accommodate a row of size which is equal to getFreeSpace(),
         // plus we will have data page overhead: header of the page as well as item, payload length and
         // possibly a link to the next row fragment.
         freeSpace -= ITEM_SIZE + PAYLOAD_LEN_SIZE + LINK_SIZE;
 
-        return freeSpace < 0 ? 0 : freeSpace;
+        return Math.max(freeSpace, 0);
     }
 
     /**
@@ -252,6 +272,14 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      */
     public int getRealFreeSpace(long pageAddr) {
         return PageUtils.getShort(pageAddr, FREE_SPACE_OFF);
+    }
+
+    /**
+     * @param buff Page address.
+     * @return Free space.
+     */
+    public int getRealFreeSpace(ByteBuffer buff) {
+        return buff.getShort(FREE_SPACE_OFF);
     }
 
     /**
@@ -284,7 +312,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      * @param buff Page buffer.
      * @return Direct count.
      */
-    public int getRowsCount(ByteBuffer buff) {
+    public int getDirectCount(ByteBuffer buff) {
         return buff.get(DIRECT_CNT_OFF) & 0xFF;
     }
 
@@ -351,6 +379,14 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      */
     private int getFreeItemSlots(long pageAddr) {
         return 0xFF - getDirectCount(pageAddr);
+    }
+
+    /**
+     * @param buff Page address.
+     * @return Number of free entry slots.
+     */
+    private int getFreeItemSlots(ByteBuffer buff) {
+        return 0xFF - getDirectCount(buff);
     }
 
     /**
@@ -546,7 +582,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
     protected int getDataOffset(ByteBuffer buff, int itemId) {
         assert checkIndex(itemId) : itemId;
 
-        int directCnt = getRowsCount(buff);
+        int directCnt = getDirectCount(buff);
 
         assert directCnt > 0 : "itemId=" + itemId + ", directCnt=" + directCnt;
 
