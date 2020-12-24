@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.util;
 
+import java.net.UnknownHostException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -29,9 +31,9 @@ import org.junit.rules.ExpectedException;
  */
 @GridCommonTest(group = "Utils")
 public class HostAndPortRangeTest extends GridCommonAbstractTest {
-
     /**
-     * tests correct input address with IPv4 host and port range.
+     * Tests correct input address with IPv4 host and port range.
+     *
      * @throws IgniteCheckedException on incorrect host/port
      */
     @Test
@@ -46,7 +48,8 @@ public class HostAndPortRangeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * tests correct input address with IPv4 host and single port.
+     * Tests correct input address with IPv4 host and single port.
+     *
      * @throws IgniteCheckedException on incorrect host/port
      */
     @Test
@@ -61,7 +64,8 @@ public class HostAndPortRangeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * ests correct input address with IPv4 host and no port.
+     * Tests correct input address with IPv4 host and no port.
+     *
      * @throws IgniteCheckedException on incorrect host/port
      */
     @Test
@@ -76,7 +80,8 @@ public class HostAndPortRangeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * tests correct input address with IPv6 host and port range.
+     * Tests correct input address with IPv6 host and port range.
+     *
      * @throws IgniteCheckedException on incorrect host/port
      */
     @Test
@@ -91,7 +96,8 @@ public class HostAndPortRangeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * tests correct input address with IPv6 host and single port.
+     * Tests correct input address with IPv6 host and single port.
+     *
      * @throws IgniteCheckedException on incorrect host/port
      */
     @Test
@@ -106,7 +112,8 @@ public class HostAndPortRangeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * tests correct input address with IPv6 host and no port.
+     * Tests correct input address with IPv6 host and no port.
+     *
      * @throws IgniteCheckedException on incorrect host/port
      */
     @Test
@@ -124,13 +131,15 @@ public class HostAndPortRangeTest extends GridCommonAbstractTest {
     public ExpectedException expectedEx = ExpectedException.none();
 
     /**
-     * tests incorrect input address with IPv6 host (no brackets) and port.
+     * Tests incorrect input address with IPv6 host (no brackets) and port.
+     *
      * @throws IgniteCheckedException on incorrect host/port
      */
     @Test
     public void testParseIPv6IncorrectHost() throws IgniteCheckedException {
         expectedEx.expect(IgniteCheckedException.class);
         expectedEx.expectMessage("IPv6 is incorrect");
+        expectedEx.expectCause(IsInstanceOf.instanceOf(UnknownHostException.class));
         String addrStr = "3ffe:2a00:100:7031";
         String errMsgPrefix = "";
         int dfltPortFrom = 18360;
@@ -139,7 +148,8 @@ public class HostAndPortRangeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * tests empty host and port.
+     * Tests empty host and port.
+     *
      * @throws IgniteCheckedException on incorrect host/port
      */
     @Test
@@ -154,7 +164,8 @@ public class HostAndPortRangeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * tests empty address string.
+     * Tests empty address string.
+     *
      * @throws IgniteCheckedException on incorrect host/port
      */
     @Test

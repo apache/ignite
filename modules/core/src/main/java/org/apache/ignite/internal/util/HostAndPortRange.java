@@ -64,24 +64,27 @@ public class HostAndPortRange implements Serializable {
 
         if (addrStr.charAt(0) == '[') { // IPv6 with port(s)
             int hostEndIdx = addrStr.indexOf(']');
-            if (hostEndIdx == -1) {
-                throw createParseError(addrStr, errMsgPrefix, "IPv6 is incorrect");
-            }
+            if (hostEndIdx == -1)
+                throw createParseError(addrStr, errMsgPrefix, "Failed to parse IPv6 address, missing ']'");
+
             host = addrStr.substring(1, hostEndIdx);
             if (hostEndIdx == addrStr.length() - 1) { // no port specified, using default
                 portFrom = dfltPortFrom;
                 portTo = dfltPortTo;
-            } else { // port specified
+            }
+            else { // port specified
                 portStr = addrStr.substring(hostEndIdx + 2);
 
                 int[] ports = verifyPortStr(addrStr, errMsgPrefix, portStr);
                 portFrom = ports[0];
                 portTo = ports[1];
             }
-        } else { //IPv4 || IPv6 without port || empty host
+        }
+
+        else { // IPv4 || IPv6 without port || empty host
             final int colIdx = addrStr.lastIndexOf(':');
             if (colIdx > 0) {
-                if (addrStr.substring(0, colIdx).contains(":")) { // IPv6 without [] and port
+                if (addrStr.lastIndexOf(':', colIdx - 1) != -1) { // IPv6 without [] and port
                     try {
                         Inet6Address.getByName(addrStr);
                         host = addrStr;
@@ -89,7 +92,7 @@ public class HostAndPortRange implements Serializable {
                         portTo = dfltPortTo;
                     }
                     catch (UnknownHostException e) {
-                        throw createParseError(addrStr, errMsgPrefix, "IPv6 is incorrect");
+                        throw createParseError(addrStr, errMsgPrefix, "IPv6 is incorrect", e);
                     }
                 }
                 else {
@@ -99,9 +102,10 @@ public class HostAndPortRange implements Serializable {
                     portFrom = ports[0];
                     portTo = ports[1];
                 }
-            } else if (colIdx == 0) {
+            }
+            else if (colIdx == 0)
                 throw createParseError(addrStr, errMsgPrefix, "Host name is empty");
-            } else { // Port is not specified, use defaults.
+            else { // Port is not specified, use defaults.
                 host = addrStr;
 
                 portFrom = dfltPortFrom;
@@ -113,6 +117,7 @@ public class HostAndPortRange implements Serializable {
     }
 
     /**
+     * Verifies string containing single port or ports range.
      *
      * @param addrStr Address String.
      * @param errMsgPrefix Error message prefix.
@@ -120,8 +125,8 @@ public class HostAndPortRange implements Serializable {
      * @return Array of int[portFrom, portTo].
      * @throws IgniteCheckedException If failed.
      */
-
-    private static int[] verifyPortStr(String addrStr, String errMsgPrefix, String portStr) throws IgniteCheckedException {
+    private static int[] verifyPortStr(String addrStr, String errMsgPrefix, String portStr)
+        throws IgniteCheckedException {
         String portFromStr;
         String portToStr;
 
@@ -147,7 +152,7 @@ public class HostAndPortRange implements Serializable {
         if (portFrom > portTo)
             throw createParseError(addrStr, errMsgPrefix, "start port cannot be less than end port");
 
-        return new int[]{portFrom, portTo};
+        return new int[] {portFrom, portTo};
     }
 
     /**
@@ -183,6 +188,19 @@ public class HostAndPortRange implements Serializable {
      */
     private static IgniteCheckedException createParseError(String addrStr, String errMsgPrefix, String errMsg) {
         return new IgniteCheckedException(errMsgPrefix + " (" + errMsg + "): " + addrStr);
+    }
+
+    /**
+     * Create parse error with cause - nested exception.
+     *
+     * @param addrStr Address string.
+     * @param errMsgPrefix Error message prefix.
+     * @param errMsg Error message.
+     * @param cause Cause exception.
+     * @return Exception.
+     */
+    private static IgniteCheckedException createParseError(String addrStr, String errMsgPrefix, String errMsg, Throwable cause) {
+        return new IgniteCheckedException(errMsgPrefix + " (" + errMsg + "): " + addrStr, cause);
     }
 
     /**
