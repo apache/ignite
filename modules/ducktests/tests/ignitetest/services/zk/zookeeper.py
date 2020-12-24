@@ -174,7 +174,7 @@ class ZookeeperService(Service, PathAware):
             self.logger.warn("%s %s was still alive at cleanup time. Killing forcefully..." %
                              (self.__class__.__name__, node.account))
         node.account.kill_process("zookeeper", clean_shutdown=False, allow_fail=True)
-        node.account.ssh(f"rm -rf {self.persistent_root}", allow_fail=False)
+        node.account.ssh(f"rm -rf -- {self.persistent_root}", allow_fail=False)
 
     def kill(self):
         """
