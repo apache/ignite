@@ -279,6 +279,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** */
     private static final short OP_DATA_STREAMER_FLUSH = 8003;
 
+    /** */
+    public static final short OP_DATA_STREAMER_ADDED = 8004;
+
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 

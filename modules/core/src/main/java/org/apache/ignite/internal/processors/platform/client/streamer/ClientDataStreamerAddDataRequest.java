@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Request to add data to streamer.
@@ -65,9 +66,9 @@ public class ClientDataStreamerAddDataRequest extends ClientRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         IgniteDataStreamer<KeyCacheObject, CacheObject> dataStreamer = ctx.resources().get(rsrcId);
 
-        dataStreamer.addData(entries);
+        IgniteFuture<?> fut = dataStreamer.addData(entries);
 
-        return new ClientResponse(requestId());
+        return new ClientDataStreamerAddDataResponse(ctx, requestId(), fut);
     }
 
     /**

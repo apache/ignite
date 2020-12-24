@@ -81,7 +81,8 @@ enum ClientOperation {
     /** Create data streamer. */DATA_STREAMER_CREATE(8000),
     /** Change data streamer flags. */DATA_STREAMER_FLAGS(8001),
     /** Add data to streamer. */DATA_STREAMER_ADD(8002),
-    /** Flush data streamer. */DATA_STREAMER_FLUSH(8003);
+    /** Flush data streamer. */DATA_STREAMER_FLUSH(8003),
+    /** Data added notification. */DATA_STREAMER_ADDED(8004, true);
 
     /** Code. */
     private final int code;

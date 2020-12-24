@@ -582,12 +582,14 @@ class ClientDataStreamersImpl {
             }
             catch (TimeoutException e) {
                 throw new ClientException("Data streamer exceeded timeout while waiting for reply for flush operation.", e);
-            } catch (InterruptedException | ExecutionException e) {
+            }
+            catch (InterruptedException | ExecutionException e) {
                 failCntr.incrementAndGet();
 
                 // TODO Correct exception unwrapping for IgniteCheckedException
                 throw new ClientException(e);
-            } finally {
+            }
+            finally {
                 bufLock.unlock();
             }
         }
@@ -624,7 +626,8 @@ class ClientDataStreamersImpl {
                     err = e;
 
                     throw e;
-                } finally {
+                }
+                finally {
                     try {
                         streamerCh.close();
                     }
@@ -646,7 +649,8 @@ class ClientDataStreamersImpl {
                     else
                         streamerFut.completeExceptionally(err);
                 }
-            } finally {
+            }
+            finally {
                 bufLock.unlock();
             }
         }
