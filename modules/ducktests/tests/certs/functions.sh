@@ -39,16 +39,25 @@ function mkcert () {
     rm -rf "${ALIAS}.pem"
 }
 
-# Создает сертификат JKS.
-# Потом импортирует его в формат PKCS12 и формирует файл с расширением .p12.
-# 1 CA, 2 ALIAS, 3 DNAME, 4 DAYS(default 3650).
-function mkcertUser () {
-    mkcert $1 $2 "${3}" $4
+function makeRoot() {
+    ALIAS=$1
+    DNAME=$2
+    PSWD=$3
 
-    rm -rf  $2".p12"
+    keytool -genkeypair -keystore ${ALIAS}.jks -alias ${ALIAS} -dname "${DNAME}" -ext bc:c -storepass ${PSWD} -keypass ${PSWD} -noprompt -v
+    keytool -keystore ${ALIAS}.jks -storepass ${PSWD} -keypass ${PSWD} -alias ${ALIAS} -exportcert -rfc > ${ALIAS}.pem
+}
 
-    keytool -importkeystore -srcstoretype JKS -srckeystore $2".jks" -srcstorepass ${PSWD} -deststoretype PKCS12 \
-     -destkeystore $2".p12" -deststorepass ${PSWD} -destkeypass ${PSWD} -noprompt || error
+function makeCA() {
+    ALIAS=$1
+    ROOT=$2
+    DNAME=$3
+    PSWD=$4
+
+    keytool -genkeypair -keystore ${ALIAS}.jks -alias ${ALIAS} -dname "${DNAME}" -ext bc:c -storepass ${PSWD} -keypass ${PSWD} -noprompt -v
+
+    kkeytool -storepass ${PSWD} -keypass ${PSWD} -keystore ${ALIAS}.jks -certreq -alias ${ALIAS} \
+      | keytool -storepass ${PSWD} -keypass ${PSWD} -keystore ${ROOT}.jks -gencert -alias ${ROOT} -ext BC=0 -rfc > ${ALIAS}.pem
 }
 
 function error () {
