@@ -78,7 +78,7 @@ public class TxRecoveryOnCoordniatorFailTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testWithoutMvcc() throws Exception {
+    public void testCoordinatorLeftCluster() throws Exception {
         startGrids(2);
 
         Ignite client = startClientGrid(2);
@@ -111,6 +111,6 @@ public class TxRecoveryOnCoordniatorFailTest extends GridCommonAbstractTest {
         Throwable error = err.get();
 
         if (error != null)
-            Assert.fail("Critical failure occured '" + error + "'");
+            Assert.fail("Critical failure occurred '" + error + "'");
     }
 }
