@@ -64,15 +64,15 @@ public class QueryIndexSchema implements SortedIndexSchema {
         for (int i = 0; i < h2IndexColumns.length; ++i) {
             IndexColumn c = h2IndexColumns[i];
 
-            addKeyDefinition(i, c.column.getType(), c.sortType);
+            addKeyDefinition(i, c.columnName, c.column.getType(), c.sortType);
         }
 
         IndexColumn.mapColumns(h2IndexColumns, table);
     }
 
     /** */
-    private void addKeyDefinition(int i, int idxKeyType, int h2SortType) {
-        idxKeyDefinitions[i] = new IndexKeyDefinition(idxKeyType, getSortOrder(h2SortType));;
+    private void addKeyDefinition(int i, String colName, int idxKeyType, int h2SortType) {
+        idxKeyDefinitions[i] = new IndexKeyDefinition(colName, idxKeyType, getSortOrder(h2SortType));
     }
 
     /** */

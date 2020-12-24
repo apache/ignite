@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
-import org.apache.ignite.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRow;
@@ -55,17 +56,13 @@ public class InlineRecommender {
     /** Ignite logger. */
     private final IgniteLogger log;
 
-    /** Cache name. */
-    private final String cacheName;
-
-    /** Index name. */
-    private final IndexName idxName;
+    /** Index definition. */
+    private final SortedIndexDefinition def;
 
     /** Constructor. */
     public InlineRecommender(GridCacheContext cctx, SortedIndexDefinition def) {
-        cacheName = cctx.name();
-        idxName = def.getIdxName();
         log = cctx.kernalContext().indexing().getLogger();
+        this.def = def;
     }
 
     /**
@@ -111,21 +108,33 @@ public class InlineRecommender {
                     break;
             }
 
-            // TODO: add recommendation for primary / affinity key
+            String cols = Arrays.stream(def.getSchema().getKeyDefinitions())
+                .map(IndexKeyDefinition::getName)
+                .collect(Collectors.joining(", ", "(", ")"));
 
-            String recommendation = "For PK index: set system property "
+            String type = def.isPrimary() ? "PRIMARY KEY" : def.isAffinity() ? "AFFINITY KEY (implicit)" : "SECONDARY";
+
+            String recommendation;
+
+            if (def.isPrimary() || def.isAffinity()) {
+                recommendation = "set system property "
                     + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " with recommended size " +
                     "(be aware it will be used by default for all indexes without explicit inline size)";
-
-            recommendation += ". For secondary index use INLINE_SIZE option for CREATE INDEX command, " +
+            }
+            else {
+                recommendation = "use INLINE_SIZE option for CREATE INDEX command, " +
                     "QuerySqlField.inlineSize for annotated classes, or QueryIndex.inlineSize for explicit " +
                     "QueryEntity configuration";
+            }
 
             String warn = "Indexed columns of a row cannot be fully inlined into index " +
                 "what may lead to slowdown due to additional data page reads, increase index inline size if needed " +
                 "(" + recommendation + ") " +
-                "[cacheName=" + cacheName +
-                ", idxName=" + idxName.fqdnIdxName() +
+                "[cacheName=" + def.getIdxName().cacheName() +
+                ", tableName=" + def.getIdxName().tableName() +
+                ", idxName=" + def.getIdxName().idxName() +
+                ", idxCols=" + cols +
+                ", idxType=" + type +
                 ", curSize=" + currInlineSize +
                 ", recommendedInlineSize=" + newSize + "]";
 

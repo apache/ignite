@@ -43,10 +43,16 @@ public class SortedIndexDefinition implements IndexDefinition {
     /** Whether this index is primary key (unique) or not. */
     private final boolean isPrimary;
 
+    /**
+     * Whether this index is affinity key index or not.
+     */
+    private final boolean isAffinity;
+
     /** Constructor. */
     public SortedIndexDefinition(
         IndexName idxName,
         boolean isPrimary,
+        boolean isAffinity,
         SortedIndexSchema schema,
         int segments,
         int inlineSize,
@@ -58,6 +64,7 @@ public class SortedIndexDefinition implements IndexDefinition {
         this.rowComparator = rowComparator;
         this.inlineSize = inlineSize;
         this.isPrimary = isPrimary;
+        this.isAffinity = isAffinity;
     }
 
     /** {@inheritDoc} */
@@ -92,15 +99,22 @@ public class SortedIndexDefinition implements IndexDefinition {
 
     /**
      * For backward compatibility.
-     *
+     * <p>
      * Prior some Ignite version complex key column was handled as regular object. Currently complex column is splitted
      * on multiple keys (if it possible) and then every key is handled separately. Information how to work with such
      * column is stored in the tree meta page info.
      */
-    public void setUseUnwrappedPk(boolean useUnwrappedPk) {}
+    public void setUseUnwrappedPk(boolean useUnwrappedPk) {
+        // No-op.
+    }
 
     /** */
     public boolean isPrimary() {
         return isPrimary;
+    }
+
+    /** */
+    public boolean isAffinity() {
+        return isAffinity;
     }
 }

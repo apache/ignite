@@ -23,21 +23,20 @@ import org.apache.ignite.cache.query.index.sorted.Order;
  * Defines IndexKey.
  */
 public class IndexKeyDefinition {
-    /** Index type. */
+    /** Index key name. */
+    private final String name;
+
+    /** Index key type. */
     private final int idxType;
 
     /** Order. */
     private final Order order;
 
     /** Constructor. */
-    public IndexKeyDefinition(int idxType) {
-        this(idxType, Order.DFLT);
-    }
-
-    /** Constructor. */
-    public IndexKeyDefinition(int idxType, Order order) {
+    public IndexKeyDefinition(String name, int idxType, Order order) {
         this.idxType = idxType;
         this.order = order;
+        this.name = name;
     }
 
     /** */
@@ -48,5 +47,10 @@ public class IndexKeyDefinition {
     /** */
     public int getIdxType() {
         return idxType;
+    }
+
+    /** */
+    public String getName() {
+        return name;
     }
 }

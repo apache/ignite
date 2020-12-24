@@ -437,6 +437,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 tbl,
                 name,
                 pk,
+                affinityKey,
                 schemaUnwrapped,
                 schemaWrapped,
                 inlineSize
