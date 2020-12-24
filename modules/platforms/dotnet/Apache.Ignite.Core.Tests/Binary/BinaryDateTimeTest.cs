@@ -179,6 +179,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             datesCache.Put(now, dt2);
             ex = Assert.Throws<BinaryObjectException>(() => datesCache.Get(now), "Timestamp fields should throw an error on non-UTC values");
             Assert.AreEqual(FromErrMsg, ex.Message);
+            
+            datesCache.Put(now, now);
+            Assert.AreEqual(now, datesCache.Get(now));
 
             var datesObjCache = ignite.CreateCache<DateTimeObj, DateTimeObj>("datesObj");
 
@@ -200,6 +203,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             datesObjCache.Put(nowObj, new DateTimeObj {Value = dt2});
             ex = Assert.Throws<BinaryObjectException>(() => datesObjCache.Get(nowObj), "Timestamp fields should throw an error on non-UTC values");
             Assert.AreEqual(FromErrMsg, ex.Message);
+            
+            datesObjCache.Put(nowObj, nowObj);
+            Assert.AreEqual(nowObj.Value, datesObjCache.Get(nowObj).Value);
         }
 
         /// <summary>
