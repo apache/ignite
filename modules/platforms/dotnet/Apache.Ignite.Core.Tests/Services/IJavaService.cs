@@ -187,6 +187,9 @@ namespace Apache.Ignite.Core.Tests.Services
         void testUTCDateFromCache();
 
         /** */
+        void testLocalDateFromCache();
+
+        /** */
         void sleep(long delayMs);
     }
 }
