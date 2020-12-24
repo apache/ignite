@@ -1402,18 +1402,19 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         try {
             getSpi().setMasterKeyName(name);
 
-            ctx.cache().context().database().checkpointReadLock();
+            synchronized (metaStorageMux) {
+                ctx.cache().context().database().checkpointReadLock();
 
-            try {
-                writeKeysToWal();
+                try {
+                    writeKeysToWal();
 
-                synchronized (metaStorageMux) {
                     assert writeToMetaStoreEnabled;
 
                     writeKeysToMetaStore(true);
                 }
-            } finally {
-                ctx.cache().context().database().checkpointReadUnlock();
+                finally {
+                    ctx.cache().context().database().checkpointReadUnlock();
+                }
             }
 
             log.info("Master key successfully changed [masterKeyName=" + name + ']');
