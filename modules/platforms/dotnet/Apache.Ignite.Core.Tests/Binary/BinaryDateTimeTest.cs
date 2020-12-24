@@ -35,6 +35,10 @@ namespace Apache.Ignite.Core.Tests.Binary
         /** */
         internal const String ToErrMsg = "ToJavaTicks Error!";
 
+        /** */
+        private const String NotUtcDate =
+            "DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.";
+
         /// <summary>
         /// Sets up the test fixture.
         /// </summary>
@@ -131,6 +135,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                     TimestampConverter = new TimestampConverter()
                 }
             };
+
             var ignite = Ignition.Start(cfg);
             var binary = ignite.GetBinary();
  
@@ -153,6 +158,47 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(FromErrMsg, ex.Message);
 
             ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<DateTime?[]>(new DateTime?[] {dt2}));
+            Assert.AreEqual(FromErrMsg, ex.Message);
+
+            var datesCache = ignite.CreateCache<DateTime, DateTime>("dates");
+
+            var check = new Action<DateTime, DateTime, String>((date1, date2, errMsg) =>
+            {
+                ex = Assert.Throws<BinaryObjectException>(() => datesCache.Put(date1, date2), "Timestamp fields should throw an error on non-UTC values");
+
+                Assert.AreEqual(errMsg, ex.Message);
+            });
+
+            check.Invoke(DateTime.Now, DateTime.UtcNow, NotUtcDate);
+            check.Invoke(DateTime.UtcNow, DateTime.Now, NotUtcDate);
+            check.Invoke(dt1, DateTime.UtcNow, ToErrMsg);
+            check.Invoke(DateTime.UtcNow, dt1, ToErrMsg);
+
+            var now = DateTime.UtcNow;
+
+            datesCache.Put(now, dt2);
+            ex = Assert.Throws<BinaryObjectException>(() => datesCache.Get(now), "Timestamp fields should throw an error on non-UTC values");
+            Assert.AreEqual(FromErrMsg, ex.Message);
+
+            var datesObjCache = ignite.CreateCache<DateTimeObj, DateTimeObj>("datesObj");
+
+            check = (date1, date2, errMsg) =>
+            {
+                ex = Assert.Throws<BinaryObjectException>(() => datesObjCache.Put(new DateTimeObj {Value = date1}, new DateTimeObj {Value = date2}),
+                    "Timestamp fields should throw an error on non-UTC values");
+
+                Assert.AreEqual(errMsg, ex.Message);
+            };
+
+            check.Invoke(DateTime.Now, DateTime.UtcNow, NotUtcDate);
+            check.Invoke(DateTime.UtcNow, DateTime.Now, NotUtcDate);
+            check.Invoke(dt1, DateTime.UtcNow, ToErrMsg);
+            check.Invoke(DateTime.UtcNow, dt1, ToErrMsg);
+
+            var nowObj = new DateTimeObj {Value = now};
+
+            datesObjCache.Put(nowObj, new DateTimeObj {Value = dt2});
+            ex = Assert.Throws<BinaryObjectException>(() => datesObjCache.Get(nowObj), "Timestamp fields should throw an error on non-UTC values");
             Assert.AreEqual(FromErrMsg, ex.Message);
         }
 
@@ -194,8 +240,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             var ex = Assert.Throws<BinaryObjectException>(() => binary.ToBinary<IBinaryObject>(obj), 
                 "Timestamp fields should throw an error on non-UTC values");
 
-            Assert.AreEqual("DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.",
-                ex.Message);
+            Assert.AreEqual(NotUtcDate, ex.Message);
 
             // UTC DateTime works.
             setValue(obj, DateTime.UtcNow);
