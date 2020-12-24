@@ -25,16 +25,16 @@ import org.apache.calcite.plan.RelOptCostFactory;
  * Creates a desired cost with regards to the weight of each particular resource.
  */
 public class IgniteCostFactory implements RelOptCostFactory {
-    /** Cpu weigth. */
+    /** Cpu weight. */
     private final double cpuWeight;
 
-    /** Memory weigth. */
+    /** Memory weight. */
     private final double memoryWeight;
 
-    /** Io weigth. */
+    /** Io weight. */
     private final double ioWeight;
 
-    /** Network weigth. */
+    /** Network weight. */
     private final double networkWeight;
 
     /**
