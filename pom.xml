@@ -41,6 +41,7 @@
         <module>modules/configuration</module>
         <module>modules/configuration-annotation-processor</module>
         <module>modules/ignite-runner</module>
-        <module>modules/cli-demo</module>
+        <module>modules/cli-common</module>
+        <module>modules/cli</module>
     </modules>
 </project>

@@ -25,11 +25,18 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-cli-demo</artifactId>
-        <version>3.0-SNAPSHOT</version>
+        <artifactId>apache-ignite</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>ignite</artifactId>
+    <artifactId>ignite-cli</artifactId>
+    <!-- Must be changed together with ignite-runner module version fix -->
+    <version>3.0-SNAPSHOT</version>
+
+    <properties>
+        <micronaut.version>2.1.2</micronaut.version>
+        <picocli.version>4.5.2</picocli.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -65,6 +72,7 @@
         <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
+            <version>${picocli.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
@@ -86,18 +94,16 @@
         <dependency>
             <groupId>io.micronaut.test</groupId>
             <artifactId>micronaut-test-junit5</artifactId>
-            <version>2.1.1</version>
+            <version>2.3.1</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-inject-java</artifactId>
+            <version>${micronaut.version}</version>
         </dependency>
-        <dependency>
-            <groupId>io.micronaut</groupId>
-            <artifactId>micronaut-core</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>com.typesafe</groupId>
             <artifactId>config</artifactId>
@@ -151,6 +157,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
                 <configuration>
                     <!-- Uncomment to enable incremental compilation -->
                     <!-- <useIncrementalCompilation>false</useIncrementalCompilation> -->

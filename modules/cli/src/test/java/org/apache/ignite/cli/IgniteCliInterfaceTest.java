@@ -120,7 +120,7 @@ public class IgniteCliInterfaceTest {
         }
 
         @Test
-        @DisplayName("add demo-module")
+        @DisplayName("add test-module")
         void addBuiltinModule() {
             doNothing().when(moduleManager).addModule(any(), any(), any());
 
@@ -129,8 +129,8 @@ public class IgniteCliInterfaceTest {
             when(cliPathsConfigLoader.loadIgnitePathsOrThrowError()).thenReturn(paths);
 
             var exitCode =
-                commandLine(applicationContext).execute("module add demo-module".split(" "));
-            verify(moduleManager).addModule("demo-module", paths, Collections.emptyList());
+                commandLine(applicationContext).execute("module add test-module".split(" "));
+            verify(moduleManager).addModule("test-module", paths, Collections.emptyList());
             assertEquals(0, exitCode);
         }
 
