@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.visor.annotation;
 
-import org.apache.ignite.configuration.NearCacheConfiguration;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Tests for key check for near cache.
+ * This annotation using for Visor's task which can interrupted by system reason.
+ * For example, when a connection between cluster and task initiator is breaking.
  */
-public class GridCacheKeyCheckNearEnabledSelfTest extends GridCacheKeyCheckSelfTest {
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return new NearCacheConfiguration();
-    }
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE})
+public @interface InterruptibleVisorTask {
 }

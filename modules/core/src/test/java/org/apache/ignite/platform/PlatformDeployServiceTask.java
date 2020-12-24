@@ -18,15 +18,20 @@
 package org.apache.ignite.platform;
 
 import java.sql.Timestamp;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cluster.ClusterNode;
@@ -44,6 +49,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Calendar.JANUARY;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -94,6 +100,9 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
      * Test service.
      */
     public static class PlatformTestService implements Service {
+        @IgniteInstanceResource
+        private Ignite ignite;
+
         /** */
         private boolean isCancelled;
 
@@ -492,6 +501,53 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             m.put(new Key(3), new Value("value3"));
 
             return m;
+        }
+
+        /** */
+        public void testDateArray(Timestamp[] dates) {
+            assertNotNull(dates);
+            assertEquals(2, dates.length);
+            assertEquals(new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()), dates[0]);
+            assertEquals(new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()), dates[1]);
+        }
+
+        /** */
+        public Timestamp testDate(Timestamp date) {
+            if (date == null)
+                return null;
+
+            assertEquals(new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()), date);
+
+            return new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime());
+        }
+
+        /** */
+        public void testUTCDateFromCache() {
+            IgniteCache<Integer, Timestamp> cache = ignite.cache("net-dates");
+
+            cache.put(3, new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()));
+            cache.put(4, new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()));
+
+            assertEquals(new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()), cache.get(1));
+            assertEquals(new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()), cache.get(2));
+        }
+
+        /** */
+        public void testLocalDateFromCache() {
+            IgniteCache<Integer, Timestamp> cache = ignite.cache("net-dates");
+
+            ZoneId msk = ZoneId.of("Europe/Moscow");
+
+            //This Date in Europe/Moscow have offset +4.
+            Timestamp ts1 = new Timestamp(ZonedDateTime.of(1982, 4, 1, 1, 0, 0, 0, msk).toInstant().toEpochMilli());
+            //This Date in Europe/Moscow have offset +3.
+            Timestamp ts2 = new Timestamp(ZonedDateTime.of(1982, 3, 31, 22, 0, 0, 0, msk).toInstant().toEpochMilli());
+
+            assertEquals(ts1, cache.get(5));
+            assertEquals(ts2, cache.get(6));
+
+            cache.put(7, ts1);
+            cache.put(8, ts2);
         }
 
         /** */

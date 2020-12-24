@@ -332,6 +332,30 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
+        public void testDateArray(DateTime?[] dates)
+        {
+            _svc.testDateArray(dates);
+        }
+
+        /** <inheritDoc /> */
+        public DateTime testDate(DateTime date)
+        {
+            return _svc.testDate(date);
+        }
+
+        /** <inheritDoc /> */
+        public void testUTCDateFromCache()
+        {
+            _svc.testDateFromCache();
+        }
+
+        /** <inheritDoc /> */
+        public void testLocalDateFromCache()
+        {
+            _svc.testLocalDateFromCache();
+        }
+
+        /** <inheritDoc /> */
         public void sleep(long delayMs)
         {
             _svc.sleep(delayMs);

@@ -531,7 +531,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
         }
 
         // Make sure the previous key has been removed.
-        assertEquals(1, encrMgr0.groupKeyIds(grpId).size());
+        checkKeysCount(node0, grpId, 1, MAX_AWAIT_MILLIS);
         assertEquals(encrMgr1.groupKeyIds(grpId), encrMgr0.groupKeyIds(grpId));
     }
 
@@ -930,8 +930,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
             encrMgr1.onWalSegmentRemoved(maxWalIdx);
         }
 
-        assertEquals(1, encrMgr1.groupKeyIds(grpId).size());
-        assertEquals(encrMgr0.groupKeyIds(grpId), encrMgr1.groupKeyIds(grpId));
+        checkKeysCount(grid(GRID_1), grpId, 1, MAX_AWAIT_MILLIS);
+        checkKeysCount(grid(GRID_0), grpId, 1, MAX_AWAIT_MILLIS);
 
         startGrid(GRID_2);
 
