@@ -122,6 +122,51 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Tests custom timestamp converter that modifies the values by adding one year on write and read.
+        /// This test verifies that actual converted values are used by Ignite.
+        /// </summary>
+        [Test]
+        public void TestAddYearTimestampConverter()
+        {
+            var cfg =  new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                AutoGenerateIgniteInstanceName = true,
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    ForceTimestamp = true, 
+                    TimestampConverter = new AddYearTimestampConverter()
+                }
+            };
+
+            var ignite = Ignition.Start(cfg);
+
+            var dt = DateTime.UtcNow;
+            var expected = dt.AddYears(2);
+
+            // Check key & value.
+            var cache = ignite.GetOrCreateCache<DateTime, DateTime>(TestUtils.TestName);
+            cache[dt] = dt;
+
+            var resEntry = cache.Single();
+            
+            Assert.AreEqual(expected, resEntry.Key);
+            Assert.AreEqual(expected, resEntry.Value);
+            
+            // Check object field.
+            var cache2 = ignite.GetOrCreateCache<DateTimePropertyAttribute, DateTimePropertyAttribute>(
+                TestUtils.TestName);
+            
+            cache2.RemoveAll();
+            
+            var obj = new DateTimePropertyAttribute {Value = dt};
+            cache2[obj] = obj;
+
+            var resEntry2 = cache2.Single();
+            Assert.AreEqual(expected, resEntry2.Key.Value);
+            Assert.AreEqual(expected, resEntry2.Value.Value);
+        }
+
+        /// <summary>
         /// Tests custom timestamp converter.
         /// </summary>
         [Test]
@@ -129,7 +174,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             var cfg =  new IgniteConfiguration(TestUtils.GetTestConfiguration(name: "ignite-1"))
             {
-                BinaryConfiguration = new BinaryConfiguration()
+                BinaryConfiguration = new BinaryConfiguration
                 {
                     ForceTimestamp = true, 
                     TimestampConverter = new TimestampConverter()
@@ -297,32 +342,47 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             public DateTime Value;
         }
-    }
-
-    /// <summary>
-    /// Adds support of the local dates to the Ignite timestamp serialization.
-    /// </summary>
-    class TimestampConverter : ITimestampConverter
-    {
-        /** <inheritdoc /> */
-        public void ToJavaTicks(DateTime date, out long high, out int low)
+        
+        private class TimestampConverter : ITimestampConverter
         {
-            if (date.Year == 1997 && date.Month == 8 && date.Day == 29)
-                throw new BinaryObjectException(BinaryDateTimeTest.ToErrMsg);
+            /** <inheritdoc /> */
+            public void ToJavaTicks(DateTime date, out long high, out int low)
+            {
+                if (date.Year == 1997 && date.Month == 8 && date.Day == 29)
+                    throw new BinaryObjectException(BinaryDateTimeTest.ToErrMsg);
 
-            BinaryUtils.ToJavaDate(date, out high, out low);
+                BinaryUtils.ToJavaDate(date, out high, out low);
+            }
+
+            /** <inheritdoc /> */
+            public DateTime FromJavaTicks(long high, int low)
+            {
+                var date = new DateTime(BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100,
+                    DateTimeKind.Utc);
+
+                if (date.Year == 1997 && date.Month == 8 && date.Day == 4)
+                    throw new BinaryObjectException(BinaryDateTimeTest.FromErrMsg);
+
+                return date;
+            }
         }
-
-        /** <inheritdoc /> */
-        public DateTime FromJavaTicks(long high, int low)
+        
+        private class AddYearTimestampConverter : ITimestampConverter
         {
-            var date = new DateTime(BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100,
-                DateTimeKind.Utc);
+            /** <inheritdoc /> */
+            public void ToJavaTicks(DateTime date, out long high, out int low)
+            {
+                BinaryUtils.ToJavaDate(date.AddYears(1), out high, out low);
+            }
 
-            if (date.Year == 1997 && date.Month == 8 && date.Day == 4)
-                throw new BinaryObjectException(BinaryDateTimeTest.FromErrMsg);
+            /** <inheritdoc /> */
+            public DateTime FromJavaTicks(long high, int low)
+            {
+                var date = new DateTime(BinaryUtils.JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100,
+                    DateTimeKind.Utc);
 
-            return date;
+                return date.AddYears(1);
+            }
         }
     }
 }
