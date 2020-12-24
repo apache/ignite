@@ -43,7 +43,6 @@ public class InitIgniteCommandTest {
     @Test
     void init() throws IOException {
         when(pathResolver.osHomeDirectoryPath()).thenReturn(homeDir);
-        when(pathResolver.osCurrentDirPath()).thenReturn(currentDir);
 
         when(mavenArtifactResolver.resolve(any(), any(), any(), any(), any()))
             .thenReturn(new ResolveResult(Arrays.asList()));
@@ -58,7 +57,6 @@ public class InitIgniteCommandTest {
     @Test
     void reinit() throws IOException {
         when(pathResolver.osHomeDirectoryPath()).thenReturn(homeDir);
-        when(pathResolver.osCurrentDirPath()).thenReturn(currentDir);
 
         when(mavenArtifactResolver.resolve(any(), any(), any(), any(), any()))
             .thenReturn(new ResolveResult(Collections.emptyList()));

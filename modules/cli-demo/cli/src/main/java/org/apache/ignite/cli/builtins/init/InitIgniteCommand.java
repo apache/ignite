@@ -57,9 +57,9 @@ public class InitIgniteCommand {
     public void init(PrintWriter out, ColorScheme cs) {
         moduleManager.setOut(out);
         Optional<IgnitePaths> ignitePathsOpt = cliPathsConfigLoader.loadIgnitePathsConfig();
-        if (ignitePathsOpt.isEmpty()) {
+        if (ignitePathsOpt.isEmpty())
             initConfigFile();
-        }
+
         IgnitePaths cfg = cliPathsConfigLoader.loadIgnitePathsConfig().get();
         out.print("Creating directories... ");
         cfg.initOrRecover();
@@ -101,8 +101,8 @@ public class InitIgniteCommand {
         File newCfgFile = newCfgPath.toFile();
         try {
             newCfgFile.createNewFile();
-            Path binDir = pathResolver.osCurrentDirPath().resolve("ignite-bin");
-            Path workDir = pathResolver.osCurrentDirPath().resolve("ignite-work");
+            Path binDir = pathResolver.osHomeDirectoryPath().resolve("ignite").resolve("bin");
+            Path workDir = pathResolver.osHomeDirectoryPath().resolve("ignite").resolve("work");
             fillNewConfigFile(newCfgFile, binDir, workDir);
             return newCfgFile;
         }

@@ -25,8 +25,6 @@ public interface SystemPathResolver {
 
     Path osHomeDirectoryPath();
 
-    Path osCurrentDirPath();
-
     /**
      *
      */
@@ -36,10 +34,6 @@ public interface SystemPathResolver {
 
         @Override public Path osHomeDirectoryPath() {
             return Path.of(System.getProperty("user.home"));
-        }
-
-        @Override public Path osCurrentDirPath() {
-            return Path.of(System.getProperty("user.dir"));
         }
 
     }
