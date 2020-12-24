@@ -145,6 +145,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets date time converter.
+        /// </summary>
+        public ITimestampConverter TimestampConverter
+        {
+            get { return _cfg.TimestampConverter; }
+        }
+
+        /// <summary>
         /// Marshal object.
         /// </summary>
         /// <param name="val">Value.</param>

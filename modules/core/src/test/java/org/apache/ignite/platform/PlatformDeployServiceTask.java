@@ -18,6 +18,8 @@
 package org.apache.ignite.platform;
 
 import java.sql.Timestamp;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -525,6 +527,24 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
             assert new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()).equals(cache.get(1));
             assert new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()).equals(cache.get(2));
+        }
+
+        /** */
+        public void testLocalDateFromCache() {
+            IgniteCache<Integer, Timestamp> cache = ignite.cache("net-dates");
+
+            ZoneId msk = ZoneId.of("Europe/Moscow");
+
+            //This Date in Europe/Moscow have offset +4.
+            Timestamp ts1 = new Timestamp(ZonedDateTime.of(1982, 4, 1, 1, 0, 0, 0, msk).toInstant().toEpochMilli());
+            //This Date in Europe/Moscow have offset +3.
+            Timestamp ts2 = new Timestamp(ZonedDateTime.of(1982, 3, 31, 22, 0, 0, 0, msk).toInstant().toEpochMilli());
+
+            assert ts1.equals(cache.get(5));
+            assert ts2.equals(cache.get(6));
+
+            cache.put(7, ts1);
+            cache.put(8, ts2);
         }
 
         /** */
