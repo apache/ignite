@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.configuration.distributed;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -38,38 +41,29 @@ public class DistributedEnumProperty<T extends Enum> implements DistributedChang
     private final IgniteClosure<Integer, T> fromOrdinalFunc;
 
     /** Function converts an enumeration value to an integer for stored in meta storage. */
-    private final IgniteClosure<T, Integer> toOredinalFunc;
+    private final IgniteClosure<T, Integer> toOrdinalFunc;
+
+    /** Enum name-values map to parse string representation. */
+    private final Map<String, T> values;
 
     /**
      * Property constructor.
      *
      * @param name Name of property.
      * @param fromOrdinalFunc Function reflects an integer to an enumiration value.
-     */
-    public DistributedEnumProperty(
-        String name,
-        IgniteClosure<Integer, T> fromOrdinalFunc
-    ) {
-        this(name, fromOrdinalFunc, (T value) -> {
-            return value == null ? null : value.ordinal();
-        });
-    }
-
-    /**
-     * Property constructor.
-     *
-     * @param name Name of property.
-     * @param fromOrdinalFunc Function reflects an integer to an enumiration value.
-     * @param toOredinalFunc Function converts an enumeration value to an integer.
+     * @param toOrdinalFunc Function converts an enumeration value to an integer.
      */
     public DistributedEnumProperty(
         String name,
         IgniteClosure<Integer, T> fromOrdinalFunc,
-        IgniteClosure<T, Integer> toOredinalFunc
+        IgniteClosure<T, Integer> toOrdinalFunc,
+        Class<T> enumCls
     ) {
-        this.internal = new SimpleDistributedProperty<>(name);
+        this.internal = new SimpleDistributedProperty<>(name, null);
         this.fromOrdinalFunc = fromOrdinalFunc;
-        this.toOredinalFunc = toOredinalFunc;
+        this.toOrdinalFunc = toOrdinalFunc;
+        this.values = Arrays.stream(enumCls.getEnumConstants())
+            .collect(Collectors.toMap(e -> e.name().toLowerCase(), e -> e));
     }
 
     /** {@inheritDoc} */
@@ -140,7 +134,7 @@ public class DistributedEnumProperty<T extends Enum> implements DistributedChang
      * @return Ordinal or {@code null}.
      */
     private Integer ordinalOrNull(T val) {
-        return val == null ? null : toOredinalFunc.apply(val);
+        return val == null ? null : toOrdinalFunc.apply(val);
     }
 
     /**
@@ -151,6 +145,18 @@ public class DistributedEnumProperty<T extends Enum> implements DistributedChang
      */
     private T fromOrdinalOrNull(Integer ord) {
         return ord != null && ord >= 0 ? fromOrdinalFunc.apply(ord) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public T parse(String str) {
+        T t = values.get(str.toLowerCase());
+
+        if (t == null) {
+            throw new IllegalArgumentException("Unknown value for enum property " +
+                "[value=" + str + ", name=" + internal.getName());
+        }
+
+        return t;
     }
 
     /** {@inheritDoc} */

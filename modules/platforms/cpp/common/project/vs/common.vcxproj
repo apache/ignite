@@ -184,6 +184,7 @@
     <ClInclude Include="..\..\include\ignite\future.h" />
     <ClInclude Include="..\..\include\ignite\guid.h" />
     <ClInclude Include="..\..\include\ignite\ignite_error.h" />
+    <ClInclude Include="..\..\include\ignite\ignite_predicate.h" />
     <ClInclude Include="..\..\include\ignite\reference.h" />
     <ClInclude Include="..\..\include\ignite\time.h" />
     <ClInclude Include="..\..\include\ignite\timestamp.h" />

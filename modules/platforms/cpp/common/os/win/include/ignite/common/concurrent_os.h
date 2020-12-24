@@ -152,7 +152,7 @@ namespace ignite
             /**
              * Primitives for atomic access.
              */
-            class Atomics
+            class IGNITE_IMPORT_EXPORT Atomics
             {
             public:
                 /**
@@ -410,6 +410,14 @@ namespace ignite
                 ThreadLocalInstance() : idx(ThreadLocal::NextIndex())
                 {
                     // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~ThreadLocalInstance()
+                {
+                    Remove();
                 }
 
                 /**

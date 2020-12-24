@@ -229,7 +229,7 @@ BOOST_AUTO_TEST_CASE(ConnectionAttributeLoginTimeout)
     SQLRETURN ret = SQLGetConnectAttr(dbc, SQL_ATTR_LOGIN_TIMEOUT, &timeout, 0, 0);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
-    BOOST_REQUIRE_EQUAL(timeout, odbc::Connection::DEFAULT_CONNECT_TIMEOUT);
+    BOOST_REQUIRE_EQUAL(timeout, (SQLUINTEGER) odbc::Connection::DEFAULT_CONNECT_TIMEOUT);
 
     ret = SQLSetConnectAttr(dbc, SQL_ATTR_LOGIN_TIMEOUT, reinterpret_cast<SQLPOINTER>(42), 0);
 
@@ -241,6 +241,26 @@ BOOST_AUTO_TEST_CASE(ConnectionAttributeLoginTimeout)
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
     BOOST_REQUIRE_EQUAL(timeout, 42);
+}
+
+/**
+ * Check that environment returns expected version of ODBC standard.
+ *
+ * 1. Start node.
+ * 2. Establish connection using ODBC driver.
+ * 3. Get current ODBC version from env handle.
+ * 4. Check that version is of the expected value.
+ */
+BOOST_AUTO_TEST_CASE(TestSQLGetEnvAttrDriverVersion)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    SQLINTEGER version;
+    SQLRETURN ret = SQLGetEnvAttr(env, SQL_ATTR_ODBC_VERSION, &version, 0, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_ENV, env);
+
+    BOOST_CHECK_EQUAL(version, SQL_OV_ODBC3);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CO
  * @deprecated Use {@link ClusterStateChangeCommand} instead.
  */
 @Deprecated
-public class DeactivateCommand implements Command<Void> {
+public class DeactivateCommand extends AbstractCommand<Void> {
     /** Cluster name. */
     private String clusterName;
 

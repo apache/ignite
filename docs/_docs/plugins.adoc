@@ -1,0 +1,129 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Plugins
+
+== Overview
+
+The Ignite plugin system allows you to extend the core functionality of Ignite.
+Plugins have access to different internal Ignite components, such as security processor and others, and can extend the programmatic API of Ignite.
+
+To add a custom plugin, implement the `PluginProvider` interface and register the implementation in the node configuration.
+The following is an overview of the steps involved in creating a plugin:
+
+. Implement the `PluginProvider` interface. This is the main interface for creating plugins.
+
+. Implement the `IgnitePlugin` interface. If your plugin adds functionality that is meant to be triggered by end users, you should add public methods to this class. An instance of this class is available to end users at runtime via `Ignite.plugin(String pluginName)`.
+
+. Register the plugin in `IgniteConfiguration.setPluginProviders(...)` either programmatically or via XML configuration.
+
+. If your plugin has a public API, call `MyPlugin plugin = Ignite.plugin(pluginName)` at runtime and execute specific actions.
+
+The following section gives an example of a plugin and goes into details about how plugins work in Ignite.
+
+== Example Plugin
+
+Let's create a simple Ignite plugin that prints information about the number of entries in every cache to the console periodically, on each node.
+In addition, it exposes a public method that the users can call programmatically from their application to print the cache size information on demand.
+The plugin has one configuration parameter: the time interval for printing the cache size information.
+
+=== {counter:step}. Implement PluginProvider
+
+`PluginProvider` is the main interface for creating Ignite plugins.
+Ignite calls the methods of each registered plugin provider during initialization.
+
+The following methods must return non-null values. Other methods are optional.
+
+* `name()` - returns the name of the plugin
+* `plugin()` - returns the object of your plugin class
+
+Below is an example implementation of a plugin provider.
+We create an object of `MyPlugin` class (see next step) in the `initExtensions()` method.
+Ignite passes a `PluginContext` object as an argument to this method.
+`PluginContext` provides access to the Ignite APIs and node configuration.
+See the javadoc:org.apache.ignite.plugin.PluginContext[] javadoc for more information.
+Here we simply pass the `PluginContext` and the time interval to the `MyPlugin` constructor.
+
+.MyPluginProvider.java:
+[source, java]
+----
+include::{javaCodeDir}/plugin/MyPluginProvider.java[tags=!no-op-methods, indent=0]
+----
+
+The `onIgniteStart()` method is invoked when Ignite is started.
+We start the plugin by calling `MyPlugin.start()`, which simply schedules periodic execution of the task that prints cache size information.
+
+=== {counter:step}. Implement IgnitePlugin
+
+The implementation of the `IgnitePlugin` returned by the plugin provider is available to the users via `Ignite.plugin(String pluginName)`.
+If you want to provide public API to end users, the API should be exposed in the class that implements `IgnitePlugin`.
+
+Strictly speaking, this step is not necessary if your plugin does not provide a public API.
+Your plugin functionality may be implemented and initialized in the `PluginProvider` implementation, and the `PluginProvider.plugin()` method may return an empty implementation of the `IgnitePlugin` interface.
+
+
+In our case, we encapsulate the plugin functionality in the `MyPlugin` class and provide one public method (`MyPlugin.printCacheInfo()`).
+The `MyPlugin.java` implements the `Runnable` interface.
+The `start()` and `stop()` methods schedule periodic printing of cache size information.
+
+
+.MyPlugin.java:
+[source, java]
+----
+include::{javaCodeDir}/plugin/MyPlugin.java[tags=, indent=0]
+----
+
+
+=== {counter:step}. Register your Plugin
+
+
+Programmatically:
+
+[source, java]
+----
+include::{javaCodeDir}/plugin/PluginExample.java[tags=register-plugin, indent=0]
+----
+
+
+Via XML Configuration:
+
+Compile your plugin source code and add the classes to the classpath on each node.
+Then, you can register the plugin as follows:
+
+[source, xml]
+----
+include::code-snippets/xml/plugins.xml[tags=ignite-config;!discovery, indent=0]
+----
+
+When you start the node, you should see the following message in the console:
+
+[source, text]
+----
+[11:00:49] Initial heap size is 248MB (should be no less than 512MB, use -Xms512m -Xmx512m).
+[11:00:49] Configured plugins:
+[11:00:49]   ^-- MyPlugin 1.0
+[11:00:49]   ^-- MyCompany
+[11:00:49]
+----
+
+=== {counter:step}. Access the Plugin at Runtime
+
+You can access the instance of the plugin by calling `Ignite.plugin(pluginName)`.
+The `pluginName` argument must be equal to the plugin name returned in `MyPluginProvider.name()`.
+
+[source, java]
+----
+include::{javaCodeDir}/plugin/PluginExample.java[tags=access-plugin, indent=0]
+----
+

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.mxbean;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteEncryption;
 
 /**
@@ -42,5 +43,16 @@ public interface EncryptionMXBean {
     @MXBeanDescription("Change master key name.")
     public void changeMasterKey(
         @MXBeanParameter(name = "masterKeyName", description = "Master key name.") String masterKeyName
+    );
+
+    /**
+     * Starts cache group encryption key change process.
+     *
+     * @param cacheOrGrpName Cache or group name.
+     * @see IgniteEncryption#changeCacheGroupKey(Collection)
+     */
+    @MXBeanDescription("Change cache group key.")
+    public void changeCacheGroupKey(
+        @MXBeanParameter(name = "cacheOrGroupName", description = "Cache or group name.") String cacheOrGrpName
     );
 }
