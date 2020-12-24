@@ -32,10 +32,33 @@ import org.springframework.transaction.support.DefaultTransactionStatus;
 /**
  * Represents {@link AbstractSpringTransactionManager} implementation that uses thin client to access the cluster and
  * manage transactions. It requires thin client instance to be set before manager use
- * (see {@link #setClientInstance(IgniteClient)}). Note that the same thin client instance must be used to both
- * initialize the transaction manager and perform transactional operations.
+ * (see {@link #setClientInstance(IgniteClient)}).
+ *
+ * You can provide ignite client instance to a Spring configuration XML file, like below:
+ *
+ * <pre name="code" class="xml">
+ * &lt;beans xmlns="http://www.springframework.org/schema/beans"
+ *        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ *        xmlns:tx="http://www.springframework.org/schema/tx"
+ *        xsi:schemaLocation="
+ *            http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+ *            http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd"&gt;
+ *     &lt;-- Provide Ignite client instance. --&gt;
+ *     &lt;bean id="transactionManager" class="org.apache.ignite.transactions.spring.IgniteClientSpringTransactionManager"&gt;
+ *         &lt;property name="clientInstance" ref="igniteClientBean"/&gt;
+ *     &lt;/bean>
+ *
+ *     &lt;-- Use annotation-driven transaction configuration. --&gt;
+ *     &lt;tx:annotation-driven/&gt;
+ * &lt;/beans&gt;
+ * </pre>
+ *
+ * Note that the same thin client instance must be used to both initialize the transaction manager and perform
+ * transactional operations.
+ *
+ * @see SpringTransactionManager to configure Transaction Manager access to the cluster through the Ignite client node.
  */
-public class SpringClientTransactionManager extends AbstractSpringTransactionManager {
+public class IgniteClientSpringTransactionManager extends AbstractSpringTransactionManager {
     /** No-op Ignite logger. */
     private static final IgniteLogger NOOP_LOG = new NullLogger();
 

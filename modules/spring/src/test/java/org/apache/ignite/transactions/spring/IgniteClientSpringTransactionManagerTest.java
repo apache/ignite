@@ -35,7 +35,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 
 /** Tests Spring Transactions manager implementation that uses thin client to access the Ignite cluster. */
-public class SpringClientTransactionManagerTest extends GridSpringTransactionManagerAbstractTest {
+public class IgniteClientSpringTransactionManagerTest extends GridSpringTransactionManagerAbstractTest {
     /** Spring application context. */
     private static AnnotationConfigApplicationContext ctx;
 
@@ -45,8 +45,7 @@ public class SpringClientTransactionManagerTest extends GridSpringTransactionMan
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-                .setName(CACHE_NAME)
+            .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)
                 .setAtomicityMode(TRANSACTIONAL));
     }
 
@@ -54,7 +53,7 @@ public class SpringClientTransactionManagerTest extends GridSpringTransactionMan
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid();
 
-        ctx = new AnnotationConfigApplicationContext(SpringClientTransactionManagerApplicationContext.class);
+        ctx = new AnnotationConfigApplicationContext(IgniteClientSpringTransactionManagerApplicationContext.class);
         cli = ctx.getBean(IgniteClient.class);
     }
 
@@ -93,7 +92,7 @@ public class SpringClientTransactionManagerTest extends GridSpringTransactionMan
     /** */
     @Configuration
     @EnableTransactionManagement
-    public static class SpringClientTransactionManagerApplicationContext {
+    public static class IgniteClientSpringTransactionManagerApplicationContext {
         /** */
         @Bean
         public GridSpringTransactionService transactionService() {
@@ -109,7 +108,7 @@ public class SpringClientTransactionManagerTest extends GridSpringTransactionMan
         /** */
         @Bean
         public AbstractSpringTransactionManager transactionManager(IgniteClient cli) {
-            SpringClientTransactionManager mgr = new SpringClientTransactionManager();
+            IgniteClientSpringTransactionManager mgr = new IgniteClientSpringTransactionManager();
 
             mgr.setClientInstance(cli);
 
