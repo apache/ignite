@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             var dt = DateTime.UtcNow;
             var expected = dt.AddYears(2);
 
-            // Check key & value.
+            // Key & value.
             var cache = ignite.GetOrCreateCache<DateTime, DateTime>(TestUtils.TestName);
             cache[dt] = dt;
 
@@ -152,7 +152,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(expected, resEntry.Key);
             Assert.AreEqual(expected, resEntry.Value);
             
-            // Check object field.
+            // Key & value array.
+            
+            // Object field.
             var cache2 = ignite.GetOrCreateCache<DateTimePropertyAttribute, DateTimePropertyAttribute>(
                 TestUtils.TestName);
             
@@ -164,6 +166,18 @@ namespace Apache.Ignite.Core.Tests.Binary
             var resEntry2 = cache2.Single();
             Assert.AreEqual(expected, resEntry2.Key.Value);
             Assert.AreEqual(expected, resEntry2.Value.Value);
+            
+            // Object array field.
+            var cache3 = ignite.GetOrCreateCache<DateTimeArr, DateTimeArr>(TestUtils.TestName);
+            cache3.RemoveAll();
+            
+            var obj2 = new DateTimeArr {Value = new[]{dt}};
+            cache3[obj2] = obj2;
+            cache3[obj2] = obj2;
+
+            var resEntry3 = cache3.Single();
+            Assert.AreEqual(expected, resEntry3.Key.Value.Single());
+            Assert.AreEqual(expected, resEntry3.Value.Value.Single());
         }
 
         /// <summary>
@@ -311,6 +325,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         private class DateTimeObj2
         {
             public DateTime Value { get; set; }
+        }
+
+        private class DateTimeArr
+        {
+            public DateTime[] Value { get; set; }
         }
 
         private class DateTimePropertyAttribute
