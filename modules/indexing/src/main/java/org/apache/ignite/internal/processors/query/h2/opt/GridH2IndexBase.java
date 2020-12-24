@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModelMultiplier;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.engine.Session;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
@@ -79,6 +80,30 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
 
         return qctx.segment();
     }
+
+    /**
+     * Puts row.
+     *
+     * @param row Row.
+     * @return Existing row or {@code null}.
+     */
+    public abstract H2CacheRow put(H2CacheRow row);
+
+    /**
+     * Puts row.
+     *
+     * @param row Row.
+     * @return {@code True} if existing row row has been replaced.
+     */
+    public abstract boolean putx(H2CacheRow row);
+
+    /**
+     * Removes row from index.
+     *
+     * @param row Row.
+     * @return {@code True} if row has been removed.
+     */
+    public abstract boolean removex(SearchRow row);
 
     /**
      * @param ses Session.
@@ -213,6 +238,12 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
     @Override public long getRowCountApproximation() {
         return ((GridH2Table)table).getRowCountApproximation();
     }
+
+    /**
+     * @param partsFilter Partitions filter.
+     * @return Total row count in the current index for filtered partitions.
+     */
+    public abstract long totalRowCount(IndexingQueryCacheFilter partsFilter);
 
     /**
      * @param tbl Table.

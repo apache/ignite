@@ -20,19 +20,19 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 import org.apache.ignite.cache.query.index.sorted.Order;
 
 /**
- * Defines IndexKey.
+ * Defines a signle index key.
  */
 public class IndexKeyDefinition {
     /** Index key name. */
     private final String name;
 
-    /** Index key type. */
+    /** Index key type. @see IndexKeyTypes. */
     private final int idxType;
 
     /** Order. */
     private final Order order;
 
-    /** Constructor. */
+    /** */
     public IndexKeyDefinition(String name, int idxType, Order order) {
         this.idxType = idxType;
         this.order = order;

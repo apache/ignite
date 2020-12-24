@@ -21,11 +21,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 
 /**
- * Provide a comparator for index rows.
+ * Comparator for index rows.
  */
 public interface IndexRowComparator {
     /**
-     * Compare an index key.
+     * Compare index keys.
      *
      * @param pageAddr address of an index row.
      * @param off offset of an index key.
@@ -36,7 +36,7 @@ public interface IndexRowComparator {
     public int compareKey(long pageAddr, int off, int maxSize, Object v, int curType) throws IgniteCheckedException;
 
     /**
-     * Compare an index key.
+     * Compare index keys.
      *
      * @param left index row.
      * @param right index row.

@@ -18,12 +18,9 @@
 package org.apache.ignite.cache.query.index.sorted;
 
 /**
- * Class represents ordering of rows.
+ * Represents ordering of rows within sorted index.
  */
 public class Order {
-    /** Default order. */
-    public static final Order DFLT = new Order();
-
     /** */
     private NullsOrder nullsOrder;
 

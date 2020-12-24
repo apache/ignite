@@ -25,12 +25,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface IndexKey {
     /**
-     * @return underlying keys.
+     * @return Underlying keys.
      */
     public Object[] keys();
 
     /**
-     * @return Cache row if index key represents an existing row or {@code null} if it is only a user query.
+     * @return Cache row if index key represents an existing index row or {@code null} if it represents a user query.
      */
     public @Nullable CacheDataRow cacheRow();
 }

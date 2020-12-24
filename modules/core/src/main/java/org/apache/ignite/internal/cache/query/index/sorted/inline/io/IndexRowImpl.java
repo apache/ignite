@@ -55,14 +55,14 @@ public class IndexRowImpl implements IndexSearchRow {
     }
 
     /**
-     * Get indexed value.
+     * @return Indexed value.
      */
     public CacheObject value() {
         return cacheRow.value();
     }
 
     /**
-     * Get cached keys.
+     * @return Index keys for this index row.
      */
     public Object[] keys() {
         return keyCache;

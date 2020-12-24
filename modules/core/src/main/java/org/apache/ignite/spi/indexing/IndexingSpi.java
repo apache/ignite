@@ -101,7 +101,7 @@ public interface IndexingSpi extends IgniteSpi {
      * @param newRow cache row to store in index.
      * @param prevRow optional cache row that will be replaced with new row.
      */
-    public default void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+    public default void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
         boolean prevRowAvailable)
         throws IgniteSpiException {
         // No-Op.
@@ -128,8 +128,8 @@ public interface IndexingSpi extends IgniteSpi {
      * @param factory Index factory.
      * @param def Description of an index to create.
      */
-    public default Index createIndex(GridCacheContext cctx, IndexFactory factory, IndexDefinition def) {
-        throw new IllegalStateException();
+    public default Index createIndex(GridCacheContext<?, ?> cctx, IndexFactory factory, IndexDefinition def) {
+        throw new IllegalStateException("IndexingSpi must implement createIndex method.");
     }
 
     /**
@@ -139,7 +139,7 @@ public interface IndexingSpi extends IgniteSpi {
      * @param def Index definition.
      * @param softDelete whether it's required to delete underlying structures.
      */
-    public default void removeIndex(GridCacheContext cctx, IndexDefinition def, boolean softDelete) {
+    public default void removeIndex(GridCacheContext<?, ?> cctx, IndexDefinition def, boolean softDelete) {
         // No-op.
     }
 
@@ -165,7 +165,7 @@ public interface IndexingSpi extends IgniteSpi {
     /**
      * Mark/unmark for rebuild indexes for a specific cache.
      */
-    public default void markRebuildIndexesForCache(GridCacheContext cctx, boolean val) {
+    public default void markRebuildIndexesForCache(GridCacheContext<?, ?> cctx, boolean val) {
         // No-op.
     }
 
@@ -175,7 +175,7 @@ public interface IndexingSpi extends IgniteSpi {
      * @param cctx Cache context.
      * @return List of indexes for specified cache.
      */
-    public default Collection<Index> getIndexes(GridCacheContext cctx) {
+    public default Collection<Index> getIndexes(GridCacheContext<?, ?> cctx) {
         return Collections.emptyList();
     }
 

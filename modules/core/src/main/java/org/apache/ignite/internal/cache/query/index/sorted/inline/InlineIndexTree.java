@@ -59,19 +59,19 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
     /** Amount of bytes to store inlined index keys. */
     private final int inlineSize;
 
-    /** */
+    /** Recommends change inline size if needed. */
     private final InlineRecommender recommender;
 
-    /** */
+    /** Whether tree is created from scratch or reused from underlying store. */
     private final boolean created;
 
-    /** */
+    /** Definition of index. */
     private final SortedIndexDefinition def;
 
-    /** */
-    private final GridCacheContext cctx;
+    /** Cache context. */
+    private final GridCacheContext<?, ?> cctx;
 
-    /** */
+    /** Statistics holder used by underlying BPlusTree. */
     private final IoStatisticsHolder stats;
 
     /**
@@ -79,7 +79,7 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
      */
     public InlineIndexTree(
         SortedIndexDefinition def,
-        GridCacheContext cctx,
+        GridCacheContext<?, ?> cctx,
         String treeName,
         IgniteCacheOffheapManager offheap,
         ReuseList reuseList,
@@ -205,7 +205,6 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
                 }
 
                 // Try compare stored values for inlined keys with different approach?
-                // TODO: what to do if compare unsupported returns from row comparator?
                 if (cmp == COMPARE_UNSUPPORTED)
                     cmp = def.getRowComparator().compareKey(
                         pageAddr, off + fieldOff, maxSize, row.getKey(i), keyType.type());
@@ -346,7 +345,7 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
     }
 
     /** */
-    public GridCacheContext getContext() {
+    public GridCacheContext<?, ?> getContext() {
         return cctx;
     }
 

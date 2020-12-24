@@ -78,6 +78,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
@@ -191,6 +192,10 @@ public class H2TreeIndex extends H2TreeIndexBase {
     /** {@inheritDoc} */
     @Override public int segmentsCount() {
         return queryIndex.segmentsCount();
+    }
+
+    @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -319,6 +324,21 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
+    @Override public H2CacheRow put(H2CacheRow row) {
+        throw new IllegalStateException("Must not be invoked.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putx(H2CacheRow row) {
+        throw new IllegalStateException("Must not be invoked.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removex(SearchRow row) {
+        throw new IllegalStateException("Must not be invoked.");
+    }
+
+    /** {@inheritDoc} */
     @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
         QueryContext qctx = H2Utils.context(filters[filter].getSession());
 
@@ -391,7 +411,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param node Requesting node.
      * @param msg Request message.
      */
-    // TODO
     private void onIndexRangeRequest(final ClusterNode node, final GridH2IndexRangeRequest msg) {
         // We don't use try with resources on purpose - the catch block must also be executed in the context of this span.
         TraceSurroundings trace = MTC.support(ctx.tracing().create(SQL_IDX_RANGE_REQ, MTC.span()));

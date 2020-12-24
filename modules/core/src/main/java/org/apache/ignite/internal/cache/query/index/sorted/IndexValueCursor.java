@@ -32,10 +32,12 @@ public class IndexValueCursor<V> implements GridCursor<V> {
      * Empty cursor implementation.
      */
     public static final GridCursor EMPTY = new GridCursor() {
+        /** {@inheritDoc} */
         @Override public boolean next() {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public Object get() {
             throw new IllegalStateException("No next element");
         }
@@ -44,7 +46,7 @@ public class IndexValueCursor<V> implements GridCursor<V> {
     /** Underlying cursor over original index rows. */
     private final GridCursor<IndexSearchRow> delegate;
 
-    /** Func to transform index row to index value. */
+    /** Map function that transforms index row to index value. */
     private final Function<IndexSearchRow, V> mapFunc;
 
     /** */

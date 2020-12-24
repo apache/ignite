@@ -47,6 +47,6 @@ public class SingleCursor<T> implements GridCursor<T> {
         if (currIdx.get() == 0)
             return val;
 
-        throw new IgniteCheckedException();
+        throw new IgniteCheckedException("No next element.");
     }
 }

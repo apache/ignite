@@ -22,45 +22,73 @@ import org.apache.ignite.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interface for sorted Ignite indexes.
  */
 public interface SortedIndex extends Index {
     /**
-     * Find by range (select * from t where val between 1 and 4 and k between 4 and 6).
-     * Runs BPlusTree.find.
+     * Finds index rows by specified range in specifed tree segment. Range can be bound or unbound.
+     *
+     * @param lower Nullable lower bound.
+     * @param upper Nullable upper bound.
+     * @param segment Number of tree segment to find.
+     * @return Cursor of found index rows.
      */
-    public GridCursor<IndexSearchRow> find(IndexKey lower, IndexKey upper, int segment) throws IgniteCheckedException;
+    public GridCursor<IndexSearchRow> find(@Nullable IndexKey lower, @Nullable IndexKey upper, int segment) throws IgniteCheckedException;
 
     /**
-     * Find by range (select * from t where val between 1 and 4 and k between 4 and 6).
-     * Runs BPlusTree.find.
+     * Finds index rows by specified range in specifed tree segment with cache filtering. Range can be bound or unbound.
+     *
+     * @param lower Nullable lower bound.
+     * @param upper Nullable upper bound.
+     * @param segment Number of tree segment to find.
+     * @param filter Cache entry filter.
+     * @return Cursor of found index rows.
      */
     public GridCursor<IndexSearchRow> find(IndexKey lower, IndexKey upper, int segment, IndexingQueryFilter filter)
         throws IgniteCheckedException;
 
-    /** */
+    /**
+     * Finds first or last index row for specified tree segment and cache filter.
+     *
+     * @param firstOrLast if {@code true} then return first index row or otherwise last row.
+     * @param segment Number of tree segment to find.
+     * @param filter Cache entry filter.
+     * @return Cursor of found index rows.
+     */
     public GridCursor<IndexSearchRow> findFirstOrLast(boolean firstOrLast, int segment, IndexingQueryFilter filter)
         throws IgniteCheckedException;
 
     /**
+     * Counts index rows in specified tree segment.
+     *
+     * @param segment Number of tree segment to find.
      * @return count of index rows for specified segment.
      */
     public long count(int segment) throws IgniteCheckedException;
 
     /**
+     * Counts index rows in specified tree segment with cache filter.
+     *
+     * @param segment Number of tree segment to find.
+     * @param filter Cache entry filter.
+     * @return count of index rows for specified segment.
+     */
+    public long count(int segment, IndexingQueryFilter filter) throws IgniteCheckedException;
+
+    /**
+     * Counts index rows for all segments.
+     *
      * @return total count of index rows.
      */
     public long totalCount() throws IgniteCheckedException;
 
     /**
-     * @return count of index rows for specified segment and filter.
-     */
-    public long count(int segment, IndexingQueryFilter filter) throws IgniteCheckedException;
-
-    /**
-     * @return amount of index segments.
+     * Returns amount of index tree segments.
+     *
+     * @return amount of index tree segments.
      */
     public int segmentsCount();
 }

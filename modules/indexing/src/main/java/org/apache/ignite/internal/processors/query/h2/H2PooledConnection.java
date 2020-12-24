@@ -116,8 +116,6 @@ public class H2PooledConnection implements AutoCloseable {
 
     /** Closes wrapped connection (return to pool or close). */
     @Override public void close() {
-
-
         assert delegate != null;
 
         if (closed.compareAndSet(false, true)) {

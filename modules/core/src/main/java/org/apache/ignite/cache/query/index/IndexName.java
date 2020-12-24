@@ -21,7 +21,7 @@ import java.io.Serializable;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Represents index FQDN.
+ * Represents list of names that fully describes index domain (schema, cache, table, index).
  */
 public class IndexName implements Serializable {
     /** */

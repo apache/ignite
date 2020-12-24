@@ -22,7 +22,7 @@ import org.apache.ignite.cache.query.index.sorted.SortedIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexSearchRow;
 
 /**
- * Represents an index that inlines part of index keys.
+ * Represents an index that inlines some of index keys.
  */
 public interface InlineIndex extends SortedIndex {
     /**
@@ -42,7 +42,10 @@ public interface InlineIndex extends SortedIndex {
     public InlineIndexTree getSegment(int segment);
 
     /**
-     * Explicitly put index row to index.
+     * Put index row to index.
+     *
+     * @param row Index row.
+     * @return {@code True} if replaced existing row.
      */
     public boolean putx(IndexSearchRow row) throws IgniteCheckedException;
 }

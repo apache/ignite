@@ -29,14 +29,14 @@ public interface SortedIndexSchema {
     public IndexKeyDefinition[] getKeyDefinitions();
 
     /**
-     * @param idx index of key within index schema.
-     * @param row original cache data row.
-     * @return index key
+     * @param idx Index of key within index schema.
+     * @param row Original cache data row.
+     * @return Index key.
      */
     public Object getIndexKey(int idx, CacheDataRow row);
 
     /**
-     * @return parition for specified row.
+     * @return Parition for specified row.
      */
     public int partition(CacheDataRow row);
 

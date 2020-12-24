@@ -158,12 +158,19 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
+    @Override public boolean putx(H2CacheRow row) {
+        H2CacheRow old = put(row);
+
+        return old != null;
+    }
+
+    /** {@inheritDoc} */
     @Override public int segmentsCount() {
         return segments.length;
     }
 
     /** {@inheritDoc} */
-    public H2CacheRow put(H2CacheRow row) {
+    @Override public H2CacheRow put(H2CacheRow row) {
         assert row instanceof H2CacheRow : "requires key to be at 0";
 
         Lock l = lock.writeLock();
@@ -261,7 +268,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    public boolean removex(SearchRow row) {
+    @Override public boolean removex(SearchRow row) {
         H2Row old = remove(row);
 
         return old != null;
@@ -403,6 +410,11 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
+        return rowCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
         return rowCnt;
     }
 

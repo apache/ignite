@@ -20,23 +20,26 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.lang.IgniteProductVersion;
 
+/**
+ * Meta page stores meta data about InlineIndexTree.
+ */
 public class MetaPageInfo {
-    /** */
+    /** Inline size used for a tree. */
     int inlineSize;
 
-    /** */
+    /** Whether index use wrapped / unwrapped PK. */
     boolean useUnwrappedPk;
 
-    /** */
+    /** Whether any flags is supported. */
     boolean flagsSupported;
 
-    /** */
+    /** Whether inlinining of java objects is supported. */
     boolean inlineObjSupported;
 
-    /** */
+    /** Whether inlinining of java objects as hash is supported. */
     boolean inlineObjHash;
 
-    /** */
+    /** Version of Ignite. */
     IgniteProductVersion createdVer;
 
     /**

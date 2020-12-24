@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.index.client;
 
 import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.cache.query.index.IndexName;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.h2.index.QueryIndexSchema;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Define index for filtered or client node.

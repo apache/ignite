@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -145,8 +146,63 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
+    @Override public H2CacheRow put(H2CacheRow row) {
+        // Should not be called directly. Rows are inserted into underlying cache data stores.
+        assert false;
+
+        throw DbException.getUnsupportedException("put");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putx(H2CacheRow row) {
+        // Should not be called directly. Rows are inserted into underlying cache data stores.
+        assert false;
+
+        throw DbException.getUnsupportedException("putx");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removex(SearchRow row) {
+        // Should not be called directly. Rows are removed from underlying cache data stores.
+        assert false;
+
+        throw DbException.getUnsupportedException("removex");
+    }
+
+    /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
         return Double.MAX_VALUE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
+        CacheDataRowStore.setSkipVersion(true);
+
+        try {
+            Collection<GridCursor<? extends CacheDataRow>> cursors = new ArrayList<>();
+
+            for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
+                int part = store.partId();
+
+                if (partsFilter == null || partsFilter.applyPartition(part))
+                    cursors.add(store.cursor(cctx.cacheId()));
+            }
+
+            Cursor pkHashCursor = new H2PkHashIndexCursor(cursors.iterator());
+
+            long res = 0;
+
+            while (pkHashCursor.next())
+                res++;
+
+            return res;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            CacheDataRowStore.setSkipVersion(false);
+        }
     }
 
     /** {@inheritDoc} */

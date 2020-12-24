@@ -84,7 +84,7 @@ public class IgniteIndexing implements IndexingSpi {
     }
 
     /** {@inheritDoc} */
-    @Override public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+    @Override public void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
         boolean prevRowAvailable)
         throws IgniteSpiException {
         try {
@@ -133,7 +133,7 @@ public class IgniteIndexing implements IndexingSpi {
     }
 
     /** {@inheritDoc} */
-    @Override public Index createIndex(GridCacheContext cctx, IndexFactory factory, IndexDefinition definition) {
+    @Override public Index createIndex(GridCacheContext<?, ?> cctx, IndexFactory factory, IndexDefinition definition) {
         ddlLock.writeLock().lock();
 
         try {
@@ -160,7 +160,7 @@ public class IgniteIndexing implements IndexingSpi {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeIndex(GridCacheContext cctx, IndexDefinition def, boolean softDelete) {
+    @Override public void removeIndex(GridCacheContext<?, ?> cctx, IndexDefinition def, boolean softDelete) {
         ddlLock.writeLock().lock();
 
         try {
@@ -168,7 +168,7 @@ public class IgniteIndexing implements IndexingSpi {
 
             Map<String, Index> idxs = cacheToIdx.get(cacheName);
 
-            assert idxs != null: "Try remove index for non registered cache " + cacheName;
+            assert idxs != null : "Try remove index for non registered cache " + cacheName;
 
             Index idx = idxs.remove(def.getIdxName().fqdnIdxName());
 
@@ -205,7 +205,7 @@ public class IgniteIndexing implements IndexingSpi {
     }
 
     /** {@inheritDoc} */
-    @Override public void markRebuildIndexesForCache(GridCacheContext cctx, boolean val) {
+    @Override public void markRebuildIndexesForCache(GridCacheContext<?, ?> cctx, boolean val) {
         ddlLock.readLock().lock();
 
         try {
@@ -225,13 +225,20 @@ public class IgniteIndexing implements IndexingSpi {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Index> getIndexes(GridCacheContext cctx) {
-        Map<String, Index> idxs = cacheToIdx.get(cctx.name());
+    @Override public Collection<Index> getIndexes(GridCacheContext<?, ?> cctx) {
+        ddlLock.readLock().lock();
 
-        if (idxs == null)
-            return Collections.emptyList();
+        try {
+            Map<String, Index> idxs = cacheToIdx.get(cctx.name());
 
-        return idxs.values();
+            if (idxs == null)
+                return Collections.emptyList();
+
+            return idxs.values();
+
+        } finally {
+            ddlLock.readLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */

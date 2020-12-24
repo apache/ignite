@@ -23,10 +23,10 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Implementation of IndexKey.
+ * Complex index key that represents a user index query.
  */
 public class IndexKeyImpl implements IndexKey {
-    /** Underlying keys. */
+    /** Underlying keys set from user query. */
     private final Object[] keys;
 
     /** */

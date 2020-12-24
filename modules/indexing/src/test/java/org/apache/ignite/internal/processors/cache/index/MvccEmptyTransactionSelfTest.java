@@ -42,7 +42,7 @@ public class MvccEmptyTransactionSelfTest extends AbstractIndexingCommonTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-//    @Test
+    @Test
     public void testEmptyTransaction() throws Exception {
         Ignition.start(config("srv", false));
 

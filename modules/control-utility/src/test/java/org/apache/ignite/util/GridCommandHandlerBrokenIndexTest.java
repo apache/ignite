@@ -31,8 +31,10 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.h2.engine.Session;
@@ -201,7 +203,27 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
         }
 
         /** */
+        @Override public H2CacheRow put(H2CacheRow row) {
+            return null;
+        }
+
+        /** */
+        @Override public boolean putx(H2CacheRow row) {
+            return false;
+        }
+
+        /** */
+        @Override public boolean removex(SearchRow row) {
+            return false;
+        }
+
+        /** */
         @Override public int segmentsCount() {
+            return 0;
+        }
+
+        /** */
+        @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
             return 0;
         }
 

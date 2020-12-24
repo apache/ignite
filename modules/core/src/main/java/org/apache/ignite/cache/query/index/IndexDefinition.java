@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.query.index;
 
 /**
- * Basic interface for index description.
+ * Basic interface for index description required to create or destroy index.
  */
 public interface IndexDefinition {
     /**

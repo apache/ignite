@@ -25,23 +25,23 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
  */
 public interface IndexRow {
     /**
-     * @return link to a cache row.
+     * @return Link to a cache row.
      */
     public long getLink();
 
     /**
-     * @return schema of an index.
+     * @return Schema of an index.
      */
     public SortedIndexSchema getSchema();
 
     /**
-     * @param idx index of a key.
-     * @return key.
+     * @param idx Index of a key.
+     * @return Key.
      */
     public Object getKey(int idx);
 
     /**
-     * @return a cache row.
+     * @return Cache row.
      */
     public CacheDataRow getCacheDataRow();
 }

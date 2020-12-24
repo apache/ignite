@@ -75,7 +75,7 @@ public class QueryIndexSchema implements SortedIndexSchema {
         idxKeyDefinitions[i] = new IndexKeyDefinition(colName, idxKeyType, getSortOrder(h2SortType));
     }
 
-    /** */
+    /** Maps H2 column order to Ignite index order. */
     private Order getSortOrder(int sortType) {
         Order o = new Order();
 
@@ -153,7 +153,9 @@ public class QueryIndexSchema implements SortedIndexSchema {
         return value(row);
     }
 
-    /** */
+    /**
+     * @return H2 table.
+     */
     GridH2Table getTable() {
         return table;
     }
@@ -189,7 +191,6 @@ public class QueryIndexSchema implements SortedIndexSchema {
     /** */
     private Object getBinaryObject(CacheObject o) {
         if (o instanceof BinaryObjectImpl) {
-            // TODO: check column is JAVA_OBJECT?
             ((BinaryObjectImpl)o).detachAllowed(true);
             o = ((BinaryObjectImpl)o).detach();
             return o;

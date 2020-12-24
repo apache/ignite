@@ -20,7 +20,7 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents null value that used to explicitly set up null value in index query.
+ * Represents null value stored in index row or query.
  */
 public class NullKey implements Comparable<Object> {
     /** Instance. */

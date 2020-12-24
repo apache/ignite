@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 public class IndexSearchRowImpl extends IndexRowImpl {
     /**
      * If {@code true} then length of {@link #keys()} must be equal to length of schema, so use full
-     * schema to search. If {@code false} then it's possible to use only part of schema for search. Only first
+     * schema to search. If {@code false} then it's possible to use only part of schema for search.
      */
     private final boolean fullSchemaSearch;
 

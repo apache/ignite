@@ -20,18 +20,19 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 import org.apache.ignite.cache.query.index.IndexDefinition;
 import org.apache.ignite.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexRowComparator;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 
 /**
- * Represents a definition of sorted index.
+ * Represents a definition of a sorted index.
  */
 public class SortedIndexDefinition implements IndexDefinition {
-    /** Schema of index. */
+    /** Schema of an index. */
     private final SortedIndexSchema schema;
 
-    /** Row comparator. */
+    /** Index row comparator. */
     private final IndexRowComparator rowComparator;
 
-    /** Unique index name. */
+    /** Index name. */
     private final IndexName idxName;
 
     /** Configured inline size. */
@@ -72,12 +73,12 @@ public class SortedIndexDefinition implements IndexDefinition {
         return idxName;
     }
 
-    /** */
+    /** Represents an index tree name. */
     public String getTreeName() {
-        return null;
+        return BPlusTree.treeName(getIdxName().idxName(), "sorted");
     }
 
-    /** */
+    /** Amount of index tree segments.*/
     public int getSegments() {
         return segments;
     }

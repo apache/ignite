@@ -22,20 +22,20 @@ import org.apache.ignite.cache.query.index.sorted.IndexKey;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 
 /**
- * Represents and index key that incapsulates a cache row.
+ * Complex index key that represents an index cache row.
  */
 public class CacheIndexKeyImpl implements IndexKey {
-    /** */
+    /** Underlying index keys. */
     private final Object[] keys;
 
-    /** */
+    /** Underlying cache row. */
     private final CacheDataRow row;
 
     /** */
     public CacheIndexKeyImpl(SortedIndexSchema schema, CacheDataRow row) {
         keys = new Object[schema.getKeyDefinitions().length];
 
-        for (int i = 0; i< schema.getKeyDefinitions().length; ++i)
+        for (int i = 0; i < schema.getKeyDefinitions().length; ++i)
             keys[i] = schema.getIndexKey(i, row);
 
         this.row = row;

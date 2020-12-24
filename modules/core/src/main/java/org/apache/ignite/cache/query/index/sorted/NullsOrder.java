@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.query.index.sorted;
 
 /**
- * Enum to store possible nulls oreding.
+ * Enum to store possible nulls ordering.
  */
 public enum NullsOrder {
     /** */

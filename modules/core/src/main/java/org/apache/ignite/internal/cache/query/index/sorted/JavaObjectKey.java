@@ -18,7 +18,8 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 /**
- * Represents an index key as explicit Java Object.
+ * Represents an index key that stores as Java Object {@see IndexKeyTypes.JAVA_OBJECT}.
+ * Note, key can be as POJO or it can be well known java type (e.g. Integer) but stored explicitly as java object.
  */
 public class JavaObjectKey {
     /** Actual key that is used for indexing. */

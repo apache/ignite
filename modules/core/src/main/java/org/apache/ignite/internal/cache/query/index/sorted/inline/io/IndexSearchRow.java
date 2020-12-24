@@ -24,12 +24,12 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
  */
 public interface IndexSearchRow extends IndexRow {
     /**
-     * @return number of search keys.
+     * @return Number of search keys.
      */
     public int getSearchKeysCount();
 
     /**
-     * @return whether number of search keys equals to number of keys in a tree.
+     * @return Whether number of search keys equals to number of keys in a tree.
      */
     public boolean isFullSchemaSearch();
 }
