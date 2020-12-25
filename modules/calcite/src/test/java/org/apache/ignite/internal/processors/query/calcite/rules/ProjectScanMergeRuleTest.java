@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsAnyProject;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsOneProject;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsProject;
@@ -134,26 +135,26 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
     @Test
     public void testNestedProjects() {
         checkQuery("SELECT NAME FROM products WHERE CAT_ID IN (SELECT CAT_ID FROM products WHERE CAT_ID > 1) and ID > 2;")
-            .matches(containsIndexScan("PUBLIC", "PRODUCTS"))
+            .matches(containsAnyProject("PUBLIC", "PRODUCTS"))
             .returns("noname3")
             .returns("noname4")
             .check();
 
         checkQuery("SELECT NAME FROM products WHERE CAT_ID IN (SELECT DISTINCT CAT_ID FROM products WHERE CAT_ID > 1)")
-            .matches(containsIndexScan("PUBLIC", "PRODUCTS"))
+            .matches(containsAnyProject("PUBLIC", "PRODUCTS"))
             .returns("noname2")
             .returns("noname3")
             .returns("noname4")
             .check();
 
         checkQuery("SELECT NAME FROM products WHERE CAT_ID IN (SELECT DISTINCT CAT_ID FROM products WHERE SUBCAT_ID > 11)")
-            .matches(containsTableScan("PUBLIC", "PRODUCTS"))
+            .matches(containsAnyProject("PUBLIC", "PRODUCTS"))
             .returns("noname3")
             .returns("noname4")
             .check();
 
         checkQuery("SELECT NAME FROM products WHERE CAT_ID = (SELECT CAT_ID FROM products WHERE SUBCAT_ID = 13)")
-            .matches(containsTableScan("PUBLIC", "PRODUCTS"))
+            .matches(containsAnyProject("PUBLIC", "PRODUCTS"))
             .returns("noname4")
             .check();
     }

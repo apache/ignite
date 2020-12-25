@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
@@ -160,6 +161,14 @@ public class Fragment {
 
             if (rootFragment())
                 mapping = FragmentMapping.create(ctx.localNodeId()).colocate(mapping);
+
+            if (single() && mapping.nodeIds().size() > 1) {
+                // this is possible when the fragment contains scan of a replicated cache, which brings
+                // several nodes (actually all containing nodes) to the collocation group, but this fragment
+                // supposed to be executed on a single node, so let's choose one wisely
+                mapping = FragmentMapping.create(mapping.nodeIds()
+                    .get(ThreadLocalRandom.current().nextInt(mapping.nodeIds().size()))).colocate(mapping);
+            }
 
             return mapping.finalize(nodesSource);
         }

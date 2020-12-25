@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsAnyProject;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsAnyScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
@@ -120,10 +121,11 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
             .check();
     }
 
+    /** */
     @Test
     public void testMergeJoin() {
         assertQuery("" +
-            "SELECT d1.name, d2.name FROM Developer d1, Developer d2 WHERE d1.depId = d2.depId")
+            "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin') */ d1.name, d2.name FROM Developer d1, Developer d2 WHERE d1.depId = d2.depId")
             .matches(containsSubPlan("IgniteMergeJoin"))
             .returns("Bach", "Bach")
             .returns("Beethoven", "Beethoven")
@@ -530,7 +532,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
                 containsIndexScan("PUBLIC", "DEVELOPER", NAME_CITY_IDX),
                 containsIndexScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             )
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .check();
@@ -619,7 +621,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrderByNameCityAsc() {
         assertQuery("SELECT * FROM Developer ORDER BY name, city")
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
+            .matches(containsAnyScan("PUBLIC", "DEVELOPER"))
             .matches(containsSubPlan("IgniteSort"))
             .returns(3, "Bach", 1, "Leipzig", 55)
             .returns(2, "Beethoven", 2, "Vienna", 44)
@@ -647,7 +650,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testOrderByNoIndexedColumn() {
         assertQuery("SELECT * FROM Developer ORDER BY age DESC")
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
+            .matches(containsAnyProject("PUBLIC", "DEVELOPER"))
             .matches(containsSubPlan("IgniteSort"))
             .returns(4, "Strauss", 2, "Munich", 66)
             .returns(3, "Bach", 1, "Leipzig", 55)

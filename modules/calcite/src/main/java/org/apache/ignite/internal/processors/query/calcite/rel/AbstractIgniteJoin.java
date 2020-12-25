@@ -25,8 +25,6 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
@@ -37,12 +35,12 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
@@ -51,9 +49,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgni
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
-import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
 import static org.apache.calcite.rel.core.JoinRelType.INNER;
 import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
@@ -63,19 +59,12 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDi
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
 /** */
-public abstract class AbstractIgniteNestedLoopJoin extends Join implements TraitsAwareIgniteRel {
+public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgniteRel {
     /** */
-    protected AbstractIgniteNestedLoopJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,
+    protected AbstractIgniteJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,
         RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
         super(cluster, traitSet, left, right, condition, variablesSet, joinType);
     }
-
-    /** {@inheritDoc} */
-    @Override public abstract Join copy(RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right,
-        JoinRelType joinType, boolean semiJoinDone);
-
-    /** {@inheritDoc} */
-    @Override public abstract <T> T accept(IgniteRelVisitor<T> visitor);
 
     /** {@inheritDoc} */
     @Override public RelWriter explainTerms(RelWriter pw) {
@@ -223,6 +212,17 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
     }
 
     /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        // left correlations
+        Set<CorrelationId> corrIds = new HashSet<>(TraitUtils.correlation(inTraits.get(0)).correlationIds());
+        // right correlations
+        corrIds.addAll(TraitUtils.correlation(inTraits.get(1)).correlationIds());
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
+    }
+
+    /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // We preserve left collation since it's translated into a nested loop join with an outer loop
         // over a left edge. The code below checks whether a desired collation is possible and requires
@@ -252,7 +252,10 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
     }
 
     /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
         // Tere are several rules:
         // 1) any join is possible on broadcast or single distribution
         // 2) hash distributed join is possible when join keys equal to source distribution keys
@@ -302,38 +305,6 @@ public abstract class AbstractIgniteNestedLoopJoin extends Join implements Trait
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
         return Util.first(joinRowCount(mq, this), 1D);
-    }
-
-    /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rowCount = mq.getRowCount(this);
-
-        // Joins can be flipped, and for many algorithms, both versions are viable
-        // and have the same cost. To make the results stable between versions of
-        // the planner, make one of the versions slightly more expensive.
-        if (joinType == RIGHT)
-            rowCount = RelMdUtil.addEpsilon(rowCount);
-
-        final double rightRowCount = right.estimateRowCount(mq);
-        final double leftRowCount = left.estimateRowCount(mq);
-
-        if (Double.isInfinite(leftRowCount))
-            rowCount = leftRowCount;
-        if (Double.isInfinite(rightRowCount))
-            rowCount = rightRowCount;
-
-        if (!Double.isInfinite(leftRowCount) && !Double.isInfinite(rightRowCount) && leftRowCount > rightRowCount)
-            rowCount = RelMdUtil.addEpsilon(rowCount);
-
-        RelDistribution.Type type = distribution().getType();
-
-        if (type == SINGLETON)
-            rowCount = RelMdUtil.addEpsilon(rowCount);
-
-        if (type == BROADCAST_DISTRIBUTED)
-            rowCount = RelMdUtil.addEpsilon(RelMdUtil.addEpsilon(rowCount));
-
-        return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }
 
     /** */

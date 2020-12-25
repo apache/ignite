@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -28,6 +29,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
@@ -61,7 +63,12 @@ public class IgniteTrimExchange extends Exchange implements SourceAwareIgniteRel
     /** */
     public IgniteTrimExchange(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
-        sourceId = ((Number)input.get("sourceId")).longValue();
+
+        Object srcIdObj = input.get("sourceId");
+        if (srcIdObj != null)
+            sourceId = ((Number)srcIdObj).longValue();
+        else
+            sourceId = -1;
     }
 
     /** {@inheritDoc} */
@@ -87,8 +94,10 @@ public class IgniteTrimExchange extends Exchange implements SourceAwareIgniteRel
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rowCount = mq.getRowCount(this);
-        return planner.getCostFactory().makeCost(rowCount, rowCount, 0);
+        double rowCount = mq.getRowCount(getInput());
+
+        return planner.getCostFactory().makeCost(rowCount,
+            rowCount * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
     }
 
     /** {@inheritDoc} */

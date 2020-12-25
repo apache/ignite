@@ -90,10 +90,8 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
         }
     }
 
-    /**
-     * Clear cached plans.
-     */
-    public void clear() {
+    /** {@inheritDoc} */
+    @Override public void clear() {
         cache = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
     }
 
