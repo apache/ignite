@@ -26,6 +26,7 @@ from abc import ABCMeta, abstractmethod
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate
 from ignitetest.services.utils.path import get_home_dir, get_module_path
 from ignitetest.utils.version import DEV_BRANCH
+from ignitetest.services.utils.jvm_utils import jvm_settings, jvm_settings_merge
 
 
 def resolve_spec(service, context, config, **kwargs):
@@ -63,7 +64,8 @@ class IgniteSpec(metaclass=ABCMeta):
         self.project = project
         self.path_aware = path_aware
         self.envs = {}
-        self.jvm_opts = jvm_opts or []
+        self.jvm_opts = jvm_settings(merge=jvm_opts, gc_dump_path=os.path.join(path_aware.log_dir, "ignite_gc.log"),
+                                     oom_path=os.path.join(path_aware.log_dir, "ignite_out_of_mem.hprof"), as_list=True)
         self.config = config
         self.version = config.version
 
@@ -168,11 +170,11 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec):
             'USER_LIBS': ":".join(libs)
         }
 
-        self.jvm_opts.extend([
+        self.jvm_opts = jvm_settings_merge(self.jvm_opts, [
             "-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
             "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
             "-Dlog4j.configDebug=true"
-        ])
+        ], as_list=True)
 
 
 class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
@@ -198,7 +200,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
             "USER_LIBS": ":".join(libs)
         }
 
-        self.jvm_opts.extend([
+        self.jvm_opts = jvm_settings_merge(self.jvm_opts, [
             "-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
             "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
             "-Dlog4j.configDebug=true",
@@ -206,7 +208,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
             "-Xmx1G",
             "-ea",
             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"
-        ])
+        ], as_list=True)
 
         self.args = [
             str(start_ignite),

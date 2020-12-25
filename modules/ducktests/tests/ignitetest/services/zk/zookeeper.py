@@ -23,7 +23,6 @@ from distutils.version import LooseVersion
 from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
 from ignitetest.services.utils.log_utils import monitor_log
-from ignitetest.services.utils.jvm_utils import jvm_settings
 from ignitetest.services.utils.path import PathAware
 
 
@@ -106,11 +105,7 @@ class ZookeeperService(Service, PathAware):
         log_config_file = self.render('log4j.properties.j2', log_dir=self.log_dir)
         node.account.create_file(self.log_config_file, log_config_file)
 
-        jvm_params = jvm_settings(gc_settings="",
-                                  gc_dump_path=os.path.join(self.PERSISTENT_ROOT, "gc.log"),
-                                  oom_path=os.path.join(self.PERSISTENT_ROOT, "'out_of_mem_`date`.hprof'"))
-
-        start_cmd = f"nohup java {jvm_params} -cp {os.path.join(self.home_dir, 'lib')}/*:{self.persistent_root} " \
+        start_cmd = f"nohup java -cp {os.path.join(self.home_dir, 'lib')}/*:{self.persistent_root} " \
                     f"org.apache.zookeeper.server.quorum.QuorumPeerMain {self.config_file} >/dev/null 2>&1 &"
 
         node.account.ssh(start_cmd)
