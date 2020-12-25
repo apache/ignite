@@ -55,14 +55,13 @@ public class IgniteTrimExchange extends Exchange implements SourceAwareIgniteRel
         super(cluster, traits, input, distribution);
 
         assert distribution.getType() == HASH_DISTRIBUTED;
-        assert input.getTraitSet().getTrait(DistributionTraitDef.INSTANCE).getType() == BROADCAST_DISTRIBUTED;
 
         this.sourceId = sourceId;
     }
 
     /** */
     public IgniteTrimExchange(RelInput input) {
-        super(changeTraits(input, IgniteConvention.INSTANCE));
+        super(changeTraits(input, IgniteConvention.INSTANCE, input.getDistribution()));
 
         Object srcIdObj = input.get("sourceId");
         if (srcIdObj != null)

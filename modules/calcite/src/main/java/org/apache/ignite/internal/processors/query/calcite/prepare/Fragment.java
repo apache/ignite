@@ -23,6 +23,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
@@ -193,6 +194,6 @@ public class Fragment {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return rootSer;
+        return RelOptUtil.toString(root);
     }
 }

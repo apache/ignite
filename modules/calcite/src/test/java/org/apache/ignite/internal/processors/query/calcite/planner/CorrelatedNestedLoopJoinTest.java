@@ -63,7 +63,6 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
                     return IgniteDistributions.broadcast();
                 }
             }
-                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t0_jid_idx")
         );
 
         publicSchema.addTable(
@@ -100,7 +99,7 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
 
         List<RexNode> lBound = idxScan.lowerBound();
 
-        assertNotNull(lBound);
+        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), lBound);
         assertEquals(3, lBound.size());
 
         assertTrue(((RexLiteral)lBound.get(0)).isNull());
@@ -109,7 +108,7 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
 
         List<RexNode> uBound = idxScan.upperBound();
 
-        assertNotNull(uBound);
+        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), uBound);
         assertEquals(3, uBound.size());
 
         assertTrue(((RexLiteral)uBound.get(0)).isNull());
