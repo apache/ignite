@@ -15,37 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+package org.apache.ignite.platform.model;
 
-import java.util.Objects;
-
-/** Test key object. */
-public class Key {
+/** Test value object. */
+public class Employee {
     /** */
-    private long id;
+    private String fio;
 
     /** */
-    public Key(long id) {
-        this.id = id;
+    private long salary;
+
+    /** */
+    public String getFio() {
+        return fio;
     }
 
     /** */
-    public long getId() {
-        return id;
+    public void setFio(String fio) {
+        this.fio = fio;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        Key key = (Key)o;
-        return id == key.id;
+    /** */
+    public long getSalary() {
+        return salary;
     }
 
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(id);
+    /** */
+    public void setSalary(long salary) {
+        this.salary = salary;
     }
 }
