@@ -28,9 +28,11 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.jetbrains.annotations.Nullable;
 
@@ -129,16 +131,16 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
             cost = 0;
 
-            if (lowerCond != null) {
-                double selectivity0 = mq.getSelectivity(this, RexUtil.composeDisjunction(builder, lowerCond));
+            if (lowerCondition() != null) {
+                double selectivity0 = mq.getSelectivity(this, RexUtil.composeDisjunction(builder, lowerCondition()));
 
                 selectivity -= 1 - selectivity0;
 
                 cost += Math.log(rows);
             }
 
-            if (upperCond != null) {
-                double selectivity0 = mq.getSelectivity(this, RexUtil.composeDisjunction(builder, upperCond));
+            if (upperCondition() != null) {
+                double selectivity0 = mq.getSelectivity(this, RexUtil.composeDisjunction(builder, upperCondition()));
 
                 selectivity -= 1 - selectivity0;
             }
