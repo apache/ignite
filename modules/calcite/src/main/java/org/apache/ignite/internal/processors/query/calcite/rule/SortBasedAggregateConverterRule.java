@@ -51,8 +51,10 @@ public class SortBasedAggregateConverterRule extends AbstractIgniteConverterRule
         RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelNode input = convert(rel.getInput(), inTrait);
-
         if (F.isEmpty(rel.getGroupSet()))
+
+        // Applicable only for GROUP BY
+        if (F.isEmpty(rel.getGroupSet()) || rel.getGroupSets().size() > 1)
             return null;
 
         RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(rel.getGroupSet().asList()));
