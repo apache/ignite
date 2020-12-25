@@ -15,37 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
-
-import java.util.Objects;
+package org.apache.ignite.platform.model;
 
 /** Test value object. */
-public class Value {
+public class Address {
     /** */
-    private String val;
+    private String zip;
 
     /** */
-    public Value(String val) {
-        this.val = val;
+    private String addr;
+
+    /** */
+    public String getZip() {
+        return zip;
     }
 
     /** */
-    public String getVal() {
-        return val;
+    public void setZip(String zip) {
+        this.zip = zip;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        Value value = (Value)o;
-        return Objects.equals(val, value.val);
+    /** */
+    public String getAddr() {
+        return addr;
     }
 
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(val);
+    /** */
+    public void setAddr(String addr) {
+        this.addr = addr;
     }
 }

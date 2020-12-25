@@ -16,8 +16,10 @@
  */
 
 // ReSharper disable once CheckNamespace
-namespace org.apache.ignite.platform
+namespace org.apache.ignite.platform.model
 {
+    using System;
+
     /// <summary>
     /// A class is a clone of Java class Address with the same namespace.
     /// </summary>
@@ -85,4 +87,61 @@ namespace org.apache.ignite.platform
     {
         public string Val { get; set; }
     }
+
+    /// <summary>
+    /// A class is a clone of Java class Account with the same namespace.
+    /// </summary>
+    public class Account
+    {
+        public String Id { get; set; }
+        
+        public int Amount { get; set; }
+
+        protected bool Equals(Account other)
+        {
+            return Id == other.Id;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((Account) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            // ReSharper disable once NonReadonlyMemberInGetHashCode
+            return Id.GetHashCode();
+        }
+    }
+
+    /// <summary>
+    /// A enum is a clone of Java class User with the same namespace.
+    /// </summary>
+    public enum ACL
+    {
+        Allow, Deny
+    }
+
+    /// <summary>
+    /// A class is a clone of Java class Role with the same namespace.
+    /// </summary>
+    public class Role
+    {
+        public String Name { get; set; }
+    }
+
+    /// <summary>
+    /// A class is a clone of Java class User with the same namespace.
+    /// </summary>
+    public class User
+    {
+        public int Id { get; set; }
+        
+        public ACL Acl { get; set; }
+        
+        public Role Role { get; set; }
+    }    
 }
