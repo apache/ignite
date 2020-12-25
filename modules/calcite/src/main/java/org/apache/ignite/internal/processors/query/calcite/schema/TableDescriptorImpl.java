@@ -592,7 +592,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src) {
-            return cctx.unwrapBinaryIfNeeded(isKey ? src.key() : src.value(), ectx.keepBinary());
+            return cctx.unwrapBinaryIfNeeded(isKey ? src.key() : src.value(), ectx.keepBinary(), null);
         }
 
         /** {@inheritDoc} */
@@ -667,7 +667,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         /** {@inheritDoc} */
         @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src)
             throws IgniteCheckedException {
-            return cctx.unwrapBinaryIfNeeded(desc.value(src.key(), src.value()), ectx.keepBinary());
+            return cctx.unwrapBinaryIfNeeded(desc.value(src.key(), src.value()), ectx.keepBinary(), null);
         }
 
         /** {@inheritDoc} */

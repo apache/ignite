@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
+
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -99,26 +99,28 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         Map<Integer, RISK> mRisk = new HashMap<>(65000);
 
         for (int i = 0; i < 65000; i++)
-            mRisk.put(1, new RISK(i));
+            mRisk.put(i, new RISK(i));
 
         RISK.putAll(mRisk);
 
         Map<Integer, TRADE> mTrade = new HashMap<>(200);
 
         for (int i = 0; i < 200; i++)
-            mTrade.put(1, new TRADE(i));
+            mTrade.put(i, new TRADE(i));
 
         TRADE.putAll(mTrade);
 
         for (int i = 0; i < 80; i++)
-            BATCH.put(1, new BATCH(i));
+            BATCH.put(i, new BATCH(i));
 
         awaitPartitionMapExchange(true, true, null);
 
-        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
+        QueryEngine engine = Commons.lookupComponent(ignite.context(), QueryEngine.class);
 
+        // TODO: https://issues.apache.org/jira/browse/IGNITE-13849
+        // we have a problem with serialization/deserialization of MergeJoin
         List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
-            "SELECT count(*)" +
+            "SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ count(*)" +
                 " FROM RISK R," +
                 " TRADE T," +
                 " BATCH B " +
@@ -128,7 +130,11 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 "AND T.BOOK = 'BOOK' " +
                 "AND B.IS = TRUE");
 
-        System.err.println(query.get(0).getAll());
+        List<List<?>> res = query.get(0).getAll();
+
+        assertEquals(1, res.size());
+        assertEquals(1, res.get(0).size());
+        assertEquals(40L, res.get(0).get(0));
     }
 
     /** */
@@ -171,7 +177,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         public TRADE(Integer in) {
             TRADEID = in;
             TRADEVER = in;
-            BOOK = ThreadLocalRandom.current().nextBoolean() ? "BOOK" : "";
+            BOOK = (in & 1) != 0 ? "BOOK" : "";
         }
     }
 
@@ -188,7 +194,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         /** */
         public BATCH(Integer in) {
             BATCHKEY = in;
-            IS = ThreadLocalRandom.current().nextBoolean();
+            IS = (in & 1) != 0;
         }
     }
 
@@ -539,6 +545,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13849")
     @Test
     public void query() throws Exception {
         IgniteCache<Integer, Developer> developer = grid(1).createCache(new CacheConfiguration<Integer, Developer>()

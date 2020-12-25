@@ -39,6 +39,10 @@ import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
+
 /**
  * Java client configuration.
  */
@@ -721,8 +725,8 @@ public class GridClientConfiguration {
 
         String sslEnabled = in.getProperty(prefix + "ssl.enabled");
 
-        String sslProto = in.getProperty(prefix + "ssl.protocol", "TLS");
-        String sslKeyAlg = in.getProperty(prefix + "ssl.key.algorithm", "SunX509");
+        String sslProto = in.getProperty(prefix + "ssl.protocol");
+        String sslKeyAlg = in.getProperty(prefix + "ssl.key.algorithm");
 
         String keyStorePath = in.getProperty(prefix + "ssl.keystore.location");
         String keyStorePwd = in.getProperty(prefix + "ssl.keystore.password");
@@ -780,8 +784,8 @@ public class GridClientConfiguration {
         if (!F.isEmpty(sslEnabled) && Boolean.parseBoolean(sslEnabled)) {
             GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 
-            factory.setProtocol(F.isEmpty(sslProto) ? "TLS" : sslProto);
-            factory.setKeyAlgorithm(F.isEmpty(sslKeyAlg) ? "SunX509" : sslKeyAlg);
+            factory.setProtocol(F.isEmpty(sslProto) ? DFLT_SSL_PROTOCOL : sslProto);
+            factory.setKeyAlgorithm(F.isEmpty(sslKeyAlg) ? DFLT_KEY_ALGORITHM : sslKeyAlg);
 
             if (F.isEmpty(keyStorePath))
                 throw new IllegalArgumentException("SSL key store location is not specified.");
@@ -791,7 +795,7 @@ public class GridClientConfiguration {
             if (keyStorePwd != null)
                 factory.setKeyStorePassword(keyStorePwd.toCharArray());
 
-            factory.setKeyStoreType(F.isEmpty(keyStoreType) ? "jks" : keyStoreType);
+            factory.setKeyStoreType(F.isEmpty(keyStoreType) ? DFLT_STORE_TYPE : keyStoreType);
 
             if (F.isEmpty(trustStorePath))
                 factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
@@ -801,7 +805,7 @@ public class GridClientConfiguration {
                 if (trustStorePwd != null)
                     factory.setTrustStorePassword(trustStorePwd.toCharArray());
 
-                factory.setTrustStoreType(F.isEmpty(trustStoreType) ? "jks" : trustStoreType);
+                factory.setTrustStoreType(F.isEmpty(trustStoreType) ? DFLT_STORE_TYPE : trustStoreType);
             }
 
             setSslContextFactory(factory);

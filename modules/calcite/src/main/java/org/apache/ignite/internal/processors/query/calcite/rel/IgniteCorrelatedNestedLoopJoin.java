@@ -38,6 +38,8 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -53,7 +55,7 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.i
  * The set of output rows is a subset of the cartesian product of the two
  * inputs; precisely which subset depends on the join condition.
  */
-public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin {
+public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
     /**
      * Creates a Join.
      *
@@ -166,8 +168,22 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        // Give it some penalty
-        return super.computeSelfCost(planner, mq).multiplyBy(5);
+        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+
+        double leftCount = mq.getRowCount(getLeft());
+
+        if (Double.isInfinite(leftCount))
+            return costFactory.makeInfiniteCost();
+
+        double rightCount = mq.getRowCount(getRight());
+
+        if (Double.isInfinite(rightCount))
+            return costFactory.makeInfiniteCost();
+
+        double rows = leftCount * rightCount;
+
+        return costFactory.makeCost(rows,
+            rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
     }
 
     /** {@inheritDoc} */
@@ -212,5 +228,11 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteNestedLoopJoin
     /** */
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw).item("correlationVariables", getVariablesSet());
+    }
+
+    /** {@inheritDoc} */
+    @Override public double estimateRowCount(RelMetadataQuery mq) {
+        // condition selectivity already counted within the external filter
+        return super.estimateRowCount(mq) / mq.getSelectivity(this, getCondition());
     }
 }

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -57,6 +58,7 @@ import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingPro
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
@@ -78,6 +80,7 @@ import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.worker.WorkersRegistry;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -199,6 +202,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Monitoring manager.
      */
     public GridMetricManager metric();
+
+    /**
+     * Gets maintenance registry.
+     *
+     * @return Maintenance registry.
+     */
+    public MaintenanceRegistry maintenanceRegistry();
 
     /**
      * Gets system view manager.
@@ -442,6 +452,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Encryption manager.
      */
     public GridEncryptionManager encryption();
+
+    /**
+     * Gets defragmentation manager.
+     *
+     * @return Defragmentation manager.
+     */
+    public IgniteDefragmentation defragmentation();
 
     /**
      * Gets workers registry.
@@ -752,4 +769,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Thread pool for create/rebuild indexes.
      */
     public ExecutorService buildIndexExecutorService();
+
+    /**
+     * Gets Performance statistics processor.
+     *
+     * @return Performance statistics processor.
+     */
+    public PerformanceStatisticsProcessor performanceStatistics();
 }

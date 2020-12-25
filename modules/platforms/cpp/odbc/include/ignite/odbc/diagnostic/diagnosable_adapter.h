@@ -104,6 +104,13 @@ namespace ignite
                 virtual void AddStatusRecord(SqlState::Type  sqlState, const std::string& message);
 
                 /**
+                 * Add new status record with SqlState::SHY000_GENERAL_ERROR state.
+                 *
+                 * @param message Message.
+                 */
+                virtual void AddStatusRecord(const std::string& message);
+
+                /**
                  * Add new status record.
                  *
                  * @param err Error.

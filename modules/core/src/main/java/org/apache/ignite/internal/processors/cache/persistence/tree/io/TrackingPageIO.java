@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.TrackingPageIsCorruptedException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
@@ -356,7 +357,11 @@ public class TrackingPageIO extends PageIO {
         int pageIdx = ((PageIdUtils.pageIndex(pageId) - COUNT_OF_EXTRA_PAGE) /
             countOfPageToTrack(pageSize)) * countOfPageToTrack(pageSize) + COUNT_OF_EXTRA_PAGE;
 
-        long trackingPageId = PageIdUtils.pageId(PageIdUtils.partId(pageId), PageIdUtils.flag(pageId), pageIdx);
+        byte flag = PageIdUtils.partId(pageId) == PageIdAllocator.INDEX_PARTITION ?
+            PageIdAllocator.FLAG_IDX :
+            PageIdAllocator.FLAG_DATA;
+
+        long trackingPageId = PageIdUtils.pageId(PageIdUtils.partId(pageId), flag, pageIdx);
 
         assert PageIdUtils.pageIndex(trackingPageId) <= PageIdUtils.pageIndex(pageId);
 

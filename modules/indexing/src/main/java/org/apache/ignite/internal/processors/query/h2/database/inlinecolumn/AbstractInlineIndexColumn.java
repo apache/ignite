@@ -100,7 +100,7 @@ public abstract class AbstractInlineIndexColumn implements InlineIndexColumn {
      *
      * @return Restored value or {@code null} if value can't be restored.
      */
-    @Nullable Value get(long pageAddr, int off, int maxSize) {
+    @Nullable public Value get(long pageAddr, int off, int maxSize) {
         if (size > 0 && size + 1 > maxSize)
             return null;
 

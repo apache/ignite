@@ -37,6 +37,9 @@ import org.apache.ignite.ml.preprocessing.encoding.frequency.FrequencyEncoderPre
 import org.apache.ignite.ml.preprocessing.encoding.label.LabelEncoderPreprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.onehotencoder.OneHotEncoderPreprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPreprocessor;
+import org.apache.ignite.ml.preprocessing.encoding.target.TargetCounter;
+import org.apache.ignite.ml.preprocessing.encoding.target.TargetEncoderPreprocessor;
+import org.apache.ignite.ml.preprocessing.encoding.target.TargetEncodingMeta;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.jetbrains.annotations.NotNull;
 
@@ -55,6 +58,18 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
 
     /** Encoder sorting strategy. */
     private EncoderSortingStrategy encoderSortingStgy = EncoderSortingStrategy.FREQUENCY_DESC;
+
+    /** Index of target for target encoding */
+    private Integer targetLabelIndex;
+
+    /** Smoting param for target encoding */
+    private Double smoothing = 1d;
+
+    /** Min samples leaf for target encoding */
+    private Integer minSamplesLeaf = 1;
+
+    /** Min category size for target concoding */
+    private Long minCategorySize = 10L;
 
     /** {@inheritDoc} */
     @Override public EncoderPreprocessor<K, V> fit(
@@ -82,7 +97,17 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
 
                     partData.withLabelFrequencies(lbFrequencies);
                 }
-                else {
+                else if (encoderType == EncoderType.TARGET_ENCODER) {
+                    TargetCounter[] targetCounter = null;
+
+                    while (upstream.hasNext()) {
+                        UpstreamEntry<K, V> entity = upstream.next();
+                        LabeledVector<Double> row = basePreprocessor.apply(entity.getKey(), entity.getValue());
+
+                        targetCounter = updateTargetCountersForNextRow(row, targetCounter);
+                    }
+                    partData.withTargetCounters(targetCounter);
+                } else {
                     // This array will contain not null values for handled indices
                     Map<String, Integer>[] categoryFrequencies = null;
 
@@ -107,6 +132,8 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
                     return new LabelEncoderPreprocessor<>(calculateEncodingValuesForLabelsByFrequencies(dataset), basePreprocessor);
                 case FREQUENCY_ENCODER:
                     return new FrequencyEncoderPreprocessor<>(calculateEncodingFrequencies(dataset), basePreprocessor, handledIndices);
+                case TARGET_ENCODER:
+                    return new TargetEncoderPreprocessor<>(calculateTargetEncodingFrequencies(dataset), basePreprocessor, handledIndices);
                 default:
                     throw new IllegalStateException("Define the type of the resulting prerocessor.");
             }
@@ -114,6 +141,86 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Calculates encoding frequencies as avarage category target on amount of rows in dataset.
+     *
+     * NOTE: The amount of rows is calculated as sum of absolute frequencies.
+     *
+     * @param dataset Dataset.
+     * @return Encoding frequency for each feature.
+     */
+    private TargetEncodingMeta[] calculateTargetEncodingFrequencies(Dataset<EmptyContext, EncoderPartitionData> dataset) {
+        TargetCounter[] targetCounters = dataset.compute(
+            EncoderPartitionData::targetCounters,
+            (a, b) -> {
+                if (a == null)
+                    return b;
+
+                if (b == null)
+                    return a;
+
+                assert a.length == b.length;
+
+                for (int i = 0; i < a.length; i++) {
+                    if (handledIndices.contains(i)) {
+                        int finalI = i;
+                        b[i].setTargetSum(a[i].getTargetSum() + b[i].getTargetSum());
+                        b[i].setTargetCount(a[i].getTargetCount() + b[i].getTargetCount());
+                        a[i].getCategoryCounts()
+                            .forEach((k, v) -> b[finalI].getCategoryCounts().merge(k, v, Long::sum));
+                        a[i].getCategoryTargetSum()
+                            .forEach((k, v) -> b[finalI].getCategoryTargetSum().merge(k, v, Double::sum));
+                    }
+                }
+                return b;
+            }
+        );
+
+        TargetEncodingMeta[] targetEncodingMetas = new TargetEncodingMeta[targetCounters.length];
+        for (int i = 0; i < targetCounters.length; i++) {
+            if (handledIndices.contains(i)) {
+                TargetCounter targetCounter = targetCounters[i];
+
+                targetEncodingMetas[i] = new TargetEncodingMeta()
+                    .withGlobalMean(targetCounter.getTargetSum() / targetCounter.getTargetCount())
+                    .withCategoryMean(calculateCategoryTargetEncodingFrequency(targetCounter));
+            }
+        }
+        return targetEncodingMetas;
+    }
+
+    /**
+     * Calculates encoding frequencies as avarage category target on amount of rows in dataset.
+     *
+     * @param targetCounter target Counter.
+     * @return Encoding frequency for each category.
+     */
+    private Map<String, Double> calculateCategoryTargetEncodingFrequency(TargetCounter targetCounter) {
+        double prior = targetCounter.getTargetSum() /
+            targetCounter.getTargetCount();
+
+        return targetCounter.getCategoryTargetSum().entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                value -> {
+                    double targetSum = targetCounter.getCategoryTargetSum()
+                        .get(value.getKey());
+                    long categorySize = targetCounter.getCategoryCounts()
+                        .get(value.getKey());
+
+                    if (categorySize < minCategorySize) {
+                        return prior;
+                    } else {
+                        double categoryMean = targetSum / categorySize;
+
+                        double smoove = 1 / (1 +
+                            Math.exp(-(categorySize - minSamplesLeaf) / smoothing));
+                        return prior * (1 - smoove) + categoryMean * smoove;
+                    }
+                }
+            ));
     }
 
     /**
@@ -344,6 +451,82 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
     }
 
     /**
+     * Updates frequencies by values and features.
+     *
+     * @param row Feature vector.
+     * @param targetCounters Holds the frequencies of categories by values and features.
+     * @return target counter.
+     */
+    private TargetCounter[] updateTargetCountersForNextRow(LabeledVector row,
+                                                           TargetCounter[] targetCounters) {
+        if (targetCounters == null)
+            targetCounters = initializeTargetCounters(row);
+        else
+            assert targetCounters.length == row.size() : "Base preprocessor must return exactly "
+                + targetCounters.length + " features";
+
+        double targetValue = row.features().get(targetLabelIndex);
+
+        for (int i = 0; i < targetCounters.length; i++) {
+            if (handledIndices.contains(i)) {
+                String strVal;
+                Object featureVal = row.features().getRaw(i);
+
+                if (featureVal.equals(Double.NaN)) {
+                    strVal = EncoderPreprocessor.KEY_FOR_NULL_VALUES;
+                    row.features().setRaw(i, strVal);
+                }
+                else if (featureVal instanceof String)
+                    strVal = (String)featureVal;
+                else if (featureVal instanceof Number)
+                    strVal = String.valueOf(featureVal);
+                else if (featureVal instanceof Boolean)
+                    strVal = String.valueOf(featureVal);
+                else
+                    throw new RuntimeException("The type " + featureVal.getClass() + " is not supported for the feature values.");
+
+                TargetCounter targetCounter = targetCounters[i];
+                targetCounter.setTargetCount(targetCounter.getTargetCount() + 1);
+                targetCounter.setTargetSum(targetCounter.getTargetSum() + targetValue);
+
+                Map<String, Long> categoryCounts = targetCounter.getCategoryCounts();
+
+                if (categoryCounts.containsKey(strVal)) {
+                    categoryCounts.put(strVal, categoryCounts.get(strVal) + 1);
+                } else {
+                    categoryCounts.put(strVal, 1L);
+                }
+
+                Map<String, Double> categoryTargetSum = targetCounter.getCategoryTargetSum();
+                if (categoryTargetSum.containsKey(strVal)) {
+                    categoryTargetSum.put(strVal, categoryTargetSum.get(strVal) + targetValue);
+                } else {
+                    categoryTargetSum.put(strVal, targetValue);
+                }
+            }
+        }
+        return targetCounters;
+    }
+
+    /**
+     * Initialize target counters for handled indices only.
+     *
+     * @param row Features vector.
+     * @return target counter.
+     */
+    private TargetCounter[] initializeTargetCounters(LabeledVector row) {
+        TargetCounter[] targetCounter = new TargetCounter[row.size()];
+
+        for (int i = 0; i < row.size(); i++) {
+            if (handledIndices.contains(i)) {
+                targetCounter[i] = new TargetCounter();
+            }
+        }
+
+        return targetCounter;
+    }
+
+    /**
      * Add the index of encoded feature.
      *
      * @param idx The index of encoded feature.
@@ -383,7 +566,48 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
      * @return The changed trainer.
      */
     public EncoderTrainer<K, V> withEncodedFeatures(Set<Integer> handledIndices) {
-        this.handledIndices = handledIndices;
+        this.handledIndices.addAll(handledIndices);
+        return this;
+    }
+
+    /**
+     * Sets the target label index.
+     * @param targetLabelIndex Index of target label.
+     * @return The changed trainer.
+     */
+    public EncoderTrainer<K, V> labeled(Integer targetLabelIndex) {
+        this.targetLabelIndex = targetLabelIndex;
+        return this;
+    }
+
+    /**
+     * Sets the smoothing for target encoding.
+     * @param smoothing smoothing value.
+     * @return The changed trainer.
+     */
+    public EncoderTrainer<K, V> smoothing(Double smoothing) {
+        this.smoothing = smoothing;
+        return this;
+    }
+
+    /**
+     * Sets the minSamplesLeaf for target encoding.
+     * @param minSamplesLeaf min samples leaf.
+     * @return The changed trainer.
+     */
+    public EncoderTrainer<K, V> minSamplesLeaf(Integer minSamplesLeaf) {
+        this.minSamplesLeaf = minSamplesLeaf;
+        return this;
+    }
+
+    /**
+     * Sets the min category size for category target encoding.
+     * Category less then minCategorySize will be encoded with avarage target value.
+     * @param minCategorySize min samples leaf.
+     * @return The changed trainer.
+     */
+    public EncoderTrainer<K, V> minCategorySize(Long minCategorySize) {
+        this.minCategorySize = minCategorySize;
         return this;
     }
 }

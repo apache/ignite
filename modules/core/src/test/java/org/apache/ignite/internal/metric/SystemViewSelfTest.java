@@ -1100,7 +1100,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertEquals(2, view.size());
 
             for (BinaryMetadataView meta : view) {
-                if (Objects.equals(TestObjectEnum.class.getName(), meta.typeName())) {
+                if (TestObjectEnum.class.getName().contains(meta.typeName())) {
                     assertTrue(meta.isEnum());
 
                     assertEquals(0, meta.fieldsCount());

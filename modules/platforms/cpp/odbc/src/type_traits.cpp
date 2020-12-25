@@ -336,12 +336,15 @@ namespace ignite
                 case SQL_C_BINARY:
                     return OdbcNativeType::AI_BINARY;
 
+                case SQL_C_DATE:
                 case SQL_C_TYPE_DATE:
                     return OdbcNativeType::AI_TDATE;
 
+                case SQL_C_TIME:
                 case SQL_C_TYPE_TIME:
                     return OdbcNativeType::AI_TTIME;
 
+                case SQL_C_TIMESTAMP:
                 case SQL_C_TYPE_TIMESTAMP:
                     return OdbcNativeType::AI_TTIMESTAMP;
 
@@ -427,7 +430,7 @@ namespace ignite
                 }
             }
 
-            int16_t BinaryTypeNullability(int8_t binaryType)
+            int16_t BinaryTypeNullability(int8_t)
             {
                 return SQL_NULLABLE_UNKNOWN;
             }
@@ -639,7 +642,7 @@ namespace ignite
                 return SqlTypeNumPrecRadix(sqlType);
             }
 
-            int32_t SqlTypeDecimalDigits(int16_t type)
+            int32_t SqlTypeDecimalDigits(int16_t)
             {
                 // Not implemented for the NUMERIC and DECIMAL data types.
                 return -1;

@@ -129,7 +129,7 @@ namespace ignite
                  */
                 TransactionState::Type ToTransactionState(int state);
 
-                IGNITE_NO_COPY_ASSIGNMENT(TransactionsImpl)
+                IGNITE_NO_COPY_ASSIGNMENT(TransactionsImpl);
             };
         }
     }

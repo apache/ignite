@@ -187,6 +187,10 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     /** Map for tracking nodes to which first request was already sent in order to send smaller subsequent requests. */
     private final Set<ClusterNode> firstReqSent = new HashSet<>();
 
+    /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
+    @GridToStringExclude
+    protected final IgniteUuid deploymentLdrId;
+
     /**
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
@@ -227,6 +231,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         this.tx = tx;
         this.filter = filter;
         this.keepBinary = keepBinary;
+        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         lockVer = tx.xidVersion();
 

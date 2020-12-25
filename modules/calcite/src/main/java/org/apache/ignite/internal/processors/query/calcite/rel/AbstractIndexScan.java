@@ -29,6 +29,7 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.jetbrains.annotations.Nullable;
@@ -117,7 +118,40 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return super.computeSelfCost(planner, mq).plus(planner.getCostFactory().makeTinyCost());
+        double rows = table.getRowCount();
+
+        double cost = rows * IgniteCost.ROW_PASS_THROUGH_COST;
+
+        if (condition != null) {
+            RexBuilder builder = getCluster().getRexBuilder();
+
+            double selectivity = 1;
+
+            cost = 0;
+
+            if (lowerCond != null) {
+                double selectivity0 = mq.getSelectivity(this, RexUtil.composeDisjunction(builder, lowerCond));
+
+                selectivity -= 1 - selectivity0;
+
+                cost += Math.log(rows);
+            }
+
+            if (upperCond != null) {
+                double selectivity0 = mq.getSelectivity(this, RexUtil.composeDisjunction(builder, upperCond));
+
+                selectivity -= 1 - selectivity0;
+            }
+
+            rows *= selectivity;
+
+            if (rows <= 0)
+                rows = 1;
+
+            cost += rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST);
+        }
+
+        return planner.getCostFactory().makeCost(rows, cost, 0);
     }
 
     /** */

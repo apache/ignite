@@ -42,7 +42,7 @@ namespace ignite
                     FAILURE = 1,
 
                     /** Affinity topology change flag. */
-                    AFFINITY_TOPOLOGY_CHANGED = 1 << 1,
+                    AFFINITY_TOPOLOGY_CHANGED = 1 << 1
                 };
             };
 

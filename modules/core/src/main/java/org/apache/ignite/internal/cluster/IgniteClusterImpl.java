@@ -116,12 +116,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /** Property for update policy of shutdown. */
     private DistributedEnumProperty<ShutdownPolicy> shutdown = new DistributedEnumProperty<>(
         "shutdown.policy",
-        (ordinal) -> {
-            return ordinal == null ? null : ShutdownPolicy.fromOrdinal(ordinal);
-        },
-        (policy) -> {
-            return policy == null ? null : policy.index();
-        }
+        (ordinal) -> ordinal == null ? null : ShutdownPolicy.fromOrdinal(ordinal),
+        (policy) -> policy == null ? null : policy.index(),
+        ShutdownPolicy.class
     );
 
     /**

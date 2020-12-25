@@ -1,0 +1,126 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Thin Clients Overview
+
+== Overview
+A thin client is a lightweight Ignite client that connects to the cluster via a standard socket connection.
+It does not become a part of the cluster topology, never holds any data, and is not used as a destination for compute grid calculations.
+What it does is simply establish a socket connection to a standard Ignite node and perform all operations through that node.
+
+Thin clients are based on the link:binary-client-protocol/binary-client-protocol[binary client protocol], which makes it possible to support Ignite connectivity from any programming language.
+
+Ignite provides the following thin clients:
+
+* link:thin-clients/java-thin-client[Java Thin Client]
+* link:thin-clients/dotnet-thin-client[.NET/C# Thin Client]
+* link:thin-clients/cpp-thin-client[C++ Thin Client]
+* link:thin-clients/python-thin-client[Python Thin Client]
+* link:thin-clients/nodejs-thin-client[Node.js Thin Client]
+* link:thin-clients/php-thin-client[PHP Thin Client]
+
+////
+*TODO: add a diagram of a thin client connecting to the cluster (multiple nodes) and how a request is rerouted to the node that hosts the data*
+////
+
+== Thin Client Features
+The following table outlines features supported by each client.
+
+:yes: pass:quotes[[.checkmark]#yes#]
+
+[%header,format=csv,cols="2,1,1,1,1,1,1"]
+|===
+include::thin-client-comparison.csv[]
+|===
+
+=== Client Connection Failover
+
+All thin clients support a connection failover mechanism, whereby the client automatically switches to an available node in case of the current node or connection failure.
+For this mechanism to work, you need to provide a list of node addresses you want to use for failover purposes in the client configuration.
+Refer to the specific client documentation for more details.
+
+[#partition-awareness]
+=== Partition Awareness
+
+As explained in the link:data-modeling/data-partitioning[Data Partitioning] section, data in the cluster is distributed between the nodes in a balanced manner for scalability and performance reasons.
+Each cluster node maintains a subset of the data and the partition distribution map, which is used to determine the node that keeps the primary/backup copy of requested entries.
+
+include::includes/partition-awareness.adoc[]
+
+Partition Awareness is available for the Java, .NET, C++, Python, and Node.js thin clients.
+Refer to the documentation of the specific client for more information.
+
+=== Authentication
+
+All thin clients support authentication in the cluster side. Authentication is link:security/authentication[configured in the cluster] configuration, and the client simply provide user credentials.
+Refer to the documentation of the specific client for more information.
+
+== Cluster Configuration
+
+Thin client connection parameters are controlled by the client connector configuration.
+By default, Ignite accepts client connections on port 10800.
+You can change the port, connection buffer size and timeout, enable SSL/TLS, etc.
+
+=== Configuring Thin Client Connector
+
+The following example shows how to configure thin client connection parameters:
+
+:xmlConfigFile: code-snippets/xml/thin-client-cluster-config.xml
+:javaFile: {javaCodeDir}/JavaThinClient.java
+:dotnetFile: code-snippets/dotnet/ThinClient.cs
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration" id="ignite.cfg">
+    <property name="clientConnectorConfiguration">
+        <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+            <property name="port" value="10000"/>
+        </bean>
+    </property>
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=clusterConfiguration,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetFile}[tag=clusterConfiguration,indent=0]
+----
+tab:C++[unsupported]
+--
+
+The following table describes some parameters that you may want to change.
+
+[cols="1,3,1",opts="header",width="100%"]
+|===
+| Parameter | Description  | Default Value
+| `thinClientEnabled`| Enables or disables thin client connectivity. | `true`
+| `port` | The port for thin client connections.  | 10800
+| `portRange`| This parameters sets a range of ports for thin client connections. For example, if `portRange` = 10, thin clients can connect to any port from range 10800–18010. The node tries to bind to each port from the range starting from the `port` until it finds an available one. If all ports are unavailable, the node won't start. | 100
+| `sslEnabled` | Set this property to `true` to enable SSL for thin client connections.  | `false`
+|===
+
+See the complete list of parameters in the link:{javadoc_base_url}/org/apache/ignite/configuration/ClientConnectorConfiguration.html[ClientConnectorConfiguration,window=_blank] javadoc.
+
+
+=== Enabling SSL/TLS for Thin Clients
+
+Refer to the  link:security/ssl-tls#ssl-for-clients[SSL for Thin Clients and JDBC/ODBC] section.
+

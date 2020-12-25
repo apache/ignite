@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientWarmU
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheRestMetrics;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisNioListener;
+import org.apache.ignite.internal.processors.rest.request.GridRestAuthenticationRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestClusterNameRequest;
@@ -321,7 +322,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         if (msg instanceof GridClientAuthenticationRequest) {
             GridClientAuthenticationRequest req = (GridClientAuthenticationRequest)msg;
 
-            restReq = new GridRestTaskRequest();
+            restReq = new GridRestAuthenticationRequest();
 
             restReq.command(NOOP);
 
