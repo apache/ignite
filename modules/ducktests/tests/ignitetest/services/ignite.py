@@ -60,10 +60,12 @@ class IgniteService(IgniteAwareService):
         """
         Rename ignite database.
         """
+        new_path = os.path.join(self.work_dir, new_name)
+
         for node in self.nodes:
             assert len(self.pids(node)) == 0
 
-            node.account.ssh(f'mv {self.work_dir}/db {self.work_dir}/{new_name}')
+            node.account.ssh(f'mv {self.database_dir} {new_path}')
 
     def restore_from_snapshot(self, snapshot_name: str):
         """
@@ -75,7 +77,6 @@ class IgniteService(IgniteAwareService):
             assert len(self.pids(node)) == 0
 
             node.account.ssh(f'rm -rf {self.database_dir}', allow_fail=False)
-
             node.account.ssh(f'cp -r {snapshot_db} {self.work_dir}', allow_fail=False)
 
     def thread_dump(self, node):
