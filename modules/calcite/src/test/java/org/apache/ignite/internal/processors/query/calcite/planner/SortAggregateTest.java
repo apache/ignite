@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import java.util.Arrays;
 
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -34,13 +36,13 @@ import org.junit.Test;
 /**
  *
  */
-@SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
+@SuppressWarnings({"TypeMayBeWeakened"})
 public class SortAggregateTest extends AbstractPlannerTest {
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void test() throws Exception {
+    public void testSimpleGroupBy() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable tbl = new TestTable(
@@ -72,6 +74,71 @@ public class SortAggregateTest extends AbstractPlannerTest {
         publicSchema.addTable("TEST", tbl);
 
         String sql = "SELECT AVG(val0) FROM test GROUP BY grp0";
+
+        IgniteRel phys = physicalPlan(
+            sql,
+            publicSchema,
+            "AggregateConverterRule"
+        );
+
+        assertNotNull(phys);
+
+//        IgniteReduceAggregate rdcAgg = findFirstNode(phys, byClass(IgniteReduceAggregate.class));
+//        IgniteMapAggregate mapAgg = findFirstNode(phys, byClass(IgniteMapAggregate.class));
+//
+//        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), rdcAgg);
+//        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), mapAgg);
+//
+//        Assert.assertThat(
+//            "Invalid plan\n" + RelOptUtil.toString(phys),
+//            F.first(rdcAgg.aggregateCalls()).getAggregation(),
+//            IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
+//
+//        Assert.assertThat(
+//            "Invalid plan\n" + RelOptUtil.toString(phys),
+//            F.first(mapAgg.getAggCallList()).getAggregation(),
+//            IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
+
+        System.out.println("+++\n" + RelOptUtil.toString(phys));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void simpleDistinct() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable tbl = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("VAL0", f.createJavaType(Integer.class))
+                .add("VAL1", f.createJavaType(Integer.class))
+                .add("GRP0", f.createJavaType(Integer.class))
+                .add("GRP1", f.createJavaType(Integer.class))
+                .build()) {
+
+            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+                return CollocationGroup.forAssignments(Arrays.asList(
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2),
+                    select(nodes, 2, 0),
+                    select(nodes, 0, 1),
+                    select(nodes, 1, 2)
+                ));
+            }
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.affinity(0, "test", "hash");
+            }
+        }
+            .addIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "val0_val1");
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("TEST", tbl);
+
+        String sql = "SELECT DISTINCT val0, val1 FROM test";
 
         IgniteRel phys = physicalPlan(
             sql,

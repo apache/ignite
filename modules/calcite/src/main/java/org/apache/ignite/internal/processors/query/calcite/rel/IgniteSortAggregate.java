@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
@@ -138,9 +139,10 @@ public class IgniteSortAggregate extends Aggregate implements TraitsAwareIgniteR
 
     /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // Since it's a hash aggregate it erases collation.
+        RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(groupSet.asList()));
+
         return Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            ImmutableList.of(inputTraits.get(0).replace(RelCollations.EMPTY)));
+            ImmutableList.of(inputTraits.get(0).replace(collation)));
     }
 
     /** {@inheritDoc} */
@@ -217,10 +219,13 @@ public class IgniteSortAggregate extends Aggregate implements TraitsAwareIgniteR
 
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // Since it's a hash aggregate it erases collation.
+        RelCollation requiredCollation = RelCollations.of(ImmutableIntList.copyOf(groupSet.asList()));
+        RelCollation inputCollation = TraitUtils.collation(inputTraits.get(0));
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            ImmutableList.of(inputTraits.get(0).replace(RelCollations.EMPTY))));
+        if (!inputCollation.satisfies(requiredCollation))
+            return ImmutableList.of();
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(requiredCollation), inputTraits));
     }
 
     /** {@inheritDoc} */
