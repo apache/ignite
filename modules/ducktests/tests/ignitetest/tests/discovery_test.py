@@ -25,7 +25,6 @@ from time import monotonic
 from typing import NamedTuple
 
 from ducktape.mark import matrix
-
 from ignitetest.services.ignite import IgniteAwareService, IgniteService, get_event_time, node_failed_event_pattern
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
@@ -33,7 +32,6 @@ from ignitetest.services.utils.ignite_configuration.cache import CacheConfigurat
 from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster, \
     TcpDiscoverySpi
 from ignitetest.services.utils.time_utils import epoch_mills
-from ignitetest.services.utils.jvm_utils import jvm_settings
 from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
 from ignitetest.utils import ignite_versions, version_if, cluster
 from ignitetest.utils.ignite_test import IgniteTest
@@ -179,14 +177,11 @@ class DiscoveryTest(IgniteTest):
             )]
         )
 
-        jvm_opts_str = jvm_settings(gc_dump_path=os.path.join(IgniteService.PERSISTENT_ROOT, "ignite_gc.log"),
-                                    oom_path=os.path.join(IgniteService.PERSISTENT_ROOT, "ignite_out_of_mem.hprof"))
-
         # Start Ignite nodes in count less than max_nodes_in_use. One node is erequired for the loader. Some nodes might
         # be needed for ZooKeeper.
         servers, start_servers_sec = start_servers(
             self.test_context, len(self.test_context.cluster) - self.ZOOKEEPER_NODES - 1,
-            ignite_config, modules, jvm_opts_str)
+            ignite_config, modules)
 
         results['Ignite cluster start time (s)'] = start_servers_sec
 
@@ -196,7 +191,7 @@ class DiscoveryTest(IgniteTest):
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
                 ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
 
-            tran_nodes = [node_id(n) for n in failed_nodes] \
+            tran_nodes = [read_node_id(n) for n in failed_nodes] \
                 if test_config.load_type == ClusterLoad.TRANSACTIONAL else None
 
             params = {"cacheName": "test-cache",
@@ -205,7 +200,7 @@ class DiscoveryTest(IgniteTest):
                       "targetNodes": tran_nodes,
                       "transactional": bool(tran_nodes)}
 
-            start_load_app(self.test_context, load_config, params, modules, jvm_opts_str)
+            start_load_app(self.test_context, load_config, params, modules)
 
         # Minimal detection timeout is failure_detection_timeout * 2. Let's more to capture also 'bad' results.
         results.update(self._simulate_and_detect_failure(servers, failed_nodes,
@@ -220,7 +215,7 @@ class DiscoveryTest(IgniteTest):
         ids_to_wait = []
 
         for node in failed_nodes:
-            ids_to_wait.append(node_id(node))
+            ids_to_wait.append(read_node_id(node))
 
             self.logger.info("Simulating failure of node '%s' (ID: %s)." % (node.name, ids_to_wait[-1]))
 
@@ -252,12 +247,14 @@ class DiscoveryTest(IgniteTest):
         """Ensures number of failed nodes is correct."""
         cmd = "grep '%s' %s | wc -l" % (node_failed_event_pattern(), survived_node.log_file)
 
+        failed_cnt = int(exec_command(survived_node, cmd))
+
         # Cache survivor id, do not read each time.
-        surv_id = node_id(survived_node)
+        surv_id = read_node_id(survived_node)
 
         if failed_cnt != len(failed_nodes):
             failed = exec_command(survived_node, "grep '%s' %s" % (node_failed_event_pattern(),
-                                                                   IgniteAwareService.STDOUT_STDERR_CAPTURE))
+                                                                   survived_node.log_file))
 
             self.logger.warn("Node '%s' (%s) has detected the following failures:%s%s" %
                              (survived_node.name, surv_id, os.linesep, failed))
@@ -289,20 +286,20 @@ def start_zookeeper(test_context, num_nodes, failure_detection_timeout):
     return zk_quorum
 
 
-def start_servers(test_context, num_nodes, ignite_config, modules=None, jvm_opts_str=""):
+def start_servers(test_context, num_nodes, ignite_config, modules=None):
     """
     Start ignite servers.
     """
     servers = IgniteService(test_context, config=ignite_config, num_nodes=num_nodes, modules=modules,
                             # mute spam in log.
-                            jvm_opts=(jvm_opts_str + " -DIGNITE_DUMP_THREADS_ON_FAILURE=false").split())
+                            jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"])
 
     start = monotonic()
     servers.start()
     return servers, round(monotonic() - start, 1)
 
 
-def start_load_app(test_context, ignite_config, params, modules=None, jvm_opts_str=""):
+def start_load_app(test_context, ignite_config, params, modules=None):
     """
     Start loader application.
     """
@@ -312,7 +309,7 @@ def start_load_app(test_context, ignite_config, params, modules=None, jvm_opts_s
         java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
         modules=modules,
         # mute spam in log.
-        jvm_opts=(jvm_opts_str + " -DIGNITE_DUMP_THREADS_ON_FAILURE=false").split(),
+        jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"],
         params=params).start()
 
 
@@ -340,6 +337,12 @@ def exec_command(node, cmd):
     return str(node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding())
 
 
-def node_id(node):
-    """Return node id."""
-    return node.discovery_info().node_id
+def read_node_id(node):
+    """
+    Returns node id from its log if started.
+    This is a remote call. Reuse its results if possible.
+    """
+    regexp = "^>>> Local node \\[ID=([^,]+),.+$"
+    cmd = "grep -E '%s' %s | sed -r 's/%s/\\1/'" % (regexp, node.log_file, regexp)
+
+    return exec_command(node, cmd).strip().lower()
