@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
-    using System.CodeDom;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;

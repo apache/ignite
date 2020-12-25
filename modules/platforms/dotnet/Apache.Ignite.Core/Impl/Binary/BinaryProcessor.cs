@@ -170,11 +170,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             try
             {
-                return DoOutInOp((int) Op.GetType, w =>
-                {
-                    w.WriteInt(id);
-                    w.WriteByte(DotNetPlatformId);
-                }, r => Marshaller.StartUnmarshal(r).ReadString());
+                return GetTypeName(id, DotNetPlatformId);
             }
             catch (BinaryObjectException)
             {
@@ -183,18 +179,26 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             // Try to get java type name and register corresponding DotNet type.
-            var javaTypeName = DoOutInOp((int) Op.GetType, w =>
-            {
-                w.WriteInt(id);
-                w.WriteByte(JavaPlatformId);
-            }, r => Marshaller.StartUnmarshal(r).ReadString());
+            var javaTypeName = GetTypeName(id, JavaPlatformId);
+            var netTypeName = Marshaller.GetTypeName(javaTypeName);
 
-            RegisterType(id, Marshaller.GetTypeName(javaTypeName), false);
+            RegisterType(id, netTypeName, false);
 
+            return netTypeName;
+        }
+
+        /// <summary>
+        /// Gets the type name by id for specific platform.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <param name="platformId">Platform identifier.</param>
+        /// <returns>Type or null.</returns>
+        private string GetTypeName(int id, byte platformId)
+        {
             return DoOutInOp((int) Op.GetType, w =>
             {
                 w.WriteInt(id);
-                w.WriteByte(DotNetPlatformId);
+                w.WriteByte(platformId);
             }, r => Marshaller.StartUnmarshal(r).ReadString());
         }
 
