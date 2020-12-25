@@ -168,7 +168,5 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
         assertNotNull(phys);
 
         checkSplitAndSerialization(phys, publicSchema);
-
-        System.out.println("+++\n" + RelOptUtil.toString(phys));
     }
 }
