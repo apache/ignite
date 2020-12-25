@@ -20,6 +20,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.keys;
 import java.sql.Timestamp;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  * Inline index key implementation for inlining {@link Timestamp} values.
@@ -32,58 +33,57 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Time
 
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, Timestamp v) {
-        Timestamp ts = new Timestamp(0);
-        ts.setTime(PageUtils.getLong(pageAddr, off + 1));
-        ts.setNanos((int)PageUtils.getLong(pageAddr, off + 9));
+        T2<Long, Long> val = get(v);
 
-        long epoch = PageUtils.getLong(pageAddr, off + 1);
-        long val2 = ts.getTime();
+        long val1 = PageUtils.getLong(pageAddr, off + 1);
 
-        int c = Integer.signum(Long.compare(epoch, val2));
+        int c = Long.compare(val1, val.get1());
 
         if (c != 0)
-            return c;
+            return Integer.signum(c);
 
         long nanos1 = PageUtils.getLong(pageAddr, off + 9);
-        long nanos2 = ts.getNanos();
 
-        return Integer.signum(Long.compare(nanos1, nanos2));
+        return Integer.signum(Long.compare(nanos1, val.get2()));
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, Timestamp val, int maxSize) {
+        T2<Long, Long> v = get(val);
+
         PageUtils.putByte(pageAddr, off, (byte) type());
 
-        PageUtils.putLong(pageAddr, off + 1, val.getTime());
-        PageUtils.putLong(pageAddr, off + 9, val.getNanos());
-
-        // TODO: timestamp, H2 DateTimeUtils
-//        public static ValueTimestamp get(Timestamp var0) {
-
-//        long epoch_ms = val.getTime();
-//        long sec_ms = val.getNanos() % 1000000;
-
-//            long var1 = var0.getTime();
-//            long var3 = (long)(var0.getNanos() % 1000000);
-//            long var5 = DateTimeUtils.dateValueFromDate(var1);
-//            var3 += DateTimeUtils.nanosFromDate(var1);
-//            return fromDateValueAndNanos(var5, var3);
-//        }
+        PageUtils.putLong(pageAddr, off + 1, v.get1());
+        PageUtils.putLong(pageAddr, off + 9, v.get2());
 
         return keySize + 1;
     }
 
     /** {@inheritDoc} */
     @Override protected Timestamp get0(long pageAddr, int off) {
-        Timestamp ts = new Timestamp(0);
-        ts.setTime(PageUtils.getLong(pageAddr, off + 1));
-        ts.setNanos((int)PageUtils.getLong(pageAddr, off + 9));
+        long dv = PageUtils.getLong(pageAddr, off + 1);
+        long nanos = PageUtils.getLong(pageAddr, off + 9);
 
-        return ts;
+        return DateTimeUtils.convertDateValueToTimestamp(dv, nanos);
     }
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(Timestamp key) {
         return keySize + 1;
+    }
+
+    /**
+     * Create pair of date value and nanos for the given timestamp.
+     *
+     * @param timestamp Timestamp.
+     * @return Pair of date value and nanos.
+     */
+    public static T2<Long, Long> get(Timestamp timestamp) {
+        long ms = timestamp.getTime();
+        long nanos = timestamp.getNanos() % 1_000_000;
+        long dateVal = DateTimeUtils.dateValueFromDate(ms);
+        nanos += DateTimeUtils.nanosFromDate(ms);
+
+        return new T2<>(dateVal, nanos);
     }
 }

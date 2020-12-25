@@ -33,8 +33,7 @@ public class DateInlineIndexKeyType extends NullableInlineIndexKeyType<Date> {
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, Date v) {
         long val1 = PageUtils.getLong(pageAddr, off + 1);
-        // TODO: gettime?
-        long val2 = v.getTime();
+        long val2 = DateTimeUtils.dateValueFromDate(v.getTime());
 
         return Integer.signum(Long.compare(val1, val2));
     }
@@ -42,14 +41,14 @@ public class DateInlineIndexKeyType extends NullableInlineIndexKeyType<Date> {
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, Date val, int maxSize) {
         PageUtils.putByte(pageAddr, off, (byte) type());
-        PageUtils.putLong(pageAddr, off + 1, val.getTime());
+        PageUtils.putLong(pageAddr, off + 1, DateTimeUtils.dateValueFromDate(val.getTime()));
 
         return keySize + 1;
     }
 
     /** {@inheritDoc} */
     @Override protected Date get0(long pageAddr, int off) {
-        return new Date(PageUtils.getLong(pageAddr, off + 1));
+        return DateTimeUtils.convertDateValueToDate(PageUtils.getLong(pageAddr, off + 1));
     }
 
     /** {@inheritDoc} */

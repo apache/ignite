@@ -33,7 +33,7 @@ public class TimeInlineIndexKeyType extends NullableInlineIndexKeyType<Time> {
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, Time v) {
         long val1 = PageUtils.getLong(pageAddr, off + 1);
-        long val2 = v.getTime(); // TODO to nanons?
+        long val2 = get(v);
 
         return Integer.signum(Long.compare(val1, val2));
     }
@@ -41,18 +41,28 @@ public class TimeInlineIndexKeyType extends NullableInlineIndexKeyType<Time> {
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, Time val, int maxSize) {
         PageUtils.putByte(pageAddr, off, (byte) type());
-        PageUtils.putLong(pageAddr, off + 1, val.getTime());
+        PageUtils.putLong(pageAddr, off + 1, get(val));
 
         return keySize + 1;
     }
 
     /** {@inheritDoc} */
     @Override protected Time get0(long pageAddr, int off) {
-        return new Time(PageUtils.getLong(pageAddr, off + 1));
+        return DateTimeUtils.convertNanoToTime(PageUtils.getLong(pageAddr, off + 1));
     }
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(Time val) {
         return keySize + 1;
+    }
+
+    /**
+     * Create nanos value for the given time.
+     *
+     * @param time Time.
+     * @return Nanos.
+     */
+    public static long get(Time time) {
+        return DateTimeUtils.nanosFromDate(time.getTime());
     }
 }
