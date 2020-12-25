@@ -35,6 +35,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,6 +53,7 @@ public class Fragment {
     private final IgniteRel root;
 
     /** Serialized root representation. */
+    @GridToStringExclude
     private final String rootSer;
 
     /** */
@@ -194,6 +197,6 @@ public class Fragment {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return RelOptUtil.toString(root);
+        return S.toString(Fragment.class, this, "root", RelOptUtil.toString(root));
     }
 }
