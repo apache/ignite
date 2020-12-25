@@ -17,7 +17,6 @@
 This module contains class to start ignite cluster node.
 """
 
-import os
 import re
 import signal
 from datetime import datetime
@@ -32,7 +31,6 @@ class IgniteService(IgniteAwareService):
     Ignite node service.
     """
     APP_SERVICE_CLASS = "org.apache.ignite.startup.cmdline.CommandLineStartup"
-    HEAP_DUMP_FILE = os.path.join(IgniteAwareService.PERSISTENT_ROOT, "ignite-heap.bin")
 
     # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, jvm_opts=None, startup_timeout_sec=60, shutdown_timeout_sec=10,
@@ -42,7 +40,7 @@ class IgniteService(IgniteAwareService):
 
     def clean_node(self, node):
         node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
-        node.account.ssh("sudo rm -rf -- %s" % self.PERSISTENT_ROOT, allow_fail=False)
+        node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
     def rename_database(self, new_name: str):
         """

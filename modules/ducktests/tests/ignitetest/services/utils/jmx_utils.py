@@ -17,19 +17,20 @@
 This module contains JMX Console client and different utilities and mixins to retrieve ignite node parameters
 and attributes.
 """
-
+import os
 import re
 
 from ignitetest.services.utils.decorators import memoize
 
 
-def ignite_jmx_mixin(node, pids):
+def ignite_jmx_mixin(node, spec, pids):
     """
     Dynamically mixin JMX attributes to Ignite service node.
     :param node: Ignite service node.
     :param pids: Ignite service node pids.
     """
     setattr(node, 'pids', pids)
+    setattr(node, 'spec', spec)
     base_cls = node.__class__
     base_cls_name = node.__class__.__name__
     node.__class__ = type(base_cls_name, (base_cls, IgniteJmxMixin), {})
@@ -55,11 +56,17 @@ class JmxMBean:
 class JmxClient:
     """JMX client, invokes jmxterm on node locally.
     """
-    jmx_util_cmd = 'java -jar /opt/jmxterm.jar -v silent -n'
-
     def __init__(self, node):
         self.node = node
+        self.install_root = node.spec.path_aware.install_root
         self.pid = node.pids[0]
+
+    @property
+    def jmx_util_cmd(self):
+        """
+        :return: jmxterm prepared command line invocation.
+        """
+        return os.path.join(f"java -jar {self.install_root}/jmxterm.jar -v silent -n")
 
     @memoize
     def find_mbean(self, pattern, domain='org.apache'):
