@@ -167,7 +167,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTrimExchange rel) {
         assert TraitUtils.distribution(rel).getType() == HASH_DISTRIBUTED;
-        assert TraitUtils.distribution(rel.getInput()).getType() == BROADCAST_DISTRIBUTED;
 
         IgniteDistribution distr = rel.distribution();
         Destination<Row> dest = distr.destination(ctx, affSrvc, ctx.group(rel.sourceId()));

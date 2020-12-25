@@ -44,7 +44,7 @@ namespace ignite
                  * @param nullable Determines whether to return special columns
                  *                 that can have a NULL value.
                  */
-                SpecialColumnsQuery(diagnostic::Diagnosable& diag, int16_t type,
+                SpecialColumnsQuery(diagnostic::DiagnosableAdapter& diag, int16_t type,
                     const std::string& catalog, const std::string& schema,
                     const std::string& table, int16_t scope, int16_t nullable);
 
@@ -89,7 +89,7 @@ namespace ignite
                  *
                  * @return Column metadata.
                  */
-                virtual const meta::ColumnMetaVector& GetMeta() const;
+                virtual const meta::ColumnMetaVector* GetMeta();
 
                 /**
                  * Check if data is available.

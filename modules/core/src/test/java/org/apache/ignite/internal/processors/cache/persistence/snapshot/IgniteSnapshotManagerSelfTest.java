@@ -44,8 +44,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
-import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -200,7 +200,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
                 }
             });
 
-        db.addCheckpointListener(new DbCheckpointListener() {
+        db.addCheckpointListener(new CheckpointListener() {
             /** {@inheritDoc} */
             @Override public void beforeCheckpointBegin(Context ctx) {
                 // No-op.

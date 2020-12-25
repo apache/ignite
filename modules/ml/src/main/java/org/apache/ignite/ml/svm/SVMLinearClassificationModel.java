@@ -17,16 +17,27 @@
 
 package org.apache.ignite.ml.svm;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.inference.json.JSONModel;
+import org.apache.ignite.ml.inference.json.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
 /**
  * Base class for SVM linear classification model.
  */
-public final class SVMLinearClassificationModel implements IgniteModel<Vector, Double>, Exportable<SVMLinearClassificationModel> {
+public final class SVMLinearClassificationModel implements IgniteModel<Vector, Double>, Exportable<SVMLinearClassificationModel>,
+    JSONWritable {
     /** */
     private static final long serialVersionUID = -996984622291440226L;
 
@@ -41,6 +52,9 @@ public final class SVMLinearClassificationModel implements IgniteModel<Vector, D
 
     /** Intercept of the linear regression model. */
     private double intercept;
+
+    public SVMLinearClassificationModel() {
+    }
 
     /** */
     public SVMLinearClassificationModel(Vector weights, double intercept) {
@@ -189,5 +203,101 @@ public final class SVMLinearClassificationModel implements IgniteModel<Vector, D
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         return toString();
+    }
+
+    /** Loads SVMLinearClassificationModel from JSON file. */
+    public static SVMLinearClassificationModel fromJSON(Path path) {
+            ObjectMapper mapper = new ObjectMapper();
+
+            SVMLinearClassificationJSONExportModel exportModel;
+            try {
+                exportModel = mapper
+                        .readValue(new File(path.toAbsolutePath().toString()), SVMLinearClassificationJSONExportModel.class);
+
+                return exportModel.convert();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void toJSON(Path path) {
+            ObjectMapper mapper = new ObjectMapper();
+
+            try {
+                SVMLinearClassificationJSONExportModel exportModel = new SVMLinearClassificationJSONExportModel(
+                    System.currentTimeMillis(),
+                    "svm_" + UUID.randomUUID().toString(),
+                    SVMLinearClassificationModel.class.getSimpleName());
+                exportModel.intercept = intercept;
+                exportModel.isKeepingRawLabels = isKeepingRawLabels;
+                exportModel.threshold = threshold;
+                exportModel.weights = weights.asArray();
+
+                File file = new File(path.toAbsolutePath().toString());
+                mapper.writeValue(file, exportModel);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+    }
+
+    /** */
+    public static class SVMLinearClassificationJSONExportModel extends JSONModel {
+        /**
+         * Multiplier of the objects's vector required to make prediction.
+         */
+        public double[] weights;
+
+        /**
+         * Intercept of the linear regression model.
+         */
+        public double intercept;
+
+        /**
+         * Output label format. 0 and 1 for false value and raw sigmoid regression value otherwise.
+         */
+        public boolean isKeepingRawLabels;
+
+        /**
+         * Threshold to assign '1' label to the observation if raw value more than this threshold.
+         */
+        public double threshold = 0.5;
+
+        /**
+         *
+         */
+        public SVMLinearClassificationJSONExportModel(Long timestamp, String uid, String modelClass) {
+            super(timestamp, uid, modelClass);
+        }
+
+        /**
+         *
+         */
+        @JsonCreator
+        public SVMLinearClassificationJSONExportModel() {
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "SVMLinearClassificationJSONExportModel{" +
+                    "weights=" + Arrays.toString(weights) +
+                    ", intercept=" + intercept +
+                    ", isKeepingRawLabels=" + isKeepingRawLabels +
+                    ", threshold=" + threshold +
+                    '}';
+        }
+
+        /** {@inheritDoc} */
+        @Override public SVMLinearClassificationModel convert() {
+            SVMLinearClassificationModel mdl = new SVMLinearClassificationModel();
+            mdl.withWeights(VectorUtils.of(weights));
+            mdl.withIntercept(intercept);
+            mdl.withRawLabels(isKeepingRawLabels);
+            mdl.withThreshold(threshold);
+
+            return mdl;
+        }
     }
 }

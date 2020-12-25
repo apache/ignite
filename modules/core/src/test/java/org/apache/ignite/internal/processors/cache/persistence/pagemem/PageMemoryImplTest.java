@@ -36,12 +36,14 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
@@ -66,7 +68,6 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
-import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -327,7 +328,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         PageStoreWriter pageStoreWriter = (fullPageId, buf, tag) -> {
             assertNotNull(tag);
 
-            pageStoreMgr.write(fullPageId.groupId(), fullPageId.pageId(), buf, 1);
+            pageStoreMgr.write(fullPageId.groupId(), fullPageId.pageId(), buf, 1, false);
         };
 
         for (FullPageId cpPage : cpPages) {
@@ -642,6 +643,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             provider,
             sizes,
             sharedCtx,
+            sharedCtx.pageStore(),
             PAGE_SIZE,
             replaceWriter,
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
@@ -661,6 +663,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             provider,
             sizes,
             sharedCtx,
+            sharedCtx.pageStore(),
             PAGE_SIZE,
             replaceWriter,
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
@@ -701,7 +704,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         private Map<FullPageId, byte[]> storedPages = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public void read(int grpId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
+        @Override public void read(int grpId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
             FullPageId fullPageId = new FullPageId(pageId, grpId);
 
             byte[] bytes = storedPages.get(fullPageId);
@@ -713,12 +716,14 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(int grpId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
+        @Override public PageStore write(int grpId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
             byte[] data = new byte[PAGE_SIZE];
 
             pageBuf.get(data);
 
             storedPages.put(new FullPageId(pageId, grpId), data);
+
+            return null;
         }
 
         /** {@inheritDoc} */

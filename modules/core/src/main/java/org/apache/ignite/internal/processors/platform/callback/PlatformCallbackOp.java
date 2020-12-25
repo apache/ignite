@@ -245,4 +245,7 @@ class PlatformCallbackOp {
 
     /** */
     public static final int ComputeActionExecute = 75;
+
+    /** */
+    public static final int BinaryTypeGet = 76;
 }

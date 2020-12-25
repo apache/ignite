@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
@@ -33,6 +35,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,6 +53,7 @@ public class Fragment {
     private final IgniteRel root;
 
     /** Serialized root representation. */
+    @GridToStringExclude
     private final String rootSer;
 
     /** */
@@ -161,6 +166,14 @@ public class Fragment {
             if (rootFragment())
                 mapping = FragmentMapping.create(ctx.localNodeId()).colocate(mapping);
 
+            if (single() && mapping.nodeIds().size() > 1) {
+                // this is possible when the fragment contains scan of a replicated cache, which brings
+                // several nodes (actually all containing nodes) to the collocation group, but this fragment
+                // supposed to be executed on a single node, so let's choose one wisely
+                mapping = FragmentMapping.create(mapping.nodeIds()
+                    .get(ThreadLocalRandom.current().nextInt(mapping.nodeIds().size()))).colocate(mapping);
+            }
+
             return mapping.finalize(nodesSource);
         }
         catch (NodeMappingException e) {
@@ -184,6 +197,6 @@ public class Fragment {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return rootSer;
+        return S.toString(Fragment.class, this, "root", RelOptUtil.toString(root));
     }
 }

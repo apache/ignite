@@ -21,6 +21,8 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
@@ -29,10 +31,12 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.Aggregate.Group;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
@@ -106,14 +110,26 @@ public class IgniteReduceAggregate extends SingleRel implements IgniteRel {
         return pw;
     }
 
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        double rows = mq.getRowCount(getInput());
+
+        // TODO: fix it when https://issues.apache.org/jira/browse/IGNITE-13543 will be resolved
+        // currently it's OK to have such a dummy cost because there is no other options
+        return planner.getCostFactory().makeCost(rows, rows * IgniteCost.ROW_PASS_THROUGH_COST, 0);
+    }
+
+    /** */
     public ImmutableBitSet groupSet() {
         return groupSet;
     }
 
+    /** */
     public List<ImmutableBitSet> groupSets() {
         return groupSets;
     }
 
+    /** */
     public List<AggregateCall> aggregateCalls() {
         return aggCalls;
     }

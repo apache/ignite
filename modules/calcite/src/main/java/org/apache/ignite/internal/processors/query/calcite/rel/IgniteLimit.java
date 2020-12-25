@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -32,9 +33,16 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 
 /** */
 public class IgniteLimit extends SingleRel implements IgniteRel {
+    /** In case the fetch value is a DYNAMIC_PARAM. */
+    private static final double FETCH_IS_PARAM_FACTOR = 0.01;
+
+    /** In case the offset value is a DYNAMIC_PARAM. */
+    private static final double OFFSET_IS_PARAM_FACTOR = 0.5;
+
     /** Offset. */
     private final RexNode offset;
 
@@ -112,44 +120,40 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rows = estimateRowCount(mq);
+        double inputRowCount = mq.getRowCount(getInput());
 
-        return planner.getCostFactory().makeCost(rows, 0, 0);
+        double lim = fetch != null ? doubleFromRex(fetch, inputRowCount * FETCH_IS_PARAM_FACTOR) : inputRowCount;
+        double off = offset != null ? doubleFromRex(offset, inputRowCount * OFFSET_IS_PARAM_FACTOR) : 0;
+
+        double rows = Math.min(lim + off, inputRowCount);
+
+        return planner.getCostFactory().makeCost(rows, rows * IgniteCost.ROW_PASS_THROUGH_COST, 0);
     }
 
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        Integer lim = intFromRex(fetch);
-        Integer off = intFromRex(offset);
+        double inputRowCount = mq.getRowCount(getInput());
 
-        if (lim == null) {
-            // If estimated rowcount is less than offset return 0
-            if (off == null)
-                return getInput().estimateRowCount(mq) * 0.01;
+        double lim = fetch != null ? doubleFromRex(fetch, inputRowCount * FETCH_IS_PARAM_FACTOR) : inputRowCount;
+        double off = offset != null ? doubleFromRex(offset, inputRowCount * OFFSET_IS_PARAM_FACTOR) : 0;
 
-            return Math.max(0, getInput().estimateRowCount(mq) - off);
-        }
-        else {
-            // probably we can process DYNAMIC_PARAM here too.
-            if (off != null)
-                return lim + off;
-            else
-                return lim / 2.;
-        }
+        return Math.min(lim, inputRowCount - off);
     }
 
     /**
      * @return Integer value of the literal expression.
      */
-    private Integer intFromRex(RexNode n) {
+    private double doubleFromRex(RexNode n, double def) {
         try {
             if (n.isA(SqlKind.LITERAL))
                 return ((RexLiteral)n).getValueAs(Integer.class);
             else
-                return null;
+                return def;
         }
         catch (Exception e) {
-            return null;
+            assert false : "Unable to extract value: " + e.getMessage();
+
+            return def;
         }
     }
 

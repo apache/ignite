@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.List;
 
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -34,7 +33,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -63,7 +61,6 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
                     return IgniteDistributions.broadcast();
                 }
             }
-                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t0_jid_idx")
         );
 
         publicSchema.addTable(
@@ -100,7 +97,7 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
 
         List<RexNode> lBound = idxScan.lowerBound();
 
-        assertNotNull(lBound);
+        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), lBound);
         assertEquals(3, lBound.size());
 
         assertTrue(((RexLiteral)lBound.get(0)).isNull());
@@ -109,7 +106,7 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
 
         List<RexNode> uBound = idxScan.upperBound();
 
-        assertNotNull(uBound);
+        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), uBound);
         assertEquals(3, uBound.size());
 
         assertTrue(((RexLiteral)uBound.get(0)).isNull());
@@ -171,7 +168,5 @@ public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
         assertNotNull(phys);
 
         checkSplitAndSerialization(phys, publicSchema);
-
-        System.out.println("+++\n" + RelOptUtil.toString(phys));
     }
 }

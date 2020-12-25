@@ -78,7 +78,7 @@ namespace ignite
                 /** Snapshot. */
                 SPSnap updated;
 
-                IGNITE_NO_COPY_ASSIGNMENT(BinaryTypeHandler)
+                IGNITE_NO_COPY_ASSIGNMENT(BinaryTypeHandler);
             };
         }
     }    

@@ -116,7 +116,8 @@ namespace ignite
                 ClientTransactions(ignite::impl::thin::transactions::TransactionsProxy& impl, const std::string& lbl) :
                     proxy(impl)
                 {
-                    ignite::common::FixedSizeArray<char> *label0 = new ignite::common::FixedSizeArray<char>(lbl.size() + 1);
+                    ignite::common::FixedSizeArray<char> *label0 =
+                        new ignite::common::FixedSizeArray<char>(static_cast<int32_t>(lbl.size()) + 1);
 
                     strcpy(label0->GetData(), lbl.c_str());
 

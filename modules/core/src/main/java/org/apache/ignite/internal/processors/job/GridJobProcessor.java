@@ -291,7 +291,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     };
 
     /** Current session. */
-    private final ThreadLocal<ComputeTaskSession> currSess = new ThreadLocal<>();
+    private final ThreadLocal<GridJobSessionImpl> currSess = new ThreadLocal<>();
 
     /**
      * @param ctx Kernal context.
@@ -1377,7 +1377,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      *
      * @param ses Session.
      */
-    public void currentTaskSession(ComputeTaskSession ses) {
+    public void currentTaskSession(GridJobSessionImpl ses) {
         currSess.set(ses);
     }
 
@@ -1407,6 +1407,20 @@ public class GridJobProcessor extends GridProcessorAdapter {
             return null;
 
         return ses.getTaskName();
+    }
+
+    /**
+     * Returns current deployment.
+     *
+     * @return Deployment.
+     */
+    public GridDeployment currentDeployment() {
+        GridJobSessionImpl session = currSess.get();
+
+        if (session == null || session.deployment() == null)
+            return null;
+
+        return session.deployment();
     }
 
     /**
@@ -2024,6 +2038,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         rwLock.readUnlock();
                     }
                 }
+            }
+
+            if (ctx.performanceStatistics().enabled()) {
+                ctx.performanceStatistics().job(ses.getId(),
+                    worker.getQueuedTime(),
+                    worker.getStartTime(),
+                    worker.getExecuteTime(),
+                    worker.isTimedOut());
             }
         }
     }

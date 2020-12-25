@@ -46,7 +46,7 @@ public class GridDistributedTxMapping {
 
     /** Mapped node. */
     @GridToStringExclude
-    private ClusterNode primary;
+    private final ClusterNode primary;
 
     /** Mapped backup nodes. */
     private volatile Set<UUID> backups;

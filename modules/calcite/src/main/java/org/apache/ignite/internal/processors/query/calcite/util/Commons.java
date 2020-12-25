@@ -31,14 +31,12 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -337,28 +335,6 @@ public final class Commons {
     }
 
     /**
-     * Returns the longest possible prefix of {@code seq} that could be form from provided {@code elems}.
-     *
-     * @param seq Sequence.
-     * @param elems Elems.
-     * @return The longest possible prefix of {@code seq}.
-     */
-    public static <T> List<T> maxPrefix(List<T> seq, Collection<T> elems) {
-        List<T> res = new ArrayList<>();
-
-        Set<T> elems0 = new HashSet<>(elems);
-
-        for (T e : seq) {
-            if (!elems0.remove(e))
-                break;
-
-            res.add(e);
-        }
-
-        return res;
-    }
-
-    /**
      * Checks if there is a such permutation of all {@code elems} that is prefix of
      * provided {@code seq}.
      *
@@ -381,17 +357,5 @@ public final class Commons {
         }
 
         return true;
-    }
-
-    /**
-     * Creates collations from provided keys.
-     *
-     * @param keys The keys to create collation from.
-     * @return New collation.
-     */
-    public static RelCollation createCollation(List<Integer> keys) {
-        return RelCollations.of(
-            keys.stream().map(RelFieldCollation::new).collect(Collectors.toList())
-        );
     }
 }

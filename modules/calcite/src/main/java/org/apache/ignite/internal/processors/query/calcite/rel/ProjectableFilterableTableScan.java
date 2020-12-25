@@ -40,6 +40,7 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -122,12 +123,13 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double estimated = estimateRowCount(mq);
+        double rows = table.getRowCount();
+        double cost = rows * IgniteCost.ROW_PASS_THROUGH_COST;
 
-        if (projects != null)
-            estimated += estimated * projects.size();
+        if (condition != null)
+            cost += rows * IgniteCost.ROW_COMPARISON_COST;
 
-        return planner.getCostFactory().makeCost(estimated, 0, 0);
+        return planner.getCostFactory().makeCost(rows, cost, 0);
     }
 
     /** {@inheritDoc} */

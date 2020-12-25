@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadWaitForBackupsWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheStartWithLoadTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.BlockedEvictionsTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.DelayedOwningDuringExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictionWhilePartitionGroupIsReservedTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.MovingPartitionIsEvictedDuringClearingTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PreloadingRestartWhileClearingPartitionTest;
@@ -157,6 +158,7 @@ public class IgniteCacheTestSuite7 {
         GridTestUtils.addTestIfNeeded(suite, PreloadingRestartWhileClearingPartitionTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MovingPartitionIsEvictedDuringClearingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, EvictionWhilePartitionGroupIsReservedTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, DelayedOwningDuringExchangeTest.class, ignoredTests);
 
         return suite;
     }

@@ -29,8 +29,9 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Spool;
-import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 
 /**
@@ -103,11 +104,19 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        // TODO: add memory usage to cost
-        double rowCount = mq.getRowCount(this);
-        rowCount = RelMdUtil.addEpsilon(rowCount);
+        double inRowCnt = mq.getRowCount(getInput());
+        double outRowCnt = estimateRowCount(mq);
+        double bytesPerRow = getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
+        double cpuCost = outRowCnt * IgniteCost.ROW_PASS_THROUGH_COST;
+        double totalBytes = outRowCnt * bytesPerRow;
 
-        return planner.getCostFactory().makeCost(rowCount, 0, 0).multiplyBy(2);
+        if (idxCond.lowerCondition() != null)
+            cpuCost += Math.log(inRowCnt) * IgniteCost.ROW_COMPARISON_COST;
+
+        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+
+        return costFactory.makeCost(outRowCnt,
+            cpuCost, 0, totalBytes, 0);
     }
 
     /** {@inheritDoc} */

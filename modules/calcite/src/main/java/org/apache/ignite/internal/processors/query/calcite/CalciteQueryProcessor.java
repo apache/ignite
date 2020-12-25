@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
+
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityServ
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServiceImpl;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
@@ -88,7 +89,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         // Context provides a way to store data within the planner session that can be accessed in planner rules.
         .context(Contexts.empty())
         // Custom cost factory to use during optimization
-        .costFactory(RelOptCostImpl.FACTORY)
+        .costFactory(new IgniteCostFactory())
         .typeSystem(IgniteTypeSystem.INSTANCE)
         .build();
 

@@ -100,6 +100,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -168,6 +169,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SHUTDOWN_POLI
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
@@ -186,6 +188,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** @see IgniteSystemProperties#IGNITE_DISCOVERY_HISTORY_SIZE */
     public static final int DFLT_DISCOVERY_HISTORY_SIZE = 500;
+
+    /** Name of the discovery metrics registry. */
+    public static final String DISCO_METRICS = metricName("io", "discovery");
 
     /** Predicate filtering out daemon nodes. */
     private static final IgnitePredicate<ClusterNode> FILTER_NOT_DAEMON = new P1<ClusterNode>() {
@@ -292,10 +297,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
 
-        ctx.systemView().registerView(NODES_SYS_VIEW, NODES_SYS_VIEW_DESC,
-            new ClusterNodeViewWalker(),
-            () -> F.concat(false, allNodes(), daemonNodes()),
-            ClusterNodeView::new);
+        if (ctx.systemView().view(NODES_SYS_VIEW) == null) {
+            ctx.systemView().registerView(NODES_SYS_VIEW, NODES_SYS_VIEW_DESC,
+                new ClusterNodeViewWalker(),
+                () -> F.concat(false, allNodes(), daemonNodes()),
+                ClusterNodeView::new);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1560,7 +1567,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ClusterNode currCrd = discoCache.oldestServerNode();
 
         if ((evtType == EventType.EVT_NODE_FAILED || evtType == EventType.EVT_NODE_LEFT) &&
-                currCrd != null && currCrd.order() > evtNode.order())
+                currCrd != null && currCrd.order() > evtNode.order() && !evtNode.isClient() && !evtNode.isDaemon())
             clo.apply("Coordinator changed [prev=" + evtNode + ", cur=" + currCrd + "]");
 
         BaselineTopology blt = state.baselineTopology();
@@ -2733,18 +2740,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 try {
                     body0();
                 }
-                catch (InterruptedException e) {
-                    if (!isCancelled)
-                        ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
-
-                    throw e;
-                }
                 catch (Throwable t) {
-                    U.error(log, "Exception in discovery notyfier worker thread.", t);
+                    boolean isInterruptedException = X.hasCause(t, InterruptedException.class)
+                        || X.hasCause(t, IgniteInterruptedException.class)
+                        || X.hasCause(t, IgniteInterruptedCheckedException.class);
 
-                    FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
+                    if (!isInterruptedException)
+                        U.error(log, "Exception in discovery notifier worker thread.", t);
 
-                    ctx.failure().process(new FailureContext(type, t));
+                    if (!isInterruptedException || !isCancelled) {
+                        FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
+
+                        ctx.failure().process(new FailureContext(type, t));
+                    }
 
                     throw t;
                 }

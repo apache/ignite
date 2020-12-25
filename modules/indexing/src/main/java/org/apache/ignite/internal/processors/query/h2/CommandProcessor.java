@@ -1051,7 +1051,7 @@ public class CommandProcessor {
                 sqlCode = IgniteQueryErrorCode.UNKNOWN;
         }
 
-        return new IgniteSQLException(e.getMessage(), sqlCode);
+        return new IgniteSQLException(e.getMessage(), sqlCode, e);
     }
 
     /**
@@ -1361,7 +1361,7 @@ public class CommandProcessor {
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
         BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter,
-            idx.runningQueryManager(), qryId);
+            idx.runningQueryManager(), qryId, ctx.tracing());
 
         BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.packetSize());
 

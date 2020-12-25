@@ -55,8 +55,24 @@ public interface ClientCompute {
      * @return A Future representing pending completion of the task.
      * @throws ClientException If task failed.
      * @see ComputeTask for information about task execution.
+     * @deprecated Use {@link #executeAsync2(String, Object)} instead.
+     * This method calls {@link #executeAsync2(String, Object)} internally, but returns a more limited
+     * Future interface.
      */
+    @Deprecated
     public <T, R> Future<R> executeAsync(String taskName, @Nullable T arg) throws ClientException;
+
+    /**
+     * Executes given task asynchronously within the cluster group. For step-by-step explanation of task execution
+     * process refer to {@link ComputeTask} documentation.
+     *
+     * @param taskName Name of the task to execute.
+     * @param arg Optional argument of task execution, can be {@code null}.
+     * @return A Future representing pending completion of the task.
+     * @throws ClientException If task failed.
+     * @see ComputeTask for information about task execution.
+     */
+    public <T, R> IgniteClientFuture<R> executeAsync2(String taskName, @Nullable T arg) throws ClientException;
 
     /**
      * Sets timeout for tasks executed by returned {@code ClientCompute} instance.

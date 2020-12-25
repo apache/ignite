@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Cache
         /// is mapped. Use it to determine which nodes are storing which keys prior to sending
         /// jobs that access these keys.
         /// </summary>
-        /// <param name="key">Keys to map to a node.</param>
+        /// <param name="key">Key to map to a node.</param>
         /// <returns>Primary node for the key or null if there are no alive nodes for this cache.</returns>
         IClusterNode MapKeyToNode<TK>(TK key);
 

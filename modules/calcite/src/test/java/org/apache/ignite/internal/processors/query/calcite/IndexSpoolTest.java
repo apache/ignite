@@ -44,7 +44,7 @@ import static org.junit.Assert.assertThat;
 
 
 /**
- * IndexSpool test.
+ * Index spool test.
  */
 @RunWith(Parameterized.class)
 public class IndexSpoolTest extends GridCommonAbstractTest {

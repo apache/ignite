@@ -37,7 +37,7 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
      * @param cap Initial capacity.
      */
     public BinaryHeapOutputStream(int cap) {
-        this(cap, BinaryMemoryAllocator.INSTANCE.chunk());
+        this(cap, BinaryMemoryAllocator.THREAD_LOCAL.chunk());
     }
 
     /**

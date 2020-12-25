@@ -1635,6 +1635,28 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(GetCompactFooter(), _marsh.CompactFooter);
         }
 
+        /// <summary>
+        /// Tests serializing/deserializing objects with IBinaryObject fields.
+        /// </summary>
+        [Test]
+        public void TestBinaryField()
+        {
+            byte[] dataInner = _marsh.Marshal(new BinaryObjectWrapper());
+
+            IBinaryObject innerObject = _marsh.Unmarshal<IBinaryObject>(dataInner, BinaryMode.ForceBinary);
+            BinaryObjectWrapper inner = innerObject.Deserialize<BinaryObjectWrapper>();
+            
+            Assert.NotNull(inner);
+
+            byte[] dataOuter = _marsh.Marshal(new BinaryObjectWrapper() { Val = innerObject });
+
+            IBinaryObject outerObject = _marsh.Unmarshal<IBinaryObject>(dataOuter, BinaryMode.ForceBinary);
+            BinaryObjectWrapper outer = outerObject.Deserialize<BinaryObjectWrapper>();
+            
+            Assert.NotNull(outer);
+            Assert.IsTrue(outer.Val.Equals(innerObject));
+        }
+
         private static void CheckKeepSerialized(BinaryConfiguration cfg, bool expKeep)
         {
             if (cfg.TypeConfigurations == null)
@@ -2745,6 +2767,11 @@ namespace Apache.Ignite.Core.Tests.Binary
             public byte* ByteP { get; set; }
             public int* IntP { get; set; }
             public void* VoidP { get; set; }
+        }
+
+        private class BinaryObjectWrapper
+        {
+            public IBinaryObject Val;
         }
     }
 }

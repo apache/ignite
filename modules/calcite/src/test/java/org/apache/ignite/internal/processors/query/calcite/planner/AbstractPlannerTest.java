@@ -455,8 +455,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             protoType = RelDataTypeImpl.proto(type);
             this.rewindable = rewindable;
             this.rowCnt = rowCnt;
-
-            addIndex(new IgniteIndex(RelCollations.of(), "PK", null, this));
         }
 
         /** {@inheritDoc} */

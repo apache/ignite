@@ -1052,22 +1052,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Validates that cache key object has overridden equals and hashCode methods.
-     * Will also check that a BinaryObject has a hash code set.
-     *
-     * @param key Key.
-     * @throws IllegalArgumentException If equals or hashCode is not implemented.
-     */
-    public static void validateCacheKey(@Nullable Object key) {
-        if (key == null)
-            return;
-
-        if (!U.overridesEqualsAndHashCode(key))
-            throw new IllegalArgumentException("Cache key must override hashCode() and equals() methods: " +
-                key.getClass().getName());
-    }
-
-    /**
      * @param cacheName Cache name.
      * @return {@code True} if this is utility system cache.
      */
@@ -2021,9 +2005,13 @@ public class GridCacheUtils {
      * @return Page size without encryption overhead.
      */
     public static int encryptedPageSize(int pageSize, EncryptionSpi encSpi) {
+        // If encryption is enabled, a space of one encryption block is reserved to store CRC and encryption key ID.
+        // If encryption is disabled, NoopEncryptionSPI with a zero encryption block size is used.
+        assert encSpi.blockSize() >= /* CRC */ 4 + /* Key ID */ 1 || encSpi.blockSize() == 0;
+
         return pageSize
             - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
-            - encSpi.blockSize(); /* For CRC. */
+            - encSpi.blockSize(); /* For CRC and encryption key ID. */
     }
 
     /**

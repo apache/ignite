@@ -71,7 +71,9 @@ namespace ignite
 
                 QUERY_MORE_RESULTS = 9,
 
-                STREAMING_BATCH = 10
+                STREAMING_BATCH = 10,
+
+                META_RESULTSET = 11
             };
         };
 
@@ -307,6 +309,39 @@ namespace ignite
 
             /** Column search pattern. */
             std::string column;
+        };
+
+        /**
+         * Query get result set metadata request.
+         */
+        class QueryGetResultsetMetaRequest
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param schema Schema.
+             * @param sqlQuery SQL query itself.
+             */
+            QueryGetResultsetMetaRequest(const std::string& schema, const std::string& sqlQuery);
+
+            /**
+             * Destructor.
+             */
+            ~QueryGetResultsetMetaRequest();
+
+            /**
+             * Write request using provided writer.
+             * @param writer Writer.
+             */
+            void Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
+
+        private:
+            /** Schema. */
+            std::string schema;
+
+            /** SQL query. */
+            std::string sqlQuery;
         };
 
         /**
@@ -864,6 +899,42 @@ namespace ignite
              * Destructor.
              */
             virtual ~QueryGetColumnsMetaResponse();
+
+            /**
+             * Get column metadata.
+             * @return Column metadata.
+             */
+            const meta::ColumnMetaVector& GetMeta() const
+            {
+                return meta;
+            }
+
+        private:
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            /** Columns metadata. */
+            meta::ColumnMetaVector meta;
+        };
+
+        /**
+         * Query get resultset metadata response.
+         */
+        class QueryGetResultsetMetaResponse : public Response
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            QueryGetResultsetMetaResponse();
+
+            /**
+             * Destructor.
+             */
+            virtual ~QueryGetResultsetMetaResponse();
 
             /**
              * Get column metadata.

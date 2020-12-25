@@ -87,10 +87,12 @@ namespace ignite
             return value;
         }
 
-        Date MakeDateGmt(int year, int month, int day, int hour,
+        IGNITE_FRIEND_EXPORT Date MakeDateGmt(int year, int month, int day, int hour,
             int min, int sec)
         {
-            tm date = { 0 };
+            tm date;
+
+            std::memset(&date, 0, sizeof(date));
 
             date.tm_year = year - 1900;
             date.tm_mon = month - 1;
@@ -102,10 +104,12 @@ namespace ignite
             return CTmToDate(date);
         }
 
-        Date MakeDateLocal(int year, int month, int day, int hour,
+        IGNITE_FRIEND_EXPORT Date MakeDateLocal(int year, int month, int day, int hour,
             int min, int sec)
         {
-            tm date = { 0 };
+            tm date;
+
+            std::memset(&date, 0, sizeof(date));
 
             date.tm_year = year - 1900;
             date.tm_mon = month - 1;
@@ -119,9 +123,11 @@ namespace ignite
             return CTimeToDate(localTime);
         }
 
-        Time MakeTimeGmt(int hour, int min, int sec)
+        IGNITE_FRIEND_EXPORT Time MakeTimeGmt(int hour, int min, int sec)
         {
-            tm date = { 0 };
+            tm date;
+
+            std::memset(&date, 0, sizeof(date));
 
             date.tm_year = 70;
             date.tm_mon = 0;
@@ -133,9 +139,11 @@ namespace ignite
             return CTmToTime(date);
         }
 
-        Time MakeTimeLocal(int hour, int min, int sec)
+        IGNITE_FRIEND_EXPORT Time MakeTimeLocal(int hour, int min, int sec)
         {
-            tm date = { 0 };
+            tm date;
+
+            std::memset(&date, 0, sizeof(date));
 
             date.tm_year = 70;
             date.tm_mon = 0;
@@ -149,10 +157,12 @@ namespace ignite
             return CTimeToTime(localTime);
         }
 
-        Timestamp MakeTimestampGmt(int year, int month, int day,
+        IGNITE_FRIEND_EXPORT Timestamp MakeTimestampGmt(int year, int month, int day,
             int hour, int min, int sec, long ns)
         {
-            tm date = { 0 };
+            tm date;
+
+            std::memset(&date, 0, sizeof(date));
 
             date.tm_year = year - 1900;
             date.tm_mon = month - 1;
@@ -164,10 +174,12 @@ namespace ignite
             return CTmToTimestamp(date, ns);
         }
 
-        Timestamp MakeTimestampLocal(int year, int month, int day,
+        IGNITE_FRIEND_EXPORT Timestamp MakeTimestampLocal(int year, int month, int day,
             int hour, int min, int sec, long ns)
         {
-            tm date = { 0 };
+            tm date;
+
+            std::memset(&date, 0, sizeof(date));
 
             date.tm_year = year - 1900;
             date.tm_mon = month - 1;
@@ -181,7 +193,7 @@ namespace ignite
             return CTimeToTimestamp(localTime, ns);
         }
 
-        std::string GetDynamicLibraryName(const char* name)
+        IGNITE_IMPORT_EXPORT std::string GetDynamicLibraryName(const char* name)
         {
             std::stringstream libNameBuffer;
 
@@ -189,5 +201,16 @@ namespace ignite
 
             return libNameBuffer.str();
         }
+
+        IGNITE_IMPORT_EXPORT bool AllDigits(const std::string &val)
+        {
+            std::string::const_iterator i = val.begin();
+
+            while (i != val.end() && isdigit(*i))
+                ++i;
+
+            return i == val.end();
+        }
+
     }
 }

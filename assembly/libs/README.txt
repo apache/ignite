@@ -81,7 +81,6 @@ The following modules are available:
 - ignite-indexing (for SQL querying and indexing)
 - ignite-jcl (for Apache Commons logging)
 - ignite-jta (for XA integration)
-- ignite-kafka (for streaming messages from Apache Kafka into Ignite)
 - ignite-logj4 (for Log4j logging)
 - ignite-log4j2 (for Log4j 2 logging)
 - ignite-mesos (for integration with Apache Mesos cluster resource manager)
