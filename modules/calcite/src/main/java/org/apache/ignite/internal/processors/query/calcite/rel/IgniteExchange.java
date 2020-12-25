@@ -81,10 +81,7 @@ public class IgniteExchange extends Exchange implements IgniteRel {
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
         if (RelDistributions.BROADCAST_DISTRIBUTED.equals(distribution))
-            // With broadcast distribution each row will be sent to the each distination node,
-            // thus the total bytes amount will be multiplies of the destination nodes count.
-            // We have no such information, so let's just multiply it by 5.
-            totalBytes *= 5;
+            totalBytes *= IgniteCost.BROADCAST_DISTRIBUTION_PENALTY;
 
         return costFactory.makeCost(rowCount, rowCount * IgniteCost.ROW_PASS_THROUGH_COST, 0, 0, totalBytes);
     }

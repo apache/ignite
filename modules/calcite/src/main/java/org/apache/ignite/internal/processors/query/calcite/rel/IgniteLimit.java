@@ -36,6 +36,12 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 
 /** */
 public class IgniteLimit extends SingleRel implements IgniteRel {
+    /** In case the fetch value is a DYNAMIC_PARAM. */
+    private static final double FETCH_IS_PARAM_FACTOR = 0.01;
+
+    /** In case the offset value is a DYNAMIC_PARAM. */
+    private static final double OFFSET_IS_PARAM_FACTOR = 0.5;
+
     /** Offset. */
     private final RexNode offset;
 
@@ -103,8 +109,8 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double inputRowCount = mq.getRowCount(getInput());
 
-        int lim = intFromRex(fetch);
-        int off = intFromRex(offset);
+        double lim = fetch != null ? doubleFromRex(fetch, inputRowCount * FETCH_IS_PARAM_FACTOR) : inputRowCount;
+        double off = offset != null ? doubleFromRex(offset, inputRowCount * OFFSET_IS_PARAM_FACTOR) : 0;
 
         double rows = Math.min(lim + off, inputRowCount);
 
@@ -115,31 +121,26 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
     @Override public double estimateRowCount(RelMetadataQuery mq) {
         double inputRowCount = mq.getRowCount(getInput());
 
-        int lim = intFromRex(fetch);
-        int off = intFromRex(offset);
+        double lim = fetch != null ? doubleFromRex(fetch, inputRowCount * FETCH_IS_PARAM_FACTOR) : inputRowCount;
+        double off = offset != null ? doubleFromRex(offset, inputRowCount * OFFSET_IS_PARAM_FACTOR) : 0;
 
-        if (lim == 0 && off == 0)
-            return inputRowCount;
-
-        if (lim == 0)
-            return Math.max(0, inputRowCount - off);
-
-        // probably we can process DYNAMIC_PARAM here too.
         return Math.min(lim, inputRowCount - off);
     }
 
     /**
      * @return Integer value of the literal expression.
      */
-    private int intFromRex(RexNode n) {
+    private double doubleFromRex(RexNode n, double def) {
         try {
             if (n.isA(SqlKind.LITERAL))
                 return ((RexLiteral)n).getValueAs(Integer.class);
             else
-                return 0;
+                return def;
         }
         catch (Exception e) {
-            return 0;
+            assert false : "Unable to extract value: " + e.getMessage();
+
+            return def;
         }
     }
 

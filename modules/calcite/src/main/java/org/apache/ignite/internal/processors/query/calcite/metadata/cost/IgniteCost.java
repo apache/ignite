@@ -37,6 +37,13 @@ public class IgniteCost implements RelOptCost {
     /** Cost of a comparison of one row. */
     public static final double ROW_COMPARISON_COST = 3;
 
+    /**
+     * With broadcast distribution each row will be sent to the each distination node,
+     * thus the total bytes amount will be multiplies of the destination nodes count.
+     * Right now it's just a const.
+     */
+    public static final double BROADCAST_DISTRIBUTION_PENALTY = 5;
+
     /** */
     static final IgniteCost ZERO = new IgniteCost(0, 0, 0, 0, 0);
 
