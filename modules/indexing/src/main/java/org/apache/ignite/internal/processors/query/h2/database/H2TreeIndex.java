@@ -90,6 +90,7 @@ import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
+import org.h2.value.ValueJavaObject;
 import org.h2.value.ValueNull;
 import org.jetbrains.annotations.NotNull;
 
@@ -262,7 +263,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
                 keys[i] = null;
             else if (v == ValueNull.INSTANCE)
                 keys[i] = NullKey.INSTANCE;
-            else if (v instanceof GridH2ValueCacheObject)
+            else if (v instanceof GridH2ValueCacheObject || v instanceof ValueJavaObject)
                 keys[i] = new JavaObjectKey(v.getObject());
             else
                 keys[i] = v.getObject();

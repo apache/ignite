@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.io;
 
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -51,6 +52,11 @@ public class IndexSearchRowImpl extends IndexRowImpl {
     /** {@inheritDoc} */
     @Override public boolean isFullSchemaSearch() {
         return fullSchemaSearch;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IndexSearchRowImpl.class, this);
     }
 
     /** */

@@ -93,7 +93,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         InlineTreeFilterClosure closure = getFilterClosure(filter);
 
         IndexSearchRowImpl rlower = lower == null ? null : new IndexSearchRowImpl(lower.keys(), lower.cacheRow(), def.getSchema());
-        IndexSearchRowImpl rupper = upper == null ? null : new IndexSearchRowImpl(upper.keys(), lower.cacheRow(), def.getSchema());
+        IndexSearchRowImpl rupper = upper == null ? null : new IndexSearchRowImpl(upper.keys(), upper.cacheRow(), def.getSchema());
 
         // If it is known that only one row will be returned an optimization is employed
         if (isSingleRowLookup(rlower, rupper)) {

@@ -229,13 +229,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Override public void start0() throws IgniteCheckedException {
         CacheConfiguration ccfg = cctx.config();
 
-        qryProcEnabled = QueryUtils.isEnabled(ccfg);
+        enabled = qryProcEnabled = QueryUtils.isEnabled(ccfg);
 
         qryProc = cctx.kernalContext().query();
 
         cacheName = cctx.name();
-
-        enabled = qryProcEnabled || (isIndexingSpiEnabled() && !CU.isSystemCache(cacheName));
 
         maxIterCnt = ccfg.getMaxQueryIteratorsCount();
 
