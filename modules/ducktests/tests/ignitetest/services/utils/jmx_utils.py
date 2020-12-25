@@ -17,19 +17,23 @@
 This module contains JMX Console client and different utilities and mixins to retrieve ignite node parameters
 and attributes.
 """
-
+import os
 import re
 
+from ducktape.cluster.remoteaccount import RemoteCommandError
 from ignitetest.services.utils.decorators import memoize
+import sys
+import time
 
 
-def ignite_jmx_mixin(node, pids):
+def ignite_jmx_mixin(node, spec, pids):
     """
     Dynamically mixin JMX attributes to Ignite service node.
     :param node: Ignite service node.
     :param pids: Ignite service node pids.
     """
     setattr(node, 'pids', pids)
+    setattr(node, 'spec', spec)
     base_cls = node.__class__
     base_cls_name = node.__class__.__name__
     node.__class__ = type(base_cls_name, (base_cls, IgniteJmxMixin), {})
@@ -55,24 +59,52 @@ class JmxMBean:
 class JmxClient:
     """JMX client, invokes jmxterm on node locally.
     """
-    jmx_util_cmd = 'java -jar /opt/jmxterm.jar -v silent -n'
-
     def __init__(self, node):
         self.node = node
+        self.install_root = node.spec.path_aware.install_root
         self.pid = node.pids[0]
 
+    @property
+    def jmx_util_cmd(self):
+        """
+        :return: jmxterm prepared command line invocation.
+        """
+        return os.path.join(f"java -jar {self.install_root}/jmxterm.jar -v silent -n")
+
     @memoize
-    def find_mbean(self, pattern, domain='org.apache'):
+    def find_mbean(self, pattern, domain='org.apache', timeout_sec=3):
         """
         Find mbean by specified pattern and domain on node.
         :param pattern: MBean name pattern.
         :param domain: Domain of MBean
+        :param timeout_sec: Max. waiting
         :return: JmxMBean instance
         """
         cmd = "echo $'open %s\\n beans -d %s \\n close' | %s | grep -o '%s'" \
               % (self.pid, domain, self.jmx_util_cmd, pattern)
 
-        name = next(self.__run_cmd(cmd)).strip()
+        start = time.monotonic()
+
+        while True:
+            try:
+                sys.stderr.write("TEST | Trying to read node id from JMX on " + self.node.name +"\n")
+
+                name = next(self.__run_cmd(cmd)).strip()
+
+                sys.stderr.write("TEST | Got bean name from JMX: " + name + "\n")
+                break
+            except RuntimeError as e:
+                sys.stderr.write("Caught " + str(e) + "\n")
+
+                now = time.monotonic()
+
+                if now - start < timeout_sec:
+                    sys.stderr.write("TEST | Retry. Waiting for " + str(min(timeout_sec / 5, start + timeout_sec - now)) + "sec. Left: " + str(start + timeout_sec - now) + "\n")
+                    time.sleep(min(timeout_sec / 5, start + timeout_sec - now))
+                else:
+                    sys.stderr.write("TEST | Wont wait any more. Raise...\n")
+
+                    raise e
 
         return JmxMBean(self, name)
 
