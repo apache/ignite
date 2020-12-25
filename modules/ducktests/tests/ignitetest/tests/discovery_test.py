@@ -94,7 +94,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(nodes_to_kill=[1, 2], load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def _test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type):
+    def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type):
         """
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
         """
@@ -106,7 +106,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def _test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type):
+    def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
         """
@@ -250,8 +250,7 @@ class DiscoveryTest(IgniteTest):
 
     def _check_failed_number(self, failed_nodes, survived_node):
         """Ensures number of failed nodes is correct."""
-        failed_cnt = int(exec_command(survived_node, "grep '%s' %s | wc -l" %
-                                      (node_failed_event_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE)))
+        cmd = "grep '%s' %s | wc -l" % (node_failed_event_pattern(), survived_node.log_file)
 
         # Cache survivor id, do not read each time.
         surv_id = node_id(survived_node)
@@ -270,7 +269,7 @@ class DiscoveryTest(IgniteTest):
         """Ensures only target nodes failed"""
         for service in [srv for srv in self.test_context.services if isinstance(srv, IgniteAwareService)]:
             for node in [srv_node for srv_node in service.nodes if srv_node not in failed_nodes]:
-                cmd = "grep -i '%s' %s | wc -l" % ("local node segmented", IgniteAwareService.STDOUT_STDERR_CAPTURE)
+                cmd = "grep -i '%s' %s | wc -l" % ("local node segmented", node.log_file)
 
                 failed = exec_command(node, cmd)
 
