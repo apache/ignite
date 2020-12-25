@@ -29,18 +29,17 @@ from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
-from ignitetest.services.utils.ignite_persistence import IgnitePersistenceAware
+from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
 
 
-class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metaclass=ABCMeta):
+# pylint: disable=too-many-public-methods
+class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
     """
-
-    NETFILTER_STORE_PATH = os.path.join(IgnitePersistenceAware.TEMP_DIR, "iptables.bak")
 
     # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, **kwargs):
@@ -58,9 +57,22 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         self.shutdown_timeout_sec = shutdown_timeout_sec
 
         self.spec = resolve_spec(self, context, config, **kwargs)
+        self.init_logs_attribute()
 
         self.disconnected_nodes = []
         self.killed = False
+
+    @property
+    def version(self):
+        return self.config.version
+
+    @property
+    def project(self):
+        return self.spec.project
+
+    @property
+    def globals(self):
+        return self.context.globals
 
     def start_async(self, clean=True):
         """
@@ -89,7 +101,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         wait_until(lambda: self.alive(node), timeout_sec=10)
 
-        ignite_jmx_mixin(node, self.pids(node))
+        ignite_jmx_mixin(node, self.spec, self.pids(node))
 
     def stop_async(self):
         """
@@ -159,7 +171,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         node_config = self._prepare_config(node)
 
-        node.account.create_file(self.CONFIG_FILE, node_config)
+        node.account.create_file(self.config_file, node_config)
 
     def _prepare_config(self, node):
         if not self.config.consistent_id:
@@ -171,7 +183,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         config.discovery_spi.prepare_on_start(cluster=self)
 
-        node_config = self.spec.config_template.render(config_dir=self.PERSISTENT_ROOT, work_dir=self.WORK_DIR,
+        node_config = self.spec.config_template.render(config_dir=self.persistent_root, work_dir=self.work_dir,
                                                        config=config)
 
         setattr(node, "consistent_id", node.account.externally_routable_ip)
@@ -190,7 +202,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
     # pylint: disable=W0613
     def _worker(self, idx, node):
-        cmd = self.spec.command(node.log_file)
+        cmd = self.spec.command(node)
 
         self.logger.debug("Attempting to start Application Service on %s with command: %s" % (str(node.account), cmd))
 
@@ -277,6 +289,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
         task(node)
 
+    @property
+    def netfilter_store_path(self):
+        """
+        :return: path to store backup of iptables filter
+        """
+        return os.path.join(self.temp_dir, "iptables.bak")
+
     def drop_network(self, nodes=None):
         """
         Disconnects node from cluster.
@@ -311,12 +330,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
     def __backup_iptables(self, nodes):
         # Store current network filter settings.
         for node in nodes:
-            cmd = "sudo iptables-save | tee " + IgniteAwareService.NETFILTER_STORE_PATH
+            cmd = f"sudo iptables-save | tee {self.netfilter_store_path}"
 
             exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
 
             if "Warning: iptables-legacy tables present" in exec_error:
-                cmd = "sudo iptables-legacy-save | tee " + IgniteAwareService.NETFILTER_STORE_PATH
+                cmd = f"sudo iptables-legacy-save | tee {self.netfilter_store_path}"
 
                 exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
 
@@ -330,7 +349,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
 
     def __restore_iptables(self):
         # Restore previous network filter settings.
-        cmd = "sudo iptables-restore < " + IgniteAwareService.NETFILTER_STORE_PATH
+        cmd = f"sudo iptables-restore < {self.netfilter_store_path}"
 
         errors = []
 
@@ -359,8 +378,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePersistenceAware, metacl
         """
         Update the node log file.
         """
-        cnt = list(node.account.ssh_capture(f'ls {self.LOGS_DIR} | '
-                                            f'grep -E "^console_[0-9]*.log$" | '
-                                            f'wc -l', callback=int))[0]
+        if not hasattr(node, 'log_file'):
+            node.log_file = os.path.join(self.log_dir, "console.log")
 
-        node.log_file = self.STDOUT_STDERR_CAPTURE.replace('.log', f'_{cnt + 1}.log')
+        cnt = list(node.account.ssh_capture(f'ls {self.log_dir} | '
+                                            f'grep -E "^console.log(.[0-9]+)?$" | '
+                                            f'wc -l', callback=int))[0]
+        if cnt > 0:
+            rotated_log = os.path.join(self.log_dir, f"console.log.{cnt}")
+            self.logger.debug(f"rotating {node.log_file} to {rotated_log} on {node.name}")
+            node.account.ssh(f"mv {node.log_file} {rotated_log}")

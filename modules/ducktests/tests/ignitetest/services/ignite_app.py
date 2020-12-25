@@ -76,7 +76,7 @@ class IgniteApplicationService(IgniteAwareService):
 
         node.account.kill_java_processes(self.servicejava_class_name, clean_shutdown=False, allow_fail=True)
 
-        node.account.ssh("rm -rf %s" % self.PERSISTENT_ROOT, allow_fail=False)
+        node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
     def pids(self, node):
         return node.account.java_pids(self.servicejava_class_name)
