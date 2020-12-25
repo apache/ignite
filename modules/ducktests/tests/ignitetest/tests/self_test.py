@@ -107,27 +107,28 @@ class SelfTest(IgniteTest):
             log_cnt = list(node.account.ssh_capture(f'cat {log_file} | wc -l', callback=int))[0]
             return log_cnt
 
-        def check_log_filename(service, filename):
+        def get_logs_count(service):
             node = service.nodes[0]
-            assert node.log_file.endswith(filename)
+            return list(node.account.ssh_capture(f'ls {service.log_dir} | wc -l', callback=int))[0]
 
         ignites = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(ignite_version)),
                                 num_nodes=1)
 
         ignites.start()
-        ignites.stop()
 
-        # check logging after stop
-        check_log_filename(ignites, "console.log")
-        old_cnt = get_log_lines_count(ignites, "console.log")
-        assert old_cnt > 0
+        num_restarts = 6
+        for i in range(num_restarts - 1):
+            ignites.stop()
 
-        ignites.start(clean=False)
+            old_cnt = get_log_lines_count(ignites, "console.log")
+            assert old_cnt > 0
 
-        # check logging after restart
-        check_log_filename(ignites, "console_1.log")
-        new_cnt = get_log_lines_count(ignites, "console_1.log")
-        assert new_cnt > 0
+            ignites.start(clean=False)
 
-        # check that there is no new entry in old file
-        assert old_cnt == get_log_lines_count(ignites, "console.log")
+            new_cnt = get_log_lines_count(ignites, "console.log")
+            assert new_cnt > 0
+
+            # check that there is no new entry in rotated file
+            assert old_cnt == get_log_lines_count(ignites, f"console.log.{i + 1}")
+
+        assert get_logs_count(ignites) == num_restarts

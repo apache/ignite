@@ -378,13 +378,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Update the node log file.
         """
+        if not hasattr(node, 'log_file'):
+            node.log_file = os.path.join(self.log_dir, "console.log")
+
         cnt = list(node.account.ssh_capture(f'ls {self.log_dir} | '
-                                            f'grep -E "^console(_[0-9]+){{0,1}}.log$" | '
+                                            f'grep -E "^console.log(.[0-9]+)?$" | '
                                             f'wc -l', callback=int))[0]
-
-        node.log_file = os.path.join(self.log_dir, f"console{'_' + str(cnt) if cnt > 0 else ''}.log")
-
         if cnt > 0:
-            self.logger.debug(f"rotating logs, now logging to {node.log_file} on {node.name}")
-        else:
-            self.logger.debug(f"logging to {node.log_file} on {node.name}")
+            rotated_log = os.path.join(self.log_dir, f"console.log.{cnt}")
+            self.logger.debug(f"rotating {node.log_file} to {rotated_log} on {node.name}")
+            node.account.ssh(f"mv {node.log_file} {rotated_log}")

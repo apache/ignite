@@ -76,19 +76,19 @@ class IgniteSpec(metaclass=ABCMeta):
             return IgniteClientConfigTemplate()
         return IgniteServerConfigTemplate()
 
-    def home(self, version=None):
+    def __home(self, version=None):
         """
         Get home directory for current spec.
         """
         version = version if version else self.version
         return get_home_dir(self.path_aware.install_root, self.project, version)
 
-    def module(self, name):
+    def _module(self, name):
         """
         Get module path for current spec.
         """
         version = DEV_BRANCH if name == "ducktests" else self.version
-        return get_module_path(self.home(version), name, version)
+        return get_module_path(self.__home(version), name, version)
 
     @abstractmethod
     def command(self, node):
@@ -158,9 +158,9 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec):
 
         libs = (modules or [])
         libs.append("log4j")
-        libs = list(map(lambda m: os.path.join(self.module(m), "*"), libs))
+        libs = list(map(lambda m: os.path.join(self._module(m), "*"), libs))
 
-        libs.append(os.path.join(self.module("ducktests"), "*"))
+        libs.append(os.path.join(self._module("ducktests"), "*"))
 
         self.envs = {
             'EXCLUDE_TEST_CLASSES': 'true',
@@ -187,8 +187,8 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
         libs = modules or []
         libs.extend(["log4j"])
 
-        libs = list(map(lambda m: os.path.join(self.module(m), "*"), libs))
-        libs.append(os.path.join(self.module("ducktests"), "*"))
+        libs = list(map(lambda m: os.path.join(self._module(m), "*"), libs))
+        libs.append(os.path.join(self._module("ducktests"), "*"))
         libs.extend(self.__jackson())
 
         self.envs = {
@@ -218,7 +218,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
     def __jackson(self):
         version = self.version
         if not version.is_dev:
-            aws = self.module("aws")
+            aws = self._module("aws")
             return self.context.cluster.nodes[0].account.ssh_capture(
                 "ls -d %s/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % aws)
 
