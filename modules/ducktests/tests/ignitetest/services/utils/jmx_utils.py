@@ -20,7 +20,10 @@ and attributes.
 
 import re
 
+from ducktape.cluster.remoteaccount import RemoteCommandError
 from ignitetest.services.utils.decorators import memoize
+import sys
+import time
 
 
 def ignite_jmx_mixin(node, pids):
@@ -62,17 +65,39 @@ class JmxClient:
         self.pid = node.pids[0]
 
     @memoize
-    def find_mbean(self, pattern, domain='org.apache'):
+    def find_mbean(self, pattern, domain='org.apache', timeout_sec=3):
         """
         Find mbean by specified pattern and domain on node.
         :param pattern: MBean name pattern.
         :param domain: Domain of MBean
+        :param timeout_sec: Max. waiting
         :return: JmxMBean instance
         """
         cmd = "echo $'open %s\\n beans -d %s \\n close' | %s | grep -o '%s'" \
               % (self.pid, domain, self.jmx_util_cmd, pattern)
 
-        name = next(self.__run_cmd(cmd)).strip()
+        start = time.monotonic()
+
+        while True:
+            try:
+                sys.stderr.write("TEST | Trying to read node id from JMX on " + self.node.name +"\n")
+
+                name = next(self.__run_cmd(cmd)).strip()
+
+                sys.stderr.write("TEST | Got bean name from JMX: " + name + "\n")
+                break
+            except RuntimeError as e:
+                sys.stderr.write("Caught " + str(e) + "\n")
+
+                now = time.monotonic()
+
+                if now - start < timeout_sec:
+                    sys.stderr.write("TEST | Retry. Waiting for " + str(min(timeout_sec / 5, start + timeout_sec - now)) + "sec. Left: " + str(start + timeout_sec - now) + "\n")
+                    time.sleep(min(timeout_sec / 5, start + timeout_sec - now))
+                else:
+                    sys.stderr.write("TEST | Wont wait any more. Raise...\n")
+
+                    raise e
 
         return JmxMBean(self, name)
 

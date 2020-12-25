@@ -37,7 +37,7 @@ from ignitetest.services.utils.jvm_utils import jvm_settings
 from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
 from ignitetest.utils import ignite_versions, version_if, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST, LATEST_2_7, V_2_8_0, V_2_9_1, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, LATEST, LATEST_2_7, V_2_8_0, V_2_9_0, IgniteVersion
 from ignitetest.utils.enum import constructible
 
 
@@ -94,7 +94,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(nodes_to_kill=[1, 2], load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type):
+    def _test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type):
         """
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
         """
@@ -106,7 +106,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(load_type=[ClusterLoad.NONE, ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type):
+    def _test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
         """
@@ -165,7 +165,7 @@ class DiscoveryTest(IgniteTest):
         else:
             discovery_spi = TcpDiscoverySpi()
 
-            if LATEST_2_7 < test_config.version < V_2_9_1:
+            if LATEST_2_7 < test_config.version <= V_2_9_0:
                 discovery_spi.so_linger = 0
 
         ignite_config = IgniteConfiguration(
@@ -196,7 +196,7 @@ class DiscoveryTest(IgniteTest):
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
                 ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
 
-            tran_nodes = [read_node_id(n) for n in failed_nodes] \
+            tran_nodes = [node_id(n) for n in failed_nodes] \
                 if test_config.load_type == ClusterLoad.TRANSACTIONAL else None
 
             params = {"cacheName": "test-cache",
@@ -220,7 +220,7 @@ class DiscoveryTest(IgniteTest):
         ids_to_wait = []
 
         for node in failed_nodes:
-            ids_to_wait.append(read_node_id(node))
+            ids_to_wait.append(node_id(node))
 
             self.logger.info("Simulating failure of node '%s' (ID: %s)." % (node.name, ids_to_wait[-1]))
 
@@ -254,7 +254,7 @@ class DiscoveryTest(IgniteTest):
                                       (node_failed_event_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE)))
 
         # Cache survivor id, do not read each time.
-        surv_id = read_node_id(survived_node)
+        surv_id = node_id(survived_node)
 
         if failed_cnt != len(failed_nodes):
             failed = exec_command(survived_node, "grep '%s' %s" % (node_failed_event_pattern(),
@@ -341,12 +341,6 @@ def exec_command(node, cmd):
     return str(node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding())
 
 
-def read_node_id(node):
-    """
-    Returns node id from its log if started.
-    This is a remote call. Reuse its results if possible.
-    """
-    regexp = "^>>> Local node \\[ID=([^,]+),.+$"
-    cmd = "grep -E '%s' %s | sed -r 's/%s/\\1/'" % (regexp, IgniteService.STDOUT_STDERR_CAPTURE, regexp)
-
-    return exec_command(node, cmd).strip().lower()
+def node_id(node):
+    """Return node id."""
+    return node.discovery_info().node_id
