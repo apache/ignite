@@ -86,7 +86,7 @@ public class IgniteExchange extends Exchange implements IgniteRel {
             // We have no such information, so let's just multiply it by 5.
             totalBytes *= 5;
 
-        return costFactory.makeCost(rowCount, rowCount * IgniteCost.ROW_PASS_THROUGH_COST, 0D, 0D, totalBytes);
+        return costFactory.makeCost(rowCount, rowCount * IgniteCost.ROW_PASS_THROUGH_COST, 0, 0, totalBytes);
     }
 
     /** {@inheritDoc} */
