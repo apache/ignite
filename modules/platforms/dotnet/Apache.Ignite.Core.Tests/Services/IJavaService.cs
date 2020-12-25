@@ -169,6 +169,12 @@ namespace Apache.Ignite.Core.Tests.Services
         Address testAddress(Address addr);
 
         /** */
+        int testOverload(int count, Employee[] emps);
+
+        /** */
+        int testOverload(int first, int second);
+
+        /** */
         Employee[] testEmployees(Employee[] emps);
 
         /** */

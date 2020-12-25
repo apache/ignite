@@ -127,13 +127,19 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("127000", addr.Zip);
             Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
 
+            Employee[] emps = new[]
+            {
+                new Employee {Fio = "Sarah Connor", Salary = 1},
+                new Employee {Fio = "John Connor", Salary = 2}
+            };
+
+            Assert.AreEqual(42, svc.testOverload(2, emps));
+            Assert.AreEqual(3, svc.testOverload(1, 2));
+            Assert.AreEqual(5, svc.testOverload(3, 2));
+
             Assert.IsNull(svc.testEmployees(null));
 
-            Employee[] emps = svc.testEmployees(new[]
-            {
-                new Employee { Fio = "Sarah Connor", Salary = 1 }, 
-                new Employee { Fio = "John Connor", Salary = 2 }
-            });
+            emps = svc.testEmployees(emps);
 
             Assert.NotNull(emps);
             Assert.AreEqual(1, emps.Length);
