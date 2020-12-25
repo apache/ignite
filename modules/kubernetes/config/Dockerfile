@@ -56,9 +56,6 @@ RUN chmod +x $IGNITE_HOME/run.sh
 # Copying the configuration.
 COPY ./$IGNITE_CFG_XML $IGNITE_HOME/config
 
-# Copying external libraries to Ignite classpath.
-COPY *.jar $IGNITE_HOME/libs
-
 # Starting an Apache Ignite node.
 CMD $IGNITE_HOME/run.sh
 
