@@ -19,6 +19,7 @@ package org.apache.ignite.client;
 
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -68,6 +69,7 @@ public class ConnectionTest {
     }
 
     /** */
+    @Ignore("IPv6 is not enabled by default on some systems.")
     @Test
     public void testIPv6NodeAddresses() throws Exception {
         testConnection(IPv6_HOST, "[::1]:10800");
