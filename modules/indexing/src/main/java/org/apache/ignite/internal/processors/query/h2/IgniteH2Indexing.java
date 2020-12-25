@@ -355,6 +355,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return; // Type was rejected.
 
+        if (tbl.luceneIndex() != null) {
+            long expireTime = row.expireTime();
+
+            if (expireTime == 0L)
+                expireTime = Long.MAX_VALUE;
+
+            tbl.luceneIndex().store(row.key(), row.value(), row.version(), expireTime);
+        }
+
         tbl.table().update(row, prevRow);
     }
 
@@ -373,6 +382,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (tbl == null)
             return;
+
+        if (tbl.luceneIndex() != null)
+            tbl.luceneIndex().remove(row.key());
 
         tbl.table().remove(row);
     }

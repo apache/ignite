@@ -57,13 +57,6 @@ public interface Index {
     /**
      * Put cache row to index.
      *
-     * @return The previous value associated with key.
-     */
-    public CacheDataRow put(CacheDataRow row) throws IgniteCheckedException;
-
-    /**
-     * Put cache row to index.
-     *
      * @return {@code True} if replaced existing row.
      */
     public boolean putx(CacheDataRow row) throws IgniteCheckedException;

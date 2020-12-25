@@ -257,25 +257,6 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheDataRow put(CacheDataRow row) throws IgniteCheckedException {
-        int segment = segmentForRow(row);
-
-        try {
-            ThreadLocalSchemaHolder.setSchema(def.getSchema());
-
-            IndexRow oldRow = segments[segment].put(new IndexRowImpl(def.getSchema(), row));
-
-            if (oldRow != null)
-                return oldRow.getCacheDataRow();
-
-            return null;
-
-        } finally {
-            ThreadLocalSchemaHolder.cleanSchema();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean putx(CacheDataRow row) throws IgniteCheckedException {
         IndexRowImpl r = new IndexRowImpl(def.getSchema(), row);
 

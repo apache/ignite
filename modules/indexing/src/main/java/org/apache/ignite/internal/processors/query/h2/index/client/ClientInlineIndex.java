@@ -130,11 +130,6 @@ public class ClientInlineIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheDataRow put(CacheDataRow row) throws IgniteCheckedException {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean putx(CacheDataRow row) throws IgniteCheckedException {
         throw unsupported();
     }
