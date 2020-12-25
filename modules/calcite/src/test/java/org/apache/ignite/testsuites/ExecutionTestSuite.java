@@ -17,21 +17,14 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.query.calcite.CalciteBasicSecondaryIndexIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
-import org.apache.ignite.internal.processors.query.calcite.CancelTest;
-import org.apache.ignite.internal.processors.query.calcite.DateTimeTest;
-import org.apache.ignite.internal.processors.query.calcite.IndexSpoolTest;
-import org.apache.ignite.internal.processors.query.calcite.LimitOffsetTest;
-import org.apache.ignite.internal.processors.query.calcite.QueryCheckerTest;
-import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.MergeJoinExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJoinExecutionTest;
-import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
-import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
-import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedNestedLoopJoinTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.IndexSpoolTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.TableSpoolTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -40,19 +33,12 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    PlannerTestSuite.class,
-    ExecutionTestSuite.class,
-    OrToUnionRuleTest.class,
-    ProjectScanMergeRuleTest.class,
-    ClosableIteratorsHolderTest.class,
+    ExecutionTest.class,
     ContinuousExecutionTest.class,
-    CalciteQueryProcessorTest.class,
-    JdbcQueryTest.class,
-    CalciteBasicSecondaryIndexIntegrationTest.class,
-    CancelTest.class,
-    QueryCheckerTest.class,
-    DateTimeTest.class,
-    LimitOffsetTest.class
+    MergeJoinExecutionTest.class,
+    NestedLoopJoinExecutionTest.class,
+    TableSpoolTest.class,
+    IndexSpoolTest.class,
 })
-public class IgniteCalciteTestSuite {
+public class ExecutionTestSuite {
 }

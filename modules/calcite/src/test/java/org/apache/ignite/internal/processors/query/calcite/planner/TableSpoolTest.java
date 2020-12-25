@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.junit.Test;
 
 /**
- *
+ * Table spool test.
  */
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class TableSpoolTest extends AbstractPlannerTest {

@@ -105,7 +105,6 @@ import static org.apache.ignite.internal.processors.query.calcite.externalize.Re
 //@WithSystemProperty(key = "calcite.debug", value = "true")
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class PlannerTest extends AbstractPlannerTest {
-
     /**
      * @throws Exception If failed.
      */
@@ -2597,7 +2596,7 @@ public class PlannerTest extends AbstractPlannerTest {
             assertEquals(
                 "Invalid plan:\n" + RelOptUtil.toString(phys),
                 "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner], correlationVariables=[[$cor1]])\n" +
-                    "  IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[PK], requiredColumns=[{0}])\n" +
+                    "  IgniteTableScan(table=[[PUBLIC, DEPT]], requiredColumns=[{0}])\n" +
                     "  IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor1.DEPTNO, $t0)):INTEGER, 2)], requiredColumns=[{2}])\n",
                 RelOptUtil.toString(phys));
 
