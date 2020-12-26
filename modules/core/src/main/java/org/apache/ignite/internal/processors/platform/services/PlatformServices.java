@@ -670,7 +670,7 @@ public class PlatformServices extends PlatformAbstractTarget {
             }
 
             if (methods.isEmpty())
-                throw new NoSuchMethodException("Could not find proxy method '" + mthdName + argsStr(args) + "' in class " + clazz);
+                throw new NoSuchMethodException("Could not find proxy method '" + mthdName + "' in class " + clazz);
 
             // Filter by param types
             for (int i = 0; i < methods.size(); i++)
@@ -681,26 +681,9 @@ public class PlatformServices extends PlatformAbstractTarget {
                 return methods.get(0);
 
             if (methods.isEmpty())
-                throw new NoSuchMethodException("Could not find proxy method '" + mthdName + argsStr(args) + "' in class " + clazz);
+                throw new NoSuchMethodException("Could not find proxy method '" + mthdName + "' in class " + clazz);
 
-            throw new NoSuchMethodException("Ambiguous proxy method '" + mthdName + argsStr(args) + "' in class " + clazz);
-        }
-
-        /**
-         * @param args Service method arguments.
-         * @return String representation of method signature.
-         */
-        private static String argsStr(Object[] args) {
-            StringBuilder res = new StringBuilder().append('(');
-            for (int i=0; i<args.length; i++) {
-                if (i > 0)
-                    res.append(", ");
-
-                res.append(args[i] == null ? "null" : args[i].getClass().getName());
-            }
-            res.append(')');
-
-            return res.toString();
+            throw new NoSuchMethodException("Ambiguous proxy method '" + mthdName + "' in class " + clazz);
         }
 
         /**
