@@ -922,9 +922,9 @@ public class PlatformUtils {
             return unwrapKnownCollection((Collection<Object>)o);
         else if (BinaryUtils.knownMap(o))
             return unwrapBinariesIfNeeded((Map<Object, Object>)o);
-        else if (o instanceof Object[]) {
+        else if (o instanceof Object[])
             return unwrapBinariesInArray((Object[])o);
-        } else if (o instanceof BinaryObject)
+        else if (o instanceof BinaryObject)
             return ((BinaryObject)o).deserialize();
 
         return o;
