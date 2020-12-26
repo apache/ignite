@@ -63,6 +63,8 @@ public class MavenArtifactResolver {
     private final SystemPathResolver pathResolver;
     private PrintWriter out;
 
+    private static final String FILE_ARTIFACT_PATTERN = "[artifact](-[classifier]).[revision].[ext]";
+
     @Inject
     public MavenArtifactResolver(SystemPathResolver pathResolver) {
         this.pathResolver = pathResolver;
@@ -126,7 +128,7 @@ public class MavenArtifactResolver {
                         new RetrieveOptions()
                                 // this is from the envelop module
                                 .setConfs(new String[]{"default"})
-                                .setDestArtifactPattern(mavenRoot.toFile().getAbsolutePath() + "/[artifact](-[classifier]).[revision].[ext]")
+                                .setDestArtifactPattern(mavenRoot.resolve("[artifact](-[classifier]).[revision].[ext]").toFile().getAbsolutePath())
                 );
 
                 return new ResolveResult(
@@ -138,6 +140,24 @@ public class MavenArtifactResolver {
                 throw new IOException(e);
             }
         }
+    }
+
+    /**
+     * Get artifact file name by artifactId and version
+     *
+     * Note: Current implementation doesn't support artifacts with classifiers or non-jar packaging
+     * @param artfactId
+     * @param version
+     * @return
+     */
+    public static String fileNameByArtifactPattern(
+        String artfactId,
+        String version) {
+       return FILE_ARTIFACT_PATTERN
+           .replace("[artifact]", artfactId)
+           .replace("(-[classifier])", "")
+           .replace("[revision]", version)
+           .replace("[ext]", "jar");
     }
 
     private Ivy ivyInstance(List<URL> repositories) {
@@ -158,7 +178,7 @@ public class MavenArtifactResolver {
 
         IvySettings ivySettings = new IvySettings();
         ivySettings.setDefaultCache(tmpDir);
-        ivySettings.setDefaultCacheArtifactPattern("[artifact](-[classifier]).[revision].[ext]");
+        ivySettings.setDefaultCacheArtifactPattern(FILE_ARTIFACT_PATTERN);
 
         ChainResolver chainResolver = new ChainResolver();
         chainResolver.setName("chainResolver");

@@ -95,6 +95,17 @@ public class ModuleStorage {
     public static class ModuleDefinition {
         public final String name;
         public final List<Path> artifacts;
+
+        @Override public String toString() {
+            return "ModuleDefinition{" +
+                "name='" + name + '\'' +
+                ", artifacts=" + artifacts +
+                ", cliArtifacts=" + cliArtifacts +
+                ", type=" + type +
+                ", source='" + source + '\'' +
+                '}';
+        }
+
         public final List<Path> cliArtifacts;
         public final SourceType type;
         public final String source;

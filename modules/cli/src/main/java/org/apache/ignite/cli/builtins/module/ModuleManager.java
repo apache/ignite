@@ -17,13 +17,16 @@
 
 package org.apache.ignite.cli.builtins.module;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.JarInputStream;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -44,6 +47,7 @@ public class ModuleManager {
     private final List<StandardModuleDefinition> modules;
 
     public static final String INTERNAL_MODULE_PREFIX = "_";
+    public static final String CLI_MODULE_MANIFEST_HEADER = "Apache-Ignite-CLI-Module";
 
     private PrintWriter out;
     private ColorScheme cs;
@@ -85,10 +89,11 @@ public class ModuleManager {
                 String mvnName = String.join(":", mavenCoordinates.groupId,
                     mavenCoordinates.artifactId, mavenCoordinates.version);
 
+                var isCliModule = isRootArtifactCliModule(mavenCoordinates.artifactId, mavenCoordinates.version, resolveResult.artifacts());
                 moduleStorage.saveModule(new ModuleStorage.ModuleDefinition(
                     mvnName,
-                    resolveResult.artifacts(),
-                    new ArrayList<>(),
+                    (isCliModule)? Collections.emptyList() : resolveResult.artifacts(),
+                    (isCliModule)? resolveResult.artifacts() : Collections.emptyList(),
                     ModuleStorage.SourceType.Maven,
                     name
                 ));
@@ -174,11 +179,22 @@ public class ModuleManager {
         return modules;
     }
 
+    private boolean isRootArtifactCliModule(String artifactId, String version, List<Path> artifacts) throws IOException {
+       var rootJarArtifactOpt = artifacts.stream()
+           .filter(p -> MavenArtifactResolver.fileNameByArtifactPattern(artifactId, version).equals(p.getFileName().toString()))
+           .findFirst();
+       if (rootJarArtifactOpt.isPresent()) {
+           try (var input = new FileInputStream(rootJarArtifactOpt.get().toFile())) {
+               var jarStream = new JarInputStream(input);
+               var manifest = jarStream.getManifest();
+               return "true".equals(manifest.getMainAttributes().getValue(CLI_MODULE_MANIFEST_HEADER));
+           }
+       } else return false;
+    }
+
     private boolean isStandardModuleName(String name) {
         return readBuiltinModules().stream().anyMatch(m -> m.name.equals(name));
     }
-
-
 
     private static List<StandardModuleDefinition> readBuiltinModules() {
         com.typesafe.config.ConfigObject config = ConfigFactory.load("builtin_modules.conf").getObject("modules");
@@ -193,6 +209,16 @@ public class ModuleManager {
             ));
         }
         return modules;
+    }
+
+    private static class IgniteArtifacts {
+        private List<Path> serverArtifacts;
+        private List<Path> cliArtifacts;
+
+        public IgniteArtifacts(List<Path> serverArtifacts, List<Path> cliArtifacts) {
+            this.serverArtifacts = serverArtifacts;
+            this.cliArtifacts = cliArtifacts;
+        }
     }
 
 }
