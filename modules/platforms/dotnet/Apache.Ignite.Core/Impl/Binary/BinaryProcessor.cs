@@ -27,6 +27,12 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class BinaryProcessor : PlatformTargetAdapter, IBinaryProcessor
     {
+        /** Java platform id. See org.apache.ignite.internal.MarshallerPlatformIds in Java. */
+        public const byte JavaPlatformId = 0;
+
+        /** Type registry platform id. See org.apache.ignite.internal.MarshallerPlatformIds in Java. */
+        public const byte DotNetPlatformId = 1;
+
         /// <summary>
         /// Op codes.
         /// </summary>
@@ -162,7 +168,38 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Type or null.</returns>
         public string GetTypeName(int id)
         {
-            return DoOutInOp((int) Op.GetType, w => w.WriteInt(id), r => Marshaller.StartUnmarshal(r).ReadString());
+            try
+            {
+                return GetTypeName(id, DotNetPlatformId);
+            }
+            catch (BinaryObjectException)
+            {
+                if (!Marshaller.RegisterSameJavaType.Value)
+                    throw;
+            }
+
+            // Try to get java type name and register corresponding DotNet type.
+            var javaTypeName = GetTypeName(id, JavaPlatformId);
+            var netTypeName = Marshaller.GetTypeName(javaTypeName);
+
+            RegisterType(id, netTypeName, false);
+
+            return netTypeName;
+        }
+
+        /// <summary>
+        /// Gets the type name by id for specific platform.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <param name="platformId">Platform identifier.</param>
+        /// <returns>Type or null.</returns>
+        private string GetTypeName(int id, byte platformId)
+        {
+            return DoOutInOp((int) Op.GetType, w =>
+            {
+                w.WriteInt(id);
+                w.WriteByte(platformId);
+            }, r => Marshaller.StartUnmarshal(r).ReadString());
         }
 
         /// <summary>
