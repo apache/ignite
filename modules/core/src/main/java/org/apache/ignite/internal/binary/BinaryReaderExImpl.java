@@ -1338,7 +1338,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
-        return BinaryUtils.unmarshal(in, ctx, ldr, this, true);
+        return BinaryUtils.unmarshal(in, ctx, ldr, this, true, deserialize);
     }
 
     /** {@inheritDoc} */

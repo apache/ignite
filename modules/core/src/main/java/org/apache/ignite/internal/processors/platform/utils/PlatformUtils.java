@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -921,9 +922,9 @@ public class PlatformUtils {
             return unwrapKnownCollection((Collection<Object>)o);
         else if (BinaryUtils.knownMap(o))
             return unwrapBinariesIfNeeded((Map<Object, Object>)o);
-        else if (o instanceof Object[])
+        else if (o instanceof Object[]) {
             return unwrapBinariesInArray((Object[])o);
-        else if (o instanceof BinaryObject)
+        } else if (o instanceof BinaryObject)
             return ((BinaryObject)o).deserialize();
 
         return o;
@@ -989,7 +990,14 @@ public class PlatformUtils {
      * @return Result.
      */
     public static Object[] unwrapBinariesInArray(Object[] arr) {
-        Object[] res = new Object[arr.length];
+        Object[] res;
+
+        Class<?> compType = arr.getClass().getComponentType();
+
+        if (compType == Object.class)
+            res = new Object[arr.length];
+        else
+            res = (Object[])Array.newInstance(compType, arr.length);
 
         for (int i = 0; i < arr.length; i++)
             res[i] = unwrapBinary(arr[i]);

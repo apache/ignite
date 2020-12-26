@@ -2969,7 +2969,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
                 assertTrue(map.containsKey(key));
                 assertEquals(val, map.get(key));
             });
-        });
+        }, false);
     }
 
     /**
@@ -2989,7 +2989,15 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
                 assertTrue(col.contains(val));
             });
-        });
+        }, false);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testReadDetachedTypedArray() throws Exception {
+        Value[] arr = IntStream.range(0, 1000).mapToObj(Value::new).toArray(Value[]::new);
+
+        testReadDetachObjectProperly(arr, obj -> assertArrayEquals(arr, (Value[])obj), true);
     }
 
     /**
@@ -3009,7 +3017,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
                 assertEquals(arr[i], new Value(val.field("val")));
             }
-        });
+        }, false);
     }
 
     /**
@@ -3019,7 +3027,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @param action Action to perform on object.
      * @throws Exception If failed.
      */
-    private void testReadDetachObjectProperly(Object obj, IgniteThrowableConsumer<Object> action) throws Exception {
+    private void testReadDetachObjectProperly(Object obj, IgniteThrowableConsumer<Object> action, boolean deserialize) throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
         BinaryHeapOutputStream os = new BinaryHeapOutputStream(1024);
@@ -3032,7 +3040,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryReaderExImpl reader = marsh.binaryMarshaller().reader(is);
 
-        Object bObj = reader.readObjectDetached();
+        Object bObj = reader.readObjectDetached(deserialize);
 
         Arrays.fill(os.array(), (byte)0);
 

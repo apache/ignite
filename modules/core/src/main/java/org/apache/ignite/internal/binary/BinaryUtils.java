@@ -2004,10 +2004,10 @@ public class BinaryUtils {
                 return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
 
             case GridBinaryMarshaller.COL:
-                return doReadCollection(in, ctx, ldr, handles, detach, false, null);
+                return doReadCollection(in, ctx, ldr, handles, detach, deserialize, null);
 
             case GridBinaryMarshaller.MAP:
-                return doReadMap(in, ctx, ldr, handles, detach, false, null);
+                return doReadMap(in, ctx, ldr, handles, detach, deserialize, null);
 
             case GridBinaryMarshaller.BINARY_OBJ:
                 return doReadBinaryObject(in, ctx, detach);
