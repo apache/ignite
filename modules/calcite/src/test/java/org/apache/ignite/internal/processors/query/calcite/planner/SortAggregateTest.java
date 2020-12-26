@@ -80,7 +80,7 @@ public class SortAggregateTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "AggregateConverterRule"
+            "HashAggregateConverterRule"
         );
 
         assertNotNull(phys);
@@ -145,7 +145,7 @@ public class SortAggregateTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "AggregateConverterRule"
+            "HashAggregateConverterRule"
         );
 
         assertNotNull(phys);
@@ -193,7 +193,7 @@ public class SortAggregateTest extends AbstractPlannerTest {
             () -> physicalPlan(
                 sql,
                 publicSchema,
-                "AggregateConverterRule"
+                "HashAggregateConverterRule"
             ),
             RelOptPlanner.CannotPlanException.class,
             "There are not enough rules to produce a node with desired properties"

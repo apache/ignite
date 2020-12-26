@@ -19,12 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -32,7 +29,6 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -42,14 +38,13 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateHash;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -496,7 +491,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapAggregate.rowType(tf);
+        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
         AggregateNode<Object[]> map = new AggregateNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
@@ -540,7 +535,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapAggregate.rowType(tf);
+        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
         AggregateNode<Object[]> map = new AggregateNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
@@ -584,7 +579,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapAggregate.rowType(tf);
+        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
         AggregateNode<Object[]> map = new AggregateNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
@@ -628,7 +623,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapAggregate.rowType(tf);
+        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
         AggregateNode<Object[]> map = new AggregateNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 
@@ -672,7 +667,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapAggregate.rowType(tf);
+        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
         AggregateNode<Object[]> map = new AggregateNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
 

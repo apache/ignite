@@ -24,8 +24,8 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateHash;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregateHash;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -84,8 +84,8 @@ public class HashAggregateTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
 
-        IgniteReduceAggregate rdcAgg = findFirstNode(phys, byClass(IgniteReduceAggregate.class));
-        IgniteMapAggregate mapAgg = findFirstNode(phys, byClass(IgniteMapAggregate.class));
+        IgniteReduceAggregateHash rdcAgg = findFirstNode(phys, byClass(IgniteReduceAggregateHash.class));
+        IgniteMapAggregateHash mapAgg = findFirstNode(phys, byClass(IgniteMapAggregateHash.class));
 
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), rdcAgg);
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), mapAgg);

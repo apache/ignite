@@ -18,44 +18,42 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
-import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.random;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
 /**
  *
  */
-public class IgniteMapAggregate extends Aggregate implements IgniteRel {
-    public IgniteMapAggregate(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+public abstract class IgniteMapAggregateBase extends Aggregate implements IgniteRel {
+    /** */
+    public IgniteMapAggregateBase(
+        RelOptCluster cluster,
+        RelTraitSet traitSet,
+        RelNode input,
+        ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets,
+        List<AggregateCall> aggCalls
+    ) {
         super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** */
-    public IgniteMapAggregate(RelInput input) {
+    public IgniteMapAggregateBase(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-        return new IgniteMapAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
@@ -66,37 +64,6 @@ public class IgniteMapAggregate extends Aggregate implements IgniteRel {
     /** {@inheritDoc} */
     @Override protected RelDataType deriveRowType() {
         return rowType(Commons.typeFactory(getCluster()));
-    }
-
-    /**
-     * @return Map aggregate relational node distribution calculated on the basis of its input and groupingSets.
-     * <b>Note</b> that the method returns {@code null} in case the given input cannot be processed in map-reduce
-     * style by an aggregate.
-     */
-    public static IgniteDistribution distribution(IgniteDistribution inputDistr, ImmutableBitSet groupSet,
-        List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-
-        switch (inputDistr.getType()) {
-            case SINGLETON:
-            case BROADCAST_DISTRIBUTED:
-                return inputDistr;
-
-            case RANDOM_DISTRIBUTED:
-            case HASH_DISTRIBUTED:
-                return random(); // its OK to just erase distribution here
-
-            default:
-                throw new AssertionError("Unexpected distribution type.");
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rows = mq.getRowCount(getInput());
-
-        // TODO: fix it when https://issues.apache.org/jira/browse/IGNITE-13543 will be resolved
-        // currently it's OK to have such a dummy cost because there is no other options
-        return planner.getCostFactory().makeCost(rows, rows * IgniteCost.ROW_PASS_THROUGH_COST, 0);
     }
 
     /** */
@@ -110,11 +77,5 @@ public class IgniteMapAggregate extends Aggregate implements IgniteRel {
         builder.add("AGG_DATA", typeFactory.createArrayType(typeFactory.createJavaType(Accumulator.class), -1));
 
         return builder.build();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteMapAggregate(cluster, getTraitSet(), sole(inputs),
-            getGroupSet(), getGroupSets(), getAggCallList());
     }
 }

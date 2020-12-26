@@ -24,13 +24,12 @@ import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
@@ -56,20 +55,22 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
 /**
  *
  */
-public class IgniteSortAggregate extends Aggregate implements TraitsAwareIgniteRel {
+public abstract class IgniteAggregateBase extends Aggregate implements TraitsAwareIgniteRel {
     /** {@inheritDoc} */
-    public IgniteSortAggregate(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+    protected IgniteAggregateBase(
+        RelOptCluster cluster,
+        RelTraitSet traitSet,
+        RelNode input,
+        ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets,
+        List<AggregateCall> aggCalls
+    ) {
         super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
-    public IgniteSortAggregate(RelInput input) {
+    protected IgniteAggregateBase(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-        return new IgniteSortAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
@@ -78,7 +79,10 @@ public class IgniteSortAggregate extends Aggregate implements TraitsAwareIgniteR
     }
 
     /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
         // Distribution propagation is based on next rules:
         // 1) Any aggregation is possible on single or broadcast distribution.
         // 2) hash-distributed aggregation is possible in case it's a simple aggregate having hash distributed input
@@ -138,15 +142,10 @@ public class IgniteSortAggregate extends Aggregate implements TraitsAwareIgniteR
     }
 
     /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(groupSet.asList()));
-
-        return Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            ImmutableList.of(inputTraits.get(0).replace(collation)));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
         // Aggregate is rewindable if its input is rewindable.
 
         RelTraitSet in = inputTraits.get(0);
@@ -159,7 +158,10 @@ public class IgniteSortAggregate extends Aggregate implements TraitsAwareIgniteR
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
         // Distribution propagation is based on next rules:
         // 1) Any aggregation is possible on single or broadcast distribution.
         // 2) hash-distributed aggregation is possible in case it's a simple aggregate having hash distributed input
@@ -218,19 +220,10 @@ public class IgniteSortAggregate extends Aggregate implements TraitsAwareIgniteR
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        RelCollation requiredCollation = RelCollations.of(ImmutableIntList.copyOf(groupSet.asList()));
-        RelCollation inputCollation = TraitUtils.collation(inputTraits.get(0));
-
-        if (!inputCollation.satisfies(requiredCollation))
-            return ImmutableList.of();
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(requiredCollation), inputTraits));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits
+    ) {
         return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.correlation(inTraits.get(0))),
             inTraits));
     }
@@ -248,19 +241,48 @@ public class IgniteSortAggregate extends Aggregate implements TraitsAwareIgniteR
             assert diff.size() == 1 && F.first(diff) == TraitUtils.distribution(outTraits);
         }
 
-        RelNode map = new IgniteMapSortAggregate(getCluster(), in, convert(getInput(), in), groupSet, groupSets, aggCalls);
-        return new IgniteReduceSortAggregate(getCluster(), outTraits, convert(map, outTraits), groupSet, groupSets, aggCalls, getRowType());
+        RelNode map = createMapAggregate(
+            getCluster(),
+            in,
+            convert(getInput(), in),
+            groupSet,
+            groupSets,
+            aggCalls);
+
+        return createReduceAggregate(
+            getCluster(),
+            outTraits,
+            convert(map, outTraits),
+            groupSet,
+            groupSets,
+            aggCalls,
+            getRowType());
     }
+
+    /** */
+    protected abstract RelNode createReduceAggregate(
+        RelOptCluster cluster,
+        RelTraitSet traits,
+        RelNode input,
+        ImmutableBitSet groupSet,
+        ImmutableList<ImmutableBitSet> groupSets,
+        List<AggregateCall> aggCalls,
+        RelDataType rowType
+    );
+
+    /** */
+    protected abstract RelNode createMapAggregate(
+        RelOptCluster cluster,
+        RelTraitSet traits,
+        RelNode input,
+        ImmutableBitSet groupSet,
+        ImmutableList<ImmutableBitSet> groupSets,
+        List<AggregateCall> aggCalls
+    );
 
     /** */
     private boolean isMapReduce(RelTraitSet out, RelTraitSet in) {
         return TraitUtils.distribution(out).satisfies(single())
             && TraitUtils.distribution(in).satisfies(random());
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteSortAggregate(cluster, getTraitSet(), sole(inputs),
-            getGroupSet(), getGroupSets(), getAggCallList());
     }
 }

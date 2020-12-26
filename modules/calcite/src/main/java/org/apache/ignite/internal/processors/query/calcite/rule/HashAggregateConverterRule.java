@@ -22,26 +22,22 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateHash;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortAggregate;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
  */
-public class SortBasedAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
+public class HashAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
     /** */
-    public static final RelOptRule INSTANCE = new SortBasedAggregateConverterRule();
+    public static final RelOptRule INSTANCE = new HashAggregateConverterRule();
 
     /** */
-    public SortBasedAggregateConverterRule() {
-        super(LogicalAggregate.class, "SortBasedAggregateConverterRule");
+    public HashAggregateConverterRule() {
+        super(LogicalAggregate.class, "HashAggregateConverterRule");
     }
 
     /** {@inheritDoc} */
@@ -51,20 +47,8 @@ public class SortBasedAggregateConverterRule extends AbstractIgniteConverterRule
         RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelNode input = convert(rel.getInput(), inTrait);
-        if (F.isEmpty(rel.getGroupSet()))
 
-        // Applicable only for GROUP BY
-        if (F.isEmpty(rel.getGroupSet()) || rel.getGroupSets().size() > 1)
-            return null;
-
-        RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(rel.getGroupSet().asList()));
-
-        return new IgniteSortAggregate(
-            cluster,
-            outTrait,
-            convert(input, input.getTraitSet().replace(collation)),
-            rel.getGroupSet(),
-            rel.getGroupSets(),
-            rel.getAggCallList());
+        return new IgniteAggregateHash(cluster, outTrait, input,
+            rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList());
     }
 }

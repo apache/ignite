@@ -79,17 +79,17 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteAggregate rel);
+    T visit(IgniteAggregateHash rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteMapAggregate rel);
+    T visit(IgniteMapAggregateHash rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteReduceAggregate rel);
+    T visit(IgniteReduceAggregateHash rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}

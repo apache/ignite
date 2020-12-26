@@ -39,7 +39,7 @@ import org.apache.calcite.rel.rules.SortRemoveRule;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
-import org.apache.ignite.internal.processors.query.calcite.rule.AggregateConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.HashAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.CorrelatedNestedLoopJoinRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterSpoolMergeRule;
@@ -47,7 +47,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConve
 import org.apache.ignite.internal.processors.query.calcite.rule.MergeJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.NestedLoopJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.SortBasedAggregateConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
@@ -160,8 +160,8 @@ public enum PlannerPhase {
                     ValuesConverterRule.INSTANCE,
                     LogicalScanConverterRule.INDEX_SCAN,
                     LogicalScanConverterRule.TABLE_SCAN,
-                    AggregateConverterRule.INSTANCE,
-                    SortBasedAggregateConverterRule.INSTANCE,
+                    HashAggregateConverterRule.INSTANCE,
+                    SortAggregateConverterRule.INSTANCE,
                     MergeJoinConverterRule.INSTANCE,
                     NestedLoopJoinConverterRule.INSTANCE,
                     ProjectConverterRule.INSTANCE,
