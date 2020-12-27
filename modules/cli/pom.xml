@@ -27,11 +27,10 @@
         <groupId>org.apache.ignite</groupId>
         <artifactId>apache-ignite</artifactId>
         <version>3.0.0-SNAPSHOT</version>
+        <relativePath>../..</relativePath>
     </parent>
 
     <artifactId>ignite-cli</artifactId>
-    <!-- Must be changed together with ignite-runner module version fix -->
-    <version>3.0-SNAPSHOT</version>
 
     <properties>
         <micronaut.version>2.1.2</micronaut.version>
