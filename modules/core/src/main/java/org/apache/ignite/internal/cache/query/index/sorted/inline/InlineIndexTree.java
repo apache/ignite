@@ -209,7 +209,7 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
                     cmp = def.getRowComparator().compareKey(
                         pageAddr, off + fieldOff, maxSize, row.getKey(i), keyType.type());
 
-                if (cmp == CANT_BE_COMPARE) {
+                if (cmp == CANT_BE_COMPARE || cmp == COMPARE_UNSUPPORTED) {
                     lastIdxUsed = i;
                     break;
                 }

@@ -30,6 +30,11 @@ public class JavaObjectKey {
         key = o;
     }
 
+    /** Get wrapped key. */
+    public Object getKey() {
+        return key;
+    }
+
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return key.hashCode();

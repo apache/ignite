@@ -195,6 +195,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         return queryIndex.segmentsCount();
     }
 
+    /** {@inheritDoc} */
     @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
         return 0;
     }

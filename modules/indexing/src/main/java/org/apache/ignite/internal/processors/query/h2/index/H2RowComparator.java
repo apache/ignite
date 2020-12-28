@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.index;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.cache.query.index.sorted.JavaObjectKey;
 import org.apache.ignite.internal.cache.query.index.sorted.NullKey;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexRowComparator;
@@ -59,9 +60,7 @@ public class H2RowComparator implements IndexRowComparator {
     }
 
     /** {@inheritDoc} */
-    @Override public int compareKey(long pageAddr, int off, int maxSize, Object v, int curType)
-        throws IgniteCheckedException {
-
+    @Override public int compareKey(long pageAddr, int off, int maxSize, Object v, int curType) {
         if (curType == IndexKeyTypes.UNKNOWN)
             return CANT_BE_COMPARE;
 
@@ -70,30 +69,20 @@ public class H2RowComparator implements IndexRowComparator {
 
         int objType = InlineIndexKeyTypeRegistry.get(v.getClass()).type();
 
-        int type = Value.getHigherOrder(curType, objType);
-
-        InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(type);
+        int highOrder = Value.getHigherOrder(curType, objType);
 
         // H2 supports comparison between different types after casting them to single type.
-        if (type != objType && type == curType) {
-            Value va = DataType.convertToValue(ses, v, type);
-            va = va.convertTo(type);
+        if (highOrder != objType && highOrder == curType) {
+            InlineIndexKeyType highType = InlineIndexKeyTypeRegistry.get(highOrder);
+
+            Value va = DataType.convertToValue(ses, v, highOrder);
+            va = va.convertTo(highOrder);
 
             // The only way to invoke inline comparation again.
-            int c = ((NullableInlineIndexKeyType) t).compare0(pageAddr, off, va.getObject());
-
-            if (c != COMPARE_UNSUPPORTED)
-                return c;
+            return ((NullableInlineIndexKeyType) highType).compare0(pageAddr, off, va.getObject());
         }
 
-        Object v1 = t.get(pageAddr, off, maxSize);
-
-        if (v1 == null)
-            return CANT_BE_COMPARE;
-
-        int c = compareValues(wrap(v1, curType), wrap(v, objType));
-
-        return Integer.signum(c);
+        return COMPARE_UNSUPPORTED;
     }
 
     /** {@inheritDoc} */
@@ -129,7 +118,12 @@ public class H2RowComparator implements IndexRowComparator {
 
     /** */
     private Value wrap(Object val, int type) throws IgniteCheckedException {
-        return H2Utils.wrap(coctx, val, type);
+        Object o = val;
+
+        if (val instanceof JavaObjectKey)
+            o = ((JavaObjectKey) val).getKey();
+
+        return H2Utils.wrap(coctx, o, type);
     }
 
     /**

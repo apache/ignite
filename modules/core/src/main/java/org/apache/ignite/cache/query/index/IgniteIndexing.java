@@ -104,7 +104,7 @@ public class IgniteIndexing implements IndexingSpi {
 
         try {
             for (Index idx : idxs)
-                err = addToIndex(idx, newRow, prevRow, prevRowAvailable, err);
+                err = updateIndex(idx, newRow, prevRow, prevRowAvailable, err);
 
             if (err != null)
                 throw err;
@@ -194,7 +194,7 @@ public class IgniteIndexing implements IndexingSpi {
                 return;
 
             for (Index idx: indexes.values())
-                err = addToIndex(idx, newRow, prevRow, prevRowAvailable, err);
+                err = updateIndex(idx, newRow, prevRow, prevRowAvailable, err);
 
         } finally {
             ddlLock.readLock().unlock();
@@ -254,7 +254,7 @@ public class IgniteIndexing implements IndexingSpi {
      * @param prevRowAvailable Whether previous row is available.
      * @param prevErr Error on index add.
      */
-    private IgniteCheckedException addToIndex(
+    private IgniteCheckedException updateIndex(
         Index idx, CacheDataRow row, CacheDataRow prevRow, boolean prevRowAvailable, IgniteCheckedException prevErr
     ) throws IgniteCheckedException {
         try {
