@@ -79,6 +79,7 @@ namespace Apache.Ignite.Core.Binary
             NameMapper = cfg.NameMapper;
             KeepDeserialized = cfg.KeepDeserialized;
             ForceTimestamp = cfg.ForceTimestamp;
+            TimestampConverter = cfg.TimestampConverter;
 
             if (cfg.Serializer != null)
             {
@@ -137,6 +138,15 @@ namespace Apache.Ignite.Core.Binary
         public IBinarySerializer Serializer { get; set; }
 
         /// <summary>
+        /// Gets or sets a converter between <see cref="DateTime"/> and Java Timestamp.
+        /// Called from <see cref="IBinaryWriter.WriteTimestamp"/>, <see cref="IBinaryWriter.WriteTimestampArray"/>,
+        /// <see cref="IBinaryReader.ReadTimestamp"/>, <see cref="IBinaryReader.ReadTimestampArray"/>.
+        /// <para />
+        /// See also <see cref="ForceTimestamp"/>.
+        /// </summary>
+        public ITimestampConverter TimestampConverter { get; set; }
+
+        /// <summary>
         /// Default keep deserialized flag.
         /// </summary>
         [DefaultValue(DefaultKeepDeserialized)]
@@ -164,7 +174,7 @@ namespace Apache.Ignite.Core.Binary
         /// should be written as a Timestamp.
         /// <para />
         /// Timestamp format is required for values used in SQL and for interoperation with other platforms.
-        /// Only UTC values are supported in Timestamp format. Other values will cause an exception on write.
+        /// Only UTC values are supported in Timestamp format. Other values will cause an exception on write, unless <see cref="TimestampConverter"/> is provided.
         /// <para />
         /// Normally Ignite serializer uses <see cref="IBinaryWriter.WriteObject{T}"/> for DateTime fields,
         /// keys and values.

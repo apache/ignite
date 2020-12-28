@@ -15,16 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.platform.model;
 
-import org.apache.ignite.configuration.NearCacheConfiguration;
+/** Test value object. */
+public class Employee {
+    /** */
+    private String fio;
 
-/**
- * Tests for key check for near cache.
- */
-public class GridCacheKeyCheckNearEnabledSelfTest extends GridCacheKeyCheckSelfTest {
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return new NearCacheConfiguration();
+    /** */
+    private long salary;
+
+    /** */
+    public String getFio() {
+        return fio;
+    }
+
+    /** */
+    public void setFio(String fio) {
+        this.fio = fio;
+    }
+
+    /** */
+    public long getSalary() {
+        return salary;
+    }
+
+    /** */
+    public void setSalary(long salary) {
+        this.salary = salary;
     }
 }

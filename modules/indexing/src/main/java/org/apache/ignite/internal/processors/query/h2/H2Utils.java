@@ -105,6 +105,7 @@ import org.h2.value.ValueUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.sql.ResultSetMetaData.columnNullableUnknown;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_COL;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
@@ -136,7 +137,8 @@ public class H2Utils {
 
     /** Dummy metadata for update result. */
     public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META =
-        Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1));
+        Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1,
+                columnNullableUnknown));
 
     /** Spatial index class name. */
     private static final String SPATIAL_IDX_CLS =
@@ -375,11 +377,12 @@ public class H2Utils {
             String type = rsMeta.getColumnClassName(i);
             int precision = rsMeta.getPrecision(i);
             int scale = rsMeta.getScale(i);
+            int nullability = rsMeta.isNullable(i);
 
             if (type == null) // Expression always returns NULL.
                 type = Void.class.getName();
 
-            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type, precision, scale));
+            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type, precision, scale, nullability));
         }
 
         return meta;

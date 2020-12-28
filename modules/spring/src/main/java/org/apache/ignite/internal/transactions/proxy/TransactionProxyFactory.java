@@ -15,20 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+package org.apache.ignite.internal.transactions.proxy;
 
-/** Test value object. */
-public class Department {
-    /** */
-    private String name;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
-    /** */
-    public String getName() {
-        return name;
-    }
-
-    /** */
-    public void setName(String name) {
-        this.name = name;
-    }
+/** Represents Ignite client-independent transaction factory. */
+public interface TransactionProxyFactory {
+    /** Starts transaction with specified concurrency, isolation and timeout. */
+    public TransactionProxy txStart(TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout);
 }

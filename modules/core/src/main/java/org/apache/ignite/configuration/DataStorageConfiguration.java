@@ -179,6 +179,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal compaction level. */
     public static final int DFLT_WAL_COMPACTION_LEVEL = Deflater.BEST_SPEED;
 
+    /** Default defragmentation thread pool size. */
+    public static final int DFLT_DEFRAGMENTATION_THREAD_POOL_SIZE = 4;
+
     /** Default compression algorithm for WAL page snapshot records. */
     public static final DiskPageCompression DFLT_WAL_PAGE_COMPRESSION = DiskPageCompression.DISABLED;
 
@@ -319,6 +322,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Encryption configuration. */
     private EncryptionConfiguration encCfg = new EncryptionConfiguration();
+
+    /** Maximum number of partitions which can be defragmented at the same time. */
+    private int defragmentationThreadPoolSize = DFLT_DEFRAGMENTATION_THREAD_POOL_SIZE;
 
     /**
      * Creates valid durable memory configuration with all default values.
@@ -1171,6 +1177,30 @@ public class DataStorageConfiguration implements Serializable {
      */
     @Nullable public WarmUpConfiguration getDefaultWarmUpConfiguration() {
         return dfltWarmUpCfg;
+    }
+
+    /**
+     * Sets maximum number of partitions which can be defragmented at the same time.
+     *
+     * @param defragmentationThreadPoolSize Maximum number of partitions which can be defragmented at the same time.
+     *      Default is {@link DataStorageConfiguration#DFLT_DEFRAGMENTATION_THREAD_POOL_SIZE}.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setDefragmentationThreadPoolSize(int defragmentationThreadPoolSize) {
+        A.ensure(defragmentationThreadPoolSize > 1, "Defragmentation thread pool size must be greater or equal to 1.");
+
+        this.defragmentationThreadPoolSize = defragmentationThreadPoolSize;
+
+        return this;
+    }
+
+    /**
+     * Maximum number of partitions which can be defragmented at the same time.
+     *
+     * @return Thread pool size for defragmentation.
+     */
+    public int getDefragmentationThreadPoolSize() {
+        return defragmentationThreadPoolSize;
     }
 
     /** {@inheritDoc} */

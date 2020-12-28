@@ -39,9 +39,11 @@ class PageStoreMap implements PageStoreCollection {
     ) {
         IntMap<PageStore> pageStoresMap = grpPageStoresMap.get(grpId);
 
-        //This code cannot be used concurrently. If we decide to parallel defragmentation then we should correct current class.
-        if (pageStoresMap == null)
-            grpPageStoresMap.put(grpId, pageStoresMap = new IntRWHashMap<>());
+        if (pageStoresMap == null) {
+            grpPageStoresMap.putIfAbsent(grpId, new IntRWHashMap<>());
+
+            pageStoresMap = grpPageStoresMap.get(grpId);
+        }
 
         pageStoresMap.put(partId, pageStore);
     }

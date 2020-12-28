@@ -15,33 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+package org.apache.ignite.internal.visor.verify;
 
-/** Test value object. */
-public class Address {
-    /** */
-    private String zip;
-
-    /** */
-    private String addr;
-
-    /** */
-    public String getZip() {
-        return zip;
-    }
-
-    /** */
-    public void setZip(String zip) {
-        this.zip = zip;
-    }
-
-    /** */
-    public String getAddr() {
-        return addr;
-    }
-
-    /** */
-    public void setAddr(String addr) {
-        this.addr = addr;
-    }
+/**
+ * Validate indexes context.
+ */
+public interface ValidateIndexesContext {
+    /**
+     * Returns a boolean value meaning whether the check is canceled or not.
+     *
+     * @return True if cancelled, otherwise false.
+     */
+    public boolean isCancelled();
 }
