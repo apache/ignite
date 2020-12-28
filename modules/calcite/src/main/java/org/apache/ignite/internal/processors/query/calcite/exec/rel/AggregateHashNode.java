@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -44,7 +45,7 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.n
 /**
  *
  */
-public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+public class AggregateHashNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
     private final AggregateType type;
 
@@ -72,7 +73,7 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
     /**
      * @param ctx Execution context.
      */
-    public AggregateNode(ExecutionContext<Row> ctx, RelDataType rowType, AggregateType type, List<ImmutableBitSet> grpSets,
+    public AggregateHashNode(ExecutionContext<Row> ctx, RelDataType rowType, AggregateType type, List<ImmutableBitSet> grpSets,
         Supplier<List<AccumulatorWrapper<Row>>> accFactory, RowFactory<Row> rowFactory) {
         super(ctx, rowType);
 
@@ -232,19 +233,6 @@ public class AggregateNode<Row> extends AbstractNode<Row> implements SingleNode<
         return groupings.stream()
             .filter(negate(Grouping::isEmpty))
             .collect(toCollection(ArrayDeque::new));
-    }
-
-    /** */
-    @SuppressWarnings("PublicInnerClass")
-    public enum AggregateType {
-        /** Map phase. */
-        MAP,
-
-        /** Reduce phase. */
-        REDUCE,
-
-        /** Single phase aggregate. */
-        SINGLE
     }
 
     /** */

@@ -50,7 +50,7 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Ign
     protected final List<AggregateCall> aggCalls;
 
     /** */
-    public IgniteReduceAggregateBase(
+    protected IgniteReduceAggregateBase(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode input,
@@ -62,8 +62,6 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Ign
         super(cluster, traits, input);
 
         assert rowType != null;
-        assert RelOptUtil.areRowTypesEqual(input.getRowType(),
-            IgniteMapAggregateHash.rowType(Commons.typeFactory(cluster)), true);
         this.groupSet = groupSet;
         if (groupSets == null)
             groupSets = ImmutableList.of(groupSet);
@@ -73,7 +71,7 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Ign
     }
 
     /** */
-    public IgniteReduceAggregateBase(RelInput input) {
+    protected IgniteReduceAggregateBase(RelInput input) {
         this(
             input.getCluster(),
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
@@ -87,11 +85,6 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Ign
     /** {@inheritDoc} */
     @Override protected RelDataType deriveRowType() {
         throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
-        return visitor.visit(this);
     }
 
     /** {@inheritDoc} */

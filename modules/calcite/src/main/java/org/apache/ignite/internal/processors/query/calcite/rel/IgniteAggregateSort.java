@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
@@ -26,6 +27,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
@@ -38,25 +40,54 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
  *
  */
 public class IgniteAggregateSort extends IgniteAggregateBase {
+    /** Collation. */
+    private final RelCollation collation;
+
     /** {@inheritDoc} */
-    public IgniteAggregateSort(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+    public IgniteAggregateSort(
+        RelOptCluster cluster,
+        RelTraitSet traitSet,
+        RelNode input,
+        ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets,
+        List<AggregateCall> aggCalls
+    ) {
         super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
+
+        assert !TraitUtils.collation(traitSet).isDefault();
+
+        collation = TraitUtils.collation(traitSet);
     }
 
     /** {@inheritDoc} */
     public IgniteAggregateSort(RelInput input) {
         super(input);
+
+        collation = input.getCollation();
+
+        assert Objects.nonNull(collation);
+        assert !collation.isDefault();
     }
 
     /** {@inheritDoc} */
     @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-        return new IgniteAggregateSort(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
+        return new IgniteAggregateSort(getCluster(), traitSet.replace(collation), input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteAggregateSort(cluster, getTraitSet(), sole(inputs),
             getGroupSet(), getGroupSets(), getAggCallList());
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        return super.explainTerms(pw).item("collation", collation);
     }
 
     /** {@inheritDoc} */
@@ -81,13 +112,20 @@ public class IgniteAggregateSort extends IgniteAggregateBase {
     /** {@inheritDoc} */
     @Override protected RelNode createMapAggregate(RelOptCluster cluster, RelTraitSet traits, RelNode input,
         ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-        return new IgniteMapAggregateSort(getCluster(), traits, input, groupSet, groupSets, aggCalls, collation());
+        return new IgniteMapAggregateSort(getCluster(), traits, input, groupSet, groupSets, aggCalls, collation);
     }
 
     /** {@inheritDoc} */
     @Override protected RelNode createReduceAggregate(RelOptCluster cluster, RelTraitSet traits, RelNode input,
         ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls,
         RelDataType rowType) {
-        return new IgniteReduceAggregateSort(getCluster(), traits, input, groupSet, groupSets, aggCalls, getRowType(), collation());
+        return new IgniteReduceAggregateSort(getCluster(), traits, input, groupSet, groupSets, aggCalls, getRowType(), collation);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelCollation collation() {
+        assert collation.equals(super.collation());
+
+        return collation;
     }
 }

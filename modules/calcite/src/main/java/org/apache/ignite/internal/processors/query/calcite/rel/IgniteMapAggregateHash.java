@@ -37,8 +37,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
-
 /**
  *
  */
@@ -69,6 +67,29 @@ public class IgniteMapAggregateHash extends IgniteMapAggregateBase {
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteMapAggregateHash(cluster, getTraitSet(), sole(inputs),
             getGroupSet(), getGroupSets(), getAggCallList());
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected RelDataType deriveRowType() {
+        return rowType(Commons.typeFactory(getCluster()));
+    }
+
+    /** */
+    public static RelDataType rowType(RelDataTypeFactory typeFactory) {
+        assert typeFactory instanceof IgniteTypeFactory;
+
+        RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
+
+        builder.add("GROUP_ID", typeFactory.createJavaType(byte.class));
+        builder.add("GROUP_KEY", typeFactory.createJavaType(GroupKey.class));
+        builder.add("AGG_DATA", typeFactory.createArrayType(typeFactory.createJavaType(Accumulator.class), -1));
+
+        return builder.build();
     }
 
     /** {@inheritDoc} */

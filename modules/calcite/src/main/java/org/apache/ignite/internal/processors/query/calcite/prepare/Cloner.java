@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateHash;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -27,11 +28,13 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateHash;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregateHash;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregateSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
@@ -46,13 +49,14 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
-class Cloner implements IgniteRelVisitor<IgniteRel> {
+public class Cloner implements IgniteRelVisitor<IgniteRel> {
     /** */
     private final RelOptCluster cluster;
 
     /** */
     private ImmutableList.Builder<IgniteReceiver> remotes;
 
+    /** */
     Cloner(RelOptCluster cluster) {
         this.cluster = cluster;
     }
@@ -75,6 +79,13 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
         finally {
             remotes = null;
         }
+    }
+
+    /** */
+    public static IgniteRel clone(IgniteRel r) {
+        Cloner c = new Cloner(r.getCluster());
+
+        return c.visit(r);
     }
 
     /** */
@@ -190,6 +201,20 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteReduceAggregateHash rel) {
+        return rel.clone(cluster, F.asList(visit((IgniteRel) rel.getInput())));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteAggregateSort rel) {
+        return rel.clone(cluster, F.asList(visit((IgniteRel) rel.getInput())));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteMapAggregateSort rel) {
+        return rel.clone(cluster, F.asList(visit((IgniteRel) rel.getInput())));
+    }
+
+    @Override public IgniteRel visit(IgniteReduceAggregateSort rel) {
         return rel.clone(cluster, F.asList(visit((IgniteRel) rel.getInput())));
     }
 

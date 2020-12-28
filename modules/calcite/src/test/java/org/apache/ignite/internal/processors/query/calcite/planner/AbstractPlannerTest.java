@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessag
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.Cloner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
@@ -175,6 +176,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     /** */
     public static <T extends RelNode> List<T> findNodes(RelNode plan, Predicate<RelNode> pred) {
         List<T> ret = new ArrayList<>();
+
+        if (pred.test(plan))
+            ret.add((T)plan);
 
         plan.childrenAccept(
             new RelVisitor() {
@@ -324,6 +328,8 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected void checkSplitAndSerialization(IgniteRel rel, IgniteSchema publicSchema) {
+        rel = Cloner.clone(rel);
+
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
 

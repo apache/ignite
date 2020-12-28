@@ -15,26 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedNestedLoopJoinTest;
-import org.apache.ignite.internal.processors.query.calcite.planner.IndexSpoolTest;
-import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTest;
-import org.apache.ignite.internal.processors.query.calcite.planner.SortAggregateTest;
-import org.apache.ignite.internal.processors.query.calcite.planner.TableSpoolTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 /**
- * Calcite tests.
+ *
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    PlannerTest.class,
-    CorrelatedNestedLoopJoinTest.class,
-    TableSpoolTest.class,
-    IndexSpoolTest.class,
-    SortAggregateTest.class,
-})
-public class PlannerTestSuite {
+public enum AggregateType {
+    /** Map phase. */
+    MAP,
+
+    /** Reduce phase. */
+    REDUCE,
+
+    /** Single phase aggregate. */
+    SINGLE
 }

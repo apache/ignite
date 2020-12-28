@@ -74,11 +74,6 @@ public abstract class IgniteAggregateBase extends Aggregate implements TraitsAwa
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
-
-    /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(
         RelTraitSet nodeTraits,
         List<RelTraitSet> inputTraits

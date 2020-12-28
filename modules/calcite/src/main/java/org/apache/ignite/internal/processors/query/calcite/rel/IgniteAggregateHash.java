@@ -62,6 +62,11 @@ public class IgniteAggregateHash extends IgniteAggregateBase {
     }
 
     /** {@inheritDoc} */
+    @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
         // Since it's a hash aggregate it erases collation.
         return Pair.of(nodeTraits.replace(RelCollations.EMPTY),

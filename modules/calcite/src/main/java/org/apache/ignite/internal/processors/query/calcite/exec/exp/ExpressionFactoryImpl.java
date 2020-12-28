@@ -61,7 +61,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorsFactory;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateHashNode;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
@@ -102,8 +103,11 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public Supplier<List<AccumulatorWrapper<Row>>> accumulatorsFactory(AggregateNode.AggregateType type,
-        List<AggregateCall> calls, RelDataType rowType) {
+    @Override public Supplier<List<AccumulatorWrapper<Row>>> accumulatorsFactory(
+        AggregateType type,
+        List<AggregateCall> calls,
+        RelDataType rowType
+    ) {
         return new AccumulatorsFactory<>(ctx, type, calls, rowType);
     }
 

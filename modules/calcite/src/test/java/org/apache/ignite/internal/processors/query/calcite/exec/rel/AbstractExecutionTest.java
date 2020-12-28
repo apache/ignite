@@ -291,6 +291,13 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         lastE = ex;
     }
 
+    /**
+     *
+     */
+    protected Object[] row(Object... fields) {
+        return fields;
+    }
+
     /** */
     private static class TestMessageServiceImpl extends MessageServiceImpl {
         /** */
