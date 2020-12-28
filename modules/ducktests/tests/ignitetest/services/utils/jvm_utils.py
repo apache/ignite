@@ -17,8 +17,6 @@
 This module contains JVM utilities.
 """
 
-import sys
-
 JVM_PARAMS_GC_CMS = "-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSIncrementalMode " \
                     "-XX:ConcGCThreads=$(((`nproc`/4)>1?(`nproc`/4):1)) " \
                     "-XX:ParallelGCThreads=$(((`nproc`/2)>1?(`nproc`/2):1)) " \
@@ -100,8 +98,8 @@ def _to_map(params):
 
     as_map = {}
 
-    for kv in [entry.split(sep='=', maxsplit=1) for entry in params]:
-        as_map[str(kv[0])] = str(kv[1]) if len(kv) > 1 else None
+    for key_val in [entry.split(sep='=', maxsplit=1) for entry in params]:
+        as_map[str(key_val[0])] = str(key_val[1]) if len(key_val) > 1 else None
 
     return as_map
 
@@ -118,4 +116,3 @@ def _remove_duplicates(params: dict):
     for dbl_lst in duplicates.values():
         for to_remove in dbl_lst[:-1]:
             params.pop(to_remove)
-
