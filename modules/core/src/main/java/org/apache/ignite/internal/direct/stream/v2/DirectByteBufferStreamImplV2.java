@@ -302,7 +302,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     protected boolean lastFinished;
 
     /** byte-array representation of string */
-    private byte[] byteArr;
+    private byte[] curStrBackingArr;
 
     /**
      * @param msgFactory Message factory.
@@ -588,13 +588,13 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeString(String val) {
         if (val != null) {
-            if (byteArr == null)
-                byteArr = val.getBytes();
+            if (curStrBackingArr == null)
+                curStrBackingArr = val.getBytes();
 
-            writeByteArray(byteArr);
+            writeByteArray(curStrBackingArr);
 
             if (lastFinished)
-                byteArr = null;
+                curStrBackingArr = null;
         }
         else
             writeByteArray(null);
