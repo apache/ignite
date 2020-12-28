@@ -83,7 +83,12 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexSearchRow> i
             try {
                 int maxSize = inlineSize - fieldOff;
 
-                int size = InlineIndexKeyTypeRegistry.get(schema.getKeyDefinitions()[i].getIdxType())
+                int type = schema.getKeyDefinitions()[i].getIdxType();
+
+                if (!InlineIndexKeyTypeRegistry.supportInline(type))
+                    break;
+
+                int size = InlineIndexKeyTypeRegistry.get(type)
                     .put(pageAddr, off + fieldOff, row.getKey(i), maxSize);
 
                 // Inline size has exceeded.
