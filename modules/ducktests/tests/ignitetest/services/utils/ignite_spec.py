@@ -112,6 +112,10 @@ class IgniteSpec(metaclass=ABCMeta):
         opts = ["-J%s" % o for o in self.jvm_opts]
         return " ".join(opts)
 
+    def _add_jvm_opts(self, opts):
+        """Properly adds JVM options to current"""
+        self.jvm_opts = jvm_settings_merge(self.jvm_opts, opts, as_list=True)
+
 
 class IgniteNodeSpec(IgniteSpec):
     """
@@ -170,11 +174,9 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec):
             'USER_LIBS': ":".join(libs)
         }
 
-        self.jvm_opts = jvm_settings_merge(self.jvm_opts, [
-            "-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
-            "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
-            "-Dlog4j.configDebug=true"
-        ], as_list=True)
+        self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
+                             "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
+                             "-Dlog4j.configDebug=true"])
 
 
 class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
@@ -200,15 +202,13 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
             "USER_LIBS": ":".join(libs)
         }
 
-        self.jvm_opts = jvm_settings_merge(self.jvm_opts, [
-            "-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
-            "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
-            "-Dlog4j.configDebug=true",
-            "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
-            "-Xmx1G",
-            "-ea",
-            "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"
-        ], as_list=True)
+        self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
+                   "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
+                   "-Dlog4j.configDebug=true",
+                   "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
+                   "-Xmx1G",
+                   "-ea",
+                   "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"])
 
         self.args = [
             str(start_ignite),
