@@ -21,6 +21,7 @@ import os
 from abc import abstractmethod, ABCMeta
 
 from ignitetest.services.utils.config_template import IgniteLoggerConfigTemplate
+from ignitetest.utils.version import DEV_BRANCH
 
 
 def get_home_dir(install_root, project, version):
@@ -171,3 +172,16 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         :return: absolute path to the specified script
         """
         return os.path.join(self.home_dir, "bin", script_name)
+
+    def get_cert_path(self, jks_name: str):
+        """
+        :param jks_name: name of jks file.
+        :return: absolute path to the certificate jks.
+        """
+        ignite_dev_dir = get_home_dir(self.install_root, self.project, DEV_BRANCH)
+
+        path = os.path.join(ignite_dev_dir, "modules", "ducktests", "tests", "certs", jks_name)
+
+        assert os.path.exists(path), path
+
+        return path

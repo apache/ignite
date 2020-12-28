@@ -14,16 +14,21 @@
 # limitations under the License
 
 """
-This module contains classes and utilities for Ignite Cache configuration.
+This module contains classes and utilities for SslContextFactory.
 """
 from typing import NamedTuple
 
 
-class SslContextFactory(NamedTuple):
+class SslContextFactory:
     """
-    Ignite Cache configuration.
+    Ignite SslContextFactory.
     """
-    key_store_file_path: str
-    key_store_password: str
-    trust_store_file_path: str
-    trust_store_password: str
+    key_store_file_path: str = ""
+    key_store_password: str = "123456"
+    trust_store_file_path: str = ""
+    trust_store_password: str = "123456"
+    trust_store_password: str = "123456"
+
+
+
+

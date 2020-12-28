@@ -22,6 +22,7 @@ from typing import NamedTuple
 from ignitetest.services.utils.ignite_configuration.communication import CommunicationSpi, TcpCommunicationSpi
 from ignitetest.services.utils.ignite_configuration.data_storage import DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import DiscoverySpi, TcpDiscoverySpi
+from ignitetest.services.utils.ignite_configuration.ssl_factory import SslContextFactory
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
 
@@ -41,6 +42,7 @@ class IgniteConfiguration(NamedTuple):
     data_storage: DataStorageConfiguration = None
     caches: list = []
     local_host: str = None
+    ssl_context_factory: SslContextFactory = None
 
 
 class IgniteClientConfiguration(IgniteConfiguration):
