@@ -18,6 +18,8 @@
 package org.apache.ignite.transactions.spring;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.client.ClientCache;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,12 +28,16 @@ import org.springframework.transaction.annotation.Transactional;
  * Service.
  */
 public class GridSpringTransactionService {
+    /** */
+    @Autowired
+    private GridSpringTransactionService self;
+
     /**
      * @param cache Cache.
      * @param entryCnt Entries count.
      */
     @Transactional
-    public void put(IgniteCache<Integer, String> cache, int entryCnt) {
+    public void put(CacheProxy<Integer, String> cache, int entryCnt) {
         for (int i = 0; i < entryCnt; i++)
             cache.put(i, String.valueOf(i));
     }
@@ -41,7 +47,7 @@ public class GridSpringTransactionService {
      * @param entryCnt Entries count.
      */
     @Transactional
-    public void putWithError(IgniteCache<Integer, String> cache, int entryCnt) {
+    public void putWithError(CacheProxy<Integer, String> cache, int entryCnt) {
         for (int i = 0; i < entryCnt; i++)
             cache.put(i, String.valueOf(i));
 
@@ -52,7 +58,7 @@ public class GridSpringTransactionService {
      * @param cache Cache.
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void putWithMandatoryPropagation(IgniteCache<Integer, String> cache) {
+    public void putWithMandatoryPropagation(CacheProxy<Integer, String> cache) {
         cache.put(1, "1");
     }
 
@@ -60,7 +66,84 @@ public class GridSpringTransactionService {
      * @param cache Cache.
      */
     @Transactional(isolation = Isolation.READ_UNCOMMITTED)
-    public void putWithUnsupportedIsolationLevel(IgniteCache<Integer, String> cache) {
+    public void putWithUnsupportedIsolationLevel(CacheProxy<Integer, String> cache) {
         cache.put(1, "1");
+    }
+
+    /** */
+    @Transactional
+    public void putWithNestedError(CacheProxy<Integer, String> cache, int entryCnt) {
+        self.put(cache, entryCnt);
+
+        try {
+            self.putWithError(cache, entryCnt);
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+    }
+
+    /** */
+    public static class ClientCacheProxy<K, V> implements CacheProxy<K, V> {
+        /** */
+        private final ClientCache<K, V> cliCache;
+
+        /** */
+        public ClientCacheProxy(ClientCache<K, V> cliCache) {
+            this.cliCache = cliCache;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void put(K key, V val) {
+            cliCache.put(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            return cliCache.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeAll() {
+            cliCache.removeAll();
+        }
+    }
+
+    /** */
+    public static class IgniteCacheProxy<K, V> implements CacheProxy<K, V> {
+        /** */
+        private final IgniteCache<K, V> cache;
+
+        /** */
+        public IgniteCacheProxy(IgniteCache<K, V> cache) {
+            this.cache = cache;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void put(K key, V val) {
+             cache.put(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            return cache.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeAll() {
+            cache.removeAll();
+        }
+    }
+
+    /** */
+    public static interface CacheProxy<K, V> {
+        /** */
+        public void put(K key, V val);
+
+        /** */
+        public int size();
+
+        /** */
+        public void removeAll();
     }
 }

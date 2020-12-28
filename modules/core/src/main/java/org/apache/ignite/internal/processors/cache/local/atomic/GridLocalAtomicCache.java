@@ -388,9 +388,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         Map<K, V> vals = U.newHashMap(keys.size());
 
-        if (keyCheck)
-            validateCacheKeys(keys);
-
         warnIfUnordered(keys, BulkOperation.GET);
 
         final IgniteCacheExpiryPolicy expiry = expiryPolicy(opCtx != null ? opCtx.expiry() : null);
@@ -575,9 +572,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         Object... args) throws IgniteCheckedException {
         A.notNull(keys, "keys", entryProcessor, "entryProcessor");
 
-        if (keyCheck)
-            validateCacheKeys(keys);
-
         warnIfUnordered(keys, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
@@ -620,9 +614,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         Object... args) throws EntryProcessorException {
         A.notNull(key, "key", entryProcessor, "entryProcessor");
 
-        if (keyCheck)
-            validateCacheKey(key);
-
         final boolean statsEnabled = ctx.statisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -664,9 +655,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         Object... args) {
         A.notNull(keys, "keys", entryProcessor, "entryProcessor");
 
-        if (keyCheck)
-            validateCacheKeys(keys);
-
         warnIfUnordered(keys, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
@@ -697,9 +685,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args) throws IgniteCheckedException {
         A.notNull(map, "map");
-
-        if (keyCheck)
-            validateCacheKeys(map.keySet());
 
         warnIfUnordered(map, BulkOperation.INVOKE);
 
@@ -734,9 +719,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args) {
         A.notNull(map, "map");
-
-        if (keyCheck)
-            validateCacheKeys(map.keySet());
 
         warnIfUnordered(map, BulkOperation.INVOKE);
 
