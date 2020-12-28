@@ -281,7 +281,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                     args = new Object[reader.readInt()];
 
                     for (int i = 0; i < args.length; i++)
-                        args[i] = reader.readObjectDetached(!srvKeepBinary && !svc.isPlatforService());
+                        args[i] = reader.readObjectDetached(!srvKeepBinary && !svc.isPlatformService());
                 }
                 else
                     args = null;
@@ -612,7 +612,7 @@ public class PlatformServices extends PlatformAbstractTarget {
          */
         public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args)
             throws IgniteCheckedException, NoSuchMethodException {
-            if (isPlatforService())
+            if (isPlatformService())
                 return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
             else {
                 assert proxy instanceof GridServiceProxy;
@@ -719,7 +719,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         }
 
         /** @return {@code True} if service is platform service. */
-        public boolean isPlatforService() {
+        public boolean isPlatformService() {
             return proxy instanceof PlatformService;
         }
     }
