@@ -58,6 +58,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
+import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -97,6 +98,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageI
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -120,7 +123,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -942,6 +947,46 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "cache groups stopped: " + retain));
             }
         }
+    }
+
+    /**
+     * @param name Snapshot name to check.
+     * @param checkCrc Check page CRC sum on idle verify flag.
+     * @param skipZeros Skip zeros partitions(size == 0) in result.
+     * @return Future which will be completed when check operation finished.
+     */
+    public IgniteFuture<IdleVerifyResultV2> checkSnapshot(String name, boolean checkCrc, boolean skipZeros) {
+        A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
+
+        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
+
+        if (!CU.isPersistenceEnabled(cctx.gridConfig())) {
+            throw new IgniteException("Check snapshot request has been rejected. Check snapshot on an in-memory " +
+                "clusters are not allowed.");
+        }
+
+        if (!cctx.kernalContext().state().clusterState().state().active())
+            throw new IgniteException("Check snapshot operation has been rejected. The cluster is inactive.");
+
+        DiscoveryDataClusterState clusterState = cctx.kernalContext().state().clusterState();
+
+        List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
+
+        return cctx.kernalContext()
+            .grid()
+            .compute(cctx.kernalContext()
+                .grid()
+                .cluster()
+                .forNodes(F.view(srvNodes, (node) -> CU.baselineNode(node, clusterState))))
+            .executeAsync(VerifyBackupPartitionsTaskV2.class, new VisorIdleVerifyTaskArg());
+
+//        return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
+//            .callAsyncNoFailover(BALANCE,
+//                new CreateSnapshotCallable(name),
+//                Collections.singletonList(crd),
+//                false,
+//                0,
+//                true));
     }
 
     /**
