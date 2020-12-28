@@ -89,7 +89,7 @@ public class IgniteCliInterfaceTest {
             applicationContext.registerSingleton(InitIgniteCommand.class, initIgniteCommand);
             CommandLine cli = commandLine(applicationContext);
             assertEquals(0, cli.execute("init"));
-            verify(initIgniteCommand).init(any(), any());
+            verify(initIgniteCommand).init(any(), any(), any());
         }
     }
 

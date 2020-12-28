@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cli.spec;
 
+import java.net.URL;
 import javax.inject.Inject;
 import org.apache.ignite.cli.common.IgniteCommand;
 import org.apache.ignite.cli.builtins.init.InitIgniteCommand;
@@ -28,8 +29,13 @@ public class InitIgniteCommandSpec extends CommandSpec implements IgniteCommand 
     @Inject
     InitIgniteCommand command;
 
-    @Override public void run() {
-        command.init(spec.commandLine().getOut(), spec.commandLine().getColorScheme());
-    }
+    @CommandLine.Option(
+        names = "--repo",
+        description = "Additional Maven repository URL"
+    )
+    public URL[] urls;
 
+    @Override public void run() {
+        command.init(urls, spec.commandLine().getOut(), spec.commandLine().getColorScheme());
+    }
 }

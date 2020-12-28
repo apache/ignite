@@ -17,9 +17,7 @@
 
 package org.apache.ignite.cli.builtins.init;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -27,7 +25,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.jar.Manifest;
 import javax.inject.Inject;
 import io.micronaut.test.annotation.MockBean;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
@@ -41,7 +38,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.junit.jupiter.MockitoExtension;
 import picocli.CommandLine.Help.ColorScheme;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -67,8 +63,8 @@ public class InitIgniteCommandTest {
         when(mavenArtifactResolver.resolve(any(), any(), any(), any(), any()))
             .thenReturn(new ResolveResult(Arrays.asList()));
 
-        var out = new ByteArrayOutputStream();
-        initIgniteCommand.init(new PrintWriter(System.out, true), new ColorScheme.Builder().build());
+        var out = new PrintWriter(System.out, true);
+        initIgniteCommand.init(null, out, new ColorScheme.Builder().build());
 
         var ignitePaths = cliPathsConfigLoader.loadIgnitePathsConfig().get();
         assertTrue(ignitePaths.validateDirs());
@@ -82,14 +78,14 @@ public class InitIgniteCommandTest {
             .thenReturn(new ResolveResult(Collections.emptyList()));
 
         var out = new PrintWriter(System.out, true);
-        initIgniteCommand.init(out, new ColorScheme.Builder().build());
+        initIgniteCommand.init(null, out, new ColorScheme.Builder().build());
 
         var ignitePaths = cliPathsConfigLoader.loadIgnitePathsOrThrowError();
         recursiveDirRemove(ignitePaths.binDir);
 
         assertFalse(ignitePaths::validateDirs);
 
-        initIgniteCommand.init(out, new ColorScheme.Builder().build());
+        initIgniteCommand.init(null, out, new ColorScheme.Builder().build());
         assertTrue(ignitePaths::validateDirs);
     }
 

@@ -21,8 +21,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Properties;
@@ -54,7 +56,7 @@ public class InitIgniteCommand {
         this.cliPathsConfigLoader = cliPathsConfigLoader;
     }
 
-    public void init(PrintWriter out, ColorScheme cs) {
+    public void init(URL[] urls, PrintWriter out, ColorScheme cs) {
         moduleManager.setOut(out);
         Optional<IgnitePaths> ignitePathsOpt = cliPathsConfigLoader.loadIgnitePathsConfig();
         if (ignitePathsOpt.isEmpty())
@@ -73,8 +75,9 @@ public class InitIgniteCommand {
         out.println(table);
         out.println();
 
-        installIgnite(cfg);
+        installIgnite(cfg, urls);
         initDefaultServerConfigs(cfg.serverDefaultConfigFile());
+
         out.println();
         out.println("Apache Ignite is successfully initialized. Use the " +
             cs.commandText("ignite node start") + " command to start a new local node.");
@@ -92,8 +95,9 @@ public class InitIgniteCommand {
         }
     }
 
-    private void installIgnite(IgnitePaths ignitePaths) {
-        moduleManager.addModule("_server", ignitePaths, Collections.emptyList());
+    private void installIgnite(IgnitePaths ignitePaths, URL[] urls) {
+        moduleManager.addModule("_server", ignitePaths,
+            urls == null ? Collections.emptyList() : Arrays.asList(urls));
     }
 
     private File initConfigFile() {
