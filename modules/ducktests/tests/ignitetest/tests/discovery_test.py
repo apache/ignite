@@ -19,13 +19,13 @@ Module contains discovery tests.
 
 import os
 import random
-import sys
 from enum import IntEnum
 from time import monotonic
 from typing import NamedTuple
 
 from ducktape.mark import matrix
-from ignitetest.services.ignite import IgniteAwareService, IgniteService, get_event_time, node_failed_event_pattern
+from ignitetest.services.ignite import IgniteAwareService, IgniteService, get_event_time, node_failed_event_pattern,\
+    node_id, exec_command
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
@@ -191,7 +191,7 @@ class DiscoveryTest(IgniteTest):
             load_config = ignite_config._replace(client_mode=True) if test_config.with_zk else \
                 ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
 
-            tran_nodes = [read_node_id(n) for n in failed_nodes] \
+            tran_nodes = [node_id(n) for n in failed_nodes] \
                 if test_config.load_type == ClusterLoad.TRANSACTIONAL else None
 
             params = {"cacheName": "test-cache",
@@ -215,7 +215,7 @@ class DiscoveryTest(IgniteTest):
         ids_to_wait = []
 
         for node in failed_nodes:
-            ids_to_wait.append(read_node_id(node))
+            ids_to_wait.append(node_id(node))
 
             self.logger.info("Simulating failure of node '%s' (ID: %s)." % (node.name, ids_to_wait[-1]))
 
@@ -250,7 +250,7 @@ class DiscoveryTest(IgniteTest):
         failed_cnt = int(exec_command(survived_node, cmd))
 
         # Cache survivor id, do not read each time.
-        surv_id = read_node_id(survived_node)
+        surv_id = node_id(survived_node)
 
         if failed_cnt != len(failed_nodes):
             failed = exec_command(survived_node, "grep '%s' %s" % (node_failed_event_pattern(),
@@ -330,19 +330,3 @@ def choose_node_to_kill(servers, nodes_to_kill, sequential):
     assert len(to_kill) == nodes_to_kill, "Unable to pick up required number of nodes to kill."
 
     return to_kill
-
-
-def exec_command(node, cmd):
-    """Executes the command passed on the given node and returns result as string."""
-    return str(node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding())
-
-
-def read_node_id(node):
-    """
-    Returns node id from its log if started.
-    This is a remote call. Reuse its results if possible.
-    """
-    regexp = "^>>> Local node \\[ID=([^,]+),.+$"
-    cmd = "grep -E '%s' %s | sed -r 's/%s/\\1/'" % (regexp, node.log_file, regexp)
-
-    return exec_command(node, cmd).strip().lower()

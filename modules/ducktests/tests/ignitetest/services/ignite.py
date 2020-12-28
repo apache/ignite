@@ -19,6 +19,7 @@ This module contains class to start ignite cluster node.
 
 import re
 import signal
+import sys
 from datetime import datetime
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
@@ -85,3 +86,19 @@ def get_event_time(service, log_node, log_pattern, from_the_beginning=True, time
 
     return datetime.strptime(re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8")).group(),
                              "[%Y-%m-%d %H:%M:%S,%f]")
+
+
+def exec_command(node, cmd):
+    """Executes the command passed on the given node and returns result as string."""
+    return str(node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding())
+
+
+def node_id(node):
+    """
+    Returns node id from its log if started.
+    This is a remote call. Reuse its results if possible.
+    """
+    regexp = "^>>> Local node \\[ID=([^,]+),.+$"
+    cmd = "grep -E '%s' %s | sed -r 's/%s/\\1/'" % (regexp, node.log_file, regexp)
+
+    return exec_command(node, cmd).strip().lower()
