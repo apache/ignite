@@ -561,7 +561,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static class ServiceProxyHolder extends PlatformAbstractTarget {
         /** */
-        public final Object proxy;
+        private final Object proxy;
 
         /** */
         private final Class serviceClass;
