@@ -37,25 +37,11 @@ class SegmentArchivedStorage extends SegmentObservable {
      */
     private volatile long lastAbsArchivedIdx = -1;
 
-    /** Latest truncated segment. */
-    private volatile long lastTruncatedArchiveIdx = -1;
-
     /**
      * @param segmentLockStorage Protects WAL work segments from moving.
      */
-    private SegmentArchivedStorage(SegmentLockStorage segmentLockStorage) {
+    SegmentArchivedStorage(SegmentLockStorage segmentLockStorage) {
         this.segmentLockStorage = segmentLockStorage;
-    }
-
-    /**
-     * @param segmentLockStorage Protects WAL work segments from moving.
-     */
-    static SegmentArchivedStorage buildArchivedStorage(SegmentLockStorage segmentLockStorage) {
-        SegmentArchivedStorage archivedStorage = new SegmentArchivedStorage(segmentLockStorage);
-
-        segmentLockStorage.addObserver(archivedStorage::onSegmentUnlocked);
-
-        return archivedStorage;
     }
 
     /**
@@ -105,7 +91,7 @@ class SegmentArchivedStorage extends SegmentObservable {
      */
     synchronized void markAsMovedToArchive(long toArchive) throws IgniteInterruptedCheckedException {
         try {
-            while (segmentLockStorage.locked(toArchive) && !interrupted)
+            while (!segmentLockStorage.minLockIndex(toArchive) && !interrupted)
                 wait();
         }
         catch (InterruptedException e) {
@@ -145,21 +131,7 @@ class SegmentArchivedStorage extends SegmentObservable {
     /**
      * Callback for waking up waiters of this object when unlocked happened.
      */
-    private synchronized void onSegmentUnlocked(long segmentId) {
+    synchronized void onSegmentUnlocked(long segmentId) {
         notifyAll();
-    }
-
-    /**
-     * @param lastTruncatedArchiveIdx Last truncated segment.
-     */
-    void lastTruncatedArchiveIdx(long lastTruncatedArchiveIdx) {
-        this.lastTruncatedArchiveIdx = lastTruncatedArchiveIdx;
-    }
-
-    /**
-     * @return Last truncated segment.
-     */
-    long lastTruncatedArchiveIdx() {
-        return lastTruncatedArchiveIdx;
     }
 }

@@ -24,12 +24,18 @@ import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.ToIntFunction;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -79,11 +85,70 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
         U.delete(srcTmpDir);
     }
 
+    /** */
+    @Test
+    public void testServiceDeploymentViaDeploymentSpi() throws Exception {
+        URLClassLoader clsLdr = prepareClassLoader(1);
+        Class<?> cls = clsLdr.loadClass("MyRenewServiceImpl");
+
+        MyRenewService srvc = (MyRenewService)cls.newInstance();
+
+        assertEquals(1, srvc.version());
+
+        try {
+            Ignite ignite = startGrid(0);
+
+            ignite.configuration().getDeploymentSpi().register(clsLdr, cls);
+
+            ignite.services().deployClusterSingleton(SERVICE_NAME, srvc);
+
+            Class<?> srvcCls = serviceClass(ignite, SERVICE_NAME);
+
+            assertSame(cls, srvcCls);
+
+            assertEquals(1, ignite.services().serviceProxy(SERVICE_NAME, MyRenewService.class, false)
+                .version());
+
+            Ignite ignite1 = startGrid(1);
+
+            ignite1.configuration().getDeploymentSpi().register(clsLdr, cls);
+
+            srvcCls = serviceClass(ignite1, SERVICE_NAME);
+
+            assertSame(cls, srvcCls);
+
+            assertEquals(1, ignite1.services().serviceProxy(SERVICE_NAME, MyRenewService.class, false)
+                .version());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** */
+    @Test
+    public void testServiceHotRedeploymentNode() throws Exception {
+        serviceHotRedeploymentTest(
+            ignite -> ignite.services().serviceProxy(SERVICE_NAME, MyRenewService.class, false).version());
+    }
+
+    /** */
+    @Test
+    public void testServiceHotRedeploymentThinClient() throws Exception {
+        serviceHotRedeploymentTest(ignite -> {
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"))) {
+                return client.services().serviceProxy(SERVICE_NAME, MyRenewService.class).version();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        });
+    }
+
     /**
      * @throws Exception If failed.
      */
-    @Test
-    public void serviceHotRedeploymentTest() throws Exception {
+    private void serviceHotRedeploymentTest(ToIntFunction<Ignite> srvcFunc) throws Exception {
         URLClassLoader clsLdr = prepareClassLoader(1);
         Class<?> cls = clsLdr.loadClass("MyRenewServiceImpl");
 
@@ -99,8 +164,12 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
             depSpi.register(clsLdr, srvc.getClass());
 
             ignite.services().deployClusterSingleton(SERVICE_NAME, srvc);
-            MyRenewService proxy = ignite.services().serviceProxy(SERVICE_NAME, MyRenewService.class, false);
-            assertEquals(1, proxy.version());
+
+            Class<?> srvcCls = serviceClass(ignite, SERVICE_NAME);
+
+            assertSame(cls, srvcCls);
+
+            assertEquals(1, srvcFunc.applyAsInt(ignite));
 
             ignite.services().cancel(SERVICE_NAME);
             depSpi.unregister(srvc.getClass().getName());
@@ -111,12 +180,24 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
             depSpi.register(clsLdr, srvc.getClass());
 
             ignite.services().deployClusterSingleton(SERVICE_NAME, srvc);
-            proxy = ignite.services().serviceProxy(SERVICE_NAME, MyRenewService.class, false);
-            assertEquals(2, proxy.version());
+
+            assertNotSame(srvcCls, serviceClass(ignite, SERVICE_NAME));
+
+            assertEquals(2, srvcFunc.applyAsInt(ignite));
         }
         finally {
             stopAllGrids();
         }
+    }
+
+    /** */
+    private Class<?> serviceClass(Ignite ignite, String srvcName) {
+        for (ServiceDescriptor desc : ignite.services().serviceDescriptors()) {
+            if (srvcName.equals(desc.name()))
+                return desc.serviceClass();
+        }
+
+        return null;
     }
 
     /** */
