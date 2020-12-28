@@ -61,15 +61,15 @@ public class OsConfigurationSuggestions {
         List<String> suggestions = new ArrayList<>();
 
         if (U.isLinux()) {
-            String val;
-            String exp = "500";
+            Integer val;
+            int exp = 500;
 
-            boolean dwcParamFlag = (val = readVmParam(DIRTY_WRITEBACK_CENTISECS)) != null && !val.equals(exp);
-            boolean decParamFlag = (val = readVmParam(DIRTY_EXPIRE_CENTISECS)) != null && !val.equals(exp);
+            boolean dwcParamFlag = (val = readVmParam(DIRTY_WRITEBACK_CENTISECS)) != null && val > exp;
+            boolean decParamFlag = (val = readVmParam(DIRTY_EXPIRE_CENTISECS)) != null && val > exp;
 
             if (dwcParamFlag || decParamFlag)
                 suggestions.add(String.format("Speed up flushing of dirty pages by OS " +
-                        "(alter %s%s%s parameter%s by setting to %s)",
+                        "(alter %s%s%s parameter%s by setting to %d)",
                     (dwcParamFlag ? "vm." + DIRTY_WRITEBACK_CENTISECS : ""),
                     (dwcParamFlag && decParamFlag ? " and " : ""),
                     (decParamFlag ? "vm." + DIRTY_EXPIRE_CENTISECS : ""),
@@ -80,7 +80,7 @@ public class OsConfigurationSuggestions {
                 try {
                     int maxSwappiness = 10;
 
-                    if (Integer.parseInt(val) > maxSwappiness)
+                    if (val > maxSwappiness)
                         suggestions.add(String.format("Reduce pages swapping ratio (set vm.%s=%d or less)", SWAPPINESS,
                                                       maxSwappiness));
                 }
@@ -89,12 +89,12 @@ public class OsConfigurationSuggestions {
                 }
             }
 
-            if ((val = readVmParam(ZONE_RECLAIM_MODE)) != null && !val.equals(exp = "0"))
-                suggestions.add(String.format("Disable NUMA memory reclaim (set vm.%s=%s)", ZONE_RECLAIM_MODE,
+            if ((val = readVmParam(ZONE_RECLAIM_MODE)) != null && val > (exp = 0))
+                suggestions.add(String.format("Disable NUMA memory reclaim (set vm.%s=%d)", ZONE_RECLAIM_MODE,
                     exp));
 
-            if ((val = readVmParam(EXTRA_FREE_KBYTES)) != null && !val.equals(exp = "1240000"))
-                suggestions.add(String.format("Avoid direct reclaim and page allocation failures (set vm.%s=%s)",
+            if ((val = readVmParam(EXTRA_FREE_KBYTES)) != null && val < (exp = 1240000))
+                suggestions.add(String.format("Avoid direct reclaim and page allocation failures (set vm.%s=%d)",
                     EXTRA_FREE_KBYTES, exp));
         }
 
@@ -105,14 +105,14 @@ public class OsConfigurationSuggestions {
      * @param name Parameter name.
      * @return Value (possibly null).
      */
-    @Nullable private static String readVmParam(@NotNull String name) {
+    @Nullable private static Integer readVmParam(@NotNull String name) {
         try {
             Path path = Paths.get(VM_PARAMS_BASE_PATH + name);
 
             if (!Files.exists(path))
                 return null;
 
-            return readLine(path);
+            return Integer.parseInt(readLine(path));
         }
         catch (Exception ignored) {
             return null;
