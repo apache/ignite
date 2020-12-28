@@ -36,7 +36,7 @@ import org.junit.Test;
 /**
  * Tests that caches could not be accessed before activation.
  */
-public class CacheReadBeforeActivation extends GridCommonAbstractTest {
+public class CacheReadBeforeActivationTest extends GridCommonAbstractTest {
     /** Activation latch.*/
     private CountDownLatch latch;
 
