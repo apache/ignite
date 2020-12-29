@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.Iterator;
-import java.util.List;
 
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory;
@@ -30,22 +29,31 @@ import org.h2.result.SearchRow;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Unsorted merge index.
+ * Unsorted one-way merge index.
  */
-public class UnsortedReducer extends UnsortedBaseReducer {
+public class UnsortedOneWayReducer extends UnsortedBaseReducer {
     /**
      * Constructor.
      *
      * @param ctx Context.
      */
-    public UnsortedReducer(GridKernalContext ctx) {
+    public UnsortedOneWayReducer(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /**
+     * @param ctx Context.
+     * @return Dummy index instance.
+     */
+    public static UnsortedOneWayReducer createDummy(GridKernalContext ctx) {
+        return new UnsortedOneWayReducer(ctx);
     }
 
     /** {@inheritDoc} */
     @Override protected Cursor findInStream(SearchRow first, SearchRow last) {
-        // This index is unsorted: have to ignore bounds.
-        return new FetchingCursor(new Iterator<Row>() {
+        assert first == null && last == null : "Invalid usage dummy reducer: [first=" + first + ", last=" + last + ']';
+
+        return new OneWayFetchingCursor(new Iterator<Row>() {
             @Override public boolean hasNext() {
                 iter = pollNextIterator(queue, iter);
 
@@ -65,68 +73,35 @@ public class UnsortedReducer extends UnsortedBaseReducer {
     /**
      * Fetching cursor.
      */
-    private class FetchingCursor implements Cursor {
+    private class OneWayFetchingCursor implements Cursor {
         /** */
         private Iterator<Row> stream;
 
         /** */
-        private List<Row> rows;
-
-        /** */
-        private int cur;
+        private Row cur;
 
         /**
          * @param stream Stream of all the rows from remote nodes.
          */
-         FetchingCursor(Iterator<Row> stream) {
+        OneWayFetchingCursor(Iterator<Row> stream) {
             assert stream != null;
 
-            // Initially we will use all the fetched rows, after we will switch to the last block.
-            rows = fetched;
-
             this.stream = stream;
-
-            cur--; // Set current position before the first row.
-        }
-
-        /**
-         * Fetch rows from the stream.
-         */
-        private void fetchRows() {
-            // Take the current last block and set the position after last.
-            rows = fetched.lastBlock();
-            cur = rows.size();
-
-            // Fetch stream.
-            if (stream.hasNext()) {
-                fetched.add(requireNonNull(stream.next()));
-
-                // Evict block if we've fetched too many rows.
-                if (fetched.size() == MAX_FETCH_SIZE) {
-                    onBlockEvict(fetched.evictFirstBlock());
-
-                    assert fetched.size() < MAX_FETCH_SIZE;
-                }
-            }
-
-            if (cur == rows.size())
-                cur = Integer.MAX_VALUE; // We were not able to fetch anything. Done.
         }
 
         /** {@inheritDoc} */
         @Override public boolean next() {
-            if (cur == Integer.MAX_VALUE)
+            if (!stream.hasNext())
                 return false;
 
-            if (++cur == rows.size())
-                fetchRows();
+            cur = requireNonNull(stream.next());
 
-            return cur < Integer.MAX_VALUE;
+            return true;
         }
 
         /** {@inheritDoc} */
         @Override public Row get() {
-            return rows.get(cur);
+            return cur;
         }
 
         /** {@inheritDoc} */
