@@ -144,4 +144,28 @@ namespace org.apache.ignite.platform.model
         
         public Role Role { get; set; }
     }    
+    
+    /// <summary>
+    /// A class is a clone of Java class ParamValue with the same namespace.
+    /// </summary>
+    public class ParamValue 
+    {
+        /** */
+        public int Id { get; set; }
+
+        /** */
+        public long Val { get; set; }
+    }
+
+    /// <summary>
+    /// A class is a clone of Java class Parameter with the same namespace.
+    /// </summary>
+    public class Parameter
+    {
+        /** */
+        public int Id { get; set; }
+
+        /** */
+        public ParamValue[] Values { get; set; }
+    }
 }
