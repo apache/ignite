@@ -247,14 +247,60 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public static bool TryReadSystemType<T>(byte typeId, BinaryReader ctx, out T res)
         {
+            var stream = ctx.Stream;
+
             switch (typeId)
             {
+                case BinaryTypeId.Byte:
+                    res = TypeCaster<T>.Cast(stream.ReadByte());
+                    return true;
+
+                case BinaryTypeId.Short:
+                    res = TypeCaster<T>.Cast(stream.ReadShort());
+                    return true;
+
+                case BinaryTypeId.Int:
+                    res = TypeCaster<T>.Cast(stream.ReadInt());
+                    return true;
+
+                case BinaryTypeId.Long:
+                    res = TypeCaster<T>.Cast(stream.ReadLong());
+                    return true;
+
+                case BinaryTypeId.Float:
+                    res = TypeCaster<T>.Cast(stream.ReadFloat());
+                    return true;
+
+                case BinaryTypeId.Double:
+                    res = TypeCaster<T>.Cast(stream.ReadDouble());
+                    return true;
+
+                case BinaryTypeId.Char:
+                    res = TypeCaster<T>.Cast(stream.ReadChar());
+                    return true;
+
+                case BinaryTypeId.Bool:
+                    res = TypeCaster<T>.Cast(stream.ReadBool());
+                    return true;
+
+                case BinaryTypeId.String:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadString(stream));
+                    return true;
+
+                case BinaryTypeId.Guid:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadGuid(stream));
+                    return true;
+
+                case BinaryTypeId.Decimal:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadDecimal(stream));
+                    return true;
+
                 case BinaryTypeId.Timestamp:
-                    res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestamp(ctx.Stream, ctx.Marshaller.TimestampConverter));
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestamp(stream, ctx.Marshaller.TimestampConverter));
                     return true;
 
                 case BinaryTypeId.ArrayTimestamp:
-                    res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestampArray(ctx.Stream, ctx.Marshaller.TimestampConverter));
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestampArray(stream, ctx.Marshaller.TimestampConverter));
                     return true;
             }
 
