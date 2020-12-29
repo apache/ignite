@@ -36,8 +36,8 @@ public @interface GridToStringInclude {
     /**
      * A flag indicating a sensitive information stored in the field or fields of the class.<br/>
      * Such information will be included in {@code toString()} output ONLY when the system property
-     * {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE IGNITE_TO_STRING_INCLUDE_SENSITIVE}
-     * is set to {@code true}.
+     * {@link IgniteSystemProperties#IGNITE_SENSITIVE_DATA_LOGGING}
+     * is set to {@code "plain"} (see {@link GridToStringBuilder.SensitiveDataLogging}).
      *
      * @return Attribute value.
      */

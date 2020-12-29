@@ -30,12 +30,17 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerInaccessibleClassException;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.HASH;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.PLAIN;
 
 /**
  * Internal binary object interface.
@@ -181,16 +186,23 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        try {
-            BinaryReaderHandles ctx = new BinaryReaderHandles();
+        GridToStringBuilder.SensitiveDataLogging sensitiveDataLogging = S.getSensitiveDataLogging();
+
+        if (sensitiveDataLogging == PLAIN) {
+            try {
+                BinaryReaderHandles ctx = new BinaryReaderHandles();
 
             ctx.put(start(), this);
 
-            return toString(ctx, new IdentityHashMap<BinaryObject, Integer>());
+                return toString(ctx, new IdentityHashMap<BinaryObject, Integer>());
+            } catch (BinaryObjectException e) {
+                throw new IgniteException("Failed to create string representation of binary object.", e);
+            }
         }
-        catch (BinaryObjectException e) {
-            throw new IgniteException("Failed to create string representation of binary object.", e);
-        }
+        if (sensitiveDataLogging == HASH)
+            return String.valueOf(IgniteUtils.hash(this));
+        else
+            return "BinaryObject";
     }
 
     /**
@@ -370,7 +382,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         try {
             BinaryReaderHandles ctx = new BinaryReaderHandles();
 
-            ctx.put(start(), this);
+                ctx.put(start(), this);
 
             return hasCircularReferences(ctx, new IdentityHashMap<BinaryObject, Integer>());
         }

@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -130,6 +131,8 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_MA
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compareIgnoreOpCounter;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.NO_KEY;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.HASH;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.PLAIN;
 
 /**
  * Adapter for cache entry.
@@ -5157,7 +5160,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
         }
         else {
-            String keySens = GridToStringBuilder.includeSensitive() ? ", key=" + key : "";
+            GridToStringBuilder.SensitiveDataLogging sensitiveDataLogging = S.getSensitiveDataLogging();
+
+            String keySens;
+
+            if (sensitiveDataLogging == PLAIN)
+                keySens = ", key=" + key;
+            else if (sensitiveDataLogging == HASH)
+                keySens = ", key=" + (key == null ? "null" : String.valueOf(IgniteUtils.hash(key)));
+            else
+                keySens = "";
 
             return "GridCacheMapEntry [err='Partial result represented because entry lock wasn't acquired."
                 + " Waiting time elapsed.'"

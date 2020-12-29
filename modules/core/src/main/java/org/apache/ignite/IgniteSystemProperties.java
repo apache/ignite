@@ -336,15 +336,37 @@ public final class IgniteSystemProperties {
 
     /**
      * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
+     *
+     * @deprecated Use {@link #IGNITE_SENSITIVE_DATA_LOGGING} instead.
      */
     @SystemProperty(value = "Enables writing sensitive information in toString() output",
         defaults = "" + DFLT_TO_STRING_INCLUDE_SENSITIVE)
     public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
 
+    /**
+     * Setting to {@code "plain"} enables writing sensitive information in {@code toString()} output.
+     * Setting to {@code "hash"} enables writing hash of sensitive information in {@code toString()} output.
+     * Setting to {@code "none"} disables writing sensitive information in {@code toString()} output.
+     *
+     * {@link #IGNITE_TO_STRING_INCLUDE_SENSITIVE} has higher priority. If it is explicitly set, then it is converted:
+     * "true" -> "plain",
+     * "false" -> "none".
+     */
+    public static final String IGNITE_SENSITIVE_DATA_LOGGING = "IGNITE_SENSITIVE_DATA_LOGGING";
+
     /** Maximum length for {@code toString()} result. */
     @SystemProperty(value = "Maximum length for toString() result", type = Integer.class,
         defaults = "" + DFLT_TO_STRING_MAX_LENGTH)
     public static final String IGNITE_TO_STRING_MAX_LENGTH = "IGNITE_TO_STRING_MAX_LENGTH";
+
+    /**
+     * Boolean flag indicating whether {@link GridToStringBuilder} should throw {@link RuntimeException}
+     * when building string representation of an object or should just print information about exception into the log
+     * and proceed.
+     *
+     * {@code False} by default.
+     */
+    public static final String IGNITE_TO_STRING_THROW_RUNTIME_EXCEPTION = "IGNITE_TO_STRING_THROW_RUNTIME_EXCEPTION";
 
     /**
      * Limit collection (map, array) elements number to output.

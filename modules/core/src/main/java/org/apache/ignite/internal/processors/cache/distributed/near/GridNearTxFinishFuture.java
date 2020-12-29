@@ -999,8 +999,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                     .noneMatch(uuid -> cctx.discovery().alive(uuid))) {
                     onDone(new CacheInvalidStateException(ALL_PARTITION_OWNERS_LEFT_GRID_MSG +
                         m.entries().stream().map(e -> " [cacheName=" + e.cached().context().name() +
-                            ", partition=" + e.key().partition() +
-                            (S.includeSensitive() ? ", key=" + e.key() : "") +
+                            ", partition=" + e.key().partition() + ", key=" + e.key() +
                             "]").findFirst().orElse("")));
 
                     return true;

@@ -24,8 +24,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.HASH;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.SensitiveDataLogging.PLAIN;
 
 /**
  * Data Entry for automatic unwrapping key and value from Mvcc Data Entry
@@ -114,12 +119,17 @@ public class UnwrapMvccDataEntry extends MvccDataEntry implements UnwrappedDataE
 
     /** {@inheritDoc} */
     @Override public String toString() {
+        GridToStringBuilder.SensitiveDataLogging sensitiveDataLogging = S.getSensitiveDataLogging();
+
         SB sb = new SB();
 
         sb.a(getClass().getSimpleName()).a('[');
 
-        if (S.includeSensitive())
+        if (sensitiveDataLogging == PLAIN)
             sb.a("k = ").a(unwrappedKey()).a(", v = [ ").a(unwrappedValue()).a("], ");
+        else if (sensitiveDataLogging == HASH)
+            sb.a("k = ").a(unwrappedKey() == null ? "null" : IgniteUtils.hash(unwrappedKey()))
+                    .a(", v = [ ").a(unwrappedValue() == null ? "null" : IgniteUtils.hash(unwrappedValue())).a("], ");
 
         return sb.a("super = [").a(super.toString()).a("]]").toString();
     }

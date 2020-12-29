@@ -33,6 +33,7 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -778,6 +780,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING, value = "plain")
     public void testObject() throws Exception {
         final Ignite ignite = ignite(0);
         final boolean binaryMarshaller = ignite.configuration().getMarshaller() instanceof BinaryMarshaller;

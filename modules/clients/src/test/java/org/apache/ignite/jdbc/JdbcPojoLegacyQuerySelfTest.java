@@ -18,7 +18,10 @@
 package org.apache.ignite.jdbc;
 
 import java.sql.ResultSet;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SENSITIVE_DATA_LOGGING;
 
 /**
  * Test for Jdbc driver query without class on client
@@ -31,6 +34,7 @@ public class JdbcPojoLegacyQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SENSITIVE_DATA_LOGGING, value = "plain")
     public void testJdbcQuery() throws Exception {
         stmt.execute("select * from JdbcTestObject");
 
