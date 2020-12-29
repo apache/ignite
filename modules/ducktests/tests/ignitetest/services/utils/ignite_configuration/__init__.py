@@ -43,6 +43,7 @@ class IgniteConfiguration(NamedTuple):
     caches: list = []
     local_host: str = None
     ssl_context_factory: SslContextFactory = None
+    connector_configuration: SslContextFactory = None
 
 
 class IgniteClientConfiguration(IgniteConfiguration):

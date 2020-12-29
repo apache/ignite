@@ -166,6 +166,19 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
     def log_config_file(self):
         return os.path.join(self.persistent_root, "ignite-log4j.xml")
 
+    @property
+    def certificate_dir(self):
+        """
+        :return: path to the certificate directory.
+        """
+        ignite_dev_dir = get_home_dir(self.install_root, self.project, DEV_BRANCH)
+
+        path = os.path.join(ignite_dev_dir, "modules", "ducktests", "tests", "certs")
+
+        assert os.path.exists(path), path
+
+        return path
+
     def script(self, script_name):
         """
         :param script_name: name of Ignite script
@@ -173,15 +186,3 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         """
         return os.path.join(self.home_dir, "bin", script_name)
 
-    def get_cert_path(self, jks_name: str):
-        """
-        :param jks_name: name of jks file.
-        :return: absolute path to the certificate jks.
-        """
-        ignite_dev_dir = get_home_dir(self.install_root, self.project, DEV_BRANCH)
-
-        path = os.path.join(ignite_dev_dir, "modules", "ducktests", "tests", "certs", jks_name)
-
-        assert os.path.exists(path), path
-
-        return path

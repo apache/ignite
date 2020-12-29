@@ -16,7 +16,7 @@
 """
 This module contains control utility wrapper.
 """
-
+import os
 import random
 import re
 import time
@@ -35,12 +35,12 @@ class ControlUtility:
                  key_store_jks: str = None, key_store_pwd: str = "123456",
                  trust_store_jks: str = "truststore.jks", trust_store_pwd: str = "123456"):
         self._cluster = cluster
-        self.logger = cluster.text_context.logger
+        self.logger = cluster.context.logger
 
         if key_store_jks is not None:
-            self.key_store_path = cluster.get_cert_path(key_store_jks)
+            self.key_store_path = os.path.join(cluster.certificate_dir, key_store_jks)
             self.key_store_pwd = key_store_pwd
-            self.trust_store_path = cluster.get_cert_path(trust_store_jks)
+            self.trust_store_path = os.path.join(cluster.certificate_dir, trust_store_jks)
             self.trust_store_pwd = trust_store_pwd
 
     def baseline(self):
