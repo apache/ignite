@@ -35,13 +35,13 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
     public class BinarySystemTypeReadBenchmark
     {
         /** */
-        private static readonly DateTime DateTime = new DateTime(2010, 10, 10);
+        private static readonly DateTime DateTime = new DateTime(2010, 10, 10).ToUniversalTime();
 
         /** */
         private static readonly Guid Guid = Guid.NewGuid();
 
         /** */
-        private readonly Marshaller _marsh = new Marshaller(new BinaryConfiguration());
+        private readonly Marshaller _marsh = new Marshaller(new BinaryConfiguration {ForceTimestamp = true});
 
         /** */
         private readonly PlatformMemoryManager _memMgr = new PlatformMemoryManager(1024);
