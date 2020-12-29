@@ -291,8 +291,48 @@ namespace Apache.Ignite.Core.Impl.Binary
                     res = TypeCaster<T>.Cast(BinaryUtils.ReadGuid(stream));
                     return true;
 
+                case BinaryTypeId.ArrayByte:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadByteArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayShort:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadShortArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayInt:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadIntArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayLong:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadLongArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayFloat:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadFloatArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayDouble:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadDoubleArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayChar:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadCharArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayBool:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadBooleanArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayString:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadStringArray(stream));
+                    return true;
+
                 case BinaryTypeId.Decimal:
                     res = TypeCaster<T>.Cast(BinaryUtils.ReadDecimal(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayDecimal:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadDecimalArray(stream));
                     return true;
 
                 case BinaryTypeId.Timestamp:
