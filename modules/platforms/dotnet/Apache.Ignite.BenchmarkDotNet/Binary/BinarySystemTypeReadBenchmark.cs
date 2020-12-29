@@ -29,7 +29,7 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
     /// <para />
     /// | Method |     Mean |     Error |    StdDev |  Gen 0 | Gen 1 | Gen 2 | Allocated |
     /// |------- |---------:|----------:|----------:|-------:|------:|------:|----------:|
-    /// |   Read | 2.063 us | 0.0089 us | 0.0084 us | 0.2823 |     - |     - |   1.74 KB |
+    /// |   Read | 1.792 us | 0.0080 us | 0.0071 us | 0.2728 |     - |     - |   1.67 KB |
     /// </summary>
     [MemoryDiagnoser]
     public class BinarySystemTypeReadBenchmark
