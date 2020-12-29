@@ -352,16 +352,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     res = (T) BinaryUtils.ReadDictionary(ctx, null);
                     return true;
 
-                case BinaryTypeId.Binary:
-                    res = default(T); // TODO
-                    return true;
-
-                case BinaryTypeId.Enum:
-                    res = default(T); // TODO
-                    return true;
-
                 case BinaryTypeId.ArrayEnum:
-                    res = default(T); // TODO
+                    res = (T) ReadArray(ctx, typeof(T));
                     return true;
 
                 case BinaryTypeId.Decimal:
@@ -378,10 +370,6 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 case BinaryTypeId.ArrayTimestamp:
                     res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestampArray(stream, ctx.Marshaller.TimestampConverter));
-                    return true;
-
-                case BinaryTypeId.BinaryEnum:
-                    res = default(T); // TODO
                     return true;
             }
 
