@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Initializes the <see cref="BinarySystemHandlers"/> class.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline", 
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline",
             Justification = "Readability.")]
         static BinarySystemHandlers()
         {
@@ -65,19 +65,19 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             ReadHandlers[BinaryTypeId.ArrayByte] =
                 new BinarySystemDualReader<byte[], sbyte[]>(BinaryUtils.ReadByteArray, BinaryUtils.ReadSbyteArray);
-            
+
             ReadHandlers[BinaryTypeId.ArrayShort] =
                 new BinarySystemDualReader<short[], ushort[]>(BinaryUtils.ReadShortArray,
                     BinaryUtils.ReadUshortArray);
 
-            ReadHandlers[BinaryTypeId.ArrayChar] = 
+            ReadHandlers[BinaryTypeId.ArrayChar] =
                 new BinarySystemReader<char[]>(BinaryUtils.ReadCharArray);
 
             ReadHandlers[BinaryTypeId.ArrayInt] =
                 new BinarySystemDualReader<int[], uint[]>(BinaryUtils.ReadIntArray, BinaryUtils.ReadUintArray);
-            
+
             ReadHandlers[BinaryTypeId.ArrayLong] =
-                new BinarySystemDualReader<long[], ulong[]>(BinaryUtils.ReadLongArray, 
+                new BinarySystemDualReader<long[], ulong[]>(BinaryUtils.ReadLongArray,
                     BinaryUtils.ReadUlongArray);
 
             ReadHandlers[BinaryTypeId.ArrayFloat] =
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 // We know how to write any array type.
                 Type elemType = type.GetElementType();
-                
+
                 // Primitives.
                 if (elemType == typeof (bool))
                     return new BinarySystemWriteHandler<bool[]>(WriteBoolArray, true);
@@ -247,24 +247,21 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public static bool TryReadSystemType<T>(byte typeId, BinaryReader ctx, out T res)
         {
+            switch (typeId)
+            {
+                case BinaryTypeId.Timestamp:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestamp(ctx.Stream, ctx.Marshaller.TimestampConverter));
+                    return true;
+
+                case BinaryTypeId.ArrayTimestamp:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestampArray(ctx.Stream, ctx.Marshaller.TimestampConverter));
+                    return true;
+            }
+
             var handler = ReadHandlers[typeId];
 
             if (handler == null)
             {
-                if (typeId == BinaryTypeId.Timestamp)
-                {
-                    // Date.
-                    res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestamp(ctx.Stream, ctx.Marshaller.TimestampConverter));
-                    return true;
-                }
-
-                if (typeId == BinaryTypeId.ArrayTimestamp)
-                {
-                    // Date array.
-                    res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestampArray(ctx.Stream, ctx.Marshaller.TimestampConverter));
-                    return true;
-                }
-
                 res = default(T);
                 return false;
             }
@@ -272,7 +269,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             res = handler.Read<T>(ctx);
             return true;
         }
-        
+
         /// <summary>
         /// Write decimal.
         /// </summary>
@@ -284,7 +281,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             BinaryUtils.WriteDecimal(obj, ctx.Stream);
         }
-        
+
         /// <summary>
         /// Write string.
         /// </summary>
@@ -332,7 +329,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             BinaryUtils.WriteBooleanArray(obj, ctx.Stream);
         }
-        
+
         /// <summary>
         /// Write byte array.
         /// </summary>
@@ -356,7 +353,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             BinaryUtils.WriteShortArray(obj, ctx.Stream);
         }
-        
+
         /// <summary>
         /// Write char array.
         /// </summary>
@@ -428,7 +425,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             BinaryUtils.WriteDecimalArray(obj, ctx.Stream);
         }
-        
+
         /// <summary>
         /// Write string array.
         /// </summary>
@@ -440,7 +437,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             BinaryUtils.WriteStringArray(obj, ctx.Stream);
         }
-        
+
         /// <summary>
         /// Write nullable GUID array.
         /// </summary>
@@ -514,7 +511,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             BinaryUtils.WriteBinary(ctx.Stream, obj);
         }
-        
+
         /// <summary>
         /// Write enum.
         /// </summary>
@@ -572,7 +569,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             return BinaryUtils.ReadDictionary(ctx, null);
         }
-                
+
         /// <summary>
         /// Write Ignite.
         /// </summary>
@@ -716,10 +713,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             /** <inheritdoc /> */
             public T Read<T>(BinaryReader ctx)
             {
-                // Can't use "as" because of variance. 
+                // Can't use "as" because of variance.
                 // For example, IBinarySystemReader<byte[]> can be cast to IBinarySystemReader<sbyte[]>, which
                 // will cause incorrect behavior.
-                if (typeof (T) == typeof (T2))  
+                if (typeof (T) == typeof (T2))
                     return ((IBinarySystemReader<T>) this).Read(ctx);
 
                 return TypeCaster<T>.Cast(_readDelegate1(ctx.Stream));
