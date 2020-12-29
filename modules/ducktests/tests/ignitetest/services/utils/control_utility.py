@@ -273,7 +273,7 @@ class ControlUtility:
 
     def __form_cmd(self, node, cmd):
         ssl = ""
-        if self.key_store_path is not None:
+        if hasattr(self, 'key_store_path'):
             ssl = f" --keystore {self.key_store_path} --keystore-password {self.key_store_pwd} " \
                   f"--truststore {self.trust_store_path} --truststore-password {self.trust_store_pwd}"
 
