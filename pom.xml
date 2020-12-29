@@ -95,6 +95,7 @@
                 <configuration>
                     <skip>true</skip>
                 </configuration>
+                <inherited>false</inherited>
             </plugin>
         </plugins>
     </build>
