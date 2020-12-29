@@ -1,1 +1,0 @@
-https://github.com/Sberbank-Technology/ducktape/tarball/master#egg=ducktape-0.8.1

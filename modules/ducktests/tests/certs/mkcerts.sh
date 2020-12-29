@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+CERTS_DIR="$(dirname "$0")"
+
+cd "${CERTS_DIR}"
+
 source ./functions.sh
 
 PSWD=123456
@@ -13,4 +17,6 @@ makeTruststore root ca
 mkCert ca server "CN=Ignite Server" ${PSWD}
 mkCert ca client "CN=Ignite Client" ${PSWD}
 mkCert ca admin "CN=Ignite Admin" ${PSWD}
+
+cd -
 

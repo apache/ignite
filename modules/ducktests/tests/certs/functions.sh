@@ -58,11 +58,11 @@ function mkCert() {
         error "mkCert: Need CA, ALIAS, DNAME, PSWD"
     fi
 
-    rm -rf "${ALIAS}.jks"
-    rm -rf "${ALIAS}.pem"
-    rm -rf "${ALIAS}.csr"
+    rm "${ALIAS}.jks"
+    rm "${ALIAS}.pem"
+    rm "${ALIAS}.csr"
 
-    keytool -genkeypair -keystore ${ALIAS}.jks -alias ${ALIAS} -dname ${DNAME} -keyalg RSA -keysize 2048 \
+    keytool -genkeypair -keystore ${ALIAS}.jks -alias ${ALIAS} -dname "${DNAME}" -keyalg RSA -keysize 2048 \
      -keypass ${PSWD} -storepass ${PSWD} -noprompt -v || error
 
     keytool -storepass ${PSWD} -keystore ${ALIAS}.jks -certreq -alias ${ALIAS} -file ${ALIAS}.csr -v || error
@@ -72,8 +72,8 @@ function mkCert() {
 
     keytool -keystore ${ALIAS}.jks -importcert -alias ${ALIAS} -storepass ${PSWD} -file ${ALIAS}.pem -noprompt -v || error
 
-    rm -rf "${ALIAS}.csr"
-    rm -rf "${ALIAS}.pem"
+    rm "${ALIAS}.csr"
+    rm "${ALIAS}.pem"
 }
 
 function makeTruststore() {
