@@ -1187,6 +1187,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Read string array.
+        /// </summary>
+        /// <param name="stream">Stream</param>
+        /// <returns>String array.</returns>
+        public static Guid?[] ReadGuidArray(IBinaryStream stream)
+        {
+            var len = stream.ReadInt();
+            var res = new Guid?[len];
+
+            for (var i = 0; i < len; i++)
+                res[i] = stream.ReadByte() == HdrNull ? (Guid?) null : ReadGuid(stream);
+
+            return res;
+        }
+
+        /// <summary>
         /// Read timestamp array.
         /// </summary>
         /// <param name="stream">Stream.</param>

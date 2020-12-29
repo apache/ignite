@@ -357,7 +357,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public string[] ReadStringArray()
         {
-            return Read(r => BinaryUtils.ReadArray<string>(r, false), BinaryTypeId.ArrayString);
+            return Read(stream => BinaryUtils.ReadStringArray(stream), BinaryTypeId.ArrayString);
         }
 
         /** <inheritdoc /> */
@@ -375,13 +375,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public Guid?[] ReadGuidArray(string fieldName)
         {
-            return ReadField(fieldName, r => BinaryUtils.ReadArray<Guid?>(r, false), BinaryTypeId.ArrayGuid);
+            return ReadField(fieldName, stream => BinaryUtils.ReadGuidArray(stream), BinaryTypeId.ArrayGuid);
         }
 
         /** <inheritdoc /> */
         public Guid?[] ReadGuidArray()
         {
-            return Read(r => BinaryUtils.ReadArray<Guid?>(r, false), BinaryTypeId.ArrayGuid);
+            return Read(stream => BinaryUtils.ReadGuidArray(stream), BinaryTypeId.ArrayGuid);
         }
 
         /** <inheritdoc /> */

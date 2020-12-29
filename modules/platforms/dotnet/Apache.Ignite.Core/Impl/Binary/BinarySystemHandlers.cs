@@ -327,6 +327,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                     res = TypeCaster<T>.Cast(BinaryUtils.ReadStringArray(stream));
                     return true;
 
+                case BinaryTypeId.ArrayGuid:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadGuidArray(stream));
+                    return true;
+
                 case BinaryTypeId.Decimal:
                     res = TypeCaster<T>.Cast(BinaryUtils.ReadDecimal(stream));
                     return true;
