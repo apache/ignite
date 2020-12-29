@@ -15,33 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+package org.apache.ignite.platform.model;
 
-/** Test value object. */
-public class Address {
-    /** */
-    private String zip;
-
-    /** */
-    private String addr;
-
-    /** */
-    public String getZip() {
-        return zip;
-    }
-
-    /** */
-    public void setZip(String zip) {
-        this.zip = zip;
-    }
-
-    /** */
-    public String getAddr() {
-        return addr;
-    }
-
-    /** */
-    public void setAddr(String addr) {
-        this.addr = addr;
-    }
+/** Test enum. */
+public enum ACL {
+    ALLOW, DENY
 }
