@@ -35,6 +35,9 @@ public class BinaryWriterSchemaHolder {
     /** Data. */
     private int[] data = new int[GROW_STEP];
 
+    /** Data. */
+    private boolean[] isFieldNull = new boolean[GROW_STEP];
+
     /** Index. */
     private int idx;
 
@@ -44,7 +47,15 @@ public class BinaryWriterSchemaHolder {
      * @param id Field ID.
      * @param off Field offset.
      */
-    public void push(int id, int off) {
+    public void push(int id, int off, boolean isNull) {
+
+        if (idx == isFieldNull.length) {
+            boolean[] isFieldNull0 = new boolean[isFieldNull.length + GROW_STEP];
+
+            System.arraycopy(isFieldNull, 0, isFieldNull0, 0, isFieldNull.length);
+
+            isFieldNull = isFieldNull0;
+        }
         if (idx == data.length) {
             int[] data0 = new int[data.length + GROW_STEP];
 
@@ -56,7 +67,21 @@ public class BinaryWriterSchemaHolder {
         data[idx] = id;
         data[idx + 1] = off;
 
+        this.isFieldNull[idx / 2] = isNull;
+
         idx += 2;
+
+    }
+
+    /**
+     * Push another frame.
+     *
+     * @param id Field ID.
+     * @param off Field offset.
+     */
+    public void push(int id, int off) {
+        push(id, off, false);
+
     }
 
     /**
@@ -76,9 +101,10 @@ public class BinaryWriterSchemaHolder {
      * @param out Output stream.
      * @param fieldCnt Count.
      * @param compactFooter Whether footer should be written in compact form.
+     * @param compactNull Whether null are compacted
      * @return Amount of bytes dedicated to each field offset. Could be 1, 2 or 4.
      */
-    public int write(BinaryOutputStream out, int fieldCnt, boolean compactFooter) {
+    public int write(BinaryOutputStream out, int fieldCnt, boolean compactFooter, boolean compactNull) {
         int startIdx = idx - fieldCnt * 2;
         assert startIdx >= 0;
 
@@ -90,53 +116,67 @@ public class BinaryWriterSchemaHolder {
         int res;
 
         if (compactFooter) {
-            if (lastOffset < MAX_OFFSET_1) {
-                for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
-                    out.unsafeWriteByte((byte)data[curIdx]);
+            if (compactNull && fieldCnt > 0) {
+               byte[] nullMask = BinaryClassDescriptor.createNullMask(fieldCnt);
 
-                res = BinaryUtils.OFFSET_1;
-            }
-            else if (lastOffset < MAX_OFFSET_2) {
-                for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
-                    out.unsafeWriteShort((short) data[curIdx]);
+               // If nulls are compacted then offset are only written if the current offset is != 0,
+               // meaning this is not a null field.
+               // Warning: index does not start at zero as the frames as nested
+               for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2) {
+                       int fieldIndex = ((curIdx - startIdx) / 2);
+                       if (!isFieldNull[curIdx / 2]) {
+                           // If the isFieldNull[curIdx / 2] != 0 then the field is not null
+                           // Compute which mask byte and bit to update
+                           byte maskOffsetByte = (byte) (fieldIndex / 8);
+                           byte maskOffsetBit = (byte) ((fieldIndex) % 8);
+                           nullMask[maskOffsetByte] = (byte) (nullMask[maskOffsetByte] | 1 << (maskOffsetBit));
 
-                res = BinaryUtils.OFFSET_2;
-            }
-            else {
-                for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
-                    out.unsafeWriteInt(data[curIdx]);
+                           writeOffset(out, lastOffset, curIdx, true);
+                       } // If the offset is 0 then the field is null and thus there is nothing to do
+               }
+               // If compact null is enable, the null mask is appended at the end of the footer
+               // Please note that when several bytes are required (fieldCnt>8) the first byte is written first
+               for (int i = 0; i < nullMask.length; i++) {
+                       out.unsafeWriteByte(nullMask[i]);
+               }
+            } else {
+               //No null compaction, default to write all null indexes
+               for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2) {
+                   writeOffset(out, lastOffset, curIdx, true);
+               }
+           }
+       } else {
+               for (int curIdx = startIdx; curIdx < idx; curIdx += 2)
+                       writeOffset(out, lastOffset, curIdx, false);
+       }
 
-                res = BinaryUtils.OFFSET_4;
-            }
-        }
-        else {
-            if (lastOffset < MAX_OFFSET_1) {
-                for (int curIdx = startIdx; curIdx < idx;) {
-                    out.unsafeWriteInt(data[curIdx++]);
-                    out.unsafeWriteByte((byte) data[curIdx++]);
-                }
+       if (lastOffset < MAX_OFFSET_1) {
+               res = BinaryUtils.OFFSET_1;
+       } else if (lastOffset < MAX_OFFSET_2) {
+               res = BinaryUtils.OFFSET_2;
+       } else {
+               res = BinaryUtils.OFFSET_4;
+       }
+       return res;
+    }
 
-                res = BinaryUtils.OFFSET_1;
-            }
-            else if (lastOffset < MAX_OFFSET_2) {
-                for (int curIdx = startIdx; curIdx < idx;) {
-                    out.unsafeWriteInt(data[curIdx++]);
-                    out.unsafeWriteShort((short) data[curIdx++]);
-                }
+    /**
+     * @param out
+     * @param lastOffset
+     * @param curIdx
+     * @param isCompactFooterEnabled
+     */
+    private void writeOffset(BinaryOutputStream out, int lastOffset, int curIdx, boolean isCompactFooterEnabled) {
+       if (!isCompactFooterEnabled)
+               out.unsafeWriteInt(data[curIdx++]);
 
-                res = BinaryUtils.OFFSET_2;
-            }
-            else {
-                for (int curIdx = startIdx; curIdx < idx;) {
-                    out.unsafeWriteInt(data[curIdx++]);
-                    out.unsafeWriteInt(data[curIdx++]);
-                }
-
-                res = BinaryUtils.OFFSET_4;
-            }
-        }
-
-        return res;
+       if (lastOffset < MAX_OFFSET_1) {
+               out.unsafeWriteByte((byte) data[curIdx]);
+       } else if (lastOffset < MAX_OFFSET_2) {
+               out.unsafeWriteShort((short) data[curIdx]);
+       } else {
+               out.unsafeWriteInt(data[curIdx]);
+       }
     }
 
     /**
