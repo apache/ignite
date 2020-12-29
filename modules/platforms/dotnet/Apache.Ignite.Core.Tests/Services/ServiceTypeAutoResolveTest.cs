@@ -31,6 +31,22 @@ namespace Apache.Ignite.Core.Tests.Services
     public class ServicesTypeAutoResolveTest
     {
         /** */
+        protected internal static readonly Employee[] Emps = new[]
+        {
+            new Employee {Fio = "Sarah Connor", Salary = 1},
+            new Employee {Fio = "John Connor", Salary = 2}
+        };
+        
+        /** */
+        protected internal static readonly Parameter[] Param = new[] 
+        {
+            new Parameter()
+                {Id = 1, Values = new[] {new ParamValue() {Id = 1, Val = 42}, new ParamValue() {Id = 2, Val = 43}}},
+            new Parameter()
+                {Id = 2, Values = new[] {new ParamValue() {Id = 3, Val = 44}, new ParamValue() {Id = 4, Val = 45}}}
+        };
+
+        /** */
         private IIgnite _grid1;
 
         [TestFixtureTearDown]
@@ -127,19 +143,14 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("127000", addr.Zip);
             Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
 
-            Employee[] emps = new[]
-            {
-                new Employee {Fio = "Sarah Connor", Salary = 1},
-                new Employee {Fio = "John Connor", Salary = 2}
-            };
-
-            Assert.AreEqual(42, svc.testOverload(2, emps));
+            Assert.AreEqual(42, svc.testOverload(2, Emps));
+            Assert.AreEqual(43, svc.testOverload(2, Param));
             Assert.AreEqual(3, svc.testOverload(1, 2));
             Assert.AreEqual(5, svc.testOverload(3, 2));
 
             Assert.IsNull(svc.testEmployees(null));
 
-            emps = svc.testEmployees(emps);
+            var emps = svc.testEmployees(Emps);
 
             Assert.NotNull(emps);
             Assert.AreEqual(1, emps.Length);
