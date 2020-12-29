@@ -29,7 +29,7 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
     /// <summary>
     /// System type reading benchmark. Checks <see cref="BinarySystemHandlers.TryReadSystemType{T}"/> performance.
     /// <para />
-    /// Results on Core i7-9700K, Ubuntu 20.04:
+    /// Results on Core i7-9700K, Ubuntu 20.04, .NET Core 3.1:
     /// | Method |     Mean |   Error |  StdDev |  Gen 0 | Gen 1 | Gen 2 | Allocated |
     /// |------- |---------:|--------:|--------:|-------:|------:|------:|----------:|
     /// |   Read | 849.4 ns | 4.44 ns | 4.16 ns | 0.0725 |     - |     - |     456 B |
