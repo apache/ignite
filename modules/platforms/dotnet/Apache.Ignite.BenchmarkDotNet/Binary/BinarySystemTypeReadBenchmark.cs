@@ -29,13 +29,19 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
     /// </summary>
     public class BinarySystemTypeReadBenchmark
     {
-        /** Marshaller. */
+        /** */
+        private static readonly DateTime DateTime = new DateTime(2010, 10, 10);
+
+        /** */
+        private static readonly Guid Guid = Guid.NewGuid();
+
+        /** */
         private readonly Marshaller _marsh = new Marshaller(new BinaryConfiguration());
 
-        /** Memory manager. */
+        /** */
         private readonly PlatformMemoryManager _memMgr = new PlatformMemoryManager(1024);
 
-        /** Memory chunk. */
+        /** */
         private IPlatformMemory _mem;
 
         /// <summary>
@@ -48,7 +54,8 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
             var stream = _mem.GetStream();
             var writer = _marsh.StartMarshal(stream);
 
-            // TODO: All system types.
+            writer.Write(true);
+            writer.Write('i');
             writer.Write((byte)1);
             writer.Write((short)2);
             writer.Write((int)3);
@@ -56,6 +63,8 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
             writer.Write((float)5.5);
             writer.Write((double)6.6);
             writer.Write((decimal)7.7);
+            writer.Write(DateTime);
+            writer.Write(Guid);
 
             stream.SynchronizeOutput();
         }
@@ -66,6 +75,8 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
             var stream = _mem.GetStream();
             var reader = _marsh.StartUnmarshal(stream);
 
+            Assert(true, reader.ReadObject<bool>());
+            Assert('i', reader.ReadObject<char>());
             Assert(1, reader.ReadObject<byte>());
             Assert(2, reader.ReadObject<short>());
             Assert(3, reader.ReadObject<int>());
@@ -73,6 +84,8 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
             Assert(5.5f, reader.ReadObject<float>());
             Assert(6.6d, reader.ReadObject<double>());
             Assert(7.7m, reader.ReadObject<decimal>());
+            Assert(DateTime, reader.ReadObject<DateTime>());
+            Assert(Guid, reader.ReadObject<Guid>());
         }
 
         // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
