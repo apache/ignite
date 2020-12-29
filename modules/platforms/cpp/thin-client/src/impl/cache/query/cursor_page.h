@@ -37,6 +37,15 @@ namespace ignite
                     {
                     public:
                         /**
+                         * Constructor.
+                         */
+                        CursorPage() :
+                            mem()
+                        {
+                            // No-op.
+                        }
+
+                        /**
                          * Destructor.
                          */
                         virtual ~CursorPage()

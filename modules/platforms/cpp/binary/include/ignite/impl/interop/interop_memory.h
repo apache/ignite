@@ -260,7 +260,7 @@ namespace ignite
                  *
                  * @param memPtr Memory pointer.
                  */
-                explicit InteropUnpooledMemory(int8_t* memPtr);
+                explicit InteropUnpooledMemory(int8_t* memPtr = 0);
 
                 /**
                  * Destructor.

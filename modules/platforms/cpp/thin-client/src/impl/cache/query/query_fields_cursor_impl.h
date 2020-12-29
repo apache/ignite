@@ -25,6 +25,7 @@
 #include "impl/cache/query/cursor_page.h"
 #include "impl/cache/query/query_fields_row_impl.h"
 #include "impl/data_router.h"
+#include "impl/message.h"
 
 namespace ignite
 {
@@ -48,17 +49,22 @@ namespace ignite
                          * @param id Cursor ID.
                          * @param page Cursor page.
                          * @param channel Data channel. Used to request new page.
+                         * @param timeout Timeout.
                          */
-                        QueryFieldsCursorImpl(int64_t id, const SP_CursorPage &page, const SP_DataChannel& channel) :
+                        QueryFieldsCursorImpl(int64_t id, const SP_CursorPage &page, const SP_DataChannel& channel,
+                            int32_t timeout) :
                             id(id),
                             page(page),
                             channel(channel),
+                            timeout(timeout),
                             currentRow(0),
                             stream(this->page.Get()->GetMemory()),
                             reader(&stream),
                             endReached(false)
                         {
                             stream.Position(page.Get()->GetStartPos());
+
+                            CheckEnd();
                         }
 
                         /**
@@ -121,8 +127,15 @@ namespace ignite
                          */
                         void Update()
                         {
-                            // TODO: Implement me!
-                            // Send req to server and get rsp
+                            SqlFieldsCursorGetPageRequest req(id);
+                            SqlFieldsCursorGetPageResponse rsp;
+
+                            DataChannel* channel0 = channel.Get();
+
+                            if (!channel0)
+                                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,"Connection is not established");
+
+                            channel0->SyncMessage(req, rsp, timeout);
 
                             currentRow = 0;
                             stream.Position(page.Get()->GetStartPos());
@@ -140,6 +153,14 @@ namespace ignite
 
                             ++currentRow;
 
+                            CheckEnd();
+                        }
+
+                        /**
+                         * Check whether end is reached.
+                         */
+                        void CheckEnd()
+                        {
                             if (currentRow == page.Get()->GetRowNum())
                             {
                                 bool hasNextPage = reader.ReadBool();
@@ -157,6 +178,9 @@ namespace ignite
 
                         /** Data channel. */
                         SP_DataChannel channel;
+
+                        /** Timeout in milliseconds. */
+                        int32_t timeout;
 
                         /** Current row in page. */
                         int32_t currentRow;

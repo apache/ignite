@@ -372,7 +372,7 @@ namespace ignite
                 }
 
                 query::SP_QueryFieldsCursorImpl CacheClientImpl::Query(
-                        const ignite::thin::cache::query::SqlFieldsQuery &qry)
+                    const ignite::thin::cache::query::SqlFieldsQuery &qry)
                 {
                     SqlFieldsQueryRequest req(id, qry);
                     SqlFieldsQueryResponse rsp;
@@ -380,7 +380,8 @@ namespace ignite
                     SP_DataChannel channel = SyncMessage(req, rsp);
 
                     query::SP_QueryFieldsCursorImpl cursorImpl(
-                        new query::QueryFieldsCursorImpl(rsp.GetCursorId(), rsp.GetCursorPage(), channel));
+                        new query::QueryFieldsCursorImpl(rsp.GetCursorId(), rsp.GetCursorPage(),
+                            channel, static_cast<int32_t>(qry.GetTimeout())));
 
                     return cursorImpl;
                 }

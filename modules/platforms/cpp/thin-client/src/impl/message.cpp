@@ -393,7 +393,6 @@ namespace ignite
 
                 int32_t columnsCnt = rawReader.ReadInt32();
 
-                std::vector<std::string> columns;
                 columns.reserve(static_cast<size_t>(columnsCnt));
 
                 for (int32_t i = 0; i < columnsCnt; ++i)
@@ -401,6 +400,16 @@ namespace ignite
                     columns.push_back(rawReader.ReadString());
                 }
 
+                cursorPage.Get()->Read(reader);
+            }
+
+            void SqlFieldsCursorGetPageRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            {
+                writer.WriteInt64(cursorId);
+            }
+
+            void SqlFieldsCursorGetPageResponse::ReadOnSuccess(binary::BinaryReaderImpl&reader, const ProtocolVersion&)
+            {
                 cursorPage.Get()->Read(reader);
             }
         }

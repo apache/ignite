@@ -835,6 +835,43 @@ namespace ignite
             };
 
             /**
+             * Cache SQL fields cursor get page request.
+             */
+            class SqlFieldsCursorGetPageRequest : public Request<RequestType::QUERY_SQL_FIELDS_CURSOR_GET_PAGE>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cursorId Cursor ID.
+                 */
+                explicit SqlFieldsCursorGetPageRequest(int64_t cursorId) :
+                    cursorId(cursorId)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~SqlFieldsCursorGetPageRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Cursor ID. */
+                const int64_t cursorId;
+            };
+
+            /**
              * General response.
              */
             class Response
@@ -1257,7 +1294,8 @@ namespace ignite
                  * Constructor.
                  */
                 SqlFieldsQueryResponse() :
-                    cursorId(0)
+                    cursorId(0),
+                    cursorPage(new cache::query::CursorPage())
                 {
                     // No-op.
                 }
@@ -1300,6 +1338,53 @@ namespace ignite
                 /** Cursor ID. */
                 int64_t cursorId;
 
+                /** Column names. */
+                std::vector<std::string> columns;
+
+                /** Cursor Page. */
+                cache::query::SP_CursorPage cursorPage;
+            };
+
+            /**
+             * Cache SQL fields cursor get page response.
+             */
+            class SqlFieldsCursorGetPageResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                SqlFieldsCursorGetPageResponse() :
+                    cursorPage(new cache::query::CursorPage())
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~SqlFieldsCursorGetPageResponse()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get cursor page.
+                 * @return Cursor page.
+                 */
+                cache::query::SP_CursorPage GetCursorPage() const
+                {
+                    return cursorPage;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
                 /** Cursor Page. */
                 cache::query::SP_CursorPage cursorPage;
             };
