@@ -256,12 +256,14 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         cache.query(new SqlFieldsQuery("DELETE FROM TEST WHERE MOD(ID, 2) = 0"));
 
-        createMaintenanceRecord();
+        createMaintenanceRecord("SQL_default_TEST");
 
         // Restart first time.
         stopGrid(0);
 
         startGrid(0);
+
+        waitForDefragmentation(0);
 
         // Restart second time.
         stopGrid(0);

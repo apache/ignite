@@ -25,7 +25,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -280,12 +282,19 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected void createMaintenanceRecord() throws IgniteCheckedException {
+    protected void createMaintenanceRecord(String... cacheNames) throws IgniteCheckedException {
         IgniteEx grid = grid(0);
 
         MaintenanceRegistry mntcReg = grid.context().maintenanceRegistry();
 
-        mntcReg.registerMaintenanceTask(toStore(Collections.singletonList(DEFAULT_CACHE_NAME)));
+        final List<String> caches = new ArrayList<>();
+
+        caches.add(DEFAULT_CACHE_NAME);
+
+        if (cacheNames != null && cacheNames.length != 0)
+            caches.addAll(Arrays.asList(cacheNames));
+
+        mntcReg.registerMaintenanceTask(toStore(caches));
     }
 
     /**
