@@ -229,11 +229,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Override public void start0() throws IgniteCheckedException {
         CacheConfiguration ccfg = cctx.config();
 
-        enabled = qryProcEnabled = QueryUtils.isEnabled(ccfg);
+        qryProcEnabled = QueryUtils.isEnabled(ccfg);
 
         qryProc = cctx.kernalContext().query();
 
         cacheName = cctx.name();
+
+        enabled = qryProcEnabled || (isIndexingSpiEnabled() && !CU.isSystemCache(cacheName));
 
         maxIterCnt = ccfg.getMaxQueryIteratorsCount();
 
@@ -397,15 +399,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     public void store(CacheDataRow newRow, @Nullable CacheDataRow prevRow,
         boolean prevRowAvailable) throws IgniteCheckedException {
-        assert enabled();
+        assert enabled() || isIndexingSpiEnabled();
         assert newRow != null && newRow.value() != null && newRow.link() != 0 : newRow;
 
         if (!enterBusy())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
         try {
-            if (qryProcEnabled)
-                qryProc.store(cctx, newRow, prevRow, prevRowAvailable);
+            qryProc.store(cctx, newRow, prevRow, prevRowAvailable);
         }
         finally {
             invalidateResultCache();

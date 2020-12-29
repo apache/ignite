@@ -28,6 +28,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -150,8 +152,8 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime)
-            throws IgniteSpiException {
+        @Override public void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+            boolean prevRowAvailable) throws IgniteSpiException {
             throw new IgniteSpiException("Test exception");
         }
 

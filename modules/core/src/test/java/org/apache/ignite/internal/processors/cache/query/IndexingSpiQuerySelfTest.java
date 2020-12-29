@@ -37,6 +37,9 @@ import org.apache.ignite.cache.query.SpiQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -268,12 +271,17 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime)
-            throws IgniteSpiException {
-            assertFalse(key instanceof BinaryObject);
-            assertFalse(val instanceof BinaryObject);
+        @Override public void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+            boolean prevRowAvailable) {
+            CacheObjectContext coctx = cctx.cacheObjectContext();
 
-            idx.put(key, val);
+            Object key = newRow.key().value(coctx, false);
+            Object value = newRow.value().value(coctx, false);
+
+            assertFalse(key instanceof BinaryObject);
+            assertFalse(value instanceof BinaryObject);
+
+            idx.put(key, value);
         }
 
         /** {@inheritDoc} */
@@ -288,13 +296,13 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     private static class MyBinaryIndexingSpi extends MyIndexingSpi {
 
         /** {@inheritDoc} */
-        @Override public void store(@Nullable String cacheName, Object key, Object val,
-            long expirationTime) throws IgniteSpiException {
-            assertTrue(key instanceof BinaryObject);
+        @Override public void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+            boolean prevRowAvailable) {
+            assertTrue(newRow.key() instanceof BinaryObject);
 
-            assertTrue(val instanceof BinaryObject);
+            assertTrue(newRow.value() instanceof BinaryObject);
 
-            super.store(cacheName, ((BinaryObject)key).deserialize(), ((BinaryObject)val).deserialize(), expirationTime);
+            super.store(cctx, newRow, prevRow, prevRowAvailable);
         }
 
         /** {@inheritDoc} */
@@ -308,8 +316,8 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
      */
     private static class MyBrokenIndexingSpi extends MyIndexingSpi {
         /** {@inheritDoc} */
-        @Override public void store(@Nullable String cacheName, Object key, Object val,
-            long expirationTime) throws IgniteSpiException {
+        @Override public void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+            boolean prevRowAvailable) {
             throw new IgniteSpiException("Test exception");
         }
     }

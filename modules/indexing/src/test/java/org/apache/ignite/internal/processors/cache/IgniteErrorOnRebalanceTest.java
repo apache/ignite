@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -160,9 +161,10 @@ public class IgniteErrorOnRebalanceTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime) {
+        @Override public void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+            boolean prevRowAvailable) throws IgniteSpiException {
             if (err && ignite.name().endsWith("IgniteErrorOnRebalanceTest1")) {
-                ignite.log().warning("Test error on store [cache=" + cacheName + ", key=" + key + ']');
+                ignite.log().warning("Test error on store [cache=" + cctx.name() + ", key=" + newRow.key() + ']');
 
                 throw new IgniteSpiException("Test error");
             }
