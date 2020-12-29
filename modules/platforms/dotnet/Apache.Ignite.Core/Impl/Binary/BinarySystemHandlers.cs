@@ -331,6 +331,30 @@ namespace Apache.Ignite.Core.Impl.Binary
                     res = TypeCaster<T>.Cast(BinaryUtils.ReadGuidArray(stream));
                     return true;
 
+                case BinaryTypeId.Array:
+                    res = (T) ReadArray(ctx, typeof(T));
+                    return true;
+
+                case BinaryTypeId.Collection:
+                    res = default(T); // TODO
+                    return true;
+
+                case BinaryTypeId.Dictionary:
+                    res = default(T); // TODO
+                    return true;
+
+                case BinaryTypeId.Binary:
+                    res = default(T); // TODO
+                    return true;
+
+                case BinaryTypeId.Enum:
+                    res = default(T); // TODO
+                    return true;
+
+                case BinaryTypeId.ArrayEnum:
+                    res = default(T); // TODO
+                    return true;
+
                 case BinaryTypeId.Decimal:
                     res = TypeCaster<T>.Cast(BinaryUtils.ReadDecimal(stream));
                     return true;
@@ -346,18 +370,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                 case BinaryTypeId.ArrayTimestamp:
                     res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestampArray(stream, ctx.Marshaller.TimestampConverter));
                     return true;
+
+                case BinaryTypeId.BinaryEnum:
+                    res = default(T); // TODO
+                    return true;
             }
 
-            var handler = ReadHandlers[typeId];
-
-            if (handler == null)
-            {
-                res = default(T);
-                return false;
-            }
-
-            res = handler.Read<T>(ctx);
-            return true;
+            res = default(T);
+            return false;
         }
 
         /// <summary>
