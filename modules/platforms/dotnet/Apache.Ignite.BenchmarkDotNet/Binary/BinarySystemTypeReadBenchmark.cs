@@ -27,6 +27,7 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
     /// <summary>
     /// System type reading benchmark. Checks <see cref="BinarySystemHandlers.TryReadSystemType{T}"/> performance.
     /// </summary>
+    [MemoryDiagnoser]
     public class BinarySystemTypeReadBenchmark
     {
         /** */
