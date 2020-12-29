@@ -2199,7 +2199,7 @@ public class BinaryUtils {
      */
     private static Object deserializeOrUnmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) {
-        return deserialize ? doReadObject(in, ctx, ldr, handles) : unmarshal(in, ctx, ldr, handles, detach);
+        return deserialize ? doReadObject(in, ctx, ldr, handles) : unmarshal(in, ctx, ldr, handles, detach, deserialize);
     }
 
     /**

@@ -990,6 +990,9 @@ public class PlatformUtils {
      * @return Result.
      */
     public static Object[] unwrapBinariesInArray(Object[] arr) {
+        if (arr.getClass().getComponentType() != Object.class)
+            return arr;
+
         Class<?> compType = arr.getClass().getComponentType();
 
         Object[] res = (Object[])Array.newInstance(compType, arr.length);
