@@ -97,8 +97,8 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
             _reader.Stream.Seek(0, SeekOrigin.Begin);
 
             _reader.ReadObject<bool>();
-            _reader.ReadObject<byte>();
             _reader.ReadObject<char>();
+            _reader.ReadObject<byte>();
             _reader.ReadObject<short>();
             _reader.ReadObject<int>();
             _reader.ReadObject<long>();
