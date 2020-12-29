@@ -16,19 +16,16 @@
 """
 This module contains classes and utilities for SslContextFactory.
 """
-from typing import NamedTuple
 
 
 class SslContextFactory:
     """
     Ignite SslContextFactory.
     """
-    key_store_file_path: str = ""
-    key_store_password: str = "123456"
-    trust_store_file_path: str = ""
-    trust_store_password: str = "123456"
-    trust_store_password: str = "123456"
+    def __init__(self, cluster, key_store_jks: str = None, key_store_pwd: str = "123456",
+                 trust_store_jks: str = "truststore.jks", trust_store_pwd: str = "123456"):
 
-
-
-
+        self.key_store_path = cluster.get_cert_path(key_store_jks)
+        self.key_store_pwd = key_store_pwd
+        self.trust_store_path = cluster.get_cert_path(trust_store_jks)
+        self.trust_store_pwd = trust_store_pwd

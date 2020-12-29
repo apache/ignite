@@ -121,7 +121,7 @@ class CellularAffinity(IgniteTest):
         for cell in [cell1, cell2, cell3]:
             cell.await_started()
 
-        ControlUtility(cell1, self.test_context).activate()
+        ControlUtility(cell1).activate()
 
         checker = IgniteApplicationService(
             self.test_context,
@@ -203,8 +203,8 @@ class CellularAffinity(IgniteTest):
         for streamer in streamers:
             streamer.await_started()
 
-        ControlUtility(cell0, self.test_context).disable_baseline_auto_adjust()  # baseline set.
-        ControlUtility(cell0, self.test_context).activate()
+        ControlUtility(cell0).disable_baseline_auto_adjust()  # baseline set.
+        ControlUtility(cell0).activate()
 
         for loader in loaders:
             loader.await_event("ALL_TRANSACTIONS_PREPARED", 180, from_the_beginning=True)

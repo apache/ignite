@@ -31,9 +31,17 @@ class ControlUtility:
     """
     BASE_COMMAND = "control.sh"
 
-    def __init__(self, cluster, text_context):
+    def __init__(self, cluster,
+                 key_store_jks: str = None, key_store_pwd: str = "123456",
+                 trust_store_jks: str = "truststore.jks", trust_store_pwd: str = "123456"):
         self._cluster = cluster
-        self.logger = text_context.logger
+        self.logger = cluster.text_context.logger
+
+        if key_store_jks is not None:
+            self.key_store_path = cluster.get_cert_path(key_store_jks)
+            self.key_store_pwd = key_store_pwd
+            self.trust_store_path = cluster.get_cert_path(trust_store_jks)
+            self.trust_store_pwd = trust_store_pwd
 
     def baseline(self):
         """
@@ -264,7 +272,13 @@ class ControlUtility:
         return output
 
     def __form_cmd(self, node, cmd):
-        return self._cluster.script(f"{self.BASE_COMMAND} --host {node.account.externally_routable_ip} {cmd}")
+        ssl = ""
+        if self.key_store_path is not None:
+            ssl = f" --keystore {self.key_store_path} --keystore-password {self.key_store_pwd} " \
+                  f"--truststore {self.trust_store_path} --truststore-password {self.trust_store_pwd}"
+
+        return self._cluster.script(f"{self.BASE_COMMAND} --host {node.account.externally_routable_ip} {cmd} {ssl}")
+
 
     @staticmethod
     def __parse_output(raw_output):

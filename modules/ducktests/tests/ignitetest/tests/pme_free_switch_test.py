@@ -84,9 +84,9 @@ class PmeFreeSwitchTest(IgniteTest):
         ignites.start()
 
         if IgniteVersion(ignite_version) >= V_2_8_0:
-            ControlUtility(ignites, self.test_context).disable_baseline_auto_adjust()
+            ControlUtility(ignites).disable_baseline_auto_adjust()
 
-        ControlUtility(ignites, self.test_context).activate()
+        ControlUtility(ignites).activate()
 
         client_config = config._replace(client_mode=True,
                                         discovery_spi=from_ignite_cluster(ignites, slice(0, num_nodes - 1)))
