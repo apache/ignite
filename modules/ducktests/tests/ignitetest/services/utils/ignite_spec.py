@@ -175,8 +175,8 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec):
         }
 
         self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
-                             "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
-                             "-Dlog4j.configDebug=true"])
+                            "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
+                            "-Dlog4j.configDebug=true"])
 
 
 class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
@@ -203,12 +203,12 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
         }
 
         self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
-                   "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
-                   "-Dlog4j.configDebug=true",
-                   "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
-                   "-Xmx1G",
-                   "-ea",
-                   "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"])
+                            "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
+                            "-Dlog4j.configDebug=true",
+                            "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
+                            "-Xmx1G",
+                            "-ea",
+                            "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"])
 
         self.args = [
             str(start_ignite),
