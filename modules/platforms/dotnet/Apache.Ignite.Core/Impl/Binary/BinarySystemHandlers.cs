@@ -623,7 +623,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Write delegate + handles flag.
     /// </summary>
-    internal class BinarySystemWriteHandler<T1> : IBinarySystemWriteHandler
+    internal sealed class BinarySystemWriteHandler<T1> : IBinarySystemWriteHandler
     {
         /** */
         private readonly Action<BinaryWriter, T1> _writeAction;
