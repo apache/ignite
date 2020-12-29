@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -993,9 +992,7 @@ public class PlatformUtils {
         if (arr.getClass().getComponentType() != Object.class)
             return arr;
 
-        Class<?> compType = arr.getClass().getComponentType();
-
-        Object[] res = (Object[])Array.newInstance(compType, arr.length);
+        Object[] res = new Object[arr.length];
 
         for (int i = 0; i < arr.length; i++)
             res[i] = unwrapBinary(arr[i]);
