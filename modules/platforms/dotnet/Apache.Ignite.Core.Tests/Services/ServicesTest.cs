@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
+    using org.apache.ignite.platform.model;
 
     /// <summary>
     /// Services tests.
@@ -298,6 +299,12 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Check err method
             Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
+ 
+            Assert.AreEqual(42, svc.TestOverload(2, ServicesTypeAutoResolveTest.Emps));
+            Assert.AreEqual(3, svc.TestOverload(1, 2));
+            Assert.AreEqual(5, svc.TestOverload(3, 2));
+
+            Assert.AreEqual(43, svc.TestOverload(2, ServicesTypeAutoResolveTest.Param));
 
             // Check local scenario (proxy should not be created for local instance)
             Assert.IsTrue(ReferenceEquals(Grid2.GetServices().GetService<ITestIgniteService>(SvcName),
@@ -358,6 +365,12 @@ namespace Apache.Ignite.Core.Tests.Services
             // Exception in service.
             ex = Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
             Assert.AreEqual("ExpectedException", (ex.InnerException ?? ex).Message.Substring(0, 17));
+ 
+            Assert.AreEqual(42, svc.TestOverload(2, ServicesTypeAutoResolveTest.Emps));
+            Assert.AreEqual(3, svc.TestOverload(1, 2));
+            Assert.AreEqual(5, svc.TestOverload(3, 2));
+
+            Assert.AreEqual(43, svc.TestOverload(2, ServicesTypeAutoResolveTest.Param));
         }
 
         /// <summary>
@@ -1328,6 +1341,15 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             object ErrMethod(object arg);
+
+            /** */
+            int TestOverload(int count, Employee[] emps);
+
+            /** */
+            int TestOverload(int first, int second);
+
+            /** */
+            int TestOverload(int count, Parameter[] param);
         }
 
         /// <summary>
@@ -1400,6 +1422,54 @@ namespace Apache.Ignite.Core.Tests.Services
             public object ErrMethod(object arg)
             {
                 throw new ArgumentNullException("arg", "ExpectedException");
+            }
+
+            /** */
+            public int TestOverload(int count, Employee[] emps)
+            {
+                Assert.IsNotNull(emps);
+                Assert.AreEqual(count, emps.Length);
+
+                Assert.AreEqual("Sarah Connor", emps[0].Fio);
+                Assert.AreEqual(1, emps[0].Salary);
+
+                Assert.AreEqual("John Connor", emps[1].Fio);
+                Assert.AreEqual(2, emps[1].Salary);
+
+                return 42;
+            }
+
+            /** */
+            public int TestOverload(int first, int second)
+            {
+                return first + second;
+            }
+
+            /** */
+            public int TestOverload(int count, Parameter[] param)
+            {
+                Assert.IsNotNull(param);
+                Assert.AreEqual(count, param.Length);
+
+                Assert.AreEqual(1, param[0].Id);
+                Assert.AreEqual(2, param[0].Values.Length);
+
+                Assert.AreEqual(1, param[0].Values[0].Id);
+                Assert.AreEqual(42, param[0].Values[0].Val);
+
+                Assert.AreEqual(2, param[0].Values[1].Id);
+                Assert.AreEqual(43, param[0].Values[1].Val);
+
+                Assert.AreEqual(2, param[1].Id);
+                Assert.AreEqual(2, param[1].Values.Length);
+
+                Assert.AreEqual(3, param[1].Values[0].Id);
+                Assert.AreEqual(44, param[1].Values[0].Val);
+
+                Assert.AreEqual(4, param[1].Values[1].Id);
+                Assert.AreEqual(45, param[1].Values[1].Val);
+
+                return 43;
             }
 
             /** <inheritdoc /> */
