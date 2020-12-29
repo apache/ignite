@@ -27,9 +27,9 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
     /// <summary>
     /// System type reading benchmark. Checks <see cref="BinarySystemHandlers.TryReadSystemType{T}"/> performance.
     /// <para />
-    /// | Method |     Mean |    Error |   StdDev |  Gen 0 | Gen 1 | Gen 2 | Allocated |
-    /// |------- |---------:|---------:|---------:|-------:|------:|------:|----------:|
-    /// |   Read | 22.10 us | 0.107 us | 0.100 us | 1.5869 |     - |     - |   9.79 KB |
+    /// | Method |     Mean |     Error |    StdDev |  Gen 0 | Gen 1 | Gen 2 | Allocated |
+    /// |------- |---------:|----------:|----------:|-------:|------:|------:|----------:|
+    /// |   Read | 2.063 us | 0.0089 us | 0.0084 us | 0.2823 |     - |     - |   1.74 KB |
     /// </summary>
     [MemoryDiagnoser]
     public class BinarySystemTypeReadBenchmark
