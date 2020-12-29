@@ -22,17 +22,19 @@
 #include <string>
 #include <vector>
 
+#include <ignite/thin/cache/query/query_sql_fields.h>
+#include <ignite/thin/transactions/transaction_consts.h>
+
 #include <ignite/impl/binary/binary_writer_impl.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
 
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
 
-#include <ignite/thin/transactions/transaction_consts.h>
-
-#include "impl/protocol_version.h"
 #include "impl/affinity/affinity_topology_version.h"
 #include "impl/affinity/partition_awareness_group.h"
+#include "impl/cache/query/cursor_page.h"
+#include "impl/protocol_version.h"
 
 namespace ignite
 {
@@ -147,11 +149,14 @@ namespace ignite
                     /** Cache destroy. */
                     CACHE_DESTROY = 1056,
 
-                    /** Cache nodes and partitions request. */
-                    CACHE_NODE_PARTITIONS = 1100,
-
                     /** Cache partitions request. */
                     CACHE_PARTITIONS = 1101,
+
+                    /** SQL fields query request. */
+                    QUERY_SQL_FIELDS = 2004,
+
+                    /** SQL fields query get next cursor page request. */
+                    QUERY_SQL_FIELDS_CURSOR_GET_PAGE = 2005,
 
                     /** Get binary type info. */
                     GET_BINARY_TYPE = 3002,
@@ -796,6 +801,40 @@ namespace ignite
             };
 
             /**
+             * Cache SQL fields query request.
+             */
+            class SqlFieldsQueryRequest : public CacheRequest<RequestType::QUERY_SQL_FIELDS>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheId Cache ID.
+                 * @param qry SQL query.
+                 */
+                explicit SqlFieldsQueryRequest(int32_t cacheId, const ignite::thin::cache::query::SqlFieldsQuery &qry);
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~SqlFieldsQueryRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Query. */
+                const ignite::thin::cache::query::SqlFieldsQuery &qry;
+            };
+
+            /**
              * General response.
              */
             class Response
@@ -1206,6 +1245,63 @@ namespace ignite
             private:
                 /** Value. */
                 int32_t value;
+            };
+
+            /**
+             * Cache SQL fields query response.
+             */
+            class SqlFieldsQueryResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                SqlFieldsQueryResponse() :
+                    cursorId(0)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~SqlFieldsQueryResponse()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get cursor ID.
+                 *
+                 * @return Cursor ID.
+                 */
+                int64_t GetCursorId() const
+                {
+                    return cursorId;
+                }
+
+                /**
+                 * Get cursor page.
+                 * @return Cursor page.
+                 */
+                cache::query::SP_CursorPage GetCursorPage() const
+                {
+                    return cursorPage;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Cursor ID. */
+                int64_t cursorId;
+
+                /** Cursor Page. */
+                cache::query::SP_CursorPage cursorPage;
             };
         }
     }

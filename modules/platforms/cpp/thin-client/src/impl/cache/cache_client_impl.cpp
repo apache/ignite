@@ -91,12 +91,14 @@ namespace ignite
                 }
 
                 template<typename ReqT, typename RspT>
-                void CacheClientImpl::SyncMessage(const ReqT& req, RspT& rsp)
+                SP_DataChannel CacheClientImpl::SyncMessage(const ReqT& req, RspT& rsp)
                 {
-                    router.Get()->SyncMessage(req, rsp);
+                    SP_DataChannel channel = router.Get()->SyncMessage(req, rsp);
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
+
+                    return channel;
                 }
 
                 template<typename ReqT>
@@ -367,6 +369,20 @@ namespace ignite
                     CacheValueResponse rsp(valOut);
 
                     SyncCacheKeyMessage(key, req, rsp);
+                }
+
+                query::SP_QueryFieldsCursorImpl CacheClientImpl::Query(
+                        const ignite::thin::cache::query::SqlFieldsQuery &qry)
+                {
+                    SqlFieldsQueryRequest req(id, qry);
+                    SqlFieldsQueryResponse rsp;
+
+                    SP_DataChannel channel = SyncMessage(req, rsp);
+
+                    query::SP_QueryFieldsCursorImpl cursorImpl(
+                        new query::QueryFieldsCursorImpl(rsp.GetCursorId(), rsp.GetCursorPage(), channel));
+
+                    return cursorImpl;
                 }
             }
         }

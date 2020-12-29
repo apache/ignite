@@ -1,0 +1,181 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef _IGNITE_IMPL_THIN_CACHE_QUERY_QUERY_FIELDS_CURSOR_IMPL
+#define _IGNITE_IMPL_THIN_CACHE_QUERY_QUERY_FIELDS_CURSOR_IMPL
+
+#include <ignite/common/concurrent.h>
+
+#include <ignite/thin/cache/query/query_fields_row.h>
+
+#include "impl/cache/query/cursor_page.h"
+#include "impl/cache/query/query_fields_row_impl.h"
+#include "impl/data_router.h"
+
+namespace ignite
+{
+    namespace impl
+    {
+        namespace thin
+        {
+            namespace cache
+            {
+                namespace query
+                {
+                    /**
+                     * Query Fields Cursor Implementation.
+                     */
+                    class QueryFieldsCursorImpl
+                    {
+                    public:
+                        /**
+                         * Constructor.
+                         *
+                         * @param id Cursor ID.
+                         * @param page Cursor page.
+                         * @param channel Data channel. Used to request new page.
+                         */
+                        QueryFieldsCursorImpl(int64_t id, const SP_CursorPage &page, const SP_DataChannel& channel) :
+                            id(id),
+                            page(page),
+                            channel(channel),
+                            currentRow(0),
+                            stream(this->page.Get()->GetMemory()),
+                            reader(&stream),
+                            endReached(false)
+                        {
+                            stream.Position(page.Get()->GetStartPos());
+                        }
+
+                        /**
+                         * Destructor.
+                         */
+                        virtual ~QueryFieldsCursorImpl()
+                        {
+                            // No-op.
+                        }
+
+                        /**
+                         * Check whether next entry exists.
+                         *
+                         * @return @c true if next entry exists.
+                         *
+                         * @throw IgniteError class instance in case of failure.
+                         */
+                        bool HasNext()
+                        {
+                            return !endReached;
+                        }
+
+                        /**
+                         * Get next entry.
+                         *
+                         * This method should only be used on the valid instance.
+                         *
+                         * @return Next entry.
+                         *
+                         * @throw IgniteError class instance in case of failure.
+                         */
+                        ignite::thin::cache::query::QueryFieldsRow GetNext()
+                        {
+                            if (!HasNext())
+                                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "The cursor is empty");
+
+                            if (IsUpdateNeeded())
+                                Update();
+
+                            SP_QueryFieldsRowImpl rowImpl(new QueryFieldsRowImpl(page, stream.Position()));
+
+                            SkipRow(*rowImpl.Get());
+
+                            return ignite::thin::cache::query::QueryFieldsRow(rowImpl);
+                        }
+
+                    private:
+                        /**
+                         * Check whether next page should be retrieved from the server.
+                         *
+                         * @return @c true if next page should be fetched.
+                         */
+                        bool IsUpdateNeeded()
+                        {
+                            return !page.IsValid() && !endReached;
+                        }
+
+                        /**
+                         * Fetch next cursor page.
+                         */
+                        void Update()
+                        {
+                            // TODO: Implement me!
+                            // Send req to server and get rsp
+
+                            currentRow = 0;
+                            stream.Position(page.Get()->GetStartPos());
+                        }
+
+                        /**
+                         * Skip position to the next row.
+                         *
+                         * @param row Row to skip.
+                         */
+                        void SkipRow(const QueryFieldsRowImpl &row)
+                        {
+                            for (int32_t field = 0; field < row.GetSize(); ++field)
+                                reader.Skip();
+
+                            ++currentRow;
+
+                            if (currentRow == page.Get()->GetRowNum())
+                            {
+                                bool hasNextPage = reader.ReadBool();
+                                endReached = !hasNextPage;
+
+                                page = SP_CursorPage();
+                            }
+                        }
+
+                        /** Cursor ID. */
+                        int64_t id;
+
+                        /** Cursor page. */
+                        SP_CursorPage page;
+
+                        /** Data channel. */
+                        SP_DataChannel channel;
+
+                        /** Current row in page. */
+                        int32_t currentRow;
+
+                        /** Stream. */
+                        interop::InteropInputStream stream;
+
+                        /** Reader. */
+                        binary::BinaryReaderImpl reader;
+
+                        /** End reached. */
+                        bool endReached;
+                    };
+
+                    typedef common::concurrent::SharedPointer<QueryFieldsCursorImpl> SP_QueryFieldsCursorImpl;
+                }
+            }
+        }
+    }
+}
+
+#endif // _IGNITE_IMPL_THIN_CACHE_QUERY_QUERY_FIELDS_CURSOR_IMPL
