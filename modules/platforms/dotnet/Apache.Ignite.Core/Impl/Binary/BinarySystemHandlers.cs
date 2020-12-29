@@ -301,15 +301,21 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return true;
 
                 case BinaryTypeId.ArrayByte:
-                    res = TypeCaster<T>.Cast(BinaryUtils.ReadByteArray(stream));
+                    res = typeof(T) == typeof(sbyte[])
+                        ? TypeCaster<T>.Cast(BinaryUtils.ReadSbyteArray(stream))
+                        : TypeCaster<T>.Cast(BinaryUtils.ReadByteArray(stream));
                     return true;
 
                 case BinaryTypeId.ArrayShort:
-                    res = TypeCaster<T>.Cast(BinaryUtils.ReadShortArray(stream));
+                    res = typeof(T) == typeof(ushort[])
+                        ? TypeCaster<T>.Cast(BinaryUtils.ReadUshortArray(stream))
+                        : TypeCaster<T>.Cast(BinaryUtils.ReadShortArray(stream));
                     return true;
 
                 case BinaryTypeId.ArrayInt:
-                    res = TypeCaster<T>.Cast(BinaryUtils.ReadIntArray(stream));
+                    res = typeof(T) == typeof(uint[])
+                        ? TypeCaster<T>.Cast(BinaryUtils.ReadUintArray(stream))
+                        : TypeCaster<T>.Cast(BinaryUtils.ReadIntArray(stream));
                     return true;
 
                 case BinaryTypeId.ArrayLong:
