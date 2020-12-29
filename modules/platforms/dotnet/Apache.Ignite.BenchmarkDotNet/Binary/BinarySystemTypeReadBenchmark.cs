@@ -79,9 +79,9 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
             writer.Write(new[] {(long) 4});
             writer.Write(new[] {(float) 5.5});
             writer.Write(new[] {(double) 6.6});
-            writer.Write(new[] {(decimal) 7.7});
-            writer.Write(new[] {DateTime});
-            writer.Write(new[] {Guid});
+            writer.Write(new[] {(decimal?) 7.7});
+            writer.Write(new DateTime?[] {DateTime});
+            writer.Write(new Guid?[] {Guid});
 
             stream.SynchronizeOutput();
         }
@@ -112,9 +112,9 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
             Assert(4, reader.ReadObject<long[]>()[0]);
             Assert(5.5f, reader.ReadObject<float[]>()[0]);
             Assert(6.6d, reader.ReadObject<double[]>()[0]);
-            Assert(7.7m, reader.ReadObject<decimal[]>()[0]);
-            Assert(DateTime, reader.ReadObject<DateTime[]>()[0]);
-            Assert(Guid, reader.ReadObject<Guid[]>()[0]);
+            Assert(7.7m, reader.ReadObject<decimal?[]>()[0]);
+            Assert(DateTime, reader.ReadObject<DateTime?[]>()[0]);
+            Assert(Guid, reader.ReadObject<Guid?[]>()[0]);
         }
 
         // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
