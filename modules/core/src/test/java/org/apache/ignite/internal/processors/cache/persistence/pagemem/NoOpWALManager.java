@@ -95,7 +95,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public int truncate(WALPointer low, WALPointer high) {
+    @Override public int truncate(@Nullable WALPointer high) {
         return 0;
     }
 
@@ -182,11 +182,6 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     /** {@inheritDoc} */
     @Override public long lastCompactedSegment() {
         return -1L;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long maxArchivedSegmentToDelete() {
-        return -1;
     }
 
     /** {@inheritDoc} */

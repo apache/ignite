@@ -39,12 +39,12 @@ The model works this way - the split process stops when either the algorithm has
 
 == Model
 
-The Model in a decision tree classification is represented by the class `DecisionTreeNode`. We can make a prediction for a given vector of features in the following way:
+The Model in a decision tree classification is represented by the class `DecisionTreeModel`. We can make a prediction for a given vector of features in the following way:
 
 
 [source, java]
 ----
-DecisionTreeNode mdl = ...;
+DecisionTreeModel mdl = ...;
 
 double prediction = mdl.apply(observation);
 ----
@@ -67,7 +67,7 @@ DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(
 );
 
 // Train model.
-DecisionTreeNode mdl = trainer.fit(ignite, dataCache, vectorizer);
+DecisionTreeModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 ----
 
 == Examples

@@ -120,7 +120,7 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return new SVMLinearClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
+        return new SVMLinearClassificationModel(weights.copyOfRange(1, weights.size()), weights.get(0));
     }
 
     /** {@inheritDoc} */
