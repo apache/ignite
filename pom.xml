@@ -108,6 +108,7 @@
                 <configuration>
                     <excludes>
                         <exclude>README.md</exclude>
+                        <exclude>DEVNOTES.md</exclude>
                         <exclude>docs/assets/images/**</exclude>
                         <exclude>docs/assets/js/anchor.min.js</exclude><!-- Distributed under the MIT license. The original license header is badly formatted. -->
                     </excludes>
