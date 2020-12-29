@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable RedundantCast
 namespace Apache.Ignite.BenchmarkDotNet.Binary
 {
     using System;
