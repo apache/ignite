@@ -319,7 +319,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return true;
 
                 case BinaryTypeId.ArrayLong:
-                    res = TypeCaster<T>.Cast(BinaryUtils.ReadLongArray(stream));
+                    res = typeof(T) == typeof(ulong[])
+                        ? TypeCaster<T>.Cast(BinaryUtils.ReadUlongArray(stream))
+                        : TypeCaster<T>.Cast(BinaryUtils.ReadLongArray(stream));
                     return true;
 
                 case BinaryTypeId.ArrayFloat:
