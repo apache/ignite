@@ -32,7 +32,7 @@ import org.junit.Test;
 
 /** */
 public class ReducerRowsBufferTest extends GridCommonAbstractTest {
-    /** Big table size. */
+    /** Table size. */
     private static final int TBL_SIZE = 1_000;
 
     /** */

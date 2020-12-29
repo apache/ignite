@@ -101,9 +101,7 @@ public abstract class UnsortedBaseReducer extends AbstractReducer {
         return new GridH2Cursor(fetched.iterator());
     }
 
-    /**
-     *
-     */
+    /** */
     private static class PollableQueue<X> extends LinkedBlockingQueue<X> implements AbstractReducer.Pollable<X> {
         // No-op.
     }
