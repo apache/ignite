@@ -186,6 +186,9 @@ public class AggregateSortNode<Row> extends AbstractNode<Row> implements SingleN
 
     /** */
     private Group newGroup(Row r) {
+        if (type == AggregateType.REDUCE)
+            System.out.println();
+
         final Object[] grpKeys = new Object[grpSet.cardinality()];
         List<Integer> fldIdxs = grpSet.asList();
 

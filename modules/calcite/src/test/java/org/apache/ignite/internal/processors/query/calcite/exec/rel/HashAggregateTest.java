@@ -46,10 +46,10 @@ public class HashAggregateTest extends BaseAggregateTest {
     /** {@inheritDoc} */
     @Override protected SingleNode<Object[]> createSingleAggregateNodesChain(
         ExecutionContext<Object[]> ctx,
-        RelDataType aggType,
         ImmutableList<ImmutableBitSet> grpSets,
         AggregateCall call,
-        RelDataType rowType,
+        RelDataType inRowType,
+        RelDataType aggRowType,
         RowHandler.RowFactory<Object[]> rowFactory,
         ScanNode<Object[]> scan
     ) {
@@ -57,10 +57,10 @@ public class HashAggregateTest extends BaseAggregateTest {
 
         AggregateHashNode<Object[]> agg = new AggregateHashNode<>(
             ctx,
-            aggType,
+            aggRowType,
             SINGLE,
             grpSets,
-            accFactory(ctx, call, SINGLE, rowType),
+            accFactory(ctx, call, SINGLE, inRowType),
             rowFactory
         );
 
@@ -77,7 +77,7 @@ public class HashAggregateTest extends BaseAggregateTest {
         Comparator<Object[]> cmp = ctx.expressionFactory().comparator(collation);
 
         // Create sort node on the top to check sorted results
-        SortNode<Object[]> sort = new SortNode<>(ctx, rowType, cmp);
+        SortNode<Object[]> sort = new SortNode<>(ctx, inRowType, cmp);
 
         sort.register(agg);
 
@@ -85,13 +85,12 @@ public class HashAggregateTest extends BaseAggregateTest {
     }
 
     /** {@inheritDoc} */
-    protected SingleNode<Object[]> createMapReduceAggregateNodesChain(
+    @Override protected SingleNode<Object[]> createMapReduceAggregateNodesChain(
         ExecutionContext<Object[]> ctx,
-        RelDataType aggType,
         ImmutableList<ImmutableBitSet> grpSets,
         AggregateCall call,
         RelDataType inRowType,
-        RelDataType outRowType,
+        RelDataType aggRowType,
         RowHandler.RowFactory<Object[]> rowFactory,
         ScanNode<Object[]> scan
     ) {
@@ -99,8 +98,8 @@ public class HashAggregateTest extends BaseAggregateTest {
 
         AggregateHashNode<Object[]> aggMap = new AggregateHashNode<>(
             ctx,
-            aggType,
-            SINGLE,
+            aggRowType,
+            MAP,
             grpSets,
             accFactory(ctx, call, MAP, inRowType),
             rowFactory
@@ -110,10 +109,10 @@ public class HashAggregateTest extends BaseAggregateTest {
 
         AggregateHashNode<Object[]> aggRdc = new AggregateHashNode<>(
             ctx,
-            aggType,
+            aggRowType,
             REDUCE,
             grpSets,
-            accFactory(ctx, call, MAP, outRowType),
+            accFactory(ctx, call, REDUCE, aggRowType),
             rowFactory
         );
 
@@ -130,7 +129,7 @@ public class HashAggregateTest extends BaseAggregateTest {
         Comparator<Object[]> cmp = ctx.expressionFactory().comparator(collation);
 
         // Create sort node on the top to check sorted results
-        SortNode<Object[]> sort = new SortNode<>(ctx, outRowType, cmp);
+        SortNode<Object[]> sort = new SortNode<>(ctx, aggRowType, cmp);
 
         sort.register(aggRdc);
 
