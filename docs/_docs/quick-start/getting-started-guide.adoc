@@ -1,0 +1,89 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Getting Started Guide
+
+== Configuration
+
+Apache Ignite uses HOCON configuration format.
+For more detail, please see the link:https://github.com/lightbend/config/blob/master/HOCON.md[HOCON documentation,window=_blank].
+
+== Ignite CLI tool
+
+Ignite CLI tool is a single entry point for all the Ignite operations.
+For example, it allows you to perform the following actions:
+
+* Manage existing nodes
+* Install new nodes
+* Update old nodes to new versions
+* Install or remove optional modules
+
+The Ignite CLI tool uses REST API as a communication protocol between the node and the CLI,
+allowing you to configure the node.
+
+Below is a list of Ignite CLI tool commands with short descriptions:
+
+* `init`: Installs Ignite core modules locally.
+
+* `module`: Manages optional Ignite modules and external artifacts.
+
+- `list`: Shows the list of available optional Ignite modules.
+- `add`: Adds an optional Ignite module or an external artifact.
+- `remove`: Adds an optional Ignite module or an external artifact.
+
+* `node`: Starts, stops and manages locally running Ignite nodes.
+
+- `start`: Starts an Ignite node locally.
+- `stop`: Stops a locally running Ignite node.
+- `classpath`: Shows the current classpath used by the Ignite nodes.
+- `list`: Shows the list of currently running local Ignite nodes.
+
+* `config`: Inspects and updates Ignite cluster configuration.
+
+- `get`: Gets current Ignite cluster configuration values.
+- `set`: Updates Ignite cluster configuration values.
+
+== Optional modules
+
+Ignite ships with a number of modules that provide various functionality. You can enable modules one by one, as required.
+
+WARNING: In the current alpha release, modules functionality is disabled.
+
+But you can still add Maven dependencies using the following command:
+
+`Ignite module add mvn:artifactId:groupId:version`
+
+It downloads the modules from Maven and adds a classpath to the server.
+
+== Work with a node
+
+The steps below illustrate basic node operations.
+
+. Use the `ignite init` command to start the configuration process.
+
+. To start a node, use the `ignite node start` command.
+Specify the `consistent-id` parameter for a certain node.
+
+. To stop a node, use the `ignite node stop` command.
+Specify the `consistent-id` parameter for a certain node.
+
+. To view the list of active nodes, use the `ignite node list` command. This command also displays the path to the log file.
+
+. To view the log, use the log file path from the previous step result. To open the log file, use any suitable approach.
+For example, use the `cat` standard command for Linux.
+
+
+
+
+

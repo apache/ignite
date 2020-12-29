@@ -1,0 +1,37 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Installing Using Distributive
+
+== Prerequisites
+
+Ignite was tested on:
+
+include::../includes/prereqs.adoc[]
+
+
+== Installing Using Distributive
+
+To install Apache Ignite, perform the following steps:
+
+. Navigate to link:https://ignite.apache.org/download.cgi[Apache Ignite Downloads,window=_blank] page to download the distributive.
+
+. Put the distributed file into the installation folder in your system.
+
+. Either execute the file or run it in the command line.
+
+. Optionally, set the Windows PATH to point to the installation folder and make sure there is no trailing / (or \ for Windows) in the path.
+
+NOTE: Depending on your system, you may need additional permissions during the installation.
+To grant permissions for Linux, run the `chmod +x ignite` standard command.
