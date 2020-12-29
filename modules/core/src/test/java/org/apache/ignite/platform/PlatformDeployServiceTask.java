@@ -448,6 +448,25 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
+        public int testOverload(Integer count, Employee[] emps) {
+            assert emps != null;
+            assert count == emps.length;
+
+            assert "Sarah Connor".equals(emps[0].getFio());
+            assert 1 == emps[0].getSalary();
+
+            assert "John Connor".equals(emps[1].getFio());
+            assert 2 == emps[1].getSalary();
+
+            return 42;
+        }
+
+        /** */
+        public int testOverload(int first, int second) {
+            return first + second;
+        }
+
+        /** */
         public Employee[] testEmployees(Employee[] emps) {
             if (emps == null)
                 return null;
