@@ -1551,6 +1551,13 @@ public class GridCacheUtils {
 
         A.ensure(!isReservedCacheName(name), "Cache name cannot be \"" + name +
             "\" because it is reserved for internal purposes.");
+
+        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_VALIDATE_CACHE_NAMES, true)) {
+            boolean hasIllegalCharacters = name.contains("/") || name.contains("\\") || name.contains("\0")
+                    || name.contains("\n");
+            A.ensure(!hasIllegalCharacters, "Cache name cannot contain slashes (/), backslashes (\\), " +
+                    "line separators (\\n), or null characters (\\0). [cacheName=" + name + "]");
+        }
     }
 
     /**
