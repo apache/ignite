@@ -300,11 +300,11 @@ namespace Apache.Ignite.Core.Tests.Services
             // Check err method
             Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
  
-            Assert.AreEqual(42, svc.testOverload(2, ServicesTypeAutoResolveTest.Emps));
-            Assert.AreEqual(3, svc.testOverload(1, 2));
-            Assert.AreEqual(5, svc.testOverload(3, 2));
+            Assert.AreEqual(42, svc.TestOverload(2, ServicesTypeAutoResolveTest.Emps));
+            Assert.AreEqual(3, svc.TestOverload(1, 2));
+            Assert.AreEqual(5, svc.TestOverload(3, 2));
 
-            Assert.AreEqual(43, svc.testOverload(2, ServicesTypeAutoResolveTest.Param));
+            Assert.AreEqual(43, svc.TestOverload(2, ServicesTypeAutoResolveTest.Param));
 
             // Check local scenario (proxy should not be created for local instance)
             Assert.IsTrue(ReferenceEquals(Grid2.GetServices().GetService<ITestIgniteService>(SvcName),
@@ -366,11 +366,11 @@ namespace Apache.Ignite.Core.Tests.Services
             ex = Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
             Assert.AreEqual("ExpectedException", (ex.InnerException ?? ex).Message.Substring(0, 17));
  
-            Assert.AreEqual(42, svc.testOverload(2, ServicesTypeAutoResolveTest.Emps));
-            Assert.AreEqual(3, svc.testOverload(1, 2));
-            Assert.AreEqual(5, svc.testOverload(3, 2));
+            Assert.AreEqual(42, svc.TestOverload(2, ServicesTypeAutoResolveTest.Emps));
+            Assert.AreEqual(3, svc.TestOverload(1, 2));
+            Assert.AreEqual(5, svc.TestOverload(3, 2));
 
-            Assert.AreEqual(43, svc.testOverload(2, ServicesTypeAutoResolveTest.Param));
+            Assert.AreEqual(43, svc.TestOverload(2, ServicesTypeAutoResolveTest.Param));
         }
 
         /// <summary>
@@ -1343,13 +1343,13 @@ namespace Apache.Ignite.Core.Tests.Services
             object ErrMethod(object arg);
 
             /** */
-            int testOverload(int count, Employee[] emps);
+            int TestOverload(int count, Employee[] emps);
 
             /** */
-            int testOverload(int first, int second);
+            int TestOverload(int first, int second);
 
             /** */
-            int testOverload(int count, Parameter[] param);
+            int TestOverload(int count, Parameter[] param);
         }
 
         /// <summary>
@@ -1425,7 +1425,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             /** */
-            public int testOverload(int count, Employee[] emps)
+            public int TestOverload(int count, Employee[] emps)
             {
                 Assert.IsNotNull(emps);
                 Assert.AreEqual(count, emps.Length);
@@ -1440,13 +1440,13 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             /** */
-            public int testOverload(int first, int second)
+            public int TestOverload(int first, int second)
             {
                 return first + second;
             }
 
             /** */
-            public int testOverload(int count, Parameter[] param)
+            public int TestOverload(int count, Parameter[] param)
             {
                 Assert.IsNotNull(param);
                 Assert.AreEqual(count, param.Length);
