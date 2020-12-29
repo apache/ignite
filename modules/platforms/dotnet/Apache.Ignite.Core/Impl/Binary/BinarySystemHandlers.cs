@@ -33,6 +33,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static readonly CopyOnWriteConcurrentDictionary<Type, IBinarySystemWriteHandler> WriteHandlers =
             new CopyOnWriteConcurrentDictionary<Type, IBinarySystemWriteHandler>();
 
+        /** */
+        private static readonly BinarySystemWriteHandler<DateTime> TimestampWriteHandler =
+            new BinarySystemWriteHandler<DateTime>(WriteTimestamp, false);
+
+        /** */
+        private static readonly BinarySystemWriteHandler<DateTime?[]> TimestampArrayWriteHandler =
+            new BinarySystemWriteHandler<DateTime?[]>(WriteTimestampArray, true);
+
         /** Read handlers. */
         private static readonly IBinarySystemReader[] ReadHandlers = new IBinarySystemReader[255];
 
@@ -122,9 +130,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (forceTimestamp)
             {
                 if (type == typeof(DateTime))
-                    return new BinarySystemWriteHandler<DateTime>(WriteTimestamp, false);
+                    return TimestampWriteHandler;
+
                 if (type == typeof(DateTime?[]))
-                    return new BinarySystemWriteHandler<DateTime?[]>(WriteTimestampArray, true);
+                    return TimestampArrayWriteHandler;
             }
 
             return WriteHandlers.GetOrAdd(type, t =>
