@@ -92,38 +92,29 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
             var stream = _mem.GetStream();
             var reader = _marsh.StartUnmarshal(stream);
 
-            Assert(true, reader.ReadObject<bool>());
-            Assert('i', reader.ReadObject<char>());
-            Assert(1, reader.ReadObject<byte>());
-            Assert(2, reader.ReadObject<short>());
-            Assert(3, reader.ReadObject<int>());
-            Assert(4, reader.ReadObject<long>());
-            Assert(5.5f, reader.ReadObject<float>());
-            Assert(6.6d, reader.ReadObject<double>());
-            Assert(7.7m, reader.ReadObject<decimal>());
-            Assert(DateTime, reader.ReadObject<DateTime>());
-            Assert(Guid, reader.ReadObject<Guid>());
+            reader.ReadObject<bool>();
+            reader.ReadObject<byte>();
+            reader.ReadObject<char>();
+            reader.ReadObject<short>();
+            reader.ReadObject<int>();
+            reader.ReadObject<long>();
+            reader.ReadObject<float>();
+            reader.ReadObject<double>();
+            reader.ReadObject<decimal>();
+            reader.ReadObject<DateTime>();
+            reader.ReadObject<Guid>();
 
-            Assert(true, reader.ReadObject<bool[]>()[0]);
-            Assert('i', reader.ReadObject<char[]>()[0]);
-            Assert(1, reader.ReadObject<byte[]>()[0]);
-            Assert(2, reader.ReadObject<short[]>()[0]);
-            Assert(3, reader.ReadObject<int[]>()[0]);
-            Assert(4, reader.ReadObject<long[]>()[0]);
-            Assert(5.5f, reader.ReadObject<float[]>()[0]);
-            Assert(6.6d, reader.ReadObject<double[]>()[0]);
-            Assert(7.7m, reader.ReadObject<decimal?[]>()[0]);
-            Assert(DateTime, reader.ReadObject<DateTime?[]>()[0]);
-            Assert(Guid, reader.ReadObject<Guid?[]>()[0]);
-        }
-
-        // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
-        private static void Assert<T>(T expected, T actual)
-        {
-            if (!Equals(expected, actual))
-            {
-                throw new Exception("Unexpected value");
-            }
+            reader.ReadObject<bool[]>();
+            reader.ReadObject<char[]>();
+            reader.ReadObject<byte[]>();
+            reader.ReadObject<short[]>();
+            reader.ReadObject<int[]>();
+            reader.ReadObject<long[]>();
+            reader.ReadObject<float[]>();
+            reader.ReadObject<double[]>();
+            reader.ReadObject<decimal?[]>();
+            reader.ReadObject<DateTime?[]>();
+            reader.ReadObject<Guid?[]>();
         }
     }
 }
