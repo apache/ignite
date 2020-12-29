@@ -17,13 +17,19 @@
 
 package org.apache.ignite.cli.builtins;
 
+import java.io.File;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import javax.inject.Singleton;
 import io.micronaut.core.annotation.Introspected;
+import org.apache.ignite.cli.IgniteCLIException;
+import org.apache.ignite.cli.IgniteCliApp;
 
 public interface SystemPathResolver {
 
     Path osHomeDirectoryPath();
+
+    Path toolHomeDirectoryPath();
 
     /**
      *
@@ -31,10 +37,22 @@ public interface SystemPathResolver {
     @Singleton
     @Introspected
     class DefaultPathResolver implements SystemPathResolver {
-
         @Override public Path osHomeDirectoryPath() {
             return Path.of(System.getProperty("user.home"));
         }
 
+        @Override public Path toolHomeDirectoryPath() {
+            try {
+                var file = new File(IgniteCliApp.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+
+                while (!file.isDirectory())
+                    file = file.getParentFile();
+
+                return file.toPath();
+            }
+            catch (URISyntaxException e) {
+                throw new IgniteCLIException("Failed to resolve the CLI tool home directory.", e);
+            }
+        }
     }
 }

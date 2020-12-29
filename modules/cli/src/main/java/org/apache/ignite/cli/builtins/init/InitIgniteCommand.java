@@ -105,9 +105,12 @@ public class InitIgniteCommand {
         File newCfgFile = newCfgPath.toFile();
         try {
             newCfgFile.createNewFile();
-            Path binDir = pathResolver.osHomeDirectoryPath().resolve("ignite").resolve("bin");
-            Path workDir = pathResolver.osHomeDirectoryPath().resolve("ignite").resolve("work");
+
+            Path binDir = pathResolver.toolHomeDirectoryPath().resolve("ignite-bin");
+            Path workDir = pathResolver.toolHomeDirectoryPath().resolve("ignite-work");
+
             fillNewConfigFile(newCfgFile, binDir, workDir);
+
             return newCfgFile;
         }
         catch (IOException e) {
