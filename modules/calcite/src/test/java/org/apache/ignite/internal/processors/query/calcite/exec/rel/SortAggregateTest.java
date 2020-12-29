@@ -17,47 +17,64 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.UUID;
+import java.util.Comparator;
 
+import com.google.common.collect.ImmutableList;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.jetbrains.annotations.NotNull;
-import org.junit.Before;
-import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.SINGLE;
 
 /**
  *
  */
 @SuppressWarnings("TypeMayBeWeakened")
 @WithSystemProperty(key = "calcite.debug", value = "true")
-public class SortAggregateTest extends AbstractExecutionTest {
-    /**
-     * @throws Exception If failed.
-     */
-    @Before
-    @Override public void setup() throws Exception {
-        nodesCnt = 1;
-        super.setup();
-    }
+public class SortAggregateTest extends BaseAggregateTest {
+    /** {@inheritDoc} */
+    @Override protected SingleNode<Object[]> createSingleAggregateNodesChain(
+        ExecutionContext<Object[]> ctx,
+        RelDataType aggType,
+        ImmutableList<ImmutableBitSet> grpSets,
+        AggregateCall call,
+        RelDataType rowType,
+        RowHandler.RowFactory<Object[]> rowFactory,
+        ScanNode<Object[]> scan
+    ) {
+        assert grpSets.size() == 1;
 
-    /**
-     *
-     */
-    @Test
-    public void single() throws Exception {
-    }
+        ImmutableBitSet grpSet = F.first(grpSets);
 
-    /**
-     *
-     */
-    @Test
-    public void mapReduce() throws Exception {
+        assert !grpSet.isEmpty() : "Not applicable for sort aggregate";
+
+        RelCollation collation = RelCollations.of(ImmutableIntList.copyOf(grpSet.asList()));
+
+        Comparator<Object[]> cmp = ctx.expressionFactory().comparator(collation);
+
+        SortNode<Object[]> sort = new SortNode<>(ctx, rowType, cmp);
+
+        sort.register(scan);
+
+        AggregateSortNode<Object[]> agg = new AggregateSortNode<>(
+            ctx,
+            aggType,
+            SINGLE,
+            grpSet,
+            accFactory(ctx, call, SINGLE, rowType),
+            rowFactory,
+            cmp
+        );
+
+        agg.register(sort);
+
+        return agg;
     }
 }
