@@ -345,11 +345,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return true;
 
                 case BinaryTypeId.Collection:
-                    res = default(T); // TODO
+                    res = (T) BinaryUtils.ReadCollection(ctx, null, null);
                     return true;
 
                 case BinaryTypeId.Dictionary:
-                    res = default(T); // TODO
+                    res = (T) BinaryUtils.ReadDictionary(ctx, null);
                     return true;
 
                 case BinaryTypeId.Binary:
