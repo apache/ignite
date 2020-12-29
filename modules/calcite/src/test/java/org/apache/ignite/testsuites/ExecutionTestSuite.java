@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ExecutionTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateSingleGroupTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.MergeJoinExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJoinExecutionTest;
@@ -40,6 +41,7 @@ import org.junit.runners.Suite;
     TableSpoolTest.class,
     IndexSpoolTest.class,
     HashAggregateTest.class,
+    HashAggregateSingleGroupTest.class,
     SortAggregateTest.class,
 })
 public class ExecutionTestSuite {

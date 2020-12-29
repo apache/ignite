@@ -57,390 +57,9 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
         super.setup();
     }
 
-//    /**
-//     *
-//     */
-//    @Test
-//    public void mapReduceAvg() {
-//        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-//        IgniteTypeFactory tf = ctx.getTypeFactory();
-//        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
-//        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
-//            row("Igor", 200),
-//            row("Roman", 300),
-//            row("Ivan", 1400),
-//            row("Alexey", 1000)
-//        ));
-//
-//        AggregateCall call = AggregateCall.create(
-//            SqlStdOperatorTable.AVG,
-//            false,
-//            false,
-//            false,
-//            ImmutableIntList.of(1),
-//            -1,
-//            RelCollations.EMPTY,
-//            tf.createJavaType(double.class),
-//            null);
-//
-//        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
-//
-//        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
-//        AggregateHashNode<Object[]> map = new AggregateHashNode<>(
-//            ctx,
-//            mapType,
-//            MAP,
-//            grpSets,
-//            accFactory(ctx, call, MAP, rowType),
-//            rowFactory()
-//        );
-//
-//        map.register(scan);
-//
-//        RelDataType reduceType = TypeUtils.createRowType(tf, double.class);
-//        AggregateHashNode<Object[]> reduce = new AggregateHashNode<>(
-//            ctx,
-//            reduceType,
-//            REDUCE,
-//            grpSets,
-//            accFactory(ctx, call, REDUCE, null),
-//            rowFactory()
-//        );
-//
-//        reduce.register(map);
-//
-//        RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
-//        root.register(reduce);
-//
-//        assertTrue(root.hasNext());
-//        assertEquals(725d, root.next()[0]);
-//        assertFalse(root.hasNext());
-//    }
-//
-//    /** */
-//    @Test
-//    public void mapReduceSum() {
-//        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-//        IgniteTypeFactory tf = ctx.getTypeFactory();
-//        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
-//        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
-//            row("Igor", 200),
-//            row("Roman", 300),
-//            row("Ivan", 1400),
-//            row("Alexey", 1000)
-//        ));
-//
-//        AggregateCall call = AggregateCall.create(
-//            SqlStdOperatorTable.SUM,
-//            false,
-//            false,
-//            false,
-//            ImmutableIntList.of(1),
-//            -1,
-//            RelCollations.EMPTY,
-//            tf.createJavaType(int.class),
-//            null);
-//
-//        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
-//
-//        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
-//        AggregateHashNode<Object[]> map = new AggregateHashNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
-//        map.register(scan);
-//
-//        RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
-//        AggregateHashNode<Object[]> reduce = new AggregateHashNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
-//        reduce.register(map);
-//
-//        RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
-//        root.register(reduce);
-//
-//        assertTrue(root.hasNext());
-//        assertEquals(2900, root.next()[0]);
-//        assertFalse(root.hasNext());
-//    }
-//
-//    /** */
-//    @Test
-//    public void mapReduceMin() {
-//        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-//        IgniteTypeFactory tf = ctx.getTypeFactory();
-//        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
-//        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
-//            row("Igor", 200),
-//            row("Roman", 300),
-//            row("Ivan", 1400),
-//            row("Alexey", 1000)
-//        ));
-//
-//        AggregateCall call = AggregateCall.create(
-//            SqlStdOperatorTable.MIN,
-//            false,
-//            false,
-//            false,
-//            ImmutableIntList.of(1),
-//            -1,
-//            RelCollations.EMPTY,
-//            tf.createJavaType(int.class),
-//            null);
-//
-//        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
-//
-//        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
-//        AggregateHashNode<Object[]> map = new AggregateHashNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
-//        map.register(scan);
-//
-//        RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
-//        AggregateHashNode<Object[]> reduce = new AggregateHashNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
-//        reduce.register(map);
-//
-//        RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
-//        root.register(reduce);
-//
-//        assertTrue(root.hasNext());
-//        assertEquals(200, root.next()[0]);
-//        assertFalse(root.hasNext());
-//    }
-//
-//    /** */
-//    @Test
-//    public void mapReduceMax() {
-//        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-//        IgniteTypeFactory tf = ctx.getTypeFactory();
-//        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
-//        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
-//            row("Igor", 200),
-//            row("Roman", 300),
-//            row("Ivan", 1400),
-//            row("Alexey", 1000)
-//        ));
-//
-//        AggregateCall call = AggregateCall.create(
-//            SqlStdOperatorTable.MAX,
-//            false,
-//            false,
-//            false,
-//            ImmutableIntList.of(1),
-//            -1,
-//            RelCollations.EMPTY,
-//            tf.createJavaType(int.class),
-//            null);
-//
-//        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
-//
-//        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
-//        AggregateHashNode<Object[]> map = new AggregateHashNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
-//        map.register(scan);
-//
-//        RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
-//        AggregateHashNode<Object[]> reduce = new AggregateHashNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
-//        reduce.register(map);
-//
-//        RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
-//        root.register(reduce);
-//
-//        assertTrue(root.hasNext());
-//        assertEquals(1400, root.next()[0]);
-//        assertFalse(root.hasNext());
-//    }
-//
-//    /** */
-//    @Test
-//    public void mapReduceCount() {
-//        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-//        IgniteTypeFactory tf = ctx.getTypeFactory();
-//        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
-//        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
-//            row("Igor", 200),
-//            row("Roman", 300),
-//            row("Ivan", 1400),
-//            row("Alexey", 1000)
-//        ));
-//
-//        AggregateCall call = AggregateCall.create(
-//            SqlStdOperatorTable.COUNT,
-//            false,
-//            false,
-//            false,
-//            ImmutableIntList.of(),
-//            -1,
-//            RelCollations.EMPTY,
-//            tf.createJavaType(int.class),
-//            null);
-//
-//        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
-//
-//        RelDataType mapType = IgniteMapAggregateHash.rowType(tf);
-//        AggregateHashNode<Object[]> map = new AggregateHashNode<>(ctx, mapType, MAP, grpSets, accFactory(ctx, call, MAP, rowType), rowFactory());
-//        map.register(scan);
-//
-//        RelDataType reduceType = TypeUtils.createRowType(tf, int.class);
-//        AggregateHashNode<Object[]> reduce = new AggregateHashNode<>(ctx, reduceType, REDUCE, grpSets, accFactory(ctx, call, REDUCE, null), rowFactory());
-//        reduce.register(map);
-//
-//        RootNode<Object[]> root = new RootNode<>(ctx, reduceType);
-//        root.register(reduce);
-//
-//        assertTrue(root.hasNext());
-//        assertEquals(4, root.next()[0]);
-//        assertFalse(root.hasNext());
-//    }
-//
-//    /** */
-//    @Test
-//    public void singleAvg() {
-//        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-//        IgniteTypeFactory tf = ctx.getTypeFactory();
-//        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
-//        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
-//            row("Igor", 200),
-//            row("Roman", 300),
-//            row("Ivan", 1400),
-//            row("Alexey", 1000)
-//        ));
-//
-//        AggregateCall call = AggregateCall.create(
-//            SqlStdOperatorTable.AVG,
-//            false,
-//            false,
-//            false,
-//            ImmutableIntList.of(1),
-//            -1,
-//            RelCollations.EMPTY,
-//            tf.createJavaType(double.class),
-//            null);
-//
-//        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
-//
-//        RelDataType aggType = TypeUtils.createRowType(tf, int.class);
-//        AggregateHashNode<Object[]> agg = new AggregateHashNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
-//        agg.register(scan);
-//
-//        RootNode<Object[]> root = new RootNode<>(ctx, aggType);
-//        root.register(agg);
-//
-//        assertTrue(root.hasNext());
-//        assertEquals(725d, root.next()[0]);
-//        assertFalse(root.hasNext());
-//    }
-//
-//    /** */
-//    @Test
-//    public void singleSum() {
-//        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-//        IgniteTypeFactory tf = ctx.getTypeFactory();
-//        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
-//        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
-//            row("Igor", 200),
-//            row("Roman", 300),
-//            row("Ivan", 1400),
-//            row("Alexey", 1000)
-//        ));
-//
-//        AggregateCall call = AggregateCall.create(
-//            SqlStdOperatorTable.SUM,
-//            false,
-//            false,
-//            false,
-//            ImmutableIntList.of(1),
-//            -1,
-//            RelCollations.EMPTY,
-//            tf.createJavaType(int.class),
-//            null);
-//
-//        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
-//
-//        RelDataType aggType = TypeUtils.createRowType(tf, int.class);
-//        AggregateHashNode<Object[]> agg = new AggregateHashNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
-//        agg.register(scan);
-//
-//        RootNode<Object[]> root = new RootNode<>(ctx, aggType);
-//        root.register(agg);
-//
-//        assertTrue(root.hasNext());
-//        assertEquals(2900, root.next()[0]);
-//        assertFalse(root.hasNext());
-//    }
-//
-//    /** */
-//    @Test
-//    public void singleMin() {
-//        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-//        IgniteTypeFactory tf = ctx.getTypeFactory();
-//        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
-//        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
-//            row("Igor", 200),
-//            row("Roman", 300),
-//            row("Ivan", 1400),
-//            row("Alexey", 1000)
-//        ));
-//
-//        AggregateCall call = AggregateCall.create(
-//            SqlStdOperatorTable.MIN,
-//            false,
-//            false,
-//            false,
-//            ImmutableIntList.of(1),
-//            -1,
-//            RelCollations.EMPTY,
-//            tf.createJavaType(int.class),
-//            null);
-//
-//        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
-//
-//        RelDataType aggType = TypeUtils.createRowType(tf, int.class);
-//        AggregateHashNode<Object[]> agg = new AggregateHashNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
-//        agg.register(scan);
-//
-//        RootNode<Object[]> root = new RootNode<>(ctx, aggType);
-//        root.register(agg);
-//
-//        assertTrue(root.hasNext());
-//        assertEquals(200, root.next()[0]);
-//        assertFalse(root.hasNext());
-//    }
-//
-//    /** */
-//    @Test
-//    public void singleMax() {
-//        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-//        IgniteTypeFactory tf = ctx.getTypeFactory();
-//        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
-//        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
-//            row("Igor", 200),
-//            row("Roman", 300),
-//            row("Ivan", 1400),
-//            row("Alexey", 1000)
-//        ));
-//
-//        AggregateCall call = AggregateCall.create(
-//            SqlStdOperatorTable.MAX,
-//            false,
-//            false,
-//            false,
-//            ImmutableIntList.of(1),
-//            -1,
-//            RelCollations.EMPTY,
-//            tf.createJavaType(int.class),
-//            null);
-//
-//        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
-//
-//        RelDataType aggType = TypeUtils.createRowType(tf, int.class);
-//        AggregateHashNode<Object[]> agg = new AggregateHashNode<>(ctx, aggType, SINGLE, grpSets, accFactory(ctx, call, SINGLE, rowType), rowFactory());
-//        agg.register(scan);
-//
-//        RootNode<Object[]> root = new RootNode<>(ctx, aggType);
-//        root.register(agg);
-//
-//        assertTrue(root.hasNext());
-//        assertEquals(1400, root.next()[0]);
-//        assertFalse(root.hasNext());
-//    }
-//
-
     /** */
     @Test
-    public void singleCountByGroup() {
+    public void singleCount() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class, int.class);
@@ -482,6 +101,150 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
         Assert.assertArrayEquals(row(0, 2), root.next());
         Assert.assertArrayEquals(row(1, 2), root.next());
+
+        assertFalse(root.hasNext());
+    }
+
+    /** */
+    @Test
+    public void singleMin() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
+            row("Igor", 0, 200),
+            row("Roman", 1, 300),
+            row("Ivan", 1, 1400),
+            row("Alexey", 0, 1000)
+        ));
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.MIN,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(2),
+            -1,
+            RelCollations.EMPTY,
+            tf.createJavaType(int.class),
+            null);
+
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(1));
+
+        RelDataType aggType = TypeUtils.createRowType(tf, int.class);
+        SingleNode<Object[]> aggChain = createSingleAggregateNodesChain(
+            ctx,
+            aggType,
+            grpSets,
+            call,
+            rowType,
+            rowFactory(),
+            scan
+        );
+
+        RootNode<Object[]> root = new RootNode<>(ctx, aggType);
+        root.register(aggChain);
+
+        assertTrue(root.hasNext());
+
+        Assert.assertArrayEquals(row(0, 200), root.next());
+        Assert.assertArrayEquals(row(1, 300), root.next());
+
+        assertFalse(root.hasNext());
+    }
+
+    /** */
+    @Test
+    public void singleMax() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
+            row("Igor", 0, 200),
+            row("Roman", 1, 300),
+            row("Ivan", 1, 1400),
+            row("Alexey", 0, 1000)
+        ));
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.MAX,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(2),
+            -1,
+            RelCollations.EMPTY,
+            tf.createJavaType(int.class),
+            null);
+
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(1));
+
+        RelDataType aggType = TypeUtils.createRowType(tf, int.class);
+        SingleNode<Object[]> aggChain = createSingleAggregateNodesChain(
+            ctx,
+            aggType,
+            grpSets,
+            call,
+            rowType,
+            rowFactory(),
+            scan
+        );
+
+        RootNode<Object[]> root = new RootNode<>(ctx, aggType);
+        root.register(aggChain);
+
+        assertTrue(root.hasNext());
+
+        Assert.assertArrayEquals(row(0, 1000), root.next());
+        Assert.assertArrayEquals(row(1, 1400), root.next());
+
+        assertFalse(root.hasNext());
+    }
+
+    /** */
+    @Test
+    public void singleAvg() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
+            row("Igor", 0, 200),
+            row("Roman", 1, 300),
+            row("Ivan", 1, 1300),
+            row("Alexey", 0, 1000)
+        ));
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.AVG,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(2),
+            -1,
+            RelCollations.EMPTY,
+            tf.createJavaType(int.class),
+            null);
+
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(1));
+
+        RelDataType aggType = TypeUtils.createRowType(tf, int.class);
+        SingleNode<Object[]> aggChain = createSingleAggregateNodesChain(
+            ctx,
+            aggType,
+            grpSets,
+            call,
+            rowType,
+            rowFactory(),
+            scan
+        );
+
+        RootNode<Object[]> root = new RootNode<>(ctx, aggType);
+        root.register(aggChain);
+
+        assertTrue(root.hasNext());
+
+        Assert.assertArrayEquals(row(0, 600), root.next());
+        Assert.assertArrayEquals(row(1, 800), root.next());
 
         assertFalse(root.hasNext());
     }

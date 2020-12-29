@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.Arrays;
 import java.util.Comparator;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -28,17 +26,15 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.MAP;
+import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.REDUCE;
 import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.SINGLE;
 
 /**
@@ -88,49 +84,56 @@ public class HashAggregateTest extends BaseAggregateTest {
         return sort;
     }
 
-    /** */
-    @Test
-    public void singleCount() {
-        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-        IgniteTypeFactory tf = ctx.getTypeFactory();
-        RelDataType rowType = TypeUtils.createRowType(tf, String.class, int.class);
-        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
-            row("Igor", 200),
-            row("Roman", 300),
-            row("Ivan", 1400),
-            row("Alexey", 1000)
-        ));
+    /** {@inheritDoc} */
+    protected SingleNode<Object[]> createMapReduceAggregateNodesChain(
+        ExecutionContext<Object[]> ctx,
+        RelDataType aggType,
+        ImmutableList<ImmutableBitSet> grpSets,
+        AggregateCall call,
+        RelDataType inRowType,
+        RelDataType outRowType,
+        RowHandler.RowFactory<Object[]> rowFactory,
+        ScanNode<Object[]> scan
+    ) {
+        assert grpSets.size() == 1 : "Test checks only simple GROUP BY";
 
-        AggregateCall call = AggregateCall.create(
-            SqlStdOperatorTable.COUNT,
-            false,
-            false,
-            false,
-            ImmutableIntList.of(),
-            -1,
-            RelCollations.EMPTY,
-            tf.createJavaType(int.class),
-            null);
-
-        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
-
-        RelDataType aggType = TypeUtils.createRowType(tf, int.class);
-        AggregateHashNode<Object[]> agg = new AggregateHashNode<>(
+        AggregateHashNode<Object[]> aggMap = new AggregateHashNode<>(
             ctx,
             aggType,
             SINGLE,
             grpSets,
-            accFactory(ctx, call, SINGLE, rowType),
-            rowFactory()
+            accFactory(ctx, call, MAP, inRowType),
+            rowFactory
         );
 
-        agg.register(scan);
+        aggMap.register(scan);
 
-        RootNode<Object[]> root = new RootNode<>(ctx, aggType);
-        root.register(agg);
+        AggregateHashNode<Object[]> aggRdc = new AggregateHashNode<>(
+            ctx,
+            aggType,
+            REDUCE,
+            grpSets,
+            accFactory(ctx, call, MAP, outRowType),
+            rowFactory
+        );
 
-        assertTrue(root.hasNext());
-        assertEquals(4, root.next()[0]);
-        assertFalse(root.hasNext());
+        aggRdc.register(aggMap);
+
+        // Collation of the first fields emulates planner behavior:
+        // The group's keys placed on the begin of the output row.
+        RelCollation collation = RelCollations.of(
+            ImmutableIntList.copyOf(
+                IntStream.range(0, F.first(grpSets).cardinality()).boxed().collect(Collectors.toList())
+            )
+        );
+
+        Comparator<Object[]> cmp = ctx.expressionFactory().comparator(collation);
+
+        // Create sort node on the top to check sorted results
+        SortNode<Object[]> sort = new SortNode<>(ctx, outRowType, cmp);
+
+        sort.register(aggRdc);
+
+        return sort;
     }
 }
