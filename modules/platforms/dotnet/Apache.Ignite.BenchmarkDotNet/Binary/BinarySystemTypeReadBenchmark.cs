@@ -56,15 +56,27 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
 
             writer.Write(true);
             writer.Write('i');
-            writer.Write((byte)1);
-            writer.Write((short)2);
-            writer.Write((int)3);
-            writer.Write((long)4);
-            writer.Write((float)5.5);
-            writer.Write((double)6.6);
-            writer.Write((decimal)7.7);
+            writer.Write((byte) 1);
+            writer.Write((short) 2);
+            writer.Write((int) 3);
+            writer.Write((long) 4);
+            writer.Write((float) 5.5);
+            writer.Write((double) 6.6);
+            writer.Write((decimal) 7.7);
             writer.Write(DateTime);
             writer.Write(Guid);
+
+            writer.Write(new[] {true});
+            writer.Write(new[] {'i'});
+            writer.Write(new[] {(byte) 1});
+            writer.Write(new[] {(short) 2});
+            writer.Write(new[] {(int) 3});
+            writer.Write(new[] {(long) 4});
+            writer.Write(new[] {(float) 5.5});
+            writer.Write(new[] {(double) 6.6});
+            writer.Write(new[] {(decimal) 7.7});
+            writer.Write(new[] {DateTime});
+            writer.Write(new[] {Guid});
 
             stream.SynchronizeOutput();
         }
@@ -86,6 +98,18 @@ namespace Apache.Ignite.BenchmarkDotNet.Binary
             Assert(7.7m, reader.ReadObject<decimal>());
             Assert(DateTime, reader.ReadObject<DateTime>());
             Assert(Guid, reader.ReadObject<Guid>());
+
+            Assert(true, reader.ReadObject<bool[]>()[0]);
+            Assert('i', reader.ReadObject<char[]>()[0]);
+            Assert(1, reader.ReadObject<byte[]>()[0]);
+            Assert(2, reader.ReadObject<short[]>()[0]);
+            Assert(3, reader.ReadObject<int[]>()[0]);
+            Assert(4, reader.ReadObject<long[]>()[0]);
+            Assert(5.5f, reader.ReadObject<float[]>()[0]);
+            Assert(6.6d, reader.ReadObject<double[]>()[0]);
+            Assert(7.7m, reader.ReadObject<decimal[]>()[0]);
+            Assert(DateTime, reader.ReadObject<DateTime[]>()[0]);
+            Assert(Guid, reader.ReadObject<Guid[]>()[0]);
         }
 
         // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
