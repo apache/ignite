@@ -19,8 +19,8 @@ tickTime={{ settings.tick_time }}
 minSessionTimeout={{ settings.min_session_timeout }}
 initLimit={{ settings.init_limit }}
 syncLimit={{ settings.sync_limit }}
+dataDir={{ data_dir }}
 forceSync={{ settings.force_sync }}
-dataDir={{ DATA_DIR }}
 clientPort={{ settings.client_port }}
 {% for node in nodes %}
 server.{{ loop.index }}={{ node.account.hostname }}:2888:3888

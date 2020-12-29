@@ -18,11 +18,13 @@ This module contains classes and utilities to start zookeeper cluster for testin
 """
 
 import os.path
+from distutils.version import LooseVersion
 
 from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.log_utils import monitor_log
+from ignitetest.services.utils.path import PathAware
 
 
 class ZookeeperSettings:
@@ -37,32 +39,48 @@ class ZookeeperSettings:
         self.force_sync = kwargs.get('force_sync', 'yes')
         self.client_port = kwargs.get('client_port', 2181)
 
+        version = kwargs.get("version")
+        if version:
+            if isinstance(version, str):
+                version = LooseVersion(version)
+            self.version = version
+        else:
+            self.version = LooseVersion("3.5.8")
+
         assert self.tick_time <= self.min_session_timeout // 2, "'tick_time' must be <= 'min_session_timeout' / 2"
 
 
-class ZookeeperService(Service):
+class ZookeeperService(Service, PathAware):
     """
     Zookeeper service.
     """
-    PERSISTENT_ROOT = "/mnt/zookeeper"
-    CONFIG_ROOT = os.path.join(PERSISTENT_ROOT, "conf")
-    LOG_FILE = os.path.join(PERSISTENT_ROOT, "zookeeper.log")
-    DATA_DIR = os.path.join(PERSISTENT_ROOT, "data")
-    CONFIG_FILE = os.path.join(CONFIG_ROOT, "zookeeper.properties")
-    LOG_CONFIG_FILE = os.path.join(CONFIG_ROOT, "log4j.properties")
-    ZK_LIB_DIR = "/opt/zookeeper-3.5.8/lib"
-
-    logs = {
-        "zk_log": {
-            "path": LOG_FILE,
-            "collect_default": True
-        }
-    }
+    LOG_FILENAME = "zookeeper.log"
 
     def __init__(self, context, num_nodes, settings=ZookeeperSettings(), start_timeout_sec=60):
         super().__init__(context, num_nodes)
         self.settings = settings
         self.start_timeout_sec = start_timeout_sec
+        self.init_logs_attribute()
+
+    @property
+    def version(self):
+        return self.settings.version
+
+    @property
+    def globals(self):
+        return self.context.globals
+
+    @property
+    def log_config_file(self):
+        return os.path.join(self.persistent_root, "log4j.properties")
+
+    @property
+    def config_file(self):
+        return os.path.join(self.persistent_root, "zookeeper.properties")
+
+    @property
+    def project(self):
+        return "zookeeper"
 
     def start(self, clean=True):
         super().start(clean=clean)
@@ -78,19 +96,18 @@ class ZookeeperService(Service):
 
         self.logger.info("Starting Zookeeper node %d on %s", idx, node.account.hostname)
 
-        node.account.ssh("mkdir -p %s" % self.DATA_DIR)
-        node.account.ssh("mkdir -p %s" % self.CONFIG_ROOT)
-        node.account.ssh("echo %d > %s/myid" % (idx, self.DATA_DIR))
+        self.init_persistent(node)
+        node.account.ssh(f"echo {idx} > {self.work_dir}/myid")
 
-        config_file = self.render('zookeeper.properties.j2', settings=self.settings)
-        node.account.create_file(self.CONFIG_FILE, config_file)
+        config_file = self.render('zookeeper.properties.j2', settings=self.settings, data_dir=self.work_dir)
+        node.account.create_file(self.config_file, config_file)
         self.logger.info("ZK config %s", config_file)
 
-        log_config_file = self.render('log4j.properties.j2')
-        node.account.create_file(self.LOG_CONFIG_FILE, log_config_file)
+        log_config_file = self.render('log4j.properties.j2', log_dir=self.log_dir)
+        node.account.create_file(self.log_config_file, log_config_file)
 
-        start_cmd = "nohup java -cp %s/*:%s org.apache.zookeeper.server.quorum.QuorumPeerMain %s >/dev/null 2>&1 &" % \
-                    (self.ZK_LIB_DIR, self.CONFIG_ROOT, self.CONFIG_FILE)
+        start_cmd = f"nohup java -cp {os.path.join(self.home_dir, 'lib')}/*:{self.persistent_root} " \
+                    f"org.apache.zookeeper.server.quorum.QuorumPeerMain {self.config_file} >/dev/null 2>&1 &"
 
         node.account.ssh(start_cmd)
 
@@ -105,12 +122,19 @@ class ZookeeperService(Service):
         :param node:  Zookeeper service node.
         :param timeout: Wait timeout.
         """
-        with monitor_log(node, self.LOG_FILE, from_the_beginning=True) as monitor:
+        with monitor_log(node, self.log_file, from_the_beginning=True) as monitor:
             monitor.wait_until(
                 "LEADER ELECTION TOOK",
                 timeout_sec=timeout,
-                err_msg="Zookeeper quorum was not formed on %s" % node.account.hostname
+                err_msg=f"Zookeeper quorum was not formed on {node.account.hostname}"
             )
+
+    @property
+    def log_file(self):
+        """
+        :return: current log file of node.
+        """
+        return os.path.join(self.log_dir, self.LOG_FILENAME)
 
     @staticmethod
     def java_class_name():
@@ -151,7 +175,7 @@ class ZookeeperService(Service):
             self.logger.warn("%s %s was still alive at cleanup time. Killing forcefully..." %
                              (self.__class__.__name__, node.account))
         node.account.kill_process("zookeeper", clean_shutdown=False, allow_fail=True)
-        node.account.ssh("rm -rf %s %s %s" % (self.CONFIG_ROOT, self.DATA_DIR, self.LOG_FILE), allow_fail=False)
+        node.account.ssh(f"rm -rf -- {self.persistent_root}", allow_fail=False)
 
     def kill(self):
         """
