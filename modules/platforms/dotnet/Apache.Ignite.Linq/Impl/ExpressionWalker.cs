@@ -59,12 +59,48 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the cache queryable.
         /// </summary>
-        public static ICacheQueryableInternal GetCacheQueryable(Expression expression, bool throwWhenNotFound = true)
+        public static ICacheQueryableInternal GetCacheQueryable(
+            Expression expression,
+            bool throwWhenNotFound = true,
+            MemberExpression memberHint = null)
         {
             var subQueryExp = expression as SubQueryExpression;
 
             if (subQueryExp != null)
-                return GetCacheQueryable(subQueryExp.QueryModel.MainFromClause, throwWhenNotFound);
+            {
+                var res = GetCacheQueryable(subQueryExp.QueryModel.MainFromClause.FromExpression, throwWhenNotFound,
+                    memberHint);
+
+                if (res != null)
+                    return res;
+                
+                if (memberHint != null)
+                {
+                    var newExpr = subQueryExp.QueryModel.SelectClause.Selector as NewExpression;
+
+                    if (newExpr != null)
+                    {
+                        foreach (var arg in newExpr.Arguments)
+                        {
+                            var refExpr = arg as QuerySourceReferenceExpression;
+                            if (refExpr != null &&
+                                refExpr.ReferencedQuerySource.ItemName == memberHint.Member.Name &&
+                                refExpr.ReferencedQuerySource.ItemType == memberHint.Type)
+                            {
+                                return GetCacheQueryable(refExpr, throwWhenNotFound);
+                            }
+
+                            var propExpr = arg as MemberExpression;
+                            if (propExpr != null &&
+                                propExpr.Member.Name == memberHint.Member.Name &&
+                                propExpr.Type == memberHint.Type)
+                            {
+                                return GetCacheQueryable(propExpr, throwWhenNotFound);
+                            }
+                        }
+                    }
+                }
+            }
 
             var srcRefExp = expression as QuerySourceReferenceExpression;
 
@@ -73,12 +109,12 @@ namespace Apache.Ignite.Linq.Impl
                 var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
 
                 if (fromSource != null)
-                    return GetCacheQueryable(fromSource, throwWhenNotFound);
+                    return GetCacheQueryable(fromSource.FromExpression, throwWhenNotFound, memberHint);
 
                 var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
 
                 if (joinSource != null)
-                    return GetCacheQueryable(joinSource, throwWhenNotFound);
+                    return GetCacheQueryable(joinSource.InnerSequence, throwWhenNotFound, memberHint);
 
                 throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
             }
@@ -91,7 +127,7 @@ namespace Apache.Ignite.Linq.Impl
                     memberExpr.Type.GetGenericTypeDefinition() == typeof (IQueryable<>))
                     return EvaluateExpression<ICacheQueryableInternal>(memberExpr);
 
-                return GetCacheQueryable(memberExpr.Expression, throwWhenNotFound);
+                return GetCacheQueryable(memberExpr.Expression, throwWhenNotFound, memberExpr);
             }
 
             var constExpr = expression as ConstantExpression;

@@ -321,7 +321,9 @@ namespace Apache.Ignite.Linq.Impl
                 return expression;
 
             // TODO: This may return a wrong Queryable when grouping with projection is present.
-            var queryable = ExpressionWalker.GetCacheQueryable(expression, false);
+            // TODO: When `expression` is a member of anonymous type,
+            // we should drill down and find the corresponding member of the query entity. 
+            var queryable = ExpressionWalker.GetCacheQueryable(expression, false, expression);
 
             if (queryable != null)
             {
