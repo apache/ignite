@@ -39,7 +39,7 @@ import org.junit.Test;
  *
  */
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
-public class CorrelatedNestedLoopJoinTest extends AbstractPlannerTest {
+public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
     /**
      * Check equi-join. CorrelatedNestedLoopJoinTest is applicable for it.
      */
