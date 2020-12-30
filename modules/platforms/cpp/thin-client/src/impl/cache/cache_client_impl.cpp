@@ -380,8 +380,12 @@ namespace ignite
                     SP_DataChannel channel = SyncMessage(req, rsp);
 
                     query::SP_QueryFieldsCursorImpl cursorImpl(
-                        new query::QueryFieldsCursorImpl(rsp.GetCursorId(), rsp.GetCursorPage(),
-                            channel, static_cast<int32_t>(qry.GetTimeout())));
+                        new query::QueryFieldsCursorImpl(
+                            rsp.GetCursorId(),
+                            rsp.GetColumns(),
+                            rsp.GetCursorPage(),
+                            channel,
+                            static_cast<int32_t>(qry.GetTimeout())));
 
                     return cursorImpl;
                 }

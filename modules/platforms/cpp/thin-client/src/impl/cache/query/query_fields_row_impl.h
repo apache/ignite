@@ -51,18 +51,18 @@ namespace ignite
                         /**
                          * Constructor.
                          *
+                         * @param size Row size in elements.
                          * @param page Cursor page.
                          * @param posInMem Row starting position in memory.
                          */
-                        QueryFieldsRowImpl(const SP_CursorPage& page, int32_t posInMem) :
-                            size(0),
+                        QueryFieldsRowImpl(int32_t size, const SP_CursorPage& page, int32_t posInMem) :
+                            size(size),
                             pos(0),
                             page(page),
                             stream(this->page.Get()->GetMemory()),
                             reader(&stream)
                         {
                             stream.Position(posInMem);
-                            size = reader.ReadInt32();
                         }
 
                         /**
@@ -84,6 +84,9 @@ namespace ignite
                          */
                         void GetNext(Readable& readable)
                         {
+                            if (!HasNext())
+                                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "The cursor is empty");
+                            
                             readable.Read(reader);
                             ++pos;
                         }

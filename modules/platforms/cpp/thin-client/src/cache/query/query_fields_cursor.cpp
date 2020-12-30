@@ -28,6 +28,11 @@ namespace
     {
         return *reinterpret_cast<QueryFieldsCursorImpl*>(ptr.Get());
     }
+
+    const QueryFieldsCursorImpl& GetQueryFieldsCursorImpl(const SharedPointer<void>& ptr)
+    {
+        return *reinterpret_cast<const QueryFieldsCursorImpl*>(ptr.Get());
+    }
 }
 
 namespace ignite
@@ -52,6 +57,24 @@ namespace ignite
                 QueryFieldsRow QueryFieldsCursor::GetNext()
                 {
                     return GetQueryFieldsCursorImpl(impl).GetNext();
+                }
+
+                const std::vector<std::string>& QueryFieldsCursor::GetColumnNames() const
+                {
+                    return GetQueryFieldsCursorImpl(impl).GetColumns();
+                }
+
+                const std::string &QueryFieldsCursor::GetColumnName(size_t idx) const
+                {
+                    const std::vector<std::string>& columns = GetQueryFieldsCursorImpl(impl).GetColumns();
+
+                    if (idx >= columns.size())
+                    {
+                        IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_ILLEGAL_ARGUMENT,
+                            "Illegal column index", "index", idx, "columnNum", columns.size());
+                    }
+
+                    return columns.at(idx);
                 }
             }
         }

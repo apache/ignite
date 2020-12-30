@@ -47,13 +47,19 @@ namespace ignite
                          * Constructor.
                          *
                          * @param id Cursor ID.
+                         * @param columns Column names.
                          * @param page Cursor page.
                          * @param channel Data channel. Used to request new page.
                          * @param timeout Timeout.
                          */
-                        QueryFieldsCursorImpl(int64_t id, const SP_CursorPage &page, const SP_DataChannel& channel,
-                            int32_t timeout) :
+                        QueryFieldsCursorImpl(
+                                int64_t id,
+                                const std::vector<std::string>& columns,
+                                const SP_CursorPage &page,
+                                const SP_DataChannel& channel,
+                                int32_t timeout) :
                             id(id),
+                            columns(columns),
                             page(page),
                             channel(channel),
                             timeout(timeout),
@@ -104,11 +110,25 @@ namespace ignite
                             if (IsUpdateNeeded())
                                 Update();
 
-                            SP_QueryFieldsRowImpl rowImpl(new QueryFieldsRowImpl(page, stream.Position()));
+                            SP_QueryFieldsRowImpl rowImpl(
+                                new QueryFieldsRowImpl(
+                                        static_cast<int32_t>(columns.size()),
+                                        page,
+                                        stream.Position()));
 
                             SkipRow(*rowImpl.Get());
 
                             return ignite::thin::cache::query::QueryFieldsRow(rowImpl);
+                        }
+
+                        /**
+                         * Get column names.
+                         *
+                         * @return Column names.
+                         */
+                        const std::vector<std::string>& GetColumns() const
+                        {
+                            return columns;
                         }
 
                     private:
@@ -148,7 +168,7 @@ namespace ignite
                          */
                         void SkipRow(const QueryFieldsRowImpl &row)
                         {
-                            for (int32_t field = 0; field < row.GetSize(); ++field)
+                            for (size_t i = 0; i < columns.size(); ++i)
                                 reader.Skip();
 
                             ++currentRow;
@@ -172,6 +192,9 @@ namespace ignite
 
                         /** Cursor ID. */
                         int64_t id;
+
+                        /** Column names. */
+                        std::vector<std::string> columns;
 
                         /** Cursor page. */
                         SP_CursorPage page;

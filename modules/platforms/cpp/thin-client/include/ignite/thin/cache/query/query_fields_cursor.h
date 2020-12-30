@@ -77,6 +77,23 @@ namespace ignite
                      */
                     QueryFieldsRow GetNext();
 
+                    /**
+                     * Get column names.
+                     *
+                     * @return Column names.
+                     */
+                    const std::vector<std::string>& GetColumnNames() const;
+
+                    /**
+                     * Get name of the specific column.
+                     *
+                     * @param idx Column index.
+                     * @return Column names.
+                     *
+                     * @throw IgniteError class instance in case of invalid index.
+                     */
+                    const std::string& GetColumnName(size_t idx) const;
+
                 private:
                     /** Implementation delegate. */
                     common::concurrent::SharedPointer<void> impl;

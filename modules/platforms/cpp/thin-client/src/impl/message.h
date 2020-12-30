@@ -1319,6 +1319,16 @@ namespace ignite
                 }
 
                 /**
+                 * Get columns.
+                 *
+                 * @return Column names.
+                 */
+                const std::vector<std::string>& GetColumns() const
+                {
+                    return columns;
+                }
+
+                /**
                  * Get cursor page.
                  * @return Cursor page.
                  */

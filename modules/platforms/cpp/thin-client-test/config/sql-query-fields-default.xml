@@ -47,7 +47,6 @@
         <property name="cacheConfiguration">
             <list>
                 <bean parent="test-type-template"/>
-                <bean parent="complex-type-template"/>
             </list>
         </property>
 
@@ -116,48 +115,6 @@
                             </bean>
                             <bean class="org.apache.ignite.cache.QueryIndex">
                                 <constructor-arg value="i64Field"/>
-                            </bean>
-                        </list>
-                    </property>
-                </bean>
-            </list>
-        </property>
-    </bean>
-
-    <bean id="complex-type-template" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration">
-        <property name="name" value="cacheComplex"/>
-        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-        <property name="cacheMode" value="PARTITIONED"/>
-        <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-        <!-- Configure type metadata to enable queries. -->
-        <property name="queryEntities">
-            <list>
-                <bean class="org.apache.ignite.cache.QueryEntity">
-                    <property name="keyType" value="java.lang.Long"/>
-                    <property name="valueType" value="ComplexType"/>
-
-                    <property name="keyFieldName" value="k"/>
-                    <property name="valueFieldName" value="v"/>
-
-                    <property name="fields">
-                        <map>
-                            <entry key="k" value="java.lang.Long"/>
-                            <entry key="v" value="ComplexType"/>
-                            <entry key="i32Field" value="java.lang.Integer"/>
-                            <entry key="objField" value="TestObject"/>
-                            <entry key="strField" value="java.lang.String"/>
-                        </map>
-                    </property>
-
-                    <property name="keyFields">
-                        <list></list>
-                    </property>
-
-                    <property name="indexes">
-                        <list>
-                            <bean class="org.apache.ignite.cache.QueryIndex">
-                                <constructor-arg value="i32Field"/>
                             </bean>
                         </list>
                     </property>
