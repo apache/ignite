@@ -257,7 +257,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
      * @param keys The keys to create collation from.
      * @return New collation.
      */
-    public static RelCollation createCollation(List<Integer> keys) {
+    private static RelCollation createCollation(List<Integer> keys) {
         return RelCollations.of(
             keys.stream().map(RelFieldCollation::new).collect(Collectors.toList())
         );
