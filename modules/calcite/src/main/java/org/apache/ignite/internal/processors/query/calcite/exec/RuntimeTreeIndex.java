@@ -111,7 +111,7 @@ public class RuntimeTreeIndex<Row> implements GridIndex<Row>, AutoCloseable {
         Supplier<Row> lowerBound,
         Supplier<Row> upperBound
     ) {
-        return new IndexScan(ectx, rowType, this, filter, lowerBound, upperBound);
+        return new IndexScan(rowType, this, filter, lowerBound, upperBound);
     }
 
     /**
@@ -167,7 +167,6 @@ public class RuntimeTreeIndex<Row> implements GridIndex<Row>, AutoCloseable {
      */
     private class IndexScan extends AbstractIndexScan<Row, Row> {
         /**
-         * @param ectx Execution context.
          * @param rowType Row type.
          * @param idx Physical index.
          * @param filters Additional filters.
@@ -175,13 +174,12 @@ public class RuntimeTreeIndex<Row> implements GridIndex<Row>, AutoCloseable {
          * @param upperBound Upper index scan bound.
          */
         IndexScan(
-            ExecutionContext<Row> ectx,
             RelDataType rowType,
             GridIndex<Row> idx,
             Predicate<Row> filters,
             Supplier<Row> lowerBound,
             Supplier<Row> upperBound) {
-            super(ectx, rowType, idx, filters, lowerBound, upperBound, null);
+            super(RuntimeTreeIndex.this.ectx, rowType, idx, filters, lowerBound, upperBound, null);
         }
 
         /** */
