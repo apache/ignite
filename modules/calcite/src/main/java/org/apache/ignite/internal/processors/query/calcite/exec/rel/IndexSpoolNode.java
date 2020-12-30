@@ -32,10 +32,10 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** Scan. */
-    private ScanNode<Row> scan;
+    private final ScanNode<Row> scan;
 
     /** Runtime index */
-    private RuntimeTreeIndex<Row> idx;
+    private final RuntimeTreeIndex<Row> idx;
 
     /** */
     private int requested;
@@ -161,6 +161,13 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
     /** {@inheritDoc} */
     @Override protected void closeInternal() {
+        try {
+            scan.close();
+        }
+        catch (Exception ex) {
+            onError(ex);
+        }
+
         try {
             idx.close();
         }
