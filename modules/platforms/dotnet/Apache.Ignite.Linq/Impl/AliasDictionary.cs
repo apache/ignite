@@ -162,6 +162,9 @@ namespace Apache.Ignite.Linq.Impl
 
         /// <summary>
         /// Gets the query source.
+        /// <para />
+        /// TODO: This logic is very similar to <see cref="ExpressionWalker.GetCacheQueryable(Expression, bool)"/>
+        /// We should probably reuse the traversal logic.
         /// </summary>
         private static IQuerySource GetQuerySource(Expression expression, MemberExpression memberHint = null)
         {
