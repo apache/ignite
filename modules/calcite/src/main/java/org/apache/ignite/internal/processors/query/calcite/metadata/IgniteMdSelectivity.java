@@ -124,6 +124,15 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                 idxSelectivity *= .35;
         }
 
-        return idxSelectivity;
+        List<RexNode> conjunctions = RelOptUtil.conjunctions(rel.condition());
+
+        if (!F.isEmpty(lowerCond))
+            conjunctions.removeAll(lowerCond);
+        if (!F.isEmpty(upperCond))
+            conjunctions.removeAll(upperCond);
+
+        RexNode remaining = RexUtil.composeConjunction(RexUtils.builder(rel), conjunctions, true);
+
+        return idxSelectivity * RelMdUtil.guessSelectivity(remaining);
     }
 }
