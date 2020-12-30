@@ -178,9 +178,6 @@ namespace Apache.Ignite.Linq.Impl
                 if (querySource != null)
                     return querySource;
 
-                // TODO: find corresponding argument instead.
-                // ((NewExpression) subQueryExp.QueryModel.SelectClause.Selector).Arguments
-
                 if (memberHint != null)
                 {
                     var newExpr = subQueryExp.QueryModel.SelectClause.Selector as NewExpression;
