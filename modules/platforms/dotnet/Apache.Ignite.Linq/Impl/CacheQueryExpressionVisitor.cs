@@ -320,6 +320,7 @@ namespace Apache.Ignite.Linq.Impl
             if (VisitGroupByMember(expression.Expression))
                 return expression;
 
+            // TODO: This may return a wrong Queryable when grouping with projection is present.
             var queryable = ExpressionWalker.GetCacheQueryable(expression, false);
 
             if (queryable != null)
