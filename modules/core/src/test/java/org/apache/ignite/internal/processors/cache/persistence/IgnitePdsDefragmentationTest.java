@@ -33,7 +33,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
@@ -41,6 +43,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.IgnitionListener;
@@ -55,10 +58,14 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.maintenance.MaintenanceFileStore;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -66,6 +73,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentationCompletionMarkerFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
@@ -243,6 +251,28 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         validateCache(grid(0).cache(DEFAULT_CACHE_NAME));
 
         validateLeftovers(workDir);
+    }
+
+    protected long[] partitionSizes(CacheGroupContext grp) {
+        final int grpId = grp.groupId();
+
+        List<Integer> parts = IntStream.range(0, grp.shared().affinity().affinity(grpId).partitions())
+            .boxed().collect(Collectors.toList());
+
+        parts.add(INDEX_PARTITION);
+
+        return parts.stream()
+            .map(p -> {
+                try {
+                    return (FilePageStore)((FilePageStoreManager)grp.shared().pageStore()).getStore(grpId, p);
+                } catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            })
+            .map(FilePageStore::getFileAbsolutePath)
+            .map(File::new)
+            .mapToLong(File::length)
+            .toArray();
     }
 
     /**
@@ -597,6 +627,37 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
                 assertNull(val);
             else
                 assertNotNull(val);
+        }
+    }
+
+    /**
+     * Start node, wait for defragmentation and validate that sizes of caches are less than those before the defragmentation.
+     * @param gridId Idx of ignite grid.
+     * @param groups Cache groups to check.
+     * @throws Exception If failed.
+     */
+    protected void defragmentAndValidateSizesDecreasedAfterDefragmentation(int gridId, CacheGroupContext... groups) throws Exception {
+        for (CacheGroupContext grp : groups) {
+            final long[] oldPartLen = partitionSizes(grp);
+
+            startGrid(0);
+
+            waitForDefragmentation(0);
+
+            stopGrid(0);
+
+            final long[] newPartLen = partitionSizes(grp);
+
+            boolean atLeastOneSmaller = false;
+
+            for (int p = 0; p < oldPartLen.length; p++) {
+                assertTrue(newPartLen[p] <= oldPartLen[p]);
+
+                if (newPartLen[p] < oldPartLen[p])
+                    atLeastOneSmaller = true;
+            }
+
+            assertTrue(atLeastOneSmaller);
         }
     }
 }

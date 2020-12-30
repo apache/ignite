@@ -319,6 +319,26 @@ public class BPlusMetaIO extends PageIO {
         PageUtils.putLong(pageAddr, FLAGS_OFFSET, flags);
     }
 
+    /**
+     * @param pageAddr Page address.
+     * @param unwrappedPk unwrapped primary key of this tree flag.
+     * @param inlineObjSupported inline POJO by created tree flag.
+     * @param inlineObjHash Whether Java objects should be inlined as hash or as bytes array.
+     */
+    public void setFlags(
+        long pageAddr,
+        boolean unwrappedPk,
+        boolean inlineObjSupported,
+        boolean inlineObjHash) {
+        assert supportFlags();
+
+        long flags = unwrappedPk ? FLAG_UNWRAPPED_PK : 0;
+        flags |= inlineObjSupported ? FLAG_INLINE_OBJECT_SUPPORTED : 0;
+        flags |= inlineObjHash ? FLAG_INLINE_OBJECT_HASH : 0;
+
+        PageUtils.putLong(pageAddr, FLAGS_OFFSET, flags);
+    }
+
     /** {@inheritDoc} */
     @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         sb.a("BPlusMeta [\n\tlevelsCnt=").a(getLevelsCount(addr))
@@ -356,5 +376,26 @@ public class BPlusMetaIO extends PageIO {
         ioNew.setInlineSize(pageAddr, inlineSize);
         ioNew.setCreatedVersion(pageAddr, IgniteVersionUtils.VER);
         ioNew.setFlags(pageAddr, unwrappedPk, inlineObjSupported);
+    }
+
+    /**
+     * Set meta page values.
+     * @param pageAddr Page address.
+     * @param inlineSize Inline size.
+     * @param unwrappedPk Unwrap PK flag.
+     * @param inlineObjSupported Supports inline object flag.
+     * @param inlineObjSupported Supports inline object hash flag.
+     */
+    public static void setValues(
+        long pageAddr,
+        int inlineSize,
+        boolean unwrappedPk,
+        boolean inlineObjSupported,
+        boolean inlineObjHash
+    ) {
+        BPlusMetaIO ioNew = VERSIONS.latest();
+
+        ioNew.setInlineSize(pageAddr, inlineSize);
+        ioNew.setFlags(pageAddr, unwrappedPk, inlineObjSupported, inlineObjHash);
     }
 }

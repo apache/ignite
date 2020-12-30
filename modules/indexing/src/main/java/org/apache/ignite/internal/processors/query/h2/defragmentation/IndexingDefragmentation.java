@@ -205,8 +205,12 @@ public class IndexingDefragmentation {
 
                 for (int i = 0; i < segments; i++) {
                     H2Tree tree = oldH2Idx.treeForRead(i);
+                    final H2Tree.MetaPageInfo oldInfo = tree.getMetaInfo();
 
-                    newIdx.treeForRead(i).enableSequentialWriteMode();
+                    final H2Tree newTree = newIdx.treeForRead(i);
+                    newTree.copyMetaInfo(oldInfo);
+
+                    newTree.enableSequentialWriteMode();
 
                     treeIterator.iterate(tree, oldCachePageMem, (theTree, io, pageAddr, idx) -> {
                         cancellationChecker.run();
