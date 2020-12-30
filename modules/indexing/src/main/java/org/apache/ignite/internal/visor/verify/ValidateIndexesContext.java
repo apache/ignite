@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.configuration.NearCacheConfiguration;
+package org.apache.ignite.internal.visor.verify;
 
 /**
- * Tests for key check for near cache.
+ * Validate indexes context.
  */
-public class GridCacheKeyCheckNearEnabledSelfTest extends GridCacheKeyCheckSelfTest {
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return new NearCacheConfiguration();
-    }
+public interface ValidateIndexesContext {
+    /**
+     * Returns a boolean value meaning whether the check is canceled or not.
+     *
+     * @return True if cancelled, otherwise false.
+     */
+    public boolean isCancelled();
 }

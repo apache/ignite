@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.tree.util;
+package org.apache.ignite.internal.transactions.proxy;
 
-/**
- * Rows with this marker interface will always be inserted in the very end of the tree.
- */
-public interface InsertLast {
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+
+/** Represents Ignite client-independent transaction factory. */
+public interface TransactionProxyFactory {
+    /** Starts transaction with specified concurrency, isolation and timeout. */
+    public TransactionProxy txStart(TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout);
 }

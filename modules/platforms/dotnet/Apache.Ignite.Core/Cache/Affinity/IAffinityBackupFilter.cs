@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+namespace Apache.Ignite.Core.Cache.Affinity
+{
+    using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
 
-/** Test value object. */
-public class Department {
-    /** */
-    private String name;
-
-    /** */
-    public String getName() {
-        return name;
-    }
-
-    /** */
-    public void setName(String name) {
-        this.name = name;
+    /// <summary>
+    /// Represents a backup filter for an affinity function - see
+    /// <see cref="RendezvousAffinityFunction.AffinityBackupFilter"/>.
+    /// <para />
+    /// Only one predefined implementation is supported for now: <see cref="ClusterNodeAttributeAffinityBackupFilter"/>.
+    /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
+    public interface IAffinityBackupFilter
+    {
+        // No-op: custom implementations are not supported.
     }
 }

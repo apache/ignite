@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+package org.apache.ignite.platform.model;
 
 /** Test value object. */
 public class Address {

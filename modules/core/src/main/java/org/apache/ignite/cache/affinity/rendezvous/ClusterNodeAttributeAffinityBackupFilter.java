@@ -24,10 +24,10 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
- * This class can be used as a {@link RendezvousAffinityFunction#affinityBackupFilter } to create
- * cache templates in Spring that force each partition's primary and backup to different hardware which
- * is not expected to fail simultaneously, e.g., in AWS, to different "availability zones".  This
+ * Attribute-based affinity backup filter that forces each partition's primary and backup nodes to different hardware
+ * which is not expected to fail simultaneously, e.g., in AWS, to different "availability zones". This
  * is a per-partition selection, and different partitions may choose different primaries.
+ * See {@link RendezvousAffinityFunction#setAffinityBackupFilter}.
  * <p>
  * This implementation will discard backups rather than place multiple on the same set of nodes. This avoids
  * trying to cram more data onto remaining nodes  when some have failed.
@@ -91,7 +91,7 @@ public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredica
     public ClusterNodeAttributeAffinityBackupFilter(String... attributeNames) {
         A.ensure(attributeNames.length > 0, "attributeNames.length > 0");
 
-        this.attributeNames = attributeNames;
+        this.attributeNames = attributeNames.clone();
     }
 
     /**
@@ -128,4 +128,12 @@ public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredica
         return true;
     }
 
+    /**
+     * Gets attribute names.
+     *
+     * @return Attribute names.
+     */
+    public String[] getAttributeNames() {
+        return attributeNames.clone();
+    }
 }

@@ -15,33 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+package org.apache.ignite.internal.visor.annotation;
 
-/** Test value object. */
-public class Employee {
-    /** */
-    private String fio;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-    /** */
-    private long salary;
-
-    /** */
-    public String getFio() {
-        return fio;
-    }
-
-    /** */
-    public void setFio(String fio) {
-        this.fio = fio;
-    }
-
-    /** */
-    public long getSalary() {
-        return salary;
-    }
-
-    /** */
-    public void setSalary(long salary) {
-        this.salary = salary;
-    }
+/**
+ * This annotation using for Visor's task which can interrupted by system reason.
+ * For example, when a connection between cluster and task initiator is breaking.
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE})
+public @interface InterruptibleVisorTask {
 }

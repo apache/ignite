@@ -17,26 +17,16 @@
 
 package org.apache.ignite.internal.visor.defragmentation;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.apache.ignite.maintenance.MaintenanceAction;
-import org.apache.ignite.maintenance.MaintenanceRegistry;
-import org.apache.ignite.maintenance.MaintenanceTask;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_TASK_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.toStore;
 
 /** */
 @GridInternal
@@ -120,91 +110,71 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
 
         /** */
         private VisorDefragmentationTaskResult runSchedule(VisorDefragmentationTaskArg arg) {
-            MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
+            final IgniteDefragmentation defragmentation = ignite.context().defragmentation();
 
-            MaintenanceTask oldTask;
+            final IgniteDefragmentation.ScheduleResult scheduleResult;
 
             try {
-                List<String> cacheNames = arg.cacheNames();
-
-                oldTask = mntcReg.registerMaintenanceTask(toStore(cacheNames == null ? Collections.emptyList() : cacheNames));
+                scheduleResult = defragmentation.schedule(arg.cacheNames());
             }
             catch (IgniteCheckedException e) {
-                return new VisorDefragmentationTaskResult(false, "Scheduling failed: " + e.getMessage());
+                return new VisorDefragmentationTaskResult(false, e.getMessage());
             }
 
-            return new VisorDefragmentationTaskResult(
-                true,
-                "Scheduling completed successfully." +
-                (oldTask == null ? "" : " Previously scheduled task has been removed.")
-            );
+            String message;
+
+            switch (scheduleResult) {
+                case SUCCESS_SUPERSEDED_PREVIOUS:
+                    message = "Scheduling completed successfully. Previously scheduled task has been removed.";
+                    break;
+                case SUCCESS:
+                default:
+                    message = "Scheduling completed successfully.";
+                    break;
+            }
+
+            return new VisorDefragmentationTaskResult(true, message);
         }
 
         /** */
         private VisorDefragmentationTaskResult runStatus(VisorDefragmentationTaskArg arg) {
-            MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
+            final IgniteDefragmentation defragmentation = ignite.context().defragmentation();
 
-            if (!mntcReg.isMaintenanceMode())
-                return new VisorDefragmentationTaskResult(false, "Node is not in maintenance node.");
-
-            IgniteCacheDatabaseSharedManager dbMgr = ignite.context().cache().context().database();
-
-            assert dbMgr instanceof GridCacheDatabaseSharedManager;
-
-            CachePartitionDefragmentationManager defrgMgr = ((GridCacheDatabaseSharedManager)dbMgr)
-                .defragmentationManager();
-
-            if (defrgMgr == null)
-                return new VisorDefragmentationTaskResult(true, "There's no active defragmentation process on the node.");
-
-            return new VisorDefragmentationTaskResult(true, defrgMgr.status());
+            try {
+                return new VisorDefragmentationTaskResult(true, defragmentation.status().toString());
+            } catch (IgniteCheckedException e) {
+                return new VisorDefragmentationTaskResult(false, e.getMessage());
+            }
         }
 
         /** */
         private VisorDefragmentationTaskResult runCancel(VisorDefragmentationTaskArg arg) {
-            assert arg.cacheNames() == null : "Cancelling specific caches is not yet implemented";
+            final IgniteDefragmentation defragmentation = ignite.context().defragmentation();
 
-            MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
+            try {
+                final IgniteDefragmentation.CancelResult cancelResult = defragmentation.cancel();
 
-            if (!mntcReg.isMaintenanceMode()) {
-                boolean deleted = mntcReg.unregisterMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
+                String message;
 
-                String msg = deleted
-                    ? "Scheduled defragmentation task cancelled successfully."
-                    : "Scheduled defragmentation task is not found.";
-
-                return new VisorDefragmentationTaskResult(true, msg);
-            }
-            else {
-                List<MaintenanceAction<?>> actions;
-
-                try {
-                    actions = mntcReg.actionsForMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
+                switch (cancelResult) {
+                    case SCHEDULED_NOT_FOUND:
+                        message = "Scheduled defragmentation task is not found.";
+                        break;
+                    case CANCELLED:
+                        message = "Defragmentation cancelled successfully.";
+                        break;
+                    case COMPLETED_OR_CANCELLED:
+                        message = "Defragmentation is already completed or has been cancelled previously.";
+                        break;
+                    case CANCELLED_SCHEDULED:
+                    default:
+                        message = "Scheduled defragmentation task cancelled successfully.";
+                        break;
                 }
-                catch (IgniteException e) {
-                    return new VisorDefragmentationTaskResult(true, "Defragmentation is already completed or has been cancelled previously.");
-                }
 
-                Optional<MaintenanceAction<?>> stopAct = actions.stream().filter(a -> "stop".equals(a.name())).findAny();
-
-                assert stopAct.isPresent();
-
-                try {
-                    Object res = stopAct.get().execute();
-
-                    assert res instanceof Boolean;
-
-                    boolean cancelled = (Boolean)res;
-
-                    String msg = cancelled
-                        ? "Defragmentation cancelled successfully."
-                        : "Defragmentation is already completed or has been cancelled previously.";
-
-                    return new VisorDefragmentationTaskResult(true, msg);
-                }
-                catch (Exception e) {
-                    return new VisorDefragmentationTaskResult(false, "Exception occurred: " + e.getMessage());
-                }
+                return new VisorDefragmentationTaskResult(true, message);
+            } catch (IgniteCheckedException e) {
+                return new VisorDefragmentationTaskResult(false, e.getMessage());
             }
         }
     }

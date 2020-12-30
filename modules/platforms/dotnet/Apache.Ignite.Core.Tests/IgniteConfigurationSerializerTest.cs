@@ -186,6 +186,10 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(99, af.Partitions);
             Assert.IsTrue(af.ExcludeNeighbors);
 
+            var afBf = af.AffinityBackupFilter as ClusterNodeAttributeAffinityBackupFilter;
+            Assert.IsNotNull(afBf);
+            Assert.AreEqual(new[] {"foo1", "bar2"}, afBf.AttributeNames);
+
             var platformCacheConfiguration = cacheCfg.PlatformCacheConfiguration;
             Assert.AreEqual("int", platformCacheConfiguration.KeyTypeName);
             Assert.AreEqual("string", platformCacheConfiguration.ValueTypeName);
@@ -787,7 +791,11 @@ namespace Apache.Ignite.Core.Tests
                         AffinityFunction = new RendezvousAffinityFunction
                         {
                             ExcludeNeighbors = true,
-                            Partitions = 48
+                            Partitions = 48,
+                            AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
+                            {
+                                AttributeNames = new[] {"foo", "baz", "bar"}
+                            }
                         },
                         ExpiryPolicyFactory = new MyPolicyFactory(),
                         EnableStatistics = true,
