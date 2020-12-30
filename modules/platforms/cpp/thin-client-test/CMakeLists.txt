@@ -25,7 +25,8 @@ endif()
 
 find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread system)
 
-include_directories(include ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
+include_directories(include)
 
 set(SOURCES src/teamcity/teamcity_boost.cpp
         src/teamcity/teamcity_messages.cpp
