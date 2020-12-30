@@ -71,6 +71,7 @@ namespace ignite
 
                             bool gotOwnership = streamMem->TryGetOwnership(mem);
 
+                            (void) gotOwnership;
                             assert(gotOwnership);
                         }
 
