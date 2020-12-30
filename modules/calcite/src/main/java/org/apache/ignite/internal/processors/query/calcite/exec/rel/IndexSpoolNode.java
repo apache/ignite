@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Comparator;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.apache.calcite.rel.RelCollation;
@@ -50,6 +51,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         RelDataType rowType,
         RelCollation collation,
         Comparator<Row> comp,
+        Predicate<Row> filter,
         Supplier<Row> lowerIdxBound,
         Supplier<Row> upperIdxBound
     ) {
@@ -63,7 +65,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
             idx.scan(
                 ctx,
                 rowType,
-                null,
+                filter,
                 lowerIdxBound,
                 upperIdxBound
             )

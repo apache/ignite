@@ -373,6 +373,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         List<RexNode> lowerBound = rel.indexCondition().lowerBound();
         List<RexNode> upperBound = rel.indexCondition().upperBound();
 
+        Predicate<Row> filter = expressionFactory.predicate(rel.condition(), rel.getRowType());
         Supplier<Row> lower = lowerBound == null ? null : expressionFactory.rowSource(lowerBound);
         Supplier<Row> upper = upperBound == null ? null : expressionFactory.rowSource(upperBound);
 
@@ -381,6 +382,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             rel.getRowType(),
             collation,
             expressionFactory.comparator(collation),
+            filter,
             lower,
             upper
         );

@@ -124,6 +124,7 @@ public class IndexSpoolExecutionTest extends AbstractExecutionTest {
                 rowType,
                 RelCollations.of(ImmutableIntList.of(0)),
                 (o1, o2) -> o1[0] != null ? ((Comparable)o1[0]).compareTo(o2[0]) : 0,
+                null,
                 () -> lower,
                 () -> upper
             );

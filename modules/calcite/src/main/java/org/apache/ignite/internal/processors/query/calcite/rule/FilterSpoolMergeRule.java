@@ -63,9 +63,6 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
 
         RelNode input = spool.getInput();
 
-        if (spool.collation().isDefault())
-            System.out.println();
-
         IndexConditions idxCond = RexUtils.buildIndexConditions(
             cluster,
             spool.collation(),
@@ -75,7 +72,7 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
         );
 
         if (F.isEmpty(idxCond.lowerCondition()) && F.isEmpty(idxCond.upperCondition()))
-            System.out.println();
+            return;
 
         RelCollation collation = RelCollations.of(idxCond.keys());
         
@@ -84,6 +81,7 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
             trait.replace(collation),
             convert(input, input.getTraitSet().replace(collation)),
             spool.collation(),
+            filter.getCondition(),
             idxCond
         );
 
