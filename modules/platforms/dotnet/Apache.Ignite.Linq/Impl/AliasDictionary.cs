@@ -172,12 +172,6 @@ namespace Apache.Ignite.Linq.Impl
 
             if (subQueryExp != null)
             {
-                var mainFromClause = subQueryExp.QueryModel.MainFromClause;
-                var querySource = GetQuerySource(mainFromClause.FromExpression, memberHint);
-
-                if (querySource != null)
-                    return querySource;
-
                 if (memberHint != null)
                 {
                     var newExpr = subQueryExp.QueryModel.SelectClause.Selector as NewExpression;
@@ -209,6 +203,12 @@ namespace Apache.Ignite.Linq.Impl
                         }
                     }
                 }
+
+                var mainFromClause = subQueryExp.QueryModel.MainFromClause;
+                var querySource = GetQuerySource(mainFromClause.FromExpression, memberHint);
+
+                if (querySource != null)
+                    return querySource;
 
                 return mainFromClause;
             }
