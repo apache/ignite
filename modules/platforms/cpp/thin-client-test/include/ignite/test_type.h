@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_TEST_TEST_TYPE
-#define _IGNITE_ODBC_TEST_TEST_TYPE
+#ifndef _IGNITE_THIN_CLIENT_TEST_TEST_TYPE
+#define _IGNITE_THIN_CLIENT_TEST_TEST_TYPE
 
 #include <string>
 
@@ -180,4 +180,4 @@ namespace ignite
     }
 }
 
-#endif // _IGNITE_ODBC_TEST_TEST_TYPE
+#endif // _IGNITE_THIN_CLIENT_TEST_TEST_TYPE

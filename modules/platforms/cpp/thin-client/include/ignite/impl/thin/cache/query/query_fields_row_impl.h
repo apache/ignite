@@ -32,7 +32,7 @@ namespace ignite
                 /**
                  * Query fields cursor implementation.
                  */
-                class QueryFieldsRowImpl
+                class IGNITE_IMPORT_EXPORT QueryFieldsRowImpl
                 {
                 public:
                     typedef common::concurrent::SharedPointer<interop::InteropMemory> SP_InteropMemory;
