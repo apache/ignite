@@ -169,17 +169,17 @@ public class RuntimeTreeIndex<Row> implements GridIndex<Row>, AutoCloseable {
         /**
          * @param rowType Row type.
          * @param idx Physical index.
-         * @param filters Additional filters.
+         * @param filter Additional filters.
          * @param lowerBound Lower index scan bound.
          * @param upperBound Upper index scan bound.
          */
         IndexScan(
             RelDataType rowType,
             GridIndex<Row> idx,
-            Predicate<Row> filters,
+            Predicate<Row> filter,
             Supplier<Row> lowerBound,
             Supplier<Row> upperBound) {
-            super(RuntimeTreeIndex.this.ectx, rowType, idx, filters, lowerBound, upperBound, null);
+            super(RuntimeTreeIndex.this.ectx, rowType, idx, filter, lowerBound, upperBound, null);
         }
 
         /** */
