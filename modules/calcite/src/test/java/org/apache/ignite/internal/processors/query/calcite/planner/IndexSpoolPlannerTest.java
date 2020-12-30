@@ -39,7 +39,7 @@ import org.junit.Test;
  *
  */
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
-public class IndexSpoolTest extends AbstractPlannerTest {
+public class IndexSpoolPlannerTest extends AbstractPlannerTest {
     /**
      * Check equi-join on not collocated fields.
      * CorrelatedNestedLoopJoinTest is applicable for this case only with IndexSpool.

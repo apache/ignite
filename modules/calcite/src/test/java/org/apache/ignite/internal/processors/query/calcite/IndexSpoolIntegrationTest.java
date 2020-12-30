@@ -47,7 +47,7 @@ import static org.junit.Assert.assertThat;
  * Index spool test.
  */
 @RunWith(Parameterized.class)
-public class IndexSpoolTest extends GridCommonAbstractTest {
+public class IndexSpoolIntegrationTest extends GridCommonAbstractTest {
     /** Rows. */
     private static final int[] ROWS = {1, 10, 512, 513, 2000};
 

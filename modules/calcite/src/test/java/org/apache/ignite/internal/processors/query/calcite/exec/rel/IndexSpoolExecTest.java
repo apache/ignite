@@ -40,7 +40,7 @@ import org.junit.Test;
  */
 @SuppressWarnings("TypeMayBeWeakened")
 @WithSystemProperty(key = "calcite.debug", value = "true")
-public class IndexSpoolTest extends AbstractExecutionTest {
+public class IndexSpoolExecTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */

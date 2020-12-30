@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrai
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Rule that pushes filter into the spool.
@@ -52,9 +53,6 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
         final IgniteFilter filter = call.rel(0);
         final IgniteTableSpool spool = call.rel(1);
 
-        if (spool.collation().isDefault())
-            return;
-
         RelOptCluster cluster = spool.getCluster();
 
         RelTraitSet trait = spool.getTraitSet();
@@ -65,6 +63,9 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
 
         RelNode input = spool.getInput();
 
+        if (spool.collation().isDefault())
+            System.out.println();
+
         IndexConditions idxCond = RexUtils.buildIndexConditions(
             cluster,
             spool.collation(),
@@ -72,6 +73,9 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
             spool.getRowType(),
             null
         );
+
+        if (F.isEmpty(idxCond.lowerCondition()) && F.isEmpty(idxCond.upperCondition()))
+            System.out.println();
 
         RelCollation collation = RelCollations.of(idxCond.keys());
         
