@@ -197,6 +197,14 @@ namespace Apache.Ignite.Linq.Impl
                                 // e.g. new {Name1 = x.Name, Name2 = x.Name} - check this.
                                 return refExpr.ReferencedQuerySource;
                             }
+
+                            var propExpr = arg as MemberExpression;
+                            if (propExpr != null &&
+                                propExpr.Member.Name == memberHint.Member.Name &&
+                                propExpr.Type == memberHint.Type)
+                            {
+                                return GetQuerySource(propExpr);
+                            }
                         }
                     }
                 }
