@@ -326,6 +326,40 @@ BOOST_AUTO_TEST_CASE(Select10000Values)
     CheckCursorEmpty(cursor);
 }
 
+BOOST_AUTO_TEST_CASE(Select10ValuesPageSize1)
+{
+    const int32_t num = 10;
+
+    std::map<int64_t, ignite::TestType> values;
+
+    for (int32_t i = 0; i < num; ++i)
+        values[i] = MakeCustomTestValue(i);
+
+    BOOST_CHECK_EQUAL(values.size(), static_cast<size_t>(num));
+
+    cacheAllFields.PutAll(values);
+
+    SqlFieldsQuery qry("select i8Field, i16Field, i32Field, i64Field, strField, floatField, "
+                       "doubleField, boolField, guidField, dateField, timeField, timestampField, i8ArrayField FROM TestType "
+                       "ORDER BY _key");
+
+    qry.SetPageSize(1);
+
+    QueryFieldsCursor cursor = cacheAllFields.Query(qry);
+
+    for (int64_t i = 0; i < num; ++i)
+    {
+        BOOST_CHECK(cursor.HasNext());
+        QueryFieldsRow row = cursor.GetNext();
+        BOOST_CHECK(row.HasNext());
+
+        CheckRowEqualsValue(row, values[i]);
+        CheckRowCursorEmpty(row);
+    }
+
+    CheckCursorEmpty(cursor);
+}
+
 
 BOOST_AUTO_TEST_CASE(SelectKeyValue)
 {

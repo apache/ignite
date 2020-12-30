@@ -48,23 +48,23 @@ namespace ignite
                          *
                          * @param id Cursor ID.
                          * @param columns Column names.
-                         * @param page Cursor page.
+                         * @param cursorPage Cursor page.
                          * @param channel Data channel. Used to request new page.
                          * @param timeout Timeout.
                          */
                         QueryFieldsCursorImpl(
                                 int64_t id,
                                 const std::vector<std::string>& columns,
-                                const SP_CursorPage &page,
+                                const SP_CursorPage &cursorPage,
                                 const SP_DataChannel& channel,
                                 int32_t timeout) :
                             id(id),
                             columns(columns),
-                            page(page),
+                            page(cursorPage),
                             channel(channel),
                             timeout(timeout),
                             currentRow(0),
-                            stream(this->page.Get()->GetMemory()),
+                            stream(page.Get()->GetMemory()),
                             reader(&stream),
                             endReached(false)
                         {
@@ -159,6 +159,8 @@ namespace ignite
 
                             page = rsp.GetCursorPage();
                             currentRow = 0;
+
+                            stream = interop::InteropInputStream(page.Get()->GetMemory());
                             stream.Position(page.Get()->GetStartPos());
                         }
 

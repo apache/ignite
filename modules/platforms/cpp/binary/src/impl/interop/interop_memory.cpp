@@ -179,7 +179,6 @@ namespace ignite
                 mem.memPtr = memPtr;
 
                 owning = false;
-                memPtr = 0;
 
                 return true;
             }
