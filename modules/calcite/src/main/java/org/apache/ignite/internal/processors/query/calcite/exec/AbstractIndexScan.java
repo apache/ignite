@@ -62,7 +62,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
      * @param lowerBound Lower index scan bound.
      * @param upperBound Upper index scan bound.
      */
-    public AbstractIndexScan(
+    protected AbstractIndexScan(
         ExecutionContext<Row> ectx,
         RelDataType rowType,
         GridIndex<IdxRow> idx,

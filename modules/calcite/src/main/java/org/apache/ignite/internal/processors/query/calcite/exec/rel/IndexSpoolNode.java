@@ -63,7 +63,6 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
             idx.scan(
                 ctx,
                 rowType,
-                idx,
                 null,
                 lowerIdxConditions,
                 upperIdxConditions

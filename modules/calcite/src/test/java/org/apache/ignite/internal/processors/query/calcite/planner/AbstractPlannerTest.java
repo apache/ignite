@@ -556,7 +556,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+        @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
             throw new AssertionError();
         }
 
