@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTableScan> extends AbstractIgniteConverterRule<T> {
     /** Instance. */
     public static final LogicalScanConverterRule<IgniteLogicalIndexScan> INDEX_SCAN =
-        new LogicalScanConverterRule<IgniteLogicalIndexScan>(IgniteLogicalIndexScan.class, "LogicalTableScanConverterRule") {
+        new LogicalScanConverterRule<IgniteLogicalIndexScan>(IgniteLogicalIndexScan.class, "LogicalIndexScanConverterRule") {
             /** {@inheritDoc} */
             @Override protected PhysicalNode convert(
                 RelOptPlanner planner,
@@ -58,7 +58,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
 
     /** Instance. */
     public static final LogicalScanConverterRule<IgniteLogicalTableScan> TABLE_SCAN =
-        new LogicalScanConverterRule<IgniteLogicalTableScan>(IgniteLogicalTableScan.class, "LogicalIndexScanConverterRule") {
+        new LogicalScanConverterRule<IgniteLogicalTableScan>(IgniteLogicalTableScan.class, "LogicalTableScanConverterRule") {
             /** {@inheritDoc} */
             @Override protected PhysicalNode convert(
                 RelOptPlanner planner,
