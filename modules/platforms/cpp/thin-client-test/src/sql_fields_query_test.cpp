@@ -170,12 +170,10 @@ void CheckRowEqualsValue(QueryFieldsRow& row, const ignite::TestType& val)
     BOOST_CHECK_EQUAL(row.GetNext<bool>(), val.boolField);
     BOOST_CHECK_EQUAL(row.GetNext<ignite::Guid>(), val.guidField);
     BOOST_CHECK(row.GetNext<ignite::Date>() == val.dateField);
-    BOOST_CHECK(row.GetNext<ignite::Time>() == val.timeField);
+    BOOST_CHECK_EQUAL(row.GetNext<ignite::Time>().GetMilliseconds(), val.timeField.GetMilliseconds());
     BOOST_CHECK(row.GetNext<ignite::Timestamp>() == val.timestampField);
 
-    std::vector<int8_t> resArray(val.i8ArrayField.size());
-
-    row.GetNextInt8Array(&resArray[0], static_cast<int32_t>(resArray.size()));
+    std::vector<int8_t> resArray = row.GetNext< std::vector<int8_t> >();
 
     BOOST_CHECK_EQUAL_COLLECTIONS(
             resArray.begin(), resArray.end(),
@@ -201,7 +199,7 @@ ignite::TestType MakeCustomTestValue(int32_t seed)
     val.boolField = ((seed % 2) == 0);
     val.guidField = ignite::Guid(0x1020304050607080 * seed, 0x9000A0B0C0D0E0F0 * seed);
     val.dateField = ignite::Date(235682736 * seed);
-    val.timeField = ignite::Time(124523 * seed);
+    val.timeField = ignite::Time((124523 * seed) % (24 * 60 * 60 * 1000));
     val.timestampField = ignite::Timestamp(128341594123 * seed);
 
     val.i8ArrayField.push_back(9 * seed);
@@ -240,20 +238,6 @@ BOOST_AUTO_TEST_CASE(SelectEmpty)
     BOOST_CHECK_EQUAL(columns.at(10), "TIMEFIELD");
     BOOST_CHECK_EQUAL(columns.at(11), "TIMESTAMPFIELD");
     BOOST_CHECK_EQUAL(columns.at(12), "I8ARRAYFIELD");
-
-    BOOST_CHECK_EQUAL(cursor.GetColumnName(0), "I8FIELD");
-    BOOST_CHECK_EQUAL(cursor.GetColumnName(1), "I16FIELD");
-    BOOST_CHECK_EQUAL(cursor.GetColumnName(2), "I32FIELD");
-    BOOST_CHECK_EQUAL(cursor.GetColumnName(3), "I64FIELD");
-    BOOST_CHECK_EQUAL(cursor.GetColumnName(4), "STRFIELD");
-    BOOST_CHECK_EQUAL(cursor.GetColumnName(5), "FLOATFIELD");
-    BOOST_CHECK_EQUAL(cursor.GetColumnName(6), "DOUBLEFIELD");
-    BOOST_CHECK_EQUAL(cursor.GetColumnName(7), "BOOLFIELD");
-    BOOST_CHECK_EQUAL(cursor.GetColumnName(8), "GUIDFIELD");
-    BOOST_CHECK_EQUAL(cursor.GetColumnName(9), "DATEFIELD");
-    BOOST_CHECK_EQUAL(cursor.GetColumnName(10), "TIMEFIELD");
-    BOOST_CHECK_EQUAL(cursor.GetColumnName(11), "TIMESTAMPFIELD");
-    BOOST_CHECK_EQUAL(cursor.GetColumnName(12), "I8ARRAYFIELD");
 }
 
 BOOST_AUTO_TEST_CASE(SelectSingleValue)
@@ -305,6 +289,66 @@ BOOST_AUTO_TEST_CASE(SelectTwoValues)
     BOOST_CHECK(row.HasNext());
 
     CheckRowEqualsValue(row, val2);
+
+    CheckRowCursorEmpty(row);
+    CheckCursorEmpty(cursor);
+}
+
+BOOST_AUTO_TEST_CASE(Select10000Values)
+{
+    const int32_t num = 10000;
+
+    std::map<int64_t, ignite::TestType> values;
+
+    for (int32_t i = 0; i < num; ++i)
+        values[i] = MakeCustomTestValue(i);
+
+    BOOST_CHECK_EQUAL(values.size(), static_cast<size_t>(num));
+
+    cacheAllFields.PutAll(values);
+
+    SqlFieldsQuery qry("select i8Field, i16Field, i32Field, i64Field, strField, floatField, "
+        "doubleField, boolField, guidField, dateField, timeField, timestampField, i8ArrayField FROM TestType "
+        "ORDER BY _key");
+
+    QueryFieldsCursor cursor = cacheAllFields.Query(qry);
+
+    for (int64_t i = 0; i < num; ++i)
+    {
+        BOOST_CHECK(cursor.HasNext());
+        QueryFieldsRow row = cursor.GetNext();
+        BOOST_CHECK(row.HasNext());
+
+        CheckRowEqualsValue(row, values[i]);
+        CheckRowCursorEmpty(row);
+    }
+
+    CheckCursorEmpty(cursor);
+}
+
+
+BOOST_AUTO_TEST_CASE(SelectKeyValue)
+{
+    const int64_t key = 123;
+    const ignite::TestType val = MakeCustomTestValue(1);
+
+    cacheAllFields.Put(key, val);
+
+    SqlFieldsQuery qry("select _key, _val FROM TestType");
+
+    QueryFieldsCursor cursor = cacheAllFields.Query(qry);
+
+    BOOST_CHECK(cursor.HasNext());
+
+    QueryFieldsRow row = cursor.GetNext();
+
+    BOOST_CHECK(row.HasNext());
+
+    const int64_t keyActual = row.GetNext<int64_t>();
+    const ignite::TestType valActual = row.GetNext<ignite::TestType>();
+
+    BOOST_CHECK_EQUAL(key, keyActual);
+    BOOST_CHECK(val == valActual);
 
     CheckRowCursorEmpty(row);
     CheckCursorEmpty(cursor);

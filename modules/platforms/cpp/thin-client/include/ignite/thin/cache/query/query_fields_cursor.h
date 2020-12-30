@@ -41,9 +41,9 @@ namespace ignite
                 /**
                  * Query fields cursor.
                  *
-                 * This class implemented as a reference to an implementation so copying of this class instance will
-                 * only create another reference to the same underlying object. Underlying object released automatically
-                 * once all the instances are destructed.
+                 * This class is implemented as a reference to an implementation so copying of this class instance will
+                 * only create another reference to the same underlying object. Underlying object will be released
+                 * automatically once all the instances are destructed.
                  */
                 class IGNITE_IMPORT_EXPORT QueryFieldsCursor
                 {
@@ -81,16 +81,6 @@ namespace ignite
                      * @return Column names.
                      */
                     const std::vector<std::string>& GetColumnNames() const;
-
-                    /**
-                     * Get name of the specific column.
-                     *
-                     * @param idx Column index.
-                     * @return Column names.
-                     *
-                     * @throw IgniteError class instance in case of invalid index.
-                     */
-                    const std::string& GetColumnName(size_t idx) const;
 
                 private:
                     /** Implementation delegate. */

@@ -48,9 +48,9 @@ namespace ignite
              * Both key and value types should be default-constructable, copy-constructable and assignable. Also
              * BinaryType class  template should be specialized for both types, if they are not one of the basic types.
              *
-             * This class implemented as a reference to an implementation so copying of this class instance will only
-             * create another reference to the same underlying object. Underlying object released automatically once all
-             * the instances are destructed.
+             * This class is implemented as a reference to an implementation so copying of this class instance will only
+             * create another reference to the same underlying object. Underlying object will be released automatically
+             * once all the instances are destructed.
              *
              * @tparam K Cache key type.
              * @tparam V Cache value type.

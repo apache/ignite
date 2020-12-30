@@ -39,9 +39,9 @@ namespace ignite
                 /**
                  * Query fields row.
                  *
-                 * This class implemented as a reference to an implementation so copying of this class instance will
-                 * only create another reference to the same underlying object. Underlying object released automatically
-                 * once all the instances are destructed.
+                 * This class is implemented as a reference to an implementation so copying of this class instance will
+                 * only create another reference to the same underlying object. Underlying object will be released
+                 * automatically once all the instances are destructed.
                  */
                 class IGNITE_IMPORT_EXPORT QueryFieldsRow
                 {
@@ -78,25 +78,10 @@ namespace ignite
                         T res;
                         impl::thin::ReadableImpl<T> readable(res);
 
-                        InternalGetNest(readable);
+                        InternalGetNext(readable);
 
                         return res;
                     }
-
-                    /**
-                     * Get next entry assuming it's an array of 8-byte signed integers. Maps to "byte[]" type in Java
-                     * and BINARY type in SQL.
-                     *
-                     * @param dst Array to store data to.
-                     * @param len Expected length of array.
-                     * @return Actual amount of elements read. If "len" argument is less than actual array size or
-                     *     resulting array is set to null, nothing will be written to resulting array and returned value
-                     *     will contain required array length.
-                     *     @c -1 will be returned in case array in stream was null.
-                     *
-                     * @throw IgniteError class instance in case of failure.
-                     */
-                    int32_t GetNextInt8Array(int8_t *dst, int32_t len);
 
                 private:
                     /**
@@ -106,7 +91,7 @@ namespace ignite
                      *
                      * @throw IgniteError class instance in case of failure.
                      */
-                    void InternalGetNest(impl::thin::Readable& readable);
+                    void InternalGetNext(impl::thin::Readable& readable);
 
                     /** Implementation delegate. */
                     common::concurrent::SharedPointer<void> impl;

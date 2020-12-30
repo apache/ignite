@@ -153,10 +153,11 @@ namespace ignite
                             DataChannel* channel0 = channel.Get();
 
                             if (!channel0)
-                                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,"Connection is not established");
+                                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Connection is not established");
 
                             channel0->SyncMessage(req, rsp, timeout);
 
+                            page = rsp.GetCursorPage();
                             currentRow = 0;
                             stream.Position(page.Get()->GetStartPos());
                         }

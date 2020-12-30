@@ -49,14 +49,9 @@ namespace ignite
                     return GetQueryFieldsRowImpl(impl).HasNext();
                 }
 
-                void QueryFieldsRow::InternalGetNest(impl::thin::Readable &readable)
+                void QueryFieldsRow::InternalGetNext(impl::thin::Readable &readable)
                 {
                     GetQueryFieldsRowImpl(impl).GetNext(readable);
-                }
-
-                int32_t QueryFieldsRow::GetNextInt8Array(int8_t* dst, int32_t len)
-                {
-                    return GetQueryFieldsRowImpl(impl).GetNextInt8Array(dst, len);
                 }
             }
         }

@@ -92,29 +92,6 @@ namespace ignite
                         }
 
                         /**
-                         * Get next entry assuming it's an array of 8-byte signed integers. Maps to "byte[]" type in Java
-                         * and BINARY type in SQL.
-                         *
-                         * @param dst Array to store data to.
-                         * @param len Expected length of array.
-                         * @return Actual amount of elements read. If "len" argument is less than actual array size or
-                         *     resulting array is set to null, nothing will be written to resulting array and returned value
-                         *     will contain required array length.
-                         *     @c -1 will be returned in case array in stream was null.
-                         *
-                         * @throw IgniteError class instance in case of failure.
-                         */
-                        int32_t GetNextInt8Array(int8_t *dst, int32_t len)
-                        {
-                            int32_t res = reader.ReadInt8Array(dst, len);
-
-                            if (res <= len)
-                                ++pos;
-
-                            return res;
-                        }
-
-                        /**
                          * Get size of the row in elements.
                          *
                          * @return

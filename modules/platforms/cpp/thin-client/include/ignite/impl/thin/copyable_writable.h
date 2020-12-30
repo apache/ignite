@@ -161,7 +161,7 @@ namespace ignite
                  */
                 virtual void Write(binary::BinaryWriterImpl& writer) const
                 {
-                    writer.WriteInt8Array(&val[0], static_cast<int32_t>(val.size()));
+                    writer.WriteInt8Array(&values[0], static_cast<int32_t>(values.size()));
                 }
 
             private:
