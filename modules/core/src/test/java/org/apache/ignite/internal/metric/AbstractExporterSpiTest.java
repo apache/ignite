@@ -52,7 +52,9 @@ public abstract class AbstractExporterSpiTest extends GridCommonAbstractTest {
         "PagesWritten",
         "TotalAllocatedPages",
         "PagesReplaceAge",
-        "PhysicalMemoryPages"));
+        "PhysicalMemoryPages",
+        "InitialSize",
+        "MaxSize"));
 
     /**
      * Creates some additional metrics.
