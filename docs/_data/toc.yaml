@@ -16,4 +16,7 @@
   url: index
 - title: Getting Started Guide
   url: quick-start/getting-started-guide
+- title: Ignite CLI Tool
+  url: ignite-cli-tool
+
 

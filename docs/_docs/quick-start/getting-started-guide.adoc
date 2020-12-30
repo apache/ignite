@@ -169,42 +169,12 @@ ignite node stop myFirstNode
 
 From here, you may want to:
 
-* Check out the <<Ignite CLI Tool Commands>> section for more detail on supported commands.
+* Check out the link:ignite-cli-tool[Ignite CLI Tool] page for more detail on supported commands.
 
-* Explore the <<Apache Ignite Configuration>> section to learn more about the configuration parameters.
-
-
-== Ignite CLI Tool Commands
-
-The Ignite CLI tool uses REST API as a communication protocol between the node and the CLI,
-allowing you to configure the node.
-
-Below is a list of Ignite CLI tool commands with short descriptions:
-
-[cols="1,3",opts="header", stripes=none]
-|===
-| Command | Description
-| `init` | Installs Ignite core modules locally.
-| `module` | Manages optional Ignite modules and external artifacts.
-| `module list` | Shows the list of available optional Ignite modules.
-| `module add` | Adds an optional Ignite module or an external artifact.
-| `module remove` | Adds an optional Ignite module or an external artifact.
-| `node`| Starts, stops and manages locally running Ignite nodes.
-| `node start` | Starts an Ignite node locally.
-| `node stop` | Stops a locally running Ignite node.
-| `node classpath` | Shows the current classpath used by the Ignite nodes.
-| `node list` | Shows the list of currently running local Ignite nodes.
-| `config`| Inspects and updates Ignite cluster configuration.
-| `config get` | Gets current Ignite cluster configuration values.
-| `config set` | Updates Ignite cluster configuration values.
-|===
-
-
-== Apache Ignite Configuration
-
-
-Apache Ignite uses HOCON configuration format.
-For more detail, please see the link:https://github.com/lightbend/config/blob/master/HOCON.md[HOCON documentation,window=_blank].
+//== Apache Ignite Configuration
+//
+//Apache Ignite uses HOCON configuration format.
+//For more detail, please see the link:https://github.com/lightbend/config/blob/master/HOCON.md[HOCON documentation,window=_blank].
 
 
 
