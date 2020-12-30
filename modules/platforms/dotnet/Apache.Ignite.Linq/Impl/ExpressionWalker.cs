@@ -71,7 +71,7 @@ namespace Apache.Ignite.Linq.Impl
                 var res = GetCacheQueryable(subQueryExp.QueryModel.MainFromClause.FromExpression, throwWhenNotFound,
                     memberHint);
 
-                if (res != null)
+                if (res != null) // TODO: This seems to be never null and the code below is not executed when it should.
                     return res;
                 
                 if (memberHint != null)
