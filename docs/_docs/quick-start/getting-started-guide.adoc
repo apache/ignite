@@ -65,7 +65,9 @@ actions:
 * Update old nodes to new versions
 * Install or remove optional modules
 
-. Use the command below to see the full list of the <<Ignite CLI Tool Commands>>:
+Let's use some of the <<Ignite CLI Tool Commands>>.
+
+. Use the command below to see the full list:
 +
 [source, shell]
 ----
@@ -81,15 +83,14 @@ ignite init --help
 
 == Installing Ignite Artifacts and Dependencies
 
-To start an Ignite 3.0 cluster, you need to install Ignite core artifacts first:
+Ignite CLI allows to install Ignite modules and 3rd party Maven dependencies.
+
+. To start an Ignite 3.0 cluster, you need to install Ignite core artifacts first:
 +
 [source, shell]
 ----
 ignite init
 ----
-
-Ignite CLI allows to install optional Ignite modules and 3rd party Maven dependencies. For instance, install
-the Guava library by following the steps below.
 
 . Use the `module add` command to download Guava from Maven and add it to the Ignite classpath:
 +
@@ -97,6 +98,7 @@ the Guava library by following the steps below.
 ----
 ignite module add mvn:com.google.guava:guava:23.0
 ----
+
 . Confirm the library is added to the Ignite dependencies list:
 +
 [source, shell]
@@ -133,7 +135,7 @@ The Ignite CLI tool also allows to perform some operations with a cluster using 
 
 See some of the examples below:
 
-* Read the cluster configuration:
+. Read the cluster configuration:
 +
 [source, shell]
 ----
@@ -142,13 +144,13 @@ ignite config get
 +
 It can be performed either for the whole tree or filtered via the `--selector` option.
 
-* Update the baseline topology auto-adjustment timeout:
+. Update the baseline topology auto-adjustment timeout:
 +
 [source, shell]
 ----
 ignite config set local.baseline.autoAdjust.timeout=20000
 ----
-* Confirm the change is applied:
+. Confirm the change is applied:
 +
 [source, shell]
 ----
@@ -157,8 +159,7 @@ ignite config get --selector=local.baseline.autoAdjust.timeout
 
 == Stopping the Cluster
 
-. To stop the node, use the command below passing `myFirstNode` as a node unique identifier:
-+
+To stop the node, use the command below passing `myFirstNode` as a node unique identifier:
 [source, shell]
 ----
 ignite node stop myFirstNode
