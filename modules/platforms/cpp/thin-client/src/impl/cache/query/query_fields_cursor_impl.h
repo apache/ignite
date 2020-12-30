@@ -116,7 +116,7 @@ namespace ignite
                                         page,
                                         stream.Position()));
 
-                            SkipRow(*rowImpl.Get());
+                            SkipRow();
 
                             return ignite::thin::cache::query::QueryFieldsRow(rowImpl);
                         }
@@ -164,10 +164,8 @@ namespace ignite
 
                         /**
                          * Skip position to the next row.
-                         *
-                         * @param row Row to skip.
                          */
-                        void SkipRow(const QueryFieldsRowImpl &row)
+                        void SkipRow()
                         {
                             for (size_t i = 0; i < columns.size(); ++i)
                                 reader.Skip();
