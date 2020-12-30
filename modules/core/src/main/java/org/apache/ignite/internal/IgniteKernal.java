@@ -1353,6 +1353,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             registerMetrics();
 
+            ctx.cluster().registerMetrics();
+
             // Register MBeans.
             mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,
                 mgmtExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
