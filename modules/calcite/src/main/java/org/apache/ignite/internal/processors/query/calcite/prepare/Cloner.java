@@ -46,13 +46,14 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
-class Cloner implements IgniteRelVisitor<IgniteRel> {
+public class Cloner implements IgniteRelVisitor<IgniteRel> {
     /** */
     private final RelOptCluster cluster;
 
     /** */
     private ImmutableList.Builder<IgniteReceiver> remotes;
 
+    /** */
     Cloner(RelOptCluster cluster) {
         this.cluster = cluster;
     }
@@ -75,6 +76,13 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
         finally {
             remotes = null;
         }
+    }
+
+    /** */
+    public static IgniteRel clone(IgniteRel r) {
+        Cloner c = new Cloner(r.getCluster());
+
+        return c.visit(r);
     }
 
     /** */

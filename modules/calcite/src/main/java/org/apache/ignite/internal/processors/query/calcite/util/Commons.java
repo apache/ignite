@@ -358,4 +358,26 @@ public final class Commons {
 
         return true;
     }
+
+    /**
+     * Returns the longest possible prefix of {@code seq} that could be form from provided {@code elems}.
+     *
+     * @param seq Sequence.
+     * @param elems Elems.
+     * @return The longest possible prefix of {@code seq}.
+     */
+    public static <T> List<T> maxPrefix(List<T> seq, Collection<T> elems) {
+        List<T> res = new ArrayList<>();
+
+        Set<T> elems0 = new HashSet<>(elems);
+
+        for (T e : seq) {
+            if (!elems0.remove(e))
+                break;
+
+            res.add(e);
+        }
+
+        return res;
+    }
 }

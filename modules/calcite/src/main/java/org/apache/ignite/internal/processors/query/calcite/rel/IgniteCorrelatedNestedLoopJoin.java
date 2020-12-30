@@ -44,8 +44,11 @@ import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrai
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.createCollation;
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.isPrefix;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
 
 /**
  * Relational expression that combines two relational expressions according to
@@ -95,11 +98,16 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
         RelCollation leftCollation = TraitUtils.collation(left), rightCollation = TraitUtils.collation(right);
 
-        if (!isPrefix(rightCollation.getKeys(), joinInfo.rightKeys))
+        List<Integer> newRightCollationFields = maxPrefix(rightCollation.getKeys(), joinInfo.leftKeys);
+
+        if (F.isEmpty(newRightCollationFields))
             return ImmutableList.of();
 
         // We preserve left edge collation only if batch size == 1
@@ -113,7 +121,7 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
                 nodeTraits.replace(leftCollation),
                 ImmutableList.of(
                     left,
-                    right.replace(rightCollation)
+                    right.replace(createCollation(newRightCollationFields))
                 )
             )
         );
@@ -144,7 +152,7 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
         // Index lookup (collation) is required for right input.
         RelCollation rightReplace = RelCollations.of(joinInfo.rightKeys);
 
-       // We preserve left edge collation only if batch size == 1
+        // We preserve left edge collation only if batch size == 1
         if (variablesSet.size() == 1) {
             Pair<RelTraitSet, List<RelTraitSet>> baseTraits = super.passThroughCollation(nodeTraits, inputTraits);
 

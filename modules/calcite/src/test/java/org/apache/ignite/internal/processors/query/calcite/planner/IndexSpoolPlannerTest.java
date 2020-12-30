@@ -116,6 +116,85 @@ public class IndexSpoolPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * Check case when exists index (collation) isn't applied not for whole join condition
+     * but may be used by part of condition.
+     */
+    @Test
+    public void testPartialIndexForCondition() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        publicSchema.addTable(
+            "T0",
+            new TestTable(
+                new RelDataTypeFactory.Builder(f)
+                    .add("ID", f.createJavaType(Integer.class))
+                    .add("JID0", f.createJavaType(Integer.class))
+                    .add("JID1", f.createJavaType(Integer.class))
+                    .add("VAL", f.createJavaType(String.class))
+                    .build()) {
+
+                @Override public IgniteDistribution distribution() {
+                    return IgniteDistributions.affinity(0, "T0", "hash");
+                }
+            }
+        );
+
+        publicSchema.addTable(
+            "T1",
+            new TestTable(
+                new RelDataTypeFactory.Builder(f)
+                    .add("ID", f.createJavaType(Integer.class))
+                    .add("JID0", f.createJavaType(Integer.class))
+                    .add("JID1", f.createJavaType(Integer.class))
+                    .add("VAL", f.createJavaType(String.class))
+                    .build()) {
+
+                @Override public IgniteDistribution distribution() {
+                    return IgniteDistributions.affinity(0, "T1", "hash");
+                }
+            }
+                .addIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "t1_jid0_idx")
+        );
+
+        String sql = "select * " +
+            "from t0 " +
+            "join t1 on t0.jid0 = t1.jid0 and t0.jid1 = t1.jid1";
+
+        IgniteRel phys = physicalPlan(
+            sql,
+            publicSchema,
+            "MergeJoinConverter", "NestedLoopJoinConverter"
+        );
+
+        checkSplitAndSerialization(phys, publicSchema);
+
+        System.out.println("+++\n" + RelOptUtil.toString(phys));
+
+        IgniteIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteIndexSpool.class));
+
+        List<RexNode> lBound = idxSpool.indexCondition().lowerBound();
+
+        assertNotNull(lBound);
+        assertEquals(4, lBound.size());
+
+        assertTrue(((RexLiteral)lBound.get(0)).isNull());
+        assertTrue(((RexLiteral)lBound.get(2)).isNull());
+        assertTrue(((RexLiteral)lBound.get(3)).isNull());
+        assertTrue(lBound.get(1) instanceof RexFieldAccess);
+
+        List<RexNode> uBound = idxSpool.indexCondition().upperBound();
+
+        assertNotNull(uBound);
+        assertEquals(4, uBound.size());
+
+        assertTrue(((RexLiteral)uBound.get(0)).isNull());
+        assertTrue(((RexLiteral)lBound.get(2)).isNull());
+        assertTrue(((RexLiteral)lBound.get(3)).isNull());
+        assertTrue(uBound.get(1) instanceof RexFieldAccess);
+    }
+
+    /**
      * Check equi-join on not collocated fields without indexes.
      */
     @Test

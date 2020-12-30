@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +31,6 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
@@ -47,7 +44,9 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.createCollation;
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.isPrefix;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
 
 /** */
 public class IgniteMergeJoin extends AbstractIgniteJoin {
@@ -227,39 +226,5 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
 
         return costFactory.makeCost(rows,
             rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
-    }
-
-    /**
-     * Returns the longest possible prefix of {@code seq} that could be form from provided {@code elems}.
-     *
-     * @param seq Sequence.
-     * @param elems Elems.
-     * @return The longest possible prefix of {@code seq}.
-     */
-    private static <T> List<T> maxPrefix(List<T> seq, Collection<T> elems) {
-        List<T> res = new ArrayList<>();
-
-        Set<T> elems0 = new HashSet<>(elems);
-
-        for (T e : seq) {
-            if (!elems0.remove(e))
-                break;
-
-            res.add(e);
-        }
-
-        return res;
-    }
-
-    /**
-     * Creates collations from provided keys.
-     *
-     * @param keys The keys to create collation from.
-     * @return New collation.
-     */
-    private static RelCollation createCollation(List<Integer> keys) {
-        return RelCollations.of(
-            keys.stream().map(RelFieldCollation::new).collect(Collectors.toList())
-        );
     }
 }

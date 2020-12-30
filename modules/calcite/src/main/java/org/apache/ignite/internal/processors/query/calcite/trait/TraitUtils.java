@@ -438,6 +438,18 @@ public class TraitUtils {
         return processed;
     }
 
+    /**
+     * Creates collations from provided keys.
+     *
+     * @param keys The keys to create collation from.
+     * @return New collation.
+     */
+    public static RelCollation createCollation(List<Integer> keys) {
+        return RelCollations.of(
+            keys.stream().map(RelFieldCollation::new).collect(Collectors.toList())
+        );
+    }
+
     /** */
     private static class PropagationContext {
         /** */
