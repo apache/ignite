@@ -27,7 +27,7 @@ from ignitetest.services.utils.ignite_configuration.data_storage import DataRegi
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import IgniteVersion, V_2_9_0, DEV_BRANCH
+from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST_2_9
 
 
 # pylint: disable=W0223
@@ -42,24 +42,21 @@ class SnapshotTest(IgniteTest):
     CACHE_NAME = "TEST_CACHE"
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(V_2_9_0))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST_2_9))
     def snapshot_test(self, ignite_version):
         """
         Basic snapshot test.
         """
-        data_storage = DataStorageConfiguration(default=DataRegionConfiguration(persistent=True))
-
         ignite_config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
-            data_storage=data_storage,
+            data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistent=True)),
             metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi',
             caches=[CacheConfiguration(name=self.CACHE_NAME, cache_mode='REPLICATED',
                                        indexed_types=['java.util.UUID', 'byte[]'])]
         )
 
-        num_nodes = len(self.test_context.cluster)
-
-        service = IgniteService(self.test_context, ignite_config, num_nodes=num_nodes - 1, startup_timeout_sec=180)
+        service = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 1,
+                                startup_timeout_sec=180)
         service.start()
 
         control_utility = ControlUtility(service, self.test_context)

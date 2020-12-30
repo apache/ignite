@@ -150,6 +150,7 @@ class ControlUtility:
     def idle_verify_dump(self, node=None):
         """
         Idle verify dump.
+        :param node: Node where will be dump file.
         """
         data = self.__run("--cache idle_verify --dump", node=node)
 
@@ -160,25 +161,32 @@ class ControlUtility:
     def snapshot_create(self, snapshot_name: str, sync_mode: bool = True, timeout_sec: int = 60):
         """
         Create snapshot.
+        :param snapshot_name: Name of Snapshot.
+        :param sync_mode: If False the ControlUtilit not wait for the snapshot to complete.
+        :param timeout_sec: Timeout to await snapshot to complete.
         """
         res = self.__run(f"--snapshot create {snapshot_name}")
 
-        if ("Command [SNAPSHOT] finished with code: 0" in res) & sync_mode:
+        assert "Command [SNAPSHOT] finished with code: 0" in res
+
+        if sync_mode:
             self.await_snapshot(snapshot_name, timeout_sec)
 
     def await_snapshot(self, snapshot_name: str, timeout_sec=60):
         """
         Waiting for the snapshot to complete.
+        :param snapshot_name: Name of Snapshot.
+        :param timeout_sec: Timeout to await snapshot to complete.
         """
         delta_time = datetime.now() + timedelta(seconds=timeout_sec)
 
         while datetime.now() < delta_time:
             for node in self._cluster.nodes:
                 mbean = JmxClient(node).find_mbean('snapshot')
-                start_time = int(list(mbean.LastSnapshotStartTime)[0])
-                end_time = int(list(mbean.LastSnapshotEndTime)[0])
-                err_msg = list(mbean.LastSnapshotErrorMessage)[0]
-                name = list(mbean.LastSnapshotName)[0]
+                start_time = int(next(mbean.LastSnapshotStartTime))
+                end_time = int(next(mbean.LastSnapshotEndTime))
+                err_msg = next(mbean.LastSnapshotErrorMessage)
+                name = next(mbean.LastSnapshotName)
 
                 if (snapshot_name == name) and (0 < start_time < end_time) and (err_msg == ''):
                     return

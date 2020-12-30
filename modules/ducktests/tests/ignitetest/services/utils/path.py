@@ -165,6 +165,13 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
     def log_config_file(self):
         return os.path.join(self.persistent_root, "ignite-log4j.xml")
 
+    @property
+    def database_dir(self):
+        """
+        :return: path to database directory
+        """
+        return os.path.join(self.work_dir, "db")
+
     def script(self, script_name):
         """
         :param script_name: name of Ignite script

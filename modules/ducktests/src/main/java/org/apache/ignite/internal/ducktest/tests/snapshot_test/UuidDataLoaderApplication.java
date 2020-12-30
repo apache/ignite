@@ -30,14 +30,14 @@ public class UuidDataLoaderApplication extends IgniteAwareApplication {
     @Override public void run(JsonNode jNode) {
         String cacheName = jNode.get("cacheName").asText();
 
-        long size = jNode.get("size").asLong();
+        int amount = jNode.get("amount").asInt();
 
         int dataSize = jNode.get("dataSize").asInt();
 
         markInitialized();
 
         try (IgniteDataStreamer<UUID, byte[]> dataStreamer = ignite.dataStreamer(cacheName)) {
-            for (long j = 0L; j <= size; j++)
+            for (int i = 0; i < amount; i++)
                 dataStreamer.addData(UUID.randomUUID(), new byte[dataSize]);
         }
 

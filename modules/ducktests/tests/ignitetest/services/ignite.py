@@ -39,13 +39,6 @@ class IgniteService(IgniteAwareService):
                          jvm_opts=jvm_opts)
 
     @property
-    def database_dir(self):
-        """
-        :return: path to database directory
-        """
-        return os.path.join(self.work_dir, "db")
-
-    @property
     def snapshots_dir(self):
         """
         :return: path to snapshots directory
@@ -70,6 +63,7 @@ class IgniteService(IgniteAwareService):
     def restore_from_snapshot(self, snapshot_name: str):
         """
         Restore from snapshot.
+        :param snapshot_name: Name of Snapshot
         """
         snapshot_db = os.path.join(self.snapshots_dir, snapshot_name, "db")
 
