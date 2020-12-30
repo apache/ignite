@@ -68,12 +68,6 @@ namespace Apache.Ignite.Linq.Impl
 
             if (subQueryExp != null)
             {
-                var res = GetCacheQueryable(subQueryExp.QueryModel.MainFromClause.FromExpression, throwWhenNotFound,
-                    memberHint);
-
-                if (res != null) // TODO: This seems to be never null and the code below is not executed when it should.
-                    return res;
-                
                 if (memberHint != null)
                 {
                     var newExpr = subQueryExp.QueryModel.SelectClause.Selector as NewExpression;
@@ -95,11 +89,13 @@ namespace Apache.Ignite.Linq.Impl
                                 propExpr.Member.Name == memberHint.Member.Name &&
                                 propExpr.Type == memberHint.Type)
                             {
-                                return GetCacheQueryable(propExpr, throwWhenNotFound);
+                                return GetCacheQueryable(propExpr.Expression, throwWhenNotFound);
                             }
                         }
                     }
                 }
+                
+                return GetCacheQueryable(subQueryExp.QueryModel.MainFromClause.FromExpression, throwWhenNotFound);
             }
 
             var srcRefExp = expression as QuerySourceReferenceExpression;
