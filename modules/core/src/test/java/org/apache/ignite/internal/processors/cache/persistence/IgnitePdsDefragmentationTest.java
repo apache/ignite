@@ -33,9 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
@@ -58,14 +56,13 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.maintenance.MaintenanceFileStore;
+import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -256,23 +253,18 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     protected long[] partitionSizes(CacheGroupContext grp) {
         final int grpId = grp.groupId();
 
-        List<Integer> parts = IntStream.range(0, grp.shared().affinity().affinity(grpId).partitions())
-            .boxed().collect(Collectors.toList());
+        return IntStream.concat(
+            IntStream.of(INDEX_PARTITION),
+            IntStream.range(0, grp.shared().affinity().affinity(grpId).partitions())
+        ).mapToLong(p -> {
+            try {
+                final FilePageStore store = (FilePageStore) ((PageStoreCollection) grp.shared().pageStore()).getStore(grpId, p);
 
-        parts.add(INDEX_PARTITION);
-
-        return parts.stream()
-            .map(p -> {
-                try {
-                    return (FilePageStore)((FilePageStoreManager)grp.shared().pageStore()).getStore(grpId, p);
-                } catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            })
-            .map(FilePageStore::getFileAbsolutePath)
-            .map(File::new)
-            .mapToLong(File::length)
-            .toArray();
+                return new File(store.getFileAbsolutePath()).length();
+            } catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }).toArray();
     }
 
     /**
