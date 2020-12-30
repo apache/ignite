@@ -107,7 +107,10 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             return 1.0;
 
         double idxSelectivity = 1.0;
-        int len = F.isEmpty(lowerCond) ? upperCond.size() : F.isEmpty(upperCond) ? lowerCond.size() : Math.max(lowerCond.size(), upperCond.size());
+
+        int len = F.isEmpty(lowerCond) ?
+            upperCond.size() :
+            F.isEmpty(upperCond) ? lowerCond.size() : Math.max(lowerCond.size(), upperCond.size());
 
         for (int i = 0; i < len; i++) {
             RexCall lower = F.isEmpty(lowerCond) || lowerCond.size() <= i ? null : (RexCall)lowerCond.get(i);

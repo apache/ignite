@@ -50,8 +50,8 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         RelDataType rowType,
         RelCollation collation,
         Comparator<Row> comp,
-        Supplier<Row> lowerIdxConditions,
-        Supplier<Row> upperIdxConditions
+        Supplier<Row> lowerIdxBound,
+        Supplier<Row> upperIdxBound
     ) {
         super(ctx, rowType);
 
@@ -64,8 +64,8 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
                 ctx,
                 rowType,
                 null,
-                lowerIdxConditions,
-                upperIdxConditions
+                lowerIdxBound,
+                upperIdxBound
             )
         );
     }
