@@ -213,6 +213,28 @@ You can also pass JVM options by using the `-J` prefix:
 ----
 ./ignite.sh -J-Xmx6G -J-DIGNITE_TO_STRING_INCLUDE_SENSITIVE=false
 ----
+
+== Ignite Internal Settings
+Ignite provide more then hundred internal flags to tweak som apects of the node behavior.
+You can see all flags, their descriptions and default values with the following command:
+
+[source, shell]
+----
+./ignite.sh -systemProps
+----
+
+Example of the output:
+
+[source, text]
+$ ./bin/ignite.sh -systemProps
+IGNITE_AFFINITY_HISTORY_SIZE                                    - [Integer] Maximum size for affinity assignment history. Default is 25.
+IGNITE_ALLOW_ATOMIC_OPS_IN_TX                                   - [Boolean] Allows atomic operations inside transactions. Default is true.
+IGNITE_ALLOW_DML_INSIDE_TRANSACTION                             - [Boolean] When set to true, Ignite will allow execute DML operation (MERGE|INSERT|UPDATE|DELETE) within transaction for non MVCC mode. Default is false.
+IGNITE_ALLOW_START_CACHES_IN_PARALLEL                           - [Boolean] Enables start caches in parallel. Default is true.
+...
+
+
+
 == Node Lifecycle Events
 
 
