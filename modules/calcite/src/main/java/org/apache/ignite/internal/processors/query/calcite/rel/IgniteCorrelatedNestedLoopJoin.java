@@ -116,11 +116,17 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
         else
             nodeTraits.replace(RelCollations.EMPTY);
 
+        System.out.println("+++ " + TraitUtils.collation(right));
+        System.out.println("+++ " + TraitUtils.collation(right.replace(createCollation(newRightCollationFields))));
+        System.out.println("");
+
+
         return ImmutableList.of(
             Pair.of(
                 nodeTraits.replace(leftCollation),
                 ImmutableList.of(
                     left,
+//                    right
                     right.replace(createCollation(newRightCollationFields))
                 )
             )
