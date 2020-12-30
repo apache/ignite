@@ -186,16 +186,16 @@ namespace Apache.Ignite.Linq.Impl
                     {
                         foreach (var arg in newExpr.Arguments)
                         {
-                            var argMember = arg as MemberExpression;
-                            if (argMember != null &&
-                                argMember.Member.Name == memberHint.Member.Name &&
-                                argMember.Type == memberHint.Type)
+                            var refExpr = arg as QuerySourceReferenceExpression;
+                            if (refExpr != null &&
+                                refExpr.ReferencedQuerySource.ItemName == memberHint.Member.Name &&
+                                refExpr.ReferencedQuerySource.ItemType == memberHint.Type)
                             {
                                 // We found the argument to the anonymous type constructor that corresponds
                                 // to the member hint up the stack.
                                 // TODO: Same anonymous type can have multiple properties coming from the same arg?
                                 // e.g. new {Name1 = x.Name, Name2 = x.Name} - check this.
-                                return GetQuerySource(argMember.Expression);
+                                return refExpr.ReferencedQuerySource;
                             }
                         }
                     }
