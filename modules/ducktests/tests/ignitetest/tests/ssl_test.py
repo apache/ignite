@@ -39,20 +39,18 @@ class SslTest(IgniteTest):
         Test that IgniteService, IgniteApplicationService correctly start and stop with ssl configurations.
         And check ControlUtility with ssl arguments.
         """
-        server_ssl = SslContextFactory(self.test_context.globals, key_store_jks="server.jks")
-
         server_configuration = IgniteConfiguration(
-            version=IgniteVersion(ignite_version), ssl_context_factory=server_ssl,
+            version=IgniteVersion(ignite_version), ssl_context_factory=SslContextFactory(self.test_context.globals),
             connector_configuration=ConnectorConfiguration(ssl_enabled=True, ssl_context_factory=server_ssl))
 
         ignite = IgniteService(self.test_context, server_configuration, num_nodes=2,
                                startup_timeout_sec=180)
 
-        client_ssl = SslContextFactory(self.test_context.globals, key_store_jks="client.jks")
-
-        client_configuration = server_configuration._replace(client_mode=True,
-                                                             discovery_spi=from_ignite_cluster(ignite),
-                                                             ssl_context_factory=client_ssl)
+        client_configuration = server_configuration._replace(
+            client_mode=True,
+            discovery_spi=from_ignite_cluster(ignite),
+            ssl_context_factory=SslContextFactory(self.test_context.globals, key_store_jks="client.jks")
+        )
 
         app = IgniteApplicationService(
             self.test_context,

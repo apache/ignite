@@ -29,6 +29,7 @@ from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
+from ignitetest.services.utils.ignite_configuration import SslContextFactory, ConnectorConfiguration
 from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
@@ -168,6 +169,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         :param node: Ignite service node.
         """
         super().init_persistent(node)
+
+        if self.globals.get("use_ssl", False) and self.config.ssl_context_factory is None:
+            self.config.ssl_context_factory = SslContextFactory(self.context.globals)
+            self.config.connector_configuration = \
+                ConnectorConfiguration(ssl_enabled=True, ssl_context_factory=self.config.ssl_context_factory)
 
         node_config = self._prepare_config(node)
 

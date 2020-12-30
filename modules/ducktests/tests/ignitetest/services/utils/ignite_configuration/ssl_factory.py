@@ -18,19 +18,25 @@ This module contains classes and utilities for SslContextFactory.
 """
 import os
 
+DEFAULT_PASSWORD = "123456"
+DEFAULT_KEYSTORE = "server.jks"
+DEFAULT_TRUSTSTORE = "truststore.jks"
+
 
 class SslContextFactory:
     """
     Ignite SslContextFactory.
     """
     def __init__(self, globals: dict,
-                 key_store_jks: str = None, key_store_password: str = "123456",
-                 trust_store_jks: str = "truststore.jks", trust_store_password: str = "123456"):
+                 key_store_jks: str = DEFAULT_KEYSTORE, key_store_password: str = DEFAULT_PASSWORD,
+                 trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD):
         self.globals = globals
-        self.key_store_file_path = os.path.join(self.certificate_dir, key_store_jks)
-        self.key_store_password = key_store_password
-        self.trust_store_file_path = os.path.join(self.certificate_dir, trust_store_jks)
-        self.trust_store_password = trust_store_password
+        self.key_store_path = self.globals.get("key_store_path",
+                                               os.path.join(self.certificate_dir, key_store_jks))
+        self.key_store_password = self.globals.get("key_store_password", key_store_password)
+        self.trust_store_path = self.globals.get("trust_store_path",
+                                                 os.path.join(self.certificate_dir, trust_store_jks))
+        self.trust_store_password = self.globals.get("trust_store_password", trust_store_password)
 
     @property
     def certificate_dir(self):

@@ -17,9 +17,9 @@
 
 {% macro ssl_factory(factory) %}
 <bean class="org.apache.ignite.ssl.SslContextFactory">
-    <property name="keyStoreFilePath" value="{{ factory.key_store_file_path }}"/>
+    <property name="keyStoreFilePath" value="{{ factory.key_store_path }}"/>
     <property name="keyStorePassword" value="{{ factory.key_store_password }}"/>
-    <property name="trustStoreFilePath" value="{{ factory.trust_store_file_path }}"/>
+    <property name="trustStoreFilePath" value="{{ factory.trust_store_path }}"/>
     <property name="trustStorePassword" value="{{ factory.trust_store_password }}"/>
 </bean>
 {% endmacro %}

@@ -21,6 +21,7 @@ import random
 import re
 import time
 from typing import NamedTuple
+from ignite_configuration.ssl_factory import DEFAULT_PASSWORD, DEFAULT_KEYSTORE, DEFAULT_TRUSTSTORE
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
@@ -32,16 +33,25 @@ class ControlUtility:
     BASE_COMMAND = "control.sh"
 
     def __init__(self, cluster,
-                 key_store_jks: str = None, key_store_pwd: str = "123456",
-                 trust_store_jks: str = "truststore.jks", trust_store_pwd: str = "123456"):
+                 key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
+                 trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD):
         self._cluster = cluster
         self.logger = cluster.context.logger
+        self.globals = cluster.context.globals
+
+        if self.globals.get("use_ssl", False):
+            self.key_store_path = self.globals.get("key_store_path",
+                                                   os.path.join(cluster.certificate_dir, DEFAULT_KEYSTORE))
+            self.key_store_password = self.globals.get("key_store_password", DEFAULT_PASSWORD)
+            self.trust_store_path = self.globals.get("trust_store_path",
+                                                     os.path.join(cluster.certificate_dir, DEFAULT_TRUSTSTORE))
+            self.trust_store_password = self.globals.get("trust_store_password", DEFAULT_PASSWORD)
 
         if key_store_jks is not None:
             self.key_store_path = os.path.join(cluster.certificate_dir, key_store_jks)
-            self.key_store_pwd = key_store_pwd
+            self.key_store_password = key_store_password
             self.trust_store_path = os.path.join(cluster.certificate_dir, trust_store_jks)
-            self.trust_store_pwd = trust_store_pwd
+            self.trust_store_password = trust_store_password
 
     def baseline(self):
         """
@@ -274,8 +284,8 @@ class ControlUtility:
     def __form_cmd(self, node, cmd):
         ssl = ""
         if hasattr(self, 'key_store_path'):
-            ssl = f" --keystore {self.key_store_path} --keystore-password {self.key_store_pwd} " \
-                  f"--truststore {self.trust_store_path} --truststore-password {self.trust_store_pwd}"
+            ssl = f" --keystore {self.key_store_path} --keystore-password {self.key_store_password} " \
+                  f"--truststore {self.trust_store_path} --truststore-password {self.trust_store_password}"
 
         return self._cluster.script(f"{self.BASE_COMMAND} --host {node.account.externally_routable_ip} {cmd} {ssl}")
 
