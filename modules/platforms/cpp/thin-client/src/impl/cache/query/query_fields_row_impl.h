@@ -52,14 +52,14 @@ namespace ignite
                          * Constructor.
                          *
                          * @param size Row size in elements.
-                         * @param page Cursor page.
+                         * @param cursorPage Cursor page.
                          * @param posInMem Row starting position in memory.
                          */
-                        QueryFieldsRowImpl(int32_t size, const SP_CursorPage& page, int32_t posInMem) :
+                        QueryFieldsRowImpl(int32_t size, const SP_CursorPage& cursorPage, int32_t posInMem) :
                             size(size),
                             pos(0),
-                            page(page),
-                            stream(this->page.Get()->GetMemory()),
+                            page(cursorPage),
+                            stream(page.Get()->GetMemory()),
                             reader(&stream)
                         {
                             stream.Position(posInMem);
