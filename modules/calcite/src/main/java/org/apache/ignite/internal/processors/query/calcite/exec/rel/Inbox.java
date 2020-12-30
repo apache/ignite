@@ -71,6 +71,9 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
     /** */
     private boolean inLoop;
 
+    /** Context finally inited flag. */
+    private volatile boolean inited;
+
     /**
      * @param ctx Execution context.
      * @param exchange Exchange service.
@@ -118,6 +121,9 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
 
         // memory barier
         this.srcNodeIds = new HashSet<>(srcNodeIds);
+
+        // new context inited.
+        inited = true;
     }
 
     /** {@inheritDoc} */
@@ -126,8 +132,6 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
         assert rowsCnt > 0 && requested == 0;
 
         try {
-            checkState();
-
             requested = rowsCnt;
 
             if (!inLoop)
@@ -168,16 +172,26 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
      * @param last Last batch flag.
      * @param rows Rows.
      */
-    public void onBatchReceived(UUID src, int batchId, boolean last, List<Row> rows) {
+    public synchronized void onBatchReceived(UUID src, int batchId, boolean last, List<Row> rows) {
         try {
-            Buffer buf = getOrCreateBuffer(src);
+            if (!inited) {
+                Buffer buf = getOrCreateBuffer(src);
 
-            boolean waitingBefore = buf.check() == State.WAITING;
+                buf.offer(batchId, last, rows);
 
-            buf.offer(batchId, last, rows);
+                return;
+            }
 
-            if (requested > 0 && waitingBefore && buf.check() != State.WAITING)
-                push();
+            context().execute(() -> {
+                Buffer buf = getOrCreateBuffer(src);
+
+                boolean waitingBefore = buf.check() == State.WAITING;
+
+                buf.offer(batchId, last, rows);
+
+                if (requested > 0 && waitingBefore && buf.check() != State.WAITING)
+                    doPush();
+            });
         }
         catch (Exception e) {
             onError(e);
@@ -187,6 +201,8 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
     /** */
     private void doPush() {
         try {
+            checkState();
+
             push();
         }
         catch (Exception e) {

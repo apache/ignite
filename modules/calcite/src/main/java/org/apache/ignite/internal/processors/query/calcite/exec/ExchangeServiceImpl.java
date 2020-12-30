@@ -177,7 +177,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         if (!F.isEmpty(outboxes)) {
             for (Outbox<?> outbox : outboxes) {
                 outbox.context().cancel();
-                outbox.context().execute(outbox::close);
+                outbox.close();
             }
         }
         else if (log.isDebugEnabled()) {
