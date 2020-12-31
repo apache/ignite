@@ -38,16 +38,18 @@ To download and install the Ignite CLI Tool, follow the steps below:
 +
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell]
 ----
 mkdir ignite3 && cd ignite3
 ----
+
 tab:Windows (PowerShell)[]
 [source,shell]
 ----
 (mkdir ignite3) -AND (cd ignite3)
 ----
+
 tab:Windows (CMD)[]
 [source,shell]
 ----
@@ -59,37 +61,52 @@ mkdir ignite3 & cd ignite3
 +
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell]
 ----
 curl https://dist.apache.org/repos/dist/dev/ignite/3.0.0-alpha1-rc1/ignite -o ignite && chmod +x ignite
 ----
-tab:Windows[]
+
+tab:Windows (PowerShell)[]
 [source,shell]
 ----
 curl https://dist.apache.org/repos/dist/dev/ignite/3.0.0-alpha1-rc1/ignite.exe -o ignite.exe
 ----
+
+tab:Windows (CMD)[]
+[source,shell]
+----
+curl https://dist.apache.org/repos/dist/dev/ignite/3.0.0-alpha1-rc1/ignite.exe -o ignite.exe
+----
+
 --
 
 . Add your installation directory to the PATH environment variable:
 +
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell]
 ----
 echo 'export PATH="'`pwd`':$PATH"' >> ~/.bash_profile && source ~/.bash_profile
 ----
-tab:Windows (PowerShell Only)[]
+
+tab:Windows (PowerShell)[]
 [source,shell]
 ----
 $ENV:PATH += ";."
 ----
+
+tab:Windows (CMD)[]
+[source,text]
+----
+set PATH=%cd%;%PATH%
+----
 --
 
-NOTE: On Windows, this change is not permanent and will only affect the current terminal session. If you want the
+NOTE: On Windows, this latter change is not permanent and will only affect the current terminal session. If you want the
 `ignite` command to be available after terminal or system restart, use the `System Properties` dialog to
-permanently update the `PATH` variable with the directory you've downloaded Ignite to.
+permanently update the `PATH` environment variable by adding a full path to the Ignite installation directory.
 
 == Using Ignite CLI Tool
 
@@ -163,7 +180,7 @@ ignite node list
 This command also displays the path to the log file.
 
 . To view the log, use the log file path from the previous step result. To open the log file, use any suitable approach.
-For example, use the `cat` command for Linux.
+For example, use the `cat` command on a Unix operating system.
 
 == Working With the Cluster
 
