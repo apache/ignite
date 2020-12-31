@@ -21,6 +21,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import org.apache.ignite.configuration.ConfigurationModule;
 import org.apache.ignite.rest.RestModule;
 import org.apache.ignite.utils.IgniteProperties;
@@ -32,19 +34,21 @@ import org.slf4j.LoggerFactory;
  */
 public class IgniteRunner {
     /** */
-    private static final String BANNER = "\n" +
-        "                       ___                         __\n" +
-        "                      /   |   ____   ____ _ _____ / /_   ___\n" +
-        "        ⣠⣶⣿          / /| |  / __ \\ / __ `// ___// __ \\ / _ \\\n" +
-        "       ⣿⣿⣿⣿         / ___ | / /_/ // /_/ // /__ / / / // ___/\n" +
-        "   ⢠⣿⡏⠈⣿⣿⣿⣿⣷       /_/  |_|/ .___/ \\__,_/ \\___//_/ /_/ \\___/\n" +
-        "  ⢰⣿⣿⣿⣧⠈⢿⣿⣿⣿⣿⣦            /_/\n" +
-        "  ⠘⣿⣿⣿⣿⣿⣦⠈⠛⢿⣿⣿⣿⡄       ____               _  __           _____\n" +
-        "   ⠈⠛⣿⣿⣿⣿⣿⣿⣦⠉⢿⣿⡟      /  _/____ _ ____   (_)/ /_ ___     |__  /\n" +
-        "  ⢰⣿⣶⣀⠈⠙⠿⣿⣿⣿⣿ ⠟⠁      / / / __ `// __ \\ / // __// _ \\     /_ <\n" +
-        "  ⠈⠻⣿⣿⣿⣿⣷⣤⠙⢿⡟       _/ / / /_/ // / / // // /_ / ___/   ___/ /\n" +
-        "        ⠉⠉⠛⠏⠉      /___/ \\__, //_/ /_//_/ \\__/ \\___/   /____/\n" +
-        "                        /____/\n\n";
+    private static final String[] BANNER = new String[] {
+        "",
+        "           #              ___                         __",
+        "         ###             /   |   ____   ____ _ _____ / /_   ___",
+        "     #  #####           / /| |  / __ \\ / __ `// ___// __ \\ / _ \\",
+        "   ###  ######         / ___ | / /_/ // /_/ // /__ / / / // ___/",
+        "  #####  #######      /_/  |_|/ .___/ \\__,_/ \\___//_/ /_/ \\___/",
+        "  #######  ######            /_/",
+        "    ########  ####        ____               _  __           _____",
+        "   #  ########  ##       /  _/____ _ ____   (_)/ /_ ___     |__  /",
+        "  ####  #######  #       / / / __ `// __ \\ / // __// _ \\     /_ <",
+        "   #####  #####        _/ / / /_/ // / / // // /_ / ___/   ___/ /",
+        "     ####  ##         /___/ \\__, //_/ /_//_/ \\__/ \\___/   /____/",
+        "       ##                  /____/\n"
+    };
 
     /** */
     private static final String CONF_PARAM_NAME = "--config";
@@ -111,6 +115,10 @@ public class IgniteRunner {
     private static void ackBanner() {
         String ver = IgniteProperties.get(VER_KEY);
 
-        log.info(BANNER + "Apache Ignite ver. " + ver + "\n");
+        String banner = Arrays
+            .stream(BANNER)
+            .collect(Collectors.joining("\n"));
+
+        log.info(banner + '\n' + " ".repeat(22) + "Apache Ignite ver. " + ver + '\n');
     }
 }
