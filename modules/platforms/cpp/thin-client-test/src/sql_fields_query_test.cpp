@@ -165,7 +165,7 @@ void CheckRowEqualsValue(QueryFieldsRow& row, const ignite::TestType& val)
     BOOST_CHECK_EQUAL(row.GetNext<int32_t>(), val.i32Field);
     BOOST_CHECK_EQUAL(row.GetNext<int64_t>(), val.i64Field);
     BOOST_CHECK_EQUAL(row.GetNext<std::string>(), val.strField);
-    BOOST_CHECK_CLOSE(row.GetNext<float>(), val.floatField, 0.0001);
+    BOOST_CHECK_CLOSE(row.GetNext<float>(), val.floatField, 0.0001f);
     BOOST_CHECK_CLOSE(row.GetNext<double>(), val.doubleField, 0.0001);
     BOOST_CHECK_EQUAL(row.GetNext<bool>(), val.boolField);
     BOOST_CHECK_EQUAL(row.GetNext<ignite::Guid>(), val.guidField);
