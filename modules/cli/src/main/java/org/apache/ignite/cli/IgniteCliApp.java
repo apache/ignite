@@ -19,12 +19,24 @@ package org.apache.ignite.cli;
 
 import io.micronaut.context.ApplicationContext;
 import org.apache.ignite.cli.spec.IgniteCliSpec;
+import org.fusesource.jansi.AnsiConsole;
 
 public class IgniteCliApp {
     public static void main(String... args) {
         ApplicationContext applicationContext = ApplicationContext.run();
 
-        System.exit(IgniteCliSpec.initCli(applicationContext).execute(args));
+        int exitCode;
+
+        try {
+            AnsiConsole.systemInstall();
+
+            exitCode = IgniteCliSpec.initCli(applicationContext).execute(args);
+        }
+        finally {
+            AnsiConsole.systemUninstall();
+        }
+
+        System.exit(exitCode);
     }
 
 }
