@@ -36,24 +36,60 @@ To download and install the Ignite CLI Tool, follow the steps below:
 
 . Create a folder. For example, use a Linux command similar to the following:
 +
-[source, shell]
+[tabs]
+--
+tab:Linux[]
+[source,shell]
 ----
 mkdir ignite3 && cd ignite3
 ----
+tab:Windows (PowerShell)[]
+[source,shell]
+----
+(mkdir ignite3) -AND (cd ignite3)
+----
+tab:Windows (CMD)[]
+[source,shell]
+----
+mkdir ignite3 & cd ignite3
+----
+--
 
 . Download the Ignite CLI tool and set required execute permissions:
 +
-[source, shell]
+[tabs]
+--
+tab:Linux[]
+[source,shell]
 ----
 curl https://dist.apache.org/repos/dist/dev/ignite/3.0.0-alpha1-rc1/ignite -o ignite && chmod +x ignite
 ----
+tab:Windows[]
+[source,shell]
+----
+curl https://dist.apache.org/repos/dist/dev/ignite/3.0.0-alpha1-rc1/ignite.exe -o ignite.exe
+----
+--
 
 . Add your installation directory to the PATH environment variable:
 +
-[source, shell]
+[tabs]
+--
+tab:Linux[]
+[source,shell]
 ----
 echo 'export PATH="'`pwd`':$PATH"' >> ~/.bash_profile && source ~/.bash_profile
 ----
+tab:Windows (PowerShell Only)[]
+[source,shell]
+----
+$ENV:PATH += ";."
+----
+--
+
+NOTE: On Windows, this change is not permanent and will only affect the current terminal session. If you want the
+`ignite` command to be available after terminal or system restart, use the `System Properties` dialog to
+permanently update the `PATH` variable with the directory you've downloaded Ignite to.
 
 == Using Ignite CLI Tool
 
