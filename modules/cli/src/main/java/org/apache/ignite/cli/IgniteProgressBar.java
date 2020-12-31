@@ -17,20 +17,21 @@
 
 package org.apache.ignite.cli;
 
-import java.time.Duration;
+import java.io.PrintWriter;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import me.tongfei.progressbar.ConsoleProgressBarConsumer;
-import me.tongfei.progressbar.IgniteProgressBarRenderer;
-import me.tongfei.progressbar.ProgressBar;
+import picocli.CommandLine.Help.Ansi;
 
 /**
- * Basic implementation of a progress bar. Based on
- * <a href="https://github.com/ctongfei/progressbar">https://github.com/ctongfei/progressbar</a>.
+ * Basic implementation of a progress bar.
  */
 public class IgniteProgressBar implements AutoCloseable {
-    private final ProgressBar impl;
+    private final PrintWriter out;
+
+    private int current;
+
+    private int max;
 
     private ScheduledExecutorService exec;
 
@@ -39,23 +40,23 @@ public class IgniteProgressBar implements AutoCloseable {
      *
      * @param initialMax Initial maximum number of steps.
      */
-    public IgniteProgressBar(long initialMax) {
-        impl = new ProgressBar(
-            null,
-            initialMax,
-            10,
-            0,
-            Duration.ZERO,
-            new IgniteProgressBarRenderer(),
-            new ConsoleProgressBarConsumer(System.out, 150)
-        );
+    public IgniteProgressBar(PrintWriter out, int initialMax) {
+        this.out = out;
+
+        assert initialMax > 0;
+
+        max = initialMax;
     }
 
     /**
      * Performs a single step.
      */
     public void step() {
-        impl.step();
+        if (current < max)
+            current++;
+
+        out.print('\r' + render());
+        out.flush();
     }
 
     /**
@@ -63,11 +64,12 @@ public class IgniteProgressBar implements AutoCloseable {
      *
      * @param interval Interval in milliseconds.
      */
-    public synchronized void stepPeriodically(long interval) {
-        if (exec == null)
+    public void stepPeriodically(long interval) {
+        if (exec == null) {
             exec = Executors.newSingleThreadScheduledExecutor();
 
-        exec.scheduleAtFixedRate(impl::step, interval, interval, TimeUnit.MILLISECONDS);
+            exec.scheduleAtFixedRate(this::step, interval, interval, TimeUnit.MILLISECONDS);
+        }
     }
 
     /**
@@ -75,12 +77,14 @@ public class IgniteProgressBar implements AutoCloseable {
      *
      * @param newMax New maximum.
      */
-    public void setMax(long newMax) {
-        impl.maxHint(newMax);
+    public void setMax(int newMax) {
+        assert newMax > 0;
+
+        max = newMax;
     }
 
     @Override public void close() {
-        while (impl.getCurrent() < impl.getMax()) {
+        while (current < max) {
             try {
                 Thread.sleep(10);
             }
@@ -91,6 +95,34 @@ public class IgniteProgressBar implements AutoCloseable {
             step();
         }
 
-        impl.close();
+        out.println();
+    }
+
+    private String render() {
+        assert current <= max;
+
+        int completed = (int)((double)current / (double)max * 100);
+
+        StringBuilder sb = new StringBuilder("|");
+
+        sb.append("=".repeat(completed));
+
+        String percentage;
+        int percentageLen;
+
+        if (completed < 100) {
+            sb.append('>').append(" ".repeat(99 - completed));
+
+            percentage = completed + "%";
+            percentageLen = percentage.length();
+        }
+        else {
+            percentage = "@|green,bold Done!|@";
+            percentageLen = 5;
+        }
+
+        sb.append("|").append(" ".repeat(6 - percentageLen)).append(percentage);
+
+        return Ansi.AUTO.string(sb.toString());
     }
 }

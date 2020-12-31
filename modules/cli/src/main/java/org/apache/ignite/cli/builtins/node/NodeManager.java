@@ -19,6 +19,7 @@ package org.apache.ignite.cli.builtins.node;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -48,9 +49,7 @@ public class NodeManager {
         this.moduleStorage = moduleStorage;
     }
 
-    public RunningNode start(String consistentId,
-        Path workDir, Path pidsDir, Path serverConfig) {
-
+    public RunningNode start(String consistentId, Path workDir, Path pidsDir, Path serverConfig, PrintWriter out) {
         if (getRunningNodes(workDir, pidsDir).stream().anyMatch(n -> n.consistentId.equals(consistentId)))
             throw new IgniteCLIException("Node with consistentId " + consistentId + " is already exist");
         try {
@@ -80,7 +79,7 @@ public class NodeManager {
 
             Process p = pb.start();
 
-            try (var bar = new IgniteProgressBar(100)) {
+            try (var bar = new IgniteProgressBar(out, 100)) {
                 bar.stepPeriodically(300);
 
                 if (!waitForStart("Apache Ignite started successfully!", logFile, NODE_START_TIMEOUT)) {

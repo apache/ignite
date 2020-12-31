@@ -85,7 +85,7 @@ public class MavenArtifactResolver {
 
         out.println("Installing " + String.join(":", grpId, artifactId, version) + "...");
 
-        try (IgniteProgressBar bar = new IgniteProgressBar(100)) {
+        try (IgniteProgressBar bar = new IgniteProgressBar(out, 100)) {
             ivy.getEventManager().addIvyListener(event -> {
                 if (event instanceof EndResolveEvent) {
                     int count = ((EndResolveEvent)event).getReport().getArtifacts().size();

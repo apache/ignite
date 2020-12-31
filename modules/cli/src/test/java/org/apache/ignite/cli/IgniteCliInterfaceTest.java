@@ -242,17 +242,18 @@ public class IgniteCliInterfaceTest {
            var nodeName = "node1";
            var node =
                new NodeManager.RunningNode(1, nodeName, Path.of("logfile"));
-           when(nodeManager.start(any(), any(), any(), any()))
+           when(nodeManager.start(any(), any(), any(), any(), any()))
                .thenReturn(node);
 
             when(cliPathsConfigLoader.loadIgnitePathsOrThrowError())
                 .thenReturn(ignitePaths);
 
-            var exitCode =
-                commandLine(applicationContext).execute(("node start " + nodeName + " --config conf.json").split(" "));
+            CommandLine cli = commandLine(applicationContext);
+
+            var exitCode = cli.execute(("node start " + nodeName + " --config conf.json").split(" "));
 
             assertEquals(0, exitCode);
-            verify(nodeManager).start(nodeName, ignitePaths.workDir, ignitePaths.cliPidsDir(), Path.of("conf.json"));
+            verify(nodeManager).start(nodeName, ignitePaths.workDir, ignitePaths.cliPidsDir(), Path.of("conf.json"), cli.getOut());
             assertEquals("Starting a new Ignite node...\n\nNode is successfully started. To stop, type ignite node stop " + nodeName + "\n\n" +
                 "+---------------+---------+\n" +
                 "| Consistent ID | node1   |\n" +

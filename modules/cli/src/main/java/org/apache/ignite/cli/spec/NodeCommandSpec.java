@@ -65,7 +65,8 @@ public class NodeCommandSpec extends CategorySpec {
 
             NodeManager.RunningNode node = nodeManager.start(consistentId, ignitePaths.workDir,
                 ignitePaths.cliPidsDir(),
-                configPath);
+                configPath,
+                out);
 
             out.println();
             out.println("Node is successfully started. To stop, type " +
