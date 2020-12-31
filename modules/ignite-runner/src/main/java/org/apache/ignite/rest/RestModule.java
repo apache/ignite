@@ -34,12 +34,12 @@ import org.slf4j.Logger;
 /**
  * Rest module is responsible for starting a REST endpoints for accessing and managing configuration.
  *
- * It is started on port 8080 by default but it is possible to change this in configuration itself.
+ * It is started on port 10300 by default but it is possible to change this in configuration itself.
  * Refer to default config file in resources for the example.
  */
 public class RestModule {
     /** */
-    private static final int DFLT_PORT = 8080;
+    private static final int DFLT_PORT = 10300;
 
     /** */
     private static final String CONF_URL = "/management/v1/configuration/";

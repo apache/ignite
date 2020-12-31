@@ -80,7 +80,7 @@ public class ConfigCommandSpec extends CategorySpec {
 
         int port() {
             if (endpoint == null)
-                return 8080;
+                return 10300;
 
             var hostPort = parse();
 
@@ -99,7 +99,7 @@ public class ConfigCommandSpec extends CategorySpec {
             var hostPort = endpoint.split(":");
             if (hostPort.length != 2)
                 throw new IgniteCLIException("Incorrect host:port pair provided " +
-                    "(example of valid value 'localhost:8080')");
+                    "(example of valid value 'localhost:10300')");
            return hostPort;
         }
     }
