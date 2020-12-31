@@ -41,14 +41,14 @@ endif("${isSystemDir}" STREQUAL "-1")
 if (WIN32)
     add_definitions(-DUNICODE=1)
 
-    add_compile_options(/source-charset:utf-8)
-
     set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
     set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 endif()
 
 if (MSVC)
+    add_compile_options(/source-charset:utf-8 /execution-charset:utf-8)
+
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 endif()
 
