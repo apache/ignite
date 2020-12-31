@@ -70,13 +70,13 @@ curl -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename
 tab:Windows (PowerShell)[]
 [source,shell]
 ----
-curl -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=ignite/3.0.0-alpha1/ignite.exe" -o ignite.exe
+include::../includes/ignite-cli-download-windows.adoc[tag=command,indent=0]
 ----
 
 tab:Windows (CMD)[]
 [source,shell]
 ----
-curl -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=ignite/3.0.0-alpha1/ignite.exe" -o ignite.exe
+include::../includes/ignite-cli-download-windows.adoc[tag=command,indent=0]
 ----
 --
 
