@@ -148,6 +148,68 @@ namespace Apache.Ignite.Linq.Impl
                 throw new NotSupportedException("Unexpected query source: " + expression);
 
             return null;
+        }        
+        
+        /// <summary>
+        /// Gets the projected member.
+        /// </summary>
+        public static MemberExpression GetProjectedMember(
+            Expression expression,
+            MemberExpression memberHint)
+        {
+            // TODO: Simplify this method? Is it a single special case after all?
+            var subQueryExp = expression as SubQueryExpression;
+
+            if (subQueryExp != null)
+            {
+                if (memberHint != null)
+                {
+                    var newExpr = subQueryExp.QueryModel.SelectClause.Selector as NewExpression;
+
+                    if (newExpr != null)
+                    {
+                        foreach (var arg in newExpr.Arguments)
+                        {
+                            var refExpr = arg as QuerySourceReferenceExpression;
+                            if (refExpr != null &&
+                                refExpr.ReferencedQuerySource.ItemName == memberHint.Member.Name &&
+                                refExpr.ReferencedQuerySource.ItemType == memberHint.Type)
+                            {
+                                return GetProjectedMember(refExpr, memberHint);
+                            }
+
+                            var propExpr = arg as MemberExpression;
+                            if (propExpr != null &&
+                                propExpr.Member.Name == memberHint.Member.Name &&
+                                propExpr.Type == memberHint.Type)
+                            {
+                                return propExpr;
+                            }
+                        }
+                    }
+                }
+                
+                return GetProjectedMember(subQueryExp.QueryModel.MainFromClause.FromExpression, memberHint);
+            }
+
+            var srcRefExp = expression as QuerySourceReferenceExpression;
+
+            if (srcRefExp != null)
+            {
+                var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
+
+                if (fromSource != null)
+                    return GetProjectedMember(fromSource.FromExpression, memberHint);
+
+                var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
+
+                if (joinSource != null)
+                    return GetProjectedMember(joinSource.InnerSequence, memberHint);
+
+                throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
+            }
+
+            return null;
         }
 
         /// <summary>
