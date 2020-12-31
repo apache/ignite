@@ -62,12 +62,12 @@ mkdir ignite3 & cd ignite3
 tab:Linux[]
 [source,shell]
 ----
-curl https://dist.apache.org/repos/dist/dev/ignite/3.0.0-alpha1-rc1/ignite -o ignite && chmod +x ignite
+curl -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=ignite/3.0.0-alpha1/ignite" -o ignite && chmod +x ignite
 ----
 tab:Windows[]
 [source,shell]
 ----
-curl https://dist.apache.org/repos/dist/dev/ignite/3.0.0-alpha1-rc1/ignite.exe -o ignite.exe
+curl -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=ignite/3.0.0-alpha1/ignite.exe" -o ignite.exe
 ----
 --
 
