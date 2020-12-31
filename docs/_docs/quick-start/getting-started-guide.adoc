@@ -76,7 +76,7 @@ curl -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename
 tab:Windows (CMD)[]
 [source,shell]
 ----
-curl https://dist.apache.org/repos/dist/dev/ignite/3.0.0-alpha1-rc1/ignite.exe -o ignite.exe
+curl -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=ignite/3.0.0-alpha1/ignite.exe" -o ignite.exe
 ----
 
 --
