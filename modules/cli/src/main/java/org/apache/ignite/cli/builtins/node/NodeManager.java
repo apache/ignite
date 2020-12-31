@@ -19,18 +19,13 @@ package org.apache.ignite.cli.builtins.node;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchService;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -44,7 +39,7 @@ public class NodeManager {
 
     private static final String MAIN_CLASS = "org.apache.ignite.app.IgniteRunner";
     private static final Duration NODE_START_TIMEOUT = Duration.ofSeconds(30);
-    private static final Duration LOG_FILE_POLL_INTERVAL = Duration.ofMillis(50);
+    private static final Duration LOG_FILE_POLL_INTERVAL = Duration.ofMillis(500);
 
     private final ModuleStorage moduleStorage;
 
@@ -109,34 +104,27 @@ public class NodeManager {
 
     // TODO: We need more robust way of checking if node successfully run
     private static boolean waitForStart(String started, Path file, Duration timeout) throws IOException, InterruptedException {
-       try(WatchService watchService = FileSystems.getDefault().newWatchService()) {
-           file.getParent().register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
-           var beginTime = System.currentTimeMillis();
-           while ((System.currentTimeMillis() - beginTime) < timeout.toMillis()) {
-               var key = watchService.poll(LOG_FILE_POLL_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);
-               if (key != null) {
-                   for (WatchEvent<?> event : key.pollEvents()) {
-                       if (event.kind().equals(StandardWatchEventKinds.ENTRY_MODIFY) &&
-                           (((WatchEvent<Path>)event).context().getFileName()).equals(file.getFileName())) {
-                           var content = Files.readString(file);
-                           if (content.contains(started))
-                               return true;
-                           else if (content.contains("Exception"))
-                               throw new IgniteCLIException("Can't start the node. Read logs for details: " + file);
-                       }
-                   }
-                   key.reset();
-               }
-           }
-           return false;
-       }
+        var start = System.currentTimeMillis();
+
+        while ((System.currentTimeMillis() - start) < timeout.toMillis()) {
+            Thread.sleep(LOG_FILE_POLL_INTERVAL.toMillis());
+
+            var content = Files.readString(file);
+
+            if (content.contains(started))
+                return true;
+            else if (content.contains("Exception"))
+                throw new IgniteCLIException("Can't start the node. Read logs for details: " + file);
+        }
+
+        return false;
     }
 
     public String classpath() throws IOException {
         return moduleStorage.listInstalled().modules.stream()
             .flatMap(m -> m.artifacts.stream())
             .map(m -> m.toAbsolutePath().toString())
-            .collect(Collectors.joining(":"));
+            .collect(Collectors.joining(System.getProperty("path.separator")));
     }
 
     public List<String> classpathItems() throws IOException {
