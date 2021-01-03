@@ -136,6 +136,8 @@ namespace Apache.Ignite.Linq.Impl
 
                     if (newExpr != null)
                     {
+                        // TODO: We should check Members collection zipped with Arguments,
+                        // and compare Members[i].ItemName to memberHint.Member.Name (probably compare Member instances directly?)
                         foreach (var arg in newExpr.Arguments)
                         {
                             var refExpr = arg as QuerySourceReferenceExpression;
