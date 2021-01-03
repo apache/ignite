@@ -123,15 +123,28 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public static MemberExpression GetProjectedMember(Expression expression, MemberInfo memberHint)
         {
-            var memberExpr = expression as MemberExpression;
+            return Walk(expression, memberHint, e => e as MemberExpression);
+        }
 
+        /// <summary>
+        /// Gets the projected member.
+        /// </summary>
+        private static T Walk<T>(Expression expression, MemberInfo memberHint, Func<Expression, T> getResult) 
+            where T : class
+        {
+            var res = getResult(expression);
+            if (res != null)
+            {
+                return res;
+            }
+            
+            var memberExpr = expression as MemberExpression;
             if (memberExpr != null)
             {
-                return memberExpr;
+                return Walk(expression, memberExpr.Member, getResult);
             }
             
             var subQueryExp = expression as SubQueryExpression;
-
             if (subQueryExp != null)
             {
                 if (memberHint != null)
@@ -148,28 +161,27 @@ namespace Apache.Ignite.Linq.Impl
 
                             if (member == memberHint)
                             {
-                                return GetProjectedMember(newExpr.Arguments[i], null);
+                                return Walk(newExpr.Arguments[i], null, getResult);
                             }
                         }
                     }
                 }
                 
-                return GetProjectedMember(subQueryExp.QueryModel.MainFromClause.FromExpression, memberHint);
+                return Walk(subQueryExp.QueryModel.MainFromClause.FromExpression, memberHint, getResult);
             }
 
             var srcRefExp = expression as QuerySourceReferenceExpression;
-
             if (srcRefExp != null)
             {
                 var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
 
                 if (fromSource != null)
-                    return GetProjectedMember(fromSource.FromExpression, memberHint);
+                    return Walk(fromSource.FromExpression, memberHint, getResult);
 
                 var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
 
                 if (joinSource != null)
-                    return GetProjectedMember(joinSource.InnerSequence, memberHint);
+                    return Walk(joinSource.InnerSequence, memberHint, getResult);
 
                 throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
             }
