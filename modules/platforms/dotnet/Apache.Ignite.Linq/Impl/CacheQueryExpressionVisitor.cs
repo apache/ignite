@@ -321,7 +321,7 @@ namespace Apache.Ignite.Linq.Impl
             if (VisitGroupByMember(expression.Expression))
                 return expression;
 
-            var queryable = ExpressionWalker.GetCacheQueryable(expression, false, expression);
+            var queryable = ExpressionWalker.GetCacheQueryable(expression, false);
 
             if (queryable != null)
             {
