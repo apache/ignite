@@ -26,6 +26,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl.Cache;
@@ -320,16 +321,13 @@ namespace Apache.Ignite.Linq.Impl
             if (VisitGroupByMember(expression.Expression))
                 return expression;
 
-            // TODO: This may return a wrong Queryable when grouping with projection is present.
-            // TODO: When `expression` is a member of anonymous type,
-            // we should drill down and find the corresponding member of the query entity. 
             var queryable = ExpressionWalker.GetCacheQueryable(expression, false, expression);
 
             if (queryable != null)
             {
-                if (expression.Expression.Type.Name.Contains("Anonymous"))
+                if (IsAnonymousType(expression.Expression.Type))
                 {
-                    // Find where the projection comes from
+                    // Find where the projection comes from.
                     expression = ExpressionWalker.GetProjectedMember(expression.Expression, expression);
                 }
 
@@ -683,6 +681,21 @@ namespace Apache.Ignite.Linq.Impl
 
                 Visit(e);
             }
+        }
+
+        /// <summary>
+        /// Determines whether specified type is an anonymous type.
+        /// <para />
+        /// There is no 100% way to identify an anonymous type, since it is up to the compiler implementation,
+        /// so we rely on some well-known anonymous type properties.
+        /// </summary>
+        private static bool IsAnonymousType(Type type)
+        {
+            return type.IsGenericType
+                   && (type.Name.StartsWith("<>", StringComparison.Ordinal) ||
+                       type.Name.StartsWith("VB$", StringComparison.Ordinal))
+                   && (type.Name.Contains("AnonymousType") || type.Name.Contains("AnonType"))
+                   && type.GetCustomAttributes(typeof(CompilerGeneratedAttribute)).Any();
         }
     }
 }
