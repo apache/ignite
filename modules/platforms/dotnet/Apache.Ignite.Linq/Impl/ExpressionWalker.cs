@@ -121,11 +121,15 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the projected member.
         /// </summary>
-        public static MemberExpression GetProjectedMember(
-            Expression expression,
-            MemberExpression memberHint)
+        public static MemberExpression GetProjectedMember(Expression expression, MemberInfo memberHint)
         {
-            // TODO: Simplify this method? Is it a single special case after all?
+            var memberExpr = expression as MemberExpression;
+
+            if (memberExpr != null)
+            {
+                return memberExpr;
+            }
+            
             var subQueryExp = expression as SubQueryExpression;
 
             if (subQueryExp != null)
@@ -136,24 +140,15 @@ namespace Apache.Ignite.Linq.Impl
 
                     if (newExpr != null)
                     {
-                        // TODO: We should check Members collection zipped with Arguments,
-                        // and compare Members[i].ItemName to memberHint.Member.Name (probably compare Member instances directly?)
-                        foreach (var arg in newExpr.Arguments)
+                        Debug.Assert(newExpr.Members.Count == newExpr.Arguments.Count);
+                        
+                        for (var i = 0; i < newExpr.Members.Count; i++)
                         {
-                            var refExpr = arg as QuerySourceReferenceExpression;
-                            if (refExpr != null &&
-                                refExpr.ReferencedQuerySource.ItemName == memberHint.Member.Name &&
-                                refExpr.ReferencedQuerySource.ItemType == memberHint.Type)
-                            {
-                                return GetProjectedMember(refExpr, memberHint);
-                            }
+                            var member = newExpr.Members[i];
 
-                            var propExpr = arg as MemberExpression;
-                            if (propExpr != null &&
-                                propExpr.Member.Name == memberHint.Member.Name &&
-                                propExpr.Type == memberHint.Type)
+                            if (member == memberHint)
                             {
-                                return propExpr;
+                                return GetProjectedMember(newExpr.Arguments[i], null);
                             }
                         }
                     }

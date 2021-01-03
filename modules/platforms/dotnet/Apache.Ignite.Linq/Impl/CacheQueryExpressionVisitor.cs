@@ -328,7 +328,8 @@ namespace Apache.Ignite.Linq.Impl
                 if (IsAnonymousType(expression.Expression.Type))
                 {
                     // Find where the projection comes from.
-                    expression = ExpressionWalker.GetProjectedMember(expression.Expression, expression) ?? expression;
+                    expression = ExpressionWalker.GetProjectedMember(expression.Expression, expression.Member) ?? 
+                                 expression;
                 }
 
                 var fieldName = GetEscapedFieldName(expression, queryable);
