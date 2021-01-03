@@ -190,7 +190,14 @@ namespace Apache.Ignite.Linq.Impl
 
             if (subQueryExp != null)
             {
-                return GetQuerySource(subQueryExp.QueryModel.SelectClause.Selector, memberHint);
+                var source = GetQuerySource(subQueryExp.QueryModel.SelectClause.Selector, memberHint);
+                if (source != null)
+                {
+                    return source;
+                }
+
+                // TODO: Why do we need this branch?
+                return subQueryExp.QueryModel.MainFromClause;
             }
 
             var srcRefExp = expression as QuerySourceReferenceExpression;
@@ -200,7 +207,15 @@ namespace Apache.Ignite.Linq.Impl
                 var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
 
                 if (fromSource != null)
-                    return GetQuerySource(fromSource.FromExpression, memberHint) ?? fromSource;
+                {
+                    var source = GetQuerySource(fromSource.FromExpression, memberHint);
+                    if (source != null)
+                    {
+                        return source;
+                    }
+
+                    return fromSource;
+                }
 
                 var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
 
