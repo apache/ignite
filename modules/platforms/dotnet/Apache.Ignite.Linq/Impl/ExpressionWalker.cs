@@ -177,7 +177,7 @@ namespace Apache.Ignite.Linq.Impl
                 throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
             }
 
-            throw new NotSupportedException("Failed to find projection origin: " + expression);
+            return null;
         }
 
         /// <summary>
