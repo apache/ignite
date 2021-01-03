@@ -196,7 +196,7 @@ namespace Apache.Ignite.Linq.Impl
                     return source;
                 }
 
-                // TODO: Why do we need this branch?
+                // TODO: Can we have a single exit point to generify this method?
                 return subQueryExp.QueryModel.MainFromClause;
             }
 
