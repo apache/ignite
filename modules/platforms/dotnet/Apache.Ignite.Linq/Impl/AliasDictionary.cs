@@ -163,7 +163,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the query source.
         /// <para />
-        /// TODO: This logic is very similar to <see cref="ExpressionWalker.GetCacheQueryable(Expression, bool)"/>
+        /// TODO: This logic is very similar to <see cref="ExpressionWalker.GetProjectedMember"/>
         /// We should probably reuse the traversal logic.
         /// </summary>
         private static IQuerySource GetQuerySource(Expression expression, MemberExpression memberHint = null)
@@ -178,26 +178,13 @@ namespace Apache.Ignite.Linq.Impl
 
                     if (newExpr != null)
                     {
-                        foreach (var arg in newExpr.Arguments)
+                        for (var i = 0; i < newExpr.Members.Count; i++)
                         {
-                            var refExpr = arg as QuerySourceReferenceExpression;
-                            if (refExpr != null &&
-                                refExpr.ReferencedQuerySource.ItemName == memberHint.Member.Name &&
-                                refExpr.ReferencedQuerySource.ItemType == memberHint.Type)
-                            {
-                                // We found the argument to the anonymous type constructor that corresponds
-                                // to the member hint up the stack.
-                                // TODO: Same anonymous type can have multiple properties coming from the same arg?
-                                // e.g. new {Name1 = x.Name, Name2 = x.Name} - check this.
-                                return refExpr.ReferencedQuerySource;
-                            }
+                            var member = newExpr.Members[i];
 
-                            var propExpr = arg as MemberExpression;
-                            if (propExpr != null &&
-                                propExpr.Member.Name == memberHint.Member.Name &&
-                                propExpr.Type == memberHint.Type)
+                            if (member == memberHint.Member)
                             {
-                                return GetQuerySource(propExpr);
+                                return GetQuerySource(newExpr.Arguments[i]);
                             }
                         }
                     }
