@@ -209,10 +209,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             Assert.AreEqual(2, res.Length);
 
-            Assert.AreEqual(1000, res[0].OrgId);
+            Assert.AreEqual("Org_0", res[0].OrgId);
             Assert.AreEqual(898, res[0].MaxAge);
 
-            Assert.AreEqual(1001, res[1].OrgId);
+            Assert.AreEqual("Org_1", res[1].OrgId);
             Assert.AreEqual(899, res[1].MaxAge);
         }
     }
