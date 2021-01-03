@@ -197,7 +197,6 @@ namespace Apache.Ignite.Linq.Impl
                                 propExpr.Member.Name == memberHint.Member.Name &&
                                 propExpr.Type == memberHint.Type)
                             {
-                                // TODO: QuerySqlField.Name is ignored for some reason on this code path
                                 return GetQuerySource(propExpr);
                             }
                         }
