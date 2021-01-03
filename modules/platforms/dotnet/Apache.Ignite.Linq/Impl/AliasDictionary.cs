@@ -168,35 +168,29 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private static IQuerySource GetQuerySource(Expression expression, MemberExpression memberHint = null)
         {
+            if (memberHint != null)
+            {
+                var newExpr = expression as NewExpression;
+
+                if (newExpr != null)
+                {
+                    for (var i = 0; i < newExpr.Members.Count; i++)
+                    {
+                        var member = newExpr.Members[i];
+
+                        if (member == memberHint.Member)
+                        {
+                            return GetQuerySource(newExpr.Arguments[i]);
+                        }
+                    }
+                }
+            }
+
             var subQueryExp = expression as SubQueryExpression;
 
             if (subQueryExp != null)
             {
-                if (memberHint != null)
-                {
-                    var newExpr = subQueryExp.QueryModel.SelectClause.Selector as NewExpression;
-
-                    if (newExpr != null)
-                    {
-                        for (var i = 0; i < newExpr.Members.Count; i++)
-                        {
-                            var member = newExpr.Members[i];
-
-                            if (member == memberHint.Member)
-                            {
-                                return GetQuerySource(newExpr.Arguments[i]);
-                            }
-                        }
-                    }
-                }
-
-                var mainFromClause = subQueryExp.QueryModel.MainFromClause;
-                var querySource = GetQuerySource(mainFromClause.FromExpression, memberHint);
-
-                if (querySource != null)
-                    return querySource;
-
-                return mainFromClause;
+                return GetQuerySource(subQueryExp.QueryModel.SelectClause.Selector, memberHint);
             }
 
             var srcRefExp = expression as QuerySourceReferenceExpression;
