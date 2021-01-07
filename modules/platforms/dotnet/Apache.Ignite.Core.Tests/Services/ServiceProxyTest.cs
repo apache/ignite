@@ -283,6 +283,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 // 1) Write to a stream
                 inStream.WriteBool(SrvKeepBinary);  // WriteProxyMethod does not do this, but Java does
 
+                var locRegisterSameJavaType = Marshaller.RegisterSameJavaType.Value;
                 Marshaller.RegisterSameJavaType.Value = true;
 
                 try
@@ -316,7 +317,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 }
                 finally 
                 {
-                    Marshaller.RegisterSameJavaType.Value = true;
+                    Marshaller.RegisterSameJavaType.Value = locRegisterSameJavaType;
                 }
             }
         }

@@ -174,6 +174,9 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             ICollection<IClusterNode> nodes = _prj.Predicate == null ? null : _prj.GetNodes();
 
+            var locRegisterSameJavaType = Marshaller.RegisterSameJavaType.Value;
+            Marshaller.RegisterSameJavaType.Value = true;
+
             try
             {
                 return DoOutInOp<TReduceRes>(OpExec, writer => WriteTask(writer, taskName, taskArg, nodes));
@@ -181,6 +184,8 @@ namespace Apache.Ignite.Core.Impl.Compute
             finally
             {
                 _keepBinary.Value = false;
+
+                Marshaller.RegisterSameJavaType.Value = locRegisterSameJavaType;
             }
         }
 

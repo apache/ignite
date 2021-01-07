@@ -45,6 +45,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Decimal task name. */
         private const string DecimalTask = "org.apache.ignite.platform.PlatformComputeDecimalTask";
 
+        /** Echo argument task name. */
+        public const string EchoArgTask = "org.apache.ignite.platform.PlatformComputeEchoArgTask";
+
         /** Echo type: null. */
         private const int EchoTypeNull = 0;
 
@@ -346,7 +349,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             });
 
             Assert.AreEqual(
-                "Failed to resolve class name [platformId=1, platform=.NET, typeId=2009791293]", ex.Message);
+                "Failed to resolve class name [platformId=0, platform=Java, typeId=2009791293]", ex.Message);
         }
 
         /// <summary>

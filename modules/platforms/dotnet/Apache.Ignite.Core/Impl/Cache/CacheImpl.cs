@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private Task<T> DoOutOpAsync<T>(CacheOp op, Action<BinaryWriter> writeAction = null,
             Func<BinaryReader, T> convertFunc = null)
         {
-            return DoOutOpAsync((int)op, writeAction, IsKeepBinary, convertFunc);
+            return DoOutOpAsync((int)op, writeAction, IsKeepBinary, convertFunc, true);
         }
 
 

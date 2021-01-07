@@ -33,6 +33,8 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.platform.model.V1;
+import org.apache.ignite.platform.model.V4;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -112,6 +114,18 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
 
     /** Type: binary enum. */
     private static final int TYPE_BINARY_ENUM = 23;
+
+    /** Type: V1. */
+    private static final int TYPE_V1 = 24;
+
+    /** Type: V2. */
+    private static final int TYPE_V2 = 25;
+
+    /** Type: V4. */
+    private static final int TYPE_V4 = 26;
+
+    /** Type: V5. */
+    private static final int TYPE_V5 = 27;
 
     /** Default cache name. */
     public static final String DEFAULT_CACHE_NAME = "default";
@@ -242,6 +256,18 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
 
                     return ignite.binary().buildEnum("JavaDynEnum", "JavaFoo");
                 }
+
+                case TYPE_V1:
+                    return new V1("V1");
+
+                case TYPE_V2:
+                    return ignite.cache("V2").get(1);
+
+                case TYPE_V4:
+                    return new V4("V4");
+
+                case TYPE_V5:
+                    return ignite.cache("V5").get(1);
 
                 default:
                     throw new IgniteException("Unknown type: " + type);
