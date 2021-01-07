@@ -78,7 +78,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
     protected IgniteLogger log;
 
     /** Ignite instance. */
-    protected Ignite ignite;
+    protected IgniteKernal ignite;
 
     /** Ignite instance name. */
     protected String igniteInstanceName;
@@ -264,7 +264,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
      * @param ignite Ignite instance.
      */
     @IgniteInstanceResource
-    protected void injectResources(Ignite ignite) {
+    protected void injectResources(IgniteKernal ignite) {
         this.ignite = ignite;
 
         if (ignite != null && igniteInstanceName == null)

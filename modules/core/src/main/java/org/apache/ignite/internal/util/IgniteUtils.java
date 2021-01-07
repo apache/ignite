@@ -4765,11 +4765,26 @@ public abstract class IgniteUtils {
         return new ObjectName(sb.toString());
     }
 
+    public static @Nullable String getInstanceNameFromContext(GridKernalContext ctx){
+        Object igniteInstanceName = null;
+        if (ctx != null) {
+             igniteInstanceName = ctx.igniteInstanceName();
+
+            if (igniteInstanceName == null && ctx.config() != null) {
+                if (ctx.config().getConsistentId() != null)
+                    igniteInstanceName = ctx.config().getConsistentId();
+                else if (ctx.config().getNodeId() != null)
+                    igniteInstanceName = ctx.config().getNodeId();
+            }
+        }
+        return igniteInstanceName.toString();
+    }
+
     /**
      * @param sb Sb.
      */
     private static void appendClassLoaderHash(SB sb) {
-        if (getBoolean(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, DFLT_MBEAN_APPEND_CLASS_LOADER_ID)) {
+        if (getBoolean(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID)) {
             String clsLdrHash = Integer.toHexString(Ignite.class.getClassLoader().hashCode());
 
             sb.a("clsLdr=").a(clsLdrHash).a(',');

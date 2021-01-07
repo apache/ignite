@@ -612,7 +612,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param ignite Ignite.
      */
     @IgniteInstanceResource
-    @Override protected void injectResources(Ignite ignite) {
+    @Override protected void injectResources(IgniteKernal ignite) {
         super.injectResources(ignite);
 
         // Inject resource.

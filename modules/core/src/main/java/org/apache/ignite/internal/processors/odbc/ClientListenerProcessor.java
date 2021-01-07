@@ -236,7 +236,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         try {
             ObjectName objName = U.registerMBean(
                 ctx.config().getMBeanServer(),
-                ctx.config().getIgniteInstanceName(),
+                U.getInstanceNameFromContext(ctx),
                 "Clients", name, new ClientProcessorMXBeanImpl(), ClientProcessorMXBean.class);
 
             if (log.isDebugEnabled())
@@ -256,7 +256,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         String name = getClass().getSimpleName();
 
         try {
-            ObjectName objName = U.makeMBeanName(ctx.config().getIgniteInstanceName(), "Clients", name);
+            ObjectName objName = U.makeMBeanName(U.getInstanceNameFromContext(ctx), "Clients", name);
 
             ctx.config().getMBeanServer().unregisterMBean(objName);
 

@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
@@ -114,7 +115,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
      * @param ignite Ignite.
      */
     @IgniteInstanceResource
-    @Override protected void injectResources(Ignite ignite) {
+    @Override protected void injectResources(IgniteKernal ignite) {
         super.injectResources(ignite);
 
         if (ignite != null) { // null when service is destroying.
