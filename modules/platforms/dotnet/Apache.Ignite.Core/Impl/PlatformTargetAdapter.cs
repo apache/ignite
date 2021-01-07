@@ -533,20 +533,6 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Writes to stream.
         /// </summary>
-        private static bool WriteToStream(Func<BinaryWriter, bool> action, IBinaryStream stream, Marshaller marsh)
-        {
-            var writer = marsh.StartMarshal(stream);
-
-            var res = action(writer);
-
-            marsh.FinishMarshal(writer);
-
-            return res;
-        }
-
-        /// <summary>
-        /// Writes to stream.
-        /// </summary>
         private static bool WriteToStream(Action<BinaryWriter> action, IBinaryStream stream, Marshaller marsh)
         {
             var writer = marsh.StartMarshal(stream);
