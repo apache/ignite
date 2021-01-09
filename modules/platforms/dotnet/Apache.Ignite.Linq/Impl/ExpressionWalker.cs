@@ -120,28 +120,16 @@ namespace Apache.Ignite.Linq.Impl
         
         /// <summary>
         /// Gets the projected member.
+        /// Queries can have multiple projections, e.g. <c>qry.Select(person => new {Foo = person.Name})</c>.
+        /// This method finds the original member expression from the given projected expression, e.g finds
+        /// <c>Person.Name</c> from <c>Foo</c>.
         /// </summary>
         public static MemberExpression GetProjectedMember(Expression expression, MemberInfo memberHint)
         {
-            return Walk(expression, memberHint, e => e as MemberExpression);
-        }
-
-        /// <summary>
-        /// Gets the projected member.
-        /// </summary>
-        private static T Walk<T>(Expression expression, MemberInfo memberHint, Func<Expression, T> getResult) 
-            where T : class
-        {
-            var res = getResult(expression);
-            if (res != null)
-            {
-                return res;
-            }
-            
             var memberExpr = expression as MemberExpression;
             if (memberExpr != null)
             {
-                return Walk(expression, memberExpr.Member, getResult);
+                return memberExpr;
             }
             
             var subQueryExp = expression as SubQueryExpression;
@@ -161,13 +149,13 @@ namespace Apache.Ignite.Linq.Impl
 
                             if (member == memberHint)
                             {
-                                return Walk(newExpr.Arguments[i], null, getResult);
+                                return GetProjectedMember(newExpr.Arguments[i], null);
                             }
                         }
                     }
                 }
                 
-                return Walk(subQueryExp.QueryModel.MainFromClause.FromExpression, memberHint, getResult);
+                return GetProjectedMember(subQueryExp.QueryModel.MainFromClause.FromExpression, memberHint);
             }
 
             var srcRefExp = expression as QuerySourceReferenceExpression;
@@ -176,12 +164,12 @@ namespace Apache.Ignite.Linq.Impl
                 var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
 
                 if (fromSource != null)
-                    return Walk(fromSource.FromExpression, memberHint, getResult);
+                    return GetProjectedMember(fromSource.FromExpression, memberHint);
 
                 var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
 
                 if (joinSource != null)
-                    return Walk(joinSource.InnerSequence, memberHint, getResult);
+                    return GetProjectedMember(joinSource.InnerSequence, memberHint);
 
                 throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
             }
@@ -255,7 +243,6 @@ namespace Apache.Ignite.Linq.Impl
                     return source;
                 }
 
-                // TODO: Can we have a single exit point to generify this method?
                 return subQueryExp.QueryModel.MainFromClause;
             }
 
