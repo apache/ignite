@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -75,7 +74,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             Debug.Assert(expression != null);
 
-            return GetTableAlias(GetQuerySource(expression));
+            return GetTableAlias(ExpressionWalker.GetQuerySource(expression));
         }
 
         /// <summary>
@@ -83,7 +82,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public string GetTableAlias(IFromClause fromClause)
         {
-            return GetTableAlias(GetQuerySource(fromClause.FromExpression) ?? fromClause);
+            return GetTableAlias(ExpressionWalker.GetQuerySource(fromClause.FromExpression) ?? fromClause);
         }
 
         /// <summary>
@@ -91,7 +90,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public string GetTableAlias(JoinClause joinClause)
         {
-            return GetTableAlias(GetQuerySource(joinClause.InnerSequence) ?? joinClause);
+            return GetTableAlias(ExpressionWalker.GetQuerySource(joinClause.InnerSequence) ?? joinClause);
         }
 
         /// <summary>
@@ -158,79 +157,6 @@ namespace Apache.Ignite.Linq.Impl
             builder.AppendFormat("{0} as {1}", tableName, GetTableAlias(clause));
 
             return builder;
-        }
-
-        /// <summary>
-        /// Gets the query source.
-        /// <para />
-        /// TODO: This logic is very similar to <see cref="ExpressionWalker.GetProjectedMember"/>
-        /// We should probably reuse the traversal logic.
-        /// </summary>
-        private static IQuerySource GetQuerySource(Expression expression, MemberExpression memberHint = null)
-        {
-            if (memberHint != null)
-            {
-                var newExpr = expression as NewExpression;
-
-                if (newExpr != null)
-                {
-                    for (var i = 0; i < newExpr.Members.Count; i++)
-                    {
-                        var member = newExpr.Members[i];
-
-                        if (member == memberHint.Member)
-                        {
-                            return GetQuerySource(newExpr.Arguments[i]);
-                        }
-                    }
-                }
-            }
-
-            var subQueryExp = expression as SubQueryExpression;
-
-            if (subQueryExp != null)
-            {
-                var source = GetQuerySource(subQueryExp.QueryModel.SelectClause.Selector, memberHint);
-                if (source != null)
-                {
-                    return source;
-                }
-
-                // TODO: Can we have a single exit point to generify this method?
-                return subQueryExp.QueryModel.MainFromClause;
-            }
-
-            var srcRefExp = expression as QuerySourceReferenceExpression;
-
-            if (srcRefExp != null)
-            {
-                var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
-
-                if (fromSource != null)
-                {
-                    var source = GetQuerySource(fromSource.FromExpression, memberHint);
-                    if (source != null)
-                    {
-                        return source;
-                    }
-
-                    return fromSource;
-                }
-
-                var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
-
-                if (joinSource != null)
-                    return GetQuerySource(joinSource.InnerSequence, memberHint) ?? joinSource;
-
-                throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
-            }
-
-            var memberExpr = expression as MemberExpression;
-
-            if (memberExpr != null)
-                return GetQuerySource(memberExpr.Expression, memberExpr);
-
-            return null;
         }
     }
 }
