@@ -178,7 +178,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Tries to find QuerySourceReferenceExpression
+        /// Gets the original QuerySourceReferenceExpression.
         /// </summary>
         public static QuerySourceReferenceExpression GetQuerySourceReference(Expression expression,
             // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Global
