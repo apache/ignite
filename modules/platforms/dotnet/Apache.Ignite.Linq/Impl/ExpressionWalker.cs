@@ -131,7 +131,8 @@ namespace Apache.Ignite.Linq.Impl
             var subQueryExp = expression as SubQueryExpression;
             if (subQueryExp != null)
             {
-                var newExpr = subQueryExp.QueryModel.SelectClause.Selector as NewExpression;
+                var selector = subQueryExp.QueryModel.SelectClause.Selector;
+                var newExpr = selector as NewExpression;
 
                 if (newExpr != null)
                 {
@@ -144,6 +145,19 @@ namespace Apache.Ignite.Linq.Impl
                         if (member == memberHint)
                         {
                             return newExpr.Arguments[i] as MemberExpression;
+                        }
+                    }
+                }
+
+                var initExpr = selector as MemberInitExpression;
+
+                if (initExpr != null)
+                {
+                    foreach (var binding in initExpr.Bindings)
+                    {
+                        if (binding.Member == memberHint && binding.BindingType == MemberBindingType.Assignment)
+                        {
+                            return ((MemberAssignment)binding).Expression as MemberExpression;
                         }
                     }
                 }
