@@ -325,12 +325,9 @@ namespace Apache.Ignite.Linq.Impl
 
             if (queryable != null)
             {
-                if (IsAnonymousType(expression.Expression.Type))
-                {
-                    // Find where the projection comes from.
-                    expression = ExpressionWalker.GetProjectedMember(expression.Expression, expression.Member) ?? 
-                                 expression;
-                }
+                // Find where the projection comes from.
+                expression = ExpressionWalker.GetProjectedMember(expression.Expression, expression.Member) ??
+                             expression;
 
                 var fieldName = GetEscapedFieldName(expression, queryable);
 
@@ -682,21 +679,6 @@ namespace Apache.Ignite.Linq.Impl
 
                 Visit(e);
             }
-        }
-
-        /// <summary>
-        /// Determines whether specified type is an anonymous type.
-        /// <para />
-        /// There is no 100% way to identify an anonymous type, since it is up to the compiler implementation,
-        /// so we rely on some well-known anonymous type properties.
-        /// </summary>
-        private static bool IsAnonymousType(Type type)
-        {
-            return type.IsGenericType
-                   && (type.Name.StartsWith("<>", StringComparison.Ordinal) ||
-                       type.Name.StartsWith("VB$", StringComparison.Ordinal))
-                   && (type.Name.Contains("AnonymousType") || type.Name.Contains("AnonType"))
-                   && type.GetCustomAttributes(typeof(CompilerGeneratedAttribute)).Any();
         }
     }
 }
