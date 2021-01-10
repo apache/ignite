@@ -230,6 +230,40 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                     persons,
                     o => o.Value.Id,
                     p => p.Value.OrganizationId,
+                    (org, person) => new Projection
+                    {
+                        OrgName = org.Value.Name,
+                        PersonAge = person.Value.Age
+                    })
+                .GroupBy(x => x.OrgName)
+                .Select(g => new {OrgId = g.Key, MaxAge = g.Max(x => x.PersonAge)})
+                .OrderBy(x => x.MaxAge);
+
+            var res = qry.ToArray();
+
+            Assert.AreEqual(2, res.Length);
+
+            Assert.AreEqual("Org_0", res[0].OrgId);
+            Assert.AreEqual(898, res[0].MaxAge);
+
+            Assert.AreEqual("Org_1", res[1].OrgId);
+            Assert.AreEqual(899, res[1].MaxAge);
+        }
+        
+        /// <summary>
+        /// Tests grouping combined with join in a reverse order followed by a projection to an anonymous type with
+        /// custom projected column names.
+        /// </summary>
+        [Test]
+        public void TestGroupByWithReverseJoinAndAnonymousProjectionWithRename()
+        {
+            var organizations = GetOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
+
+            var qry = organizations.Join(
+                    persons,
+                    o => o.Value.Id,
+                    p => p.Value.OrganizationId,
                     (org, person) => new
                     {
                         OrgName = org.Value.Name,
@@ -248,6 +282,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             Assert.AreEqual("Org_1", res[1].OrgId);
             Assert.AreEqual(899, res[1].MaxAge);
+        }
+        
+        private class Projection
+        {
+            public int PersonAge { get; set; }
+            
+            public string OrgName { get; set; }
         }
     }
 }
