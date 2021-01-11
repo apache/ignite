@@ -114,9 +114,7 @@ public class H2RowComparator implements IndexRowComparator {
                 .get(robject.getClass(), right.getSchema().getKeyDefinitions()[idx].getIdxType())
                 .type();
 
-        int highOrder = Value.getHigherOrder(ltype, rtype);
-
-        int c = compareValues(wrap(lobject, highOrder), wrap(robject, highOrder));
+        int c = compareValues(wrap(lobject, ltype), wrap(robject, rtype));
 
         return Integer.signum(c);
     }
