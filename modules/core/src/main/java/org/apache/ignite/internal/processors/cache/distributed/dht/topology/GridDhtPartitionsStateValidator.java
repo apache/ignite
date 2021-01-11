@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.AbstractMap;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
