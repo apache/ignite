@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.AbstractMap;
 import java.util.Collections;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +26,7 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
