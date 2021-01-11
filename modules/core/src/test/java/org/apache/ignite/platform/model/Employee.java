@@ -15,33 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+package org.apache.ignite.platform.model;
 
 /** Test value object. */
-public class Address {
+public class Employee {
     /** */
-    private String zip;
+    private String fio;
 
     /** */
-    private String addr;
+    private long salary;
 
     /** */
-    public String getZip() {
-        return zip;
+    public String getFio() {
+        return fio;
     }
 
     /** */
-    public void setZip(String zip) {
-        this.zip = zip;
+    public void setFio(String fio) {
+        this.fio = fio;
     }
 
     /** */
-    public String getAddr() {
-        return addr;
+    public long getSalary() {
+        return salary;
     }
 
     /** */
-    public void setAddr(String addr) {
-        this.addr = addr;
+    public void setSalary(long salary) {
+        this.salary = salary;
     }
 }

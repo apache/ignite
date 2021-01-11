@@ -15,37 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+package org.apache.ignite.platform.model;
 
-import java.util.Objects;
-
-/** Test key object. */
-public class Key {
+/** Test value object. */
+public class Address {
     /** */
-    private long id;
+    private String zip;
 
     /** */
-    public Key(long id) {
-        this.id = id;
+    private String addr;
+
+    /** */
+    public String getZip() {
+        return zip;
     }
 
     /** */
-    public long getId() {
-        return id;
+    public void setZip(String zip) {
+        this.zip = zip;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        Key key = (Key)o;
-        return id == key.id;
+    /** */
+    public String getAddr() {
+        return addr;
     }
 
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(id);
+    /** */
+    public void setAddr(String addr) {
+        this.addr = addr;
     }
 }

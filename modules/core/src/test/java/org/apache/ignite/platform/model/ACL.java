@@ -15,20 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+package org.apache.ignite.platform.model;
 
-/** Test value object. */
-public class Department {
-    /** */
-    private String name;
-
-    /** */
-    public String getName() {
-        return name;
-    }
-
-    /** */
-    public void setName(String name) {
-        this.name = name;
-    }
+/** Test enum. */
+public enum ACL {
+    ALLOW, DENY
 }
