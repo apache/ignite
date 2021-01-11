@@ -52,7 +52,7 @@ class IgniteService(IgniteAwareService):
     def restore_from_snapshot(self, snapshot_name: str):
         """
         Restore from snapshot.
-        :param snapshot_name: Name of Snapshot
+        :param snapshot_name: Name of Snapshot.
         """
         snapshot_db = os.path.join(self.snapshots_dir, snapshot_name, "db")
 

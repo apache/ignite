@@ -182,7 +182,7 @@ class ControlUtility:
 
         while datetime.now() < delta_time:
             for node in self._cluster.nodes:
-                mbean = JmxClient(node).find_mbean('snapshot')
+                mbean = JmxClient(node).find_mbean('.*name=snapshot')
                 start_time = int(next(mbean.LastSnapshotStartTime))
                 end_time = int(next(mbean.LastSnapshotEndTime))
                 err_msg = next(mbean.LastSnapshotErrorMessage)
