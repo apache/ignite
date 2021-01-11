@@ -79,7 +79,7 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
 
     /**
      * Removes this set.
-     * To check state you could use {@link #removed()}.
+     * In order to check the state it is possible to use {@link #removed()}.
      *
      * @throws IgniteException If operation failed.
      */
@@ -101,7 +101,7 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
     public boolean collocated();
 
     /**
-     * Gets status of set. Status could be changed to 'removed' by calling {@link #close()} method.
+     * Gets status of set. In order to change the status it is possible to use {@link #close()} method.
      *
      * @return {@code True} if set was removed from cache {@code false} otherwise.
      */
