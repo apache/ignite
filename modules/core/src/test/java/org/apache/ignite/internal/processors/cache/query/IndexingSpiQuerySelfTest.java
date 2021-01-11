@@ -276,12 +276,12 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
             CacheObjectContext coctx = cctx.cacheObjectContext();
 
             Object key = newRow.key().value(coctx, false);
-            Object value = newRow.value().value(coctx, false);
+            Object val = newRow.value().value(coctx, false);
 
             assertFalse(key instanceof BinaryObject);
-            assertFalse(value instanceof BinaryObject);
+            assertFalse(val instanceof BinaryObject);
 
-            idx.put(key, value);
+            idx.put(key, val);
         }
 
         /** {@inheritDoc} */

@@ -38,9 +38,13 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -304,7 +308,14 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime) {
+        @Override public void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+            boolean prevRowAvailable) throws IgniteSpiException {
+
+            CacheObjectContext coctx = cctx.cacheObjectContext();
+
+            Object key = newRow.key().value(coctx, false);
+            Object val = newRow.value().value(coctx, false);
+
             idx.put(key, val);
         }
 

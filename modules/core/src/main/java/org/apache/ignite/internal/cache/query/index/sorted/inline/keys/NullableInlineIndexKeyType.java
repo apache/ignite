@@ -195,7 +195,7 @@ public abstract class NullableInlineIndexKeyType<T> implements InlineIndexKeyTyp
             return 1;
 
         // Value can be set up by user in query with different data type.
-        if (type != IndexKeyTypes.JAVA_OBJECT && type != InlineIndexKeyTypeRegistry.get(v.getClass()).type())
+        if (!InlineIndexKeyTypeRegistry.validate(type, v.getClass()))
             return COMPARE_UNSUPPORTED;
 
         ensureKeyType(v);
@@ -215,7 +215,7 @@ public abstract class NullableInlineIndexKeyType<T> implements InlineIndexKeyTyp
      * Checks whether specified val corresponds to this key type.
      */
     private void ensureKeyType(Object val) {
-        int valType = InlineIndexKeyTypeRegistry.get(val.getClass()).type();
+        int valType = InlineIndexKeyTypeRegistry.get(val.getClass(), type).type();
         ensureKeyType(valType);
     }
 

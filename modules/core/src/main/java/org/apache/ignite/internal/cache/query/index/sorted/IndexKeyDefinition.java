@@ -29,12 +29,16 @@ public class IndexKeyDefinition {
     /** Index key type. @see IndexKeyTypes. */
     private final int idxType;
 
+    /** Index key class. */
+    private final Class<?> idxCls;
+
     /** Order. */
     private final Order order;
 
     /** */
-    public IndexKeyDefinition(String name, int idxType, Order order) {
+    public IndexKeyDefinition(String name, int idxType, Class<?> idxCls, Order order) {
         this.idxType = idxType;
+        this.idxCls = idxCls;
         this.order = order;
         this.name = name;
     }
@@ -47,6 +51,11 @@ public class IndexKeyDefinition {
     /** */
     public int getIdxType() {
         return idxType;
+    }
+
+    /** */
+    public Class<?> getIdxClass() {
+        return idxCls;
     }
 
     /** */

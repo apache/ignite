@@ -60,6 +60,7 @@ public class InlineIndexKeyTypeRegistry {
         classMapping.put(Byte.class, new ByteInlineIndexKeyType());
         classMapping.put(byte[].class, new BytesInlineIndexKeyType());
         classMapping.put(Date.class, new DateInlineIndexKeyType());
+        classMapping.put(Timestamp.class, new TimestampInlineIndexKeyType());
         classMapping.put(Double.class, new DoubleInlineIndexKeyType());
         classMapping.put(Float.class, new FloatInlineIndexKeyType());
         classMapping.put(Integer.class, new IntegerInlineIndexKeyType());
@@ -68,7 +69,6 @@ public class InlineIndexKeyTypeRegistry {
         // TODO: ignore case handling
         classMapping.put(String.class, new StringInlineIndexKeyType(false));
         classMapping.put(Time.class, new TimeInlineIndexKeyType());
-        classMapping.put(Timestamp.class, new TimestampInlineIndexKeyType());
         classMapping.put(UUID.class, new UuidInlineIndexKeyType());
 
         for (InlineIndexKeyType cm: classMapping.values())
@@ -79,12 +79,22 @@ public class InlineIndexKeyTypeRegistry {
 
     /**
      * Get key type for a class. Used for user queries, where getting type from class.
+     * Type is required for cases when class doesn't have strict type relation (nulls, POJO).
+     *
+     * @param clazz Class of a key.
+     * @param type Type of a key.
      */
-    public static InlineIndexKeyType get(Class<?> clazz) {
-        if (clazz == BinaryObjectImpl.class || clazz == JavaObjectKey.class)
-            return objectType;
+    public static InlineIndexKeyType get(Class<?> clazz, int type) {
+        if (clazz == NullKey.class)
+            return get(type);
 
         InlineIndexKeyType key = classMapping.get(clazz);
+
+        if (key == null && type == IndexKeyTypes.JAVA_OBJECT)
+            return objectType;
+
+        if (key == null && clazz == BinaryObjectImpl.class)
+            return objectType;
 
         if (key == null)
             throw new IgniteException("There is no InlineIndexKey mapping for class " + clazz);
@@ -118,6 +128,14 @@ public class InlineIndexKeyTypeRegistry {
         if (clazz == NullKey.class)
             return true;
 
-        return typeMapping.get(type) == get(clazz);
+        if (clazz == BinaryObjectImpl.class || clazz == JavaObjectKey.class)
+            return type == IndexKeyTypes.JAVA_OBJECT;
+
+        InlineIndexKeyType key = classMapping.get(clazz);
+
+        if (key == null)
+            throw new IgniteException("There is no InlineIndexKey mapping for class " + clazz);
+
+        return typeMapping.get(type).type() == key.type();
     }
 }

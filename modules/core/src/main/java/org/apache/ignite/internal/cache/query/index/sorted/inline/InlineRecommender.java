@@ -92,7 +92,8 @@ public class InlineRecommender {
             if (!InlineIndexKeyTypeRegistry.supportInline(keyDef.getIdxType()))
                 break;
 
-            newSize += InlineIndexKeyTypeRegistry.get(keyDef.getIdxType()).inlineSize(row.getKey(i));
+            newSize += InlineIndexKeyTypeRegistry.get(row.getKey(i).getClass(), keyDef.getIdxType())
+                .inlineSize(row.getKey(i));
         }
 
         if (newSize > currInlineSize) {

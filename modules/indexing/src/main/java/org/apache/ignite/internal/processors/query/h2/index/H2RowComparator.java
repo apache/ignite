@@ -67,7 +67,7 @@ public class H2RowComparator implements IndexRowComparator {
         if (v == NullKey.INSTANCE)
             return 1;
 
-        int objType = InlineIndexKeyTypeRegistry.get(v.getClass()).type();
+        int objType = InlineIndexKeyTypeRegistry.get(v.getClass(), curType).type();
 
         int highOrder = Value.getHigherOrder(curType, objType);
 
@@ -94,6 +94,8 @@ public class H2RowComparator implements IndexRowComparator {
             return ((NullKey) lobject).compareTo(robject);
         else if (robject == NullKey.INSTANCE)
             return 1;
+        else if (lobject == null)
+            return CANT_BE_COMPARE;
 
         int ltype, rtype;
 
@@ -101,17 +103,20 @@ public class H2RowComparator implements IndexRowComparator {
         if (left instanceof IndexSearchRowImpl)
             ltype = DataType.getTypeFromClass(lobject.getClass());
         else
-            ltype = left.getSchema().getKeyDefinitions()[idx].getIdxType();
+            ltype = InlineIndexKeyTypeRegistry
+                .get(lobject.getClass(), left.getSchema().getKeyDefinitions()[idx].getIdxType())
+                .type();
 
         if (right instanceof IndexSearchRowImpl)
             rtype = DataType.getTypeFromClass(robject.getClass());
         else
-            rtype = right.getSchema().getKeyDefinitions()[idx].getIdxType();
+            rtype = InlineIndexKeyTypeRegistry
+                .get(robject.getClass(), right.getSchema().getKeyDefinitions()[idx].getIdxType())
+                .type();
 
-        if (lobject == null)
-            return CANT_BE_COMPARE;
+        int highOrder = Value.getHigherOrder(ltype, rtype);
 
-        int c = compareValues(wrap(lobject, ltype), wrap(robject, rtype));
+        int c = compareValues(wrap(lobject, highOrder), wrap(robject, highOrder));
 
         return Integer.signum(c);
     }

@@ -93,7 +93,7 @@ public interface IndexingSpi extends IgniteSpi {
      */
     public default void store(@Nullable String cacheName, Object key, Object val, long expirationTime) throws IgniteSpiException {
         // No-op.
-    };
+    }
 
     /**
      * Updates index with new row. Note that key is unique for cache, so if cache contains multiple indexes
@@ -105,6 +105,7 @@ public interface IndexingSpi extends IgniteSpi {
      */
     public void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
         boolean prevRowAvailable) throws IgniteSpiException;
+
     /**
      * Updates index with new row. Note that key is unique for cache, so if cache contains multiple indexes
      * the key should be removed from indexes other than one being updated.

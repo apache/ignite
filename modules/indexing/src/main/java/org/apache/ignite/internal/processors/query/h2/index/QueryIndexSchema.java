@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -61,18 +62,29 @@ public class QueryIndexSchema implements SortedIndexSchema {
 
         this.h2IdxColumns = h2IndexColumns.clone();
 
-        for (int i = 0; i < h2IndexColumns.length; ++i) {
-            IndexColumn c = h2IndexColumns[i];
-
-            addKeyDefinition(i, c.columnName, c.column.getType(), c.sortType);
-        }
+        for (int i = 0; i < h2IndexColumns.length; ++i)
+            addKeyDefinition(i, h2IndexColumns[i]);
 
         IndexColumn.mapColumns(h2IndexColumns, table);
     }
 
     /** */
-    private void addKeyDefinition(int i, String colName, int idxKeyType, int h2SortType) {
-        idxKeyDefinitions[i] = new IndexKeyDefinition(colName, idxKeyType, getSortOrder(h2SortType));
+    private void addKeyDefinition(int i, IndexColumn c) {
+        GridQueryTypeDescriptor type = cacheDesc.type();
+
+        Class<?> idxKeyCls;
+
+        int colId = c.column.getColumnId();
+
+        if (cacheDesc.isKeyColumn(colId) || cacheDesc.isKeyAliasColumn(colId))
+            idxKeyCls = type.keyClass();
+        else if (cacheDesc.isValueColumn(colId) || cacheDesc.isKeyAliasColumn(colId))
+            idxKeyCls = type.valueClass();
+        else
+            idxKeyCls = type.property(c.columnName).type();
+
+        idxKeyDefinitions[i] = new IndexKeyDefinition(
+            c.columnName, c.column.getType(), idxKeyCls, getSortOrder(c.sortType));
     }
 
     /** Maps H2 column order to Ignite index order. */
@@ -102,7 +114,10 @@ public class QueryIndexSchema implements SortedIndexSchema {
     @Override public Object getIndexKey(int idx, CacheDataRow row) {
         Object o = getKey(idx, row);
 
-        if (idxKeyDefinitions[idx].getIdxType() == IndexKeyTypes.JAVA_OBJECT && o != null && o != NullKey.INSTANCE)
+        if (o == null)
+            return NullKey.INSTANCE;
+
+        if (idxKeyDefinitions[idx].getIdxType() == IndexKeyTypes.JAVA_OBJECT)
             return new JavaObjectKey(o);
 
         return o;
@@ -127,12 +142,7 @@ public class QueryIndexSchema implements SortedIndexSchema {
                     return value(row);
 
                 // columnValue ignores default columns (_KEY, _VAL), so make this shift.
-                Object res = cacheDesc.columnValue(row.key(), row.value(), cacheIdx - QueryUtils.DEFAULT_COLUMNS_COUNT);
-
-                if (res == null)
-                    return NullKey.INSTANCE;
-
-                return res;
+                return cacheDesc.columnValue(row.key(), row.value(), cacheIdx - QueryUtils.DEFAULT_COLUMNS_COUNT);
         }
     }
 

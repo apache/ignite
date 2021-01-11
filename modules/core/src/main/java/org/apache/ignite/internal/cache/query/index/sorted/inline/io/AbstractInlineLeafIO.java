@@ -88,7 +88,7 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexSearchRow> i
                 if (!InlineIndexKeyTypeRegistry.supportInline(type))
                     break;
 
-                int size = InlineIndexKeyTypeRegistry.get(type)
+                int size = InlineIndexKeyTypeRegistry.get(row.getKey(i).getClass(), type)
                     .put(pageAddr, off + fieldOff, row.getKey(i), maxSize);
 
                 // Inline size has exceeded.
