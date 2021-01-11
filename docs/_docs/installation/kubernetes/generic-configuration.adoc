@@ -388,8 +388,11 @@ Note that we use the external IP address (LoadBalancer Ingress) of the service.
 include::{javaFile}[tags=connectThinClient, indent=0]
 ----
 
-Thin clients support the partition awareness feature that may speed up operations. Thin clients store a mapping of Ignite nodes to cache partitions and send partition requests directly to the right node.
-A client connected to the Kubernetes cluster through Ingress can't build such a map. Instead, to activate the feature, one should start a client within the cluster and configure it with KubernetesConnectionConfiguration.
+== Partition Awareness
+
+include::../../includes/partition-awareness.adoc[]
+
+To enable the partition awareness feature within scaling Kubernetes enviroment one should start a client within the cluster and configure it with `KubernetesConnectionConfiguration`.
 In this case, a client can connect to every pod in a cluster.
 
 Note that client configuration must be in sync with Ignite node configuration.

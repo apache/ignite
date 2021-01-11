@@ -83,7 +83,7 @@ public class JavaThinClient {
         // Start a node
         Ignite ignite = Ignition.start(cfg);
         // end::clusterConfiguration[]
-        
+
         ignite.close();
     }
 
@@ -318,7 +318,7 @@ public class JavaThinClient {
         // end::results-to-map[]
     }
 
-    
+
     void veiwsystemview() {
         //tag::system-views[]
         ClientConfiguration cfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
@@ -360,6 +360,26 @@ public class JavaThinClient {
         //end::partition-awareness[]
     }
 
+    void clientAddressFinder() throws Exception {
+        //tag::client-address-finder[]
+        ClientAddressFinder finder = () -> {
+            String[] dynamicServerAddresses = fetchServerAddresses();
+
+            return dynamicServerAddresses;
+        };
+
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddressFinder(finder)
+            .setPartitionAwarenessEnabled(true);
+
+        try (IgniteClient client = Ignition.startClient(cfg)) {
+            ClientCache<Integer, String> cache = client.cache("myCache");
+            // Put, get or remove data from the cache...
+        } catch (ClientException e) {
+            System.err.println(e.getMessage());
+        }
+        //end::client-address-finder[]
+    }
 
     @Test
     void cientCluster() throws Exception {
