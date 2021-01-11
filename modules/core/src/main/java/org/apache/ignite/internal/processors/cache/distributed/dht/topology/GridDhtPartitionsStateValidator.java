@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
-import java.util.UUID;
-import java.util.Set;
-import java.util.Map;
+import java.util.AbstractMap;
+import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.HashMap;
-import java.util.AbstractMap;
+import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.Collections;
+import java.util.UUID;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -126,7 +126,7 @@ public class GridDhtPartitionsStateValidator {
         else if (resUpdCnt.isEmpty() && !resSize.isEmpty())
             error.append("Partitions cache sizes are inconsistent for ").append(fold(topVer, resSize));
 
-        if (!error.isEmpty()){
+        if (error.length() > 0) {
             Set<Integer> parts = new HashSet<>(resUpdCnt.keySet());
             parts.addAll(resSize.keySet());
 
@@ -407,7 +407,7 @@ public class GridDhtPartitionsStateValidator {
             for (Map.Entry<UUID, IgnitePair<Long>> e : p.getValue().entrySet()) {
                 Object consistentId = cctx.discovery().node(topVer, e.getKey()).consistentId();
                 sb.a("consistentId=").a(consistentId).a(" meta=[updCnt=").a(e.getValue().get1())
-                    .a(", size=").a(e.getValue().get2()) .a("] ");
+                    .a(", size=").a(e.getValue().get2()).a("] ");
             }
             sb.a("] ");
         }
@@ -422,7 +422,7 @@ public class GridDhtPartitionsStateValidator {
      */
     private void fillMapForPartition(Map<UUID, Long> sourceMap,
         Map<UUID, IgnitePair<Long>> resultMap, boolean isFirst) {
-        if (sourceMap!=null) {
+        if (sourceMap != null) {
             sourceMap.forEach((uuid, val) -> {
                 IgnitePair<Long> pair = resultMap.computeIfAbsent(uuid, u -> new IgnitePair<>());
                 if (isFirst)

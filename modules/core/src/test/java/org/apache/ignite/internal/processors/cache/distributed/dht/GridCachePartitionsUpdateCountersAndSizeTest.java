@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -175,20 +176,25 @@ public class GridCachePartitionsUpdateCountersAndSizeTest extends GridCommonAbst
     private static class SizeCounterLogListener extends LogListener {
         /** Pattern for Counters inconsistent message.*/
         final Pattern patCnt = Pattern.compile("(\\d)=(\\d{1,2})");
+
         /** Pattern for Size inconsistent message.*/
         final Pattern patSz = Pattern.compile("(\\d)=(\\d{1,2})");
+
         /** Pattern for Both counters and sizes message*/
         final Pattern patCntSz = Pattern.compile("consistentId=dht.GridCachePartitionsUpdateCountersAndSizeTest" +
             "\\d meta=\\[updCnt=(\\d{2}), size=(\\d{1,2})");
 
         /** if finded substring in log for inconsistent counters.*/
         boolean cn;
+
         /** if finded substring in log for inconsistent partition size.*/
         boolean sz;
+
         /** return true if inconsistent counters.*/
         public boolean checkCnt() {
                 return cn;
         }
+
         /** return true if inconsistent partition size.*/
         public boolean checkSize() {
                 return sz;
@@ -230,9 +236,9 @@ public class GridCachePartitionsUpdateCountersAndSizeTest extends GridCommonAbst
                 }
             }
 
-            if (setCnt.size()==2 && setCnt.contains(32L) && setCnt.contains(99L))
+            if (setCnt.size() == 2 && setCnt.contains(32L) && setCnt.contains(99L))
                 cn = true;
-            if (setSize.size()==2 && setSize.contains(0L) && setSize.contains(32L))
+            if (setSize.size() == 2 && setSize.contains(0L) && setSize.contains(32L))
                 sz = true;
         }
     }
