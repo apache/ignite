@@ -132,11 +132,7 @@ public class GridDhtPartitionsStateValidator {
 
             invalidParts.putIfAbsent(top.groupId(), parts);
 
-            throw new IgniteCheckedException(
-                error.toString(),
-                topVer,
-                top.groupId(),
-                parts);
+            throw new IgniteCheckedException(error.toString());
         }
     }
 
