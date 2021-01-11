@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Common
         public T Convert(IBinaryStream stream)
         {
             var locRegisterSameJavaType = Marshaller.RegisterSameJavaType.Value;
-            Marshaller.RegisterSameJavaType.Value = _registerSameJavaType;
+            Marshaller.RegisterSameJavaType.Value = _marsh.IsRegisterSameJavaType(_registerSameJavaType);
 
             try
             {

@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl
         private readonly IPlatformTargetInternal _target;
 
         /** Marshaller. */
-        private readonly Marshaller _marsh;
+        protected readonly Marshaller _marsh;
 
         /// <summary>
         /// Constructor.
@@ -233,7 +233,7 @@ namespace Apache.Ignite.Core.Impl
             Func<IBinaryStream, Exception> inErrorAction)
         {
             var locRegisterSameJavaType = Marshaller.RegisterSameJavaType.Value;
-            Marshaller.RegisterSameJavaType.Value = true;
+            Marshaller.RegisterSameJavaType.Value = _marsh.IsRegisterSameJavaType();
 
             try
             {
@@ -259,7 +259,7 @@ namespace Apache.Ignite.Core.Impl
             Func<IBinaryStream, Exception> inErrorAction)
         {
             var locRegisterSameJavaType = Marshaller.RegisterSameJavaType.Value;
-            Marshaller.RegisterSameJavaType.Value = true;
+            Marshaller.RegisterSameJavaType.Value = _marsh.IsRegisterSameJavaType();
 
             try
             {
@@ -462,7 +462,7 @@ namespace Apache.Ignite.Core.Impl
             IPlatformTargetInternal futTarget;
 
             var locRegisterSameJavaType = Marshaller.RegisterSameJavaType.Value;
-            Marshaller.RegisterSameJavaType.Value = true;
+            Marshaller.RegisterSameJavaType.Value = _marsh.IsRegisterSameJavaType();
 
             try
             {
@@ -510,7 +510,7 @@ namespace Apache.Ignite.Core.Impl
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 
             var locRegisterSameJavaType = Marshaller.RegisterSameJavaType.Value;
-            Marshaller.RegisterSameJavaType.Value = registerSameJavaType;
+            Marshaller.RegisterSameJavaType.Value = _marsh.IsRegisterSameJavaType(registerSameJavaType);
 
             try
             {

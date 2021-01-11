@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             ICollection<IClusterNode> nodes = _prj.Predicate == null ? null : _prj.GetNodes();
 
             var locRegisterSameJavaType = Marshaller.RegisterSameJavaType.Value;
-            Marshaller.RegisterSameJavaType.Value = true;
+            Marshaller.RegisterSameJavaType.Value = _marsh.IsRegisterSameJavaType();
 
             try
             {

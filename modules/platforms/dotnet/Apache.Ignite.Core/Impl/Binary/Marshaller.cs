@@ -969,5 +969,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             return BinaryBasicNameMapper.FullNameInstance;
         }
+
+        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>	
+        /// <returns>True if registerSameJavaType feature can be used, BinaryBasicNameMapper with IsSimpleName = false.</returns>
+        public bool IsRegisterSameJavaType(bool registerSameJavaType = true)
+        {
+            return registerSameJavaType && (_cfg.NameMapper == null || 
+                 _cfg.NameMapper is BinaryBasicNameMapper && !((BinaryBasicNameMapper)_cfg.NameMapper).IsSimpleName);
+        }
     }
 }

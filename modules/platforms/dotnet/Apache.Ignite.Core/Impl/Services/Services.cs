@@ -435,7 +435,7 @@ namespace Apache.Ignite.Core.Impl.Services
             MethodBase method, object[] args, PlatformType platformType)
         {
             var locRegisterSameJavaType = Marshaller.RegisterSameJavaType.Value;
-            Marshaller.RegisterSameJavaType.Value = true;
+            Marshaller.RegisterSameJavaType.Value = _marsh.IsRegisterSameJavaType();
 
             try
             {
