@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-= Ignite for .NET/C#
+= Ignite Quick Start Guide for .NET/C#
 
 This chapter explains how to use .NET Core to build and run a simple Hello World example in .NET that starts a node, puts a value into the node and then gets the value.
 
