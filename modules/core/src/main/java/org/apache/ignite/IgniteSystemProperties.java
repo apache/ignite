@@ -1526,8 +1526,8 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}.
      */
-    @SystemProperty("When set to true, Ignite will allow execute DML operation " +
-        "(MERGE|INSERT|UPDATE|DELETE) within transaction for non MVCC mode")
+    @SystemProperty("When set to true, Ignite will allow executing DML operation " +
+        "(MERGE|INSERT|UPDATE|DELETE) within transactions for non MVCC mode")
     public static final String IGNITE_ALLOW_DML_INSIDE_TRANSACTION = "IGNITE_ALLOW_DML_INSIDE_TRANSACTION";
 
     /**
@@ -1596,7 +1596,7 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code true}.
      */
-    @SystemProperty(value = "Enables start caches in parallel",
+    @SystemProperty(value = "Allows to start multiple caches in parallel",
         defaults = "" + DFLT_ALLOW_START_CACHES_IN_PARALLEL)
     public static final String IGNITE_ALLOW_START_CACHES_IN_PARALLEL = "IGNITE_ALLOW_START_CACHES_IN_PARALLEL";
 
