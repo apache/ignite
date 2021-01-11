@@ -15,26 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
+namespace Apache.Ignite.Core.Binary
+{
+    using System;
 
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.jetbrains.annotations.Nullable;
+    /// <summary>
+    /// Converts <see cref="DateTime"/> values to Java Timestamp and back.
+    /// </summary>
+    public interface ITimestampConverter
+    {
+        /// <summary>Converts date to Java ticks.</summary>
+        /// <param name="date">Date</param>
+        /// <param name="high">High part (milliseconds).</param>
+        /// <param name="low">Low part (nanoseconds)</param>
+        void ToJavaTicks(DateTime date, out long high, out int low);
 
-/**
- * Extended reader interface.
- */
-public interface BinaryRawReaderEx extends BinaryRawReader {
-    /**
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    @Nullable public Object readObjectDetached() throws BinaryObjectException;
-
-    /**
-     * @param deserialize {@code True} if object should be deserialized during reading.
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    @Nullable public Object readObjectDetached(boolean deserialize) throws BinaryObjectException;
+        /// <summary>Converts date from Java ticks.</summary>
+        /// <param name="high">High part (milliseconds).</param>
+        /// <param name="low">Low part (nanoseconds)</param>
+        DateTime FromJavaTicks(long high, int low);
+    }
 }

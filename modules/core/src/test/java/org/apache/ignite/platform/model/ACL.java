@@ -15,26 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
+package org.apache.ignite.platform.model;
 
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.jetbrains.annotations.Nullable;
-
-/**
- * Extended reader interface.
- */
-public interface BinaryRawReaderEx extends BinaryRawReader {
-    /**
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    @Nullable public Object readObjectDetached() throws BinaryObjectException;
-
-    /**
-     * @param deserialize {@code True} if object should be deserialized during reading.
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    @Nullable public Object readObjectDetached(boolean deserialize) throws BinaryObjectException;
+/** Test enum. */
+public enum ACL {
+    ALLOW, DENY
 }

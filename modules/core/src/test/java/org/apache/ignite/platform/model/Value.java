@@ -15,26 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
+package org.apache.ignite.platform.model;
 
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.jetbrains.annotations.Nullable;
+import java.util.Objects;
 
-/**
- * Extended reader interface.
- */
-public interface BinaryRawReaderEx extends BinaryRawReader {
-    /**
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    @Nullable public Object readObjectDetached() throws BinaryObjectException;
+/** Test value object. */
+public class Value {
+    /** */
+    private String val;
 
-    /**
-     * @param deserialize {@code True} if object should be deserialized during reading.
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    @Nullable public Object readObjectDetached(boolean deserialize) throws BinaryObjectException;
+    /** */
+    public Value(String val) {
+        this.val = val;
+    }
+
+    /** */
+    public String getVal() {
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Value value = (Value)o;
+        return Objects.equals(val, value.val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(val);
+    }
 }
