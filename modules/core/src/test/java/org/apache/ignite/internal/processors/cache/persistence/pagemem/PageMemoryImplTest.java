@@ -43,6 +43,7 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
@@ -327,7 +328,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         PageStoreWriter pageStoreWriter = (fullPageId, buf, tag) -> {
             assertNotNull(tag);
 
-            pageStoreMgr.write(fullPageId.groupId(), fullPageId.pageId(), buf, 1);
+            pageStoreMgr.write(fullPageId.groupId(), fullPageId.pageId(), buf, 1, false);
         };
 
         for (FullPageId cpPage : cpPages) {
@@ -642,6 +643,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             provider,
             sizes,
             sharedCtx,
+            sharedCtx.pageStore(),
             PAGE_SIZE,
             replaceWriter,
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
@@ -661,6 +663,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             provider,
             sizes,
             sharedCtx,
+            sharedCtx.pageStore(),
             PAGE_SIZE,
             replaceWriter,
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
@@ -701,7 +704,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         private Map<FullPageId, byte[]> storedPages = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public void read(int grpId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
+        @Override public void read(int grpId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
             FullPageId fullPageId = new FullPageId(pageId, grpId);
 
             byte[] bytes = storedPages.get(fullPageId);
@@ -713,12 +716,14 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(int grpId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
+        @Override public PageStore write(int grpId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
             byte[] data = new byte[PAGE_SIZE];
 
             pageBuf.get(data);
 
             storedPages.put(new FullPageId(pageId, grpId), data);
+
+            return null;
         }
 
         /** {@inheritDoc} */

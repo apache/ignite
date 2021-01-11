@@ -187,6 +187,22 @@ public interface Command<T> {
     public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception;
 
     /**
+     * Actual command execution with verbose mode if needed.
+     * Implement it if your command supports verbose mode.
+     *
+     * @see Command#execute(GridClientConfiguration, Logger)
+     *
+     * @param clientCfg Thin client configuration if connection to cluster is necessary.
+     * @param logger Logger to use.
+     * @param verbose Use verbose mode or not
+     * @return Result of operation (mostly usable for tests).
+     * @throws Exception If error occur.
+     */
+    default Object execute(GridClientConfiguration clientCfg, Logger logger, boolean verbose) throws Exception {
+        return execute(clientCfg, logger);
+    }
+
+    /**
      * Prepares confirmation for the command.
      *
      * @param clientCfg Thin client configuration.

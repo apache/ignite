@@ -21,10 +21,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -40,6 +44,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -64,6 +70,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.impl.GridClientImpl;
@@ -83,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGroupsWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
@@ -94,18 +102,23 @@ import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfigura
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -113,6 +126,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.io.File.separatorChar;
@@ -132,6 +146,12 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
+import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.CACHE_GROUP_KEY_IDS;
+import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.CHANGE_CACHE_GROUP_KEY;
+import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_RATE;
+import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_RESUME;
+import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_STATUS;
+import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_SUSPEND;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
@@ -140,6 +160,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -245,6 +266,365 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         Map<UUID, GridClientImpl> clntsAfter2 = new HashMap<>(clnts);
 
         assertTrue("Still opened clients: " + new ArrayList<>(clnts.values()), clntsBefore.equals(clntsAfter2));
+    }
+
+    private CacheConfiguration cacheConfiguration(String cacheName) {
+        CacheConfiguration ccfg = new CacheConfiguration(cacheName)
+            .setAtomicityMode(TRANSACTIONAL)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1);
+
+        return ccfg;
+    }
+
+    /**
+     * Starts cluster of two nodes and prepares situation of corrupted PDS on node2
+     * so it enters maintenance mode on restart.
+     *
+     * @param cachesToStart Configurations of caches that should be started in cluster.
+     * @param cacheToCorrupt Function determining should cache with given name be corrupted or not.
+     */
+    private File startGridAndPutNodeToMaintenance(CacheConfiguration[] cachesToStart,
+                                                  @Nullable Function<String, Boolean> cacheToCorrupt) throws Exception {
+        assert cachesToStart != null && cachesToStart.length > 0;
+
+        IgniteEx ig0 = startGrid(0);
+        IgniteEx ig1 = startGrid(1);
+
+        String ig1Folder = ig1.context().pdsFolderResolver().resolveFolders().folderName();
+        File dbDir = U.resolveWorkDirectory(ig1.configuration().getWorkDirectory(), "db", false);
+
+        File ig1LfsDir = new File(dbDir, ig1Folder);
+
+        ig0.cluster().baselineAutoAdjustEnabled(false);
+        ig0.cluster().state(ACTIVE);
+
+        IgniteCache dfltCache = ig0.getOrCreateCache(cachesToStart[0]);
+
+        if (cachesToStart.length > 1) {
+            for (int i = 1; i < cachesToStart.length; i++)
+                ig0.getOrCreateCache(cachesToStart[i]);
+        }
+
+        for (int k = 0; k < 1000; k++)
+            dfltCache.put(k, k);
+
+        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager) ig0.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager) ig1.context().cache().context().database();
+
+        dbMrg0.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
+        dbMrg1.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
+
+        Arrays.stream(cachesToStart)
+            .map(ccfg -> ccfg.getName())
+            .filter(name -> cacheToCorrupt.apply(name))
+            .forEach(name -> ig0.cluster().disableWal(name));
+
+        for (int k = 1000; k < 2000; k++)
+            dfltCache.put(k, k);
+
+        stopGrid(1);
+
+        File[] cpMarkers = new File(ig1LfsDir, "cp").listFiles();
+
+        for (File cpMark : cpMarkers) {
+            if (cpMark.getName().contains("-END"))
+                cpMark.delete();
+        }
+
+        assertThrows(log, () -> startGrid(1), Exception.class, null);
+
+        return ig1LfsDir;
+    }
+
+    /**
+     * Test verifies persistence clean command with explicit list of caches to be cleaned.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPersistenceCleanSpecifiedCachesCommand() throws Exception {
+        String cacheName0 = DEFAULT_CACHE_NAME + "0";
+        String cacheName1 = DEFAULT_CACHE_NAME + "1";
+        String cacheName2 = DEFAULT_CACHE_NAME + "2";
+        String cacheName3 = DEFAULT_CACHE_NAME + "3";
+
+        String nonExistingCacheName = DEFAULT_CACHE_NAME + "4";
+
+        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+            new CacheConfiguration[]{
+                cacheConfiguration(cacheName0),
+                cacheConfiguration(cacheName1),
+                cacheConfiguration(cacheName2),
+                cacheConfiguration(cacheName3)
+            },
+            s -> !s.equals(cacheName3));
+
+        IgniteEx ig1 = startGrid(1);
+
+        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--persistence", "clean", "caches",
+            nonExistingCacheName,
+            "--host", "localhost", "--port", port));
+
+        assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "caches",
+            cacheName0 + "," + cacheName1,
+            "--host", "localhost", "--port", port));
+
+        boolean cleanedEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(f -> f.getName().contains(cacheName0) || f.getName().contains(cacheName1))
+            .map(f -> f.listFiles().length == 1)
+            .reduce(true, (t, u) -> t && u);
+
+        assertTrue(cleanedEmpty);
+
+        boolean nonCleanedNonEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(f -> f.getName().contains(cacheName2) || f.getName().contains(cacheName3))
+            .map(f -> f.listFiles().length > 1)
+            .reduce(true, (t, u) -> t && u);
+
+        assertTrue(nonCleanedNonEmpty);
+
+        stopGrid(1);
+
+        ig1 = startGrid(1);
+
+        assertTrue(ig1.context().maintenanceRegistry().isMaintenanceMode());
+
+        assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "caches",
+            cacheName2,
+            "--host", "localhost", "--port", port));
+
+        stopGrid(1);
+
+        ig1 = startGrid(1);
+
+        assertFalse(ig1.context().maintenanceRegistry().isMaintenanceMode());
+    }
+
+    /**
+     * Test verifies persistence clean command cleaning only corrupted caches and not touching others.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPersistenceCleanCorruptedCachesCommand() throws Exception {
+        String cacheName0 = DEFAULT_CACHE_NAME + "0";
+        String cacheName1 = DEFAULT_CACHE_NAME + "1";
+        String cacheName2 = DEFAULT_CACHE_NAME + "2";
+        String cacheName3 = DEFAULT_CACHE_NAME + "3";
+
+        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+            new CacheConfiguration[]{
+                cacheConfiguration(cacheName0),
+                cacheConfiguration(cacheName1),
+                cacheConfiguration(cacheName2),
+                cacheConfiguration(cacheName3)
+            },
+            s -> !s.equals(cacheName3));
+
+        IgniteEx ig1 = startGrid(1);
+
+        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+
+        assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "corrupted",
+            "--host", "localhost", "--port", port));
+
+        boolean cleanedEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(f ->
+                f.getName().contains(cacheName0)
+                || f.getName().contains(cacheName1)
+                || f.getName().contains(cacheName2)
+            )
+            .map(f -> f.listFiles().length == 1)
+            .reduce(true, (t, u) -> t && u);
+
+        assertTrue(cleanedEmpty);
+
+        stopGrid(1);
+
+        ig1 = startGrid(1);
+
+        assertFalse(ig1.context().maintenanceRegistry().isMaintenanceMode());
+    }
+
+    /**
+     * Test verifies persistence clean all command that cleans all cache directories.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPersistenceCleanAllCachesCommand() throws Exception {
+        String cacheName0 = DEFAULT_CACHE_NAME + "0";
+        String cacheName1 = DEFAULT_CACHE_NAME + "1";
+
+        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+            new CacheConfiguration[]{
+                cacheConfiguration(cacheName0),
+                cacheConfiguration(cacheName1)
+            },
+            s -> s.equals(cacheName0));
+
+        IgniteEx ig1 = startGrid(1);
+
+        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+
+        assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "all",
+            "--host", "localhost", "--port", port));
+
+        boolean allEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(File::isDirectory)
+            .filter(f -> f.getName().startsWith("cache-"))
+            .map(f -> f.listFiles().length == 1)
+            .reduce(true, (t, u) -> t && u);
+
+        assertTrue(allEmpty);
+
+        stopGrid(1);
+
+        ig1 = startGrid(1);
+
+        assertFalse(ig1.context().maintenanceRegistry().isMaintenanceMode());
+    }
+
+    /**
+     * Test verifies that persistence backup command to backup all caches backs up all cache directories.
+     * 
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPersistenceBackupAllCachesCommand() throws Exception {
+        String cacheName0 = DEFAULT_CACHE_NAME + "0";
+        String cacheName1 = DEFAULT_CACHE_NAME + "1";
+
+        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+            new CacheConfiguration[]{
+                cacheConfiguration(cacheName0),
+                cacheConfiguration(cacheName1)
+            },
+            s -> s.equals(cacheName0));
+
+        IgniteEx ig1 = startGrid(1);
+
+        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+
+        assertEquals(EXIT_CODE_OK, execute("--persistence", "backup", "all",
+            "--host", "localhost", "--port", port));
+
+        Set<String> backedUpCacheDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(File::isDirectory)
+            .filter(f -> f.getName().startsWith("backup_"))
+            .map(f -> f.getName().substring("backup_".length()))
+            .collect(Collectors.toCollection(TreeSet::new));
+
+        Set<String> allCacheDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(File::isDirectory)
+            .filter(f -> f.getName().startsWith("cache-"))
+            .map(File::getName)
+            .collect(Collectors.toCollection(TreeSet::new));
+
+        assertEqualsCollections(backedUpCacheDirs, allCacheDirs);
+
+        checkCacheAndBackupDirsContent(mntcNodeWorkDir);
+    }
+
+    /**
+     * Test verifies that persistence backup command copies all corrupted caches content to backup directory
+     * but does not touch other directories.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPersistenceBackupCorruptedCachesCommand() throws Exception {
+        String cacheName0 = DEFAULT_CACHE_NAME + "0";
+        String cacheName1 = DEFAULT_CACHE_NAME + "1";
+
+        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+            new CacheConfiguration[]{
+                cacheConfiguration(cacheName0),
+                cacheConfiguration(cacheName1)
+            },
+            s -> s.equals(cacheName0));
+
+        IgniteEx ig1 = startGrid(1);
+
+        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+
+        assertEquals(EXIT_CODE_OK, execute("--persistence", "backup", "corrupted",
+            "--host", "localhost", "--port", port));
+
+        long backedUpCachesCnt = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(File::isDirectory)
+            .filter(f -> f.getName().startsWith("backup_"))
+            .filter(f -> f.getName().contains(cacheName0))
+            .count();
+
+        assertEquals(1, backedUpCachesCnt);
+
+        checkCacheAndBackupDirsContent(mntcNodeWorkDir);
+    }
+
+    /**
+     * Test verifies that persistence backup command with specified caches copied only content of that caches and
+     * doesn't touch other directories.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPersistenceBackupSpecifiedCachesCommand() throws Exception {
+        String cacheName0 = DEFAULT_CACHE_NAME + "0";
+        String cacheName1 = DEFAULT_CACHE_NAME + "1";
+        String cacheName2 = DEFAULT_CACHE_NAME + "2";
+
+        String nonExistingCacheName = "nonExistingCache";
+
+        File mntcNodeWorkDir = startGridAndPutNodeToMaintenance(
+            new CacheConfiguration[]{
+                cacheConfiguration(cacheName0),
+                cacheConfiguration(cacheName1),
+                cacheConfiguration(cacheName2)
+            },
+            s -> s.equals(cacheName0) || s.equals(cacheName2));
+
+        IgniteEx ig1 = startGrid(1);
+
+        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--persistence", "backup", "caches",
+            nonExistingCacheName,
+            "--host", "localhost", "--port", port));
+
+        assertEquals(EXIT_CODE_OK, execute("--persistence", "backup", "caches",
+            cacheName0 + "," + cacheName2,
+            "--host", "localhost", "--port", port));
+
+        long backedUpCachesCnt = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(File::isDirectory)
+            .filter(f -> f.getName().startsWith("backup_"))
+            .count();
+
+        assertEquals(2, backedUpCachesCnt);
+
+        checkCacheAndBackupDirsContent(mntcNodeWorkDir);
+    }
+
+    /** */
+    private void checkCacheAndBackupDirsContent(File mntcNodeWorkDir) {
+        List<File> backupDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
+            .filter(File::isDirectory)
+            .filter(f -> f.getName().startsWith("backup_"))
+            .collect(Collectors.toList());
+
+        Path mntcNodeWorkDirPath = mntcNodeWorkDir.toPath();
+
+        for (File bDir : backupDirs) {
+            File origCacheDir = mntcNodeWorkDirPath.resolve(bDir.getName().substring("backup_".length())).toFile();
+
+            assertTrue(origCacheDir.isDirectory());
+
+            assertEquals(origCacheDir.listFiles().length, bDir.listFiles().length);
+        }
     }
 
     /**
@@ -606,13 +986,49 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testBaselineCollect() throws Exception {
-        Ignite ignite = startGrids(1);
+        Ignite ignite = startGrid(
+            optimize(getConfiguration(getTestIgniteInstanceName(0))).setLocalHost("0.0.0.0"));
+
+        Field addresses = ignite.cluster().node().getClass().getDeclaredField("addrs");
+        addresses.setAccessible(true);
+        addresses.set(ignite.cluster().node(), Arrays.asList("127.0.0.1", "0:0:0:0:0:0:0:1", "10.19.112.175", "188.166.164.247"));
+        Field hostNames = ignite.cluster().node().getClass().getDeclaredField("hostNames");
+        hostNames.setAccessible(true);
+        hostNames.set(ignite.cluster().node(), Arrays.asList("10.19.112.175.hostname"));
 
         assertFalse(ignite.cluster().active());
 
         ignite.cluster().active(true);
 
-        assertEquals(EXIT_CODE_OK, execute("--baseline"));
+        injectTestSystemOut();
+
+        { // non verbose mode
+            assertEquals(EXIT_CODE_OK, execute("--baseline"));
+
+            List<String> nodesInfo = findBaselineNodesInfo();
+            assertEquals(1, nodesInfo.size());
+            assertContains(log, nodesInfo.get(0), "Address=188.166.164.247.hostname/188.166.164.247, ");
+        }
+
+        { // verbose mode
+            assertEquals(EXIT_CODE_OK, execute("--verbose", "--baseline"));
+
+            List<String> nodesInfo = findBaselineNodesInfo();
+            assertEquals(1, nodesInfo.size());
+            assertContains(log, nodesInfo.get(0), "Addresses=188.166.164.247.hostname/188.166.164.247,10.19.112.175.hostname/10.19.112.175");
+        }
+
+        { // empty resolved addresses
+            addresses.set(ignite.cluster().node(), Collections.emptyList());
+            hostNames.set(ignite.cluster().node(), Collections.emptyList());
+
+            assertEquals(EXIT_CODE_OK, execute("--verbose", "--baseline"));
+
+            List<String> nodesInfo = findBaselineNodesInfo();
+            assertEquals(1, nodesInfo.size());
+            assertContains(log, nodesInfo.get(0), "ConsistentId=" +
+                grid(0).cluster().localNode().consistentId() + ", State=");
+        }
 
         assertEquals(1, ignite.cluster().currentBaselineTopology().size());
     }
@@ -637,7 +1053,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String crdStr = findCrdInfo();
 
         assertEquals("(Coordinator: ConsistentId=" +
-            grid(0).cluster().localNode().consistentId() + ", Order=1)", crdStr);
+            grid(0).cluster().localNode().consistentId() + ", Address=127.0.0.1.hostname/127.0.0.1" + ", Order=1)", crdStr);
 
         stopGrid(0);
 
@@ -646,7 +1062,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         crdStr = findCrdInfo();
 
         assertEquals("(Coordinator: ConsistentId=" +
-            grid(1).cluster().localNode().consistentId() + ", Order=2)", crdStr);
+            grid(1).cluster().localNode().consistentId() + ", Address=127.0.0.1.hostname/127.0.0.1" + ", Order=2)", crdStr);
 
         startGrid(0);
 
@@ -655,7 +1071,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         crdStr = findCrdInfo();
 
         assertEquals("(Coordinator: ConsistentId=" +
-            grid(1).cluster().localNode().consistentId() + ", Order=2)", crdStr);
+            grid(1).cluster().localNode().consistentId() + ", Address=127.0.0.1.hostname/127.0.0.1" + ", Order=2)", crdStr);
 
         stopGrid(1);
 
@@ -664,7 +1080,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         crdStr = findCrdInfo();
 
         assertEquals("(Coordinator: ConsistentId=" +
-            grid(0).cluster().localNode().consistentId() + ", Order=4)", crdStr);
+            grid(0).cluster().localNode().consistentId() + ", Address=127.0.0.1.hostname/127.0.0.1" + ", Order=4)", crdStr);
     }
 
     /**
@@ -680,6 +1096,30 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String crdStr = outStr.substring(i).trim();
 
         return crdStr.substring(0, crdStr.indexOf('\n')).trim();
+    }
+
+    /**
+     * @return utility information about baseline nodes
+     */
+    private List<String> findBaselineNodesInfo() {
+        String outStr = testOut.toString();
+
+        int i = outStr.indexOf("Baseline nodes:");
+
+        assertTrue("Baseline nodes information is not found", i != -1);
+
+        int j = outStr.indexOf("\n", i) + 1;
+
+        int beginOfNodeDesc = -1;
+
+        List<String> nodesInfo = new ArrayList<>();
+
+        while ((beginOfNodeDesc = outStr.indexOf("ConsistentId=", j) ) != -1) {
+            j = outStr.indexOf("\n", beginOfNodeDesc);
+            nodesInfo.add(outStr.substring(beginOfNodeDesc, j).trim());
+        }
+
+        return nodesInfo;
     }
 
     /**
@@ -725,6 +1165,148 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--baseline", "add", consistentIds(other)));
 
         assertEquals(2, ignite.cluster().currentBaselineTopology().size());
+    }
+
+    /**
+     * Test connectivity command works via control.sh.
+     */
+    @Test
+    public void testConnectivityCommandWithoutFailedNodes() throws Exception {
+        IgniteEx ignite = startGrids(5);
+
+        assertFalse(ignite.cluster().state().active());
+
+        ignite.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "connectivity"));
+
+        assertContains(log, testOut.toString(), "There are no connectivity problems.");
+    }
+
+    /**
+     * Test that if node exits topology during connectivity check, the command will not fail.
+     *
+     * Description:
+     * 1. Start three nodes.
+     * 2. Execute connectivity check.
+     * 3. When 3-rd node receives connectivity check compute task, it must stop itself.
+     * 4. The command should exit with code OK.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testConnectivityCommandWithNodeExit() throws Exception {
+        IgniteEx[] node3 = new IgniteEx[1];
+
+        class KillNode3CommunicationSpi extends TcpCommunicationSpi {
+            /** Fail check connection request and stop third node */
+            boolean fail;
+
+            public KillNode3CommunicationSpi(boolean fail) {
+                this.fail = fail;
+            }
+
+            /** {@inheritDoc} */
+            @Override public IgniteFuture<BitSet> checkConnection(List<ClusterNode> nodes) {
+                if (fail) {
+                    runAsync(node3[0]::close);
+                    return null;
+                }
+
+                return super.checkConnection(nodes);
+            }
+        }
+
+        IgniteEx node1 = startGrid(1, (UnaryOperator<IgniteConfiguration>) configuration -> {
+            configuration.setCommunicationSpi(new KillNode3CommunicationSpi(false));
+            return configuration;
+        });
+
+        IgniteEx node2 = startGrid(2, (UnaryOperator<IgniteConfiguration>) configuration -> {
+            configuration.setCommunicationSpi(new KillNode3CommunicationSpi(false));
+            return configuration;
+        });
+
+        node3[0] = startGrid(3, (UnaryOperator<IgniteConfiguration>) configuration -> {
+            configuration.setCommunicationSpi(new KillNode3CommunicationSpi(true));
+            return configuration;
+        });
+
+        assertFalse(node1.cluster().state().active());
+
+        node1.cluster().state(ACTIVE);
+
+        assertEquals(3, node1.cluster().nodes().size());
+
+        injectTestSystemOut();
+
+        final IgniteInternalFuture<?> connectivity = runAsync(() -> {
+            final int result = execute("--diagnostic", "connectivity");
+            assertEquals(EXIT_CODE_OK, result);
+        });
+
+        connectivity.get();
+    }
+
+    /**
+     * Test connectivity command works via control.sh with one node failing.
+     */
+    @Test
+    public void testConnectivityCommandWithFailedNodes() throws Exception {
+        UUID okId = UUID.randomUUID();
+        UUID failingId = UUID.randomUUID();
+
+        UnaryOperator<IgniteConfiguration> operator = configuration -> {
+            configuration.setCommunicationSpi(new TcpCommunicationSpi() {
+                /** {inheritDoc} */
+                @Override public IgniteFuture<BitSet> checkConnection(List<ClusterNode> nodes) {
+                    BitSet bitSet = new BitSet();
+
+                    int idx = 0;
+
+                    for (ClusterNode remoteNode : nodes) {
+                        if (!remoteNode.id().equals(failingId))
+                            bitSet.set(idx);
+
+                        idx++;
+                    }
+
+                    return new IgniteFinishedFutureImpl<>(bitSet);
+                }
+            });
+            return configuration;
+        };
+
+        IgniteEx ignite = startGrid("normal", configuration -> {
+            operator.apply(configuration);
+            configuration.setConsistentId(okId);
+            configuration.setNodeId(okId);
+            return configuration;
+        });
+
+        IgniteEx failure = startGrid("failure", configuration -> {
+            operator.apply(configuration);
+            configuration.setConsistentId(failingId);
+            configuration.setNodeId(failingId);
+            return configuration;
+        });
+
+        ignite.cluster().state(ACTIVE);
+
+        failure.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
+
+        int connectivity = execute("--diagnostic", "connectivity");
+        assertEquals(EXIT_CODE_OK, connectivity);
+
+        String out = testOut.toString();
+        String what = "There is no connectivity between the following nodes";
+
+        assertContains(log, out.replaceAll("[\\W_]+", "").trim(),
+                            what.replaceAll("[\\W_]+", "").trim());
     }
 
     /**
@@ -1799,7 +2381,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testDiagnosticPageLocksTracker() throws Exception {
-        Ignite ignite = startGrids(4);
+        Ignite ignite = startGrid(0, (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setConsistentId("node0/dump"));
+        startGrid(1, (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setConsistentId("node1/dump"));
+        startGrid(2, (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setConsistentId("node2/dump"));
+        startGrid(3, (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setConsistentId("node3/dump"));
 
         Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
@@ -2200,7 +2785,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** @throws Exception If failed. */
     @Test
     public void testMasterKeyChange() throws Exception {
-        encriptionEnabled = true;
+        encryptionEnabled = true;
 
         injectTestSystemOut();
 
@@ -2237,8 +2822,187 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** @throws Exception If failed. */
     @Test
+    public void testCacheGroupKeyChange() throws Exception {
+        encryptionEnabled = true;
+
+        injectTestSystemOut();
+
+        int srvNodes = 2;
+
+        IgniteEx ignite = startGrids(srvNodes);
+
+        startGrid(CLIENT_NODE_NAME_PREFIX);
+        startGrid(DAEMON_NODE_NAME_PREFIX);
+
+        ignite.cluster().state(ACTIVE);
+
+        List<Ignite> srvGrids = GridFunc.asList(grid(0), grid(1));
+
+        enableCheckpoints(srvGrids, false);
+
+        createCacheAndPreload(ignite, 1000);
+
+        int ret = execute("--encryption", CACHE_GROUP_KEY_IDS.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertContains(log, testOut.toString(), "Encryption key identifiers for cache: " + DEFAULT_CACHE_NAME);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(), "0 (active)"));
+
+        ret = execute("--encryption", CHANGE_CACHE_GROUP_KEY.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertContains(log, testOut.toString(),
+            "The encryption key has been changed for the cache group \"" + DEFAULT_CACHE_NAME + '"');
+
+        ret = execute("--encryption", CACHE_GROUP_KEY_IDS.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(testOut.toString(), EXIT_CODE_OK, ret);
+        assertContains(log, testOut.toString(), "Encryption key identifiers for cache: " + DEFAULT_CACHE_NAME);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(), "1 (active)"));
+
+        GridTestUtils.waitForCondition(() -> {
+            execute("--encryption", REENCRYPTION_STATUS.toString(), DEFAULT_CACHE_NAME);
+
+            return srvNodes == countSubstrs(testOut.toString(),
+                "re-encryption will be completed after the next checkpoint");
+        }, getTestTimeout());
+
+        enableCheckpoints(srvGrids, true);
+        forceCheckpoint(srvGrids);
+
+        GridTestUtils.waitForCondition(() -> {
+            execute("--encryption", REENCRYPTION_STATUS.toString(), DEFAULT_CACHE_NAME);
+
+            return srvNodes == countSubstrs(testOut.toString(), "re-encryption completed or not required");
+        }, getTestTimeout());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testChangeReencryptionRate() throws Exception {
+        int srvNodes = 2;
+
+        IgniteEx ignite = startGrids(srvNodes);
+
+        ignite.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
+
+        int ret = execute("--encryption", REENCRYPTION_RATE.toString());
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(), "re-encryption rate is not limited."));
+
+        double newRate = 0.01;
+
+        ret = execute("--encryption", REENCRYPTION_RATE.toString(), Double.toString(newRate));
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(),
+            String.format("re-encryption rate has been limited to %.2f MB/s.", newRate)));
+
+        ret = execute("--encryption", REENCRYPTION_RATE.toString());
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(),
+            String.format("re-encryption rate is limited to %.2f MB/s.", newRate)));
+
+        ret = execute("--encryption", REENCRYPTION_RATE.toString(), "0");
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(), "re-encryption rate is not limited."));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testReencryptionSuspendAndResume() throws Exception {
+        encryptionEnabled = true;
+        reencryptSpeed = 0.01;
+        reencryptBatchSize = 1;
+
+        int srvNodes = 2;
+
+        IgniteEx ignite = startGrids(srvNodes);
+
+        ignite.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
+
+        createCacheAndPreload(ignite, 10_000);
+
+        ignite.encryption().changeCacheGroupKey(Collections.singleton(DEFAULT_CACHE_NAME)).get();
+
+        assertTrue(isReencryptionStarted(DEFAULT_CACHE_NAME));
+
+        int ret = execute("--encryption", REENCRYPTION_STATUS.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, ret);
+
+        Pattern ptrn = Pattern.compile("(?m)Node [-0-9a-f]{36}:\n\\s+(?<left>\\d+) KB of data.+");
+        Matcher matcher = ptrn.matcher(testOut.toString());
+        int matchesCnt = 0;
+
+        while (matcher.find()) {
+            assertEquals(1, matcher.groupCount());
+
+            int pagesLeft = Integer.parseInt(matcher.group("left"));
+
+            assertTrue(pagesLeft > 0);
+
+            matchesCnt++;
+        }
+
+        assertEquals(srvNodes, matchesCnt);
+
+        ret = execute("--encryption", REENCRYPTION_SUSPEND.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(),
+            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has been suspended."));
+        assertFalse(isReencryptionStarted(DEFAULT_CACHE_NAME));
+
+        ret = execute("--encryption", REENCRYPTION_SUSPEND.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(),
+            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has already been suspended."));
+
+        ret = execute("--encryption", REENCRYPTION_RESUME.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(),
+            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has been resumed."));
+        assertTrue(isReencryptionStarted(DEFAULT_CACHE_NAME));
+
+        ret = execute("--encryption", REENCRYPTION_RESUME.toString(), DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, ret);
+        assertEquals(srvNodes, countSubstrs(testOut.toString(),
+            "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has already been resumed."));
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if re-encryption of the specified cache is started on all server nodes.
+     */
+    private boolean isReencryptionStarted(String cacheName) {
+        for (Ignite grid : G.allGrids()) {
+            ClusterNode locNode = grid.cluster().localNode();
+
+            if (locNode.isClient() || locNode.isDaemon())
+                continue;
+
+            if (((IgniteEx)grid).context().encryption().reencryptionFuture(CU.cacheId(cacheName)).isDone())
+                return false;
+        }
+
+        return true;
+    }
+
+    /** @throws Exception If failed. */
+    @Test
     public void testMasterKeyChangeOnInactiveCluster() throws Exception {
-        encriptionEnabled = true;
+        encryptionEnabled = true;
 
         injectTestSystemOut();
 
@@ -2407,5 +3171,19 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         hnd.execute(args);
 
         return hnd.getLastOperationResult();
+    }
+
+    /**
+     * @param str String.
+     * @param substr Substring to find in the specified string.
+     * @return The number of substrings found in the specified string.
+     */
+    private int countSubstrs(String str, String substr) {
+        int cnt = 0;
+
+        for (int off = 0; (off = str.indexOf(substr, off)) != -1; off++)
+            ++cnt;
+
+        return cnt;
     }
 }

@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 /**
  * Wal commands.
  */
-public class WalCommands implements Command<T2<String, String>> {
+public class WalCommands extends AbstractCommand<T2<String, String>> {
     /** */
     static final String WAL_PRINT = "print";
 

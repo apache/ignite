@@ -39,6 +39,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Ssl;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
@@ -103,6 +104,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(10000, cfg.MvccVacuumFrequency);
             Assert.AreEqual(4, cfg.MvccVacuumThreadCount);
             Assert.AreEqual(123, cfg.SqlQueryHistorySize);
+            Assert.AreEqual(true, cfg.JavaPeerClassLoadingEnabled);
 
             Assert.IsNotNull(cfg.SqlSchemas);
             Assert.AreEqual(2, cfg.SqlSchemas.Count);
@@ -159,6 +161,14 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(nearCfg);
             Assert.AreEqual(7, nearCfg.NearStartSize);
 
+            var nodeFilter = (AttributeNodeFilter)cacheCfg.NodeFilter;
+            Assert.IsNotNull(nodeFilter);
+            var attributes = nodeFilter.Attributes.ToList();
+            Assert.AreEqual(3, nodeFilter.Attributes.Count);
+            Assert.AreEqual(new KeyValuePair<string, object>("myNode", "true"), attributes[0]);
+            Assert.AreEqual(new KeyValuePair<string, object>("foo", null), attributes[1]);
+            Assert.AreEqual(new KeyValuePair<string, object>("baz", null), attributes[2]);
+
             var plc = nearCfg.EvictionPolicy as FifoEvictionPolicy;
             Assert.IsNotNull(plc);
             Assert.AreEqual(10, plc.BatchSize);
@@ -175,6 +185,10 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(af);
             Assert.AreEqual(99, af.Partitions);
             Assert.IsTrue(af.ExcludeNeighbors);
+
+            var afBf = af.AffinityBackupFilter as ClusterNodeAttributeAffinityBackupFilter;
+            Assert.IsNotNull(afBf);
+            Assert.AreEqual(new[] {"foo1", "bar2"}, afBf.AttributeNames);
 
             var platformCacheConfiguration = cacheCfg.PlatformCacheConfiguration;
             Assert.AreEqual("int", platformCacheConfiguration.KeyTypeName);
@@ -777,7 +791,11 @@ namespace Apache.Ignite.Core.Tests
                         AffinityFunction = new RendezvousAffinityFunction
                         {
                             ExcludeNeighbors = true,
-                            Partitions = 48
+                            Partitions = 48,
+                            AffinityBackupFilter = new ClusterNodeAttributeAffinityBackupFilter
+                            {
+                                AttributeNames = new[] {"foo", "baz", "bar"}
+                            }
                         },
                         ExpiryPolicyFactory = new MyPolicyFactory(),
                         EnableStatistics = true,
@@ -1055,6 +1073,7 @@ namespace Apache.Ignite.Core.Tests
                     Timeout = TimeSpan.FromSeconds(10)
                 },
                 SqlQueryHistorySize = 345,
+                JavaPeerClassLoadingEnabled = true,
                 ExecutorConfiguration = new[]
                 {
                     new ExecutorConfiguration

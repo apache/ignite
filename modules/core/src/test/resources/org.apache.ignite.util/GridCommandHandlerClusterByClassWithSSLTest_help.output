@@ -27,7 +27,10 @@ This utility can do the following commands:
       ACTIVE_READ_ONLY  - Activate cluster. Cache updates are denied.
 
   Print cluster baseline topology:
-    control.(sh|bat) --baseline
+    control.(sh|bat) --baseline [--verbose]
+
+    Parameters:
+      verbose  - Show the full list of node ips.
 
   Add nodes into baseline topology:
     control.(sh|bat) --baseline add consistentId1[,consistentId2,....,consistentIdN] [--yes]
@@ -67,6 +70,27 @@ This utility can do the following commands:
 
   Change the master key:
     control.(sh|bat) --encryption change_master_key newMasterKeyName
+
+  Change the encryption key of the cache group:
+    control.(sh|bat) --encryption change_cache_key cacheGroupName
+
+  View encryption key identifiers of the cache group:
+    control.(sh|bat) --encryption cache_key_ids cacheGroupName
+
+  Display re-encryption status of the cache group:
+    control.(sh|bat) --encryption reencryption_status cacheGroupName
+
+  Suspend re-encryption of the cache group:
+    control.(sh|bat) --encryption suspend_reencryption cacheGroupName
+
+  Resume re-encryption of the cache group:
+    control.(sh|bat) --encryption resume_reencryption cacheGroupName
+
+  View/change re-encryption rate limit:
+    control.(sh|bat) --encryption reencryption_rate_limit [new_limit]
+
+    Parameters:
+      new_limit  - Decimal value to change re-encryption rate limit (MB/s).
 
   Kill compute task by session id:
     control.(sh|bat) --kill COMPUTE session_id
@@ -174,10 +198,10 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
   Print list of available properties:
     control.(sh|bat) --property list
 
-  Get the property value
+  Get the property value:
     control.(sh|bat) --property get --name <property_name>
 
-  Set the property value
+  Set the property value:
     control.(sh|bat) --property set --name <property_name> --val <property_value>
 
   Print system view content:
@@ -193,6 +217,39 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
     Parameters:
       name     - Name of the metric which value should be printed. If name of the metric registry is specified, value of all its metrics will be printed.
       node_id  - ID of the node to get the metric values from. If not set, random node will be chosen.
+
+  Print information about potentially corrupted caches on local node:
+    control.(sh|bat) --persistence
+
+  The same information is printed when info subcommand is passed:
+    control.(sh|bat) --persistence info
+
+  Clean directories of caches with corrupted data files:
+    control.(sh|bat) --persistence clean corrupted
+
+  Clean directories of all caches:
+    control.(sh|bat) --persistence clean all
+
+  Clean directories of only given caches:
+    control.(sh|bat) --persistence clean caches cache1,cache2,cache3
+
+  Backup data files of corrupted caches only:
+    control.(sh|bat) --persistence backup corrupted
+
+  Backup data files of all caches:
+    control.(sh|bat) --persistence backup all
+
+  Backup data files of only given caches:
+    control.(sh|bat) --persistence backup caches cache1,cache2,cache3
+
+  Schedule PDS defragmentation on given nodes for all caches:
+    control.(sh|bat) --defragmentation schedule --nodes consistentId0,consistentId1
+
+  Schedule PDS defragmentation on given nodes but only for given caches:
+    control.(sh|bat) --defragmentation schedule --nodes consistentId0,consistentId1 --caches cache1,cache2,cache3
+
+  Cancel scheduled or active PDS defragmentation on underlying node:
+    control.(sh|bat) --defragmentation cancel
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

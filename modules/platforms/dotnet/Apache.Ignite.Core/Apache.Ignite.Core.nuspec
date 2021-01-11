@@ -40,10 +40,10 @@ Creating NuGet package:
         <icon>images\logo_ignite_128x128.png</icon>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
-Apache Ignite is a memory-centric distributed database, caching, and processing platform for transactional, analytical, and streaming workloads, delivering in-memory speeds at petabyte scale.
+Apache Ignite is a distributed database for in-memory speed and high-performance computing.
 Supports .NET 4+ and .NET Core 2.0+.
             
-More info: https://apacheignite-net.readme.io/
+More info: https://ignite.apache.org/
         </description>
         <copyright>Copyright 2020</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache linqpad-samples</tags>

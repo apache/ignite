@@ -380,7 +380,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
             Set<String> schemaFromSysView = new HashSet<>();
 
-            schemasSysView.forEach(v -> schemaFromSysView.add(v.name()));
+            schemasSysView.forEach(v -> schemaFromSysView.add(v.schemaName()));
 
             HashSet<String> expSchemas = new HashSet<>(asList("MY_SCHEMA", "ANOTHER_SCHEMA", "SYS", "PUBLIC"));
 
@@ -453,20 +453,22 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         assertEquals(1, res.size());
 
-        List tbl = res.get(0);
+        List<?> tbl = res.get(0);
 
         int cacheId = cacheId("SQL_PUBLIC_T1");
         String cacheName = "SQL_PUBLIC_T1";
 
-        assertEquals("T1", tbl.get(0)); // TABLE_NAME
-        assertEquals(DFLT_SCHEMA, tbl.get(1)); // SCHEMA_NAME
-        assertEquals(cacheName, tbl.get(2)); // CACHE_NAME
-        assertEquals(cacheId, tbl.get(3)); // CACHE_ID
-        assertNull(tbl.get(4)); // AFFINITY_KEY_COLUMN
-        assertEquals("ID", tbl.get(5)); // KEY_ALIAS
-        assertNull(tbl.get(6)); // VALUE_ALIAS
-        assertEquals("java.lang.Long", tbl.get(7)); // KEY_TYPE_NAME
-        assertNotNull(tbl.get(8)); // VALUE_TYPE_NAME
+        assertEquals(cacheId, tbl.get(0)); // CACHE_GROUP_ID
+        assertEquals(cacheName, tbl.get(1)); // CACHE_GROUP_NAME
+        assertEquals(cacheId, tbl.get(2)); // CACHE_ID
+        assertEquals(cacheName, tbl.get(3)); // CACHE_NAME
+        assertEquals(DFLT_SCHEMA, tbl.get(4)); // SCHEMA_NAME
+        assertEquals("T1", tbl.get(5)); // TABLE_NAME
+        assertNull(tbl.get(6)); // AFFINITY_KEY_COLUMN
+        assertEquals("ID", tbl.get(7)); // KEY_ALIAS
+        assertNull(tbl.get(8)); // VALUE_ALIAS
+        assertEquals("java.lang.Long", tbl.get(9)); // KEY_TYPE_NAME
+        assertNotNull(tbl.get(10)); // VALUE_TYPE_NAME
 
         execute(ignite0, "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR)");
 

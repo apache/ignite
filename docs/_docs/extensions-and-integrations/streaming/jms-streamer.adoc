@@ -116,8 +116,8 @@ tab:pom.xml[]
 ----
 <dependency>
     <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-jms11</artifactId>
-    <version>${ignite.version}</version>
+    <artifactId>ignite-jms11-ext</artifactId>
+    <version>${ignite-jms11-ext.version}</version>
 </dependency>
 ----
 --

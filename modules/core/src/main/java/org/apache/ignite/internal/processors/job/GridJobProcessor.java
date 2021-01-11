@@ -166,7 +166,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final boolean jobAlwaysActivate;
 
     /** */
-    private final ConcurrentMap<IgniteUuid, GridJobWorker> activeJobs;
+    private volatile ConcurrentMap<IgniteUuid, GridJobWorker> activeJobs;
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridJobWorker> passiveJobs;
@@ -291,7 +291,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     };
 
     /** Current session. */
-    private final ThreadLocal<ComputeTaskSession> currSess = new ThreadLocal<>();
+    private final ThreadLocal<GridJobSessionImpl> currSess = new ThreadLocal<>();
 
     /**
      * @param ctx Kernal context.
@@ -306,8 +306,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         metricsUpdateFreq = ctx.config().getMetricsUpdateFrequency();
 
-        activeJobs = jobAlwaysActivate ? new ConcurrentHashMap<IgniteUuid, GridJobWorker>() :
-            new JobsMap(1024, 0.75f, 256);
+        activeJobs = initJobsMap(jobAlwaysActivate);
 
         passiveJobs = jobAlwaysActivate ? null : new JobsMap(1024, 0.75f, 256);
 
@@ -377,7 +376,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         // Clear collections.
-        activeJobs.clear();
+        activeJobs = initJobsMap(jobAlwaysActivate);
 
         activeJobsMetric.reset();
 
@@ -505,6 +504,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         if (dep.obsolete())
             ctx.resource().onUndeployed(dep);
+    }
+
+    /**
+     * @param collisionsDisabled If collision SPI is disabled.
+     */
+    private ConcurrentMap<IgniteUuid, GridJobWorker> initJobsMap(boolean collisionsDisabled) {
+        return collisionsDisabled ? new ConcurrentHashMap<IgniteUuid, GridJobWorker>() :
+            new JobsMap(1024, 0.75f, 256);
     }
 
     /**
@@ -1377,7 +1384,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      *
      * @param ses Session.
      */
-    public void currentTaskSession(ComputeTaskSession ses) {
+    public void currentTaskSession(GridJobSessionImpl ses) {
         currSess.set(ses);
     }
 
@@ -1407,6 +1414,20 @@ public class GridJobProcessor extends GridProcessorAdapter {
             return null;
 
         return ses.getTaskName();
+    }
+
+    /**
+     * Returns current deployment.
+     *
+     * @return Deployment.
+     */
+    public GridDeployment currentDeployment() {
+        GridJobSessionImpl session = currSess.get();
+
+        if (session == null || session.deployment() == null)
+            return null;
+
+        return session.deployment();
     }
 
     /**
@@ -2024,6 +2045,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         rwLock.readUnlock();
                     }
                 }
+            }
+
+            if (ctx.performanceStatistics().enabled()) {
+                ctx.performanceStatistics().job(ses.getId(),
+                    worker.getQueuedTime(),
+                    worker.getStartTime(),
+                    worker.getExecuteTime(),
+                    worker.isTimedOut());
             }
         }
     }

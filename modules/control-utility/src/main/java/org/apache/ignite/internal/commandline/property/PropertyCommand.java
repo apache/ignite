@@ -19,6 +19,7 @@ package org.apache.ignite.internal.commandline.property;
 
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
@@ -33,7 +34,7 @@ import static org.apache.ignite.internal.commandline.property.PropertySubCommand
 /**
  * Command to manage distributed properties (see {@link DistributedChangeableProperty})
  */
-public class PropertyCommand implements Command<Object> {
+public class PropertyCommand extends AbstractCommand<Object> {
     /**
      *
      */
@@ -51,13 +52,13 @@ public class PropertyCommand implements Command<Object> {
             LIST.toString()
         );
 
-        usage(log, "Get the property value",
+        usage(log, "Get the property value:",
             PROPERTY,
             GET.toString(),
             PropertyArgs.NAME,
             "<property_name>");
 
-        usage(log, "Set the property value",
+        usage(log, "Set the property value:",
             PROPERTY,
             SET.toString(),
             PropertyArgs.NAME,

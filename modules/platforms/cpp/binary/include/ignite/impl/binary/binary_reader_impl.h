@@ -20,6 +20,9 @@
 
 #include <stdint.h>
 
+#include <vector>
+#include <string>
+
 #include <ignite/common/common.h>
 #include <ignite/common/fixed_size_array.h>
 
@@ -1080,8 +1083,41 @@ namespace ignite
 
                         default:
                         {
-                            IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_BINARY, 
-                                           "Unexpected header during deserialization: ", (hdr & 0xFF));
+                            IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_BINARY,
+                                "Unexpected header during deserialization: ", static_cast<int>(hdr & 0xFF));
+                        }
+                    }
+                }
+
+                /**
+                 * Read object.
+                 *
+                 * @return Read object.
+                 */
+                template<typename R, typename T>
+                void ReadTopObject0(std::vector<T>& res)
+                {
+                    int8_t hdr = stream->ReadInt8();
+
+                    switch (hdr)
+                    {
+                        case IGNITE_TYPE_ARRAY:
+                        {
+                            int32_t elementNum = stream->ReadInt32();
+
+                            res.clear();
+                            res.reserve(static_cast<size_t>(elementNum));
+
+                            for (int32_t i = 0; i < elementNum; ++i)
+                                res.push_back(ReadObject<T>());
+
+                            return;
+                        }
+
+                        default:
+                        {
+                            IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_BINARY,
+                                "Unexpected header during deserialization: ", static_cast<int>(hdr & 0xFF));
                         }
                     }
                 }
@@ -1269,36 +1305,33 @@ namespace ignite
                     const char* fieldName, 
                     T(*func) (interop::InteropInputStream*), 
                     const int8_t expHdr, 
-                    T dflt
-                )
+                    T dflt)
                 {
+                    CheckRawMode(false);
+                    CheckSingleMode(true);
+
+                    int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
+                    int32_t fieldPos = FindField(fieldId);
+
+                    if (fieldPos <= 0)
+                        return dflt;
+
+                    stream->Position(fieldPos);
+
+                    int8_t typeId = stream->ReadInt8();
+
+                    if (typeId == IGNITE_HDR_NULL)
+                        return dflt;
+
+                    if (typeId != expHdr)
                     {
-                        CheckRawMode(false);
-                        CheckSingleMode(true);
+                        int32_t pos = stream->Position();
 
-                        int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                        int32_t fieldPos = FindField(fieldId);
-
-                        if (fieldPos <= 0)
-                            return dflt;
-
-                        stream->Position(fieldPos);
-
-                        int8_t typeId = stream->ReadInt8();
-                        
-                        if (typeId == IGNITE_HDR_NULL)
-                            return dflt;
-
-                        if (typeId != expHdr)
-                        {
-                            int32_t pos = stream->Position();
-
-                            IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid type ID", 
-                                "position", pos, "expected", static_cast<int>(expHdr), "actual", static_cast<int>(typeId))
-                        }
-
-                        return func(stream);
+                        IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid type ID",
+                            "position", pos, "expected", static_cast<int>(expHdr), "actual", static_cast<int>(typeId))
                     }
+
+                    return func(stream);
                 }
 
                 /**
@@ -1378,29 +1411,63 @@ namespace ignite
                     T* res,
                     const int32_t len,
                     interop::InteropInputStream* stream,
-                    void(*func)(interop::InteropInputStream*, T* const, const int32_t),
+                    void(*func)(interop::InteropInputStream*, T*, int32_t),
                     const int8_t expHdr
                 )
                 {
+                    int8_t hdr = stream->ReadInt8();
+
+                    if (hdr == expHdr)
                     {
-                        int8_t hdr = stream->ReadInt8();
+                        int32_t realLen = stream->ReadInt32();
 
-                        if (hdr == expHdr)
-                        {
-                            int32_t realLen = stream->ReadInt32();
+                        if (realLen == 0 || (res && len >= realLen))
+                            func(stream, res, realLen);
+                        else
+                            stream->Position(stream->Position() - 5);
 
-                            if (realLen == 0 || (res && len >= realLen))
-                                func(stream, res, realLen);
-                            else
-                                stream->Position(stream->Position() - 5);
-
-                            return realLen;
-                        }
-                        else if (hdr != IGNITE_HDR_NULL)
-                            ThrowOnInvalidHeader(stream->Position() - 1, expHdr, hdr);
-
-                        return -1;
+                        return realLen;
                     }
+                    else if (hdr != IGNITE_HDR_NULL)
+                        ThrowOnInvalidHeader(stream->Position() - 1, expHdr, hdr);
+
+                    return -1;
+                }
+
+                /**
+                 * Internal read array to vector routine.
+                 *
+                 * @param res Resulting array.
+                 * @param stream Stream.
+                 * @param func Function to be invoked on stream.
+                 * @param expHdr Expected header.
+                 * @return Length.
+                 */
+                template<typename T>
+                static void ReadArrayToVectorInternal(
+                        std::vector<T>& res,
+                        interop::InteropInputStream* stream,
+                        void(*func)(interop::InteropInputStream*, T*, int32_t),
+                        const int8_t expHdr
+                )
+                {
+                    int8_t hdr = stream->ReadInt8();
+
+                    if (hdr == expHdr)
+                    {
+                        int32_t realLen = stream->ReadInt32();
+
+                        if (realLen > 0)
+                        {
+                            res.resize(realLen, 0);
+
+                            func(stream, &res[0], realLen);
+                        }
+                    }
+                    else if (hdr == IGNITE_HDR_NULL)
+                        res.clear();
+                    else
+                        ThrowOnInvalidHeader(stream->Position() - 1, expHdr, hdr);
                 }
 
                 /**
@@ -1579,6 +1646,26 @@ namespace ignite
             template<>
             void IGNITE_IMPORT_EXPORT
             BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, std::string>(std::string& res);
+
+            template<>
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<
+                ignite::binary::BinaryReader, std::vector<int8_t> >(std::vector<int8_t>& res);
+
+            template<>
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<
+                ignite::binary::BinaryReader, std::vector<int16_t> >(std::vector<int16_t>& res);
+
+            template<>
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<
+                ignite::binary::BinaryReader, std::vector<int32_t> >(std::vector<int32_t>& res);
+
+            template<>
+            void IGNITE_IMPORT_EXPORT
+            BinaryReaderImpl::ReadTopObject0<
+                ignite::binary::BinaryReader, std::vector<int64_t> >(std::vector<int64_t>& res);
 
             template<>
             inline int8_t BinaryReaderImpl::GetNull() const

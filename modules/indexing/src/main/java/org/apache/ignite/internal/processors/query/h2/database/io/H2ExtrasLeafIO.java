@@ -26,7 +26,7 @@ public class H2ExtrasLeafIO extends AbstractH2ExtrasLeafIO {
      * @param ver Page format version.
      * @param payloadSize Payload size.
      */
-    H2ExtrasLeafIO(short type, int ver, int payloadSize) {
+    public H2ExtrasLeafIO(short type, int ver, int payloadSize) {
         super(type, ver, 8, payloadSize);
     }
 }
