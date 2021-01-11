@@ -292,8 +292,6 @@ You can set the `JVM_OPTS` environment variable:
 export JVM_OPTS="$JVM_OPTS -Xmx6G -DIGNITE_TO_STRING_INCLUDE_SENSITIVE=false"; $IGNITE_HOME/bin/ignite.sh
 ----
 
-
-
 === Command Line Arguments
 
 You can also pass JVM options by using the `-J` prefix:
