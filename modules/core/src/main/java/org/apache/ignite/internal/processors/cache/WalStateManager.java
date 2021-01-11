@@ -203,27 +203,28 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         synchronized (mux) {
             // Process top pending requests.
             for (CacheGroupDescriptor grpDesc : cacheProcessor().cacheGroupDescriptors().values()) {
-                WalStateProposeMessage msg = grpDesc.nextWalChangeRequest();
+                for (WalStateProposeMessage msg : grpDesc.walChangeRequests()) {
 
-                if (msg != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Processing WAL state message on start: " + msg);
+                    if (msg != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Processing WAL state message on start: " + msg);
 
-                    boolean enabled = grpDesc.walEnabled();
+                        boolean enabled = grpDesc.walEnabled();
 
-                    WalStateResult res;
+                        WalStateResult res;
 
-                    if (F.eq(enabled, msg.enable()))
-                        res = new WalStateResult(msg, false);
-                    else {
-                        res = new WalStateResult(msg, true);
+                        if (F.eq(enabled, msg.enable()))
+                            res = new WalStateResult(msg, false);
+                        else {
+                            res = new WalStateResult(msg, true);
 
-                        grpDesc.walEnabled(!enabled);
+                            grpDesc.walEnabled(!enabled);
+                        }
+
+                        initialRess.add(res);
+
+                        addResult(res);
                     }
-
-                    initialRess.add(res);
-
-                    addResult(res);
                 }
             }
         }
