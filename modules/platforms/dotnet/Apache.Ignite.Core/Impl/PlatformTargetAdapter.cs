@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl
         private readonly IPlatformTargetInternal _target;
 
         /** Marshaller. */
-        protected readonly Marshaller _marsh;
+        private readonly Marshaller _marsh;
 
         /// <summary>
         /// Constructor.
@@ -554,6 +554,13 @@ namespace Apache.Ignite.Core.Impl
             writer.WriteObject(obj);
 
             marsh.FinishMarshal(writer);
+        }
+        
+        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>	
+        /// <returns>True if registerSameJavaType feature can be used, BinaryBasicNameMapper with IsSimpleName = false.</returns>
+        protected bool IsRegisterSameJavaType(bool registerSameJavaType = true)
+        {
+            return _marsh.IsRegisterSameJavaType();
         }
 
         #endregion
