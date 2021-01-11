@@ -15,26 +15,53 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
+package org.apache.ignite.platform.model;
 
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.jetbrains.annotations.Nullable;
+/** Test value object. */
+public class User {
+    /** */
+    private int id;
 
-/**
- * Extended reader interface.
- */
-public interface BinaryRawReaderEx extends BinaryRawReader {
-    /**
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    @Nullable public Object readObjectDetached() throws BinaryObjectException;
+    /** */
+    private ACL acl;
 
-    /**
-     * @param deserialize {@code True} if object should be deserialized during reading.
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    @Nullable public Object readObjectDetached(boolean deserialize) throws BinaryObjectException;
+    /** */
+    private Role role;
+
+    /** */
+    public User(int id, ACL acl, Role role) {
+        this.id = id;
+        this.acl = acl;
+        this.role = role;
+    }
+
+    /** */
+    public int getId() {
+        return id;
+    }
+
+    /** */
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    /** */
+    public ACL getAcl() {
+        return acl;
+    }
+
+    /** */
+    public void setAcl(ACL acl) {
+        this.acl = acl;
+    }
+
+    /** */
+    public Role getRole() {
+        return role;
+    }
+
+    /** */
+    public void setRole(Role role) {
+        this.role = role;
+    }
 }

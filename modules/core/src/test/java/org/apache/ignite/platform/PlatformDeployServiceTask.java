@@ -18,13 +18,20 @@
 package org.apache.ignite.platform;
 
 import java.sql.Timestamp;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cluster.ClusterNode;
@@ -33,6 +40,16 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.platform.model.ACL;
+import org.apache.ignite.platform.model.Account;
+import org.apache.ignite.platform.model.Address;
+import org.apache.ignite.platform.model.Department;
+import org.apache.ignite.platform.model.Employee;
+import org.apache.ignite.platform.model.Key;
+import org.apache.ignite.platform.model.Role;
+import org.apache.ignite.platform.model.User;
+import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
@@ -89,6 +106,9 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
      * Test service.
      */
     public static class PlatformTestService implements Service {
+        @IgniteInstanceResource
+        private Ignite ignite;
+
         /** */
         private boolean isCancelled;
 
@@ -411,6 +431,174 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
                 return null;
 
             return o.toBuilder().setField("field", 15).build();
+        }
+
+        /** */
+        public Address testAddress(Address addr) {
+            if (addr == null)
+                return null;
+
+            assert "000".equals(addr.getZip());
+            assert "Moscow".equals(addr.getAddr());
+
+            addr.setZip("127000");
+            addr.setAddr("Moscow Akademika Koroleva 12");
+
+            return addr;
+        }
+
+        /** */
+        public int testOverload(Integer count, Employee[] emps) {
+            assert emps != null;
+            assert count == emps.length;
+
+            assert "Sarah Connor".equals(emps[0].getFio());
+            assert 1 == emps[0].getSalary();
+
+            assert "John Connor".equals(emps[1].getFio());
+            assert 2 == emps[1].getSalary();
+
+            return 42;
+        }
+
+        /** */
+        public int testOverload(int first, int second) {
+            return first + second;
+        }
+
+        /** */
+        public Employee[] testEmployees(Employee[] emps) {
+            if (emps == null)
+                return null;
+
+            assert 2 == emps.length;
+
+            assert "Sarah Connor".equals(emps[0].getFio());
+            assert 1 == emps[0].getSalary();
+
+            assert "John Connor".equals(emps[1].getFio());
+            assert 2 == emps[1].getSalary();
+
+            Employee kyle = new Employee();
+
+            kyle.setFio("Kyle Reese");
+            kyle.setSalary(3);
+
+            return new Employee[] { kyle };
+        }
+
+        /** */
+        public Collection testDepartments(Collection deps) {
+            if (deps == null)
+                return null;
+
+            assert 2 == deps.size();
+
+            Iterator<Department> iter = deps.iterator();
+
+            assert "HR".equals(iter.next().getName());
+            assert "IT".equals(iter.next().getName());
+
+            Collection<Department> res = new ArrayList<>();
+
+            Department d = new Department();
+
+            d.setName("Executive");
+
+            res.add(d);
+
+            return res;
+        }
+
+        /** */
+        public Map testMap(Map map) {
+            if (map == null)
+                return null;
+
+            assert map.containsKey(new Key(1));
+            assert map.containsKey(new Key(2));
+
+            assert "value1".equals(((Value)map.get(new Key(1))).getVal());
+            assert "value2".equals(((Value)map.get(new Key(2))).getVal());
+
+            Map m = new HashMap();
+
+            m.put(new Key(3), new Value("value3"));
+
+            return m;
+        }
+
+        /** */
+        public Account[] testAccounts() {
+            return new Account[] {
+                new Account("123", 42),
+                new Account("321", 0)
+            };
+        }
+
+        /** */
+        public User[] testUsers() {
+            return new User[] {
+                new User(1, ACL.ALLOW, new Role("admin")),
+                new User(2, ACL.DENY, new Role("user"))
+            };
+        }
+
+        /** */
+        public void testDateArray(Timestamp[] dates) {
+            assert dates != null;
+            assert 2 == dates.length;
+            assert new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()).equals(dates[0]);
+            assert new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()).equals(dates[1]);
+        }
+
+        /** */
+        public Timestamp testDate(Timestamp date) {
+            if (date == null)
+                return null;
+
+            assert new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()).equals(date);
+
+            return new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime());
+        }
+
+        /** */
+        public void testUTCDateFromCache() {
+            IgniteCache<Integer, Timestamp> cache = ignite.cache("net-dates");
+
+            cache.put(3, new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()));
+            cache.put(4, new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()));
+
+            assert new Timestamp(new Date(82, Calendar.APRIL, 1, 0, 0, 0).getTime()).equals(cache.get(1));
+            assert new Timestamp(new Date(91, Calendar.OCTOBER, 1, 0, 0, 0).getTime()).equals(cache.get(2));
+        }
+
+        /** */
+        public void testLocalDateFromCache() {
+            IgniteCache<Integer, Timestamp> cache = ignite.cache("net-dates");
+
+            ZoneId msk = ZoneId.of("Europe/Moscow");
+
+            //This Date in Europe/Moscow have offset +4.
+            Timestamp ts1 = new Timestamp(ZonedDateTime.of(1982, 4, 1, 1, 0, 0, 0, msk).toInstant().toEpochMilli());
+            //This Date in Europe/Moscow have offset +3.
+            Timestamp ts2 = new Timestamp(ZonedDateTime.of(1982, 3, 31, 22, 0, 0, 0, msk).toInstant().toEpochMilli());
+
+            assert ts1.equals(cache.get(5));
+            assert ts2.equals(cache.get(6));
+
+            cache.put(7, ts1);
+            cache.put(8, ts2);
+        }
+
+        /** */
+        public void sleep(long delayMs) {
+            try {
+                U.sleep(delayMs);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
         }
     }
 }

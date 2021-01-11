@@ -15,26 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
+package org.apache.ignite.platform.model;
 
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.jetbrains.annotations.Nullable;
+/** Test value object. */
+public class Address {
+    /** */
+    private String zip;
 
-/**
- * Extended reader interface.
- */
-public interface BinaryRawReaderEx extends BinaryRawReader {
-    /**
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    @Nullable public Object readObjectDetached() throws BinaryObjectException;
+    /** */
+    private String addr;
 
-    /**
-     * @param deserialize {@code True} if object should be deserialized during reading.
-     * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    @Nullable public Object readObjectDetached(boolean deserialize) throws BinaryObjectException;
+    /** */
+    public String getZip() {
+        return zip;
+    }
+
+    /** */
+    public void setZip(String zip) {
+        this.zip = zip;
+    }
+
+    /** */
+    public String getAddr() {
+        return addr;
+    }
+
+    /** */
+    public void setAddr(String addr) {
+        this.addr = addr;
+    }
 }
