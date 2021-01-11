@@ -211,6 +211,89 @@ namespace Apache.Ignite.Core.Tests.Log
         }
 
         /// <summary>
+        /// Tests the nullable <see cref="QueryEntity"/> validation.
+        /// </summary>
+        [TestCase(typeof(sbyte?), "java.lang.Byte", typeof(byte))]
+        [TestCase(typeof(ushort?), "java.lang.Short", typeof(short))]
+        [TestCase(typeof(uint?), "java.lang.Integer", typeof(int))]
+        [TestCase(typeof(ulong?), "java.lang.Long", typeof(long))]
+        public void TestNullableQueryEntityValidation(Type type, string javaType, Type hintType)
+        {
+            var cfg = new IgniteConfiguration(GetConfigWithLogger())
+            {
+                CacheConfiguration = new[]
+                {
+                    new CacheConfiguration("cache1", new QueryEntity(type, type)
+                    {
+                        Fields = new[]
+                        {
+                            new QueryField("myField", type)
+                        }
+                    })
+                }
+            };
+
+            using (Ignition.Start(cfg))
+            {
+                var warns = TestLogger.Entries.Where(x => x.Level == LogLevel.Warn && x.Args != null)
+                    .Select(x => string.Format(x.Message, x.Args)).ToList();
+
+                Assert.AreEqual(3, warns.Count);
+
+                string pattern = "Validating cache configuration 'cache1', QueryEntity '{0}:{0}': " +
+                                 "Type '{1}' maps to Java type '{0}' using unchecked " +
+                                 "conversion. This may cause issues in SQL queries. You can use '{2}' " +
+                                 "instead to achieve direct mapping.";
+
+                string expected = string.Format(pattern, javaType, type, hintType);
+
+                Assert.AreEqual(expected, warns[0]);
+                Assert.AreEqual(expected, warns[1]);
+
+                string fieldsPattern = "Validating cache configuration 'cache1', QueryEntity '{0}:{0}', " +
+                                       "QueryField 'myField': Type '{1}' maps to Java type '{0}' using " +
+                                       "unchecked conversion. This may cause issues in SQL queries. " +
+                                       "You can use '{2}' instead to achieve direct mapping.";
+
+                string fieldsExpected = string.Format(fieldsPattern, javaType, type, hintType);
+                Assert.AreEqual(fieldsExpected, warns[2]);
+            }
+        }
+
+        /// <summary>
+        /// Tests cache creation with nullable <see cref="QueryEntity"/> does not log warnings.
+        /// </summary>
+        [TestCase(typeof(int))]
+        [TestCase(typeof(int?))]
+        [TestCase(typeof(string))]
+        [TestCase(typeof(LogEntry))]
+        [TestCase(typeof(CustomLoggerTest))]
+        [TestCase(typeof(CustomEnum))]
+        [TestCase(typeof(CustomEnum?))]
+        public void TestCacheCreationWithDirectQueryEntityMappingsDoesNotLogWarnings(Type type)
+        {
+            var cfg = new IgniteConfiguration(GetConfigWithLogger())
+            {
+                CacheConfiguration = new[]
+                {
+                    new CacheConfiguration("cache1", new QueryEntity(type, type)
+                    {
+                        Fields = new[]
+                        {
+                            new QueryField("myField", type)
+                        }
+                    })
+                }
+            };
+
+            using (Ignition.Start(cfg))
+            {
+                int warnsCount = TestLogger.Entries.Count(x => x.Level == LogLevel.Warn && x.Args != null);
+                Assert.AreEqual(0, warnsCount);
+            }
+        }
+
+        /// <summary>
         /// Tests the <see cref="LoggerExtensions"/> methods.
         /// </summary>
         [Test]
@@ -448,6 +531,14 @@ namespace Apache.Ignite.Core.Tests.Log
             {
                 throw new ArithmeticException("Error in func.");
             }
+        }
+
+        /// <summary>
+        /// Custom enum for testing.
+        /// </summary>
+        private struct CustomEnum
+        {
+            public int Field { get; set; }
         }
     }
 }
