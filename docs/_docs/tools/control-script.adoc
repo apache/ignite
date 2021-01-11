@@ -22,7 +22,7 @@ The control script syntax is as follows:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source, shell]
 ----
 control.sh <connection parameters> <command> <arguments>
@@ -76,7 +76,7 @@ To get the state of the cluster, run the following command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --state
@@ -97,7 +97,7 @@ To activate the cluster, run the following command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --set-state ACTIVE
@@ -117,7 +117,7 @@ To deactivate the cluster, run the following command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --set-state INACTIVE [--yes]
@@ -137,7 +137,7 @@ To get the list of nodes registered in the baseline topology, run the following 
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --baseline
@@ -183,7 +183,7 @@ After the node is added, the link:data-rebalancing[rebalancing process] starts.
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --baseline add _consistentId1,consistentId2,..._ [--yes]
@@ -203,7 +203,7 @@ This operation starts the rebalancing process, which re-distributes the data acr
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --baseline remove _consistentId1,consistentId2,..._ [--yes]
@@ -223,7 +223,7 @@ To set a list of node as the baseline topology, use the following command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 
 [source,shell,subs="verbatim,quotes"]
 ----
@@ -241,7 +241,7 @@ To restore a specific version of the baseline topology, use the following comman
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --baseline version _topologyVersion_ [--yes]
@@ -263,7 +263,7 @@ To enable it, use the following command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 
 [source, shell]
 ----
@@ -283,7 +283,7 @@ To disable baseline autoadjustment, use the following command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 
 [source, shell]
 ----
@@ -305,7 +305,7 @@ You can also cancel specific transactions.
 The following command returns a list of transactions that satisfy a given filter (or all transactions if no filter is provided):
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --tx _<transaction filter>_ --info
@@ -337,7 +337,7 @@ To cancel transactions, use the following command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --tx _<transaction filter>_ --kill
@@ -603,7 +603,7 @@ To view the cluster ID, run the `--state` command:
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --state
@@ -634,7 +634,7 @@ To change the tag, use the following command (the tag must contain no more than 
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --change-tag _<new-tag>_
@@ -646,16 +646,13 @@ control.bat --change-tag _<new-tag>_
 ----
 --
 
-== Metric command
+== Metric Command
 
-Metrics command prints value(s) of the metric or metric registry from the parameter.
-
-If you need to get metric from the specific node, please, set the `--node-id` parameter.
-Without `--node-id` random node will be used.
+The metrics command prints out the value of a metric or metric registry provided in the parameters list. Use the `--node-id` parameter, If you need to get a metric from a specific node. Ignite selects a random node, if the `--node-id` is not set.
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --metric sys
@@ -669,7 +666,7 @@ control.bat --metric sys
 
 Example of the metric output:
 [source, text]
-$ ./bin/control.sh --metric sysCurrentThreadCpuTime
+control.sh --metric sysCurrentThreadCpuTime
 Command [METRIC] started
 Arguments: --metric sys
 --------------------------------------------------------------------------------
@@ -680,7 +677,7 @@ Command [METRIC] finished with code: 0
 
 Example of the metric registry output:
 [source, text]
-$ ./bin/control.sh --metric io.dataregion.default
+control.sh --metric io.dataregion.default
 Command [METRIC] started
 Arguments: --metric sys
 --------------------------------------------------------------------------------
@@ -709,16 +706,13 @@ io.dataregion.default.PagesReplaceAge             0
 io.dataregion.default.PhysicalMemoryPages         0
 Command [METRIC] finished with code: 0
 
-== System view command
+== System View Command
 
-System view command prints content of the system view from the parameter.
-
-If you need to get metric from the specific node, please, set the `--node-id` parameter.
-Without `--node-id` random node will be used.
+The system view command prints out the content of a system view provided in the parameters list. Use the `--node-id` parameter, If you need to get a metric from a specific node. Ignite selects a random node, if the `--node-id` is not set.
 
 [tabs]
 --
-tab:Linux[]
+tab:Unix[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.sh --system-view views
@@ -732,7 +726,7 @@ control.bat --system-view views
 Examples of the output:
 
 [source, text]
-$ ./bin/control.sh --system-view nodes
+control.sh --system-view nodes
 Command [SYSTEM-VIEW] started
 Arguments: --system-view nodes
 --------------------------------------------------------------------------------
@@ -743,7 +737,7 @@ Command [SYSTEM-VIEW] finished with code: 0
 
 
 [source, text]
-$ ./bin/control.sh --system-view views
+control.sh --system-view views
 Command [SYSTEM-VIEW] started
 Arguments: --system-view views
 --------------------------------------------------------------------------------
