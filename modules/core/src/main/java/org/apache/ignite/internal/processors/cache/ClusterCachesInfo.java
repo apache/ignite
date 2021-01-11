@@ -1568,6 +1568,11 @@ public class ClusterCachesInfo {
                 CacheGroupDescriptor locGrpCfg = locCacheGrps.get(grpDesc.groupId());
 
                 grpDesc.mergeWith(locGrpCfg);
+
+                CacheGroupContext cctx = ctx.cache().cacheGroup(grpDesc.groupId());
+
+                if (cctx != null)
+                    cctx.globalWalEnabled(grpData.walEnabled());
             }
 
             CacheGroupDescriptor old = registeredCacheGrps.put(grpDesc.groupId(), grpDesc);
