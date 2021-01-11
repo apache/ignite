@@ -15,20 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+package org.apache.ignite.internal.visor.verify;
 
-/** Test value object. */
-public class Department {
-    /** */
-    private String name;
-
-    /** */
-    public String getName() {
-        return name;
-    }
-
-    /** */
-    public void setName(String name) {
-        this.name = name;
-    }
+/**
+ * Validate indexes context.
+ */
+public interface ValidateIndexesContext {
+    /**
+     * Returns a boolean value meaning whether the check is canceled or not.
+     *
+     * @return True if cancelled, otherwise false.
+     */
+    public boolean isCancelled();
 }

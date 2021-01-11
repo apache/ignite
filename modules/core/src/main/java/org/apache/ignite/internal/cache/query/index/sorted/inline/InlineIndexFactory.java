@@ -60,7 +60,7 @@ public class InlineIndexFactory implements IndexFactory {
                 try {
                     RootPage page = getRootPage(cctx, sdef.getTreeName(), i);
 
-                    trees[i] = createIndexSegment(cctx, sdef, page, stats, recommender);
+                    trees[i] = createIndexSegment(cctx, sdef, page, stats, recommender, i);
 
                 } finally {
                     db.checkpointReadUnlock();
@@ -76,7 +76,7 @@ public class InlineIndexFactory implements IndexFactory {
 
     /** */
     protected InlineIndexTree createIndexSegment(GridCacheContext<?, ?> cctx, SortedIndexDefinition def,
-        RootPage rootPage, IoStatisticsHolder stats, InlineRecommender recommender) throws Exception {
+        RootPage rootPage, IoStatisticsHolder stats, InlineRecommender recommender, int segmentNum) throws Exception {
         return new InlineIndexTree(
             def,
             cctx,

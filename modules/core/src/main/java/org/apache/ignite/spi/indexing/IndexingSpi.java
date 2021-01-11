@@ -169,10 +169,10 @@ public interface IndexingSpi extends IgniteSpi {
     }
 
     /**
-     * Returns list of indexes for specified cache.
+     * Returns collection of indexes for specified cache.
      *
      * @param cctx Cache context.
-     * @return List of indexes for specified cache.
+     * @return Collection of indexes for specified cache.
      */
     public default Collection<Index> getIndexes(GridCacheContext<?, ?> cctx) {
         return Collections.emptyList();

@@ -94,6 +94,9 @@
     <ClCompile Include="..\..\src\cluster_node_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\cluster_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\affinity_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>

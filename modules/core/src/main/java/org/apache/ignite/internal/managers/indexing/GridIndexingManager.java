@@ -59,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -434,6 +435,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * @param mappingByPart Mapping page memory.
      * @param cpLock Defragmentation checkpoint read lock.
      * @param cancellationChecker Cancellation checker.
+     * @param defragmentationThreadPool Thread pool for defragmentation.
      *
      * @throws IgniteCheckedException If failed.
      */
@@ -443,10 +445,12 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
         PageMemoryEx partPageMem,
         IntMap<LinkMap> mappingByPart,
         CheckpointTimeoutLock cpLock,
-        Runnable cancellationChecker
+        Runnable cancellationChecker,
+        IgniteThreadPoolExecutor defragmentationThreadPool
     ) throws IgniteCheckedException {
         new IndexingDefragmentation(this)
-            .defragment(grpCtx, newCtx, partPageMem, mappingByPart, cpLock, cancellationChecker, log);
+            .defragment(grpCtx, newCtx, partPageMem, mappingByPart, cpLock, cancellationChecker,
+                defragmentationThreadPool, log);
     }
 
     /**

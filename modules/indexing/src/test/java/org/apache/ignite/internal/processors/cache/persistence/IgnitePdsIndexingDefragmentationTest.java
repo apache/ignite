@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
@@ -32,10 +33,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
@@ -130,10 +133,13 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         long newIdxFileLen = new File(workDir, FilePageStoreManager.INDEX_FILE_NAME).length();
 
-        assertTrue(newIdxFileLen <= oldIdxFileLen);
+        assertTrue(
+            "newIdxFileLen=" + newIdxFileLen + ", oldIdxFileLen=" + oldIdxFileLen,
+            newIdxFileLen <= oldIdxFileLen
+        );
 
         File completionMarkerFile = DefragmentationFileUtils.defragmentationCompletionMarkerFile(workDir);
-        assertTrue(completionMarkerFile.exists());
+        assertTrue(Arrays.toString(workDir.listFiles()), completionMarkerFile.exists());
 
         stopGrid(0);
 
@@ -165,6 +171,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
      */
     private static void validateIndexes(IgniteEx node) throws Exception {
         ValidateIndexesClosure clo = new ValidateIndexesClosure(
+            () -> false,
             Collections.singleton(DEFAULT_CACHE_NAME),
             0,
             0,
@@ -210,6 +217,8 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         cache.query(new SqlFieldsQuery("CREATE TABLE TEST (ID INT PRIMARY KEY, VAL_INT INT, VAL_OBJ LONG)"));
 
+        final String cacheName = "SQL_default_TEST";
+
         cache.query(new SqlFieldsQuery("CREATE INDEX TEST_VAL_INT ON TEST(VAL_INT)"));
 
         cache.query(new SqlFieldsQuery("CREATE INDEX TEST_VAL_OBJ ON TEST(VAL_OBJ)"));
@@ -219,15 +228,14 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         cache.query(new SqlFieldsQuery("DELETE FROM TEST WHERE MOD(ID, 2) = 0"));
 
-        createMaintenanceRecord();
+        createMaintenanceRecord(cacheName);
+
+        CacheGroupContext grp = grid(0).context().cache().cacheGroup(CU.cacheId(cacheName));
 
         // Restart first time.
         stopGrid(0);
 
-        startGrid(0);
-
-        // Restart second time.
-        stopGrid(0);
+        defragmentAndValidateSizesDecreasedAfterDefragmentation(0, grp);
 
         startGrid(0);
 

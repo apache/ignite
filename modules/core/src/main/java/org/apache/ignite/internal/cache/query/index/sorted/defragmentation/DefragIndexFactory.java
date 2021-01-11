@@ -20,11 +20,13 @@ package org.apache.ignite.internal.cache.query.index.sorted.defragmentation;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexSchema;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IndexRowImpl;
@@ -53,22 +55,22 @@ public class DefragIndexFactory extends InlineIndexFactory {
     /** Temporary offheap manager. */
     private final IgniteCacheOffheapManager offheap;
 
-    /** Old index inline size. */
-    private final int inlineSize;
+    /** Old index. */
+    private final InlineIndex oldIdx;
 
     /** Temporary cache page memory. */
     private final PageMemory newCachePageMemory;
 
     /** */
-    public DefragIndexFactory(IgniteCacheOffheapManager offheap, PageMemory newCachePageMemory, int inlineSize) {
+    public DefragIndexFactory(IgniteCacheOffheapManager offheap, PageMemory newCachePageMemory, InlineIndex oldIdx) {
         this.offheap = offheap;
-        this.inlineSize = inlineSize;
+        this.oldIdx = oldIdx;
         this.newCachePageMemory = newCachePageMemory;
     }
 
     /** {@inheritDoc} */
     @Override protected InlineIndexTree createIndexSegment(GridCacheContext<?, ?> cctx, SortedIndexDefinition def,
-        RootPage rootPage, IoStatisticsHolder stats, InlineRecommender recommender) throws Exception {
+        RootPage rootPage, IoStatisticsHolder stats, InlineRecommender recommender, int segmentNum) throws Exception {
 
         InlineIndexTree tree = new InlineIndexTree(
             def,
@@ -80,10 +82,14 @@ public class DefragIndexFactory extends InlineIndexFactory {
             getPageIoResolver(def),
             rootPage.pageId().pageId(),
             rootPage.isAllocated(),
-            inlineSize,
+            oldIdx.inlineSize(),
             null,
             null
         );
+
+        final MetaPageInfo oldInfo = oldIdx.getSegment(segmentNum).getMetaInfo();
+
+        tree.copyMetaInfo(oldInfo);
 
         tree.enableSequentialWriteMode();
 

@@ -137,6 +137,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         public bool RegistrationDisabled { get; set; }
 
         /// <summary>
+        /// Gets force timestamp flag value.
+        /// </summary>
+        public bool ForceTimestamp
+        {
+            get { return _cfg.ForceTimestamp; }
+        }
+
+        /// <summary>
+        /// Gets date time converter.
+        /// </summary>
+        public ITimestampConverter TimestampConverter
+        {
+            get { return _cfg.TimestampConverter; }
+        }
+
+        /// <summary>
         /// Marshal object.
         /// </summary>
         /// <param name="val">Value.</param>
@@ -376,7 +392,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 return holder;
             }
-            
+
             lock (this)
             {
                 if (!_metas.TryGetValue(desc.TypeId, out holder))
@@ -394,9 +410,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return holder;
         }
-        
+
         /// <summary>
-        /// Updates or creates cached binary type holder. 
+        /// Updates or creates cached binary type holder.
         /// </summary>
         private void UpdateOrCreateBinaryTypeHolder(BinaryType meta)
         {
@@ -406,7 +422,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 holder.Merge(meta);
                 return;
             }
-            
+
             lock (this)
             {
                 if (_metas.TryGetValue(meta.TypeId, out holder))
@@ -414,7 +430,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     holder.Merge(meta);
                     return;
                 }
-                
+
                 var metas0 = new Dictionary<int, BinaryTypeHolder>(_metas);
 
                 holder = new BinaryTypeHolder(meta.TypeId, meta.TypeName, meta.AffinityKeyFieldName, meta.IsEnum, this);
@@ -702,7 +718,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return new SerializableSerializer(type);
                 }
 
-                serializer = new BinaryReflectiveSerializer();
+                serializer = new BinaryReflectiveSerializer
+                {
+                    ForceTimestamp = cfg != null && cfg.ForceTimestamp
+                };
             }
 
             var refSerializer = serializer as BinaryReflectiveSerializer;
@@ -877,16 +896,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (!clusterRestarted)
                 return;
-            
+
             // Reset all binary structures. Metadata must be sent again.
             // _idToDesc enumerator is thread-safe (returns a snapshot).
             // If there are new descriptors added concurrently, they are fine (we are already connected).
-            
+
             // Race is possible when serialization is started before reconnect (or even before disconnect)
             // and finished after reconnect, meta won't be sent to cluster because it is assumed to be known,
             // but operation will succeed.
             // We don't support this use case. Users should handle reconnect events properly when cluster is restarted.
-            // Supporting this very rare use case will complicate the code a lot with little benefit. 
+            // Supporting this very rare use case will complicate the code a lot with little benefit.
             foreach (var desc in _idToDesc)
             {
                 desc.Value.ResetWriteStructure();
@@ -896,7 +915,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the name of the type.
         /// </summary>
-        private string GetTypeName(string fullTypeName, IBinaryNameMapper mapper = null)
+        public string GetTypeName(string fullTypeName, IBinaryNameMapper mapper = null)
         {
             mapper = mapper ?? _cfg.NameMapper ?? GetDefaultNameMapper();
 

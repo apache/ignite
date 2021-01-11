@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.transactions.proxy;
 
-import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
-/**
- * Tests for key check for near cache.
- */
-public class GridCacheKeyCheckNearEnabledSelfTest extends GridCacheKeyCheckSelfTest {
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return new NearCacheConfiguration();
-    }
+/** Represents Ignite client-independent transaction factory. */
+public interface TransactionProxyFactory {
+    /** Starts transaction with specified concurrency, isolation and timeout. */
+    public TransactionProxy txStart(TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout);
 }

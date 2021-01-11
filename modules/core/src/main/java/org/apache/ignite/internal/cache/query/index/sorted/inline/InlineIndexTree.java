@@ -356,7 +356,7 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
      * @return Inline size.
      * @throws IgniteCheckedException If failed.
      */
-    private MetaPageInfo getMetaInfo() throws IgniteCheckedException {
+    public MetaPageInfo getMetaInfo() throws IgniteCheckedException {
         final long metaPage = acquirePage(metaPageId);
 
         try {
@@ -401,6 +401,38 @@ public class InlineIndexTree extends BPlusTree<IndexSearchRow, IndexSearchRow> {
                 if (wal != null)
                     wal.log(new PageSnapshot(new FullPageId(metaPageId, grpId),
                         pageAddr, pageMem.pageSize(), pageMem.realPageSize(grpId)));
+            }
+            finally {
+                writeUnlock(metaPageId, metaPage, pageAddr, true);
+            }
+        }
+        finally {
+            releasePage(metaPageId, metaPage);
+        }
+    }
+
+    /**
+     * Copy info from another meta page.
+     * @param info Meta page info.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void copyMetaInfo(MetaPageInfo info) throws IgniteCheckedException {
+        final long metaPage = acquirePage(metaPageId);
+
+        try {
+            long pageAddr = writeLock(metaPageId, metaPage); // Meta can't be removed.
+
+            assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" +
+                U.hexLong(metaPageId) + ']';
+
+            try {
+                BPlusMetaIO.setValues(
+                    pageAddr,
+                    info.inlineSize,
+                    info.useUnwrappedPk,
+                    info.inlineObjSupported,
+                    info.inlineObjHash
+                );
             }
             finally {
                 writeUnlock(metaPageId, metaPage, pageAddr, true);

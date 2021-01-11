@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.defragmentation;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -36,7 +40,10 @@ import org.apache.ignite.internal.processors.cache.persistence.defragmentation.L
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.TreeIterator;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.collection.IntMap;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -59,6 +66,7 @@ public class IndexingDefragmentation {
      * @param mappingByPartition Mapping page memory.
      * @param cpLock Defragmentation checkpoint read lock.
      * @param cancellationChecker Cancellation checker.
+     * @param defragmentationThreadPool Thread pool for defragmentation.
      * @param log Log.
      *
      * @throws IgniteCheckedException If failed.
@@ -70,84 +78,173 @@ public class IndexingDefragmentation {
         IntMap<LinkMap> mappingByPartition,
         CheckpointTimeoutLock cpLock,
         Runnable cancellationChecker,
+        IgniteThreadPoolExecutor defragmentationThreadPool,
         IgniteLogger log
     ) throws IgniteCheckedException {
         int pageSize = grpCtx.cacheObjectContext().kernalContext().grid().configuration().getDataStorageConfiguration().getPageSize();
-
-        TreeIterator treeIterator = new TreeIterator(pageSize);
 
         PageMemoryEx oldCachePageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
 
         PageMemory newCachePageMemory = partPageMem;
 
+        Collection<TableIndexes> tables = getTables(grpCtx);
+
         long cpLockThreshold = 150L;
 
+        AtomicLong lastCpLockTs = new AtomicLong(System.currentTimeMillis());
+
+        IgniteUtils.doInParallel(
+            defragmentationThreadPool,
+            tables,
+            table -> defragmentTable(
+                grpCtx,
+                newCtx,
+                mappingByPartition,
+                cpLock,
+                cancellationChecker,
+                log,
+                pageSize,
+                oldCachePageMem,
+                newCachePageMemory,
+                cpLockThreshold,
+                lastCpLockTs,
+                table
+            )
+        );
+
+        if (log.isInfoEnabled())
+            log.info("Defragmentation indexes completed for group '" + grpCtx.groupId() + "'");
+    }
+
+    /**
+     * Defragment one given table.
+     */
+    private boolean defragmentTable(
+        CacheGroupContext grpCtx,
+        CacheGroupContext newCtx,
+        IntMap<LinkMap> mappingByPartition,
+        CheckpointTimeoutLock cpLock,
+        Runnable cancellationChecker,
+        IgniteLogger log,
+        int pageSize,
+        PageMemoryEx oldCachePageMem,
+        PageMemory newCachePageMemory,
+        long cpLockThreshold,
+        AtomicLong lastCpLockTs,
+        TableIndexes indexes
+    ) throws IgniteCheckedException {
         cpLock.checkpointReadLock();
 
         try {
-            AtomicLong lastCpLockTs = new AtomicLong(System.currentTimeMillis());
+            TreeIterator treeIterator = new TreeIterator(pageSize);
 
-            for (GridCacheContext cctx: grpCtx.caches()) {
-                cancellationChecker.run();
+            GridCacheContext<?, ?> cctx = indexes.cctx;
 
-                List<InlineIndex> indexes = indexing.getTreeIndexes(cctx, false);
+            cancellationChecker.run();
 
-                for (InlineIndex oldIdx: indexes) {
-                    SortedIndexDefinition idxDef = (SortedIndexDefinition) indexing.getIndexDefition(oldIdx.id());
+            for (InlineIndex oldIdx : indexes.idxs) {
+                SortedIndexDefinition idxDef = (SortedIndexDefinition) indexing.getIndexDefition(oldIdx.id());
 
-                    InlineIndex newIdx = new DefragIndexFactory(newCtx.offheap(), newCachePageMemory, oldIdx.inlineSize())
-                        .createIndex(cctx, idxDef)
-                        .unwrap(InlineIndex.class);
+                InlineIndex newIdx = new DefragIndexFactory(newCtx.offheap(), newCachePageMemory, oldIdx)
+                    .createIndex(cctx, idxDef)
+                    .unwrap(InlineIndex.class);
 
-                    int segments = oldIdx.segmentsCount();
+                int segments = oldIdx.segmentsCount();
 
-                    for (int i = 0; i < segments; ++i) {
-                        treeIterator.iterate(oldIdx.getSegment(i), oldCachePageMem, (theTree, io, pageAddr, idx) -> {
-                            cancellationChecker.run();
+                for (int i = 0; i < segments; ++i) {
+                    treeIterator.iterate(oldIdx.getSegment(i), oldCachePageMem, (theTree, io, pageAddr, idx) -> {
+                        cancellationChecker.run();
 
-                            if (System.currentTimeMillis() - lastCpLockTs.get() >= cpLockThreshold) {
-                                cpLock.checkpointReadUnlock();
+                        if (System.currentTimeMillis() - lastCpLockTs.get() >= cpLockThreshold) {
+                            cpLock.checkpointReadUnlock();
 
-                                cpLock.checkpointReadLock();
+                            cpLock.checkpointReadLock();
 
-                                lastCpLockTs.set(System.currentTimeMillis());
-                            }
+                            lastCpLockTs.set(System.currentTimeMillis());
+                        }
 
-                            assert 1 == io.getVersion()
-                                : "IO version " + io.getVersion() + " is not supported by current defragmentation algorithm." +
-                                " Please implement copying of tree in a new format.";
+                        assert 1 == io.getVersion()
+                            : "IO version " + io.getVersion() + " is not supported by current defragmentation algorithm." +
+                            " Please implement copying of tree in a new format.";
 
-                            BPlusIO<IndexSearchRow> h2IO = DefragIndexFactory.wrap(io, idxDef.getSchema());
+                        BPlusIO<IndexSearchRow> h2IO = DefragIndexFactory.wrap(io, idxDef.getSchema());
 
-                            IndexSearchRow row = theTree.getRow(h2IO, pageAddr, idx);
+                        IndexSearchRow row = theTree.getRow(h2IO, pageAddr, idx);
 
-                            if (row instanceof IndexRowImpl) {
-                                IndexRowImpl r = (IndexRowImpl) row;
+                        if (row instanceof IndexRowImpl) {
+                            IndexRowImpl r = (IndexRowImpl)row;
 
-                                CacheDataRow cacheDataRow = r.getCacheDataRow();
+                            CacheDataRow cacheDataRow = r.getCacheDataRow();
 
-                                int partition = cacheDataRow.partition();
+                            int partition = cacheDataRow.partition();
 
-                                long link = r.getLink();
+                            long link = r.getLink();
 
-                                LinkMap map = mappingByPartition.get(partition);
+                            LinkMap map = mappingByPartition.get(partition);
 
-                                long newLink = map.get(link);
+                            long newLink = map.get(link);
 
-                                IndexRowImpl newRow = new IndexRowImpl(
-                                    idxDef.getSchema(), new CacheDataRowAdapter(newLink), r.keys());
+                            IndexRowImpl newRow = new IndexRowImpl(
+                                idxDef.getSchema(), new CacheDataRowAdapter(newLink), r.keys());
 
-                                newIdx.putx(newRow);
-                            }
+                            newIdx.putx(newRow);
+                        }
 
-                            return true;
-                        });
-                    }
+                        return true;
+                    });
                 }
             }
+
+            return true;
         }
         finally {
             cpLock.checkpointReadUnlock();
+        }
+    }
+
+    /** Returns collection of table indexes. */
+    private Collection<TableIndexes> getTables(CacheGroupContext gctx) {
+        Collection<TableIndexes> tables = new ArrayList<>();
+
+        for (GridCacheContext<?, ?> cctx: gctx.caches()) {
+            Map<String, TableIndexes> idxs = new HashMap<>();
+
+            List<InlineIndex> indexes = indexing.getTreeIndexes(cctx, false);
+
+            for (InlineIndex idx: indexes) {
+                String table = indexing.getIndexDefition(idx.id()).getIdxName().tableName();
+
+                idxs.putIfAbsent(table, new TableIndexes(cctx, table));
+
+                idxs.get(table).addIndex(idx);
+            }
+
+            tables.addAll(idxs.values());
+        }
+
+        return tables;
+    }
+
+    /** Holder for indexes per cache table. */
+    private static class TableIndexes {
+        /** Table name. */
+        final @Nullable String tableName;
+
+        /** Cache context. */
+        final GridCacheContext<?, ?> cctx;
+
+        /** Indexes. */
+        final List<InlineIndex> idxs = new ArrayList<>();
+
+        /** */
+        TableIndexes(GridCacheContext<?, ?> cctx, String tableName) {
+            this.cctx = cctx;
+            this.tableName = tableName;
+        }
+
+        /** */
+        void addIndex(InlineIndex idx) {
+            idxs.add(idx);
         }
     }
 }
