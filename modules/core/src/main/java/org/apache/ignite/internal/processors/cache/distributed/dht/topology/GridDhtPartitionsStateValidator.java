@@ -27,6 +27,8 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Collections;
+
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -79,7 +81,7 @@ public class GridDhtPartitionsStateValidator {
      * @param fut Current exchange future.
      * @param top Topology to validate.
      * @param messages Single messages received from all nodes.
-     * @throws PartitionStateValidationException If validation failed.
+     * @throws IgniteCheckedException If validation failed.
      * Exception message contains full information about all partitions which
      * update counters or cache sizes are not consistent.
      */
@@ -124,13 +126,13 @@ public class GridDhtPartitionsStateValidator {
         else if (resUpdCnt.isEmpty() && !resSize.isEmpty())
             error.append("Partitions cache sizes are inconsistent for ").append(fold(topVer, resSize));
 
-        if (error.length() > 0){
+        if (!error.isEmpty()){
             Set<Integer> parts = new HashSet<>(resUpdCnt.keySet());
             parts.addAll(resSize.keySet());
 
             invalidParts.putIfAbsent(top.groupId(), parts);
 
-            throw new PartitionStateValidationException(
+            throw new IgniteCheckedException(
                 error.toString(),
                 topVer,
                 top.groupId(),
