@@ -49,7 +49,8 @@ class SnapshotTest(IgniteTest):
             version=IgniteVersion(ignite_version),
             data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistent=True)),
             metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi',
-            caches=[CacheConfiguration(name=self.CACHE_NAME, cache_mode='REPLICATED',
+            caches=[CacheConfiguration(name=self.CACHE_NAME,
+                                       cache_mode='REPLICATED',
                                        indexed_types=['java.util.UUID', 'byte[]'])]
         )
 
@@ -70,21 +71,22 @@ class SnapshotTest(IgniteTest):
             self.test_context,
             client_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.snapshot_test.UuidDataLoaderApplication",
+            startup_timeout_sec=180,
+            shutdown_timeout_sec=300,
             params={
                 "cacheName": self.CACHE_NAME,
                 "size": 512 * 1024,
                 "dataSize": 1024
             },
-            startup_timeout_sec=180,
-            shutdown_timeout_sec=300
         )
 
         loader.run()
 
-        node = service.nodes[0]
-
         control_utility.validate_indexes()
         control_utility.idle_verify()
+
+        node = service.nodes[0]
+
         dump_1 = control_utility.idle_verify_dump(node)
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
@@ -98,16 +100,15 @@ class SnapshotTest(IgniteTest):
 
         service.stop()
 
-        service.rename_database(new_name='old_db')
         service.restore_from_snapshot(self.SNAPSHOT_NAME)
 
-        service.stop()
         service.start(clean=False)
 
         control_utility.activate()
 
         control_utility.validate_indexes()
         control_utility.idle_verify()
+
         dump_3 = control_utility.idle_verify_dump(node)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
