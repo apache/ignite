@@ -79,6 +79,11 @@ public class GridCacheSqlQuery implements Message {
     @GridDirectTransient
     private transient boolean hasSubQries;
 
+    /** Flag indicating that the query contains an OUTER JOIN from REPLICATED to PARTITIONED. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private transient boolean hasOuterJoinReplicatedPartitioned;
+
     /**
      * For {@link Message}.
      */
@@ -359,12 +364,30 @@ public class GridCacheSqlQuery implements Message {
     }
 
     /**
-     * @param hasSubQries Flag indicating that query contains sub-queries.
+     * @param hasSubQries Flag indicating that the query contains sub-queries.
      *
      * @return {@code this}.
      */
     public GridCacheSqlQuery hasSubQueries(boolean hasSubQries) {
         this.hasSubQries = hasSubQries;
+
+        return this;
+    }
+
+    /**
+     * @return {@code true} if the query contains an OUTER JOIN from REPLICATED to PARTITIONED.
+     */
+    public boolean hasOuterJoinReplicatedPartitioned() {
+        return hasOuterJoinReplicatedPartitioned;
+    }
+
+    /**
+     * @param hasOuterJoinReplicatedPartitioned Flag indicating that the query contains an OUTER JOIN from REPLICATED to PARTITIONED.
+     *
+     * @return {@code this}.
+     */
+    public GridCacheSqlQuery hasOuterJoinReplicatedPartitioned(boolean hasOuterJoinReplicatedPartitioned) {
+        this.hasOuterJoinReplicatedPartitioned = hasOuterJoinReplicatedPartitioned;
 
         return this;
     }

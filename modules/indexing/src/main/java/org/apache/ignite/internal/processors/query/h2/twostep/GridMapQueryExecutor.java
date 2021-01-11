@@ -214,6 +214,7 @@ public class GridMapQueryExecutor {
         boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
         boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
         final boolean lazy = req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
+        boolean treatReplicatedAsPartitioned = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED_AS_PARTITIONED);
 
         Boolean dataPageScanEnabled = req.isDataPageScanEnabled();
 
@@ -255,7 +256,9 @@ public class GridMapQueryExecutor {
                             params,
                             lazy,
                             req.mvccSnapshot(),
-                            dataPageScanEnabled);
+                            dataPageScanEnabled,
+                            treatReplicatedAsPartitioned
+                        );
 
                         return null;
                     }
@@ -280,7 +283,9 @@ public class GridMapQueryExecutor {
             params,
             lazy,
             req.mvccSnapshot(),
-            dataPageScanEnabled);
+            dataPageScanEnabled,
+            treatReplicatedAsPartitioned
+        );
     }
 
     /**
@@ -321,7 +326,8 @@ public class GridMapQueryExecutor {
         final Object[] params,
         boolean lazy,
         @Nullable final MvccSnapshot mvccSnapshot,
-        Boolean dataPageScanEnabled
+        Boolean dataPageScanEnabled,
+        boolean treatReplicatedAsPartitioned
     ) {
         boolean performanceStatsEnabled = ctx.performanceStatistics().enabled();
 
@@ -379,7 +385,7 @@ public class GridMapQueryExecutor {
 
             qctx = new QueryContext(
                 segmentId,
-                h2.backupFilter(topVer, parts),
+                h2.backupFilter(topVer, parts, treatReplicatedAsPartitioned),
                 distributedJoinCtx,
                 mvccSnapshot,
                 reserved,
