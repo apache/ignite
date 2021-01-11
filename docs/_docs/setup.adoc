@@ -296,19 +296,37 @@ export JVM_OPTS="$JVM_OPTS -Xmx6G -DIGNITE_TO_STRING_INCLUDE_SENSITIVE=false"; $
 
 You can also pass JVM options by using the `-J` prefix:
 
+[tabs]
+--
+tab:Unix[]
 [source, shell]
 ----
 ./ignite.sh -J-Xmx6G -J-DIGNITE_TO_STRING_INCLUDE_SENSITIVE=false
 ----
+tab:Windows[]
+[source, shell]
+----
+.\ignite.bat -J-Xmx6G -J-DIGNITE_TO_STRING_INCLUDE_SENSITIVE=false
+----
+--
 
 == Setting Ignite System Properties
 
 In addition to public configuration settings, you can adjust specific, usually low-level, Ignite behavior with internal system properties. You can find all the properties with their descriptions and default values by using the command below:
 
+[tabs]
+--
+tab:Unix[]
 [source, shell]
 ----
 ./ignite.sh -systemProps
 ----
+tab:Windows[]
+[source, shell]
+----
+.\ignite.bat -systemProps
+----
+--
 
 Example of the output:
 
