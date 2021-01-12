@@ -39,7 +39,7 @@ import org.junit.Test;
 /**
  *
  */
-@SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
+@SuppressWarnings({"FieldCanBeLocal"})
 public class IndexSpoolPlannerTest extends AbstractPlannerTest {
     /**
      * Check equi-join on not collocated fields.
@@ -168,8 +168,6 @@ public class IndexSpoolPlannerTest extends AbstractPlannerTest {
         );
 
         checkSplitAndSerialization(phys, publicSchema);
-
-        System.out.println("+++\n" + RelOptUtil.toString(phys));
 
         IgniteIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteIndexSpool.class));
 

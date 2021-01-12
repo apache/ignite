@@ -46,8 +46,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.createCollation;
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.isPrefix;
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
 
 /**
@@ -121,7 +119,7 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
                 nodeTraits.replace(leftCollation),
                 ImmutableList.of(
                     left,
-                    right
+                    right.replace(TraitUtils.createCollation(newRightCollationFields))
                 )
             )
         );

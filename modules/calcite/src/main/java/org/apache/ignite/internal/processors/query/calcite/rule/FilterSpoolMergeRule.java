@@ -80,7 +80,7 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
             cluster,
             trait.replace(collation),
             convert(input, input.getTraitSet().replace(collation)),
-            spool.collation(),
+            collation,
             filter.getCondition(),
             idxCond
         );

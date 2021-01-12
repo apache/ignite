@@ -123,7 +123,7 @@ public class IgniteTableImpl extends AbstractTable implements IgniteTable {
 
     /** {@inheritDoc} */
     @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-        return desc.collocationGroup(ctx);
+        return desc.colocationGroup(ctx);
     }
 
     /** {@inheritDoc} */

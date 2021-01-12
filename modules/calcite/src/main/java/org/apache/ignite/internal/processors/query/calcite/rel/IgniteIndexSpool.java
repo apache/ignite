@@ -131,7 +131,6 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        System.out.println("+++ Spool " + mq.getRowCount(getInput()) * mq.getSelectivity(this, null));
         return mq.getRowCount(getInput()) * mq.getSelectivity(this, null);
     }
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -114,11 +113,5 @@ public class IgniteMdRowCount extends RelMdRowCount {
      */
     public double getRowCount(IgniteIndexSpool rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
-    }
-
-    @Override public Double getRowCount(Filter rel, RelMetadataQuery mq) {
-        System.out.println("+++ Filter " + super.getRowCount(rel, mq));
-
-        return super.getRowCount(rel, mq);
     }
 }
