@@ -10,4 +10,8 @@
     <PackageReference Include="Apache.Ignite" Version="2.*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Shared.csproj" />
+  </ItemGroup>
+
 </Project>

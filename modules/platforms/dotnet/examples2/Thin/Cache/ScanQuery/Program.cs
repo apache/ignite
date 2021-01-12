@@ -1,7 +1,12 @@
 ﻿using System;
+using System.Linq;
 using Apache.Ignite.Core;
+using Apache.Ignite.Core.Cache.Query;
 using Apache.Ignite.Core.Client;
 using Apache.Ignite.Core.Client.Cache;
+using IgniteExamples.Shared;
+using IgniteExamples.Shared.Models;
+using IgniteExamples.Shared.ScanQuery;
 
 namespace IgniteExamples.ScanQuery
 {
@@ -21,11 +26,22 @@ namespace IgniteExamples.ScanQuery
 
             using (IIgniteClient ignite = Ignition.StartClient(cfg))
             {
-                ICacheClient<int, string> cache = ignite.GetOrCreateCache<int, string>("my-cache");
+                ICacheClient<int, Employee> cache = ignite.GetOrCreateCache<int, Employee>("ThinScanQuery");
 
-                cache.Put(1, "Hello World!");
+                cache[1] = SampleData.GetEmployees().First();
 
-                Console.WriteLine(">>> " + cache.Get(1));
+                var query = new ScanQuery<int, Employee>
+                {
+                    Filter = new EmployeeFilter
+                    {
+                        EmployeeName = "Wilson"
+                    }
+                };
+
+                foreach (var cacheEntry in cache.Query(query))
+                {
+                    Console.WriteLine(cacheEntry);
+                }
             }
         }
     }

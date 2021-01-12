@@ -21,7 +21,7 @@ namespace IgniteExamples.PutGet
 
             using (IIgniteClient ignite = Ignition.StartClient(cfg))
             {
-                ICacheClient<int, string> cache = ignite.GetOrCreateCache<int, string>("my-cache");
+                ICacheClient<int, string> cache = ignite.GetOrCreateCache<int, string>("PutGetString");
 
                 cache.Put(1, "Hello World!");
 
