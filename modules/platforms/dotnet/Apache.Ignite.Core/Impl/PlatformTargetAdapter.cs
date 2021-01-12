@@ -556,9 +556,8 @@ namespace Apache.Ignite.Core.Impl
             marsh.FinishMarshal(writer);
         }
         
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>	
         /// <returns>True if registerSameJavaType feature can be used, BinaryBasicNameMapper with IsSimpleName = false.</returns>
-        protected bool IsRegisterSameJavaType(bool registerSameJavaType = true)
+        protected bool IsRegisterSameJavaType()
         {
             return _marsh.IsRegisterSameJavaType();
         }
