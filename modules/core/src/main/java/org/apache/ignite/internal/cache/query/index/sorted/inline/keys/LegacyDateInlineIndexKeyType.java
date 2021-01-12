@@ -17,22 +17,22 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.keys;
 
-import java.sql.Timestamp;
+import java.util.Date;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexKeyTypes;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.typedef.T2;
 
 /**
- * Inline index key implementation for inlining {@link Timestamp} values.
+ * Inline index key implementation for inlining {@link Date} values.
  */
-public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Timestamp> {
+public class LegacyDateInlineIndexKeyType extends NullableInlineIndexKeyType<Date> {
     /** */
-    public TimestampInlineIndexKeyType() {
+    public LegacyDateInlineIndexKeyType() {
         super(IndexKeyTypes.TIMESTAMP, (short) 16);
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, Timestamp v) {
+    @Override public int compare0(long pageAddr, int off, Date v) {
         T2<Long, Long> val = get(v);
 
         long val1 = PageUtils.getLong(pageAddr, off + 1);
@@ -48,7 +48,7 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Time
     }
 
     /** {@inheritDoc} */
-    @Override protected int put0(long pageAddr, int off, Timestamp val, int maxSize) {
+    @Override protected int put0(long pageAddr, int off, Date val, int maxSize) {
         T2<Long, Long> v = get(val);
 
         PageUtils.putByte(pageAddr, off, (byte) type());
@@ -60,7 +60,7 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Time
     }
 
     /** {@inheritDoc} */
-    @Override protected Timestamp get0(long pageAddr, int off) {
+    @Override protected Date get0(long pageAddr, int off) {
         long dv = PageUtils.getLong(pageAddr, off + 1);
         long nanos = PageUtils.getLong(pageAddr, off + 9);
 
@@ -68,21 +68,21 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Time
     }
 
     /** {@inheritDoc} */
-    @Override protected int inlineSize0(Timestamp key) {
+    @Override protected int inlineSize0(Date key) {
         return keySize + 1;
     }
 
     /**
-     * Create pair of date value and nanos for the given timestamp.
+     * Create pair of date value and nanos for the given date.
      *
-     * @param timestamp Timestamp.
+     * @param date Date.
      * @return Pair of date value and nanos.
      */
-    private static T2<Long, Long> get(Timestamp timestamp) {
-        long ms = timestamp.getTime();
-        long nanos = timestamp.getNanos() % 1_000_000;
+    private static T2<Long, Long> get(Date date) {
+        long ms = date.getTime();
         long dateVal = DateTimeUtils.dateValueFromDate(ms);
-        nanos += DateTimeUtils.nanosFromDate(ms);
+
+        long nanos = DateTimeUtils.nanosFromDate(ms);
 
         return new T2<>(dateVal, nanos);
     }
