@@ -13,16 +13,13 @@ namespace IgniteExamples.Thin.ScanQuery
     /// <summary>
     /// ScanQuery example.
     /// <para />
-    /// This example requires an Ignite server node. You can start the node in any of the following ways:
-    /// * docker run -p 10800:10800 apacheignite/ignite
-    /// * dotnet run -p ServerNode.csproj
-    /// * ignite.sh/ignite.bat from the distribution
+    /// This example requires an active Ignite server node with <see cref="EmployeeFilter"/> type loaded.
+    /// Start ServerNode project one or more times before running this example.
     /// </summary>
     public class Program
     {
         public static void Main()
         {
-            // TODO: This example requires .NET with some classes on the server side - update documentation.
             var cfg = new IgniteClientConfiguration("127.0.0.1");
 
             using (IIgniteClient ignite = Ignition.StartClient(cfg))
