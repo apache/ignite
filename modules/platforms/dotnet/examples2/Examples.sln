@@ -9,6 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cache", "Cache", "{065AC9B6
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PutGet", "Thin\Cache\PutGet\PutGet.csproj", "{D40C6568-1803-4934-9AE4-F4B8E96EBA90}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerNode", "ServerNode\ServerNode.csproj", "{D84AFE4B-C016-4082-983B-EE79D69C87FC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,6 +36,18 @@ Global
 		{D40C6568-1803-4934-9AE4-F4B8E96EBA90}.Release|x64.Build.0 = Release|Any CPU
 		{D40C6568-1803-4934-9AE4-F4B8E96EBA90}.Release|x86.ActiveCfg = Release|Any CPU
 		{D40C6568-1803-4934-9AE4-F4B8E96EBA90}.Release|x86.Build.0 = Release|Any CPU
+		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Debug|x64.Build.0 = Debug|Any CPU
+		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Debug|x86.Build.0 = Debug|Any CPU
+		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Release|x64.ActiveCfg = Release|Any CPU
+		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Release|x64.Build.0 = Release|Any CPU
+		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Release|x86.ActiveCfg = Release|Any CPU
+		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{065AC9B6-519D-488D-8C05-4CFAF47C0975} = {886F8F3F-C769-49C0-8BED-AA20B7B43A5D}
