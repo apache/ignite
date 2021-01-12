@@ -1,30 +1,24 @@
 ﻿using System;
 using System.Linq;
 using Apache.Ignite.Core;
+using Apache.Ignite.Core.Cache;
 using Apache.Ignite.Core.Cache.Query;
-using Apache.Ignite.Core.Client;
-using Apache.Ignite.Core.Client.Cache;
 using IgniteExamples.Shared;
 using IgniteExamples.Shared.Models;
 using IgniteExamples.Shared.ScanQuery;
 
-namespace IgniteExamples.Thin.ScanQuery
+namespace IgniteExamples.Thick.ScanQuery
 {
     /// <summary>
     /// ScanQuery example.
-    /// <para />
-    /// This example requires an active Ignite server node with <see cref="EmployeeFilter"/> type loaded.
-    /// Start ServerNode project one or more times before running this example.
     /// </summary>
     public class Program
     {
         public static void Main()
         {
-            var cfg = new IgniteClientConfiguration("127.0.0.1");
-
-            using (IIgniteClient ignite = Ignition.StartClient(cfg))
+            using (IIgnite ignite = Ignition.Start())
             {
-                ICacheClient<int, Employee> cache = ignite.GetOrCreateCache<int, Employee>("ThinScanQuery");
+                ICache<int, Employee> cache = ignite.GetOrCreateCache<int, Employee>("ScanQuery");
 
                 cache[1] = SampleData.GetEmployees().First();
 
@@ -38,7 +32,7 @@ namespace IgniteExamples.Thin.ScanQuery
 
                 foreach (var cacheEntry in cache.Query(query))
                 {
-                    Console.WriteLine(cacheEntry);
+                    Console.WriteLine(">>> " + cacheEntry);
                 }
             }
         }
