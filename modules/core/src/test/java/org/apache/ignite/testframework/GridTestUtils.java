@@ -1609,14 +1609,31 @@ public final class GridTestUtils {
     private static Object findField(Class<?> cls, Object obj,
         String fieldName) throws NoSuchFieldException, IllegalAccessException {
         // Resolve inner field.
-        Field field = cls.getDeclaredField(fieldName);
 
-        boolean accessible = field.isAccessible();
+        NoSuchFieldException ex = null;
 
-        if (!accessible)
-            field.setAccessible(true);
+        while (cls != null) {
+            try {
+                Field field = cls.getDeclaredField(fieldName);
 
-        return field.get(obj);
+                boolean accessible = field.isAccessible();
+
+                if (!accessible)
+                    field.setAccessible(true);
+
+                return field.get(obj);
+            }
+            catch (NoSuchFieldException ex0) {
+                if (ex == null)
+                    ex = ex0;
+                else
+                    ex.addSuppressed(ex0);
+
+                cls = cls.getSuperclass();
+            }
+        }
+
+        throw ex;
     }
 
     /**

@@ -19,7 +19,7 @@ project(ignite-bin)
 
 set(TARGET ignite-bin)
 
-include_directories(${JNI_INCLUDE_DIRS})
+include_directories(SYSTEM ${JNI_INCLUDE_DIRS})
 
 set(SOURCES src/ignite.cpp)
 

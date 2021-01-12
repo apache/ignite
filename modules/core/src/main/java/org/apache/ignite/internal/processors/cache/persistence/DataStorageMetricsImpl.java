@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.Collection;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,10 +53,19 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private final HitRateMetric walBuffPollSpinsNum;
 
     /** */
+    private final AtomicLongMetric lastCpBeforeLockDuration;
+
+    /** */
     private final AtomicLongMetric lastCpLockWaitDuration;
 
     /** */
+    private final AtomicLongMetric lastCpListenersExecuteDuration;
+
+    /** */
     private final AtomicLongMetric lastCpMarkDuration;
+
+    /** */
+    private final AtomicLongMetric lastCpLockHoldDuration;
 
     /** */
     private final AtomicLongMetric lastCpPagesWriteDuration;
@@ -67,6 +78,15 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
     /** */
     private final AtomicLongMetric lastCpFsyncDuration;
+
+    /** */
+    private final AtomicLongMetric lastCpWalRecordFsyncDuration;
+
+    /** */
+    private final AtomicLongMetric lastCpWriteEntryDuration;
+
+    /** */
+    private final AtomicLongMetric lastCpSplitAndSortPagesDuration;
 
     /** */
     private final AtomicLongMetric lastCpTotalPages;
@@ -106,6 +126,39 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
     /** */
     private final AtomicLongMetric sparseStorageSize;
+
+    /** */
+    private final HistogramMetricImpl cpBeforeLockHistogram;
+
+    /** */
+    private final HistogramMetricImpl cpLockWaitHistogram;
+
+    /** */
+    private final HistogramMetricImpl cpListenersExecuteHistogram;
+
+    /** */
+    private final HistogramMetricImpl cpMarkHistogram;
+
+    /** */
+    private final HistogramMetricImpl cpLockHoldHistogram;
+
+    /** */
+    private final HistogramMetricImpl cpPagesWriteHistogram;
+
+    /** */
+    private final HistogramMetricImpl cpFsyncHistogram;
+
+    /** */
+    private final HistogramMetricImpl cpWalRecordFsyncHistogram;
+
+    /** */
+    private final HistogramMetricImpl cpWriteEntryHistogram;
+
+    /** */
+    private final HistogramMetricImpl cpSplitAndSortPagesHistogram;
+
+    /** */
+    private final HistogramMetricImpl cpHistogram;
 
     /**
      * @param mmgr Metrics manager.
@@ -154,11 +207,20 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             rateTimeInterval,
             subInts);
 
+        lastCpBeforeLockDuration = mreg.longMetric("LastCheckpointBeforeLockDuration",
+            "Duration of the checkpoint action before taken write lock in milliseconds.");
+
         lastCpLockWaitDuration = mreg.longMetric("LastCheckpointLockWaitDuration",
             "Duration of the checkpoint lock wait in milliseconds.");
 
+        lastCpListenersExecuteDuration = mreg.longMetric("LastCheckpointListenersExecuteDuration",
+            "Duration of the checkpoint execution listeners under write lock in milliseconds.");
+
         lastCpMarkDuration = mreg.longMetric("LastCheckpointMarkDuration",
-            "Duration of the checkpoint lock wait in milliseconds.");
+            "Duration of the checkpoint mark in milliseconds.");
+
+        lastCpLockHoldDuration = mreg.longMetric("LastCheckpointLockHoldDuration",
+            "Duration of the checkpoint lock hold in milliseconds.");
 
         lastCpPagesWriteDuration = mreg.longMetric("LastCheckpointPagesWriteDuration",
             "Duration of the checkpoint pages write in milliseconds.");
@@ -171,6 +233,16 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
         lastCpFsyncDuration = mreg.longMetric("LastCheckpointFsyncDuration",
             "Duration of the sync phase of the last checkpoint in milliseconds.");
+
+        lastCpWalRecordFsyncDuration = mreg.longMetric("LastCheckpointWalRecordFsyncDuration",
+            "Duration of the WAL fsync after logging CheckpointRecord on begin of the last checkpoint " +
+                "in milliseconds.");
+
+        lastCpWriteEntryDuration = mreg.longMetric("LastCheckpointWriteEntryDuration",
+            "Duration of entry buffer writing to file of the last checkpoint in milliseconds.");
+
+        lastCpSplitAndSortPagesDuration = mreg.longMetric("LastCheckpointSplitAndSortPagesDuration",
+            "Duration of splitting and sorting checkpoint pages of the last checkpoint in milliseconds.");
 
         lastCpTotalPages = mreg.longMetric("LastCheckpointTotalPagesNumber",
             "Total number of pages written during the last checkpoint.");
@@ -200,6 +272,42 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         mreg.register("WalTotalSize",
             this::getWalTotalSize,
             "Total size in bytes for storage wal files.");
+
+        long[] cpBounds = new long[] {100, 500, 1000, 5000, 30000};
+
+        cpBeforeLockHistogram = mreg.histogram("CheckpointBeforeLockHistogram", cpBounds,
+                "Histogram of checkpoint action before taken write lock durations in milliseconds.");
+
+        cpLockWaitHistogram = mreg.histogram("CheckpointLockWaitHistogram", cpBounds,
+                "Histogram of checkpoint lock wait durations in milliseconds.");
+
+        cpListenersExecuteHistogram = mreg.histogram("CheckpointListenersExecuteHistogram", cpBounds,
+                "Histogram of checkpoint execution listeners under write lock durations in milliseconds.");
+
+        cpMarkHistogram = mreg.histogram("CheckpointMarkHistogram", cpBounds,
+                "Histogram of checkpoint mark durations in milliseconds.");
+
+        cpLockHoldHistogram = mreg.histogram("CheckpointLockHoldHistogram", cpBounds,
+                "Histogram of checkpoint lock hold durations in milliseconds.");
+
+        cpPagesWriteHistogram = mreg.histogram("CheckpointPagesWriteHistogram", cpBounds,
+                "Histogram of checkpoint pages write durations in milliseconds.");
+
+        cpFsyncHistogram = mreg.histogram("CheckpointFsyncHistogram", cpBounds,
+                "Histogram of checkpoint fsync durations in milliseconds.");
+
+        cpWalRecordFsyncHistogram = mreg.histogram("CheckpointWalRecordFsyncHistogram", cpBounds,
+                "Histogram of the WAL fsync after logging CheckpointRecord on begin of checkpoint durations " +
+                    "in milliseconds.");
+
+        cpWriteEntryHistogram = mreg.histogram("CheckpointWriteEntryHistogram", cpBounds,
+                "Histogram of entry buffer writing to file durations in milliseconds.");
+
+        cpSplitAndSortPagesHistogram = mreg.histogram("CheckpointSplitAndSortPagesHistogram", cpBounds,
+                "Histogram of splitting and sorting checkpoint pages durations in milliseconds.");
+
+        cpHistogram = mreg.histogram("CheckpointHistogram", cpBounds,
+                "Histogram of checkpoint durations in milliseconds.");
     }
 
     /** {@inheritDoc} */
@@ -596,20 +704,33 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     }
 
     /**
+     * @param beforeLockDuration Checkpoint action before taken write lock duration.
      * @param lockWaitDuration Lock wait duration.
+     * @param listenersExecuteDuration Execution listeners under write lock duration.
      * @param markDuration Mark duration.
+     * @param lockHoldDuration Lock hold duration.
      * @param pagesWriteDuration Pages write duration.
      * @param fsyncDuration Total checkpoint fsync duration.
+     * @param walRecordFsyncDuration Duration of WAL fsync after logging {@link CheckpointRecord} on checkpoint begin.
+     * @param writeEntryDuration Duration of checkpoint entry buffer writing to file.
+     * @param splitAndSortPagesDuration Duration of splitting and sorting checkpoint pages.
      * @param duration Total checkpoint duration.
+     * @param start Checkpoint start time.
      * @param totalPages Total number of all pages in checkpoint.
      * @param dataPages Total number of data pages in checkpoint.
      * @param cowPages Total number of COW-ed pages in checkpoint.
      */
     public void onCheckpoint(
+        long beforeLockDuration,
         long lockWaitDuration,
+        long listenersExecuteDuration,
         long markDuration,
+        long lockHoldDuration,
         long pagesWriteDuration,
         long fsyncDuration,
+        long walRecordFsyncDuration,
+        long writeEntryDuration,
+        long splitAndSortPagesDuration,
         long duration,
         long start,
         long totalPages,
@@ -617,10 +738,16 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         long cowPages
     ) {
         if (metricsEnabled) {
+            lastCpBeforeLockDuration.value(beforeLockDuration);
             lastCpLockWaitDuration.value(lockWaitDuration);
+            lastCpListenersExecuteDuration.value(listenersExecuteDuration);
             lastCpMarkDuration.value(markDuration);
+            lastCpLockHoldDuration.value(lockHoldDuration);
             lastCpPagesWriteDuration.value(pagesWriteDuration);
             lastCpFsyncDuration.value(fsyncDuration);
+            lastCpWalRecordFsyncDuration.value(walRecordFsyncDuration);
+            lastCpWriteEntryDuration.value(writeEntryDuration);
+            lastCpSplitAndSortPagesDuration.value(splitAndSortPagesDuration);
             lastCpDuration.value(duration);
             lastCpStart.value(start);
             lastCpTotalPages.value(totalPages);
@@ -628,6 +755,18 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             lastCpCowPages.value(cowPages);
 
             totalCheckpointTime.add(duration);
+
+            cpBeforeLockHistogram.value(beforeLockDuration);
+            cpLockWaitHistogram.value(lockWaitDuration);
+            cpListenersExecuteHistogram.value(listenersExecuteDuration);
+            cpMarkHistogram.value(markDuration);
+            cpLockHoldHistogram.value(lockHoldDuration);
+            cpPagesWriteHistogram.value(pagesWriteDuration);
+            cpFsyncHistogram.value(fsyncDuration);
+            cpWalRecordFsyncHistogram.value(walRecordFsyncDuration);
+            cpWriteEntryHistogram.value(writeEntryDuration);
+            cpSplitAndSortPagesHistogram.value(splitAndSortPagesDuration);
+            cpHistogram.value(duration);
         }
     }
 
