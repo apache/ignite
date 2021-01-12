@@ -189,11 +189,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
 
             var clientEx = (IgniteClientException) ex.GetInnermostException();
 
-            var expected = string.Format(
-                "Failed to resolve .NET class '{0}' in Java [platformId=0, typeId=-315989221].",
-                arg.GetType().FullName);
-
-            Assert.AreEqual(expected, clientEx.Message);
+            Assert.AreEqual(arg.GetType().FullName, clientEx.Message);
         }
 
         /// <summary>
@@ -464,10 +460,13 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 () => Client.GetCompute().ExecuteJavaTask<object>(
                     ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizableJava));
 
-            var clientEx = (IgniteClientException) ex.GetInnermostException();
+            var clientEx = (BinaryObjectException) ex.GetInnermostException();
 
-            Assert.AreEqual("Failed to resolve Java class 'org.apache.ignite.platform.PlatformComputeJavaBinarizable'" +
-                            " in .NET [platformId=1, typeId=-422570294].", clientEx.Message);
+            Assert.AreEqual("No matching type found for object [typeId=-422570294, " + "typeName=org.apache.ignite.platform.PlatformComputeJavaBinarizable]. " +
+                            "This usually indicates that assembly with specified type is not loaded on a node. " +
+                            "When using Apache.Ignite.exe, make sure to load assemblies with -assembly parameter. " +
+                            "Alternatively, set IgniteConfiguration.PeerAssemblyLoadingMode to CurrentAppDomain.", 
+                clientEx.Message);
         }
 
         /// <summary>

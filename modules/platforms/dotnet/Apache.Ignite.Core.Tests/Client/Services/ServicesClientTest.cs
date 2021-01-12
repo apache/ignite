@@ -372,7 +372,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
             // Dates & Timestamps: not supported in Thin Client Services.
             var ex = Assert.Throws<IgniteClientException>(() => svc.test(DateTime.UtcNow));
-            StringAssert.StartsWith("Failed to resolve .NET class 'System.DateTime' in Java", ex.Message);
+            StringAssert.StartsWith("System.DateTime", ex.Message);
 
             // Guid.
             var guid = Guid.NewGuid();
