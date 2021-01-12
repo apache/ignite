@@ -66,6 +66,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** */
         private readonly ILogger _log;
 
+        /** */
+        private readonly bool _registerSameJavaType;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -105,6 +108,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (typeNames != null)
                 foreach (string typeName in typeNames)
                     AddUserType(new BinaryTypeConfiguration(typeName), typeResolver);
+
+            _registerSameJavaType = _cfg.NameMapper == null || 
+                 _cfg.NameMapper is BinaryBasicNameMapper && !((BinaryBasicNameMapper)_cfg.NameMapper).IsSimpleName;
         }
 
         /// <summary>
@@ -138,6 +144,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         public bool ForceTimestamp
         {
             get { return _cfg.ForceTimestamp; }
+        }
+
+        /// <summary>
+        /// Gets the compact footer flag.
+        /// </summary>
+        public bool RegisterSameJavaType
+        {
+            get { return _registerSameJavaType; }
         }
 
         /// <summary>
@@ -530,7 +544,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (type == null && _ignite != null)
                 {
-                    typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId, RegisterSameJavaType());
+                    typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId, _registerSameJavaType);
 
                     if (typeName != null)
                     {
@@ -578,7 +592,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var typeName = GetTypeName(type);
             var typeId = GetTypeId(typeName, _cfg.IdMapper);
 
-            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName, RegisterSameJavaType());
+            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName, _registerSameJavaType);
 
             return AddUserType(type, typeId, typeName, registered, desc);
         }
@@ -964,13 +978,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static IBinaryNameMapper GetDefaultNameMapper()
         {
             return BinaryBasicNameMapper.FullNameInstance;
-        }
-
-        /// <returns>True if FQN NameMapper used and can implicitly register types for java platform.</returns>
-        private bool RegisterSameJavaType()
-        {
-            return _cfg.NameMapper == null || 
-                 _cfg.NameMapper is BinaryBasicNameMapper && !((BinaryBasicNameMapper)_cfg.NameMapper).IsSimpleName;
         }
     }
 }

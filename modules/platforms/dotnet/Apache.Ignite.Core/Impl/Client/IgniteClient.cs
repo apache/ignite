@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _socket = new ClientFailoverSocket(_configuration, _marsh, _transactions);
 
-            _binProc = _configuration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
+            _binProc = _configuration.BinaryProcessor ?? new BinaryProcessorClient(_socket, _marsh);
 
             _binary = new Binary(_marsh);
 

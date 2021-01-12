@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
@@ -31,15 +32,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Socket. */
         private readonly ClientFailoverSocket _socket;
 
+        /** Marshaller. */
+        private readonly Marshaller _marsh;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryProcessorClient"/> class.
         /// </summary>
         /// <param name="socket">The socket.</param>
-        public BinaryProcessorClient(ClientFailoverSocket socket)
+        /// <param name="marsh">The marshaller.</param>
+        public BinaryProcessorClient(ClientFailoverSocket socket, Marshaller marsh)
         {
             Debug.Assert(socket != null);
 
             _socket = socket;
+            _marsh = marsh;
         }
 
         /** <inheritdoc /> */
@@ -101,9 +107,36 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public string GetTypeName(int id, bool registerSameJavaType)
         {
+            try
+            {
+                return GetTypeName(id, BinaryProcessor.DotNetPlatformId);
+            }
+            catch (Exception)
+            {
+                if (!registerSameJavaType)
+                    throw;
+            }
+
+            // Try to get java type name and register corresponding DotNet type.
+            var javaTypeName = GetTypeName(id, BinaryProcessor.JavaPlatformId);
+            var netTypeName = _marsh.GetTypeName(javaTypeName);
+
+            RegisterType(id, netTypeName, false);
+
+            return netTypeName;
+        }
+        
+        /// <summary>
+        /// Gets the type name by id for specific platform.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <param name="platformId">Platform identifier.</param>
+        /// <returns>Type or null.</returns>
+        private string GetTypeName(int id, byte platformId)
+        {
             return _socket.DoOutInOp(ClientOp.BinaryTypeNameGet, ctx =>
                 {
-                    ctx.Stream.WriteByte(BinaryProcessor.DotNetPlatformId);
+                    ctx.Stream.WriteByte(platformId);
                     ctx.Stream.WriteInt(id);
                 },
                 ctx => ctx.Reader.ReadString());
