@@ -96,10 +96,7 @@ public class InlineIndexKeyTypeRegistry {
         if (key == null && clazz == BinaryObjectImpl.class)
             return objectType;
 
-        if (key == null)
-            throw new IgniteException("There is no InlineIndexKey mapping for class " + clazz);
-
-        return key;
+        return key == null ? get(type) : key;
     }
 
     /**
