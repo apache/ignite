@@ -48,23 +48,30 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
      */
     public IgniteReceiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, long exchangeId,
         long sourceFragmentId) {
+        this(cluster, traits, rowType, exchangeId, sourceFragmentId, traits.getCollation());
+    }
+
+    /** */
+    public IgniteReceiver(RelInput input) {
+        this(
+            input.getCluster(),
+            input.getTraitSet().replace(IgniteConvention.INSTANCE),
+            input.getRowType("rowType"),
+            ((Number)input.get("exchangeId")).longValue(),
+            ((Number)input.get("sourceFragmentId")).longValue(),
+            input.getCollation()
+        );
+    }
+
+    /** */
+    private IgniteReceiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, long exchangeId,
+        long sourceFragmentId, RelCollation collation) {
         super(cluster, traits);
 
         this.exchangeId = exchangeId;
         this.sourceFragmentId = sourceFragmentId;
         this.rowType = rowType;
-
-        collation = traits.getCollation();
-    }
-
-    /** */
-    public IgniteReceiver(RelInput input) {
-        super(input.getCluster(), input.getTraitSet().replace(IgniteConvention.INSTANCE));
-
-        exchangeId = ((Number)input.get("exchangeId")).longValue();
-        sourceFragmentId = ((Number)input.get("sourceFragmentId")).longValue();
-        rowType = input.getRowType("rowType");
-        collation = input.getCollation();
+        this.collation = collation;
     }
 
     /** */
@@ -84,7 +91,7 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new IgniteReceiver(getCluster(), traitSet, rowType, exchangeId, sourceFragmentId);
+        return new IgniteReceiver(getCluster(), traitSet, rowType, exchangeId, sourceFragmentId, collation);
     }
 
     /** {@inheritDoc} */
@@ -122,6 +129,6 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteReceiver(cluster, getTraitSet(), rowType, exchangeId, sourceFragmentId);
+        return new IgniteReceiver(cluster, getTraitSet(), rowType, exchangeId, sourceFragmentId, collation);
     }
 }

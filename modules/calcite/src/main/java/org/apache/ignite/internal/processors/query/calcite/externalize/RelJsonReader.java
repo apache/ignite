@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -114,7 +115,7 @@ public class RelJsonReader {
     }
 
     /** */
-    private class RelInputImpl implements RelInput {
+    private class RelInputImpl implements RelInputEx {
         /** */
         private final Map<String, Object> jsonRel;
 
@@ -266,6 +267,11 @@ public class RelJsonReader {
         /** {@inheritDoc} */
         @Override public RelCollation getCollation() {
             return relJson.toCollation((List)get("collation"));
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelCollation getCollation(String tag) {
+            return relJson.toCollation((List)get(tag));
         }
 
         /** {@inheritDoc} */
