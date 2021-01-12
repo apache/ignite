@@ -22,6 +22,7 @@ namespace IgniteExamples.ScanQuery
     {
         public static void Main()
         {
+            // TODO: This example requires .NET with some classes on the server side - update documentation.
             var cfg = new IgniteClientConfiguration("127.0.0.1");
 
             using (IIgniteClient ignite = Ignition.StartClient(cfg))
