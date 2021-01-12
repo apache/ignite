@@ -1,13 +1,12 @@
 ﻿using System;
 using Apache.Ignite.Core;
 
-namespace ServerNode
+namespace IgniteExamples.ServerNode
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main()
         {
-            // TODO: Reference shared assembly in this project.
             using (Ignition.Start())
             {
                 Console.ReadKey();
