@@ -445,6 +445,12 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         /**
          * Rotate performance statistics.
          */
-        PERFORMANCE_STATISTICS_ROTATE
+        PERFORMANCE_STATISTICS_ROTATE,
+
+        START_SNAPSHOT_RESTORE,
+
+        END_SNAPSHOT_RESTORE,
+
+        UNDO_SNAPSHOT_RESTORE
     }
 }

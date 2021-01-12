@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import java.util.Collection;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
@@ -48,4 +49,6 @@ public interface IgniteSnapshot {
      * @return Future which will be completed when cancel operation finished.
      */
     public IgniteFuture<Void> cancelSnapshot(String name);
+
+    public IgniteFuture<Void> restoreCacheGroups(String snapshotName, Collection<String> cacheGroupNames);
 }

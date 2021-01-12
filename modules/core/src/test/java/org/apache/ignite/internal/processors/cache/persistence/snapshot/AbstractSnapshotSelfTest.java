@@ -111,7 +111,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected final List<Integer> locEvts = new CopyOnWriteArrayList<>();
 
     /** Configuration for the 'default' cache. */
-    protected volatile CacheConfiguration<Integer, Integer> dfltCacheCfg;
+    protected volatile CacheConfiguration<Integer, Object> dfltCacheCfg;
 
     /** Enable default data region persistence. */
     protected boolean persistence = true;
@@ -239,7 +239,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @return Ignite instance.
      * @throws Exception If fails.
      */
-    protected IgniteEx startGridWithCache(CacheConfiguration<Integer, Integer> ccfg, int keys) throws Exception {
+    protected IgniteEx startGridWithCache(CacheConfiguration<Integer, Object> ccfg, int keys) throws Exception {
         return startGridsWithCache(1, ccfg, keys);
     }
 
@@ -250,7 +250,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @return Ignite instance.
      * @throws Exception If fails.
      */
-    protected IgniteEx startGridsWithCache(int grids, CacheConfiguration<Integer, Integer> ccfg, int keys) throws Exception {
+    protected IgniteEx startGridsWithCache(int grids, CacheConfiguration<Integer, Object> ccfg, int keys) throws Exception {
         dfltCacheCfg = ccfg;
 
         return startGridsWithCache(grids, keys, Integer::new, ccfg);
