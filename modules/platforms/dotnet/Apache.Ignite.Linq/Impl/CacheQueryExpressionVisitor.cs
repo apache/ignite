@@ -324,6 +324,10 @@ namespace Apache.Ignite.Linq.Impl
 
             if (queryable != null)
             {
+                // Find where the projection comes from.
+                expression = ExpressionWalker.GetProjectedMember(expression.Expression, expression.Member) ??
+                             expression;
+
                 var fieldName = GetEscapedFieldName(expression, queryable);
 
                 ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(expression), fieldName);
@@ -334,7 +338,6 @@ namespace Apache.Ignite.Linq.Impl
             return expression;
         }
 
-        
         /// <summary>
         /// Gets the name of the field from a member expression, with quotes when necessary.
         /// </summary>
