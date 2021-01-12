@@ -67,16 +67,18 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
             }
 
             @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
-                synchronized (this.addrs){
+                synchronized (addrs){
                     if(addrs.isEmpty()) {
-                        this.addrs.add(new InetSocketAddress("127.0.0.1", 47500));
-                        this.addrs.add(new InetSocketAddress("127.0.0.1", 47501));
-                        this.addrs.add(new InetSocketAddress("127.0.0.1", 47502));
-                        this.addrs.add(new InetSocketAddress("127.0.0.1", 47503));
-                        this.addrs.add(new InetSocketAddress("127.0.0.1", 47504));
-                        this.addrs.add(new InetSocketAddress("127.0.0.1", 47505));
-                        this.addrs.add(new InetSocketAddress("127.0.0.1", 47506));
-                        this.addrs.add(new InetSocketAddress("127.0.0.1", 47507));
+                        addrs.add(new InetSocketAddress("127.0.0.1", 47500));
+                        addrs.add(new InetSocketAddress("127.0.0.1", 47501));
+                        addrs.add(new InetSocketAddress("127.0.0.1", 47502));
+                        addrs.add(new InetSocketAddress("127.0.0.1", 47503));
+                        addrs.add(new InetSocketAddress("127.0.0.1", 47504));
+                        addrs.add(new InetSocketAddress("127.0.0.1", 47505));
+                        addrs.add(new InetSocketAddress("127.0.0.1", 47506));
+                        addrs.add(new InetSocketAddress("127.0.0.1", 47507));
+                        addrs.add(new InetSocketAddress("127.0.0.1", 47508));
+                        addrs.add(new InetSocketAddress("127.0.0.1", 47509));
                     }
                 }
 
@@ -118,7 +120,7 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
         for (int i = 0; i < 10; i++) {
             try {
 //                startGridsMultiThreaded(TOP_SIZE);
-                startGridsMultiThreaded(1);
+                startGridsMultiThreaded(5);
             }
             finally {
                 stopAllGrids();

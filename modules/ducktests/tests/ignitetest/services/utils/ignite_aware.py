@@ -74,12 +74,17 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
     def globals(self):
         return self.context.globals
 
-    def start_async(self, clean=True):
+    def start_async(self, full_async=True, clean=True):
         """
         Starts in async way.
         """
-        self.exec_on_nodes_async(self.nodes, self.__stop_and_clean_single_node, simultaneously=False)
-        self.exec_on_nodes_async(self.nodes, lambda srvc, node: srvc.start_node(node), simultaneously=True)
+        if full_async:
+            if clean:
+                self.exec_on_nodes_async(self.nodes, self.__stop_and_clean_single_node, simultaneously=False)
+
+            self.exec_on_nodes_async(self.nodes, lambda srvc, node: srvc.start_node(node), simultaneously=True)
+        else:
+            super().start()
 
     def start(self, clean=True):
         self.start_async(clean=clean)

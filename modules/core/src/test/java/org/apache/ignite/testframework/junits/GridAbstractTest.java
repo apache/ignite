@@ -861,16 +861,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected Ignite startGridsMultiThreaded(int cnt) throws Exception {
         assert cnt > 0 : "Number of grids must be a positive number";
 
-        Ignite ignite = startGrids(1);
+//        Ignite ignite = startGrids(1);
 
-        if (cnt > 1) {
-            startGridsMultiThreaded(1, cnt - 1);
+//        if (cnt > 1) {
+            startGridsMultiThreaded(0, cnt);
 
             if (checkTopology())
                 checkTopology(cnt);
-        }
+//        }
 
-        return ignite;
+        return grid(0);
     }
 
     /**
