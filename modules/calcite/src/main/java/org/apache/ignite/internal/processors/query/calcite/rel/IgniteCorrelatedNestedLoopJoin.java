@@ -119,7 +119,7 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
                 nodeTraits.replace(leftCollation),
                 ImmutableList.of(
                     left,
-                    right.replace(TraitUtils.createCollation(newRightCollationFields))
+                    right
                 )
             )
         );

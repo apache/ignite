@@ -108,6 +108,7 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         RelWriter writer = super.explainTerms(pw);
 
         writer.item("condition", condition);
+        writer.item("collation", collation);
 
         return idxCond.explainTerms(writer);
     }
