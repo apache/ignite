@@ -3,7 +3,7 @@ using Apache.Ignite.Core;
 using Apache.Ignite.Core.Client;
 using Apache.Ignite.Core.Client.Cache;
 
-namespace PutGet
+namespace IgniteExamples.PutGet
 {
     /// <summary>
     /// Put/Get example.

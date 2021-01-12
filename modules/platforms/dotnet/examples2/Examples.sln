@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PutGet", "Thin\Cache\PutGet
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerNode", "ServerNode\ServerNode.csproj", "{D84AFE4B-C016-4082-983B-EE79D69C87FC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{4D4CB21E-49D9-4AFA-8321-EA1F00EB01F0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,6 +50,18 @@ Global
 		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Release|x64.Build.0 = Release|Any CPU
 		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Release|x86.ActiveCfg = Release|Any CPU
 		{D84AFE4B-C016-4082-983B-EE79D69C87FC}.Release|x86.Build.0 = Release|Any CPU
+		{4D4CB21E-49D9-4AFA-8321-EA1F00EB01F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D4CB21E-49D9-4AFA-8321-EA1F00EB01F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D4CB21E-49D9-4AFA-8321-EA1F00EB01F0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4D4CB21E-49D9-4AFA-8321-EA1F00EB01F0}.Debug|x64.Build.0 = Debug|Any CPU
+		{4D4CB21E-49D9-4AFA-8321-EA1F00EB01F0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4D4CB21E-49D9-4AFA-8321-EA1F00EB01F0}.Debug|x86.Build.0 = Debug|Any CPU
+		{4D4CB21E-49D9-4AFA-8321-EA1F00EB01F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D4CB21E-49D9-4AFA-8321-EA1F00EB01F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D4CB21E-49D9-4AFA-8321-EA1F00EB01F0}.Release|x64.ActiveCfg = Release|Any CPU
+		{4D4CB21E-49D9-4AFA-8321-EA1F00EB01F0}.Release|x64.Build.0 = Release|Any CPU
+		{4D4CB21E-49D9-4AFA-8321-EA1F00EB01F0}.Release|x86.ActiveCfg = Release|Any CPU
+		{4D4CB21E-49D9-4AFA-8321-EA1F00EB01F0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{065AC9B6-519D-488D-8C05-4CFAF47C0975} = {886F8F3F-C769-49C0-8BED-AA20B7B43A5D}
