@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
 
             /** <inheritdoc /> */
-            public string GetTypeName(int id)
+            public string GetTypeName(int id, bool registerSameJavaType)
             {
                 return null;
             }
