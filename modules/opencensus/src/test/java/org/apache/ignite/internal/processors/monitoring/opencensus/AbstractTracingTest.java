@@ -402,5 +402,11 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
                 span.end();
             }
         }
+
+        /** Clears collected spans. */
+        void clearCollectedSpans() {
+            collectedSpans.clear();
+            collectedSpansByParents.clear();
+        }
     }
 }

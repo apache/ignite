@@ -167,6 +167,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformNoopProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
@@ -1195,7 +1196,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Assign discovery manager to context before other processors start so they
             // are able to register custom event listener.
-            GridManager discoMgr = new GridDiscoveryManager(ctx);
+            GridDiscoveryManager discoMgr = new GridDiscoveryManager(ctx);
 
             ctx.add(discoMgr, false);
 
@@ -1210,9 +1211,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(mntcProcessor);
 
             if (mntcProcessor.isMaintenanceMode()) {
+                if (log.isInfoEnabled()) {
+                    log.info(
+                        "Node is being started in maintenance mode. " +
+                        "Starting IsolatedDiscoverySpi instead of configured discovery SPI."
+                    );
+                }
+
+                cfg.setClusterStateOnStart(ClusterState.INACTIVE);
+
+                if (log.isInfoEnabled())
+                    log.info("Overriding 'clusterStateOnStart' configuration to 'INACTIVE'.");
+
                 ctx.config().setDiscoverySpi(new IsolatedDiscoverySpi());
 
                 discoMgr = new GridDiscoveryManager(ctx);
+
+                // Reinitialized discovery manager won't have a valid consistentId on creation.
+                discoMgr.consistentId(ctx.pdsFolderResolver().resolveFolders().consistentId());
 
                 ctx.add(discoMgr, false);
             }
@@ -1251,6 +1267,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new DistributedMetaStorageImpl(ctx));
                 startProcessor(new DistributedConfigurationProcessor(ctx));
                 startProcessor(new DurableBackgroundTasksProcessor(ctx));
+                startProcessor(new PerformanceStatisticsProcessor(ctx));
 
                 startTimer.finishGlobalStage("Start processors");
 

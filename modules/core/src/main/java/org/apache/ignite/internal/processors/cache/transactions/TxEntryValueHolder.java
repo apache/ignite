@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -150,9 +151,9 @@ public class TxEntryValueHolder implements Message {
      * @param ldr Class loader.
      * @throws org.apache.ignite.IgniteCheckedException If unmarshalling failed.
      */
-    public void unmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    public void unmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         if (hasWriteVal && val != null)
-            val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
+            val.finishUnmarshal(ctx, ldr);
     }
 
     /** {@inheritDoc} */

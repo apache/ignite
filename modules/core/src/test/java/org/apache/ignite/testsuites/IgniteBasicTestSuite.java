@@ -46,6 +46,7 @@ import org.apache.ignite.internal.GridReleaseTypeSelfTest;
 import org.apache.ignite.internal.GridSelfTest;
 import org.apache.ignite.internal.GridStartStopSelfTest;
 import org.apache.ignite.internal.GridStopWithCancelSelfTest;
+import org.apache.ignite.internal.GridStopWithCollisionSpiTest;
 import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.IgniteThreadGroupNodeRestartTest;
@@ -78,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.RebalanceWithDifferentThreadP
 import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictPartitionInLogTest;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMapTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagePoolTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.DiscoveryDataDeserializationFailureHanderTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
@@ -177,6 +179,7 @@ import org.junit.runners.Suite;
     GridSpiLocalHostInjectionTest.class,
     GridLifecycleBeanSelfTest.class,
     GridStopWithCancelSelfTest.class,
+    GridStopWithCollisionSpiTest.class,
     GridReduceSelfTest.class,
     GridEventConsumeSelfTest.class,
     GridSuppressedExceptionSelfTest.class,
@@ -299,6 +302,8 @@ import org.junit.runners.Suite;
     ClusterActivationStartedEventTest.class,
 
     IgniteThreadGroupNodeRestartTest.class,
+
+    LinkMapTest.class,
 
     // Other tests
     CacheLockCandidatesThreadTest.class,

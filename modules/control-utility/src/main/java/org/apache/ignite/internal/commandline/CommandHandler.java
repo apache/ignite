@@ -46,6 +46,7 @@ import org.apache.ignite.internal.client.impl.connection.GridClientConnectionRes
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import org.apache.ignite.logger.java.JavaLoggerFormatter;
@@ -266,7 +267,7 @@ public class CommandHandler {
                     }
 
                     logger.info("Command [" + commandName + "] started");
-                    logger.info("Arguments: " + String.join(" ", rawArgs));
+                    logger.info("Arguments: " + argumentsToString(rawArgs));
                     logger.info(DELIM);
 
                     lastOperationRes = command.execute(clientCfg, logger, args.verbose());
@@ -452,6 +453,36 @@ public class CommandHandler {
             return true;
 
         return false;
+    }
+
+    /**
+     * Joins user's arguments and hides sensitive information.
+     *
+     * @param rawArgs Arguments which user has provided.
+     * @return String which could be shown in console and pritned to log.
+     */
+    private String argumentsToString(List<String> rawArgs) {
+        boolean hide = false;
+
+        SB sb = new SB();
+
+        for (int i = 0; i < rawArgs.size(); i++) {
+            if (hide) {
+                sb.a("***** ");
+
+                hide = false;
+
+                continue;
+            }
+
+            String arg = rawArgs.get(i);
+
+            sb.a(arg).a(' ');
+
+            hide = CommonArgParser.isSensitiveArgument(arg);
+        }
+
+        return sb.toString();
     }
 
     /**

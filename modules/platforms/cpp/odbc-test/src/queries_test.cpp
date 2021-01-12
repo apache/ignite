@@ -1629,7 +1629,7 @@ BOOST_AUTO_TEST_CASE(TestErrorMessage)
 
 BOOST_AUTO_TEST_CASE(TestAffectedRows)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PAGE_SIZE=1024");
 
     const int recordsNum = 100;
 
@@ -1670,7 +1670,41 @@ BOOST_AUTO_TEST_CASE(TestAffectedRows)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    BOOST_CHECK_EQUAL(affected, 0);
+    BOOST_CHECK_EQUAL(affected, 1024);
+}
+
+BOOST_AUTO_TEST_CASE(TestAffectedRowsOnSelect)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PAGE_SIZE=123");
+
+    const int recordsNum = 1000;
+
+    // Inserting values.
+    InsertTestStrings(recordsNum);
+
+    // Just selecting everything to make sure everything is OK
+    SQLCHAR selectReq[] = "SELECT _key, strField FROM TestType ORDER BY _key";
+
+    SQLRETURN ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    for (int i = 0; i < 200; ++i)
+    {
+        SQLLEN affected = -1;
+        ret = SQLRowCount(stmt, &affected);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECK_EQUAL(affected, 123);
+
+        ret = SQLFetch(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
 }
 
 BOOST_AUTO_TEST_CASE(TestMultipleSelects)

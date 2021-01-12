@@ -19,6 +19,8 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.index.StaticCacheDdlKeepStaticConfigurationTest;
 import org.apache.ignite.internal.processors.cache.index.StaticCacheDdlTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFilterDeploymentFailedTest;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsQueryTest;
 import org.apache.ignite.internal.processors.query.MemLeakOnSqlWithClientReconnectTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -30,7 +32,10 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     StaticCacheDdlTest.class,
     StaticCacheDdlKeepStaticConfigurationTest.class,
-    MemLeakOnSqlWithClientReconnectTest.class
+    MemLeakOnSqlWithClientReconnectTest.class,
+    MemLeakOnSqlWithClientReconnectTest.class,
+    CacheContinuousQueryFilterDeploymentFailedTest.class,
+    PerformanceStatisticsQueryTest.class
 })
 public class IgniteCacheQuerySelfTestSuite6 {
 }
