@@ -2940,17 +2940,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Output stream. */
         private OutputStream out;
 
-        /** Last time status message has been sent. */
-        private long lastTimeStatusMsgSentNanos;
-
-        /** Incoming metrics check frequency. */
-        private long metricsCheckFreq = 3 * spi.metricsUpdateFreq + 50;
-
         /** Last time metrics update message has been sent. */
         private long lastTimeMetricsUpdateMsgSentNanos = System.nanoTime() - U.millisToNanos(spi.metricsUpdateFreq);
-
-        /** */
-        private long lastRingMsgTimeNanos;
 
         /** */
         private List<DiscoveryDataPacket> joiningNodesDiscoDataList;
@@ -3199,11 +3190,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (debugMode)
                 debugLog(msg, "Processing message [cls=" + msg.getClass().getSimpleName() + ", id=" + msg.id() + ']');
 
-            boolean ensured = spi.ensured(msg);
-
-            if (!locNode.id().equals(msg.senderNodeId()) && ensured)
-                lastRingMsgTimeNanos = System.nanoTime();
-
             if (locNode.internalOrder() == 0) {
                 boolean proc = false;
 
@@ -3324,8 +3310,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             checkConnection();
 
             sendMetricsUpdateMessage();
-
-            checkMetricsReceiving();
 
             checkPendingCustomMessages();
 
@@ -6488,24 +6472,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             msgWorker.addMessage(msg);
 
             lastTimeMetricsUpdateMsgSentNanos = System.nanoTime();
-        }
-
-        /**
-         * Checks the last time a metrics update message received. If the time is bigger than {@code metricsCheckFreq}
-         * than {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
-         */
-        private void checkMetricsReceiving() {
-            if (lastTimeStatusMsgSentNanos < locNode.lastUpdateTimeNanos())
-                lastTimeStatusMsgSentNanos = locNode.lastUpdateTimeNanos();
-
-            long updateTimeNanos = Math.max(lastTimeStatusMsgSentNanos, lastRingMsgTimeNanos);
-
-            if (U.millisSinceNanos(updateTimeNanos) < metricsCheckFreq)
-                return;
-
-            msgWorker.addMessage(createTcpDiscoveryStatusCheckMessage(locNode, locNode.id(), null));
-
-            lastTimeStatusMsgSentNanos = System.nanoTime();
         }
 
         /**
