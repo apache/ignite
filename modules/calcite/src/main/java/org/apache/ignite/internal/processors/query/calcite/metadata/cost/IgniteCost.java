@@ -179,6 +179,11 @@ public class IgniteCost implements RelOptCost {
         return this != cost && (cpu + memory + io + network) < (other.cpu + other.memory + other.io + other.network);
     }
 
+    /** */
+    public double normalCost() {
+        return cpu + memory + io + network;
+    }
+
     /** {@inheritDoc} */
     @Override public RelOptCost plus(RelOptCost cost) {
         IgniteCost other = (IgniteCost)cost;
@@ -223,6 +228,6 @@ public class IgniteCost implements RelOptCost {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteCost.class, this);
+        return S.toString(IgniteCost.class, this, "normal", normalCost());
     }
 }

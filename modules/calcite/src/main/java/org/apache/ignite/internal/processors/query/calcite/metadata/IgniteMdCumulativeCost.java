@@ -34,6 +34,8 @@ import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.any;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.distribution;
@@ -69,6 +71,9 @@ public class IgniteMdCumulativeCost implements MetadataHandler<BuiltInMetadata.C
 
             cost = cost.plus(inputCost);
         }
+
+        if (rel instanceof IgniteFilter || rel instanceof IgniteIndexSpool)
+            System.out.println("+++ " + rel + ":" + cost);
 
         return cost;
     }

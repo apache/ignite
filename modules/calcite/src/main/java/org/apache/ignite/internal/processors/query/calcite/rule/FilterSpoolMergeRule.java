@@ -65,7 +65,7 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
 
         IndexConditions idxCond = RexUtils.buildIndexConditions(
             cluster,
-            spool.collation(),
+            TraitUtils.collation(input),
             filter.getCondition(),
             spool.getRowType(),
             null
