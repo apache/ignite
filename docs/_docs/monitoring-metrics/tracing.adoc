@@ -29,6 +29,7 @@ The following Ignite APIs are instrumented for tracing:
 * Communication
 * Exchange
 * Transactions
+* SQL queries
 
 
 To view traces, you must export them into an external system.
@@ -114,6 +115,7 @@ The following APIs are instrumented for tracing:
 * `EXCHANGE` —  exchange events
 * `COMMUNICATION` — communication events
 * `TX` — transactions
+* `SQL` — SQL queries
 
 The `--sampling-rate` is the probabilistic sampling rate, a number between `0` and `1`:
 
@@ -172,6 +174,68 @@ You can click on each span to view the annotations and tags attached to it.
 
 
 image::images/span.png[Span]
+
+== Tracing SQL queries
+
+To enable tracing of SQL queries, use `SQL` as value of `scope` parameter during link:[trace sampling configuration].
+If tracing of SQL queries is enabled, execution of each SQL query on any cluster node will produce a separate link:[trace].
+
+[IMPORTANT]
+====
+[discrete]
+Enabling tracing for SQL queries impose severe degradation on SQL engine performance.
+====
+
+The table below provides description and a list of tags and annotations for each span that can be part of the SQL query trace tree.
+
+[NOTE]
+====
+[discrete]
+Depending on the type of SQL query and its execution plan, some spans can be not present in the SQL query span tree.
+====
+
+[cols="2,5,5",opts="header"]
+|===
+|Span Name | Description | Tags And Annotations
+| sql.query | Execution of SQL query from the moment of registration until the release of used resources on the query initiator node a|
+* sql.query.text - SQL query text
+* sql.schema - SQL schema
+| sql.cursor.open | SQL query cursor opening |
+| sql.cursor.close | SQL query cursor closure |
+| sql.cursor.cancel | SQL query cursor cancellation |
+| sql.query.parse | Parsing of SQL query a|
+* sql.parser.cache.hit - Whether parsing of the SQL query was skipped due to the cached result
+| sql.query.execute.request | Processing of SQL query execution request a|
+* sql.query.text - SQL query text
+| sql.next.page.request | Processing of request for obtaining the next page of local SQL query execution result  |
+| sql.page.response | Processing of message with page of node local SQL query execution result |
+| sql.query.execute | Execution of query by H2 SQL engine a|
+* sql.query.text - SQL query text
+| sql.page.prepare | Reading rows from cursor and preparing result page a|
+* sql.page.rows - Number of rows that result page contains
+| sql.fail.response | Processing of message that indicates failure of SQL query execution |
+| sql.dml.query.execute.request | Processing of SQL DML query execution request a|
+* sql.query.text - SQL query text
+| sql.dml.query.response | Processing of SQL DML query execution result by query initiator node |
+| sql.query.cancel.request | Processing of SQL query cancel request |
+| sql.iterator.open | SQL query iterator opening |
+| sql.iterator.close | SQL query iterator closure |
+| sql.page.fetch | Fetching SQL query result page a|
+* sql.page.rows - Number of rows that result page contains
+| sql.page.wait | Waiting for SQL query results page to be received from remote node |
+| sql.index.range.request | Processing SQL index range request a|
+* sql.index - Name of SQL index
+* sql.table - Name of SQL table
+* sql.index.range.rows - Number of rows that result of index range request contains
+| sql.index.range.response | Processing SQL index range responce |
+| sql.dml.query.execute |  Execution of SQL DML query |
+| sql.command.query.execute | Execution of SQL command query which either DDL query or Ignite native command |
+| sql.partitions.reserve | Reservation of data partitions used to execute a query a|
+* Annotation message that indicates reservation of data partitions for particular cache - `Cache partitions were reserved [cache=<name of the cache>, partitions=[<partitions numbers>]`
+| sql.cache.update | Cache update as a result of SQL DML query execution a|
+* sql.cache.updates - Number of cache entries to be updated as a result of DML query
+| sql.batch.process| Processing of SQL batch update |
+|===
 
 ////
 TODO: describe annotations and tags
