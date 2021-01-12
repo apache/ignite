@@ -530,7 +530,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (type == null && _ignite != null)
                 {
-                    typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId, IsRegisterSameJavaType());
+                    typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId, RegisterSameJavaType());
 
                     if (typeName != null)
                     {
@@ -578,7 +578,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var typeName = GetTypeName(type);
             var typeId = GetTypeId(typeName, _cfg.IdMapper);
 
-            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName, IsRegisterSameJavaType());
+            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName, RegisterSameJavaType());
 
             return AddUserType(type, typeId, typeName, registered, desc);
         }
@@ -967,7 +967,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <returns>True if FQN NameMapper used and can implicitly register types for java platform.</returns>
-        private bool IsRegisterSameJavaType(bool registerSameJavaType = true)
+        private bool RegisterSameJavaType()
         {
             return _cfg.NameMapper == null || 
                  _cfg.NameMapper is BinaryBasicNameMapper && !((BinaryBasicNameMapper)_cfg.NameMapper).IsSimpleName;
