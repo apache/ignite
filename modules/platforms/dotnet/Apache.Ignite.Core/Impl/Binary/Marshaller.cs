@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.Linq;
     using System.Runtime.Serialization;
-    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Common;
@@ -43,9 +42,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class Marshaller
     {
-        /** Register same java type flag. */
-        public static readonly ThreadLocal<Boolean> RegisterSameJavaType = new ThreadLocal<Boolean>(() => false);
-
         /** Binary configuration. */
         private readonly BinaryConfiguration _cfg;
 
@@ -534,7 +530,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (type == null && _ignite != null)
                 {
-                    typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId);
+                    typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId, IsRegisterSameJavaType());
 
                     if (typeName != null)
                     {
@@ -582,7 +578,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var typeName = GetTypeName(type);
             var typeId = GetTypeId(typeName, _cfg.IdMapper);
 
-            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName, RegisterSameJavaType.Value);
+            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName, IsRegisterSameJavaType());
 
             return AddUserType(type, typeId, typeName, registered, desc);
         }
@@ -970,12 +966,11 @@ namespace Apache.Ignite.Core.Impl.Binary
             return BinaryBasicNameMapper.FullNameInstance;
         }
 
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>	
-        /// <returns>True if registerSameJavaType feature can be used, BinaryBasicNameMapper with IsSimpleName = false.</returns>
-        public bool IsRegisterSameJavaType(bool registerSameJavaType = true)
+        /// <returns>True if FQN NameMapper used and can implicitly register types for java platform.</returns>
+        private bool IsRegisterSameJavaType(bool registerSameJavaType = true)
         {
-            return registerSameJavaType && (_cfg.NameMapper == null || 
-                 _cfg.NameMapper is BinaryBasicNameMapper && !((BinaryBasicNameMapper)_cfg.NameMapper).IsSimpleName);
+            return _cfg.NameMapper == null || 
+                 _cfg.NameMapper is BinaryBasicNameMapper && !((BinaryBasicNameMapper)_cfg.NameMapper).IsSimpleName;
         }
     }
 }

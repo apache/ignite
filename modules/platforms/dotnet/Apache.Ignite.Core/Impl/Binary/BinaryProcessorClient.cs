@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public string GetTypeName(int id)
+        public string GetTypeName(int id, bool registerSameJavaType)
         {
             return _socket.DoOutInOp(ClientOp.BinaryTypeNameGet, ctx =>
                 {

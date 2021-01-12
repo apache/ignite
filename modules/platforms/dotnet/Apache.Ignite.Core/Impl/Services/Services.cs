@@ -434,20 +434,10 @@ namespace Apache.Ignite.Core.Impl.Services
         private object InvokeProxyMethod(IPlatformTargetInternal proxy, string methodName,
             MethodBase method, object[] args, PlatformType platformType)
         {
-            var locRegisterSameJavaType = Marshaller.RegisterSameJavaType.Value;
-            Marshaller.RegisterSameJavaType.Value = IsRegisterSameJavaType();
-
-            try
-            {
-                return DoOutInOp(OpInvokeMethod,
-                    writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platformType),
-                    (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary),
-                    proxy);
-            }
-            finally
-            {
-                Marshaller.RegisterSameJavaType.Value = locRegisterSameJavaType;
-            }
+            return DoOutInOp(OpInvokeMethod,
+                writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platformType),
+                (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary),
+                proxy);
         }
 
         /// <summary>

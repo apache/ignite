@@ -232,18 +232,8 @@ namespace Apache.Ignite.Core.Impl
         protected TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
-            var locRegisterSameJavaType = Marshaller.RegisterSameJavaType.Value;
-            Marshaller.RegisterSameJavaType.Value = _marsh.IsRegisterSameJavaType();
-
-            try
-            {
-                return _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
-                    inAction, inErrorAction);
-            }
-            finally
-            {
-                Marshaller.RegisterSameJavaType.Value = locRegisterSameJavaType;
-            }
+            return _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
+                inAction, inErrorAction);
         }
 
         /// <summary>
@@ -258,18 +248,8 @@ namespace Apache.Ignite.Core.Impl
         protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
-            var locRegisterSameJavaType = Marshaller.RegisterSameJavaType.Value;
-            Marshaller.RegisterSameJavaType.Value = _marsh.IsRegisterSameJavaType();
-
-            try
-            {
-                return _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
-                    (stream, res) => res == True, inErrorAction);
-            }
-            finally
-            {
-                Marshaller.RegisterSameJavaType.Value = locRegisterSameJavaType;
-            }
+            return _target.InStreamOutLong(type, stream => WriteToStream(outAction, stream, _marsh), 
+                (stream, res) => res == True, inErrorAction);
         }
 
         /// <summary>
@@ -345,10 +325,9 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writeAction">The write action.</param>
         /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>	
         /// <returns>Task for async operation</returns>
         protected Task<T> DoOutOpAsync<T>(int type, Action<BinaryWriter> writeAction = null, bool keepBinary = false,
-            Func<BinaryReader, T> convertFunc = null, bool registerSameJavaType = false)
+            Func<BinaryReader, T> convertFunc = null)
         {
             return GetFuture((futId, futType) => DoOutOp(type, w =>
             {
@@ -358,7 +337,7 @@ namespace Apache.Ignite.Core.Impl
                 }
                 w.WriteLong(futId);
                 w.WriteInt(futType);
-            }), keepBinary, convertFunc, registerSameJavaType).Task;
+            }), keepBinary, convertFunc).Task;
         }
 
         /// <summary>
@@ -395,7 +374,7 @@ namespace Apache.Ignite.Core.Impl
                 w.WriteObject(val1);
                 w.WriteLong(futId);
                 w.WriteInt(futType);
-            }), registerSameJavaType: true).Task;
+            })).Task;
         }
 
         /// <summary>
@@ -418,7 +397,7 @@ namespace Apache.Ignite.Core.Impl
                 w.WriteObjectDetached(val2);
                 w.WriteLong(futId);
                 w.WriteInt(futType);
-            }), registerSameJavaType: true).Task;
+            })).Task;
         }
 
         #endregion
@@ -455,28 +434,21 @@ namespace Apache.Ignite.Core.Impl
 
             var fut = convertFunc == null && futType != FutureType.Object
                 ? new Future<T>()
-                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, convertFunc, true));
+                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, convertFunc));
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 
             IPlatformTargetInternal futTarget;
 
-            var locRegisterSameJavaType = Marshaller.RegisterSameJavaType.Value;
-            Marshaller.RegisterSameJavaType.Value = _marsh.IsRegisterSameJavaType();
-
             try
             {
-                futTarget = listenAction(futHnd, (int) futType);
+                futTarget = listenAction(futHnd, (int)futType);
             }
             catch (Exception)
             {
                 _marsh.Ignite.HandleRegistry.Release(futHnd);
 
                 throw;
-            }
-            finally
-            {
-                Marshaller.RegisterSameJavaType.Value = locRegisterSameJavaType;
             }
 
             fut.SetTarget(new Listenable(futTarget));
@@ -491,10 +463,9 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="listenAction">The listen action.</param>
         /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>	
         /// <returns>Created future.</returns>
         private Future<T> GetFuture<T>(Action<long, int> listenAction, bool keepBinary = false,
-            Func<BinaryReader, T> convertFunc = null, bool registerSameJavaType = false)
+            Func<BinaryReader, T> convertFunc = null)
         {
             var futType = FutureType.Object;
 
@@ -505,26 +476,19 @@ namespace Apache.Ignite.Core.Impl
 
             var fut = convertFunc == null && futType != FutureType.Object
                 ? new Future<T>()
-                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, convertFunc, registerSameJavaType));
+                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, convertFunc));
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 
-            var locRegisterSameJavaType = Marshaller.RegisterSameJavaType.Value;
-            Marshaller.RegisterSameJavaType.Value = _marsh.IsRegisterSameJavaType(registerSameJavaType);
-
             try
             {
-                listenAction(futHnd, (int) futType);
+                listenAction(futHnd, (int)futType);
             }
             catch (Exception)
             {
                 _marsh.Ignite.HandleRegistry.Release(futHnd);
 
                 throw;
-            }
-            finally
-            {
-                Marshaller.RegisterSameJavaType.Value = locRegisterSameJavaType;
             }
 
             return fut;
@@ -554,12 +518,6 @@ namespace Apache.Ignite.Core.Impl
             writer.WriteObject(obj);
 
             marsh.FinishMarshal(writer);
-        }
-        
-        /// <returns>True if registerSameJavaType feature can be used, BinaryBasicNameMapper with IsSimpleName = false.</returns>
-        protected bool IsRegisterSameJavaType()
-        {
-            return _marsh.IsRegisterSameJavaType();
         }
 
         #endregion

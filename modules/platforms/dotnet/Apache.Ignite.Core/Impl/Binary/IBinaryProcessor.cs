@@ -63,7 +63,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the type name by id.
         /// </summary>
         /// <param name="id">The identifier.</param>
+        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>	
         /// <returns>Type or null.</returns>
-        string GetTypeName(int id);
+        string GetTypeName(int id, bool registerSameJavaType);
     }
 }

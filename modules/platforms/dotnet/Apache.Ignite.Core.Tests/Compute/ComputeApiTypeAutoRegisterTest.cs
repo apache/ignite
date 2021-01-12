@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         /** Echo type: V5. */
         private const int EchoTypeV5Action = 27;
-        
+
         /** First node. */
         private IIgnite _grid1;
 
