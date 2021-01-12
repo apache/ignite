@@ -8,7 +8,7 @@ using IgniteExamples.Shared;
 using IgniteExamples.Shared.Models;
 using IgniteExamples.Shared.ScanQuery;
 
-namespace IgniteExamples.ScanQuery
+namespace IgniteExamples.Thin.ScanQuery
 {
     /// <summary>
     /// ScanQuery example.
