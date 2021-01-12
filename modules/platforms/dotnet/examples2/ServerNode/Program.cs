@@ -1,5 +1,9 @@
 ﻿using System;
+using System.Reflection;
 using Apache.Ignite.Core;
+using Apache.Ignite.Core.Binary;
+using IgniteExamples.Shared;
+using IgniteExamples.Shared.Models;
 
 namespace IgniteExamples.ServerNode
 {
@@ -7,7 +11,7 @@ namespace IgniteExamples.ServerNode
     {
         public static void Main()
         {
-            using (Ignition.Start())
+            using (Ignition.Start(Utils.GetServerNodeConfiguration()))
             {
                 Console.ReadKey();
             }
