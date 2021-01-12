@@ -7,13 +7,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Thin", "Thin", "{886F8F3F-C
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cache", "Cache", "{065AC9B6-519D-488D-8C05-4CFAF47C0975}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PutGet", "Thin\Cache\PutGet\PutGet.csproj", "{D40C6568-1803-4934-9AE4-F4B8E96EBA90}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PutGetThin", "Thin\Cache\PutGetThin\PutGetThin.csproj", "{D40C6568-1803-4934-9AE4-F4B8E96EBA90}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerNode", "ServerNode\ServerNode.csproj", "{D84AFE4B-C016-4082-983B-EE79D69C87FC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{4D4CB21E-49D9-4AFA-8321-EA1F00EB01F0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScanQuery", "Thin\Cache\ScanQuery\ScanQuery.csproj", "{47CD2517-6BD9-4EDC-996D-05FEDBFA275D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScanQueryThin", "Thin\Cache\ScanQueryThin\ScanQueryThin.csproj", "{47CD2517-6BD9-4EDC-996D-05FEDBFA275D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Thick", "Thick", "{AEAD9D9F-2162-40F0-9380-4AA066192998}"
 EndProject
