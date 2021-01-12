@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "thin", "thin", "{886F8F3F-C769-49C0-8BED-AA20B7B43A5D}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Thin", "Thin", "{886F8F3F-C769-49C0-8BED-AA20B7B43A5D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cache", "Cache", "{065AC9B6-519D-488D-8C05-4CFAF47C0975}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PutGet", "thin\Cache\PutGet\PutGet.csproj", "{D40C6568-1803-4934-9AE4-F4B8E96EBA90}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PutGet", "Thin\Cache\PutGet\PutGet.csproj", "{D40C6568-1803-4934-9AE4-F4B8E96EBA90}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

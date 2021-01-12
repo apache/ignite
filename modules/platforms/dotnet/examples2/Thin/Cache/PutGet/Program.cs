@@ -5,6 +5,14 @@ using Apache.Ignite.Core.Client.Cache;
 
 namespace PutGet
 {
+    /// <summary>
+    /// Put/Get example.
+    /// <para />
+    /// This example requires an Ignite server node. You can start the node in any of the following ways:
+    /// * docker run -p 10800:10800 apacheignite/ignite
+    /// * 
+    /// * ignite.sh/ignite.bat from the distribution
+    /// </summary>
     class Program
     {
         static void Main(string[] args)
