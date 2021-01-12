@@ -955,7 +955,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             if (topOk)
                 return;
             else
-                Thread.sleep(1000);
+                Thread.sleep(10000);
         }
 
         throw new Exception("Failed to wait for proper topology [expCnt=" + cnt +

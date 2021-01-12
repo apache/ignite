@@ -1293,6 +1293,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             Collection<Exception> errs = new ArrayList<>();
 
             for (InetSocketAddress addr : addrs) {
+                log.error("TEST | trying address " + addr);
+
                 try {
                     IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
 
