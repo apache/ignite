@@ -87,37 +87,21 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut;
 
-        try {
-            fut = runAsync(() -> {
-                cdc.start();
+        fut = runAsync(cdc);
 
-                try {
-                    cdc.join();
-                }
-                catch (InterruptedException ignore) {
-                    // No-op.
-                }
-            });
+        Ignite ign = startGrid();
 
-            Ignite ign = startGrid();
+        ign.cluster().state(ACTIVE);
 
-            ign.cluster().state(ACTIVE);
+        IgniteCache<Integer, byte[]> cache = ign.createCache(DEFAULT_CACHE_NAME);
 
-            IgniteCache<Integer, byte[]> cache = ign.createCache(DEFAULT_CACHE_NAME);
+        addData(cache, 0, KEYS_CNT);
 
-            addData(cache, 0, KEYS_CNT);
+        boolean res = waitForSize(consumer, KEYS_CNT);
 
-            boolean res = waitForSize(consumer, KEYS_CNT);
+        assertTrue(res);
 
-            assertTrue(res);
-        }
-        finally {
-            cdc.interrupt();
-
-            cdc.join();
-        }
-
-        fut.get(getTestTimeout());
+        fut.cancel();
 
         Set<Integer> keys = consumer.keys(cacheId(DEFAULT_CACHE_NAME));
 
@@ -132,60 +116,36 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
 
         IgniteCDC cdc = new IgniteCDC(getConfiguration("cdc"), consumer);
 
-        Runnable runCDC = () -> {
-            cdc.start();
+        IgniteInternalFuture<?> runFut = runAsync(cdc);
 
+        Ignite ign = startGrid();
+
+        ign.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, byte[]> cache = ign.createCache(DEFAULT_CACHE_NAME);
+
+        addData(cache, 0, KEYS_CNT);
+
+        IgniteInternalFuture<?> restartFut = runAsync(() -> {
             try {
-                cdc.join();
+                waitForSize(consumer, 2);
+
+                runFut.cancel();
+
+                cdc.run();
             }
-            catch (InterruptedException ignore) {
-                // No-op.
+            catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
             }
-        };
+        });
 
-        IgniteInternalFuture<?> restartFut;
+        addData(cache, KEYS_CNT, KEYS_CNT * 2);
 
-        try {
-            IgniteInternalFuture<?> runFut = runAsync(runCDC);
+        boolean res = waitForSize(consumer, KEYS_CNT * 2);
 
-            Ignite ign = startGrid();
+        assertTrue(res);
 
-            ign.cluster().state(ACTIVE);
-
-            IgniteCache<Integer, byte[]> cache = ign.createCache(DEFAULT_CACHE_NAME);
-
-            addData(cache, 0, KEYS_CNT);
-
-            restartFut = runAsync(() -> {
-                try {
-                    waitForSize(consumer, 2);
-
-                    cdc.interrupt();
-
-                    cdc.join();
-
-                    runFut.get(getTestTimeout());
-
-                    runCDC.run();
-                }
-                catch (InterruptedException | IgniteCheckedException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
-            addData(cache, KEYS_CNT, KEYS_CNT * 2);
-
-            boolean res = waitForSize(consumer, KEYS_CNT * 2);
-
-            assertTrue(res);
-        }
-        finally {
-            cdc.interrupt();
-
-            cdc.join();
-        }
-
-        restartFut.get(getTestTimeout());
+        restartFut.cancel();
 
         Set<Integer> keys = consumer.keys(cacheId(DEFAULT_CACHE_NAME));
 
@@ -229,9 +189,9 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends WALRecord> void onRecord(T record) {
+        @Override public <T extends WALRecord> boolean onRecord(T record) {
             if (record.type() != WALRecord.RecordType.DATA_RECORD)
-                return;
+                return false;
 
             DataRecord dataRecord = (DataRecord)record;
 
@@ -252,6 +212,8 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
                     fail("Unexpected data entry type.");
                 }
             }
+
+            return true;
         }
 
         /** {@inheritDoc} */

@@ -41,9 +41,11 @@ public class LogAllCDCConsumer implements CDCConsumer {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends WALRecord> void onRecord(T record) {
+    @Override public <T extends WALRecord> boolean onRecord(T record) {
         if (record.type().purpose() == LOGICAL)
             log.info(Objects.toString(record));
+
+        return false;
     }
 
     /** {@inheritDoc} */

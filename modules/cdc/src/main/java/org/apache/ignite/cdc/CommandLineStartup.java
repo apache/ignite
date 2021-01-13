@@ -43,7 +43,7 @@ import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
  * It accepts just one parameter which is Spring XML configuration file path.
  * You can run this class from command line without parameters to get help message.
  * <p>
- * Note that scripts {@code ${IGNITE_HOME}/bin/ignite.{sh|bat}} shipped with Ignite use
+ * Note that scripts {@code ${IGNITE_HOME}/bin/cdc.{sh|bat}} shipped with Ignite use
  * this startup and you can use them as an example.
  */
 public class CommandLineStartup {
@@ -89,11 +89,11 @@ public class CommandLineStartup {
 
             CDCConsumer consumer = consumer(cfgUrl, spring);
 
-            IgniteCDC app = new IgniteCDC(cfg, consumer);
+            Thread appThread = new Thread(new IgniteCDC(cfg, consumer));
 
-            app.start();
+            appThread.start();
 
-            app.join();
+            appThread.join();
         }
         catch (Throwable e) {
             e.printStackTrace();

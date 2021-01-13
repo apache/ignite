@@ -38,8 +38,9 @@ public interface CDCConsumer {
     /**
      * @param record WAL record.
      * @param <T> Record type.
+     * @return {@code True} if current offset in WAL should be commited.
      */
-    <T extends WALRecord> void onRecord(T record);
+    <T extends WALRecord> boolean onRecord(T record);
 
     /**
      * Stops this consumer.
