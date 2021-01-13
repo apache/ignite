@@ -108,6 +108,9 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
      * @param comp Optional comparator for merge exchange.
      */
     public void init(ExecutionContext<Row> ctx, RelDataType rowType, Collection<UUID> srcNodeIds, @Nullable Comparator<Row> comp) {
+        assert context().fragmentId() == ctx.fragmentId() : "different fragments unsupported: previous=" + context().fragmentId() +
+            " current=" + ctx.fragmentId();
+
         // It's important to set proper context here because
         // the one, that is created on a first message
         // received doesn't have all context variables in place.

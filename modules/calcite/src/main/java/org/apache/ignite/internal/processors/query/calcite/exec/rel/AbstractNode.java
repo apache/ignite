@@ -53,7 +53,7 @@ public abstract class AbstractNode<Row> implements Node<Row> {
      * creates on first message received from a remote source. This case the context
      * sets in scope of {@link Inbox#init(ExecutionContext, RelDataType, Collection, Comparator)} method call.
      */
-    private volatile ExecutionContext<Row> ctx;
+    private ExecutionContext<Row> ctx;
 
     /** */
     private RelDataType rowType;
