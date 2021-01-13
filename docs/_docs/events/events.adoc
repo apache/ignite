@@ -329,7 +329,7 @@ They allow you to get notification about different stages of transaction executi
 
 All snapshot events are instances of the link:{events_url}/SnapshotEvent.html[SnapshotEvent] class. The snapshot events
 are always triggered at the node initiated a snapshot operation. They are also associated with the particular snapshot operation name.
-These events allow you to be notified about the states and result of the cluster snapshot operation for further processing
+These events can notify you about the states and the result of the cluster snapshot operation, which can be used for further processing in
 your custom procedures.
 
 
