@@ -80,7 +80,7 @@ Register name: `cache.{cache_name}.{near}`
 |GetTime |histogram|   Get time in nanoseconds.
 |GetTimeTotal|long|The total time of cache gets, in nanoseconds.
 |HeapEntriesCount|long|Onheap entries count.
-|IndexRebuildKeyProcessed|long|Number of keys processed during index rebuilding.
+|IndexRebuildKeyProcessed|long|Number of keys processed during the index rebuilding.
 |IsIndexRebuildInProgress|boolean | True if index rebuild is in progress.
 |OffHeapBackupEntriesCount|long|Offheap backup entries count.
 |OffHeapEntriesCount|long|Offheap entries count.
@@ -351,7 +351,7 @@ Register name: `io.datastorage`
 |LastCheckpointTotalPagesNumber|  long|    Total number of pages written during the last checkpoint.
 |LastCheckpointSplitAndSortPagesDuration|  long|    Duration of splitting and sorting checkpoint pages of the last checkpoint in milliseconds.
 |LastCheckpointStart|  long|    Start timestamp of the last checkpoint.
-|LastCheckpointWalRecordFsyncDuration|  long|    Duration of the WAL fsync after logging CheckpointRecord on begin of the last checkpoint in milliseconds.
+|LastCheckpointWalRecordFsyncDuration|  long|    Duration of the WAL fsync after logging CheckpointRecord on the start of the last checkpoint in milliseconds.
 |LastCheckpointWriteEntryDuration|  long|    Duration of entry buffer writing to file of the last checkpoint in milliseconds.
 |SparseStorageSize  | long|    Storage space allocated adjusted for possible sparsity, in bytes.
 |StorageSize | long|    Storage space allocated, in bytes.
@@ -377,7 +377,7 @@ Register name: `cluster`
 |===
 |Name|    Type|    Description
 |ActiveBaselineNodes| integer | Active baseline nodes count.
-|Rebalanced| boolean | True if the cluster has achieved fully rebalanced state. Note that an inactive cluster always has this metric in False regardless of the real partitions state.
+|Rebalanced| boolean | True if the cluster has fully achieved rebalanced state. Note that an inactive cluster always has this metric in False regardless of the real partitions state.
 |TotalBaselineNodes| integer | Total baseline nodes count.
 |TotalClientNodes| integer | Client nodes count.
 |TotalServerNodes| integer | Server nodes count.
