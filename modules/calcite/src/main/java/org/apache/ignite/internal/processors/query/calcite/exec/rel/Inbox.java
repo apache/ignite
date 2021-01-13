@@ -132,6 +132,8 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
         assert rowsCnt > 0 && requested == 0;
 
         try {
+            checkState();
+
             requested = rowsCnt;
 
             if (!inLoop)
