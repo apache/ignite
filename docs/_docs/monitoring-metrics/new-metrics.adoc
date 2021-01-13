@@ -351,7 +351,7 @@ Register name: `io.datastorage`
 |LastCheckpointTotalPagesNumber|  long|    Total number of pages written during the last checkpoint.
 |LastCheckpointSplitAndSortPagesDuration|  long|    Duration of splitting and sorting checkpoint pages of the last checkpoint in milliseconds.
 |LastCheckpointStart|  long|    Start timestamp of the last checkpoint.
-|LastCheckpointWalRecordFsyncDuration|  long|    Duration of the WAL fsync after logging CheckpointRecord on begin of the last checkpoint in milliseconds.
+|LastCheckpointWalRecordFsyncDuration|  long|    Duration of the WAL fsync after logging CheckpointRecord on the start of the last checkpoint in milliseconds.
 |LastCheckpointWriteEntryDuration|  long|    Duration of entry buffer writing to file of the last checkpoint in milliseconds.
 |SparseStorageSize  | long|    Storage space allocated adjusted for possible sparsity, in bytes.
 |StorageSize | long|    Storage space allocated, in bytes.
