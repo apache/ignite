@@ -27,7 +27,7 @@ Rotation of the cache encryption key is required when the key is compromised or 
 
 The process of changing the cache encryption key includes two sequential stages:
 
-1. Rotate cache group key. This process adds a new encryption key for the specified cache group(s) on each server node and sets it to write new data.
+1. Rotate cache group key. This process adds a new encryption key for the specified cache group or groups on each server node and sets it to write new data.
 
     Node join during this stage is prohibited and will be rejected.
 
@@ -143,4 +143,3 @@ control.sh|bat --encryption reencryption_rate_limit 0
 ----
 
 The re-encryption status can be also obtained using JMX metrics described in the link:monitoring-metrics/new-metrics#cache-groups[Cache group metrics] section.
-
