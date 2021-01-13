@@ -109,7 +109,7 @@ class SelfTest(IgniteTest):
 
         def get_logs_count(service):
             node = service.nodes[0]
-            return list(node.account.ssh_capture(f'ls {service.log_dir}/console.log* | wc -l', callback=int))[0]
+            return list(node.account.ssh_capture(f'ls {service.log_dir} | wc -l', callback=int))[0]
 
         ignites = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(ignite_version)),
                                 num_nodes=1)
