@@ -38,14 +38,14 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPoi
  */
 public class CDCState {
     /** State file. */
-    private Path state;
+    private final Path state;
 
     /** Temp state file. */
-    private Path tmp;
+    private final Path tmp;
 
     /**
-     * @param stateDir
-     * @param consumerId
+     * @param stateDir State directory.
+     * @param consumerId Consumer ID.
      */
     public CDCState(Path stateDir, String consumerId) {
         String fileName = "state-" + U.maskForFileName(consumerId) + FILE_SUFFIX;

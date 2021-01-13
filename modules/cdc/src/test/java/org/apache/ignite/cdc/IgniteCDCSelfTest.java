@@ -71,6 +71,8 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        stopAllGrids();
+
         cleanPersistenceDir();
 
         super.beforeTest();
