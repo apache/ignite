@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.encryption;
 
-import com.google.common.primitives.Bytes;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import com.google.common.primitives.Bytes;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
