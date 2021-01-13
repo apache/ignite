@@ -20,12 +20,14 @@ package org.apache.ignite.internal.processors.cache.verify;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -35,13 +37,17 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyMap;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
@@ -229,6 +235,70 @@ public class IdleVerifyUtility {
         }
 
         return diff;
+    }
+
+    /**
+     * @param updCntr Partition update counter prior check.
+     * @param grpId Group id.
+     * @param partId Partition id.
+     * @param grpName Group name.
+     * @param consId Local node consistent id.
+     * @param state Partition state to check.
+     * @param isPrimary {@code true} if partition is primary.
+     * @param partSize Partition size on disk.
+     * @param it Iterator though partition data rows.
+     * @return Map of calculated partition.
+     */
+    public static Map<PartitionKeyV2, PartitionHashRecordV2> calculatePartitionHash(
+        long updCntr,
+        int grpId,
+        int partId,
+        String grpName,
+        Object consId,
+        GridDhtPartitionState state,
+        boolean isPrimary,
+        long partSize,
+        GridIterator<CacheDataRow> it
+    ) {
+        int partHash = 0;
+
+        PartitionKeyV2 partKey = new PartitionKeyV2(grpId, partId, grpName);
+
+        try {
+            if (state == GridDhtPartitionState.MOVING || state == GridDhtPartitionState.LOST) {
+                PartitionHashRecordV2 movingHashRecord = new PartitionHashRecordV2(
+                    partKey,
+                    isPrimary,
+                    consId,
+                    partHash,
+                    updCntr,
+                    state == GridDhtPartitionState.MOVING ? PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
+                    state == GridDhtPartitionState.MOVING ? PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST
+                );
+
+                return Collections.singletonMap(partKey, movingHashRecord);
+            }
+
+            if (state != GridDhtPartitionState.OWNING)
+                return emptyMap();
+
+            while (it.hasNextX()) {
+                CacheDataRow row = it.nextX();
+
+                partHash += row.key().hashCode();
+
+                // Object context may be null since the value bytes have been read directly from page.
+                partHash += Arrays.hashCode(row.value().valueBytes(null));
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Can't calculate partition hash [grpId=" + grpId + ", partId=" + partId + "]", e);
+        }
+
+        PartitionHashRecordV2 partRec = new PartitionHashRecordV2(partKey, isPrimary, consId, partHash, updCntr,
+            partSize, PartitionHashRecordV2.PartitionState.OWNING);
+
+        return Collections.singletonMap(partKey, partRec);
     }
 
     /**

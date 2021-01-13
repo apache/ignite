@@ -403,7 +403,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         int rows = 0;
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).getSnapshotDataRows(SNAPSHOT_NAME, grpId, 0)) {
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).getPartitionDataRows(SNAPSHOT_NAME, grpId, 0)) {
             while (iter.hasNext()) {
                 CacheDataRow row = iter.next();
 
@@ -438,7 +438,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         int grpId = ignite.cachex(DEFAULT_CACHE_NAME).context().groupId();
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).getSnapshotDataRows(SNAPSHOT_NAME, grpId, 0)) {
+        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).getPartitionDataRows(SNAPSHOT_NAME, grpId, 0)) {
             while (iter.hasNext()) {
                 CacheDataRow row = iter.next();
 

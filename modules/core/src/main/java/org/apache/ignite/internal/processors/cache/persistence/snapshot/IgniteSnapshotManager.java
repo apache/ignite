@@ -58,7 +58,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
-import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -125,7 +124,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -153,6 +151,7 @@ import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBina
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
@@ -972,6 +971,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
 
+        // TODO if snapshot belongs to different cluster, we must collect all consistent ids locally first
+
         return cctx.kernalContext()
             .grid()
             .compute(cctx.kernalContext()
@@ -996,21 +997,52 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Iterator over partition.
      * @throws IgniteCheckedException If fails.
      */
-    public GridCloseableIterator<CacheDataRow> getSnapshotDataRows(String snpName, int grpId, int partId)
+    public GridCloseableIterator<CacheDataRow> getPartitionDataRows(String snpName, int grpId, int partId)
         throws IgniteCheckedException {
         CacheGroupContext grp = cctx.kernalContext().cache().cacheGroup(grpId);
 
         File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName), databaseRelativePath(pdsSettings.folderName())),
             cacheDirName(grp.config()), partId);
 
+        return getPartitionDataRows(snpPart, grpId, partId, true);
+    }
+
+    /**
+     * @param partFile Partition file to read.
+     * @param grpId Group id.
+     * @param partId Partition id.
+     * @return Iterator over partition.
+     * @throws IgniteCheckedException If fails.
+     */
+    public GridCloseableIterator<CacheDataRow> getPartitionDataRows(
+        File partFile,
+        int grpId,
+        int partId,
+        boolean checkCrc
+    ) throws IgniteCheckedException {
         FilePageStore pageStore = (FilePageStore)storeFactory
             .apply(grpId, false)
             .createPageStore(getTypeByPartId(partId),
-                snpPart::toPath,
+                partFile::toPath,
                 val -> {
                 });
 
-        return new SerialPageStoreIterator(cctx, grp, pageStore, partId);
+        return new SerialPageStoreIterator(cctx, pageStore, partId, checkCrc);
+    }
+
+    /**
+     * @param snpName Snapshot name.
+     * @return The list of cache or cache group names in given snapshot on local node.
+     */
+    public List<File> snapshotCacheDirectories(String snpName) {
+        File snpDir = snapshotLocalDir(snpName);
+
+        if (!snpDir.exists())
+            return Collections.emptyList();
+
+        File nodeDir = new File(snpDir, databaseRelativePath(pdsSettings.folderName()));
+
+        return cacheDirectories(nodeDir);
     }
 
     /**
@@ -1177,10 +1209,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @GridToStringExclude
         private final GridCacheSharedContext<?, ?> sctx;
 
-        /** */
-        @GridToStringExclude
-        private final CacheGroupContext grp;
-
         /** Page store to iterate over. */
         @GridToStringExclude
         private final PageStore store;
@@ -1207,6 +1235,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Batch of rows read through iteration. */
         private final Deque<CacheDataRow> rows = new LinkedList<>();
 
+        /** {@code true} if CRC must be checked for each page read. */
+        private final boolean checkCrc;
+
         /** {@code true} if the iteration reached its end. */
         private boolean finished;
 
@@ -1218,23 +1249,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /**
          * @param sctx Shared context.
-         * @param grp Group context.
          * @param store Page store to read.
          * @param partId Partition id.
          * @throws IgniteCheckedException If fails.
          */
         public SerialPageStoreIterator(
             GridCacheSharedContext<?, ?> sctx,
-            CacheGroupContext grp,
             PageStore store,
-            int partId
+            int partId,
+            boolean checkCrc
         ) throws IgniteCheckedException {
             assert flags == CacheDataRowAdapter.RowData.FULL;
 
             this.sctx = sctx;
-            this.grp = grp;
             this.store = store;
             this.partId = partId;
+            this.checkCrc = checkCrc;
 
             store.sync();
             pages = store.pages();
@@ -1270,7 +1300,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     locBuff.clear();
 
                     long pageId = PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, pageIdx);
-                    boolean success = store.read(pageId, locBuff, true);
+                    boolean success = store.read(pageId, locBuff, checkCrc);
 
                     assert success : PageIdUtils.toDetailString(pageId);
 
@@ -1329,7 +1359,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             locBuff,
                             fragmentBuff,
                             itemId,
-                            grp,
+                            null,
                             sctx,
                             flags,
                             false);
