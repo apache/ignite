@@ -235,7 +235,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             "Duration of the sync phase of the last checkpoint in milliseconds.");
 
         lastCpWalRecordFsyncDuration = mreg.longMetric("LastCheckpointWalRecordFsyncDuration",
-            "Duration of the WAL fsync after logging CheckpointRecord on begin of the last checkpoint " +
+            "Duration of the WAL fsync after logging CheckpointRecord on the start of the last checkpoint " +
                 "in milliseconds.");
 
         lastCpWriteEntryDuration = mreg.longMetric("LastCheckpointWriteEntryDuration",
