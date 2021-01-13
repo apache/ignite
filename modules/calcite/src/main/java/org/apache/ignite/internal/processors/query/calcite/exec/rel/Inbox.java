@@ -71,9 +71,6 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
     /** */
     private boolean inLoop;
 
-    /** Context finally inited flag. */
-    private volatile boolean inited;
-
     /**
      * @param ctx Execution context.
      * @param exchange Exchange service.
@@ -121,9 +118,6 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
 
         // memory barier
         this.srcNodeIds = new HashSet<>(srcNodeIds);
-
-        // new context inited.
-        inited = true;
     }
 
     /** {@inheritDoc} */
@@ -174,26 +168,16 @@ public class Inbox<Row> extends AbstractNode<Row> implements Mailbox<Row>, Singl
      * @param last Last batch flag.
      * @param rows Rows.
      */
-    public synchronized void onBatchReceived(UUID src, int batchId, boolean last, List<Row> rows) {
+    public void onBatchReceived(UUID src, int batchId, boolean last, List<Row> rows) {
         try {
-            if (!inited) {
-                Buffer buf = getOrCreateBuffer(src);
+            Buffer buf = getOrCreateBuffer(src);
 
-                buf.offer(batchId, last, rows);
+            boolean waitingBefore = buf.check() == State.WAITING;
 
-                return;
-            }
+            buf.offer(batchId, last, rows);
 
-            context().execute(() -> {
-                Buffer buf = getOrCreateBuffer(src);
-
-                boolean waitingBefore = buf.check() == State.WAITING;
-
-                buf.offer(batchId, last, rows);
-
-                if (requested > 0 && waitingBefore && buf.check() != State.WAITING)
-                    doPush();
-            });
+            if (requested > 0 && waitingBefore && buf.check() != State.WAITING)
+                push();
         }
         catch (Exception e) {
             onError(e);
