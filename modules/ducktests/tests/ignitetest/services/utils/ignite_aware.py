@@ -86,8 +86,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         else:
             super().start()
 
-    def start(self, clean=True):
-        self.start_async(clean=clean)
+    def start(self, clean=True, full_async=False):
+        self.start_async(full_async=full_async, clean=clean)
         self.await_started()
 
     def await_started(self):
