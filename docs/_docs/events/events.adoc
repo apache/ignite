@@ -335,7 +335,7 @@ your custom procedures.
 
 [cols="2,5,3",opts="header"]
 |===
-| Event Type | Event Description | Where Event Is Fired
+| Event Type | Event Description | Where Event is Fired
 | EVT_CLUSTER_SNAPSHOT_STARTED | A cluster snapshot operation is started. | The node where the snapshot operation was initiated.
 | EVT_CLUSTER_SNAPSHOT_FINISHED | A cluster snapshot operation is finished. The event fired when the snapshot operation finished on all the cluster nodes. |  The node where the snapshot operation was finished.
 | EVT_CLUSTER_SNAPSHOT_FAILED | A cluster snapshot operation is failed. | The node where the snapshot operation was initiated. Note that message will contain the short reason of the failure from another node. You may check the logs for details.
