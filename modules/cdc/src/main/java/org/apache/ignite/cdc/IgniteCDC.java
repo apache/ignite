@@ -328,7 +328,7 @@ public class IgniteCDC {
         return Long.parseLong(fn.substring(0, fn.indexOf('.')));
     }
 
-    /** {@inheritDoc} */
+    /** */
     public void interrupt() {
         if (segmentThread != null)
             segmentThread.interrupt();

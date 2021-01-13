@@ -64,7 +64,7 @@ public class WatchUtils {
             try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
                 watchDir.register(watcher, ENTRY_CREATE);
 
-                try(Stream<Path> children = Files.walk(watchDir, 1).filter(p -> !p.equals(watchDir))) {
+                try (Stream<Path> children = Files.walk(watchDir, 1).filter(p -> !p.equals(watchDir))) {
                     final boolean[] status = {true};
 
                     children.filter(filter).sorted().peek(p -> {

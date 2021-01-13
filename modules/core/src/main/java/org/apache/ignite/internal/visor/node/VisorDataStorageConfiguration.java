@@ -122,7 +122,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     /** Time interval (in milliseconds) for running auto archiving for incompletely WAL segment. */
     private long walForceArchiveTimeout;
 
-
     /** If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled. */
     private boolean writeThrottlingEnabled;
 

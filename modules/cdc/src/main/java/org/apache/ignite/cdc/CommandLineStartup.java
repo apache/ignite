@@ -85,7 +85,7 @@ public class CommandLineStartup {
             if (cfgTuple.get1().size() > 1)
                 exit("Found " + cfgTuple.get1().size() + " configurations. Can use only 1", false, 1);
 
-            IgniteConfiguration cfg =  cfgTuple.get1().iterator().next();
+            IgniteConfiguration cfg = cfgTuple.get1().iterator().next();
 
             CDCConsumer consumer = consumer(cfgUrl, spring);
 
