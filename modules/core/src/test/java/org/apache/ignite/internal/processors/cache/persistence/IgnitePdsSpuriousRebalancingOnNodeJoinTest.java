@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Objects;
+
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterTrackingImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -148,9 +149,10 @@ public class IgnitePdsSpuriousRebalancingOnNodeJoinTest extends GridCommonAbstra
 
             PartitionUpdateCounterTrackingImpl cntr0 = (PartitionUpdateCounterTrackingImpl)part.dataStore().partUpdateCounter();
 
-            AtomicLong cntr = U.field(cntr0, "cntr");
+            Field[] declaredFields = cntr0.getClass().getDeclaredFields();
 
-            cntr.set(cntr.get() - 1);
+            Arrays.stream(declaredFields).filter(field -> "cntr".equals(field.getName())).findFirst()
+                    .ifPresent(field -> updateValue(field, cntr0));
 
             TestRecordingCommunicationSpi.spi(crd).record((node, msg) -> msg instanceof GridDhtPartitionDemandMessage);
 
@@ -165,6 +167,22 @@ public class IgnitePdsSpuriousRebalancingOnNodeJoinTest extends GridCommonAbstra
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    private void updateValue(Field field, Object cntr0) {
+
+        Objects.requireNonNull(cntr0);
+
+        try {
+            field.setAccessible(true);
+
+            long o = (long) field.get(cntr0);
+            o -= 1;
+
+            field.set(cntr0, o);
+        } catch (IllegalAccessException ex) {
+            log.error("Reflective access exception while changing internal value of " + cntr0, ex);
         }
     }
 }
