@@ -3,6 +3,7 @@
   "classifications": [ "Apache Ignite" ],
   "name": "Apache Ignite Example",
   "identity": "Apache.Ignite.Example",
+  "shortName": "ignite-example",
   "tags": {
     "language": "C#"
   },
