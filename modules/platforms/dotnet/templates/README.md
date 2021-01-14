@@ -6,12 +6,12 @@ Templates for `dotnet new` command.
 
 Template for Server and Thick Client modes.
 
-* Install: `dotnet new --install templates/ExampleProject`
+* Install: `dotnet new --install ExampleProject`
 * Use: `dotnet new ignite-example`
 
 ## ExampleProjectThin
 
 Template for Thin Client mode.
 
-* Install: `dotnet new --install templates/ExampleProjectThin`
+* Install: `dotnet new --install ExampleProjectThin`
 * Use: `dotnet new ignite-example-thin`
