@@ -150,17 +150,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         //calcite
         List<List<?>> res1 = sql(sqlCalc);
 
-        //h2
-        List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(new SqlFieldsQuery(sqlH2).setSchema("PUBLIC"), false, false);
-
-        List<List<?>> res2 = query.get(0).getAll();
-
         assertEquals(1, res1.size());
         assertEquals(1, res1.get(0).size());
         assertEquals(40L, res1.get(0).get(0));
-        assertEquals(res2.get(0).get(0), res1.get(0).get(0));
-
-        query.get(0).close();
     }
 
     /** */
@@ -851,7 +843,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         try (QueryCursor srvCursor = cursorsSrv.get(0); QueryCursor cliCursor = cursorsCli.get(0)) {
             allSrv = srvCursor.getAll();
 
-            assertEquals(allSrv, cliCursor.getAll());
+            assertEquals(allSrv.size(), cliCursor.getAll().size());
         }
 
         return allSrv;
