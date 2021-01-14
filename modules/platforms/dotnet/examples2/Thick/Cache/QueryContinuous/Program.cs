@@ -27,7 +27,7 @@ namespace IgniteExamples.Thick.QueryContinuous
     using IgniteExamples.Shared.Cache;
 
     /// <summary>
-    /// TODO
+    /// Continuous Query example.
     /// </summary>
     public class Program
     {
