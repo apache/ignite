@@ -948,6 +948,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
+    // TODO Global - id meta file, snapshot name, baseline nodes, cache groups, global partition distribution, partition hashes
+
     /**
      * @param name Snapshot name to check.
      * @param checkCrc Check page CRC sum on idle verify flag.
