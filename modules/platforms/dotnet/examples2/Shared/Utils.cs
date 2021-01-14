@@ -16,6 +16,7 @@
  */
 
 using Apache.Ignite.Core;
+using Apache.Ignite.Core.Client;
 using Apache.Ignite.Core.Discovery.Tcp;
 using Apache.Ignite.Core.Discovery.Tcp.Multicast;
 using Apache.Ignite.Core.Log;
@@ -50,6 +51,17 @@ namespace IgniteExamples.Shared
                 Logger = new ConsoleLogger
                 {
                     MinLevel = LogLevel.Error
+                }
+            };
+        }
+
+        public static IgniteClientConfiguration GetThinClientConfiguration()
+        {
+            return new IgniteClientConfiguration
+            {
+                Endpoints = new[]
+                {
+                    "127.0.0.1"
                 }
             };
         }

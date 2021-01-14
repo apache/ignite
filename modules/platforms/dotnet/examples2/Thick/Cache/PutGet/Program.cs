@@ -34,8 +34,6 @@ namespace IgniteExamples.Thick.PutGet
 
         public static void Main()
         {
-            Console.WriteLine(Console.ForegroundColor);
-
             using (IIgnite ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
             {
                 Console.WriteLine();
