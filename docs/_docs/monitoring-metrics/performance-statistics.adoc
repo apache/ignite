@@ -14,26 +14,30 @@
 // limitations under the License.
 = Performance statistics
 
-WARNING: This feature is experimental and can be changed in future releases.
+WARNING: This feature is experimental and may change in future releases.
 
 == Overview
 
 Ignite provides a built-in tool for cluster profiling.
 
-You can link:#collecting-statistics[collect] performance statistics from the cluster and then link:#building-the-report[build] the performance report.
+You can link:#collecting-statistics[collect] performance statistics from the cluster and then
+link:#building-the-report[build] the performance report.
 
 == Collecting statistics
 
-To start and stop collecting statistics use the link:#jmx[JMX interface].
+The link:#jmx[JMX interface] is used to start and stop statistics collecting.
 
-Each node collects performance statistics to the file in binary format. This file is placed under `Ignite_work_directory/perf_stat/` directory.
-The name mask is `node-{nodeId}-{index}.prf`.
+Each node collects performance statistics to the file in binary format. This file is placed under
+`Ignite_work_directory/perf_stat/` directory. The name mask is `node-{nodeId}-{index}.prf`.
 
-Performance statistics files are used to build the report offline. Stop collecting statistics before creating the report.
+Performance statistics files are used to build the report offline.
 
-Nodes use off-heap buffer to temporarily store serialized statistics. The writer thread flushes buffer to the file when the flush size is reached. See the link:#system-properties[properties] section for details.
+Nodes use off-heap cyclic buffer to temporarily store serialized statistics. The writer thread flushes buffer to the
+file when the flush size is reached. Some statistics will be skipped if the buffer overflows due to a slow disk. See
+the link:#system-properties[properties] section for customization.
 
-Each start of collecting statistics will create a new file on nodes. The index in the file name will be increased if such file exists:
+Each run of collecting statistics will create a new file on nodes. The index in the file name will be increased if
+such file exists:
 
     node-faedc6c9-3542-4610-ae10-4ff7e0600000.prf
     node-faedc6c9-3542-4610-ae10-4ff7e0600000-1.prf
@@ -41,11 +45,14 @@ Each start of collecting statistics will create a new file on nodes. The index i
 
 == Building the report
 
-Ignite provides a tool to generate the report from performance statistics files. The tool is published in the ignite-extensions repository: https://github.com/apache/ignite-extensions/tree/master/modules/performance-statistics-ext/[performance-statistics-ext, windows="_blank"].
+Ignite provides a tool to generate the report from performance statistics files. The tool is published in the
+ignite-extensions repository:
+https://github.com/apache/ignite-extensions/tree/master/modules/performance-statistics-ext/[performance-statistics-ext,
+windows="_blank"].
 
-To build the performance report follow:
+To build the performance report follow these steps:
 
-1. Collect performance statistics files from all nodes under an empty directory. For example:
+1. Stop collecting statistics and place files from all nodes under an empty directory. For example:
 
     path_to_files
         ├── node-162c7147-fef8-4ea2-bd25-8653c41fc7fa.prf
@@ -56,8 +63,9 @@ To build the performance report follow:
 
         performance-statistics-tool/build-report.sh path_to_files
 
-The performance report will be created in the new directory under the performance statistics files path:
-`path_to_files/report_yyyy-MM-dd_HH-mm-ss/`. Open `report_yyyy-MM-dd_HH-mm-ss/index.html` in the browser to see the report.
+The performance report will be created in the new directory under the performance statistics files
+path: `path_to_files/report_yyyy-MM-dd_HH-mm-ss/`. Open `report_yyyy-MM-dd_HH-mm-ss/index.html` in the browser to see
+the report.
 
 == Management
 
@@ -78,8 +86,10 @@ You can manage the performance statistics collection via the `PerformanceStatist
 [cols="2,1,1,3",opts="header"]
 |===
 |Property | Type | Default Value | Description
-|IGNITE_PERF_STAT_FILE_MAX_SIZE | Long | 32 Gb | Performance statistics maximum file size in bytes. Performance statistics will be stopped when the size exceeded.
+|IGNITE_PERF_STAT_FILE_MAX_SIZE | Long | 32 Gb | Performance statistics maximum file size in bytes. Performance
+statistics will be stopped when the size exceeded.
 |IGNITE_PERF_STAT_BUFFER_SIZE | Integer | 32 Mb | Performance statistics off heap buffer size in bytes.
 |IGNITE_PERF_STAT_FLUSH_SIZE | Integer | 8 Mb | Performance statistics minimal batch size to flush in bytes.
-|IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD | Integer | 1024 | Performance statistics maximum cached strings threshold. String caching will stop on threshold excess.
+|IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD | Integer | 1024 | Performance statistics maximum cached strings threshold.
+String caching will stop on threshold excess.
 |===
