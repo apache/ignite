@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Comparator;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.apache.calcite.rel.RelCollation;
@@ -31,10 +32,10 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** Scan. */
-    private ScanNode<Row> scan;
+    private final ScanNode<Row> scan;
 
     /** Runtime index */
-    private RuntimeTreeIndex<Row> idx;
+    private final RuntimeTreeIndex<Row> idx;
 
     /** */
     private int requested;
@@ -50,8 +51,9 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         RelDataType rowType,
         RelCollation collation,
         Comparator<Row> comp,
-        Supplier<Row> lowerIdxConditions,
-        Supplier<Row> upperIdxConditions
+        Predicate<Row> filter,
+        Supplier<Row> lowerIdxBound,
+        Supplier<Row> upperIdxBound
     ) {
         super(ctx, rowType);
 
@@ -63,10 +65,9 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
             idx.scan(
                 ctx,
                 rowType,
-                idx,
-                null,
-                lowerIdxConditions,
-                upperIdxConditions
+                filter,
+                lowerIdxBound,
+                upperIdxBound
             )
         );
     }
@@ -160,6 +161,13 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
     /** {@inheritDoc} */
     @Override protected void closeInternal() {
+        try {
+            scan.close();
+        }
+        catch (Exception ex) {
+            onError(ex);
+        }
+
         try {
             idx.close();
         }

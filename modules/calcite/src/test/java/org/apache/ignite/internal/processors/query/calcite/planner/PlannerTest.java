@@ -349,7 +349,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -371,7 +371,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -393,7 +393,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -493,7 +493,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -515,7 +515,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -537,7 +537,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -655,7 +655,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 };
             }
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -695,7 +695,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 };
             }
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -888,7 +888,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -909,7 +909,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -1035,7 +1035,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 );
             }
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 1));
             }
 
@@ -1063,7 +1063,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 );
             }
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 1));
             }
 
@@ -1328,7 +1328,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 return checkRes0;
             }
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 1));
             }
 
@@ -1561,7 +1561,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 0,1,2,3));
             }
 
@@ -1576,7 +1576,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 0,1,2,3));
             }
 
@@ -1681,7 +1681,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 0));
             }
 
@@ -1696,7 +1696,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 1,2),
                     select(nodes, 2,3),
@@ -1804,7 +1804,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 1,2,3));
             }
 
@@ -1819,7 +1819,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0),
                     select(nodes, 1),
@@ -1928,7 +1928,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 0));
             }
 
@@ -1943,7 +1943,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 1),
                     select(nodes, 2),
@@ -2050,7 +2050,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 2));
             }
 
@@ -2065,7 +2065,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forNodes(select(nodes, 0,1));
             }
 

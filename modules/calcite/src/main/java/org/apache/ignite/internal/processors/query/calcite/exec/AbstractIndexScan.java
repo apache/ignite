@@ -62,7 +62,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
      * @param lowerBound Lower index scan bound.
      * @param upperBound Upper index scan bound.
      */
-    public AbstractIndexScan(
+    protected AbstractIndexScan(
         ExecutionContext<Row> ectx,
         RelDataType rowType,
         GridIndex<IdxRow> idx,
@@ -97,7 +97,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
     /** */
     protected abstract BPlusTree.TreeRowClosure<IdxRow, IdxRow> filterClosure();
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void close() {
         // No-op.
     }
@@ -111,7 +111,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
         private Row next;
 
         /** */
-        public IteratorImpl(@NotNull GridCursor<IdxRow> cursor) {
+        private IteratorImpl(@NotNull GridCursor<IdxRow> cursor) {
             this.cursor = cursor;
         }
 

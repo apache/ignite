@@ -257,6 +257,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
                 .replace(CorrelationTrait.UNCORRELATED)
+                .replace(RewindabilityTrait.ONE_WAY)
                 .simplify();
 
             planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
@@ -562,7 +563,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+        @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
             throw new AssertionError();
         }
 

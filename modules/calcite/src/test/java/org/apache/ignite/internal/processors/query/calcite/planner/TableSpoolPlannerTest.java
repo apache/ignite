@@ -33,7 +33,7 @@ import org.junit.Test;
  * Table spool test.
  */
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
-public class TableSpoolTest extends AbstractPlannerTest {
+public class TableSpoolPlannerTest extends AbstractPlannerTest {
     /**
      * @throws Exception If failed.
      */

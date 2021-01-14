@@ -25,17 +25,27 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Runtime sorted index based on on-heap tree.
  */
-public class RuntimeTreeIndex<Row> extends AbstractRuntimeSortedIndex<Row> {
+public class RuntimeTreeIndex<Row> implements GridIndex<Row>, AutoCloseable {
+    /** */
+    protected final ExecutionContext<Row> ectx;
+
+    /** */
+    protected final Comparator<Row> comp;
+
     /** Collation. */
     private final RelCollation collation;
 
@@ -50,7 +60,8 @@ public class RuntimeTreeIndex<Row> extends AbstractRuntimeSortedIndex<Row> {
         RelCollation collation,
         Comparator<Row> comp
     ) {
-        super(ectx, comp);
+        this.ectx = ectx;
+        this.comp = comp;
 
         assert Objects.nonNull(collation);
 
@@ -58,7 +69,9 @@ public class RuntimeTreeIndex<Row> extends AbstractRuntimeSortedIndex<Row> {
         rows = new TreeMap<>(comp);
     }
 
-    /** */
+    /**
+     * Add row to index.
+     */
     public void push(Row r) {
         List<Row> eqRows = rows.putIfAbsent(r, new ArrayList<>(Collections.singletonList(r)));
 
@@ -68,16 +81,13 @@ public class RuntimeTreeIndex<Row> extends AbstractRuntimeSortedIndex<Row> {
 
     /** */
     @Override public void close() throws Exception {
-        // No-op.
+        rows.clear();
     }
 
     /** {@inheritDoc} */
     @Override public GridCursor<Row> find(Row lower, Row upper, BPlusTree.TreeRowClosure<Row, Row> filterC) {
-        return find(lower, upper);
-    }
+        assert filterC == null;
 
-    /** */
-    private GridCursor<Row> find(Row lower, Row upper) {
         int firstCol = F.first(collation.getKeys());
 
         if (ectx.rowHandler().get(firstCol, lower) != null && ectx.rowHandler().get(firstCol, upper) != null)
@@ -91,20 +101,34 @@ public class RuntimeTreeIndex<Row> extends AbstractRuntimeSortedIndex<Row> {
     }
 
     /**
+     * Return an iterable to scan index range from lower to upper bounds inclusive,
+     * filtered by {@code filter} predicate.
+     */
+    public Iterable<Row> scan(
+        ExecutionContext<Row> ectx,
+        RelDataType rowType,
+        Predicate<Row> filter,
+        Supplier<Row> lowerBound,
+        Supplier<Row> upperBound
+    ) {
+        return new IndexScan(rowType, this, filter, lowerBound, upperBound);
+    }
+
+    /**
      *
      */
     private class Cursor implements GridCursor<Row> {
-        /** Sub map. */
+        /** Sub map iterator. */
         private final Iterator<Map.Entry<Row, List<Row>>> mapIt;
 
-        /** Sub map. */
+        /** Iterator over rows with equal index keys. */
         private Iterator<Row> listIt;
 
         /** */
         private Row row;
 
         /** */
-        public Cursor(SortedMap<Row, List<Row>> subMap) {
+        Cursor(SortedMap<Row, List<Row>> subMap) {
             mapIt = subMap.entrySet().iterator();
             listIt = null;
         }
@@ -126,18 +150,51 @@ public class RuntimeTreeIndex<Row> extends AbstractRuntimeSortedIndex<Row> {
 
         /** */
         private void next0() {
-            if (listIt != null && listIt.hasNext())
-                row = listIt.next();
-            else {
+            if (listIt == null || !listIt.hasNext())
                 listIt = mapIt.next().getValue().iterator();
 
-                row = listIt.next();
-            }
+            row = listIt.next();
         }
 
         /** {@inheritDoc} */
         @Override public Row get() throws IgniteCheckedException {
             return row;
+        }
+    }
+
+    /**
+     *
+     */
+    private class IndexScan extends AbstractIndexScan<Row, Row> {
+        /**
+         * @param rowType Row type.
+         * @param idx Physical index.
+         * @param filter Additional filters.
+         * @param lowerBound Lower index scan bound.
+         * @param upperBound Upper index scan bound.
+         */
+        IndexScan(
+            RelDataType rowType,
+            GridIndex<Row> idx,
+            Predicate<Row> filter,
+            Supplier<Row> lowerBound,
+            Supplier<Row> upperBound) {
+            super(RuntimeTreeIndex.this.ectx, rowType, idx, filter, lowerBound, upperBound, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Row row2indexRow(Row bound) {
+            return bound;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Row indexRow2Row(Row row) {
+            return row;
+        }
+
+        /** */
+        @Override protected BPlusTree.TreeRowClosure<Row, Row> filterClosure() {
+            return null;
         }
     }
 }

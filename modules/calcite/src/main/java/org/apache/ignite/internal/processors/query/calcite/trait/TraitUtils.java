@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -35,6 +36,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -434,6 +436,18 @@ public class TraitUtils {
                 return false;
         }
         return processed;
+    }
+
+    /**
+     * Creates collations from provided keys.
+     *
+     * @param keys The keys to create collation from.
+     * @return New collation.
+     */
+    public static RelCollation createCollation(List<Integer> keys) {
+        return RelCollations.of(
+            keys.stream().map(RelFieldCollation::new).collect(Collectors.toList())
+        );
     }
 
     /** */

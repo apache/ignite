@@ -103,7 +103,7 @@ public interface IgniteTable extends TranslatableTable {
      * @param ctx Planning context.
      * @return Nodes mapping.
      */
-    CollocationGroup collocationGroup(PlanningContext ctx);
+    CollocationGroup colocationGroup(PlanningContext ctx);
 
     /**
      * @return Table distribution.

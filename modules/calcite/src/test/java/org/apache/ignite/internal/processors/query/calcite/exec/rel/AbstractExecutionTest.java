@@ -413,5 +413,15 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             GridTestUtils.setFieldValue(this, RootNode.class, "waiting", 0);
             GridTestUtils.setFieldValue(this, RootNode.class, "closed", false);
         }
+
+        /** {@inheritDoc} */
+        @Override public void closeInternal() {
+            // No-op
+        }
+
+        /** */
+        public void closeRewindableRoot() {
+            super.closeInternal();
+        }
     }
 }

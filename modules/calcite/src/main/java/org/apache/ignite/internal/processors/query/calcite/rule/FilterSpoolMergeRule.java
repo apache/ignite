@@ -22,7 +22,6 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.RelFactories;
@@ -34,6 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrai
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Rule that pushes filter into the spool.
@@ -52,9 +52,6 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
         final IgniteFilter filter = call.rel(0);
         final IgniteTableSpool spool = call.rel(1);
 
-        if (spool.collation().isDefault())
-            return;
-
         RelOptCluster cluster = spool.getCluster();
 
         RelTraitSet trait = spool.getTraitSet();
@@ -67,19 +64,23 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
 
         IndexConditions idxCond = RexUtils.buildIndexConditions(
             cluster,
-            spool.collation(),
+            TraitUtils.collation(input),
             filter.getCondition(),
             spool.getRowType(),
             null
         );
 
-        RelCollation collation = RelCollations.of(idxCond.keys());
+        if (F.isEmpty(idxCond.lowerCondition()) && F.isEmpty(idxCond.upperCondition()))
+            return;
+
+        RelCollation collation = TraitUtils.collation(input);
         
         RelNode res = new IgniteIndexSpool(
             cluster,
             trait.replace(collation),
             convert(input, input.getTraitSet().replace(collation)),
-            spool.collation(),
+            collation,
+            filter.getCondition(),
             idxCond
         );
 

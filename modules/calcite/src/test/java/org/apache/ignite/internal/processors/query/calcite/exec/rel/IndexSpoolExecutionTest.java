@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
@@ -27,7 +28,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
-import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.lang.GridTuple4;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -40,7 +41,7 @@ import org.junit.Test;
  */
 @SuppressWarnings("TypeMayBeWeakened")
 @WithSystemProperty(key = "calcite.debug", value = "true")
-public class IndexSpoolTest extends AbstractExecutionTest {
+public class IndexSpoolExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */
@@ -64,41 +65,52 @@ public class IndexSpoolTest extends AbstractExecutionTest {
         int[] sizes = {1, inBufSize / 2 - 1, inBufSize / 2, inBufSize / 2 + 1, inBufSize, inBufSize + 1, inBufSize * 4};
 
         for (int size : sizes) {
-            // (lower, upper, expected result size)
-            GridTuple3<Object[], Object[], Integer>[] testBounds;
+            // (filter, lower, upper, expected result size)
+            GridTuple4<Predicate<Object[]>, Object[], Object[], Integer>[] testBounds;
 
             if (size == 1) {
-                testBounds = new GridTuple3[] {
-                    new GridTuple3(new Object[] {null, null, null}, new Object[] {null, null, null}, 1),
-                    new GridTuple3(new Object[] {0, null, null}, new Object[] {0, null, null}, 1)
+                testBounds = new GridTuple4[] {
+                    new GridTuple4(null, new Object[] {null, null, null}, new Object[] {null, null, null}, 1),
+                    new GridTuple4(null, new Object[] {0, null, null}, new Object[] {0, null, null}, 1)
                 };
             }
             else {
-                testBounds = new GridTuple3[] {
-                    new GridTuple3(
+                testBounds = new GridTuple4[] {
+                    new GridTuple4(
+                        null,
                         new Object[] {null, null, null},
                         new Object[] {null, null, null},
                         size
                     ),
-                    new GridTuple3(
+                    new GridTuple4(
+                        null,
                         new Object[] {size / 2, null, null},
                         new Object[] {size / 2, null, null},
                         1
                     ),
-                    new GridTuple3(
+                    new GridTuple4(
+                        null,
                         new Object[] {size / 2 + 1, null, null},
                         new Object[] {size / 2 + 1, null, null},
                         1
                     ),
-                    new GridTuple3(
+                    new GridTuple4(
+                        null,
                         new Object[] {size / 2, null, null},
                         new Object[] {null, null, null},
                         size - size / 2
                     ),
-                    new GridTuple3(
+                    new GridTuple4(
+                        null,
                         new Object[] {null, null, null},
                         new Object[] {size / 2, null, null},
                         size / 2 + 1
+                    ),
+                    new GridTuple4<>(
+                        (Predicate<Object[]>)(r -> ((int)r[0]) < size / 2),
+                        new Object[] {null, null, null},
+                        new Object[] {size / 2, null, null},
+                        size / 2
                     ),
                 };
             }
@@ -118,12 +130,14 @@ public class IndexSpoolTest extends AbstractExecutionTest {
 
             Object[] lower = new Object[3];
             Object[] upper = new Object[3];
+            TestPredicate testFilter = new TestPredicate();
 
             IndexSpoolNode<Object[]> spool = new IndexSpoolNode<>(
                 ctx,
                 rowType,
                 RelCollations.of(ImmutableIntList.of(0)),
                 (o1, o2) -> o1[0] != null ? ((Comparable)o1[0]).compareTo(o2[0]) : 0,
+                testFilter,
                 () -> lower,
                 () -> upper
             );
@@ -133,10 +147,13 @@ public class IndexSpoolTest extends AbstractExecutionTest {
             RootRewindable<Object[]> root = new RootRewindable<>(ctx, rowType);
             root.register(spool);
 
-            for (GridTuple3<Object[], Object[], Integer> bound : testBounds) {
+            for (GridTuple4<Predicate<Object[]>, Object[], Object[], Integer> bound : testBounds) {
+                log.info("Check: bound=" + bound);
+
                 // Set up bounds
-                System.arraycopy(bound.get1(), 0, lower, 0, lower.length);
-                System.arraycopy(bound.get2(), 0, upper, 0, lower.length);
+                testFilter.delegate = bound.get1();
+                System.arraycopy(bound.get2(), 0, lower, 0, lower.length);
+                System.arraycopy(bound.get3(), 0, upper, 0, upper.length);
 
                 int cnt = 0;
 
@@ -148,11 +165,27 @@ public class IndexSpoolTest extends AbstractExecutionTest {
 
                 assertEquals(
                     "Invalid result size",
-                    (int)bound.get3(),
+                    (int)bound.get4(),
                     cnt);
 
                 root.rewind();
             }
+
+            root.closeRewindableRoot();
+        }
+    }
+
+    /** */
+    static class TestPredicate implements Predicate<Object[]> {
+        /** */
+        Predicate<Object[]> delegate;
+
+        /** {@inheritDoc} */
+        @Override public boolean test(Object[] objects) {
+            if (delegate == null)
+                return true;
+            else
+                return delegate.test(objects);
         }
     }
 }
