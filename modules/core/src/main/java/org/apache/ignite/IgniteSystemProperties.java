@@ -1971,11 +1971,11 @@ public final class IgniteSystemProperties {
         "IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE";
 
     /**
-     * Performance statistics maximum file size in bytes. Performance statistics will be stopped when the size exceeded.
-     * The default value is {@link FilePerformanceStatisticsWriter#DFLT_FILE_MAX_SIZE}.
+     * Maximum performance statistics file size in bytes. Performance statistics collection will be stopped when the
+     * size exceeded. The default value is {@link FilePerformanceStatisticsWriter#DFLT_FILE_MAX_SIZE}.
      */
-    @SystemProperty(value = "Performance statistics maximum file size in bytes. Performance statistics will be " +
-        "stopped when the size exceeded", type = Long.class, defaults = "" + DFLT_FILE_MAX_SIZE)
+    @SystemProperty(value = "Maximum performance statistics file size in bytes. Performance statistics collection " +
+        "will be stopped when the size exceeded", type = Long.class, defaults = "" + DFLT_FILE_MAX_SIZE)
     public static final String IGNITE_PERF_STAT_FILE_MAX_SIZE = "IGNITE_PERF_STAT_FILE_MAX_SIZE";
 
     /**
@@ -1987,19 +1987,19 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PERF_STAT_BUFFER_SIZE = "IGNITE_PERF_STAT_BUFFER_SIZE";
 
     /**
-     * Performance statistics minimal batch size to flush in bytes. The default value is
+     * Minimal performance statistics batch size to be flushed in bytes. The default value is
      * {@link FilePerformanceStatisticsWriter#DFLT_FLUSH_SIZE}.
      */
-    @SystemProperty(value = "Performance statistics minimal batch size to flush in bytes", type = Integer.class,
+    @SystemProperty(value = "Minimal performance statistics batch size to be flushed in bytes", type = Integer.class,
         defaults = "" + DFLT_FLUSH_SIZE)
     public static final String IGNITE_PERF_STAT_FLUSH_SIZE = "IGNITE_PERF_STAT_FLUSH_SIZE";
 
     /**
-     * Performance statistics maximum cached strings threshold. String caching will stop on threshold excess.
-     * The default value is {@link FilePerformanceStatisticsWriter#DFLT_CACHED_STRINGS_THRESHOLD}.
+     * Maximum performance statistics cached strings threshold. String caching will be stopped, when the threshold
+     * is exceeded. The default value is {@link FilePerformanceStatisticsWriter#DFLT_CACHED_STRINGS_THRESHOLD}.
      */
-    @SystemProperty(value = "Performance statistics maximum cached strings threshold. String caching will stop on " +
-        "threshold excess", type = Integer.class, defaults = "" + DFLT_CACHED_STRINGS_THRESHOLD)
+    @SystemProperty(value = "Maximum performance statistics cached strings threshold. String caching will be " +
+        "stopped, when the threshold is exceeded", type = Integer.class, defaults = "" + DFLT_CACHED_STRINGS_THRESHOLD)
     public static final String IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD = "IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD";
 
     /**
