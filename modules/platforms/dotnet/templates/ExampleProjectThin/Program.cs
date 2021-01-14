@@ -20,10 +20,12 @@ using System.Collections.Generic;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Binary;
 using Apache.Ignite.Core.Cache;
+using Apache.Ignite.Core.Client;
+using Apache.Ignite.Core.Client.Cache;
 using IgniteExamples.Shared;
 using IgniteExamples.Shared.Models;
 
-namespace IgniteExamples.Thin.ExampleProject
+namespace IgniteExamples.Thin.ExampleProjectThin
 {
     /// <summary>
     /// TODO
@@ -32,7 +34,19 @@ namespace IgniteExamples.Thin.ExampleProject
     {
         public static void Main()
         {
-            // TODO
+            using (IIgniteClient ignite = Ignition.StartClient(Utils.GetThinClientConfiguration()))
+            {
+                Console.WriteLine();
+                Console.WriteLine(">>> Example started.");
+
+                // TODO
+
+                Console.WriteLine();
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Example finished, press any key to exit ...");
+            Console.ReadKey();
         }
     }
 }

@@ -1,0 +1,12 @@
+{
+  "author": "Pavel Tupitsyn",
+  "classifications": [ "Apache Ignite" ],
+  "name": "Apache Ignite Thin Client Example",
+  "identity": "Apache.Ignite.ExampleThin",
+  "shortName": "ignite-example-thin",
+  "tags": {
+    "language": "C#"
+  },
+  "sourceName": "ExampleProjectThin",
+  "preferNameDirectory":"true"
+}
