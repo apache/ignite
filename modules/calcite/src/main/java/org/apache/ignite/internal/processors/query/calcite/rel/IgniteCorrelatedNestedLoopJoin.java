@@ -110,19 +110,11 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
 
         // We preserve left edge collation only if batch size == 1
         if (variablesSet.size() == 1)
-            nodeTraits.replace(leftCollation);
+            nodeTraits = nodeTraits.replace(leftCollation);
         else
-            nodeTraits.replace(RelCollations.EMPTY);
+            nodeTraits = nodeTraits.replace(RelCollations.EMPTY);
 
-        return ImmutableList.of(
-            Pair.of(
-                nodeTraits.replace(leftCollation),
-                ImmutableList.of(
-                    left,
-                    right
-                )
-            )
-        );
+        return ImmutableList.of(Pair.of(nodeTraits, inputTraits));
     }
 
     /** {@inheritDoc} */

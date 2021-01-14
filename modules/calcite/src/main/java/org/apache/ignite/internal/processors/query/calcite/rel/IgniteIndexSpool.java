@@ -23,24 +23,19 @@ import java.util.Objects;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Spool;
-import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
-import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Relational operator that returns the sorted contents of a table
@@ -122,51 +117,41 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double inRowCnt = mq.getRowCount(getInput());
-        double outRowCnt = estimateRowCount(mq);
+        double rowCnt = mq.getRowCount(getInput());
         double bytesPerRow = getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
-        double cpuCost = inRowCnt * indexBoundSelectivity() * IgniteCost.ROW_PASS_THROUGH_COST;
-        double totalBytes = outRowCnt * bytesPerRow;
+        double totalBytes = rowCnt * bytesPerRow;
+        double cpuCost = rowCnt * IgniteCost.ROW_PASS_THROUGH_COST;
 
-        if (idxCond.lowerCondition() != null)
-            cpuCost += Math.log(inRowCnt) * IgniteCost.ROW_COMPARISON_COST;
+        if (condition != null) {
+            RexBuilder builder = getCluster().getRexBuilder();
+
+            double selectivity = 1;
+
+            if (idxCond.lowerBound() != null) {
+                double selectivity0 = mq.getSelectivity(this, RexUtil.composeConjunction(builder, idxCond.lowerBound()));
+
+                selectivity -= 1 - selectivity0;
+
+                cpuCost += Math.log(rowCnt) * IgniteCost.ROW_COMPARISON_COST;
+            }
+
+            if (idxCond.upperBound() != null) {
+                double selectivity0 = mq.getSelectivity(this, RexUtil.composeConjunction(builder, idxCond.upperBound()));
+
+                selectivity -= 1 - selectivity0;
+            }
+
+            double boundedRowsCnt = rowCnt * selectivity;
+
+            if (boundedRowsCnt <= 0)
+                boundedRowsCnt = 1;
+
+            cpuCost += boundedRowsCnt * IgniteCost.ROW_COMPARISON_COST;
+        }
 
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
-        return costFactory.makeCost(outRowCnt,
-            cpuCost, 0, totalBytes, 0);
-    }
-
-    /** */
-    private double indexBoundSelectivity() {
-        if (idxCond == null)
-            return 1.0;
-
-        List<RexNode> lowerCond = idxCond.lowerCondition();
-        List<RexNode> upperCond = idxCond.upperCondition();
-
-        if (F.isEmpty(lowerCond) && F.isEmpty(upperCond))
-            return 1.0;
-
-        double idxSelectivity = 1.0;
-
-        int len = F.isEmpty(lowerCond) ?
-            upperCond.size() :
-            F.isEmpty(upperCond) ? lowerCond.size() : Math.max(lowerCond.size(), upperCond.size());
-
-        for (int i = 0; i < len; i++) {
-            RexCall lower = F.isEmpty(lowerCond) || lowerCond.size() <= i ? null : (RexCall)lowerCond.get(i);
-            RexCall upper = F.isEmpty(upperCond) || upperCond.size() <= i ? null : (RexCall)upperCond.get(i);
-
-            assert lower != null || upper != null;
-
-            if (lower != null && upper != null)
-                idxSelectivity *= lower.op.kind == SqlKind.EQUALS ? .1 : .2;
-            else
-                idxSelectivity *= .35;
-        }
-
-        return idxSelectivity;
+        return costFactory.makeCost(rowCnt, cpuCost, 0, totalBytes, 0);
     }
 
     /** {@inheritDoc} */

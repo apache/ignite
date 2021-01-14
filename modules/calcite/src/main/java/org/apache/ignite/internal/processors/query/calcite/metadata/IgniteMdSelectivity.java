@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdSelectivity;
@@ -95,8 +96,9 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
 
     /** */
     public Double getSelectivity(IgniteIndexSpool rel, RelMetadataQuery mq, RexNode predicate) {
-        assert predicate == null : "IndexSpool doesn't support predicate: " + predicate;
+        if (predicate != null)
+            return RelMdUtil.guessSelectivity(predicate);
 
-        return mq.getSelectivity(rel.getInput(), rel.condition());
+        return RelMdUtil.guessSelectivity(rel.condition());
     }
 }
