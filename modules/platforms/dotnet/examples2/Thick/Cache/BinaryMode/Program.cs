@@ -126,12 +126,12 @@ namespace IgniteExamples.Thick.BinaryMode
             string name = person.GetField<string>(NameField);
 
             Console.WriteLine();
-            Console.WriteLine(">>> Name of the person with id {0}: {1}", id, name);
+            Console.WriteLine($">>> Name of the person with id {id}: {name}");
 
             // Modify the binary object.
-            cache[id] = person.ToBuilder().SetField("Name", name + " Jr.").Build();
+            cache[id] = person.ToBuilder().SetField("Name", $"{name} Jr.").Build();
 
-            Console.WriteLine(">>> Modified person with id {0}: {1}", id, cache[1]);
+            Console.WriteLine($">>> Modified person with id {id}: {cache[1]}");
         }
 
         /// <summary>
