@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.TreeMap;
-
 /**
  * Update counter implementation for MVCC mode.
  */
 public class PartitionUpdateCounterMvccImpl extends PartitionUpdateCounterTrackingImpl {
+
+    private final CacheGroupContext grp;
+
     /**
      * @param grp Group.
      */
     public PartitionUpdateCounterMvccImpl(CacheGroupContext grp) {
         super(grp);
+        this.grp = grp;
     }
 
     /** {@inheritDoc} */
@@ -43,18 +45,5 @@ public class PartitionUpdateCounterMvccImpl extends PartitionUpdateCounterTracki
     /** {@inheritDoc} */
     @Override protected PartitionUpdateCounterTrackingImpl createInstance() {
         return new PartitionUpdateCounterMvccImpl(grp);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PartitionUpdateCounter copy() {
-        PartitionUpdateCounterMvccImpl copy = new PartitionUpdateCounterMvccImpl(grp);
-
-        copy.cntr.set(cntr.get());
-        copy.first = first;
-        copy.queue = new TreeMap<>(queue);
-        copy.initCntr = initCntr;
-        copy.reserveCntr.set(reserveCntr.get());
-
-        return copy;
     }
 }

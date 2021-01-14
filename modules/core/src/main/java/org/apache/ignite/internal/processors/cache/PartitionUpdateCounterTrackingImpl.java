@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
@@ -68,25 +68,25 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     private static final byte VERSION = 1;
 
     /** Queue of applied out of order counter updates. */
-    protected NavigableMap<Long, Item> queue = new TreeMap<>();
+    private NavigableMap<Long, Item> queue = new TreeMap<>();
 
     /** LWM. */
-    protected final AtomicLong cntr = new AtomicLong();
+    private volatile long cntr;
 
     /** HWM. */
-    protected final AtomicLong reserveCntr = new AtomicLong();
+    private volatile long reserveCntr;
 
     /** */
-    protected boolean first = true;
+    private boolean first = true;
 
     /** */
-    protected final CacheGroupContext grp;
+    private final CacheGroupContext grp;
 
     /**
      * Initial counter points to last sequential update after WAL recovery.
      * @deprecated TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11794
      */
-    @Deprecated protected volatile long initCntr;
+    @Deprecated private volatile long initCntr;
 
     /**
      * @param grp Group.
@@ -96,10 +96,11 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     }
 
     /** {@inheritDoc} */
-    @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
-        cntr.set(initUpdCntr);
+    @Override public synchronized void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
+        cntr = initUpdCntr;
 
-        reserveCntr.set(initCntr = initUpdCntr);
+        initCntr = initUpdCntr;
+        reserveCntr = initCntr;
 
         queue = fromBytes(cntrUpdData);
     }
@@ -111,35 +112,33 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public long get() {
-        return cntr.get();
+        return cntr;
     }
 
     /** */
     protected synchronized long highestAppliedCounter() {
-        return queue.isEmpty() ? cntr.get() : queue.lastEntry().getValue().absolute();
+        return queue.isEmpty() ? cntr : queue.lastEntry().getValue().absolute();
     }
 
     /**
      * @return Next update counter. For tx mode called by {@link DataStreamerImpl} IsolatedUpdater.
      */
-    @Override public long next() {
-        long next = cntr.incrementAndGet();
+    @Override public synchronized long next() {
+        reserveCntr = ++cntr;
 
-        reserveCntr.set(next);
-
-        return next;
+        return reserveCntr;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized void update(long val) throws IgniteCheckedException {
         // Reserved update counter is updated only on exchange.
-        long cur = get();
+        long cur = cntr;
 
         // Always set reserved counter equal to max known counter.
         long max = Math.max(val, cur);
 
-        if (reserveCntr.get() < max)
-            reserveCntr.set(max);
+        if (reserveCntr < max)
+            reserveCntr = max;
 
         // Outdated counter (txs are possible before current topology future is finished if primary is not changed).
         if (val < cur)
@@ -151,7 +150,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
         if (val < highestAppliedCounter())
             throw new IgniteCheckedException("Failed to update the counter [newVal=" + val + ", curState=" + this + ']');
 
-        cntr.set(val);
+        cntr = val;
 
         /** If some holes are present at this point, thar means some update were missed on recovery and will be restored
          * during rebalance. All gaps are safe to "forget".
@@ -165,7 +164,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public synchronized boolean update(long start, long delta) {
-        long cur = cntr.get();
+        long cur = cntr;
 
         if (cur > start)
             return false;
@@ -208,22 +207,20 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
             if (nextItem != null)
                 next += nextItem.delta;
 
-            boolean res = cntr.compareAndSet(cur, next);
-
-            assert res;
+            cntr = next;
 
             return true;
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void updateInitial(long start, long delta) {
+    @Override public synchronized void updateInitial(long start, long delta) {
         update(start, delta);
 
-        initCntr = get();
+        initCntr = cntr;
 
-        if (reserveCntr.get() < initCntr)
-            reserveCntr.set(initCntr);
+        if (reserveCntr < initCntr)
+            reserveCntr = initCntr;
     }
 
     /** {@inheritDoc} */
@@ -236,28 +233,28 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
             if (gaps == null)
                 gaps = new GridLongList((queue.size() + 1) * 2);
 
-            long start = cntr.get() + 1;
+            long start = cntr + 1;
             long end = item.getValue().start;
 
             gaps.add(start);
             gaps.add(end);
 
             // Close pending ranges.
-            cntr.set(item.getValue().absolute());
+            cntr = item.getValue().absolute();
 
             item = queue.pollFirstEntry();
         }
 
-        reserveCntr.set(get());
+        reserveCntr = cntr;
 
         return gaps;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized long reserve(long delta) {
-        long cntr = get();
 
-        long reserved = reserveCntr.getAndAdd(delta);
+        long reserved = reserveCntr;
+        reserveCntr += delta;
 
         assert reserved >= cntr : "LWM after HWM: lwm=" + cntr + ", hwm=" + reserved;
 
@@ -265,8 +262,10 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     }
 
     /** {@inheritDoc} */
-    @Override public long next(long delta) {
-        return cntr.getAndAdd(delta);
+    @Override public synchronized long next(long delta) {
+        long next = cntr;
+        cntr += delta;
+        return next;
     }
 
     /** {@inheritDoc} */
@@ -339,15 +338,15 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     @Override public synchronized void reset() {
         initCntr = 0;
 
-        cntr.set(0);
+        cntr = 0;
 
-        reserveCntr.set(0);
+        reserveCntr = 0;
 
         queue.clear();
     }
 
     /** {@inheritDoc} */
-    @Override public void resetInitialCounter() {
+    @Override public synchronized void resetInitialCounter() {
         initCntr = 0;
     }
 
@@ -356,7 +355,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
      */
     private static class Item {
         /** */
-        private long start;
+        private final long start;
 
         /** */
         private long delta;
@@ -366,8 +365,8 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
          * @param delta Delta value.
          */
         private Item(long start, long delta) {
-            this.start = start;
             this.delta = delta;
+            this.start = start;
         }
 
         /** {@inheritDoc} */
@@ -421,22 +420,24 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
         if (o == null || getClass() != o.getClass())
             return false;
 
-        PartitionUpdateCounterTrackingImpl cntr = (PartitionUpdateCounterTrackingImpl)o;
+        synchronized (this) {
+            PartitionUpdateCounterTrackingImpl cntr = (PartitionUpdateCounterTrackingImpl) o;
 
-        if (!queue.equals(cntr.queue))
-            return false;
+            if (!queue.equals(cntr.queue))
+                return false;
 
-        return this.cntr.get() == cntr.cntr.get();
+            return this.cntr == cntr.cntr;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public long reserved() {
-        return reserveCntr.get();
+        return reserveCntr;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized boolean empty() {
-        return get() == 0 && sequential();
+        return cntr == 0 && sequential();
     }
 
     /** {@inheritDoc} */
@@ -445,9 +446,9 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return "Counter [lwm=" + get() + ", holes=" + queue +
-            ", maxApplied=" + highestAppliedCounter() + ", hwm=" + reserveCntr.get() + ']';
+    @Override public synchronized String toString() {
+        return "Counter [lwm=" + cntr + ", holes=" + queue +
+            ", maxApplied=" + highestAppliedCounter() + ", hwm=" + reserveCntr + ']';
     }
 
     /** {@inheritDoc} */
@@ -456,14 +457,14 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     }
 
     /** {@inheritDoc} */
-    @Override public PartitionUpdateCounter copy() {
+    @Override public synchronized PartitionUpdateCounter copy() {
         PartitionUpdateCounterTrackingImpl copy = createInstance();
 
-        copy.cntr.set(cntr.get());
+        copy.cntr = cntr;
         copy.first = first;
         copy.queue = new TreeMap<>(queue);
         copy.initCntr = initCntr;
-        copy.reserveCntr.set(reserveCntr.get());
+        copy.reserveCntr = reserveCntr;
 
         return copy;
     }
