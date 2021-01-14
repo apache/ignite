@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Index conditions and bounds holder.
- * Conditions are not printed to terms (serialized). Its are used only to calculate selectivity.
+ * Conditions are not printed to terms (serialized). They are used only to calculate selectivity.
  */
 public class IndexConditions {
     /** */

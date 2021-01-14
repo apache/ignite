@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -84,7 +83,7 @@ public class RuntimeTreeIndex<Row> implements GridIndex<Row>, AutoCloseable {
     }
 
     /** */
-    @Override public void close() throws Exception {
+    @Override public void close() {
         rows.clear();
     }
 
