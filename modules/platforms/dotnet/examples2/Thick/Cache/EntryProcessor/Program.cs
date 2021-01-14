@@ -18,33 +18,57 @@
 namespace IgniteExamples.Thick.EntryProcessor
 {
     using System;
-    using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Models;
+    using IgniteExamples.Shared.Cache;
 
     /// <summary>
-    /// TODO
+    /// This example demonstrates the affinity collocation of a closure with data
+    /// by creating and modifying cache entries via an EntryProcessor.
     /// </summary>
     public class Program
     {
+        private const string CacheName = "dotnet_cache_entry_processor";
+
+        private const int EntryCount = 20;
+
         public static void Main()
         {
             using (IIgnite ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Example started.");
+                Console.WriteLine(">>> Cache EntryProcessor example started.");
 
-                // TODO
+                ICache<int, int> cache = ignite.GetOrCreateCache<int, int>(CacheName);
+                cache.Clear();
 
-                Console.WriteLine();
+                // Populate cache with Invoke.
+                int[] keys = Enumerable.Range(1, EntryCount).ToArray();
+
+                foreach (var key in keys)
+                    cache.Invoke(key, new CachePutEntryProcessor(), 10);
+
+                PrintCacheEntries(cache);
+
+                // Increment entries by 5 with InvokeAll.
+                cache.InvokeAll(keys, new CacheIncrementEntryProcessor(), 5);
+
+                PrintCacheEntries(cache);
             }
 
             Console.WriteLine();
             Console.WriteLine(">>> Example finished, press any key to exit ...");
             Console.ReadKey();
+        }
+
+        private static void PrintCacheEntries(ICache<int, int> cache)
+        {
+            Console.WriteLine("\n>>> Entries in cache:");
+
+            foreach (var entry in cache)
+                Console.WriteLine(entry);
         }
     }
 }
