@@ -51,6 +51,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_S
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FILE_MAX_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CQ;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
@@ -59,6 +60,8 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheStartRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.continuousQueryOperationRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.continuousQueryRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
@@ -310,6 +313,46 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /**
+     * @param routineId Routine id.
+     * @param cacheId Cache id.
+     * @param startTime Start time in milliseconds.
+     * @param lsnr Local listener class name.
+     * @param rmtFilter Remote filter factory class name.
+     * @param rmtTrans Remote transformer factory class name.
+     */
+    public void continuousQuery(UUID routineId, int cacheId, long startTime, String lsnr, String rmtFilter,
+        String rmtTrans) {
+        boolean cached = cacheIfPossible(lsnr) && cacheIfPossible(rmtFilter) && cacheIfPossible(rmtTrans);
+
+        doWrite(CQ,
+            continuousQueryRecordSize(cached ? 0 : lsnr.getBytes().length, cached ? 0 : rmtFilter.getBytes().length,
+                cached ? 0 : rmtTrans.getBytes().length, cached),
+            buf -> {
+                writeStrings(buf, cached, lsnr, rmtFilter, rmtTrans);
+                writeUuid(buf, routineId);
+                buf.putInt(cacheId);
+                buf.putLong(startTime);
+            });
+    }
+
+    /**
+     * @param type Operation type.
+     * @param routineId Routine id.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in nanoseconds.
+     * @param entCnt Entries count.
+     */
+    public void continuousQueryOperation(OperationType type, UUID routineId, long startTime, long duration,
+        int entCnt) {
+        doWrite(type, continuousQueryOperationRecordSize(), buf -> {
+            writeUuid(buf, routineId);
+            buf.putLong(startTime);
+            buf.putLong(duration);
+            buf.putInt(entCnt);
+        });
+    }
+
+    /**
      * @param op Operation type.
      * @param recSize Record size.
      * @param writer Record writer.
@@ -405,6 +448,26 @@ public class FilePerformanceStatisticsWriter {
             buf.put(bytes);
         }
     }
+
+    /**
+     * @param buf Buffer to write to.
+     * @param cached {@code True} if string cached.
+     * @param strs Strings to write.
+     */
+     static void writeStrings(ByteBuffer buf, boolean cached, String... strs) {
+         buf.put(cached ? (byte)1 : 0);
+
+         for (String str : strs) {
+             if (cached)
+                 buf.putInt(str.hashCode());
+             else {
+                 byte[] bytes = str.getBytes();
+
+                 buf.putInt(bytes.length);
+                 buf.put(bytes);
+             }
+         }
+     }
 
     /** @return {@code True} if string was cached and can be written as hashcode. */
     private boolean cacheIfPossible(String str) {

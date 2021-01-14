@@ -102,6 +102,12 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
     }
 
     /** {@inheritDoc} */
+    @Override public @Nullable Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>>
+    getRemoteTransformerFactory() {
+        return rmtTransFactory;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer() {
         if (rmtTrans == null && rmtTransFactory != null)
             rmtTrans = rmtTransFactory.create();
@@ -115,7 +121,7 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheEntryEventFilter getEventFilter0() {
+    @Override public CacheEntryEventFilter getEventFilter0() {
         if (rmtFilterFactory == null)
             return null;
 

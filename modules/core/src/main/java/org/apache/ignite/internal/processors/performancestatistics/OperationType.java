@@ -79,7 +79,19 @@ public enum OperationType {
     JOB(16),
 
     /** Cache start. */
-    CACHE_START(17);
+    CACHE_START(17),
+
+    /** Cache continuous query. */
+    CQ(18),
+
+    /** Cache continuous query entry filtered. */
+    CQ_ENTRY_FILTERED(19),
+
+    /** Cache continuous query entry transformed. */
+    CQ_ENTRY_TRANSFORMED(20),
+
+    /** Cache continuous query entry processed. */
+    CQ_ENTRY_PROCESSED(21);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,
@@ -88,6 +100,10 @@ public enum OperationType {
 
     /** Transaction operations. */
     public static final EnumSet<OperationType> TX_OPS = EnumSet.of(TX_COMMIT, TX_ROLLBACK);
+
+    /** Cache continuous query operations. */
+    public static final EnumSet<OperationType> CQ_OPS = EnumSet.of(CQ_ENTRY_FILTERED, CQ_ENTRY_TRANSFORMED,
+        CQ_ENTRY_PROCESSED);
 
     /** Value by identifier. */
     private static final Map<Byte, OperationType> VALS;
@@ -131,6 +147,11 @@ public enum OperationType {
     /** @return {@code True} if transaction operation. */
     public static boolean transactionOperation(OperationType op) {
         return TX_OPS.contains(op);
+    }
+
+    /** @return {@code True} if cache continuous query entry operation. */
+    public static boolean continuousQueryEntryOperation(OperationType op) {
+        return CQ_OPS.contains(op);
     }
 
     /**
@@ -181,5 +202,15 @@ public enum OperationType {
     /** @return Job record size. */
     public static int jobRecordSize() {
         return 24 + 8 + 8 + 8 + 1;
+    }
+
+    /** @return Cache continuous query record size. */
+    public static int continuousQueryRecordSize(int lsnrLen, int rmtFilterLen, int rmtTransLen, boolean cached) {
+        return 1 + (cached ? 4 + 4 + 4 : 4 + lsnrLen + 4 + rmtFilterLen + 4 + rmtTransLen) + 16 + 4 + 8;
+    }
+
+    /** @return Cache continuous query operation record size. */
+    public static int continuousQueryOperationRecordSize() {
+        return 16 + 8 + 8 + 4;
     }
 }

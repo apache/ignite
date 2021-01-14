@@ -20,19 +20,28 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
+import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.query.AbstractContinuousQuery;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -55,6 +64,9 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CQ_ENTRY_FILTERED;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CQ_ENTRY_PROCESSED;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CQ_OPS;
 
 /**
  * Tests performance statistics.
@@ -126,6 +138,13 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
         for (int i = 0; i < ENTRY_COUNT; i++)
             cache.put(i, i);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        cache.clear();
     }
 
     /** @throws Exception If failed. */
@@ -314,5 +333,118 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         });
 
         assertEquals(1, txs.get());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testContinuousQuery() throws Exception {
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+        checkContinuousQuery(qry);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testContinuousQueryWithTransformer() throws Exception {
+        ContinuousQueryWithTransformer<Object, Object, Object> qry = new ContinuousQueryWithTransformer<>();
+
+        qry.setRemoteTransformerFactory(() -> Cache.Entry::getValue);
+
+        checkContinuousQuery(qry);
+    }
+
+    /** @throws Exception If failed. */
+    private void checkContinuousQuery(AbstractContinuousQuery<Object, Object> qry) throws Exception {
+        int qryCnt = 2;
+        int entryCnt = 10;
+        int pageSize = entryCnt / 2;
+
+        CountDownLatch evtLatch = new CountDownLatch(qryCnt * entryCnt);
+
+        if (qry instanceof ContinuousQuery)
+            ((ContinuousQuery)qry).setLocalListener(evts -> evts.forEach(event -> evtLatch.countDown()));
+        else
+            ((ContinuousQueryWithTransformer)qry).setLocalListener(evts -> evts.forEach(e -> evtLatch.countDown()));
+
+        qry.setRemoteFilterFactory(() -> evt -> true);
+
+        qry.setPageSize(pageSize);
+
+        long startTime = U.currentTimeMillis();
+
+        try (QueryCursor<Cache.Entry<Object, Object>> cur = cache.query(qry)) {
+            startCollectStatistics();
+
+            try (QueryCursor<Cache.Entry<Object, Object>> cur1 = cache.query(qry)) {
+                for (int i = 0; i < entryCnt; i++)
+                    cache.put(i, i);
+
+                evtLatch.await();
+            }
+        }
+
+        HashSet<UUID> ids = new HashSet<>();
+        HashMap<UUID, EnumMap<OperationType, Integer>> evts = new HashMap<>();
+
+        stopCollectStatisticsAndRead(new TestHandler() {
+            @Override public void continuousQuery(UUID nodeId, UUID routineId, int cacheId, long qryStartTime,
+                String lsnrCls, String rmtFilterCls, String rmtTransCls) {
+                ids.add(routineId);
+
+                assertEquals(node.context().localNodeId(), nodeId);
+                assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), cacheId);
+                assertTrue(qryStartTime >= startTime);
+                assertEquals(qry.getRemoteFilterFactory().getClass().getName(), rmtFilterCls);
+
+                if (qry instanceof ContinuousQuery)
+                    assertEquals(((ContinuousQuery)qry).getLocalListener().getClass().getName(), lsnrCls);
+                else {
+                    ContinuousQueryWithTransformer qryTrans = (ContinuousQueryWithTransformer)qry;
+
+                    assertEquals(qryTrans.getLocalListener().getClass().getName(), lsnrCls);
+                    assertEquals(qryTrans.getRemoteTransformerFactory().getClass().getName(), rmtTransCls);
+                }
+            }
+
+            @Override public void continuousQueryOperation(UUID nodeId, OperationType type, UUID routineId,
+                long opStartTime, long duration, int entCnt) {
+                evts.computeIfAbsent(routineId, uuid -> new EnumMap<>(OperationType.class))
+                    .compute(type, (t, cnt) -> cnt == null ? 1 : ++cnt);
+
+                assertTrue(opStartTime >= startTime);
+                assertTrue(duration >= 0);
+
+                if (type == CQ_ENTRY_PROCESSED) {
+                    assertEquals(pageSize, entCnt);
+                    assertEquals(node.context().localNodeId(), nodeId);
+                }
+                else {
+                    assertEquals(1, entCnt);
+                    assertEquals(srv.context().localNodeId(), nodeId);
+                }
+            }
+        });
+
+        assertEquals(qryCnt, evts.keySet().size());
+
+        if (qry instanceof ContinuousQueryWithTransformer)
+            assertTrue(evts.values().stream().allMatch(map -> map.keySet().containsAll(CQ_OPS)));
+        else {
+            assertTrue(evts.values().stream().allMatch(
+                map -> map.keySet().containsAll(F.asList(CQ_ENTRY_FILTERED, CQ_ENTRY_PROCESSED))));
+        }
+
+        evts.values().forEach(map -> map.forEach((type, cnt) -> {
+            if (type == CQ_ENTRY_PROCESSED)
+                assertEquals(entryCnt / pageSize, cnt.intValue());
+            else
+                assertEquals(entryCnt, cnt.intValue());
+        }));
+
+        assertEquals(qryCnt, ids.size());
+
+        evts.keySet().removeAll(ids);
+
+        assertTrue(evts.isEmpty());
     }
 }

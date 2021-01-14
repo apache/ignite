@@ -48,6 +48,7 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.file.Files.walkFileTree;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CQ;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
@@ -56,6 +57,9 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheOperation;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheStartRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.continuousQueryEntryOperation;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.continuousQueryOperationRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.continuousQueryRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
@@ -397,6 +401,93 @@ public class FilePerformanceStatisticsReader {
 
             for (PerformanceStatisticsHandler handler : curHnd)
                 handler.cacheStart(nodeId, cacheId, cacheName);
+
+            return true;
+        }
+        else if (opType == CQ) {
+            if (buf.remaining() < 1)
+                return false;
+
+            boolean cached = buf.get() != 0;
+
+            String lsnr;
+            int lsnrHash = 0;
+            String rmtFilter;
+            int rmtFilterHash = 0;
+            String rmtTrans;
+            int rmtTransHash = 0;
+
+            if (cached) {
+                if (buf.remaining() < continuousQueryRecordSize(0, 0, 0, true) - 1)
+                    return false;
+
+                lsnrHash = buf.getInt();
+                lsnr = knownStrs.get(lsnrHash);
+
+                rmtFilterHash = buf.getInt();
+                rmtFilter = knownStrs.get(rmtFilterHash);
+
+                rmtTransHash = buf.getInt();
+                rmtTrans = knownStrs.get(rmtTransHash);
+            }
+            else {
+                if (buf.remaining() < continuousQueryRecordSize(0, 0, 0, false) - 1)
+                    return false;
+
+                int lsnrLen = buf.getInt();
+
+                if (buf.remaining() < continuousQueryRecordSize(lsnrLen, 0, 0, false) -
+                    1 - 4)
+                    return false;
+
+                lsnr = readString(buf, lsnrLen);
+
+                int rmtFilterLen = buf.getInt();
+
+                if (buf.remaining() < continuousQueryRecordSize(rmtFilterLen, rmtFilterLen, 0, false) -
+                    1 - 4 - lsnrLen - 4)
+                    return false;
+
+                rmtFilter = readString(buf, rmtFilterLen);
+
+                int rmtTransLen = buf.getInt();
+
+                if (buf.remaining() < continuousQueryRecordSize(rmtTransLen, rmtFilterLen, rmtTransLen, false) -
+                    1 - 4 - lsnrLen - 4 - rmtFilterLen - 4)
+                    return false;
+
+                rmtTrans = readString(buf, rmtTransLen);
+            }
+
+            UUID routineId = readUuid(buf);
+            int cacheId = buf.getInt();
+            long startTime = buf.getLong();
+
+            if (lsnr == null)
+                forwardRead(lsnrHash);
+
+            if (rmtFilter == null)
+                forwardRead(rmtFilterHash);
+
+            if (rmtTrans == null)
+                forwardRead(rmtTransHash);
+
+            for (PerformanceStatisticsHandler handler : curHnd)
+                handler.continuousQuery(nodeId, routineId, cacheId, startTime, lsnr, rmtFilter, rmtTrans);
+
+            return true;
+        }
+        else if (continuousQueryEntryOperation(opType)) {
+            if (buf.remaining() < continuousQueryOperationRecordSize())
+                return false;
+
+            UUID routineId = readUuid(buf);
+            long startTime = buf.getLong();
+            long duration = buf.getLong();
+            int entCnt = buf.getInt();
+
+            for (PerformanceStatisticsHandler handler : curHnd)
+                handler.continuousQueryOperation(nodeId, opType, routineId, startTime, duration, entCnt);
 
             return true;
         }

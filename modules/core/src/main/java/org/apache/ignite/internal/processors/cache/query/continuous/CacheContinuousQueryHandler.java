@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListener;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryLocalListener;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryRemoteFilter;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryStatisticsHelper.StatisticsHolder;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousQueryBatch;
@@ -85,6 +87,11 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.toCountersMap;
 import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry.createFilteredEntry;
+import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryStatisticsHelper.finishGatheringStatistics;
+import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryStatisticsHelper.startGatheringStatistics;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CQ_ENTRY_FILTERED;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CQ_ENTRY_PROCESSED;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CQ_ENTRY_TRANSFORMED;
 
 /**
  * Continuous query handler.
@@ -225,6 +232,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /** */
     private transient IgniteLogger log;
+
+    /** Query start time. */
+    private final long startTime = U.currentTimeMillis();
 
     /**
      * Required by {@link Externalizable}.
@@ -787,8 +797,23 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      *
      * @return Cache entry event filter.
      */
-    protected CacheEntryEventFilter getEventFilter0() {
+    public CacheEntryEventFilter getEventFilter0() {
         return rmtFilter;
+    }
+
+    /**
+     * @return Remote filter factory.
+     */
+    @Nullable public Factory<? extends CacheEntryEventFilter> getRemoteFilterFactory() {
+        return null;
+    }
+
+    /**
+     * @return Remote transformer factory.
+     */
+    @Nullable public Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>>
+    getRemoteTransformerFactory() {
+        return null;
     }
 
     /**
@@ -1009,8 +1034,24 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         boolean notify = !entry.isFiltered();
 
         try {
-            if (notify && getEventFilter() != null)
-                notify = getEventFilter().evaluate(evt);
+            if (notify && getEventFilter() != null) {
+                boolean performanceStatsEnabled = ctx.performanceStatistics().enabled();
+
+                if (performanceStatsEnabled)
+                    startGatheringStatistics();
+
+                try {
+                    notify = getEventFilter().evaluate(evt);
+                }
+                finally {
+                    if (performanceStatsEnabled) {
+                        StatisticsHolder stat = finishGatheringStatistics();
+
+                        ctx.performanceStatistics().continuousQueryOperation(CQ_ENTRY_FILTERED, routineId,
+                            stat.startTime(), stat.duration(), 1);
+                    }
+                }
+            }
         }
         catch (Exception e) {
             U.error(log, "CacheEntryEventFilter failed: " + e);
@@ -1128,14 +1169,28 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         assert locLsnr == null || locTransLsnr == null;
 
-        if (F.isEmpty(evts))
+        if (F.isEmpty(evts) || (locLsnr == null && locTransLsnr == null))
             return;
 
-        if (locLsnr != null)
-            locLsnr.onUpdated(evts);
+        boolean performanceStatsEnabled = ctx.performanceStatistics().enabled();
 
-        if (locTransLsnr != null)
-            locTransLsnr.onUpdated(transform(trans, evts));
+        if (performanceStatsEnabled)
+            startGatheringStatistics();
+
+        try {
+            if (locLsnr != null)
+                locLsnr.onUpdated(evts);
+
+            if (locTransLsnr != null)
+                locTransLsnr.onUpdated(transform(trans, evts));
+        }
+        finally {
+            if (performanceStatsEnabled) {
+                StatisticsHolder stat = finishGatheringStatistics();
+                ctx.performanceStatistics().continuousQueryOperation(CQ_ENTRY_PROCESSED, routineId, stat.startTime(),
+                    stat.duration(), evts.size());
+            }
+        }
     }
 
     /**
@@ -1294,6 +1349,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      */
     public boolean isMarshalled() {
         return rmtFilter == null || U.isGrid(rmtFilter.getClass()) || rmtFilterDep != null;
+    }
+
+    /** @return Query start time. */
+    public long startTime() {
+        return startTime;
     }
 
     /**
@@ -1587,6 +1647,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         CacheEntryEvent<? extends K, ? extends V> evt) {
         assert trans != null;
 
+        boolean performanceStatsEnabled = ctx.performanceStatistics().enabled() && trans != returnValTrans;
+
+        if (performanceStatsEnabled)
+            startGatheringStatistics();
+
         Object transVal = null;
 
         try {
@@ -1594,6 +1659,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         }
         catch (Exception e) {
             U.error(log, e);
+        }
+        finally {
+            if (performanceStatsEnabled) {
+                StatisticsHolder stat = finishGatheringStatistics();
+
+                ctx.performanceStatistics().continuousQueryOperation(CQ_ENTRY_TRANSFORMED, routineId, stat.startTime(),
+                    stat.duration(), 1);
+            }
         }
 
         return transVal;
