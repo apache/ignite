@@ -48,7 +48,7 @@ namespace IgniteExamples.Thick.DataStreamer
                 // Clean up caches on all nodes before run.
                 ignite.GetOrCreateCache<int, Account>(CacheName).Clear();
 
-                Stopwatch timer = new Stopwatch();
+                var timer = new Stopwatch();
 
                 timer.Start();
 
@@ -62,15 +62,13 @@ namespace IgniteExamples.Thick.DataStreamer
 
                         // Print out progress while loading cache.
                         if (i > 0 && i % 10000 == 0)
-                            Console.WriteLine("Loaded " + i + " accounts.");
+                            Console.WriteLine($"Loaded {i} accounts.");
                     }
                 }
 
                 timer.Stop();
 
-                long dur = timer.ElapsedMilliseconds;
-
-                Console.WriteLine(">>> Loaded " + EntryCount + " accounts in " + dur + "ms.");
+                Console.WriteLine($">>> Loaded {EntryCount} accounts in {timer.ElapsedMilliseconds}ms.");
             }
 
             Console.WriteLine();
