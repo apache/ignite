@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -187,7 +186,7 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
             restoreCacheGroups(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName()));
 
         GridTestUtils.assertThrowsAnyCause(
-            log, () -> fut1.get(MAX_AWAIT_MILLIS), IllegalStateException.class, "Cache group \"" + dfltCacheCfg.getName() + "\" should be destroyed manually");
+            log, () -> fut1.get(MAX_AWAIT_MILLIS), IllegalStateException.class, "Cache \"" + dfltCacheCfg.getName() + "\" should be destroyed manually");
 
         ignite.cache(dfltCacheCfg.getName()).destroy();
 
@@ -230,7 +229,7 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
 
         forceCheckpoint();
 
-        ignite.context().cache().context().snapshotMgr().
+        ignite.snapshot().
             restoreCacheGroups(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName())).get(MAX_AWAIT_MILLIS);
 
         IgniteCache<Object, Object> cache = grid(nodesCnt - 1).cache(dfltCacheCfg.getName()).withKeepBinary();
@@ -250,8 +249,7 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         String cacheName2 = "cache2";
 
         CacheConfiguration<?, ?> cacheCfg1 = txCacheConfig(new CacheConfiguration<>(cacheName1)).setGroupName(grpName);
-        CacheConfiguration<?, ?> cacheCfg2 = txCacheConfig(new CacheConfiguration<>(cacheName2))
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC).setGroupName(grpName);
+        CacheConfiguration<?, ?> cacheCfg2 = txCacheConfig(new CacheConfiguration<>(cacheName2)).setGroupName(grpName);
 
         cacheCfgs = new CacheConfiguration[] {cacheCfg1, cacheCfg2};
 
@@ -259,13 +257,11 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        IgniteCache<Object, Object> cache1 = ignite.cache(cacheName1);
-        IgniteCache<Object, Object> cache2 = ignite.cache(cacheName2);
+        IgniteCache<Integer, Object> cache1 = ignite.cache(cacheName1);
+        putKeys(cache1, 0, CACHE_KEYS_RANGE);
 
-        for (int i = 0; i < CACHE_KEYS_RANGE; i++) {
-            cache1.put(i, i);
-            cache2.put(i, i);
-        }
+        IgniteCache<Integer, Object> cache2 = ignite.cache(cacheName2);
+        putKeys(cache2, 0, CACHE_KEYS_RANGE);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(MAX_AWAIT_MILLIS);
 
@@ -288,13 +284,8 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
 
         snapshotMgr.restoreCacheGroups(SNAPSHOT_NAME, Collections.singleton(grpName)).get(MAX_AWAIT_MILLIS);
 
-        cache1 = ignite.cache(cacheName1);
-        cache2 = ignite.cache(cacheName2);
-
-        for (int i = 0; i < CACHE_KEYS_RANGE; i++) {
-            assertEquals(i, cache1.get(i));
-            assertEquals(i, cache2.get(i));
-        }
+        checkCacheKeys(ignite.cache(cacheName1), CACHE_KEYS_RANGE);
+        checkCacheKeys(ignite.cache(cacheName2), CACHE_KEYS_RANGE);
     }
 
     /** @throws Exception If fails. */
@@ -376,23 +367,66 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
     }
 
     @Test
-    @Ignore
-    public void testParallelCacheStartWithTheSameName() throws Exception {
-        int keysCnt = 10_000;
+    public void testParallelCacheStartWithTheSameNameOnPrepare() throws Exception {
+        checkCacheStartWithTheSameName(true);
+    }
 
-        IgniteEx ignite = startGridsWithSnapshot(2, keysCnt);
+    @Test
+    public void testParallelCacheStartWithTheSameNameOnPerform() throws Exception {
+        checkCacheStartWithTheSameName(false);
+    }
+
+    private void checkCacheStartWithTheSameName(boolean prepare) throws Exception {
+        String grpName = "shared";
+        String cacheName = "cache1";
+
+        dfltCacheCfg = txCacheConfig(new CacheConfiguration<Integer, Object>(cacheName)).setGroupName(grpName);
+
+        IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
 
-        IgniteFuture<Void> fut = waitForBlockOnRestore(spi, START_SNAPSHOT_RESTORE);
+        IgniteFuture<Void> fut = waitForBlockOnRestore(spi, prepare ? START_SNAPSHOT_RESTORE : END_SNAPSHOT_RESTORE, grpName);
 
-        IgniteCache cache = ignite.createCache(dfltCacheCfg);
+        String msgFormat = "Cache start failed. A cache named \"%s\" is currently being restored from a snapshot.";
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> ignite.createCache(grpName),
+            IgniteCheckedException.class,
+            String.format(msgFormat, grpName)
+        );
+
+        if (prepare)
+            ignite.createCache(cacheName);
+        else {
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> ignite.createCache(cacheName),
+                IgniteCheckedException.class,
+                String.format(msgFormat, cacheName)
+            );
+        }
 
         spi.stopBlock();
 
-        fut.get(MAX_AWAIT_MILLIS);
+        // We don't know shared cache names during prepare phase - so we just interrupting process.
+        if (prepare) {
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> fut.get(MAX_AWAIT_MILLIS),
+                IgniteException.class,
+                "Cache \"" + cacheName + "\" should be destroyed manually before perform restore operation."
+            );
 
-        checkCacheKeys(grid(0).cache(dfltCacheCfg.getName()), keysCnt);
+            ensureCacheDirEmpty(0, grpName);
+            ensureCacheDirEmpty(1, grpName);
+        }
+        else {
+            fut.get(MAX_AWAIT_MILLIS);
+
+            checkCacheKeys(grid(0).cache(cacheName), CACHE_KEYS_RANGE);
+        }
     }
 
     /** @throws Exception If fails. */
@@ -410,11 +444,11 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
     private void checkBaselineChange(boolean stopNode) throws Exception {
         int keysCnt = 10_000;
 
-        IgniteEx ignite = startGridsWithSnapshot(4, keysCnt);
+        startGridsWithSnapshot(4, keysCnt);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(3));
 
-        IgniteFuture<Void> fut = waitForBlockOnRestore(spi, END_SNAPSHOT_RESTORE);
+        IgniteFuture<Void> fut = waitForBlockOnRestore(spi, END_SNAPSHOT_RESTORE, dfltCacheCfg.getName());
 
         if (stopNode) {
             runAsync(() -> stopGrid(3, true));
@@ -484,12 +518,12 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         return ignite;
     }
 
-    private IgniteFuture<Void> waitForBlockOnRestore(TestRecordingCommunicationSpi spi, DistributedProcess.DistributedProcessType restorePhase) throws InterruptedException {
+    private IgniteFuture<Void> waitForBlockOnRestore(TestRecordingCommunicationSpi spi, DistributedProcess.DistributedProcessType restorePhase, String grpName) throws InterruptedException {
         spi.blockMessages((node, msg) ->
             msg instanceof SingleNodeMessage && ((SingleNodeMessage<?>)msg).type() == restorePhase.ordinal());
 
-        IgniteFuture<Void> fut = grid(0).context().cache().context().snapshotMgr().
-            restoreCacheGroups(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName()));
+        IgniteFuture<Void> fut =
+            grid(0).snapshot().restoreCacheGroups(SNAPSHOT_NAME, Collections.singleton(grpName));
 
         spi.waitForBlocked();
 
@@ -549,42 +583,6 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         checkCacheKeys(client.cache(dfltCacheCfg.getName()), CACHE_KEYS_RANGE);
     }
 
-//    @Test
-//    public void testPreventRecoveryOnRestoredCacheGroup() throws Exception {
-//        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
-//
-//        resetBaselineTopology();
-//
-//        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(MAX_AWAIT_MILLIS);
-//
-//        enableCheckpoints(G.allGrids(), false);
-//
-//        putKeys(ignite.cache(dfltCacheCfg.getName()), CACHE_KEYS_RANGE, CACHE_KEYS_RANGE);
-//
-//        stopAllGrids();
-//
-//        ignite = startGrid(0);
-//        startGrid(1);
-//
-//        ignite.cluster().state(ClusterState.ACTIVE);
-//
-//        ignite.cache(dfltCacheCfg.getName()).destroy();
-//
-//        awaitPartitionMapExchange();
-//
-//        ignite.context().cache().context().snapshotMgr().
-//            restoreCacheGroups(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName())).get(MAX_AWAIT_MILLIS);
-//
-//        stopAllGrids();
-//
-//        ignite = startGrid(0);
-//        startGrid(1);
-//
-//        ignite.cluster().state(ClusterState.ACTIVE);
-//
-//        checkCacheKeys(ignite.cache(dfltCacheCfg.getName()), CACHE_KEYS_RANGE);
-//    }
-
     private void checkCacheKeys(IgniteCache<Object, Object> testCache, int keysCnt) {
         assertEquals(keysCnt, testCache.size());
 
@@ -592,9 +590,9 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
             assertEquals(valueBuilder.apply(i), testCache.get(i));
     }
 
-    private void putKeys(IgniteCache<Object, Object> cache, int startIdx, int cnt) {
+    private void putKeys(IgniteCache<Integer, Object> cache, int startIdx, int cnt) {
         for (int i = startIdx; i < (startIdx + cnt); i++)
-            cache.put(i, i);
+            cache.put(i, valueBuilder.apply(i));
     }
 
     /** */

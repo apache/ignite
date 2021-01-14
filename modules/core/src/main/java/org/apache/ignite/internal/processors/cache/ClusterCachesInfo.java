@@ -55,6 +55,7 @@ import org.apache.ignite.internal.managers.systemview.walker.CacheGroupViewWalke
 import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -1005,6 +1006,16 @@ public class ClusterCachesInfo {
                 if (err != null)
                     U.warn(log, "Ignore cache start request during the master key change process.", err);
             }
+        }
+
+        if (err == null && !req.restoredCache()) {
+            IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
+
+            String conflictingName;
+
+            if (snapshotMgr.isCacheGroupRestoring(conflictingName = cacheName) ||
+                ((conflictingName = ccfg.getGroupName()) != null && snapshotMgr.isCacheGroupRestoring(conflictingName)))
+                err = new IgniteCheckedException("Cache start failed. A cache named \"" + conflictingName + "\" is currently being restored from a snapshot.");
         }
 
         if (err != null) {

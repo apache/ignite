@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,7 +36,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -62,6 +62,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT_RESTORE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT_RESTORE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.UNDO_SNAPSHOT_RESTORE;
@@ -153,6 +154,15 @@ public class SnapshotRestoreCacheGroupProcess {
         return !fut0.isDone() && fut0.request() != null;
     }
 
+    public boolean inProgress(String cacheName) {
+        RestoreSnapshotFuture fut0 = fut;
+
+        if (fut0.isDone() || fut0.request() == null)
+            return false;
+
+        return fut0.request().groups().contains(cacheName) || fut0.sharedCacheNames().contains(cacheName);
+    }
+
     /**
      * Node left callback.
      *
@@ -228,7 +238,7 @@ public class SnapshotRestoreCacheGroupProcess {
 
         Set<Integer> parts = new HashSet<>();
 
-        List<CacheConfiguration<?, ?>> cacheCfgs = new ArrayList<>(1);
+        List<StoredCacheData> cacheCfgs = new ArrayList<>(1);
 
         for (File file : cacheDir.listFiles()) {
             if (file.isDirectory())
@@ -245,7 +255,9 @@ public class SnapshotRestoreCacheGroupProcess {
             }
         }
 
-        return new CacheGroupSnapshotDetails(grpName, cacheCfgs, parts);
+        boolean sharedGrp = cacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
+
+        return new CacheGroupSnapshotDetails(grpName, sharedGrp, cacheCfgs, parts);
     }
 
     private void finishPrepare(UUID reqId, Map<UUID, SnapshotRestorePrepareResponse> res, Map<UUID, Exception> errs) {
@@ -265,18 +277,21 @@ public class SnapshotRestoreCacheGroupProcess {
 
         List<String> notFoundGroups = new ArrayList<>(fut.request().groups());
 
-        try {
-            Collection<CacheGroupSnapshotDetails> grpsDetails = mergeDetails(res);
+        Set<String> sharedCacheNames = new HashSet<>();
 
-            List<CacheConfiguration> cacheCfgs = new ArrayList<>();
+        try {
+            Collection<CacheGroupSnapshotDetails> grpsDetails = mergeNodeResults(res);
+
+            List<StoredCacheData> cacheCfgs = new ArrayList<>();
 
             for (CacheGroupSnapshotDetails grpDetails : grpsDetails) {
-                CacheConfiguration<?, ?> ccfg = F.first(grpDetails.configs());
+                StoredCacheData cdata = F.first(grpDetails.configs());
 
-                if (ccfg == null)
+                if (cdata == null)
                     continue;
 
-                int reqParts = ccfg.getAffinity().partitions();
+
+                int reqParts = cdata.config().getAffinity().partitions();
                 int availParts = grpDetails.parts().size();
 
                 if (reqParts != availParts) {
@@ -286,14 +301,23 @@ public class SnapshotRestoreCacheGroupProcess {
 
                 notFoundGroups.remove(grpDetails.groupName());
 
-                cacheCfgs.addAll(grpDetails.configs());
+                for (StoredCacheData cacheData : grpDetails.configs()) {
+                    String cacheName = cacheData.config().getName();
 
-                CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptor(CU.cacheId(grpDetails.groupName()));
+                    if (grpDetails.shared())
+                        sharedCacheNames.add(cacheName);
 
-                if (desc != null) {
-                    throw new IllegalStateException("Cache group \"" + desc.cacheOrGroupName() +
-                        "\" should be destroyed manually before perform restore operation.");
+                    cacheCfgs.add(cacheData);
+
+                    CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptor(CU.cacheId(cacheName));
+
+                    if (desc != null) {
+                        throw new IllegalStateException("Cache \"" + desc.cacheOrGroupName() +
+                            "\" should be destroyed manually before perform restore operation.");
+                    }
                 }
+
+
             }
 
             if (!notFoundGroups.isEmpty()) {
@@ -315,6 +339,7 @@ public class SnapshotRestoreCacheGroupProcess {
             }
 
             fut.startConfigs(cacheCfgs);
+            fut.sharedCacheNames(sharedCacheNames);
         }
         catch (Exception e) {
             fut.onDone(e);
@@ -326,7 +351,7 @@ public class SnapshotRestoreCacheGroupProcess {
             performRestoreProc.start(reqId, fut.request());
     }
 
-    private Collection<CacheGroupSnapshotDetails> mergeDetails(Map<UUID, SnapshotRestorePrepareResponse> responses) {
+    private Collection<CacheGroupSnapshotDetails> mergeNodeResults(Map<UUID, SnapshotRestorePrepareResponse> responses) {
         Map<String, T2<UUID, CacheGroupSnapshotDetails>> globalDetails = new HashMap<>();
 
         for (Map.Entry<UUID, SnapshotRestorePrepareResponse> entry : responses.entrySet()) {
@@ -370,6 +395,16 @@ public class SnapshotRestoreCacheGroupProcess {
             return errResponse("Unknown snapshot restore operation was rejected.");
 
         try {
+            // Double check that cache was not started after first phase.
+            for (String grpName : req.groups()) {
+                CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptor(CU.cacheId(grpName));
+
+                if (desc != null) {
+                    throw new IllegalStateException("Cache group \"" + desc.cacheOrGroupName() +
+                        "\" should be destroyed manually before perform restore operation.");
+                }
+            }
+
             RestoreOperationContext opCtx =
                 ctx.cache().context().snapshotMgr().restoreCacheGroupsLocal(req.snapshotName(), req.groups());
 
@@ -419,7 +454,7 @@ public class SnapshotRestoreCacheGroupProcess {
             return;
         }
 
-        Collection<CacheConfiguration> ccfgs0 = fut0.startConfigs();
+        Collection<StoredCacheData> ccfgs0 = fut0.startConfigs();
 
         if (fut0 == null || !fut0.id().equals(reqId) || !fut0.initiator() || F.isEmpty(ccfgs0)) {
             completeFuture(reqId, errs, fut);
@@ -427,8 +462,22 @@ public class SnapshotRestoreCacheGroupProcess {
             return;
         }
 
-        ctx.cache().dynamicStartCaches(ccfgs0, true, true, false).
-            listen(f -> completeFuture(reqId, errs, fut0));
+        // todo check whether the cache has been already started
+        try {
+            System.out.println(">xxx> start cache(s)");
+
+            ctx.cache().dynamicStartCachesByStoredConf(ccfgs0, true, true, false, null, true).
+                listen(f -> {
+                    System.out.println(">xxx> future completed");
+                    // todo rollback operation
+                    if (f.error() != null)
+                        f.error().printStackTrace();
+
+                    completeFuture(reqId, errs, fut0);
+                });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // todo separate rollback request
@@ -474,13 +523,13 @@ public class SnapshotRestoreCacheGroupProcess {
         return !F.isEmpty(err) ? fut.onDone(F.firstValue(err)) : fut.onDone();
     }
 
-    private CacheConfiguration<?, ?> unmarshal(IgniteConfiguration cfg, File cacheDataFile) throws IOException, IgniteCheckedException {
+    private StoredCacheData unmarshal(IgniteConfiguration cfg, File cacheDataFile) throws IOException, IgniteCheckedException {
         JdkMarshaller marshaller = MarshallerUtils.jdkMarshaller(cfg.getIgniteInstanceName());
 
         try (InputStream stream = new BufferedInputStream(new FileInputStream(cacheDataFile))) {
             StoredCacheData data = marshaller.unmarshal(stream, U.resolveClassLoader(cfg));
 
-            return data.config();
+            return data;
         }
     }
 
@@ -508,7 +557,9 @@ public class SnapshotRestoreCacheGroupProcess {
             return err;
         }
 
-        private volatile Collection<CacheConfiguration> cacheCfgsToStart;
+        private volatile Collection<StoredCacheData> cacheCfgsToStart;
+
+        private volatile Set<String> sharedCacheNames;
 
         public SnapshotRestoreRequest request() {
             return reqRef.get();
@@ -518,7 +569,9 @@ public class SnapshotRestoreCacheGroupProcess {
             return reqRef.compareAndSet(null, req);
         }
 
-        /** @param id Request ID. */
+        /**
+         * @param initiator A flag indicating that the node is the initiator of the request.
+         */
         RestoreSnapshotFuture(boolean initiator) {
             this.initiator = initiator;
         }
@@ -538,11 +591,21 @@ public class SnapshotRestoreCacheGroupProcess {
             this.err = err;
         }
 
-        public void startConfigs(Collection<CacheConfiguration> ccfgs) {
+        public void startConfigs(Collection<StoredCacheData> ccfgs) {
             cacheCfgsToStart = ccfgs;
         }
 
-        public Collection<CacheConfiguration> startConfigs() {
+        public void sharedCacheNames(Set<String> sharedCacheNames) {
+            this.sharedCacheNames = sharedCacheNames;
+        }
+
+        public Set<String> sharedCacheNames() {
+            Set<String> sharedCacheNames0 = sharedCacheNames;
+
+            return sharedCacheNames0 == null ? Collections.emptySet() : sharedCacheNames0;
+        }
+
+        public Collection<StoredCacheData> startConfigs() {
             return cacheCfgsToStart;
         }
 

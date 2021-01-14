@@ -760,8 +760,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    public boolean isSnapshotRestoring() {
-        return restoreCacheGrpProcess.inProgress();
+    public boolean isCacheGroupRestoring(String grpName) {
+        // todo check shared caches names
+        return restoreCacheGrpProcess.inProgress(grpName);
     }
 
     /**

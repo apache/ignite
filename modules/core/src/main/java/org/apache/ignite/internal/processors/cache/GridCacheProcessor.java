@@ -3520,7 +3520,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 false,
                 null,
                 ccfg != null && ccfg.isEncryptionEnabled() ? grpKeys.iterator().next() : null,
-                ccfg != null && ccfg.isEncryptionEnabled() ? masterKeyDigest : null);
+                ccfg != null && ccfg.isEncryptionEnabled() ? masterKeyDigest : null,
+                false);
 
             if (req != null) {
                 if (req.clientStartOnly())
@@ -3714,14 +3715,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<CacheConfiguration> ccfgList,
         boolean failIfExists,
         boolean checkThreadTx,
-        boolean disabledAfterStart
+        boolean disabledAfterStart,
+        boolean restoredCache
     ) {
         return dynamicStartCachesByStoredConf(
             ccfgList.stream().map(StoredCacheData::new).collect(toList()),
             failIfExists,
             checkThreadTx,
             disabledAfterStart,
-            null);
+            null,
+            restoredCache);
     }
 
     /**
@@ -3739,7 +3742,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean failIfExists,
         boolean checkThreadTx,
         boolean disabledAfterStart,
-        IgniteUuid restartId
+        IgniteUuid restartId,
+        boolean restoredCache
     ) {
         if (checkThreadTx) {
             sharedCtx.tm().checkEmptyTransactions(() -> {
@@ -3774,7 +3778,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     disabledAfterStart,
                     ccfg.queryEntities(),
                     ccfg.config().isEncryptionEnabled() ? grpKeysIter.next() : null,
-                    ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null);
+                    ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null,
+                    restoredCache);
 
                 if (req != null) {
                     if (req.clientStartOnly()) {
@@ -5044,7 +5049,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean disabledAfterStart,
         @Nullable Collection<QueryEntity> qryEntities,
         @Nullable byte[] encKey,
-        @Nullable byte[] masterKeyDigest
+        @Nullable byte[] masterKeyDigest,
+        boolean restoredCache
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
@@ -5061,6 +5067,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         req.encryptionKey(encKey);
 
         req.restartId(restartId);
+
+        req.restoredCache(restoredCache);
 
         if (ccfg != null) {
             cloneCheckSerializable(ccfg);

@@ -107,6 +107,8 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment cacheCfgEnrichment;
 
+    private boolean restoredCache;
+
     /**
      * @param reqId Unique request ID.
      * @param cacheName Cache stop name.
@@ -478,6 +480,14 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** @return Master key digest that encrypted the group encryption key. */
     @Nullable public byte[] masterKeyDigest() {
         return masterKeyDigest;
+    }
+
+    public void restoredCache(boolean restoredCache) {
+        this.restoredCache = restoredCache;
+    }
+
+    public boolean restoredCache() {
+        return restoredCache;
     }
 
     /**

@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 
 /**
  * Snapshot restore operation single node validation response.
@@ -60,14 +61,17 @@ public class SnapshotRestorePrepareResponse implements Serializable {
         private Set<Integer> parts;
 
         /** Group cache configurations. */
-        private List<CacheConfiguration<?, ?>> cfgs;
+        private List<StoredCacheData> cfgs;
+
+        private boolean shared;
 
         /**
          * @param cfgs Group cache configurations.
          * @param parts Local partition IDs.
          */
-        public CacheGroupSnapshotDetails(String grpName, List<CacheConfiguration<?, ?>> cfgs, Set<Integer> parts) {
+        public CacheGroupSnapshotDetails(String grpName, boolean shared, List<StoredCacheData> cfgs, Set<Integer> parts) {
             this.grpName = grpName;
+            this.shared = shared;
             this.cfgs = cfgs;
             this.parts = parts;
         }
@@ -75,7 +79,7 @@ public class SnapshotRestorePrepareResponse implements Serializable {
         /**
          * @return Group cache configurations.
          */
-        public List<CacheConfiguration<?, ?>> configs() {
+        public List<StoredCacheData> configs() {
             return cfgs;
         }
 
@@ -91,6 +95,10 @@ public class SnapshotRestorePrepareResponse implements Serializable {
          */
         public String groupName() {
             return grpName;
+        }
+
+        public boolean shared() {
+            return shared;
         }
     }
 }
