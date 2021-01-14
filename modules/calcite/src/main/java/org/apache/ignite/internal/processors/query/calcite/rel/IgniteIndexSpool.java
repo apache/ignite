@@ -30,9 +30,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexUtil;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
@@ -122,32 +120,8 @@ public class IgniteIndexSpool extends Spool implements IgniteRel {
         double totalBytes = rowCnt * bytesPerRow;
         double cpuCost = rowCnt * IgniteCost.ROW_PASS_THROUGH_COST;
 
-        if (condition != null) {
-            RexBuilder builder = getCluster().getRexBuilder();
-
-            double selectivity = 1;
-
-            if (idxCond.lowerBound() != null) {
-                double selectivity0 = mq.getSelectivity(this, RexUtil.composeConjunction(builder, idxCond.lowerBound()));
-
-                selectivity -= 1 - selectivity0;
-
-                cpuCost += Math.log(rowCnt) * IgniteCost.ROW_COMPARISON_COST;
-            }
-
-            if (idxCond.upperBound() != null) {
-                double selectivity0 = mq.getSelectivity(this, RexUtil.composeConjunction(builder, idxCond.upperBound()));
-
-                selectivity -= 1 - selectivity0;
-            }
-
-            double boundedRowsCnt = rowCnt * selectivity;
-
-            if (boundedRowsCnt <= 0)
-                boundedRowsCnt = 1;
-
-            cpuCost += boundedRowsCnt * IgniteCost.ROW_COMPARISON_COST;
-        }
+        if (idxCond.lowerCondition() != null)
+            cpuCost += Math.log(rowCnt) * IgniteCost.ROW_COMPARISON_COST;
 
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 

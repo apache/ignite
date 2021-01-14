@@ -96,9 +96,14 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
 
     /** */
     public Double getSelectivity(IgniteIndexSpool rel, RelMetadataQuery mq, RexNode predicate) {
-        if (predicate != null)
-            return RelMdUtil.guessSelectivity(predicate);
+        if (predicate != null) {
+            return mq.getSelectivity(rel.getInput(),
+                RelMdUtil.minusPreds(
+                    rel.getCluster().getRexBuilder(),
+                    predicate,
+                    rel.condition()));
+        }
 
-        return RelMdUtil.guessSelectivity(rel.condition());
+        return mq.getSelectivity(rel.getInput(), rel.condition());
     }
 }

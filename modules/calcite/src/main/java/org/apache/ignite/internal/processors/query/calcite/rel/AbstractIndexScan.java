@@ -131,16 +131,16 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
             cost = 0;
 
-            if (lowerBound() != null) {
-                double selectivity0 = mq.getSelectivity(this, RexUtil.composeConjunction(builder, lowerBound()));
+            if (lowerCondition() != null) {
+                double selectivity0 = mq.getSelectivity(this, RexUtil.composeDisjunction(builder, lowerCondition()));
 
                 selectivity -= 1 - selectivity0;
 
-                cost += Math.log(rows) * IgniteCost.ROW_COMPARISON_COST;
+                cost += Math.log(rows);
             }
 
-            if (upperBound() != null) {
-                double selectivity0 = mq.getSelectivity(this, RexUtil.composeConjunction(builder, upperBound()));
+            if (upperCondition() != null) {
+                double selectivity0 = mq.getSelectivity(this, RexUtil.composeDisjunction(builder, upperCondition()));
 
                 selectivity -= 1 - selectivity0;
             }
