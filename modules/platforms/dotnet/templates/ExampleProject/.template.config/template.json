@@ -1,0 +1,11 @@
+{
+  "author": "Pavel Tupitsyn",
+  "classifications": [ "Apache Ignite" ],
+  "name": "Apache Ignite Example",
+  "identity": "Apache.Ignite.Example",
+  "tags": {
+    "language": "C#"
+  },
+  "sourceName": "ExampleProject",
+  "preferNameDirectory":"true"
+}
