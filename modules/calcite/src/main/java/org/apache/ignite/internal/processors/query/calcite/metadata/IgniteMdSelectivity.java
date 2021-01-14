@@ -97,42 +97,6 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     public Double getSelectivity(IgniteIndexSpool rel, RelMetadataQuery mq, RexNode predicate) {
         assert predicate == null : "IndexSpool doesn't support predicate: " + predicate;
 
-        if (rel.indexCondition() == null)
-            return 1.0;
-
-        List<RexNode> lowerCond = rel.indexCondition().lowerCondition();
-        List<RexNode> upperCond = rel.indexCondition().upperCondition();
-
-        if (F.isEmpty(lowerCond) && F.isEmpty(upperCond))
-            return 1.0;
-
-        double idxSelectivity = 1.0;
-
-        int len = F.isEmpty(lowerCond) ?
-            upperCond.size() :
-            F.isEmpty(upperCond) ? lowerCond.size() : Math.max(lowerCond.size(), upperCond.size());
-
-        for (int i = 0; i < len; i++) {
-            RexCall lower = F.isEmpty(lowerCond) || lowerCond.size() <= i ? null : (RexCall)lowerCond.get(i);
-            RexCall upper = F.isEmpty(upperCond) || upperCond.size() <= i ? null : (RexCall)upperCond.get(i);
-
-            assert lower != null || upper != null;
-
-            if (lower != null && upper != null)
-                idxSelectivity *= lower.op.kind == SqlKind.EQUALS ? .1 : .2;
-            else
-                idxSelectivity *= .35;
-        }
-
-        List<RexNode> conjunctions = RelOptUtil.conjunctions(rel.condition());
-
-        if (!F.isEmpty(lowerCond))
-            conjunctions.removeAll(lowerCond);
-        if (!F.isEmpty(upperCond))
-            conjunctions.removeAll(upperCond);
-
-        RexNode remaining = RexUtil.composeConjunction(RexUtils.builder(rel), conjunctions, true);
-
-        return idxSelectivity * RelMdUtil.guessSelectivity(remaining);
+        return mq.getSelectivity(rel.getInput(), rel.condition());
     }
 }
