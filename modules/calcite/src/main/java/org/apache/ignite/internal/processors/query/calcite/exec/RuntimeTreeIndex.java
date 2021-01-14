@@ -182,13 +182,13 @@ public class RuntimeTreeIndex<Row> implements GridIndex<Row>, AutoCloseable {
             super(RuntimeTreeIndex.this.ectx, rowType, idx, filter, lowerBound, upperBound, null);
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override protected Row row2indexRow(Row bound) {
             return bound;
         }
 
-        /** */
-        @Override protected Row indexRow2Row(Row row) throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override protected Row indexRow2Row(Row row) {
             return row;
         }
 
