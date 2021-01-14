@@ -18,6 +18,7 @@
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Discovery.Tcp;
 using Apache.Ignite.Core.Discovery.Tcp.Multicast;
+using Apache.Ignite.Core.Log;
 
 namespace IgniteExamples.Shared
 {
@@ -37,6 +38,17 @@ namespace IgniteExamples.Shared
                             "127.0.0.1:47500..47502"
                         }
                     }
+                },
+                // TODO: Do we need this?
+                // JvmOptions = new[]
+                // {
+                //     "-Xms1g",
+                //     "-Xmx4g",
+                //     "-DIGNITE_QUIET=false"
+                // },
+                Logger = new ConsoleLogger
+                {
+                    MinLevel = LogLevel.Error
                 }
             };
         }
