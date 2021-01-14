@@ -10,16 +10,16 @@ using IgniteExamples.Shared.Models;
 
 namespace IgniteExamples.Thin.PutGet
 {
-    /// <summary>
-    /// Put/Get example.
-    /// <para />
-    /// This example requires an Ignite server node. You can start the node in any of the following ways:
-    /// * docker run -p 10800:10800 apacheignite/ignite
-    /// * dotnet run -p ServerNode.csproj
-    /// * ignite.sh/ignite.bat from the distribution
-    /// </summary>
     public class Program
     {
+        /// <summary>
+        /// Put/Get example.
+        /// <para />
+        /// This example requires an Ignite server node. You can start the node in any of the following ways:
+        /// * docker run -p 10800:10800 apacheignite/ignite
+        /// * dotnet run -p ServerNode.csproj
+        /// * ignite.sh/ignite.bat from the distribution
+        /// </summary>
         private const string CacheName = "dotnet_cache_put_get";
 
         public static void Main()

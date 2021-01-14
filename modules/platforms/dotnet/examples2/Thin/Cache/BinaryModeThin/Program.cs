@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-using System;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Binary;
-using Apache.Ignite.Core.Cache.Configuration;
-using Apache.Ignite.Core.Cache.Query;
-using Apache.Ignite.Core.Client;
-using Apache.Ignite.Core.Client.Cache;
-using IgniteExamples.Shared;
-
 namespace IgniteExamples.Thin.BinaryModeThin
 {
+    using System;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Cache;
+    using IgniteExamples.Shared;
+
     /// <summary>
     /// This example works with cache entirely in binary mode: no classes are needed.
     /// <para />

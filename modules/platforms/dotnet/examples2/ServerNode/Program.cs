@@ -1,9 +1,9 @@
-﻿using System;
-using Apache.Ignite.Core;
-using IgniteExamples.Shared;
-
-namespace IgniteExamples.ServerNode
+﻿namespace IgniteExamples.ServerNode
 {
+    using System;
+    using Apache.Ignite.Core;
+    using IgniteExamples.Shared;
+
     public class Program
     {
         public static void Main()

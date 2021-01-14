@@ -1,14 +1,14 @@
-﻿using System;
-using System.Linq;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Cache;
-using Apache.Ignite.Core.Cache.Query;
-using IgniteExamples.Shared;
-using IgniteExamples.Shared.Models;
-using IgniteExamples.Shared.ScanQuery;
-
-namespace IgniteExamples.Thick.ScanQuery
+﻿namespace IgniteExamples.Thick.ScanQuery
 {
+    using System;
+    using System.Linq;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Query;
+    using IgniteExamples.Shared;
+    using IgniteExamples.Shared.Models;
+    using IgniteExamples.Shared.ScanQuery;
+
     /// <summary>
     /// ScanQuery example.
     /// </summary>
