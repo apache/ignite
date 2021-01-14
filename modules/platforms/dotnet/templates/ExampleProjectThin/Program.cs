@@ -29,6 +29,11 @@ namespace IgniteExamples.Thin.ExampleProjectThin
 {
     /// <summary>
     /// TODO
+    /// <para />
+    /// This example requires an Ignite server node. You can start the node in any of the following ways:
+    /// * docker run -p 10800:10800 apacheignite/ignite
+    /// * dotnet run -p ServerNode.csproj
+    /// * ignite.sh/ignite.bat from the distribution
     /// </summary>
     public class Program
     {
