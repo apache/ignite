@@ -26,6 +26,9 @@ namespace IgniteExamples.Shared
     {
         public static IgniteConfiguration GetServerNodeConfiguration()
         {
+            // None of the options below are mandatory for the examples to work.
+            // * Discovery and localhost settings improve startup time
+            // * Logging options reduce console output
             return new IgniteConfiguration
             {
                 Localhost = "127.0.0.1",
@@ -39,13 +42,11 @@ namespace IgniteExamples.Shared
                         }
                     }
                 },
-                // TODO: Do we need this?
-                // JvmOptions = new[]
-                // {
-                //     "-Xms1g",
-                //     "-Xmx4g",
-                //     "-DIGNITE_QUIET=false"
-                // },
+                JvmOptions = new[]
+                {
+                    "-DIGNITE_QUIET=true",
+                    "-DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true"
+                },
                 Logger = new ConsoleLogger
                 {
                     MinLevel = LogLevel.Error
