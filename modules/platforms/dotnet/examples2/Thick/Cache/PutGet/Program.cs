@@ -16,9 +16,12 @@
  */
 
 using System;
+using System.Collections.Generic;
 using Apache.Ignite.Core;
+using Apache.Ignite.Core.Binary;
 using Apache.Ignite.Core.Cache;
 using IgniteExamples.Shared;
+using IgniteExamples.Shared.Models;
 
 namespace IgniteExamples.Thick.PutGet
 {
@@ -33,12 +36,160 @@ namespace IgniteExamples.Thick.PutGet
         {
             using (IIgnite ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
             {
-                ICache<int, string> cache = ignite.GetOrCreateCache<int, string>("PutGetString");
+                Console.WriteLine();
+                Console.WriteLine(">>> Cache put-get example started.");
 
-                cache.Put(1, "Hello World!");
+                // Clean up caches on all nodes before run.
+                ignite.GetOrCreateCache<object, object>(CacheName).Clear();
 
-                Console.WriteLine(">>> " + cache.Get(1));
+                PutGet(ignite);
+                PutGetBinary(ignite);
+                PutAllGetAll(ignite);
+                PutAllGetAllBinary(ignite);
+
+                Console.WriteLine();
             }
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Example finished, press any key to exit ...");
+            Console.ReadKey();
+        }
+
+        /// <summary>
+        /// Execute individual Put and Get.
+        /// </summary>
+        /// <param name="ignite">Ignite instance.</param>
+        private static void PutGet(IIgnite ignite)
+        {
+            var cache = ignite.GetCache<int, Organization>(CacheName);
+
+            // Create new Organization to store in cache.
+            Organization org = new Organization(
+                "Microsoft",
+                new Address("1096 Eddy Street, San Francisco, CA", 94109),
+                OrganizationType.Private,
+                DateTime.Now
+            );
+
+            // Put created data entry to cache.
+            cache.Put(1, org);
+
+            // Get recently created employee as a strongly-typed fully de-serialized instance.
+            Organization orgFromCache = cache.Get(1);
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Retrieved organization instance from cache: " + orgFromCache);
+        }
+
+        /// <summary>
+        /// Execute individual Put and Get, getting value in binary format, without de-serializing it.
+        /// </summary>
+        /// <param name="ignite">Ignite instance.</param>
+        private static void PutGetBinary(IIgnite ignite)
+        {
+            var cache = ignite.GetCache<int, Organization>(CacheName);
+
+            // Create new Organization to store in cache.
+            Organization org = new Organization(
+                "Microsoft",
+                new Address("1096 Eddy Street, San Francisco, CA", 94109),
+                OrganizationType.Private,
+                DateTime.Now
+            );
+
+            // Put created data entry to cache.
+            cache.Put(1, org);
+
+            // Create projection that will get values as binary objects.
+            var binaryCache = cache.WithKeepBinary<int, IBinaryObject>();
+
+            // Get recently created organization as a binary object.
+            var binaryOrg = binaryCache.Get(1);
+
+            // Get organization's name from binary object (note that  object doesn't need to be fully deserialized).
+            string name = binaryOrg.GetField<string>("name");
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Retrieved organization name from binary object: " + name);
+        }
+
+        /// <summary>
+        /// Execute bulk Put and Get operations.
+        /// </summary>
+        /// <param name="ignite">Ignite instance.</param>
+        private static void PutAllGetAll(IIgnite ignite)
+        {
+            var cache = ignite.GetCache<int, Organization>(CacheName);
+
+            // Create new Organizations to store in cache.
+            Organization org1 = new Organization(
+                "Microsoft",
+                new Address("1096 Eddy Street, San Francisco, CA", 94109),
+                OrganizationType.Private,
+                DateTime.Now
+            );
+
+            Organization org2 = new Organization(
+                "Red Cross",
+                new Address("184 Fidler Drive, San Antonio, TX", 78205),
+                OrganizationType.NonProfit,
+                DateTime.Now
+            );
+
+            var map = new Dictionary<int, Organization> { { 1, org1 }, { 2, org2 } };
+
+            // Put created data entries to cache.
+            cache.PutAll(map);
+
+            // Get recently created organizations as a strongly-typed fully de-serialized instances.
+            ICollection<ICacheEntry<int, Organization>> mapFromCache = cache.GetAll(new List<int> { 1, 2 });
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Retrieved organization instances from cache:");
+
+            foreach (ICacheEntry<int, Organization> org in mapFromCache)
+                Console.WriteLine(">>>     " + org.Value);
+        }
+
+        /// <summary>
+        /// Execute bulk Put and Get operations getting values in binary format, without de-serializing it.
+        /// </summary>
+        /// <param name="ignite">Ignite instance.</param>
+        private static void PutAllGetAllBinary(IIgnite ignite)
+        {
+            var cache = ignite.GetCache<int, Organization>(CacheName);
+
+            // Create new Organizations to store in cache.
+            Organization org1 = new Organization(
+                "Microsoft",
+                new Address("1096 Eddy Street, San Francisco, CA", 94109),
+                OrganizationType.Private,
+                DateTime.Now
+            );
+
+            Organization org2 = new Organization(
+                "Red Cross",
+                new Address("184 Fidler Drive, San Antonio, TX", 78205),
+                OrganizationType.NonProfit,
+                DateTime.Now
+            );
+
+            var map = new Dictionary<int, Organization> { { 1, org1 }, { 2, org2 } };
+
+            // Put created data entries to cache.
+            cache.PutAll(map);
+
+            // Create projection that will get values as binary objects.
+            var binaryCache = cache.WithKeepBinary<int, IBinaryObject>();
+
+            // Get recently created organizations as binary objects.
+            ICollection<ICacheEntry<int, IBinaryObject>> binaryMap = binaryCache.GetAll(new List<int> { 1, 2 });
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Retrieved organization names from binary objects:");
+
+            foreach (var pair in binaryMap)
+                Console.WriteLine(">>>     " + pair.Value.GetField<string>("name"));
         }
     }
 }
