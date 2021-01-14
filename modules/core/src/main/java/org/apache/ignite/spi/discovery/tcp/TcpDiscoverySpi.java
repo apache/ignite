@@ -1587,6 +1587,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             assert addr != null;
 
+            simulateNetTimeout0(timeoutHelper.nextTimeoutChunk(sockTimeout));
+
             sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
 
             writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
@@ -1650,6 +1652,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         try {
             OutputStream out = sock.getOutputStream();
+
+            simulateNetTimeout0(timeout);
 
             out.write(data);
 
@@ -1761,6 +1765,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         IgniteCheckedException err = null;
 
         try {
+            simulateNetTimeout0(timeout);
+
             U.marshal(marshaller(), msg, out);
         }
         catch (IgniteCheckedException e) {
@@ -1804,6 +1810,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         IOException err = null;
 
         try {
+            simulateNetTimeout0(timeout);
+
             out.write(res);
 
             out.flush();
@@ -1844,6 +1852,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         try {
             sock.setSoTimeout((int)timeout);
+
+            simulateNetTimeout0(timeout);
 
             T res = U.unmarshal(marshaller(), in == null ? sock.getInputStream() : in,
                 U.resolveClassLoader(ignite.configuration()));
@@ -1901,6 +1911,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         try {
             sock.setSoTimeout((int)timeout);
 
+            simulateNetTimeout0(timeout);
+
             int res = sock.getInputStream().read();
 
             if (res == -1)
@@ -1925,6 +1937,23 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             catch (SocketException ignored) {
                 // No-op.
             }
+        }
+    }
+
+    /** Simulates network timeout. For testing purposes only. */
+    private void simulateNetTimeout0(long timeout) throws SocketTimeoutException {
+        if (impl.netTimeoutSimulated()) {
+            if (log.isDebugEnabled())
+                log.debug("Simulating network timeout: " + timeout);
+
+            try {
+                Thread.sleep(timeout);
+            }
+            catch (InterruptedException ignored) {
+                // No-op.
+            }
+
+            throw new SocketTimeoutException("Simulated timeout.");
         }
     }
 

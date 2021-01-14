@@ -359,6 +359,22 @@ abstract class TcpDiscoveryImpl {
     abstract void simulateNodeFailure();
 
     /**
+     * <strong>FOR TEST ONLY!!!</strong>
+     * <p>
+     * Simulates unknown delays on network.
+     * <p>
+     * This method is intended for test purposes only.
+     */
+    abstract void simulateNetworkTimeout();
+
+    /**
+     * <strong>FOR TEST ONLY!!!</strong>
+     * This method is intended for test purposes only.
+     * @return {@code True} if network timeouts is simulated. {@code False} otherwise.
+     */
+    abstract boolean netTimeoutSimulated();
+
+    /**
      * FOR TEST PURPOSE ONLY!
      */
     public abstract void brakeConnection();

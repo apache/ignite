@@ -136,6 +136,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private SegmentationPolicy segPlc;
 
+    /** */
+    private long connRecoveryTimeout = -1;
+
     /**
      * @throws Exception If fails.
      */
@@ -238,6 +241,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             strLog.logLength(300_000);
         }
+
+        if (connRecoveryTimeout >= 0)
+            spi.setConnectionRecoveryTimeout(connRecoveryTimeout);
 
         return cfg;
     }
@@ -1694,18 +1700,16 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailedNodes1() throws Exception {
+        connRecoveryTimeout = 0;
+
+        final int FAIL_ORDER = 3;
+
         try {
-            final int FAIL_ORDER = 3;
-
-            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
-
             final Ignite ignite0 = startGrid(0);
-
-            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             startGrid(1);
 
-            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER, ignite0));
 
             Ignite ignite2 = startGrid(2);
 
@@ -1721,15 +1725,27 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param failOrder Fail order.
+     * @param failOrder     Fail order.
+     * @param dropNetOn If set, will use network problem emulation instead of dropping single message.
+     * @return Failed node spi.
+     */
+    @NotNull private TestFailedNodesSpi createFailedNodeSpi(int failOrder, Ignite dropNetOn) {
+        TestFailedNodesSpi spi = new TestFailedNodesSpi(failOrder);
+
+        if (dropNetOn != null)
+            spi.dropNetOn = dropNetOn;
+
+        spi.setConnectionRecoveryTimeout(connRecoveryTimeout < 0 ? 0 : connRecoveryTimeout);
+
+        return spi;
+    }
+
+    /**
+     * @param failOrder     Fail order.
      * @return Failed node spi.
      */
     @NotNull private TestFailedNodesSpi createFailedNodeSpi(int failOrder) {
-        TestFailedNodesSpi spi = new TestFailedNodesSpi(failOrder);
-
-        spi.setConnectionRecoveryTimeout(0);
-
-        return spi;
+        return createFailedNodeSpi(failOrder, null);
     }
 
     /**
@@ -1742,11 +1758,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             final int FAIL_ORDER = 3;
 
-            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
+            connRecoveryTimeout = 0;
 
             Ignite ignite0 = startGrid(0);
-
-            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             startGrid(1);
 
@@ -1756,7 +1770,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 @Override public Void call() throws Exception {
                     int idx = nodeIdx.incrementAndGet();
 
-                    nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
+                    nodeSpi.set(createFailedNodeSpi(FAIL_ORDER, ignite0));
 
                     startGrid(idx);
 
@@ -1784,9 +1798,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailedNodes3() throws Exception {
-        try {
-            nodeSpi.set(createFailedNodeSpi(-1));
+        connRecoveryTimeout = 0;
 
+        try {
             Ignite ignite0 = startGrid(0);
 
             nodeSpi.set(createFailedNodeSpi(2));
@@ -1795,7 +1809,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             assertEquals(1, ignite1.cluster().nodes().size());
 
-            waitNodeStop(ignite0.name());
+            //waitNodeStop(ignite0.name());
 
             ignite1.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)).put(1, 1);
 
@@ -1818,18 +1832,20 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailedNodes4() throws Exception {
+        connRecoveryTimeout = 0;
+
         try {
             final int FAIL_ORDER = 3;
 
-            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
+            //nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             final Ignite ignite0 = startGrid(0);
 
-            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
+            //nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             Ignite ignite1 = startGrid(1);
 
-            TestFailedNodesSpi spi = createFailedNodeSpi(FAIL_ORDER);
+            TestFailedNodesSpi spi = createFailedNodeSpi(FAIL_ORDER, ignite0);
 
             spi.stopBeforeSndFail = true;
 
@@ -2297,7 +2313,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     private void tryCreateCache(int expNodes) {
         List<Ignite> allNodes = G.allGrids();
 
-        assertEquals(expNodes, allNodes.size());
+        assertEquals(expNodes, allNodes.size()-1);
 
         int cntr = 0;
 
@@ -2596,6 +2612,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         /** */
         private volatile boolean failSingleMsg;
 
+        /** */
+        private Ignite dropNetOn;
+
         /**
          * @param failOrder Spi fails connection if local node order equals to this order.
          */
@@ -2624,11 +2643,21 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             if (locNode.internalOrder() == failOrder &&
                 (msg instanceof TcpDiscoveryNodeAddedMessage) &&
                 failMsg.compareAndSet(false, true)) {
-                log.info("IO error on message send [locNode=" + locNode + ", msg=" + msg + ']');
+                if(dropNetOn != null) {
+                    DiscoverySpi disco = dropNetOn.configuration().getDiscoverySpi();
 
-                sock.close();
+                    ServerImpl serverImpl = U.field(disco, "impl");
 
-                throw new SocketTimeoutException();
+                    serverImpl.simulateNetworkTimeout();
+
+                    return;
+                } else {
+                    log.info("IO error on message send [locNode=" + locNode + ", msg=" + msg + ']');
+
+                    sock.close();
+
+                    throw new SocketTimeoutException();
+                }
             }
 
             if (stopBeforeSndFail &&

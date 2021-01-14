@@ -212,6 +212,9 @@ class ClientImpl extends TcpDiscoveryImpl {
     @GridToStringExclude
     private int joinCnt;
 
+    /** */
+    private volatile boolean netTimeoutSimulated;
+
     /**
      * @param adapter Adapter.
      */
@@ -970,6 +973,18 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         if (msgWorker != null)
             U.join(msgWorker.runner(), log);
+    }
+
+    /** {@inheritDoc} */
+    @Override void simulateNetworkTimeout() {
+        U.warn(log, "Simulating network timeouts: " + getLocalNodeId());
+
+        netTimeoutSimulated = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override boolean netTimeoutSimulated() {
+        return netTimeoutSimulated;
     }
 
     /** {@inheritDoc} */

@@ -292,6 +292,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Discovery state. */
     private TcpDiscoverySpiState spiState = DISCONNECTED;
 
+    /** For testing puroses only. */
+    private volatile boolean netTimeoutSimulated;
+
     /** Last time received message from ring. */
     private volatile long lastRingMsgReceivedTime;
 
@@ -1919,6 +1922,18 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
+    @Override void simulateNetworkTimeout() {
+        U.warn(log, "Simulating network timeout: " + getLocalNodeId());
+
+        netTimeoutSimulated = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override boolean netTimeoutSimulated() {
+        return netTimeoutSimulated;
+    }
+
+    /** {@inheritDoc} */
     @Override void simulateNodeFailure() {
         U.warn(log, "Simulating node failure: " + getLocalNodeId());
 
@@ -2940,8 +2955,17 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Output stream. */
         private OutputStream out;
 
+        /** Last time status message has been sent. */
+        private long lastTimeStatusMsgSentNanos;
+
+        /** Incoming metrics check frequency. */
+        private long metricsCheckFreq = 3 * spi.metricsUpdateFreq + 50;
+
         /** Last time metrics update message has been sent. */
         private long lastTimeMetricsUpdateMsgSentNanos = System.nanoTime() - U.millisToNanos(spi.metricsUpdateFreq);
+
+        /** */
+        private long lastRingMsgTimeNanos;
 
         /** */
         private List<DiscoveryDataPacket> joiningNodesDiscoDataList;
@@ -3190,6 +3214,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (debugMode)
                 debugLog(msg, "Processing message [cls=" + msg.getClass().getSimpleName() + ", id=" + msg.id() + ']');
 
+            boolean ensured = spi.ensured(msg);
+
+            if (!locNode.id().equals(msg.senderNodeId()) && ensured)
+                lastRingMsgTimeNanos = System.nanoTime();
+
             if (locNode.internalOrder() == 0) {
                 boolean proc = false;
 
@@ -3310,6 +3339,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             checkConnection();
 
             sendMetricsUpdateMessage();
+
+            //checkMetricsReceiving();
 
             checkPendingCustomMessages();
 
@@ -3524,9 +3555,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     // Remote node checked connection to it's previous and got success.
                                     boolean previousNode = sndState.markLastFailedNodeAlive();
 
-                                    if (previousNode)
-                                        failedNodes.remove(failedNodes.size() - 1);
-                                    else {
+                                    if (previousNode) {
+                                        if(spi.getEffectiveConnectionRecoveryTimeout() > 0)
+                                            failedNodes.remove(failedNodes.size() - 1);
+                                    } else {
                                         newNextNode = false;
 
                                         next = ring.nextNode(failedNodes);
@@ -3849,7 +3881,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!sent) {
                     if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
                         sndState = new CrossRingMessageSendState();
-                    else if (sndState != null && sndState.checkTimeout()) {
+                    else if (sndState != null && sndState.checkTimeout() ||
+                        spi.getEffectiveConnectionRecoveryTimeout() == 0 && !failedNodes.isEmpty()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
                         return; // Nothing to do here.
@@ -5856,6 +5889,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processStatusCheckMessage(final TcpDiscoveryStatusCheckMessage msg) {
             assert msg != null;
 
+            log.error("TEST | Process status message: " + msg);
+
             UUID locNodeId = getLocalNodeId();
 
             if (msg.failedNodeId() != null) {
@@ -6475,6 +6510,26 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
+         * Checks the last time a metrics update message received. If the time is bigger than {@code metricsCheckFreq}
+         * than {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
+         */
+        private void checkMetricsReceiving() {
+            if (lastTimeStatusMsgSentNanos < locNode.lastUpdateTimeNanos())
+                lastTimeStatusMsgSentNanos = locNode.lastUpdateTimeNanos();
+
+            long updateTimeNanos = Math.max(lastTimeStatusMsgSentNanos, lastRingMsgTimeNanos);
+
+            if (U.millisSinceNanos(updateTimeNanos) < metricsCheckFreq)
+                return;
+
+            log.error("TEST | Updating metrics on");
+
+            msgWorker.addMessage(createTcpDiscoveryStatusCheckMessage(locNode, locNode.id(), null));
+
+            lastTimeStatusMsgSentNanos = System.nanoTime();
+        }
+
+        /**
          * Check connection to next node in the ring.
          */
         private void checkConnection() {
@@ -6615,6 +6670,24 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     try {
                         sock = srvrSock.accept();
+
+                        if (netTimeoutSimulated()) {
+                            if (log.isDebugEnabled())
+                                log.debug("Simulating timeout for new connection: " + sock.getInetAddress());
+
+                            try {
+                                Thread.sleep(spi.getNetworkTimeout());
+                            }
+                            catch (InterruptedException ignored) {
+                                // No-op.
+                            }
+
+                            U.closeQuiet(sock);
+
+                            onIdle();
+
+                            return;
+                        }
                     }
                     finally {
                         blockingSectionEnd();
@@ -7031,6 +7104,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         TcpDiscoveryAbstractMessage msg = U.unmarshal(spi.marshaller(), in,
                             U.resolveClassLoader(spi.ignite().configuration()));
+
+                        if (netTimeoutSimulated()) {
+                            if (log.isDebugEnabled())
+                                log.debug("Simulating network failure. Won't process message: " + msg);
+
+                            continue;
+                        }
 
                         msg.senderNodeId(nodeId);
 
