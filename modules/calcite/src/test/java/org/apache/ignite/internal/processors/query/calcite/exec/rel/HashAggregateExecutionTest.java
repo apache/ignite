@@ -42,7 +42,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.A
  */
 @SuppressWarnings("TypeMayBeWeakened")
 @WithSystemProperty(key = "calcite.debug", value = "true")
-public class HashAggregateTest extends BaseAggregateTest {
+public class HashAggregateExecutionTest extends BaseAggregateTest {
     /** {@inheritDoc} */
     @Override protected SingleNode<Object[]> createSingleAggregateNodesChain(
         ExecutionContext<Object[]> ctx,

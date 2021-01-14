@@ -51,7 +51,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.A
  */
 @SuppressWarnings("TypeMayBeWeakened")
 @WithSystemProperty(key = "calcite.debug", value = "true")
-public class HashAggregateSingleGroupTest extends AbstractExecutionTest {
+public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */

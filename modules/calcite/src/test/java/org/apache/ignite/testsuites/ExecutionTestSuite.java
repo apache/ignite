@@ -19,12 +19,12 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ExecutionTest;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateSingleGroupTest;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateExecutionTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateSingleGroupExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.IndexSpoolExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.MergeJoinExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJoinExecutionTest;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortAggregateTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortAggregateExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolExecutionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -40,9 +40,9 @@ import org.junit.runners.Suite;
     NestedLoopJoinExecutionTest.class,
     TableSpoolExecutionTest.class,
     IndexSpoolExecutionTest.class,
-    HashAggregateTest.class,
-    HashAggregateSingleGroupTest.class,
-    SortAggregateTest.class,
+    HashAggregateExecutionTest.class,
+    HashAggregateSingleGroupExecutionTest.class,
+    SortAggregateExecutionTest.class,
 })
 public class ExecutionTestSuite {
 }

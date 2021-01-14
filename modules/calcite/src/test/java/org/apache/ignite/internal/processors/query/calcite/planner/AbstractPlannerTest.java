@@ -329,6 +329,8 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected void checkSplitAndSerialization(IgniteRel rel, IgniteSchema publicSchema) {
+        assertNotNull(rel);
+
         rel = Cloner.clone(rel);
 
         SchemaPlus schema = createRootSchema(false)

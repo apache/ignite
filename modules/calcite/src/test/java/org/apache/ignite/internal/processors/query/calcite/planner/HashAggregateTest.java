@@ -56,7 +56,7 @@ public class HashAggregateTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),

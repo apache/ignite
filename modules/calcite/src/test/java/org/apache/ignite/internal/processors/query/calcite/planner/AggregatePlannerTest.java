@@ -60,7 +60,7 @@ import org.junit.runners.Parameterized;
  */
 @SuppressWarnings({"TypeMayBeWeakened"})
 @RunWith(Parameterized.class)
-public class SortAggregateTest extends AbstractPlannerTest {
+public class AggregatePlannerTest extends AbstractPlannerTest {
     /** Algorithm. */
     @Parameterized.Parameter
     public AggregateAlgorithm algo;
@@ -104,8 +104,6 @@ public class SortAggregateTest extends AbstractPlannerTest {
             publicSchema,
             algo.ruleToDisable
         );
-
-        assertNotNull(phys);
 
         checkSplitAndSerialization(phys, publicSchema);
 
@@ -156,8 +154,6 @@ public class SortAggregateTest extends AbstractPlannerTest {
             algo.ruleToDisable
         );
 
-        assertNotNull(phys);
-
         checkSplitAndSerialization(phys, publicSchema);
 
         IgniteAggregateBase agg = findFirstNode(phys, byClass(algo.single));
@@ -189,7 +185,7 @@ public class SortAggregateTest extends AbstractPlannerTest {
                 .add("GRP1", f.createJavaType(Integer.class))
                 .build()) {
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -215,8 +211,6 @@ public class SortAggregateTest extends AbstractPlannerTest {
             publicSchema,
             algo.ruleToDisable
         );
-
-        assertNotNull(phys);
 
         checkSplitAndSerialization(phys, publicSchema);
 
@@ -256,7 +250,7 @@ public class SortAggregateTest extends AbstractPlannerTest {
                 .add("GRP1", f.createJavaType(Integer.class))
                 .build()) {
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -283,8 +277,6 @@ public class SortAggregateTest extends AbstractPlannerTest {
             publicSchema,
             algo.ruleToDisable
         );
-
-        assertNotNull(phys);
 
         checkSplitAndSerialization(phys, publicSchema);
 
@@ -323,7 +315,7 @@ public class SortAggregateTest extends AbstractPlannerTest {
                 .add("GRP1", f.createJavaType(Integer.class))
                 .build()) {
 
-            @Override public CollocationGroup collocationGroup(PlanningContext ctx) {
+            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
                 return CollocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
