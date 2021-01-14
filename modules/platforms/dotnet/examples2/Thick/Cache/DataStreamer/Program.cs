@@ -19,27 +19,58 @@ namespace IgniteExamples.Thick.DataStreamer
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Datastream;
     using IgniteExamples.Shared;
     using IgniteExamples.Shared.Models;
 
     /// <summary>
-    /// TODO
+    /// Demonstrates how cache can be populated with data utilizing <see cref="IDataStreamer{TK,TV}"/>.
+    /// Data streamer is a lot more efficient to use than standard cache put operation
+    /// as it properly buffers cache requests together and properly manages load on remote nodes.
     /// </summary>
     public class Program
     {
+        private const int EntryCount = 500000;
+
+        private const string CacheName = "dotnet_cache_data_streamer";
+
         public static void Main()
         {
             using (IIgnite ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Example started.");
+                Console.WriteLine(">>> Cache data streamer example started.");
 
-                // TODO
+                // Clean up caches on all nodes before run.
+                ignite.GetOrCreateCache<int, Account>(CacheName).Clear();
 
-                Console.WriteLine();
+                Stopwatch timer = new Stopwatch();
+
+                timer.Start();
+
+                using (var ldr = ignite.GetDataStreamer<int, Account>(CacheName))
+                {
+                    ldr.PerNodeBufferSize = 1024;
+
+                    for (int i = 0; i < EntryCount; i++)
+                    {
+                        ldr.AddData(i, new Account(i, i));
+
+                        // Print out progress while loading cache.
+                        if (i > 0 && i % 10000 == 0)
+                            Console.WriteLine("Loaded " + i + " accounts.");
+                    }
+                }
+
+                timer.Stop();
+
+                long dur = timer.ElapsedMilliseconds;
+
+                Console.WriteLine(">>> Loaded " + EntryCount + " accounts in " + dur + "ms.");
             }
 
             Console.WriteLine();
