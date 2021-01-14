@@ -326,18 +326,18 @@ Register name: `io.datastorage`
 [cols="2,1,3",opts="header"]
 |===
 |Name |    Type |    Description
-|CheckpointBeforeLockHistogram| histogram |   Histogram of checkpoint action before taken write lock durations in milliseconds.
-|CheckpointFsyncHistogram| histogram |   Histogram of checkpoint fsync durations in milliseconds.
-|CheckpointHistogram| histogram |   Histogram of checkpoint durations in milliseconds.
-|CheckpointListenersExecuteHistogram| histogram |   Histogram of checkpoint execution listeners under write lock durations in milliseconds.
-|CheckpointLockHoldHistogram| histogram |   Histogram of checkpoint lock hold durations in milliseconds.
-|CheckpointLockWaitHistogram| histogram |   Histogram of checkpoint lock wait durations in milliseconds.
-|CheckpointMarkHistogram| histogram |   Histogram of checkpoint mark durations in milliseconds.
-|CheckpointPagesWriteHistogram| histogram |   Histogram of checkpoint pages write durations in milliseconds.
-|CheckpointSplitAndSortPagesHistogram| histogram |   Histogram of splitting and sorting checkpoint pages durations in milliseconds.
+|CheckpointBeforeLockHistogram| histogram |   Histogram of checkpoint action before taken write lock duration in milliseconds.
+|CheckpointFsyncHistogram| histogram |   Histogram of checkpoint fsync duration in milliseconds.
+|CheckpointHistogram| histogram |   Histogram of checkpoint duration in milliseconds.
+|CheckpointListenersExecuteHistogram| histogram |   Histogram of checkpoint execution listeners under write lock duration in milliseconds.
+|CheckpointLockHoldHistogram| histogram |   Histogram of checkpoint lock hold duration in milliseconds.
+|CheckpointLockWaitHistogram| histogram |   Histogram of checkpoint lock wait duration in milliseconds.
+|CheckpointMarkHistogram| histogram |   Histogram of checkpoint mark duration in milliseconds.
+|CheckpointPagesWriteHistogram| histogram |   Histogram of checkpoint pages write duration in milliseconds.
+|CheckpointSplitAndSortPagesHistogram| histogram |   Histogram of splitting and sorting checkpoint pages duration in milliseconds.
 |CheckpointTotalTime| long |   Total duration of checkpoint
-|CheckpointWalRecordFsyncHistogram| histogram |   Histogram of the WAL fsync after logging ChTotalNodeseckpointRecord on begin of checkpoint durations in milliseconds.
-|CheckpointWriteEntryHistogram| histogram |   Histogram of entry buffer writing to file durations in milliseconds.
+|CheckpointWalRecordFsyncHistogram| histogram |   Histogram of the WAL fsync after logging ChTotalNodeseckpointRecord on begin of checkpoint duration in milliseconds.
+|CheckpointWriteEntryHistogram| histogram |   Histogram of entry buffer writing to file duration in milliseconds.
 |LastCheckpointBeforeLockDuration|  long |   Duration of the checkpoint action before taken write lock in milliseconds.
 |LastCheckpointCopiedOnWritePagesNumber|  long |   Number of pages copied to a temporary checkpoint buffer during the last checkpoint.
 |LastCheckpointDataPagesNumber|   long  |  Total number of data pages written during the last checkpoint.
