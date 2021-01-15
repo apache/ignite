@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -39,7 +40,7 @@ public class GridCachePartitionsUpdateCountersAndSizeTest extends GridCommonAbst
     private static final String CACHE_NAME = "cacheTest";
 
     /** Listener for parsing patterns in log. */
-    private static final ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+    private static final ListeningTestLogger testLog = new ListeningTestLogger(log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -75,18 +76,16 @@ public class GridCachePartitionsUpdateCountersAndSizeTest extends GridCommonAbst
     }
 
     /**
-     * Four tests that partitions state validation works correctly and
-     * show partition size always:
-     * Start three-nodes grid,
-     * @param cnt - partition counters are inconsistent(boolean)
-     * @param size - partition size are inconsistent(boolean)
+     * Method that shows the results of partitions state validation for all possible cases:
+     * @param inconsistentCnt - {@code true} if it is expected that partition counters are inconsistent.
+     * @param inconsistentSize -  {@code true} if it is expected that partition sizes are inconsistent.
      * @throws Exception If failed.
      */
-    private void startThreeNodesGrid(boolean cnt, boolean size) throws Exception {
+    private void startThreeNodesGrid(boolean inconsistentCnt, boolean inconsistentSize) throws Exception {
         SizeCounterLogListener lsnr = new SizeCounterLogListener();
 
         IgniteEx ignite = startGrids(3);
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
         awaitPartitionMapExchange();
 
         testLog.registerListener(lsnr);
@@ -95,12 +94,12 @@ public class GridCachePartitionsUpdateCountersAndSizeTest extends GridCommonAbst
         for (int i = 0; i < 1000; i++)
             ignite.cache(CACHE_NAME).put(i, i);
 
-        if (cnt) {
+        if (inconsistentCnt) {
             // Modify update counter for some partition.
             ignite.cachex(CACHE_NAME).context().topology().localPartitions().get(0).updateCounter(99L);
         }
 
-        if (size) {
+        if (inconsistentSize) {
             // Modify update size for some partition.
             ignite.cachex(CACHE_NAME).context().topology().localPartitions().get(0).dataStore()
                 .clear(ignite.cachex(CACHE_NAME).context().cacheId());
@@ -115,16 +114,16 @@ public class GridCachePartitionsUpdateCountersAndSizeTest extends GridCommonAbst
         // to put data to corrupted cache.
         ignite.cache(CACHE_NAME).put(0, 0);
 
-        if (cnt && !size)
+        if (inconsistentCnt && !inconsistentSize)
             assertTrue("Counters inconsistent message found", lsnr.checkCnt());
 
-        if (!cnt && size)
+        if (!inconsistentCnt && inconsistentSize)
             assertTrue("Size inconsistent message found", lsnr.checkSize());
 
-        if (cnt && size)
+        if (inconsistentCnt && inconsistentSize)
             assertTrue("Both counters and sizes message found", lsnr.check());
 
-        if (!cnt && !size) {
+        if (!inconsistentCnt && !inconsistentSize) {
             assertFalse("Counters and Size inconsistent message found!",
                 lsnr.check() || lsnr.checkCnt() || lsnr.checkSize());
         }
