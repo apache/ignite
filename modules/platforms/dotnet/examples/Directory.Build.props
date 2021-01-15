@@ -11,7 +11,12 @@
         <IgniteSourceDistro>true</IgniteSourceDistro>
     </PropertyGroup>
 
-    <ItemGroup Condition="$(IgniteBinaryDistro) == 'true'">
+    <ItemGroup Condition="$(IgniteSourceDistro) == 'true'">
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\Apache.Ignite.Linq\Apache.Ignite.Linq.DotNetCore.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="$(IgniteBinaryDistro) == 'true' And $(IgniteSourceDistro) == ''">
         <Reference Include="Apache.Ignite.Core">
             <HintPath>$(MSBuildThisFileDirectory)..\bin\Apache.Ignite.Core.dll</HintPath>
         </Reference>
@@ -20,8 +25,4 @@
         </Reference>
     </ItemGroup>
 
-    <ItemGroup Condition="$(IgniteBinaryDistro) == '' And $(IgniteSourceDistro) == 'true'">
-        <ProjectReference Include="$(MSBuildThisFileDirectory)..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
-        <ProjectReference Include="$(MSBuildThisFileDirectory)..\Apache.Ignite.Linq\Apache.Ignite.Linq.DotNetCore.csproj" />
-    </ItemGroup>
 </Project>
