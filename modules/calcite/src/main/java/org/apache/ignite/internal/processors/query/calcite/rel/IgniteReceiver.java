@@ -46,8 +46,13 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
     /**
      * Creates a Receiver
      */
-    public IgniteReceiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, long exchangeId,
-        long sourceFragmentId) {
+    public IgniteReceiver(
+        RelOptCluster cluster,
+        RelTraitSet traits,
+        RelDataType rowType,
+        long exchangeId,
+        long sourceFragmentId
+    ) {
         this(cluster, traits, rowType, exchangeId, sourceFragmentId, traits.getCollation());
     }
 
@@ -64,8 +69,14 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
     }
 
     /** */
-    private IgniteReceiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, long exchangeId,
-        long sourceFragmentId, RelCollation collation) {
+    private IgniteReceiver(
+        RelOptCluster cluster,
+        RelTraitSet traits,
+        RelDataType rowType,
+        long exchangeId,
+        long sourceFragmentId,
+        RelCollation collation
+    ) {
         super(cluster, traits);
 
         this.exchangeId = exchangeId;

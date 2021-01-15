@@ -63,8 +63,15 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
     private final RelCollation rightCollation;
 
     /** */
-    public IgniteMergeJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,
-        RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
+    public IgniteMergeJoin(
+        RelOptCluster cluster,
+        RelTraitSet traitSet,
+        RelNode left,
+        RelNode right,
+        RexNode condition,
+        Set<CorrelationId> variablesSet,
+        JoinRelType joinType
+    ) {
         this(cluster, traitSet, left, right, condition, variablesSet, joinType,
             left.getTraitSet().getCollation(), right.getTraitSet().getCollation());
     }
@@ -85,9 +92,17 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
     }
 
     /** */
-    public IgniteMergeJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,
-        RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType, RelCollation leftCollation,
-        RelCollation rightCollation) {
+    private IgniteMergeJoin(
+        RelOptCluster cluster,
+        RelTraitSet traitSet,
+        RelNode left,
+        RelNode right,
+        RexNode condition,
+        Set<CorrelationId> variablesSet,
+        JoinRelType joinType,
+        RelCollation leftCollation,
+        RelCollation rightCollation
+    ) {
         super(cluster, traitSet, left, right, condition, variablesSet, joinType);
 
         this.leftCollation = leftCollation;
