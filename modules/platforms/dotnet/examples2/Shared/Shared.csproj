@@ -9,8 +9,4 @@
     <PackageReference Include="Apache.Ignite" Version="2.*" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Cache" />
-  </ItemGroup>
-
 </Project>
