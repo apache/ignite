@@ -7,6 +7,10 @@
         <IgniteBinaryDistro>true</IgniteBinaryDistro>
     </PropertyGroup>
 
+    <PropertyGroup Condition="Exists('..\Apache.Ignite.Core\Ignition.cs')">
+        <IgniteSourceDistro>true</IgniteSourceDistro>
+    </PropertyGroup>
+
     <ItemGroup Condition="$(IgniteBinaryDistro) == 'true'">
         <Reference Include="Apache.Ignite.Core">
             <HintPath>$(MSBuildThisFileDirectory)..\bin\Apache.Ignite.Core.dll</HintPath>
