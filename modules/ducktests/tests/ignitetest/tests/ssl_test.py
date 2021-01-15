@@ -21,7 +21,6 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
-from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
@@ -51,14 +50,13 @@ class SslTest(IgniteTest):
 
         client_configuration = server_configuration._replace(
             client_mode=True,
-            discovery_spi=from_ignite_cluster(ignite),
-            ssl_context_factory=SslContextFactory(self.test_context.globals, key_store_jks="client.jks")
-        )
+            ssl_context_factory=SslContextFactory(self.test_context.globals, key_store_jks="client.jks"))
 
         app = IgniteApplicationService(
             self.test_context,
             client_configuration,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.smoke_test.SimpleApplication")
+            java_class_name="org.apache.ignite.internal.ducktest.tests.smoke_test.SimpleApplication",
+            startup_timeout_sec=180)
 
         control_utility = ControlUtility(cluster=ignite, key_store_jks="admin.jks")
 

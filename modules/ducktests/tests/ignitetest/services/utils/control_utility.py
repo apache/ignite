@@ -43,18 +43,22 @@ class ControlUtility:
         self.globals = cluster.context.globals
 
         if self.globals.get("use_ssl", False):
-            self.key_store_path = self.globals.get("key_store_path",
-                                                   os.path.join(cluster.certificate_dir, DEFAULT_KEYSTORE))
+            self.key_store_path = self.globals.get("key_store_path", self.jks_path(DEFAULT_KEYSTORE))
             self.key_store_password = self.globals.get("key_store_password", DEFAULT_PASSWORD)
-            self.trust_store_path = self.globals.get("trust_store_path",
-                                                     os.path.join(cluster.certificate_dir, DEFAULT_TRUSTSTORE))
+            self.trust_store_path = self.globals.get("trust_store_path", self.jks_path(DEFAULT_TRUSTSTORE))
             self.trust_store_password = self.globals.get("trust_store_password", DEFAULT_PASSWORD)
 
         if key_store_jks is not None:
-            self.key_store_path = os.path.join(cluster.certificate_dir, key_store_jks)
+            self.key_store_path = self.jks_path(key_store_jks)
             self.key_store_password = key_store_password
-            self.trust_store_path = os.path.join(cluster.certificate_dir, trust_store_jks)
+            self.trust_store_path = self.jks_path(trust_store_jks)
             self.trust_store_password = trust_store_password
+
+    def jks_path(self, jks_name: str):
+        """
+        :return Path to jks file.
+        """
+        return os.path.join(self._cluster.certificate_dir, jks_name)
 
     def baseline(self):
         """

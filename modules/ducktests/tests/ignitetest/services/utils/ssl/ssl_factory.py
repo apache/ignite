@@ -32,11 +32,9 @@ class SslContextFactory:
                  key_store_jks: str = DEFAULT_KEYSTORE, key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD):
         self.globals = globals
-        self.key_store_path = self.globals.get("key_store_path",
-                                               os.path.join(self.certificate_dir, key_store_jks))
+        self.key_store_path = self.globals.get("key_store_path", self.jks_path(key_store_jks))
         self.key_store_password = self.globals.get("key_store_password", key_store_password)
-        self.trust_store_path = self.globals.get("trust_store_path",
-                                                 os.path.join(self.certificate_dir, trust_store_jks))
+        self.trust_store_path = self.globals.get("trust_store_path", self.jks_path(trust_store_jks))
         self.trust_store_password = self.globals.get("trust_store_password", trust_store_password)
 
     @property
@@ -46,3 +44,9 @@ class SslContextFactory:
         """
         return os.path.join(self.globals.get("install_root", "/opt"),
                             "ignite-dev", "modules", "ducktests", "tests", "certs")
+
+    def jks_path(self, jks_name: str):
+        """
+        :return Path to jks file.
+        """
+        return os.path.join(self.certificate_dir, jks_name)
