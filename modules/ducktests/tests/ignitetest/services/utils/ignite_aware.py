@@ -80,10 +80,10 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Starts in async way.
         """
+        self.update_config_with_globals()
         super().start(clean=clean)
 
     def start(self, clean=True):
-        self.update_config_with_globals()
         self.start_async(clean=clean)
         self.await_started()
 
