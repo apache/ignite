@@ -29,12 +29,28 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** */
         private static readonly Example[] AllExamples = Example.GetExamples().ToArray();
 
+        /** */
+        private static readonly Example[] ThickExamples = AllExamples.Where(e => !e.IsThin).ToArray();
+
+        /** */
+        private static readonly Example[] ThinExamples = AllExamples.Where(e => e.IsThin).ToArray();
+
         /// <summary>
         /// Tests the example in a single node mode.
         /// </summary>
         /// <param name="example">The example to run.</param>
-        [Test, TestCaseSource(nameof(AllExamples))]
-        public void TestLocalNode(Example example)
+        [Test, TestCaseSource(nameof(ThickExamples))]
+        public void TestThick(Example example)
+        {
+            example.Run();
+        }
+
+        /// <summary>
+        /// Tests the example in a single node mode.
+        /// </summary>
+        /// <param name="example">The example to run.</param>
+        [Test, TestCaseSource(nameof(ThinExamples))]
+        public void TestThin(Example example)
         {
             example.Run();
         }
