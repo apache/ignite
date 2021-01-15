@@ -41,7 +41,7 @@ import static java.util.Collections.singletonList;
 /**
  * Sort aggregate integration test.
  */
-public class SortAggregateTest extends GridCommonAbstractTest {
+public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
     /** */
     public static final int ROWS = 103;
 

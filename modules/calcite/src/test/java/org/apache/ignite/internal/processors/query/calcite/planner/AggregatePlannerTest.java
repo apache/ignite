@@ -28,7 +28,7 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregateHash;
@@ -185,8 +185,8 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
                 .add("GRP1", f.createJavaType(Integer.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
@@ -250,8 +250,8 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
                 .add("GRP1", f.createJavaType(Integer.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
@@ -315,8 +315,8 @@ public class AggregatePlannerTest extends AbstractPlannerTest {
                 .add("GRP1", f.createJavaType(Integer.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),

@@ -22,7 +22,7 @@ import java.util.Arrays;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
-import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregateHash;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregateHash;
@@ -56,8 +56,8 @@ public class HashAggregateTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),

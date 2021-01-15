@@ -21,14 +21,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -571,42 +567,5 @@ public class ExecutionTest extends AbstractExecutionTest {
                     cnt);
             }
         }
-    }
-
-    /**
-     *
-     */
-    private Object[] row(Object... fields) {
-        return fields;
-    }
-
-    /**
-     *
-     */
-    private Supplier<List<AccumulatorWrapper<Object[]>>> accFactory(ExecutionContext<Object[]> ctx, AggregateCall call,
-        AggregateNode.AggregateType type, RelDataType rowType) {
-        return ctx.expressionFactory().accumulatorsFactory(type, F.asList(call), rowType);
-    }
-
-    /**
-     *
-     */
-    private RowFactory<Object[]> rowFactory() {
-        return new RowFactory<Object[]>() {
-            /** */
-            @Override public RowHandler<Object[]> handler() {
-                return ArrayRowHandler.INSTANCE;
-            }
-
-            /** */
-            @Override public Object[] create() {
-                throw new AssertionError();
-            }
-
-            /** */
-            @Override public Object[] create(Object... fields) {
-                return fields;
-            }
-        };
     }
 }
