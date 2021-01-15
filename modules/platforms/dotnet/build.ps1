@@ -240,10 +240,6 @@ if(!$skipDotNetCore) {
     $publishCommand = "dotnet publish $targetSolution -c $configuration"
 	echo "Starting dotnet publish: '$publishCommand'"
 	Exec $publishCommand
-
-    if (!$skipExamples) {
-        Exec "dotnet build .\examples\IgniteExamples.sln"
-    }
 }
 
 if ($asmDirs) {
@@ -303,4 +299,7 @@ if (!$skipNuGet) {
 }
 
 # 4) Build Examples
-# TODO: Build examples against the nuget packages from above
+if ((!$skipDotNetCore) -and (!$skipExamples)) {
+    Exec "dotnet build .\examples\IgniteExamples.sln"
+}
+
