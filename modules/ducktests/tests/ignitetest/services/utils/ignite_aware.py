@@ -305,7 +305,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             nodes = self.nodes
 
         for node in nodes:
-            self.logger.info("Disconnecting " + node.account.hostname + ".")
+            self.logger.info("Dropping ignite connections on '" + node.account.hostname + "' ...")
 
         self.__backup_iptables(nodes)
 
@@ -320,12 +320,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         cmd = f"sudo iptables -I %s 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP"
 
-        for node in nodes:
-            self.logger.debug("Activating netfilter on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
-
         return self.exec_on_nodes_async(nodes,
                                         lambda n: (n.account.ssh_client.exec_command(cmd % "INPUT"),
-                                                   n.account.ssh_client.exec_command(cmd % "OUTPUT")))
+                                                   n.account.ssh_client.exec_command(cmd % "OUTPUT"),
+                                                   self.logger.debug("Activated netfilter on '%s': %s" %
+                                                                     (n.name, self.__dump_netfilter_settings(n)))
+                                                   )
+                                        )
 
     def __backup_iptables(self, nodes):
         # Store current network filter settings.
