@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Examples
 {
+    using System.IO;
     using NUnit.Framework;
 
     /// <summary>
@@ -24,17 +25,28 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public class ProjectFilesTest
     {
+        /** */
+        private static readonly Example[] Examples = Example.AllExamples;
+
         /// <summary>
-        /// Checks config files in examples comments for existence.
+        /// Checks csproj files.
         /// </summary>
-        [Test]
-        public void Test()
+        [Test, TestCaseSource(nameof(Examples))]
+        public void TestCsprojFiles(Example example)
         {
             // TODO:
             // * All projects are in solution
             // * All projects are in VS Code config
             // * All projects have correct namespaces
             // * All examples have Thin and Thick variants when possible
+            Assert.IsTrue(File.Exists(example.ProjectFile), $"File.Exists({example.ProjectFile})");
+
+            var text = File.ReadAllText(example.ProjectFile);
+
+            StringAssert.Contains("<OutputType>Exe</OutputType>", text);
+            StringAssert.Contains("<TargetFramework>netcoreapp2.1</TargetFramework>", text);
+            StringAssert.Contains("<RootNamespace>IgniteExamples.", text);
+            StringAssert.Contains("<ProjectReference Include=\"..\\..\\..\\Shared\\Shared.csproj", text);
         }
     }
 }
