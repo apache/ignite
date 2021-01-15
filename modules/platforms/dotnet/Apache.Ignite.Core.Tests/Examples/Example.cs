@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using NUnit.Framework;
 
     /// <summary>
@@ -28,6 +29,14 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public class Example
     {
+        /** Expected exception when ReadKey is present. */
+        private const string ReadKeyException =
+            "Cannot read keys when either application does not have a console or " +
+            "when console input has been redirected from a file. Try Console.Read.";
+
+        /** Method invoke flags. */
+        private const BindingFlags InvokeFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.InvokeMethod;
+
         /** Name */
         public string Name { get; }
 
@@ -53,13 +62,16 @@ namespace Apache.Ignite.Core.Tests.Examples
             {
                 Assert.IsTrue(File.Exists(AssemblyFile), $"Assembly not found: {AssemblyFile}");
 
-                // TODO
+                var assembly = Assembly.LoadFrom(AssemblyFile);
+                var program = assembly.GetTypes().Single(t => t.Name == "Program");
+
+                program.InvokeMember("Main", InvokeFlags, null, null, null);
             }
-            catch (InvalidOperationException ex)
+            catch (TargetInvocationException ex)
             {
                 // Each example has a ReadKey at the end, which throws an exception in test environment.
-                if (ex.Message != "Cannot read keys when either application does not have a console or " +
-                    "when console input has been redirected from a file. Try Console.Read.")
+                var inner = ex.InnerException as InvalidOperationException;
+                if (inner == null || inner.Message != ReadKeyException)
                 {
                     throw;
                 }
@@ -67,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Examples
                 return;
             }
 
-            throw new Exception("ReadKey missing at the end of the example.");
+            throw new Exception("ReadKey is missing at the end of the example.");
         }
 
         /// <summary>
