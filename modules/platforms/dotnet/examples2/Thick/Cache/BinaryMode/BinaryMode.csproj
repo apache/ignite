@@ -6,6 +6,15 @@
     <RootNamespace>IgniteExamples.Thick.BinaryMode</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup Condition="Exists('..\..\..\..\bin\Apache.Ignite.Core.dll')">
+    <Reference Include="Apache.Ignite.Core">
+      <HintPath>..\..\..\..\bin\Apache.Ignite.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Apache.Ignite.Linq">
+      <HintPath>..\..\..\..\bin\Apache.Ignite.Linq.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\..\Shared\Shared.csproj" />
   </ItemGroup>
