@@ -61,7 +61,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             try
             {
-                Assert.IsTrue(File.Exists(AssemblyFile), $"Assembly not found: {AssemblyFile}");
+                Assert.IsTrue(File.Exists(AssemblyFile),
+                    $"Assembly not found: {AssemblyFile}. " +
+                    "Make sure to build IgniteExamples.sln. This usually happens as part of build.ps1 execution.");
 
                 var assembly = Assembly.LoadFrom(AssemblyFile);
                 var program = assembly.GetTypes().Single(t => t.Name == "Program");
