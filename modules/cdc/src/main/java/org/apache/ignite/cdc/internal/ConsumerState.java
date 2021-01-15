@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc;
+package org.apache.ignite.cdc.internal;
 
 import java.io.File;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
