@@ -17,41 +17,22 @@
 
 namespace Apache.Ignite.Core.Tests.Examples
 {
-    using System.Linq;
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests all examples in various modes.
+    /// Tests thick examples.
     /// </summary>
     [Category(TestUtils.CategoryExamples)]
-    public class ExamplesTest
+    public class ThickExamplesTest
     {
-        /** */
-        private static readonly Example[] AllExamples = Example.GetExamples().ToArray();
-
-        /** */
-        private static readonly Example[] ThickExamples = AllExamples.Where(e => !e.IsThin).ToArray();
-
-        /** */
-        private static readonly Example[] ThinExamples = AllExamples.Where(e => e.IsThin).ToArray();
-
         /// <summary>
-        /// Tests the example in a single node mode.
+        /// Tests thick mode example.
         /// </summary>
-        /// <param name="example">The example to run.</param>
-        [Test, TestCaseSource(nameof(ThickExamples))]
-        public void TestThick(Example example)
+        [Test, TestCaseSource(nameof(Example.ThickExamples))]
+        public void TestThickExample(Example example)
         {
-            example.Run();
-        }
+            Assert.IsFalse(example.IsThin);
 
-        /// <summary>
-        /// Tests the example in a single node mode.
-        /// </summary>
-        /// <param name="example">The example to run.</param>
-        [Test, TestCaseSource(nameof(ThinExamples))]
-        public void TestThin(Example example)
-        {
             example.Run();
         }
     }
