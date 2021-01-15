@@ -71,16 +71,6 @@ public class Fragment {
         this(id, root, remotes, null, null);
     }
 
-    /**
-     * @param id Fragment id.
-     * @param root Root node of the fragment.
-     * @param remotes Remote sources of the fragment.
-     * @param rootSer Root serialized representation.
-     */
-    public Fragment(long id, IgniteRel root, List<IgniteReceiver> remotes, @Nullable String rootSer) {
-        this(id, root, remotes, rootSer, null);
-    }
-
     /** */
     Fragment(long id, IgniteRel root, List<IgniteReceiver> remotes, @Nullable String rootSer, @Nullable FragmentMapping mapping) {
         this.id = id;
