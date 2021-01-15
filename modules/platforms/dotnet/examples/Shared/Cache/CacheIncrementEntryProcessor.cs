@@ -21,7 +21,7 @@ namespace IgniteExamples.Shared.Cache
     using Apache.Ignite.Core.Cache;
 
     /// <summary>
-    /// EntryProocessor that increments cached values.
+    /// EntryProcessor that increments cached values.
     /// </summary>
     [Serializable]
     public class CacheIncrementEntryProcessor : ICacheEntryProcessor<int, int, int, object>

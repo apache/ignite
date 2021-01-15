@@ -5,17 +5,8 @@
     <RootNamespace>IgniteExamples.Shared</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup Condition="!Exists('..\..\bin\Apache.Ignite.Core.dll')">
+  <ItemGroup Condition="$(IgniteBinaryDistro) == ''">
     <PackageReference Include="Apache.Ignite" Version="2.*" />
-  </ItemGroup>
-
-  <ItemGroup Condition="Exists('..\..\bin\Apache.Ignite.Core.dll')">
-    <Reference Include="Apache.Ignite.Core">
-      <HintPath>..\..\bin\Apache.Ignite.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Apache.Ignite.Linq">
-      <HintPath>..\..\bin\Apache.Ignite.Linq.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,18 @@
+<Project>
+    <PropertyGroup Condition="Exists('..\bin\Apache.Ignite.Core.dll')">
+        <DefineConstants>$(DefineConstants);COMMERCIAL_LOCKING;ENCRYPT_DB</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="Exists('..\bin\Apache.Ignite.Core.dll')">
+        <IgniteBinaryDistro>true</IgniteBinaryDistro>
+    </PropertyGroup>
+
+    <ItemGroup Condition="$(IgniteBinaryDistro) == 'true'">
+        <Reference Include="Apache.Ignite.Core">
+            <HintPath>$(MSBuildThisFileDirectory)..\bin\Apache.Ignite.Core.dll</HintPath>
+        </Reference>
+        <Reference Include="Apache.Ignite.Linq">
+            <HintPath>$(MSBuildThisFileDirectory)..\bin\Apache.Ignite.Linq.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+</Project>
