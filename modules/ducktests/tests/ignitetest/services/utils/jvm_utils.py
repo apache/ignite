@@ -32,27 +32,29 @@ JVM_PARAMS_GENERIC = "-server -da -XX:+DisableExplicitGC -XX:+AggressiveOpts -XX
                      "-XX:+OptimizeStringConcat -XX:+UseStringDeduplication"
 
 
-def jvm_settings(heap_size="768M", gc_settings=JVM_PARAMS_GC_CMS, generic_params=JVM_PARAMS_GENERIC, gc_dump_path=None,
-                 oom_path=None, **kwargs):
+def create_jvm_settings(heap_size="768M", gc_settings=JVM_PARAMS_GC_CMS, generic_params=JVM_PARAMS_GENERIC,
+                        gc_dump_path=None, oom_path=None, **kwargs):
     """
     Provides settings string for JVM process.
     param as_list: Represent JVM params as list.
     param as_map: Represent JVM params as dict.
-    param merge: JVM Params to merge. Adds new or rewrites default values. Can be dict, list or string.
+    param opts: JVM options to merge. Adds new or rewrites default values. Can be dict, list or string.
     """
-    gc_dump = "-XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=32M " \
-              "-XX:+PrintGCDateStamps -verbose:gc -XX:+PrintGCDetails -Xloggc:" + gc_dump_path \
-        if gc_dump_path else ""
+    gc_dump = ""
+    if gc_dump_path:
+        gc_dump = "-XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=32M -XX:+PrintGCDateStamps " \
+                  "-verbose:gc -XX:+PrintGCDetails -Xloggc:" + gc_dump_path
 
-    out_of_mem_dump = "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=" + oom_path \
-        if oom_path else ""
+    out_of_mem_dump = ""
+    if oom_path:
+        out_of_mem_dump = "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=" + oom_path
 
     as_string = f"-Xmx{heap_size} -Xms{heap_size} {gc_settings} {gc_dump} {out_of_mem_dump} {generic_params}".strip()
 
-    to_merge = kwargs.get("merge")
+    to_merge = kwargs.get("opts")
 
-    if to_merge or kwargs.get("as_map", False):
-        return jvm_settings_merge(as_string, to_merge if to_merge else {}, **kwargs)
+    if to_merge or kwargs.get("as_map"):
+        return merge_jvm_settings(as_string, to_merge if to_merge else {}, **kwargs)
 
     if kwargs.get("as_list", False):
         return as_string.split()
@@ -60,7 +62,7 @@ def jvm_settings(heap_size="768M", gc_settings=JVM_PARAMS_GC_CMS, generic_params
     return as_string
 
 
-def jvm_settings_merge(src_settings, additionals, **kwargs):
+def merge_jvm_settings(src_settings, additionals, **kwargs):
     """
     Merges two JVM settings.
     :param src_settings: base settings. Can be dict, list or string.
@@ -75,7 +77,7 @@ def jvm_settings_merge(src_settings, additionals, **kwargs):
 
     _remove_duplicates(as_map)
 
-    if kwargs.get("as_map", False):
+    if kwargs.get("as_map"):
         return as_map
 
     as_list = [e[0] + '=' + e[1] if len(e) > 0 and e[1] else e[0] for e in as_map.items()]
