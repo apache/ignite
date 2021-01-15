@@ -572,4 +572,41 @@ public class ExecutionTest extends AbstractExecutionTest {
             }
         }
     }
+
+    /**
+     *
+     */
+    private Object[] row(Object... fields) {
+        return fields;
+    }
+
+    /**
+     *
+     */
+    private Supplier<List<AccumulatorWrapper<Object[]>>> accFactory(ExecutionContext<Object[]> ctx, AggregateCall call,
+        AggregateNode.AggregateType type, RelDataType rowType) {
+        return ctx.expressionFactory().accumulatorsFactory(type, F.asList(call), rowType);
+    }
+
+    /**
+     *
+     */
+    private RowFactory<Object[]> rowFactory() {
+        return new RowFactory<Object[]>() {
+            /** */
+            @Override public RowHandler<Object[]> handler() {
+                return ArrayRowHandler.INSTANCE;
+            }
+
+            /** */
+            @Override public Object[] create() {
+                throw new AssertionError();
+            }
+
+            /** */
+            @Override public Object[] create(Object... fields) {
+                return fields;
+            }
+        };
+    }
 }

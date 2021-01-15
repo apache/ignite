@@ -52,7 +52,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -463,7 +463,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** {@inheritDoc} */
-    @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+    @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
         if (!cctx.gate().enterIfNotStopped())
             throw U.convertException(new CacheStoppedException(cctx.name()));
 
@@ -479,7 +479,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private CollocationGroup partitionedGroup(@NotNull AffinityTopologyVersion topVer) {
+    private ColocationGroup partitionedGroup(@NotNull AffinityTopologyVersion topVer) {
         List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
         List<List<UUID>> assignments0;
 
@@ -492,11 +492,11 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
                 assignments0.add(F.isEmpty(partNodes) ? emptyList() : singletonList(F.first(partNodes).id()));
         }
 
-        return CollocationGroup.forAssignments(assignments0);
+        return ColocationGroup.forAssignments(assignments0);
     }
 
     /** */
-    private CollocationGroup replicatedGroup(@NotNull AffinityTopologyVersion topVer) {
+    private ColocationGroup replicatedGroup(@NotNull AffinityTopologyVersion topVer) {
         GridDhtPartitionTopology top = cctx.topology();
 
         List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.cacheId());
@@ -515,7 +515,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         else
             nodes0 = Commons.transform(nodes, ClusterNode::id);
 
-        return CollocationGroup.forNodes(nodes0);
+        return ColocationGroup.forNodes(nodes0);
     }
 
     /** */

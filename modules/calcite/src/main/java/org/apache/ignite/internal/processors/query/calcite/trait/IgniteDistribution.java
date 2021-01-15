@@ -22,7 +22,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 
 /**
  * Ignite distribution trait.
@@ -41,7 +41,7 @@ public interface IgniteDistribution extends RelDistribution {
      * @param targetGroup Target mapping.
      * @return Destination function.
      */
-    <Row> Destination<Row> destination(ExecutionContext<Row> ectx, AffinityService affinityService, CollocationGroup targetGroup);
+    <Row> Destination<Row> destination(ExecutionContext<Row> ectx, AffinityService affinityService, ColocationGroup targetGroup);
 
     /** {@inheritDoc} */
     @Override ImmutableIntList getKeys();

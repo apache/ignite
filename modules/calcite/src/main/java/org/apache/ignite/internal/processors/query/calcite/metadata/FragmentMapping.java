@@ -41,21 +41,21 @@ import org.jetbrains.annotations.NotNull;
  */
 public class FragmentMapping implements MarshalableMessage {
     /** */
-    @GridDirectCollection(CollocationGroup.class)
-    private List<CollocationGroup> collocationGroups;
+    @GridDirectCollection(ColocationGroup.class)
+    private List<ColocationGroup> colocationGroups;
 
     /** */
     public FragmentMapping() {
     }
 
     /** */
-    private FragmentMapping(CollocationGroup collocationGroup) {
-        this(F.asList(collocationGroup));
+    private FragmentMapping(ColocationGroup colocationGroup) {
+        this(F.asList(colocationGroup));
     }
 
     /** */
-    private FragmentMapping(List<CollocationGroup> collocationGroups) {
-        this.collocationGroups = collocationGroups;
+    private FragmentMapping(List<ColocationGroup> colocationGroups) {
+        this.colocationGroups = colocationGroups;
     }
 
     /** */
@@ -65,81 +65,81 @@ public class FragmentMapping implements MarshalableMessage {
 
     /** */
     public static FragmentMapping create(UUID nodeId) {
-        return new FragmentMapping(CollocationGroup.forNodes(Collections.singletonList(nodeId)));
+        return new FragmentMapping(ColocationGroup.forNodes(Collections.singletonList(nodeId)));
     }
 
     /** */
     public static FragmentMapping create(long sourceId) {
-        return new FragmentMapping(CollocationGroup.forSourceId(sourceId));
+        return new FragmentMapping(ColocationGroup.forSourceId(sourceId));
     }
 
     /** */
-    public static FragmentMapping create(long sourceId, CollocationGroup group) {
+    public static FragmentMapping create(long sourceId, ColocationGroup group) {
         try {
-            return new FragmentMapping(CollocationGroup.forSourceId(sourceId).collocate(group));
+            return new FragmentMapping(ColocationGroup.forSourceId(sourceId).colocate(group));
         }
-        catch (CollocationMappingException e) {
+        catch (ColocationMappingException e) {
             throw new AssertionError(e); // Cannot happen
         }
     }
 
     /** */
     public boolean colocated() {
-        return collocationGroups.isEmpty() || collocationGroups.size() == 1;
+        return colocationGroups.isEmpty() || colocationGroups.size() == 1;
     }
 
     /** */
     public FragmentMapping prune(IgniteRel rel) {
-        if (collocationGroups.size() != 1)
+        if (colocationGroups.size() != 1)
             return this;
 
-        return new FragmentMapping(F.first(collocationGroups).prune(rel));
+        return new FragmentMapping(F.first(colocationGroups).prune(rel));
     }
 
     /** */
     public FragmentMapping combine(FragmentMapping other) {
-        return new FragmentMapping(Commons.combine(collocationGroups, other.collocationGroups));
+        return new FragmentMapping(Commons.combine(colocationGroups, other.colocationGroups));
     }
 
     /** */
-    public FragmentMapping colocate(FragmentMapping other) throws CollocationMappingException {
+    public FragmentMapping colocate(FragmentMapping other) throws ColocationMappingException {
         assert colocated() && other.colocated();
 
-        CollocationGroup first = F.first(collocationGroups);
-        CollocationGroup second = F.first(other.collocationGroups);
+        ColocationGroup first = F.first(colocationGroups);
+        ColocationGroup second = F.first(other.colocationGroups);
 
         if (first == null && second == null)
             return this;
         else if (first == null || second == null)
             return new FragmentMapping(U.firstNotNull(first, second));
         else
-            return new FragmentMapping(first.collocate(second));
+            return new FragmentMapping(first.colocate(second));
     }
 
     /** */
     public List<UUID> nodeIds() {
-        return collocationGroups.stream()
+        return colocationGroups.stream()
             .flatMap(g -> g.nodeIds().stream())
             .distinct().collect(Collectors.toList());
     }
 
     /** */
     public FragmentMapping finalize(Supplier<List<UUID>> nodesSource) {
-        if (collocationGroups.isEmpty())
+        if (colocationGroups.isEmpty())
             return this;
 
-        List<CollocationGroup> collocationGroups = this.collocationGroups;
+        List<ColocationGroup> colocationGroups = this.colocationGroups;
 
-        collocationGroups = Commons.transform(collocationGroups, CollocationGroup::finalaze);
+        colocationGroups = Commons.transform(colocationGroups, ColocationGroup::finalaze);
         List<UUID> nodes = nodeIds(), nodes0 = nodes.isEmpty() ? nodesSource.get() : nodes;
-        collocationGroups = Commons.transform(collocationGroups, g -> g.mapToNodes(nodes0));
+        colocationGroups = Commons.transform(colocationGroups, g -> g.mapToNodes(nodes0));
 
-        return new FragmentMapping(collocationGroups);
+        return new FragmentMapping(colocationGroups);
     }
 
     /** */
-    public @NotNull CollocationGroup findGroup(long sourceId) {
-        List<CollocationGroup> groups = collocationGroups.stream()
+    public @NotNull ColocationGroup findGroup(long sourceId) {
+        List<ColocationGroup> groups = colocationGroups.stream()
             .filter(c -> c.belongs(sourceId))
             .collect(Collectors.toList());
 
@@ -153,12 +153,12 @@ public class FragmentMapping implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(MarshallingContext ctx) {
-        collocationGroups.forEach(g -> g.prepareMarshal(ctx));
+        colocationGroups.forEach(g -> g.prepareMarshal(ctx));
     }
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(MarshallingContext ctx) {
-        collocationGroups.forEach(g -> g.prepareUnmarshal(ctx));
+        colocationGroups.forEach(g -> g.prepareUnmarshal(ctx));
     }
 
     /** {@inheritDoc} */
@@ -179,7 +179,7 @@ public class FragmentMapping implements MarshalableMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("collocationGroups", collocationGroups, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection("colocationGroups", colocationGroups, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -198,7 +198,7 @@ public class FragmentMapping implements MarshalableMessage {
 
         switch (reader.state()) {
             case 0:
-                collocationGroups = reader.readCollection("collocationGroups", MessageCollectionItemType.MSG);
+                colocationGroups = reader.readCollection("colocationGroups", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

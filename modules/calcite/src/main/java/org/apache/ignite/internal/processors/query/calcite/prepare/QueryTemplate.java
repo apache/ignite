@@ -119,7 +119,7 @@ public class QueryTemplate {
                     sender = new IgniteSender(sender.getCluster(), sender.getTraitSet(),
                         sender.getInput(), sender.exchangeId(), newTargetId, sender.distribution());
 
-                    fragment0 = new Fragment(fragment0.fragmentId(), sender, fragment0.remotes(), fragment0.serialized());
+                    fragment0 = new Fragment(fragment0.fragmentId(), sender, fragment0.remotes());
                 }
             }
 

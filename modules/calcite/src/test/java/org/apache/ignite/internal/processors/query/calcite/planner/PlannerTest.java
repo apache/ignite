@@ -58,7 +58,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
-import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
@@ -349,8 +349,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
@@ -371,8 +371,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
@@ -393,8 +393,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
@@ -493,8 +493,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
@@ -515,8 +515,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
@@ -537,8 +537,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("SALARY", f.createJavaType(Double.class))
                 .build()) {
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
@@ -640,7 +640,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 return new IgniteIndex(null, null, null, null) {
                     @Override public <Row> Iterable<Row> scan(
                         ExecutionContext<Row> execCtx,
-                        CollocationGroup group,
+                        ColocationGroup group,
                         Predicate<Row> filters,
                         Supplier<Row> lowerIdxConditions,
                         Supplier<Row> upperIdxConditions,
@@ -655,8 +655,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 };
             }
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
@@ -680,7 +680,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 return new IgniteIndex(null, null, null, null) {
                     @Override public <Row> Iterable<Row> scan(
                         ExecutionContext<Row> execCtx,
-                        CollocationGroup group,
+                        ColocationGroup group,
                         Predicate<Row> filters,
                         Supplier<Row> lowerIdxConditions,
                         Supplier<Row> upperIdxConditions,
@@ -695,8 +695,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 };
             }
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
@@ -879,7 +879,7 @@ public class PlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSplitterCollocatedPartitionedPartitioned() throws Exception {
+    public void testSplitterColocatedPartitionedPartitioned() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable developer = new TestTable(
@@ -888,8 +888,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
@@ -909,8 +909,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
                     select(nodes, 2, 0),
@@ -1024,7 +1024,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                CollocationGroup group,
+                ColocationGroup group,
                 Predicate<Row> filter,
                 Function<Row, Row> transformer,
                 ImmutableBitSet requiredColunms
@@ -1035,8 +1035,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 );
             }
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forNodes(select(nodes, 1));
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forNodes(select(nodes, 1));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1052,7 +1052,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                CollocationGroup group,
+                ColocationGroup group,
                 Predicate<Row> filter,
                 Function<Row, Row> transformer,
                 ImmutableBitSet requiredColunms
@@ -1063,8 +1063,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 );
             }
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forNodes(select(nodes, 1));
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forNodes(select(nodes, 1));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1305,7 +1305,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                CollocationGroup group,
+                ColocationGroup group,
                 Predicate<Row> filter,
                 Function<Row, Row> rowTransformer,
                 ImmutableBitSet requiredColunms
@@ -1328,8 +1328,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 return checkRes0;
             }
 
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forNodes(select(nodes, 1));
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forNodes(select(nodes, 1));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1552,7 +1552,7 @@ public class PlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSplitterCollocatedReplicatedReplicated() throws Exception {
+    public void testSplitterColocatedReplicatedReplicated() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable developer = new TestTable(
@@ -1561,8 +1561,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forNodes(select(nodes, 0,1,2,3));
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forNodes(select(nodes, 0,1,2,3));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1576,8 +1576,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forNodes(select(nodes, 0,1,2,3));
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forNodes(select(nodes, 0,1,2,3));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1672,7 +1672,7 @@ public class PlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSplitterPartiallyCollocatedReplicatedAndPartitioned() throws Exception {
+    public void testSplitterPartiallyColocatedReplicatedAndPartitioned() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable developer = new TestTable(
@@ -1681,8 +1681,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forNodes(select(nodes, 0));
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forNodes(select(nodes, 0));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1696,8 +1696,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 1,2),
                     select(nodes, 2,3),
                     select(nodes, 3,0),
@@ -1795,7 +1795,7 @@ public class PlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSplitterPartiallyCollocated1() throws Exception {
+    public void testSplitterPartiallyColocated1() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable developer = new TestTable(
@@ -1804,8 +1804,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forNodes(select(nodes, 1,2,3));
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forNodes(select(nodes, 1,2,3));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1819,8 +1819,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0),
                     select(nodes, 1),
                     select(nodes, 2)
@@ -1919,7 +1919,7 @@ public class PlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSplitterPartiallyCollocated2() throws Exception {
+    public void testSplitterPartiallyColocated2() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable developer = new TestTable(
@@ -1928,8 +1928,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forNodes(select(nodes, 0));
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forNodes(select(nodes, 0));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1943,8 +1943,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forAssignments(Arrays.asList(
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 1),
                     select(nodes, 2),
                     select(nodes, 3)
@@ -2041,7 +2041,7 @@ public class PlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSplitterNonCollocated() throws Exception {
+    public void testSplitterNonColocated() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable developer = new TestTable(
@@ -2050,8 +2050,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forNodes(select(nodes, 2));
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forNodes(select(nodes, 2));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -2065,8 +2065,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
-                return CollocationGroup.forNodes(select(nodes, 0,1));
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                return ColocationGroup.forNodes(select(nodes, 0,1));
             }
 
             @Override public IgniteDistribution distribution() {

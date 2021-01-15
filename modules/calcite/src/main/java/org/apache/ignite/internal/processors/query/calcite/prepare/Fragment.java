@@ -25,7 +25,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationMappingException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentMapping;
@@ -69,16 +69,6 @@ public class Fragment {
      */
     public Fragment(long id, IgniteRel root, List<IgniteReceiver> remotes) {
         this(id, root, remotes, null, null);
-    }
-
-    /**
-     * @param id Fragment id.
-     * @param root Root node of the fragment.
-     * @param remotes Remote sources of the fragment.
-     * @param rootSer Root serialized representation.
-     */
-    public Fragment(long id, IgniteRel root, List<IgniteReceiver> remotes, @Nullable String rootSer) {
-        this(id, root, remotes, rootSer, null);
     }
 
     /** */
@@ -168,7 +158,7 @@ public class Fragment {
 
             if (single() && mapping.nodeIds().size() > 1) {
                 // this is possible when the fragment contains scan of a replicated cache, which brings
-                // several nodes (actually all containing nodes) to the collocation group, but this fragment
+                // several nodes (actually all containing nodes) to the colocation group, but this fragment
                 // supposed to be executed on a single node, so let's choose one wisely
                 mapping = FragmentMapping.create(mapping.nodeIds()
                     .get(ThreadLocalRandom.current().nextInt(mapping.nodeIds().size()))).colocate(mapping);
@@ -179,7 +169,7 @@ public class Fragment {
         catch (NodeMappingException e) {
             throw new FragmentMappingException("Failed to calculate physical distribution", this, e.node(), e);
         }
-        catch (CollocationMappingException e) {
+        catch (ColocationMappingException e) {
             throw new FragmentMappingException("Failed to calculate physical distribution", this, root, e);
         }
     }

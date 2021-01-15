@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 /**
  *
  */
-public class CollocationMappingException extends Exception {
+public class ColocationMappingException extends Exception {
     /**
      * @param message Message.
      */
-    public CollocationMappingException(String message) {
+    public ColocationMappingException(String message) {
         super(message);
     }
 }
