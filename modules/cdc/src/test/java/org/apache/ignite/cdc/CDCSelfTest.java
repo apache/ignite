@@ -55,13 +55,13 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 @RunWith(Parameterized.class)
-public class IgniteCDCSelfTest extends GridCommonAbstractTest {
+public class CDCSelfTest extends GridCommonAbstractTest {
     /** */
     @Parameterized.Parameter
     public boolean specificConsistentId;
 
     @Parameterized.Parameters(name = "specificConsistentId={0}")
-    public static Collection parameters() {
+    public static Collection<?> parameters() {
         return Arrays.asList(new Object[][] {{true}, {false},});
     }
 
@@ -101,7 +101,7 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
     /** Simplest CDC test. */
     @Test
     public void testReadAllKeys() throws Exception {
-        StoreKeysCDCConsumer consumer = new StoreKeysCDCConsumer();
+        StoreKeysConsumer consumer = new StoreKeysConsumer();
 
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
@@ -127,12 +127,14 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < KEYS_CNT; i++)
             assertTrue(keys.contains(i));
+
+        assertTrue(consumer.stoped);
     }
 
     /** Simplest CDC test. */
     @Test
     public void testRestoreStateAfterStop() throws Exception {
-        StoreKeysCDCConsumer consumer = new StoreKeysCDCConsumer();
+        StoreKeysConsumer consumer = new StoreKeysConsumer();
 
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
@@ -154,6 +156,8 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
 
                 runFut.cancel();
 
+                assertTrue(consumer.stoped);
+
                 cdc.run();
             }
             catch (IgniteCheckedException e) {
@@ -171,6 +175,8 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < KEYS_CNT * 2; i++)
             assertTrue(keys.contains(i));
+
+        assertTrue(consumer.stoped);
     }
 
     @Test
@@ -184,8 +190,8 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> addDataFut = runAsync(() -> addData(cache, 0, KEYS_CNT));
 
-        StoreKeysCDCConsumer consumer1 = new StoreKeysCDCConsumer();
-        StoreKeysCDCConsumer consumer2 = new StoreKeysCDCConsumer();
+        StoreKeysConsumer consumer1 = new StoreKeysConsumer();
+        StoreKeysConsumer consumer2 = new StoreKeysConsumer();
 
         IgniteConfiguration cfg1 = ign1.configuration();
         IgniteConfiguration cfg2 = ign2.configuration();
@@ -213,8 +219,14 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
 
             assertTrue(waitForSize(KEYS_CNT * 2, consumer1, consumer2));
 
+            assertFalse(consumer1.stoped);
+            assertFalse(consumer2.stoped);
+
             fut1.cancel();
             fut2.cancel();
+
+            assertTrue(consumer1.stoped);
+            assertTrue(consumer2.stoped);
         }
         finally {
             System.clearProperty(IgniteCDC.IGNITE_CDC_CONSISTENT_ID);
@@ -226,8 +238,11 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
     public void testOneOfConcurrentRunsFail() throws Exception {
         IgniteEx ign = startGrid(0);
 
-        IgniteInternalFuture<?> fut1 = runAsync(new IgniteCDC(ign.configuration(), new StoreKeysCDCConsumer()));
-        IgniteInternalFuture<?> fut2 = runAsync(new IgniteCDC(ign.configuration(), new StoreKeysCDCConsumer()));
+        StoreKeysConsumer consumer1 = new StoreKeysConsumer();
+        StoreKeysConsumer consumer2 = new StoreKeysConsumer();
+
+        IgniteInternalFuture<?> fut1 = runAsync(new IgniteCDC(ign.configuration(), consumer1));
+        IgniteInternalFuture<?> fut2 = runAsync(new IgniteCDC(ign.configuration(), consumer2));
 
         assertTrue(waitForCondition(() -> fut1.isDone() || fut2.isDone(), getTestTimeout()));
 
@@ -237,6 +252,8 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
             assertFalse(fut2.isDone());
 
             fut2.cancel();
+
+            assertTrue(consumer2.stoped);
         }
         else {
             assertNotNull(fut2.error());
@@ -244,11 +261,83 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
             assertFalse(fut1.isDone());
 
             fut1.cancel();
+
+            assertTrue(consumer1.stoped);
         }
     }
 
+    @Test
+    public void testReReadIfNoCommit() throws Exception {
+        IgniteConfiguration cfg = getConfiguration("ignite-0");
+
+        Ignite ign = startGrid(cfg);
+
+        ign.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, byte[]> cache = ign.createCache(DEFAULT_CACHE_NAME);
+
+        addData(cache, 0, KEYS_CNT);
+
+        for (int i=0; i<3; i++) {
+            StoreKeysConsumer consumer = new StoreKeysConsumer() {
+                @Override protected boolean commit() {
+                    return false;
+                }
+            };
+
+            IgniteCDC cdc = new IgniteCDC(cfg, consumer);
+
+            IgniteInternalFuture<?> fut = runAsync(cdc);
+
+            assertTrue(waitForSize(KEYS_CNT, consumer));
+
+            fut.cancel();
+
+            assertTrue(consumer.stoped);
+        }
+
+        final int[] expSz = {KEYS_CNT};
+
+        StoreKeysConsumer consumer = new StoreKeysConsumer() {
+            @Override public String id() {
+                return "half-consumer";
+            }
+
+            @Override protected boolean commit() {
+                // Commiting on the half of the data.
+                int sz = keys(cacheId(DEFAULT_CACHE_NAME)).size();
+
+                if (sz >= KEYS_CNT/2) {
+                    expSz[0] = KEYS_CNT - sz;
+
+                    return true;
+                }
+
+                return false;
+            }
+        };
+
+        IgniteCDC cdc = new IgniteCDC(cfg, consumer);
+
+        IgniteInternalFuture<?> fut = runAsync(cdc);
+
+        waitForSize(KEYS_CNT, consumer);
+
+        fut.cancel();
+
+        assertTrue(consumer.stoped);
+
+        fut = runAsync(cdc);
+
+        waitForSize(expSz[0], consumer);
+
+        fut.cancel();
+
+        assertTrue(consumer.stoped);
+    }
+
     /** */
-    private boolean waitForSize(int expSz, StoreKeysCDCConsumer... consumers) throws IgniteInterruptedCheckedException {
+    private boolean waitForSize(int expSz, StoreKeysConsumer... consumers) throws IgniteInterruptedCheckedException {
         return waitForCondition(() ->
             Arrays.stream(consumers).mapToInt(c -> F.size(c.keys(cacheId(DEFAULT_CACHE_NAME)))).sum() >= expSz,
             getTestTimeout());
@@ -271,9 +360,28 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class StoreKeysCDCConsumer implements CDCConsumer {
+    private static class StoreKeysConsumer extends ProcessDataConsumer<Integer, byte[]> {
         /** Keys */
         private final ConcurrentMap<Integer, Set<Integer>> cacheKeys = new ConcurrentHashMap<>();
+
+        /** {@inheritDoc} */
+        @Override protected void onData(int cacheId, Integer key, byte[] val) {
+            cacheKeys.computeIfAbsent(cacheId, k -> new GridConcurrentHashSet<>()).add(key);
+        }
+
+        /** @return Read keys. */
+        public Set<Integer> keys(int cacheId) {
+            if (cacheKeys == null)
+                return null;
+
+            return cacheKeys.get(cacheId);
+        }
+    }
+
+    /** */
+    private abstract static class ProcessDataConsumer<K, V> implements CDCConsumer {
+        /** */
+        public boolean stoped;
 
         /** {@inheritDoc} */
         @Override public String id() {
@@ -288,14 +396,10 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
             DataRecord dataRecord = (DataRecord)rec;
 
             for (DataEntry entry : dataRecord.writeEntries()) {
-                cacheKeys.computeIfAbsent(entry.cacheId(), key -> new GridConcurrentHashSet<>());
-
                 if (entry instanceof UnwrappedDataEntry) {
                     UnwrappedDataEntry unwrapDataEntry = (UnwrappedDataEntry)entry;
 
-                    Integer key = (Integer)unwrapDataEntry.unwrappedKey();
-
-                    cacheKeys.get(entry.cacheId()).add(key);
+                    onData(entry.cacheId(), (K)unwrapDataEntry.unwrappedKey(), (V)unwrapDataEntry.unwrappedValue());
                 }
                 else if (entry instanceof MarshalledDataEntry) {
                     fail("Unexpected data entry type.");
@@ -305,25 +409,25 @@ public class IgniteCDCSelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            return true;
+            return commit();
         }
 
         /** {@inheritDoc} */
         @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
-            // No-op.
+            stoped = false;
         }
 
         /** {@inheritDoc} */
         @Override public void stop() {
-            // No-op.
+            stoped = true;
         }
 
-        /** @return Read keys. */
-        public Set<Integer> keys(int cacheId) {
-            if (cacheKeys == null)
-                return null;
-
-            return cacheKeys.get(cacheId);
+        /** */
+        protected boolean commit() {
+            return true;
         }
+
+        /** */
+        protected abstract void onData(int cacheId, K key, V val);
     }
 }
