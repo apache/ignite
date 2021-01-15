@@ -29,6 +29,7 @@ namespace IgniteExamples.Shared
     {
         static Utils()
         {
+            // Only necessary during Ignite development.
             Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
         }
 
