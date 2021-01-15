@@ -32,12 +32,6 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** */
         public static readonly Example[] AllExamples = GetExamples().ToArray();
 
-        /** */
-        public static readonly Example[] ThickExamples = AllExamples.Where(e => !e.IsThin).ToArray();
-
-        /** */
-        public static readonly Example[] ThinExamples = AllExamples.Where(e => e.IsThin).ToArray();
-
         /** Method invoke flags. */
         private const BindingFlags InvokeFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.InvokeMethod;
 
