@@ -5,7 +5,7 @@
     <RootNamespace>IgniteExamples.Shared</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(IgniteBinaryDistro) == ''">
+  <ItemGroup Condition="$(IgniteBinaryDistro) == '' And $(IgniteSourceDistro) == ''">
     <PackageReference Include="Apache.Ignite" Version="2.*" />
   </ItemGroup>
 
