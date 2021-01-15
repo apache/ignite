@@ -27,8 +27,8 @@
     <name>Apache Ignite</name>
     <homepage rdf:resource="http://ignite.apache.org" />
     <asfext:pmc rdf:resource="http://ignite.apache.org" />
-    <shortdesc>Apache Ignite is a distributed database for in-memory speed and high-performance computing.</shortdesc>
-    <description>Apache Ignite is a distributed database for in-memory speed and high-performance computing.</description>
+    <shortdesc>Apache Ignite is a distributed database for high-performance computing with in-memory speed.</shortdesc>
+    <description>Apache Ignite is a distributed database for high-performance computing with in-memory speed.</description>
     <bug-database rdf:resource="https://issues.apache.org/jira/browse/IGNITE" />
     <mailing-list rdf:resource="https://ignite.apache.org/community/resources.html#mail-lists" />
     <download-page rdf:resource="https://ignite.apache.org/download" />
