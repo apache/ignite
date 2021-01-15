@@ -45,6 +45,9 @@ Skip NuGet packaging.
 .PARAMETER skipCodeAnalysis
 Skip code analysis.
 
+.PARAMETER skipExamples
+Skip examples build.
+
 .PARAMETER clean
 Perform a clean rebuild.
 
@@ -85,6 +88,7 @@ param (
     [switch]$skipDotNetCore,
     [switch]$skipNuGet,
     [switch]$skipCodeAnalysis,
+    [switch]$skipExamples,
     [switch]$clean,
     [ValidateSet("Any CPU", "x64", "x86")]
     [string]$platform="Any CPU",
@@ -236,6 +240,10 @@ if(!$skipDotNetCore) {
     $publishCommand = "dotnet publish $targetSolution -c $configuration"
 	echo "Starting dotnet publish: '$publishCommand'"
 	Exec $publishCommand
+
+    if (!$skipExamples) {
+        Exec "dotnet build .\examples\IgniteExamples.sln"
+    }
 }
 
 if ($asmDirs) {
