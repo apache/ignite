@@ -21,8 +21,6 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Text.RegularExpressions;
-    using Apache.Ignite.Examples.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -30,17 +28,21 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public class Example
     {
-        /** Execute action */
-        private Action _runAction;
-
-        /** Config url */
-        public string ConfigPath { get; private set; }
-
-        /** Dll load flag */
-        public bool NeedsTestDll { get; private set; }
-
         /** Name */
-        public Type ExampleType { get; private set; }
+        public string Name { get; }
+
+        /** Project file */
+        public string ProjectFile { get; }
+
+        /** Assembly path */
+        public string AssemblyFile { get; }
+
+        public Example(string name, string projectFile, string assemblyFile)
+        {
+            Name = name;
+            ProjectFile = projectFile;
+            AssemblyFile = assemblyFile;
+        }
 
         /// <summary>
         /// Runs this example.
@@ -49,7 +51,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             try
             {
-                _runAction();
+                Assert.IsTrue(File.Exists(AssemblyFile), $"Assembly not found: {AssemblyFile}");
+
+                // TODO
             }
             catch (InvalidOperationException ex)
             {
@@ -71,59 +75,27 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// </summary>
         public static IEnumerable<Example> GetExamples()
         {
-            var examplesAsm = typeof (ClosureExample).Assembly;
+            var projFiles = Directory.GetFiles(ExamplePaths.ExamplesSourcePath, "*.csproj", SearchOption.AllDirectories)
+                .Where(x => !x.EndsWith("Shared.csproj") && !x.EndsWith("ServerNode.csproj")).ToArray();
 
-            var sourceFiles = Directory.GetFiles(PathUtil.ExamplesSourcePath, "*.cs", SearchOption.AllDirectories)
-                .Where(x => !x.Contains("dotnetcore")).ToArray();
+            Assert.IsTrue(projFiles.Any());
 
-            Assert.IsTrue(sourceFiles.Any());
-
-            var types = examplesAsm.GetTypes().Where(x => x.GetMethod("Main") != null).OrderBy(x => x.Name).ToArray();
-
-            Assert.IsTrue(types.Any());
-
-            foreach (var type in types)
-            {
-                var sourceFile = sourceFiles.Single(
-                    x => x.EndsWith(string.Format("{0}{1}.cs", Path.DirectorySeparatorChar, type.Name)));
-
-                var sourceCode = File.ReadAllText(sourceFile);
-
-                yield return new Example
+            return projFiles
+                .Select(projFile =>
                 {
-                    ConfigPath = GetConfigPath(sourceCode),
-                    NeedsTestDll = sourceCode.Contains("-assembly="),
-                    _runAction = GetRunAction(type),
-                    ExampleType = type
-                };
-            }
-        }
+                    var name = Path.GetFileNameWithoutExtension(projFile);
+                    var path = Path.GetDirectoryName(projFile);
+                    var asmFile = Path.Combine(path, "bin", "debug", "netcoreapp2.1", $"{name}.dll");
 
-        /// <summary>
-        /// Gets the run action.
-        /// </summary>
-        private static Action GetRunAction(Type type)
-        {
-            var mainMethod = type.GetMethod("Main");
-            Assert.IsNotNull(mainMethod);
-            return (Action) Delegate.CreateDelegate(typeof (Action), mainMethod);
-        }
-
-        /// <summary>
-        /// Gets the spring configuration URL.
-        /// </summary>
-        private static string GetConfigPath(string code)
-        {
-            var match = Regex.Match(code, "-configFileName=(.*?.config)");
-
-            return match.Success ? match.Groups[1].Value : null;
+                    return new Example(name, projFile, asmFile);
+                });
         }
 
         /** <inheritdoc /> */
         public override string ToString()
         {
             // This will be displayed in TeamCity and R# test runner
-            return ExampleType.Name;
+            return Name;
         }
     }
 }

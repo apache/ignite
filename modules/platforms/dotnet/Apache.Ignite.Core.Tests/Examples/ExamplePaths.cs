@@ -22,11 +22,8 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// <summary>
     /// Grid path resolver.
     /// </summary>
-    public static class PathUtil
+    public static class ExamplePaths
     {
-        /** */
-        public const string DevPrefix = "modules\\";
-
         /** */
         public static readonly string IgniteHome = Impl.Common.IgniteHome.Resolve();
 
@@ -35,22 +32,5 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// </summary>
         public static readonly string ExamplesSourcePath =
             Path.Combine(IgniteHome, "modules", "platforms", "dotnet", "examples");
-
-        /// <summary>
-        /// Examples application configuration path.
-        /// </summary>
-        public static readonly string ExamplesAppConfigPath =
-            Path.Combine(ExamplesSourcePath, "Apache.Ignite.Examples", "App.config");
-
-        /// <summary>
-        /// Gets the full configuration path.
-        /// </summary>
-        public static string GetFullConfigPath(string springConfigUrl)
-        {
-            if (string.IsNullOrEmpty(springConfigUrl))
-                return springConfigUrl;
-
-            return Path.GetFullPath(Path.Combine(IgniteHome, DevPrefix + springConfigUrl));
-        }
     }
 }

@@ -17,9 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Examples
 {
-    using System.IO;
-    using System.Linq;
-    using System.Text.RegularExpressions;
     using NUnit.Framework;
 
     /// <summary>
@@ -31,25 +28,13 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// Checks config files in examples comments for existence.
         /// </summary>
         [Test]
-        public void CheckConfigFilesExist()
+        public void Test()
         {
             // TODO:
             // * All projects are in solution
             // * All projects are in VS Code config
             // * All projects have correct namespaces
             // * All examples have Thin and Thick variants when possible
-
-            var paths = Directory.GetFiles(PathUtil.ExamplesSourcePath, "*.cs", SearchOption.AllDirectories)
-                .Select(File.ReadAllText)
-                .SelectMany(src => Regex.Matches(src, @"platforms[^\s]+.config").OfType<Match>())
-                .Where(match => match.Success)
-                .Select(match => PathUtil.GetFullConfigPath(match.Value))
-                .Distinct()
-                .ToList();
-
-            Assert.AreEqual(1, paths.Count);
-
-            paths.ForEach(path => Assert.IsTrue(File.Exists(path), "Config file does not exist: " + path));
         }
     }
 }
