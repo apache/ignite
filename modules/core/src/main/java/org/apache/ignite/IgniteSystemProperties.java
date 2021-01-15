@@ -1972,10 +1972,10 @@ public final class IgniteSystemProperties {
 
     /**
      * Maximum performance statistics file size in bytes. Performance statistics collection will be stopped when the
-     * size exceeded. The default value is {@link FilePerformanceStatisticsWriter#DFLT_FILE_MAX_SIZE}.
+     * file size exceeded. The default value is {@link FilePerformanceStatisticsWriter#DFLT_FILE_MAX_SIZE}.
      */
     @SystemProperty(value = "Maximum performance statistics file size in bytes. Performance statistics collection " +
-        "will be stopped when the size exceeded", type = Long.class, defaults = "" + DFLT_FILE_MAX_SIZE)
+        "will be stopped when the file size exceeded", type = Long.class, defaults = "" + DFLT_FILE_MAX_SIZE)
     public static final String IGNITE_PERF_STAT_FILE_MAX_SIZE = "IGNITE_PERF_STAT_FILE_MAX_SIZE";
 
     /**

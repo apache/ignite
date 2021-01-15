@@ -89,7 +89,7 @@ You can manage the performance statistics collection via the `PerformanceStatist
 |===
 |Property | Type | Default Value | Description
 |IGNITE_PERF_STAT_FILE_MAX_SIZE | Long | 32 Gb | Maximum performance statistics file size in bytes. Performance
-statistics collection will be stopped when the size exceeded.
+statistics collection will be stopped when the file size exceeded.
 |IGNITE_PERF_STAT_BUFFER_SIZE | Integer | 32 Mb | Performance statistics off heap buffer size in bytes.
 |IGNITE_PERF_STAT_FLUSH_SIZE | Integer | 8 Mb | Minimal performance statistics batch size to be flushed in bytes.
 |IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD | Integer | 1024 | Maximum performance statistics cached strings threshold.
