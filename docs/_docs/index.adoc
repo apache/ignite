@@ -14,7 +14,7 @@
 // limitations under the License.
 = Apache Ignite Documentation
 
-Apache Ignite is a distributed database for in-memory speed and high-performance computing.
+Apache Ignite is a distributed database for high-performance computing with in-memory speed.
 
 The technical documentation introduces you to the key capabilities, shows how to use certain features of
 the current Apache Ignite version.
