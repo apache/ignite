@@ -23,8 +23,15 @@ using Apache.Ignite.Core.Log;
 
 namespace IgniteExamples.Shared
 {
+    using System;
+
     public static class Utils
     {
+        static Utils()
+        {
+            Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
+        }
+
         public static IgniteConfiguration GetServerNodeConfiguration()
         {
             // None of the options below are mandatory for the examples to work.
