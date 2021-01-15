@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel.logical;
 
 import java.util.List;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -26,15 +27,14 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
-import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -47,27 +47,37 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         String idxName,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColunms
+        @Nullable ImmutableBitSet requiredColumns
     ) {
         IgniteTable tbl = table.unwrap(IgniteTable.class);
         IgniteTypeFactory typeFactory = Commons.typeFactory(cluster);
-        RelDataType rowType = tbl.getRowType(typeFactory, requiredColunms);
+        RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
         RelCollation collation = tbl.getIndex(idxName).collation();
 
-        if (requiredColunms != null) {
-            Mappings.TargetMapping targetMapping = Commons.mapping(requiredColunms,
+        if (requiredColumns != null) {
+            Mappings.TargetMapping targetMapping = Commons.mapping(requiredColumns,
                 tbl.getRowType(typeFactory).getFieldCount());
             collation = collation.apply(targetMapping);
             if (proj != null)
                 collation = TraitUtils.projectCollation(collation, proj, rowType);
         }
 
-        Pair<List<RexNode>, List<RexNode>> pair = RexUtils.buildIndexConditions(cluster, collation, cond, rowType);
+        IndexConditions idxCond = RexUtils.buildIndexConditions(
+            cluster,
+            collation,
+            cond,
+            tbl.getRowType(typeFactory),
+            requiredColumns);
 
-        List<RexNode> lowerIdxCond = F.isEmpty(pair.left) ? null : pair.left;
-        List<RexNode> upperIdxCond = F.isEmpty(pair.right) ? null : pair.right;
-
-        return new IgniteLogicalIndexScan(cluster, traits, table, idxName, proj, cond, lowerIdxCond, upperIdxCond, requiredColunms);
+        return new IgniteLogicalIndexScan(
+            cluster,
+            traits,
+            table,
+            idxName,
+            proj,
+            cond,
+            idxCond,
+            requiredColumns);
     }
 
     /**
@@ -78,9 +88,8 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
      * @param idxName Index name.
      * @param proj Projects.
      * @param cond Filters.
-     * @param lowerCond Lower condition.
-     * @param upperCond Upper condition.
-     * @param requiredColunms Participating colunms.
+     * @param idxCond Index conditions.
+     * @param requiredCols Participating columns.
      */
     private IgniteLogicalIndexScan(
         RelOptCluster cluster,
@@ -89,10 +98,9 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         String idxName,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable List<RexNode> lowerCond,
-        @Nullable List<RexNode> upperCond,
-        @Nullable ImmutableBitSet requiredColunms
+        @Nullable IndexConditions idxCond,
+        @Nullable ImmutableBitSet requiredCols
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, lowerCond, upperCond, requiredColunms);
+        super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, idxCond, requiredCols);
     }
 }

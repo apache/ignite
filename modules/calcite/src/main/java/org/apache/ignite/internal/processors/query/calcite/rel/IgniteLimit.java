@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
@@ -67,6 +68,18 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
         super(cluster, traits, child);
         this.offset = offset;
         this.fetch = fetch;
+    }
+
+    /** */
+    public IgniteLimit(RelInput input) {
+        super(
+            input.getCluster(),
+            input.getTraitSet().replace(IgniteConvention.INSTANCE),
+            input.getInputs().get(0)
+        );
+
+        offset = input.getExpression("offset");
+        fetch = input.getExpression("fetch");
     }
 
     /** {@inheritDoc} */

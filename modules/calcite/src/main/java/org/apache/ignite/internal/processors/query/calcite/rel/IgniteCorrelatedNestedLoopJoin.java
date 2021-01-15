@@ -27,6 +27,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
@@ -43,6 +44,9 @@ import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrai
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
 
 /**
  * Relational expression that combines two relational expressions according to
@@ -92,21 +96,33 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
+        RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
+        RelCollation leftCollation = TraitUtils.collation(left), rightCollation = TraitUtils.collation(right);
+
+        List<Integer> newRightCollationFields = maxPrefix(rightCollation.getKeys(), joinInfo.leftKeys);
+
+        if (F.isEmpty(newRightCollationFields))
+            return ImmutableList.of();
+
         // We preserve left edge collation only if batch size == 1
         if (variablesSet.size() == 1)
-            return super.deriveCollation(nodeTraits, inputTraits);
+            nodeTraits = nodeTraits.replace(leftCollation);
+        else
+            nodeTraits = nodeTraits.replace(RelCollations.EMPTY);
 
-        RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(RelCollations.EMPTY))));
+        return ImmutableList.of(Pair.of(nodeTraits, inputTraits));
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
         // Correlated nested loop requires rewindable right edge.
-
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
         RewindabilityTrait rewindability = TraitUtils.rewindability(left);
@@ -116,15 +132,30 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
     }
 
     /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // We preserve left edge collation only if batch size == 1
-        if (variablesSet.size() == 1)
-            return super.passThroughCollation(nodeTraits, inputTraits);
-
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
 
+        // Index lookup (collation) is required for right input.
+        RelCollation rightReplace = RelCollations.of(joinInfo.rightKeys);
+
+        // We preserve left edge collation only if batch size == 1
+        if (variablesSet.size() == 1) {
+            Pair<RelTraitSet, List<RelTraitSet>> baseTraits = super.passThroughCollation(nodeTraits, inputTraits);
+
+            return Pair.of(
+                baseTraits.getKey(),
+                ImmutableList.of(
+                    baseTraits.getValue().get(0),
+                    baseTraits.getValue().get(1).replace(rightReplace)
+                )
+            );
+        }
+
         return Pair.of(nodeTraits.replace(RelCollations.EMPTY),
-            ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(RelCollations.EMPTY)));
+            ImmutableList.of(left.replace(RelCollations.EMPTY), right.replace(rightReplace)));
     }
 
     /** {@inheritDoc} */

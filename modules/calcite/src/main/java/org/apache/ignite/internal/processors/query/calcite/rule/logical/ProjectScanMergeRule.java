@@ -50,10 +50,22 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             "ProjectIndexScanMergeRule"
         ) {
             /** {@inheritDoc} */
-            @Override protected IgniteLogicalIndexScan createNode(RelOptCluster cluster, IgniteLogicalIndexScan scan,
-                RelTraitSet traits, List<RexNode> projections, RexNode cond, ImmutableBitSet requiredColunms) {
-                return IgniteLogicalIndexScan.create(cluster, traits, scan.getTable(), scan.indexName(), projections,
-                    cond, requiredColunms);
+            @Override protected IgniteLogicalIndexScan createNode(
+                RelOptCluster cluster,
+                IgniteLogicalIndexScan scan,
+                RelTraitSet traits,
+                List<RexNode> projections,
+                RexNode cond,
+                ImmutableBitSet requiredColumns
+            ) {
+                return IgniteLogicalIndexScan.create(
+                    cluster,
+                    traits,
+                    scan.getTable(),
+                    scan.indexName(),
+                    projections,
+                    cond, requiredColumns
+                );
             }
         };
 
@@ -65,15 +77,34 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             "ProjectTableScanMergeRule"
         ) {
             /** {@inheritDoc} */
-            @Override protected IgniteLogicalTableScan createNode(RelOptCluster cluster, IgniteLogicalTableScan scan,
-                RelTraitSet traits, List<RexNode> projections, RexNode cond, ImmutableBitSet requiredColunms) {
-                return IgniteLogicalTableScan.create(cluster, traits, scan.getTable(), projections, cond, requiredColunms);
+            @Override protected IgniteLogicalTableScan createNode(
+                RelOptCluster cluster,
+                IgniteLogicalTableScan scan,
+                RelTraitSet traits,
+                List<RexNode> projections,
+                RexNode cond,
+                ImmutableBitSet requiredColumns
+            ) {
+                return IgniteLogicalTableScan.create(
+                    cluster,
+                    traits,
+                    scan.getTable(),
+                    projections,
+                    cond,
+                    requiredColumns
+                );
             }
         };
 
     /** */
-    protected abstract T createNode(RelOptCluster cluster, T scan, RelTraitSet traits, List<RexNode> projections,
-                                    RexNode cond, ImmutableBitSet requiredColunms);
+    protected abstract T createNode(
+        RelOptCluster cluster,
+        T scan,
+        RelTraitSet traits,
+        List<RexNode> projections,
+        RexNode cond,
+        ImmutableBitSet requiredColumns
+    );
 
     /**
      * Constructor.
@@ -134,9 +165,9 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             }
         }.apply(cond);
 
-        ImmutableBitSet requiredColunms = builder.build();
+        ImmutableBitSet requiredColumns = builder.build();
 
-        Mappings.TargetMapping targetMapping = Commons.mapping(requiredColunms,
+        Mappings.TargetMapping targetMapping = Commons.mapping(requiredColumns,
             tbl.getRowType(typeFactory).getFieldCount());
 
         projects = new RexShuttle() {
@@ -145,7 +176,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             }
         }.apply(projects);
 
-        if (RexUtils.isIdentity(projects, tbl.getRowType(typeFactory, requiredColunms), true))
+        if (RexUtils.isIdentity(projects, tbl.getRowType(typeFactory, requiredColumns), true))
             projects = null;
 
         cond = new RexShuttle() {
@@ -154,6 +185,6 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             }
         }.apply(cond);
 
-        call.transformTo(createNode(cluster, scan, traits, projects, cond, requiredColunms));
+        call.transformTo(createNode(cluster, scan, traits, projects, cond, requiredColumns));
     }
 }

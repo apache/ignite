@@ -19,12 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -32,7 +29,6 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -49,7 +45,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -1054,74 +1049,6 @@ public class ExecutionTest extends AbstractExecutionTest {
     /**
      *
      */
-    @Test
-    public void testTableSpool() {
-        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-        IgniteTypeFactory tf = ctx.getTypeFactory();
-        RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
-
-        int[] leftSizes = {1, 99, 100, 101, 512, 513, 2000};
-        int[] rightSizes = {1, 99, 100, 101, 512, 513, 2000};
-        int[] rightBufSizes = {1, 100, 512};
-
-        for (int rightBufSize : rightBufSizes) {
-            for (int leftSize : leftSizes) {
-                for (int rightSize : rightSizes) {
-                    log.info("Check: rightBufSize=" + rightBufSize + ", leftSize=" + leftSize + ", rightSize=" + rightSize);
-
-                    ScanNode<Object[]> left = new ScanNode<>(ctx, rowType, new TestTable(leftSize, rowType));
-                    ScanNode<Object[]> right = new ScanNode<>(ctx, rowType, new TestTable(rightSize, rowType) {
-                        boolean first = true;
-
-                        @Override public @NotNull Iterator<Object[]> iterator() {
-                            assertTrue("Rewind right", first);
-
-                            first = false;
-                            return super.iterator();
-                        }
-                    });
-
-                    TableSpoolNode<Object[]> rightSpool = new TableSpoolNode<>(ctx, rowType);
-
-                    rightSpool.register(Arrays.asList(right));
-
-                    RelDataType joinRowType = TypeUtils.createRowType(
-                        tf,
-                        int.class, String.class, int.class,
-                        int.class, String.class, int.class);
-
-                    CorrelatedNestedLoopJoinNode<Object[]> join = new CorrelatedNestedLoopJoinNode<>(
-                        ctx,
-                        joinRowType,
-                        r -> r[0].equals(r[3]),
-                        ImmutableSet.of(new CorrelationId(0)));
-
-                    GridTestUtils.setFieldValue(join, "rightInBufferSize", rightBufSize);
-
-                    join.register(Arrays.asList(left, rightSpool));
-
-                    RootNode<Object[]> root = new RootNode<>(ctx, joinRowType);
-                    root.register(join);
-
-                    int cnt = 0;
-                    while (root.hasNext()) {
-                        root.next();
-
-                        cnt++;
-                    }
-
-                    assertEquals(
-                        "Invalid result size. [left=" + leftSize + ", right=" + rightSize + ", results=" + cnt,
-                        min(leftSize, rightSize),
-                        cnt);
-                }
-            }
-        }
-    }
-
-    /**
-     *
-     */
     private Object[] row(Object... fields) {
         return fields;
     }
@@ -1154,76 +1081,5 @@ public class ExecutionTest extends AbstractExecutionTest {
                 return fields;
             }
         };
-    }
-
-    /**
-     *
-     */
-    public static class TestTable implements Iterable<Object[]> {
-        /** */
-        private int rowsCnt;
-
-        /** */
-        private RelDataType rowType;
-
-        /** */
-        private Function<Integer, Object>[] fieldCreators;
-
-        /** */
-        TestTable(int rowsCnt, RelDataType rowType) {
-            this.rowsCnt = rowsCnt;
-            this.rowType = rowType;
-
-            fieldCreators = rowType.getFieldList().stream()
-                .map((Function<RelDataTypeField, Function<Integer, Object>>) (t) -> {
-                    switch (t.getType().getSqlTypeName().getFamily()) {
-                        case NUMERIC:
-                            return TestTable::intField;
-
-                        case CHARACTER:
-                            return TestTable::stringField;
-
-                        default:
-                            assert false : "Not supported type for test: " + t;
-                            return null;
-                    }
-                })
-                .collect(Collectors.toList()).toArray(new Function[rowType.getFieldCount()]);
-        }
-
-        /** */
-        private static Object stringField(Integer rowNum) {
-            return "val_" + rowNum;
-        }
-
-        /** */
-        private static Object intField(Integer rowNum) {
-            return rowNum;
-        }
-
-        /** */
-        private Object[] createRow(int rowNum) {
-            Object[] row = new Object[rowType.getFieldCount()];
-
-            for (int i = 0; i < fieldCreators.length; ++i)
-                row[i] = fieldCreators[i].apply(rowNum);
-
-            return row;
-        }
-
-        /** {@inheritDoc} */
-        @NotNull @Override public Iterator<Object[]> iterator() {
-            return new Iterator<Object[]>() {
-                private int curRow;
-
-                @Override public boolean hasNext() {
-                    return curRow < rowsCnt;
-                }
-
-                @Override public Object[] next() {
-                    return createRow(curRow++);
-                }
-            };
-        }
     }
 }

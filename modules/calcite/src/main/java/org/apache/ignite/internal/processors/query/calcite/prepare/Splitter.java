@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
@@ -49,8 +50,11 @@ public class Splitter extends IgniteRelShuttle {
 
         while (!stack.isEmpty()) {
             curr = stack.pop();
+
             curr.root = visit(curr.root);
+
             res.add(curr.build());
+
             curr = null;
         }
 
@@ -81,7 +85,7 @@ public class Splitter extends IgniteRelShuttle {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTrimExchange rel) {
-        return rel.clone(IdGenerator.nextId());
+        return ((IgniteTrimExchange)processNode(rel)).clone(IdGenerator.nextId());
     }
 
     /** {@inheritDoc} */

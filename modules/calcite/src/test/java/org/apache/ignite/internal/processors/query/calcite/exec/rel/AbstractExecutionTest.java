@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,11 +29,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
@@ -52,6 +56,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -315,6 +320,101 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void prepareUnmarshal(Message msg) {
             // No-op;
+        }
+    }
+
+    /**
+     *
+     */
+    public static class TestTable implements Iterable<Object[]> {
+        /** */
+        private int rowsCnt;
+
+        /** */
+        private RelDataType rowType;
+
+        /** */
+        private Function<Integer, Object>[] fieldCreators;
+
+        /** */
+        TestTable(int rowsCnt, RelDataType rowType) {
+            this.rowsCnt = rowsCnt;
+            this.rowType = rowType;
+
+            fieldCreators = rowType.getFieldList().stream()
+                .map((Function<RelDataTypeField, Function<Integer, Object>>) (t) -> {
+                    switch (t.getType().getSqlTypeName().getFamily()) {
+                        case NUMERIC:
+                            return TestTable::intField;
+
+                        case CHARACTER:
+                            return TestTable::stringField;
+
+                        default:
+                            assert false : "Not supported type for test: " + t;
+                            return null;
+                    }
+                })
+                .collect(Collectors.toList()).toArray(new Function[rowType.getFieldCount()]);
+        }
+
+        /** */
+        private static Object stringField(Integer rowNum) {
+            return "val_" + rowNum;
+        }
+
+        /** */
+        private static Object intField(Integer rowNum) {
+            return rowNum;
+        }
+
+        /** */
+        private Object[] createRow(int rowNum) {
+            Object[] row = new Object[rowType.getFieldCount()];
+
+            for (int i = 0; i < fieldCreators.length; ++i)
+                row[i] = fieldCreators[i].apply(rowNum);
+
+            return row;
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<Object[]> iterator() {
+            return new Iterator<Object[]>() {
+                private int curRow;
+
+                @Override public boolean hasNext() {
+                    return curRow < rowsCnt;
+                }
+
+                @Override public Object[] next() {
+                    return createRow(curRow++);
+                }
+            };
+        }
+    }
+
+    /** */
+    public static class RootRewindable<Row> extends RootNode<Row> {
+        /** */
+        public RootRewindable(ExecutionContext<Row> ctx, RelDataType rowType) {
+            super(ctx, rowType);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void rewindInternal() {
+            GridTestUtils.setFieldValue(this, RootNode.class, "waiting", 0);
+            GridTestUtils.setFieldValue(this, RootNode.class, "closed", false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void closeInternal() {
+            // No-op
+        }
+
+        /** */
+        public void closeRewindableRoot() {
+            super.closeInternal();
         }
     }
 }

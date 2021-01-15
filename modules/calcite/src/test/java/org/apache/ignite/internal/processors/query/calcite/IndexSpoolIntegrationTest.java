@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -41,10 +44,10 @@ import static org.junit.Assert.assertThat;
 
 
 /**
- * IndexSpool test.
+ * Index spool test.
  */
 @RunWith(Parameterized.class)
-public class TableSpoolTest extends GridCommonAbstractTest {
+public class IndexSpoolIntegrationTest extends GridCommonAbstractTest {
     /** Rows. */
     private static final int[] ROWS = {1, 10, 512, 513, 2000};
 
@@ -95,7 +98,8 @@ public class TableSpoolTest extends GridCommonAbstractTest {
             .setKeyFieldName("ID")
             .addQueryField("ID", Integer.class.getName(), null)
             .addQueryField("JID", Integer.class.getName(), null)
-            .addQueryField("VAL", String.class.getName(), null);
+            .addQueryField("VAL", String.class.getName(), null)
+            .setIndexes(Collections.singletonList(new QueryIndex("JID")));
 
         QueryEntity part1 = new QueryEntity()
             .setTableName("TEST1")
@@ -104,7 +108,8 @@ public class TableSpoolTest extends GridCommonAbstractTest {
             .setKeyFieldName("ID")
             .addQueryField("ID", Integer.class.getName(), null)
             .addQueryField("JID", Integer.class.getName(), null)
-            .addQueryField("VAL", String.class.getName(), null);
+            .addQueryField("VAL", String.class.getName(), null)
+            .setIndexes(Collections.singletonList(new QueryIndex("JID")));
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
@@ -131,7 +136,7 @@ public class TableSpoolTest extends GridCommonAbstractTest {
         List<FieldsQueryCursor<List<?>>> cursors = engine.query(
             null,
             "PUBLIC",
-            "SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter') */" +
+            "SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */" +
                 "T0.val, T1.val FROM TEST0 as T0 " +
                 "JOIN TEST1 as T1 on T0.jid = T1.jid ",
             X.EMPTY_OBJECT_ARRAY

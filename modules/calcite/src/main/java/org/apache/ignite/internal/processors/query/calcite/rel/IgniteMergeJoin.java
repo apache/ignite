@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +31,6 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
@@ -46,6 +43,10 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.createCollation;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.isPrefix;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
 
 /** */
 public class IgniteMergeJoin extends AbstractIgniteJoin {
@@ -98,7 +99,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             Map<Integer, Integer> leftToRight = joinInfo.pairs().stream()
                 .collect(Collectors.toMap(p -> p.source, p -> p.target));
 
-            newRightCollation = newLeftCollation.stream().map(leftToRight::get).collect(Collectors.toList());
+            newRightCollation = newLeftCollation.subList(0, leftToRight.size()).stream().map(leftToRight::get).collect(Collectors.toList());
         }
         else if (isPrefix(rightCollation.getKeys(), joinInfo.rightKeys)) { // preserve right collation
             newRightCollation = new ArrayList<>(rightCollation.getKeys());
@@ -106,7 +107,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             Map<Integer, Integer> rightToLeft = joinInfo.pairs().stream()
                 .collect(Collectors.toMap(p -> p.target, p -> p.source));
 
-            newLeftCollation = newRightCollation.stream().map(rightToLeft::get).collect(Collectors.toList());
+            newLeftCollation = newRightCollation.subList(0, rightToLeft.size()).stream().map(rightToLeft::get).collect(Collectors.toList());
         }
         else { // generate new collations
             // TODO: generate permutations when there will be multitraits
@@ -225,64 +226,5 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
 
         return costFactory.makeCost(rows,
             rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
-    }
-
-    /**
-     * Returns the longest possible prefix of {@code seq} that could be form from provided {@code elems}.
-     *
-     * @param seq Sequence.
-     * @param elems Elems.
-     * @return The longest possible prefix of {@code seq}.
-     */
-    private static <T> List<T> maxPrefix(List<T> seq, Collection<T> elems) {
-        List<T> res = new ArrayList<>();
-
-        Set<T> elems0 = new HashSet<>(elems);
-
-        for (T e : seq) {
-            if (!elems0.remove(e))
-                break;
-
-            res.add(e);
-        }
-
-        return res;
-    }
-
-    /**
-     * Checks if there is a such permutation of all {@code elems} that is prefix of
-     * provided {@code seq}.
-     *
-     * @param seq Sequence.
-     * @param elems Elems.
-     * @return {@code true} if there is a permutation of all {@code elems} that is prefix of {@code seq}.
-     */
-    private static <T> boolean isPrefix(List<T> seq, Collection<T> elems) {
-        Set<T> elems0 = new HashSet<>(elems);
-
-        if (seq.size() < elems0.size())
-            return false;
-
-        for (T e : seq) {
-            if (!elems0.remove(e))
-                return false;
-
-            if (elems0.isEmpty())
-                break;
-        }
-
-        return true;
-    }
-
-    /**
-     * Creates collations from provided keys.
-     *
-     * @param keys The keys to create collation from.
-     * @return New collation.
-     */
-    private static RelCollation createCollation(List<Integer> keys) {
-        return RelCollations.of(
-            keys.stream().map(RelFieldCollation::new).collect(Collectors.toList())
-        );
     }
 }

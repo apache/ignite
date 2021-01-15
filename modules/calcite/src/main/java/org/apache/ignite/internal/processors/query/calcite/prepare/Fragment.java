@@ -23,6 +23,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
@@ -34,6 +35,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,6 +53,7 @@ public class Fragment {
     private final IgniteRel root;
 
     /** Serialized root representation. */
+    @GridToStringExclude
     private final String rootSer;
 
     /** */
@@ -183,6 +187,6 @@ public class Fragment {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return rootSer;
+        return S.toString(Fragment.class, this, "root", RelOptUtil.toString(root));
     }
 }

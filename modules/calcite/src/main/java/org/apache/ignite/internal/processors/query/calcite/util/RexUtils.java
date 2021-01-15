@@ -26,7 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import com.google.common.collect.ImmutableList;
+
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPredicateList;
@@ -58,8 +58,8 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ControlFlowException;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Litmus;
-import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
@@ -159,16 +159,22 @@ public class RexUtils {
     /**
      * Builds index conditions.
      */
-    public static Pair<List<RexNode>, List<RexNode>> buildIndexConditions(RelOptCluster cluster, RelCollation collation, RexNode condition, RelDataType rowType) {
+    public static IndexConditions buildIndexConditions(
+        RelOptCluster cluster,
+        RelCollation collation,
+        RexNode condition,
+        RelDataType rowType,
+        ImmutableBitSet requiredColumns
+    ) {
         if (condition == null || collation == null || collation.getFieldCollations().isEmpty())
-            return Pair.of(ImmutableList.of(), ImmutableList.of());
+            return new IndexConditions();
 
         condition = RexUtil.toCnf(builder(cluster), condition);
 
         Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields(condition, cluster);
 
         if (F.isEmpty(fieldsToPredicates))
-            return Pair.of(ImmutableList.of(), ImmutableList.of());
+            return new IndexConditions();
 
         List<RexNode> lower = new ArrayList<>();
         List<RexNode> upper = new ArrayList<>();
@@ -248,7 +254,25 @@ public class RexUtils {
             }
         }
 
-        return Pair.of(lower, upper);
+        Mappings.TargetMapping mapping = null;
+
+        if (requiredColumns != null)
+            mapping = Commons.inverseMapping(requiredColumns, rowType.getFieldCount());
+
+        List<RexNode> lowerBound = null;
+        List<RexNode> upperBound = null;
+
+        if (!F.isEmpty(lower))
+            lowerBound = asBound(cluster, lower, rowType, mapping);
+        else
+            lower = null;
+
+        if (!F.isEmpty(upper))
+            upperBound = asBound(cluster, upper, rowType, mapping);
+        else
+            upper = null;
+
+        return new IndexConditions(lower, upper, lowerBound, upperBound);
     }
 
     /** */
@@ -262,7 +286,7 @@ public class RexUtils {
                 continue;
 
             RexCall predCall = (RexCall)rexNode;
-            RexLocalRef ref = (RexLocalRef)extractRef(predCall);
+            RexSlot ref = (RexSlot)extractRef(predCall);
 
             if (ref == null)
                 continue;
@@ -288,9 +312,9 @@ public class RexUtils {
         leftOp = RexUtil.removeCast(leftOp);
         rightOp = RexUtil.removeCast(rightOp);
 
-        if (leftOp instanceof RexLocalRef && idxOpSupports(rightOp))
+        if ((leftOp instanceof RexLocalRef || leftOp instanceof RexInputRef) && idxOpSupports(rightOp))
             return leftOp;
-        else if (rightOp instanceof RexLocalRef && idxOpSupports(leftOp))
+        else if ((rightOp instanceof RexLocalRef || rightOp instanceof RexInputRef) && idxOpSupports(leftOp))
             return rightOp;
 
         return null;
@@ -302,7 +326,7 @@ public class RexUtils {
 
         rightOp = RexUtil.removeCast(rightOp);
 
-        return rightOp.isA(SqlKind.LOCAL_REF);
+        return rightOp.isA(SqlKind.LOCAL_REF) || rightOp.isA(SqlKind.INPUT_REF);
     }
 
     /** */
@@ -325,6 +349,14 @@ public class RexUtils {
     }
 
     /** */
+    public static boolean isNotNull(RexNode op) {
+        if (op == null)
+            return false;
+
+        return !(op instanceof RexLiteral) || !((RexLiteral)op).isNull();
+    }
+
+    /** */
     public static List<RexNode> asBound(RelOptCluster cluster, Iterable<RexNode> idxCond, RelDataType rowType, @Nullable Mappings.TargetMapping mapping) {
         if (F.isEmpty(idxCond))
             return null;
@@ -337,7 +369,7 @@ public class RexUtils {
             assert pred instanceof RexCall;
 
             RexCall call = (RexCall)pred;
-            RexLocalRef ref = (RexLocalRef)RexUtil.removeCast(call.operands.get(0));
+            RexSlot ref = (RexSlot)RexUtil.removeCast(call.operands.get(0));
             RexNode cond = RexUtil.removeCast(call.operands.get(1));
 
             assert idxOpSupports(cond) : cond;
@@ -367,7 +399,7 @@ public class RexUtils {
     }
 
     /** */
-    public static Mappings.TargetMapping invercePermutation(List<RexNode> nodes, RelDataType inputRowType, boolean local) {
+    public static Mappings.TargetMapping inversePermutation(List<RexNode> nodes, RelDataType inputRowType, boolean local) {
         final Mappings.TargetMapping mapping =
             Mappings.create(MappingType.INVERSE_FUNCTION, nodes.size(), inputRowType.getFieldCount());
 

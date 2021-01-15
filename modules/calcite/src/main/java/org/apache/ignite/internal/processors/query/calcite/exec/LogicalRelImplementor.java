@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNod
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNestedLoopJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.IndexSpoolNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.LimitNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.MergeJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ModifyNode;
@@ -57,6 +58,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedN
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
@@ -165,7 +167,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTrimExchange rel) {
         assert TraitUtils.distribution(rel).getType() == HASH_DISTRIBUTED;
-        assert TraitUtils.distribution(rel.getInput()).getType() == BROADCAST_DISTRIBUTED;
 
         IgniteDistribution distr = rel.distribution();
         Destination<Row> dest = distr.destination(ctx, affSrvc, ctx.group(rel.sourceId()));
@@ -264,11 +265,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
-        ImmutableBitSet requiredColunms = rel.requiredColumns();
+        ImmutableBitSet requiredColumns = rel.requiredColumns();
         List<RexNode> lowerCond = rel.lowerBound();
         List<RexNode> upperCond = rel.upperBound();
 
-        RelDataType rowType = tbl.getRowType(typeFactory, requiredColunms);
+        RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
         Supplier<Row> lower = lowerCond == null ? null : expressionFactory.rowSource(lowerCond);
@@ -279,7 +280,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         CollocationGroup group = ctx.group(rel.sourceId());
 
-        Iterable<Row> rowsIter = idx.scan(ctx, group, filters, lower, upper, prj, requiredColunms);
+        Iterable<Row> rowsIter = idx.scan(ctx, group, filters, lower, upper, prj, requiredColumns);
 
         return new ScanNode<>(ctx, rowType, rowsIter);
     }
@@ -355,6 +356,36 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableSpool rel) {
         TableSpoolNode<Row> node = new TableSpoolNode<>(ctx, rel.getRowType());
+
+        Node<Row> input = visit(rel.getInput());
+
+        node.register(input);
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteIndexSpool rel) {
+        RelCollation collation = rel.collation();
+
+        assert rel.indexCondition() != null : rel;
+
+        List<RexNode> lowerBound = rel.indexCondition().lowerBound();
+        List<RexNode> upperBound = rel.indexCondition().upperBound();
+
+        Predicate<Row> filter = expressionFactory.predicate(rel.condition(), rel.getRowType());
+        Supplier<Row> lower = lowerBound == null ? null : expressionFactory.rowSource(lowerBound);
+        Supplier<Row> upper = upperBound == null ? null : expressionFactory.rowSource(upperBound);
+
+        IndexSpoolNode<Row> node = new IndexSpoolNode<>(
+            ctx,
+            rel.getRowType(),
+            collation,
+            expressionFactory.comparator(collation),
+            filter,
+            lower,
+            upper
+        );
 
         Node<Row> input = visit(rel.getInput());
 

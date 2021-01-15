@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +31,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.Context;
@@ -325,10 +327,57 @@ public final class Commons {
     }
 
     /** */
-    public static Mappings.TargetMapping inverceMapping(ImmutableBitSet bitSet, int sourceSize) {
+    public static Mappings.TargetMapping inverseMapping(ImmutableBitSet bitSet, int sourceSize) {
         Mapping mapping = Mappings.create(MappingType.INVERSE_FUNCTION, sourceSize, bitSet.cardinality());
         for (Ord<Integer> ord : Ord.zip(bitSet))
             mapping.set(ord.e, ord.i);
         return mapping;
+    }
+
+    /**
+     * Checks if there is a such permutation of all {@code elems} that is prefix of
+     * provided {@code seq}.
+     *
+     * @param seq Sequence.
+     * @param elems Elems.
+     * @return {@code true} if there is a permutation of all {@code elems} that is prefix of {@code seq}.
+     */
+    public static <T> boolean isPrefix(List<T> seq, Collection<T> elems) {
+        Set<T> elems0 = new HashSet<>(elems);
+
+        if (seq.size() < elems0.size())
+            return false;
+
+        for (T e : seq) {
+            if (!elems0.remove(e))
+                return false;
+
+            if (elems0.isEmpty())
+                break;
+        }
+
+        return true;
+    }
+
+    /**
+     * Returns the longest possible prefix of {@code seq} that could be form from provided {@code elems}.
+     *
+     * @param seq Sequence.
+     * @param elems Elems.
+     * @return The longest possible prefix of {@code seq}.
+     */
+    public static <T> List<T> maxPrefix(List<T> seq, Collection<T> elems) {
+        List<T> res = new ArrayList<>();
+
+        Set<T> elems0 = new HashSet<>(elems);
+
+        for (T e : seq) {
+            if (!elems0.remove(e))
+                break;
+
+            res.add(e);
+        }
+
+        return res;
     }
 }

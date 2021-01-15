@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdSelectivity;
@@ -30,6 +31,7 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -90,5 +92,18 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
 
         RexNode diff = RelMdUtil.minusPreds(RexUtils.builder(rel), predicate, condition);
         return RelMdUtil.guessSelectivity(diff);
+    }
+
+    /** */
+    public Double getSelectivity(IgniteIndexSpool rel, RelMetadataQuery mq, RexNode predicate) {
+        if (predicate != null) {
+            return mq.getSelectivity(rel.getInput(),
+                RelMdUtil.minusPreds(
+                    rel.getCluster().getRexBuilder(),
+                    predicate,
+                    rel.condition()));
+        }
+
+        return mq.getSelectivity(rel.getInput(), rel.condition());
     }
 }

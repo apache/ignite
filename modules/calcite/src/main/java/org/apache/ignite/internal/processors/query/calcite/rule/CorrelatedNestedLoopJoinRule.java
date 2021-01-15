@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
@@ -117,7 +118,10 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
         RelTraitSet filterInTraits = rel.getRight().getTraitSet().replace(RewindabilityTrait.REWINDABLE);
 
         // Push a filter with batchSize disjunctions
-        relBuilder.push(rel.getRight().copy(filterInTraits, rel.getRight().getInputs())).filter(relBuilder.or(conditionList));
+        relBuilder
+            .push(rel.getRight().copy(filterInTraits, rel.getRight().getInputs()))
+            .filter(relBuilder.or(conditionList));
+
         RelNode right = relBuilder.build();
 
         CorrelationTrait corrTrait = CorrelationTrait.correlations(correlationIds);
@@ -135,7 +139,17 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
         RelNode left = convert(rel.getLeft(), leftInTraits);
         right = convert(right, rightInTraits);
 
-        call.transformTo(new IgniteCorrelatedNestedLoopJoin(cluster, outTraits, left, right, rel.getCondition(), correlationIds, joinType));
+        call.transformTo(
+            new IgniteCorrelatedNestedLoopJoin(
+                cluster,
+                outTraits,
+                left,
+                right,
+                rel.getCondition(),
+                correlationIds,
+                joinType
+            )
+        );
     }
 
     /** */

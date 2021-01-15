@@ -46,6 +46,7 @@ public class FragmentSplitter extends IgniteRelShuttle {
     /** */
     private FragmentProto curr;
 
+    /** */
     public FragmentSplitter(RelNode cutPoint) {
         this.cutPoint = cutPoint;
     }

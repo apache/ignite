@@ -82,11 +82,11 @@ public class IgniteIndex {
         Supplier<Row> lowerIdxConditions,
         Supplier<Row> upperIdxConditions,
         Function<Row, Row> rowTransformer,
-        @Nullable ImmutableBitSet requiredColunms) {
+        @Nullable ImmutableBitSet requiredColumns) {
         UUID localNodeId = execCtx.planningContext().localNodeId();
         if (group.nodeIds().contains(localNodeId))
             return new IndexScan<>(execCtx, table().descriptor(), idx, group.partitions(localNodeId),
-                filters, lowerIdxConditions, upperIdxConditions, rowTransformer, requiredColunms);
+                filters, lowerIdxConditions, upperIdxConditions, rowTransformer, requiredColumns);
 
         return Collections.emptyList();
     }

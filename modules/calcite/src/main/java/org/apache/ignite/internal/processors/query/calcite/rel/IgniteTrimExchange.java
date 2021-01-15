@@ -30,10 +30,8 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
-import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
 
@@ -55,14 +53,13 @@ public class IgniteTrimExchange extends Exchange implements SourceAwareIgniteRel
         super(cluster, traits, input, distribution);
 
         assert distribution.getType() == HASH_DISTRIBUTED;
-        assert input.getTraitSet().getTrait(DistributionTraitDef.INSTANCE).getType() == BROADCAST_DISTRIBUTED;
 
         this.sourceId = sourceId;
     }
 
     /** */
     public IgniteTrimExchange(RelInput input) {
-        super(changeTraits(input, IgniteConvention.INSTANCE));
+        super(changeTraits(input, IgniteConvention.INSTANCE, input.getDistribution()));
 
         Object srcIdObj = input.get("sourceId");
         if (srcIdObj != null)
