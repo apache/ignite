@@ -19,7 +19,6 @@ package org.apache.ignite.cdc;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,13 +30,14 @@ import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -52,6 +52,21 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  * CDC(Capture Data Change) application.
  */
 public class IgniteCDC implements Runnable {
+    /** System property to specify consistent id for CDC. */
+    public static final String IGNITE_CDC_CONSISTENT_ID = "IGNITE_CDC_CONSISTENT_ID";
+
+    /** System property to specify node index for CDC. */
+    public static final String IGNITE_CDC_NODE_IDX = "IGNITE_CDC_NODE_IDX";
+
+    /** System property to specify lock file timeout for CDC. */
+    public static final String IGNITE_CDC_LOCK_TIMEOUT = "IGNITE_CDC_LOCK_TIMEOUT";
+
+    /** State dir. */
+    public static final String STATE_DIR = "state";
+
+    /** Default lock timeout. */
+    public static final int DFLT_LOCK_TIMEOUT = 1000;
+
     /** Ignite configuration. */
     private final IgniteConfiguration cfg;
 
@@ -82,6 +97,9 @@ public class IgniteCDC implements Runnable {
     /** Save state to start from. */
     private WALPointer initState;
 
+    /** Consistent ID. */
+    private final String nodeDir;
+
     /** Previous segments. */
     private final List<Path> prevSegments = new ArrayList<>();
 
@@ -99,71 +117,81 @@ public class IgniteCDC implements Runnable {
         if (!CU.isPersistenceEnabled(cfg))
             throw new IllegalArgumentException("Persistence disabled. IgniteCDC can't run!");
 
-        if (cfg.getConsistentId() == null) {
-            log.warning("Consistent ID is not set, it is recommended to set consistent ID for production " +
-                "clusters (use IgniteConfiguration.setConsistentId property)");
+        nodeDir = consistentId(cfg);
+
+        if (nodeDir == null) {
+            log.warning("Can't determine nodeDir. It is recommended to set consistent ID for production " +
+                "clusters (use IgniteConfiguration.setConsistentId or " + IGNITE_CDC_CONSISTENT_ID + ", " + IGNITE_CDC_NODE_IDX + " property)");
         }
     }
 
     /** Runs CDC. */
     @Override public void run() {
+        try {
+            runX();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** */
+    public void runX() throws Exception {
         if (log.isInfoEnabled()) {
             log.info("Starting Ignite CDC Application.");
             log.info("Consumer    -\t" + consumer.toString());
         }
 
-        try {
-            initDirs();
-        }
-        catch (IgniteCheckedException | IOException | InterruptedException e) {
-            throw new IgniteException(e);
-        }
+        cdcDir = initCdcDir(workDir(cfg));
 
-        if (log.isInfoEnabled()) {
-            log.info("CDC dir     -\t" + cdcDir);
-            log.info("Binary meta -\t" + binaryMeta);
-            log.info("Marshaller  -\t" + marshaller);
-            log.info("--------------------------------");
-        }
+        try(CDCFileLockHolder lock =
+                new CDCFileLockHolder(cdcDir.toString(), consumer::id, log)) {
+            log.info("Trying to acquire file lock[lock=" + lock.lockPath() + ']');
 
-        state = new CDCState(cdcDir.resolve("state"), consumer.id());
+            lock.tryLock(IgniteSystemProperties.getInteger(IGNITE_CDC_LOCK_TIMEOUT, DFLT_LOCK_TIMEOUT));
 
-        initState = state.load();
+            init();
 
-        if (initState != null && log.isInfoEnabled())
-            log.info("Loaded initial state[state=" + initState + ']');
+            if (log.isInfoEnabled()) {
+                log.info("CDC dir     -\t" + cdcDir);
+                log.info("Binary meta -\t" + binaryMeta);
+                log.info("Marshaller  -\t" + marshaller);
+                log.info("--------------------------------");
+            }
 
-        consumer.start(cfg, log);
+            state = new CDCState(cdcDir.resolve(STATE_DIR), consumer.id());
 
-        try {
-            Predicate<Path> walFilesOnly = p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches();
+            initState = state.load();
 
-            Comparator<Path> sortByNumber = Comparator.comparingLong(this::segmentNumber);
+            if (initState != null && log.isInfoEnabled())
+                log.info("Loaded initial state[state=" + initState + ']');
 
-            wu.waitFor(cdcDir, walFilesOnly, sortByNumber, segment -> {
-                try {
-                    readSegment(segment);
+            consumer.start(cfg, log);
 
-                    return true;
-                }
-                catch (IgniteCheckedException | IOException e) {
-                    throw new IgniteException(e);
-                }
-            });
-        }
-        catch (IgniteException err) {
-            if (!X.hasCause(err, ClosedByInterruptException.class))
-                throw err;
-        }
-        catch (InterruptedException ignore) {
-            if (log.isInfoEnabled())
-                log.info("Segment wait thread interrupted.");
-        }
-        finally {
-            consumer.stop();
+            try {
+                Predicate<Path> walFilesOnly = p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches();
 
-            if (log.isInfoEnabled())
-                log.info("Ignite CDC Application stoped.");
+                Comparator<Path> sortByNumber = Comparator.comparingLong(this::segmentNumber);
+
+                wu.waitFor(cdcDir, walFilesOnly, sortByNumber, segment -> {
+                    try {
+                        readSegment(segment);
+
+                        return true;
+                    }
+                    catch (IgniteCheckedException | IOException e) {
+                        throw new IgniteException(e);
+                    }
+                });
+            }
+            finally {
+                consumer.stop();
+
+                if (log.isInfoEnabled())
+                    log.info("Ignite CDC Application stoped.");
+            }
         }
     }
 
@@ -230,26 +258,21 @@ public class IgniteCDC implements Runnable {
     }
 
     /** Founds required directories. */
-    private void initDirs() throws IgniteCheckedException, IOException, InterruptedException {
+    private void init() throws IgniteCheckedException, IOException, InterruptedException {
         String workDir = workDir(cfg);
-
-        cdcDir = initCdcDir(workDir);
 
         String consIdDir = cdcDir.getName(cdcDir.getNameCount() - 1).toString();
 
-        if (log.isDebugEnabled())
-            log.debug("Found WAL archive[dir=" + cdcDir + ']');
+        log.info("Found WAL archive[dir=" + cdcDir + ']');
 
-        Files.createDirectories(cdcDir.resolve("state"));
+        Files.createDirectories(cdcDir.resolve(STATE_DIR));
 
         binaryMeta = new File(U.resolveWorkDirectory(workDir, DFLT_BINARY_METADATA_PATH, false), consIdDir);
 
         marshaller = U.resolveWorkDirectory(workDir, DFLT_MARSHALLER_PATH, false);
 
-        if (log.isDebugEnabled()) {
-            log.debug("Using BinaryMeta directory[dir=" + binaryMeta + ']');
-            log.debug("Using Marshaller directory[dir=" + marshaller + ']');
-        }
+        log.info("Using BinaryMeta directory[dir=" + binaryMeta + ']');
+        log.info("Using Marshaller directory[dir=" + marshaller + ']');
     }
 
     /**
@@ -269,13 +292,16 @@ public class IgniteCDC implements Runnable {
         else
             cdcParent = Paths.get(workDir).resolve(DFLT_CDC_PATH);
 
-        if (log.isDebugEnabled())
-            log.debug("Archive root[dir=" + cdcParent + ']');
+        log.info("Archive root[dir=" + cdcParent + ']');
 
         final Path[] cdcDir = new Path[1];
 
+        String nodePattern = nodeDir == null ? (NODE_PATTERN + UUID_STR_PATTERN) : nodeDir;
+
+        log.info("ConsistendId pattern[dir=" + nodePattern + ']');
+
         wu.waitFor(cdcParent,
-            dir -> dir.getName(dir.getNameCount() - 1).toString().matches(NODE_PATTERN + UUID_STR_PATTERN),
+            dir -> dir.getName(dir.getNameCount() - 1).toString().matches(nodePattern),
             dir -> cdcDir[0] = dir);
 
         return cdcDir[0];
@@ -331,5 +357,32 @@ public class IgniteCDC implements Runnable {
         String fn = segment.getFileName().toString();
 
         return Long.parseLong(fn.substring(0, fn.indexOf('.')));
+    }
+
+    /**
+     * @param cfg Configuration.
+     * @return Consistent id to use.
+     */
+    private String consistentId(IgniteConfiguration cfg) {
+        if (cfg.getConsistentId() != null)
+            return U.maskForFileName(cfg.getConsistentId().toString());
+
+        String consistendId = IgniteSystemProperties.getString(IGNITE_CDC_CONSISTENT_ID, null);
+
+        if (consistendId == null) {
+            log.warning(IGNITE_CDC_CONSISTENT_ID + " is null.");
+
+            return null;
+        }
+
+        int idx = IgniteSystemProperties.getInteger(IGNITE_CDC_NODE_IDX, -1);
+
+        if (idx == -1) {
+            log.warning(IGNITE_CDC_NODE_IDX + " is null.");
+
+            return null;
+        }
+
+        return PdsConsistentIdProcessor.genNewStyleSubfolderName(idx, UUID.fromString(consistendId));
     }
 }
