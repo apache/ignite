@@ -64,7 +64,7 @@ class IgniteSpec(metaclass=ABCMeta):
         self.project = project
         self.path_aware = path_aware
         self.envs = {}
-        self.jvm_opts = create_jvm_settings(merge=jvm_opts,
+        self.jvm_opts = create_jvm_settings(opts=jvm_opts,
                                             gc_dump_path=os.path.join(path_aware.log_dir, "ignite_gc.log"),
                                             oom_path=os.path.join(path_aware.log_dir, "ignite_out_of_mem.hprof"),
                                             as_list=True)
