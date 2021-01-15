@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Tests.Examples
                 {
                     var name = Path.GetFileNameWithoutExtension(projFile);
                     var path = Path.GetDirectoryName(projFile);
-                    var asmFile = Path.Combine(path, "bin", "debug", "netcoreapp2.1", $"{name}.dll");
+                    var asmFile = Path.Combine(path, "bin", "Debug", "netcoreapp2.1", $"{name}.dll");
 
                     return new Example(name, projFile, asmFile);
                 });
