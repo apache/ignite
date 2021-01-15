@@ -66,9 +66,11 @@ namespace Apache.Ignite.Core.Tests.Examples
                     "Make sure to build IgniteExamples.sln. This usually happens as part of build.ps1 execution.");
 
                 var assembly = Assembly.LoadFrom(AssemblyFile);
-                var program = assembly.GetTypes().Single(t => t.Name == "Program");
 
-                program.InvokeMember("Main", InvokeFlags, null, null, null);
+                var programType = assembly.GetTypes().SingleOrDefault(t => t.Name == "Program");
+                Assert.IsNotNull(programType, $"Assembly {AssemblyFile} does not have Program class.");
+
+                programType.InvokeMember("Main", InvokeFlags, null, null, null);
             }
             catch (TargetInvocationException ex)
             {
