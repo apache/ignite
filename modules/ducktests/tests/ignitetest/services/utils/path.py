@@ -175,8 +175,6 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
 
         path = os.path.join(ignite_dev_dir, "modules", "ducktests", "tests", "certs")
 
-        assert os.path.exists(path), path
-
         return path
 
     def script(self, script_name):
