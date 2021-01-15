@@ -29,11 +29,6 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public class Example
     {
-        /** Expected exception when ReadKey is present. */
-        private const string ReadKeyException =
-            "Cannot read keys when either application does not have a console or " +
-            "when console input has been redirected from a file. Try Console.Read.";
-
         /** Method invoke flags. */
         private const BindingFlags InvokeFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.InvokeMethod;
 
@@ -45,6 +40,9 @@ namespace Apache.Ignite.Core.Tests.Examples
 
         /** Assembly path */
         public string AssemblyFile { get; }
+
+        /** Whether this is a thin client example (needs a server node). */
+        public bool IsThin => ProjectFile.Contains("Thin");
 
         public Example(string name, string projectFile, string assemblyFile)
         {
@@ -70,13 +68,13 @@ namespace Apache.Ignite.Core.Tests.Examples
             catch (TargetInvocationException ex)
             {
                 // Each example has a ReadKey at the end, which throws an exception in test environment.
-                var inner = ex.InnerException as InvalidOperationException;
-                if (inner == null || inner.Message != ReadKeyException)
+                if (ex.InnerException is InvalidOperationException inner &&
+                    inner.Message.StartsWith("Cannot read keys"))
                 {
-                    throw;
+                    return;
                 }
 
-                return;
+                throw;
             }
 
             throw new Exception("ReadKey is missing at the end of the example.");
