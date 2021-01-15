@@ -41,7 +41,6 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
@@ -67,7 +66,7 @@ import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonRe
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
-import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Cloner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
@@ -532,7 +531,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public <Row> Iterable<Row> scan(
             ExecutionContext<Row> execCtx,
-            CollocationGroup group, Predicate<Row> filter,
+            ColocationGroup group, Predicate<Row> filter,
             Function<Row, Row> transformer,
             ImmutableBitSet bitSet
         ) {
@@ -560,7 +559,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public CollocationGroup colocationGroup(PlanningContext ctx) {
+        @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
             throw new AssertionError();
         }
 

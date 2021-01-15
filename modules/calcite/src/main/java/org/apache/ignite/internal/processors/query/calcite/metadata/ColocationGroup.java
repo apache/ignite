@@ -45,7 +45,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 /** */
-public class CollocationGroup implements MarshalableMessage {
+public class ColocationGroup implements MarshalableMessage {
     /** */
     private static final int SYNTHETIC_PARTITIONS_COUNT = IgniteSystemProperties.getInteger("IGNITE_CALCITE_SYNTHETIC_PARTITIONS_COUNT", 512);
 
@@ -66,26 +66,26 @@ public class CollocationGroup implements MarshalableMessage {
     private List<UUIDCollectionMessage> assignments0;
 
     /** */
-    public static CollocationGroup forNodes(List<UUID> nodeIds) {
-        return new CollocationGroup(null, nodeIds, null);
+    public static ColocationGroup forNodes(List<UUID> nodeIds) {
+        return new ColocationGroup(null, nodeIds, null);
     }
 
     /** */
-    public static CollocationGroup forAssignments(List<List<UUID>> assignments) {
-        return new CollocationGroup(null, null, assignments);
+    public static ColocationGroup forAssignments(List<List<UUID>> assignments) {
+        return new ColocationGroup(null, null, assignments);
     }
 
     /** */
-    public static CollocationGroup forSourceId(long sourceId) {
-        return new CollocationGroup(Collections.singletonList(sourceId), null, null);
+    public static ColocationGroup forSourceId(long sourceId) {
+        return new ColocationGroup(Collections.singletonList(sourceId), null, null);
     }
 
     /** */
-    public CollocationGroup() {
+    public ColocationGroup() {
     }
 
     /** */
-    private CollocationGroup(List<Long> sourceIds, List<UUID> nodeIds, List<List<UUID>> assignments) {
+    private ColocationGroup(List<Long> sourceIds, List<UUID> nodeIds, List<List<UUID>> assignments) {
         this.sourceIds = sourceIds;
         this.nodeIds = nodeIds;
         this.assignments = assignments;
@@ -119,7 +119,7 @@ public class CollocationGroup implements MarshalableMessage {
      * @param rel Filter.
      * @return Resulting nodes mapping.
      */
-    public CollocationGroup prune(IgniteRel rel) {
+    public ColocationGroup prune(IgniteRel rel) {
         return this; // TODO https://issues.apache.org/jira/browse/IGNITE-12455
     }
 
@@ -132,10 +132,10 @@ public class CollocationGroup implements MarshalableMessage {
      * Merges this mapping with given one.
      * @param other Mapping to merge with.
      * @return Merged nodes mapping.
-     * @throws CollocationMappingException If involved nodes intersection is empty, hence there is no nodes capable to execute
+     * @throws ColocationMappingException If involved nodes intersection is empty, hence there is no nodes capable to execute
      * being calculated fragment.
      */
-    public CollocationGroup collocate(CollocationGroup other) throws CollocationMappingException {
+    public ColocationGroup colocate(ColocationGroup other) throws ColocationMappingException {
         List<Long> sourceIds;
         if (this.sourceIds == null || other.sourceIds == null)
             sourceIds = U.firstNotNull(this.sourceIds, other.sourceIds);
@@ -149,7 +149,7 @@ public class CollocationGroup implements MarshalableMessage {
             nodeIds = Commons.intersect(other.nodeIds, this.nodeIds);
 
         if (nodeIds != null && nodeIds.isEmpty()) {
-            throw new CollocationMappingException("Failed to map fragment to location. " +
+            throw new ColocationMappingException("Failed to map fragment to location. " +
                 "Replicated query parts are not co-located on all nodes");
         }
 
@@ -165,7 +165,7 @@ public class CollocationGroup implements MarshalableMessage {
                     List<UUID> assignment = Commons.intersect(filter, assignments.get(i));
 
                     if (assignment.isEmpty()) // TODO check with partition filters
-                        throw new CollocationMappingException("Failed to map fragment to location. Partition mapping is empty [part=" + i + "]");
+                        throw new ColocationMappingException("Failed to map fragment to location. Partition mapping is empty [part=" + i + "]");
 
                     assignments0.add(assignment);
                 }
@@ -184,17 +184,17 @@ public class CollocationGroup implements MarshalableMessage {
                     assignment.retainAll(filter);
 
                 if (assignment.isEmpty()) // TODO check with partition filters
-                    throw new CollocationMappingException("Failed to map fragment to location. Partition mapping is empty [part=" + i + "]");
+                    throw new ColocationMappingException("Failed to map fragment to location. Partition mapping is empty [part=" + i + "]");
 
                 assignments.add(assignment);
             }
         }
 
-        return new CollocationGroup(sourceIds, nodeIds, assignments);
+        return new ColocationGroup(sourceIds, nodeIds, assignments);
     }
 
     /** */
-    public CollocationGroup finalaze() {
+    public ColocationGroup finalaze() {
         if (assignments == null && nodeIds == null)
             return this;
 
@@ -208,23 +208,23 @@ public class CollocationGroup implements MarshalableMessage {
                 assignments.add(first != null ? Collections.singletonList(first) : Collections.emptyList());
             }
 
-            return new CollocationGroup(sourceIds, new ArrayList<>(nodes), assignments);
+            return new ColocationGroup(sourceIds, new ArrayList<>(nodes), assignments);
         }
 
         return forNodes0(nodeIds);
     }
 
     /** */
-    public CollocationGroup mapToNodes(List<UUID> nodeIds) {
+    public ColocationGroup mapToNodes(List<UUID> nodeIds) {
         return !F.isEmpty(this.nodeIds) ? this : forNodes0(nodeIds);
     }
 
     /** */
-    @NotNull private CollocationGroup forNodes0(List<UUID> nodeIds) {
+    @NotNull private ColocationGroup forNodes0(List<UUID> nodeIds) {
         List<List<UUID>> assignments = new ArrayList<>(SYNTHETIC_PARTITIONS_COUNT);
         for (int i = 0; i < SYNTHETIC_PARTITIONS_COUNT; i++)
             assignments.add(F.asList(nodeIds.get(i % nodeIds.size())));
-        return new CollocationGroup(sourceIds, nodeIds, assignments);
+        return new ColocationGroup(sourceIds, nodeIds, assignments);
     }
 
     /**
@@ -319,7 +319,7 @@ public class CollocationGroup implements MarshalableMessage {
 
         }
 
-        return reader.afterMessageRead(CollocationGroup.class);
+        return reader.afterMessageRead(ColocationGroup.class);
     }
 
     /** {@inheritDoc} */

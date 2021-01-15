@@ -26,7 +26,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
-import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.jetbrains.annotations.Nullable;
 
@@ -77,7 +77,7 @@ public class IgniteIndex {
     /** */
     public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
-        CollocationGroup group,
+        ColocationGroup group,
         Predicate<Row> filters,
         Supplier<Row> lowerIdxConditions,
         Supplier<Row> upperIdxConditions,

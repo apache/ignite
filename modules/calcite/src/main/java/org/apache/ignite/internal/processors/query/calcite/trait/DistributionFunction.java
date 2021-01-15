@@ -26,7 +26,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -78,7 +78,7 @@ public abstract class DistributionFunction {
      * @return Destination function.
      */
     abstract <Row> Destination<Row> destination(ExecutionContext<Row> ctx, AffinityService affinityService,
-        CollocationGroup group, ImmutableIntList keys);
+        ColocationGroup group, ImmutableIntList keys);
 
     /**
      * @return Function name. This name used for equality checking and in {@link RelNode#getDigest()}.
@@ -160,7 +160,7 @@ public abstract class DistributionFunction {
 
         /** {@inheritDoc} */
         @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, AffinityService affinityService,
-            CollocationGroup m, ImmutableIntList k) {
+            ColocationGroup m, ImmutableIntList k) {
             throw new AssertionError();
         }
     }
@@ -177,7 +177,7 @@ public abstract class DistributionFunction {
 
         /** {@inheritDoc} */
         @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, AffinityService affinityService,
-            CollocationGroup m, ImmutableIntList k) {
+            ColocationGroup m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.nodeIds());
 
             return new AllNodes<>(m.nodeIds());
@@ -196,7 +196,7 @@ public abstract class DistributionFunction {
 
         /** {@inheritDoc} */
         @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, AffinityService affinityService,
-            CollocationGroup m, ImmutableIntList k) {
+            ColocationGroup m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.nodeIds());
 
             return new RandomNode<>(m.nodeIds());
@@ -215,7 +215,7 @@ public abstract class DistributionFunction {
 
         /** {@inheritDoc} */
         @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, AffinityService affinityService,
-            CollocationGroup m, ImmutableIntList k) {
+            ColocationGroup m, ImmutableIntList k) {
             if (m == null || m.nodeIds() == null || m.nodeIds().size() != 1)
                 throw new AssertionError();
 
@@ -237,7 +237,7 @@ public abstract class DistributionFunction {
 
         /** {@inheritDoc} */
         @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, AffinityService affSrvc,
-            CollocationGroup m, ImmutableIntList k) {
+            ColocationGroup m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.assignments()) && !k.isEmpty();
 
             List<List<UUID>> assignments = m.assignments();
@@ -287,7 +287,7 @@ public abstract class DistributionFunction {
 
         /** {@inheritDoc} */
         @Override public <Row> Destination<Row> destination(ExecutionContext<Row> ctx, AffinityService affSrvc,
-            CollocationGroup m, ImmutableIntList k) {
+            ColocationGroup m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.assignments()) && k.size() == 1;
 
             List<List<UUID>> assignments = m.assignments();

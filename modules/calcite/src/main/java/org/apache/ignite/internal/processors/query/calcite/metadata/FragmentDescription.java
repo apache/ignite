@@ -43,7 +43,7 @@ public class FragmentDescription implements MarshalableMessage {
     private FragmentMapping mapping;
 
     /** */
-    private CollocationGroup target;
+    private ColocationGroup target;
 
     /** */
     @GridDirectTransient
@@ -58,7 +58,7 @@ public class FragmentDescription implements MarshalableMessage {
     }
 
     /** */
-    public FragmentDescription(long fragmentId, FragmentMapping mapping, CollocationGroup target,
+    public FragmentDescription(long fragmentId, FragmentMapping mapping, ColocationGroup target,
         Map<Long, List<UUID>> remoteSources) {
         this.fragmentId = fragmentId;
         this.mapping = mapping;
@@ -77,7 +77,7 @@ public class FragmentDescription implements MarshalableMessage {
     }
 
     /** */
-    public CollocationGroup target() {
+    public ColocationGroup target() {
         return target;
     }
 

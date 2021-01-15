@@ -42,7 +42,7 @@ import org.junit.Test;
 @SuppressWarnings({"FieldCanBeLocal"})
 public class IndexSpoolPlannerTest extends AbstractPlannerTest {
     /**
-     * Check equi-join on not collocated fields.
+     * Check equi-join on not colocated fields.
      * CorrelatedNestedLoopJoinTest is applicable for this case only with IndexSpool.
      */
     @Test
@@ -193,7 +193,7 @@ public class IndexSpoolPlannerTest extends AbstractPlannerTest {
     }
 
     /**
-     * Check equi-join on not collocated fields without indexes.
+     * Check equi-join on not colocated fields without indexes.
      */
     @Test
     public void testSourceWithoutCollation() throws Exception {

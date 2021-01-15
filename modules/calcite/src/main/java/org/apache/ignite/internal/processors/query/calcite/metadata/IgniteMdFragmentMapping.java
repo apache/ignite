@@ -87,7 +87,7 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
     /**
      * See {@link IgniteMdFragmentMapping#fragmentMapping(RelNode, RelMetadataQuery)}
      *
-     * {@link CollocationMappingException} may be thrown on two children nodes locations merge. This means
+     * {@link ColocationMappingException} may be thrown on two children nodes locations merge. This means
      * that the fragment (which part the parent node is) cannot be executed on any node and additional exchange
      * is needed. This case we throw {@link NodeMappingException} with an edge, where we need the additional
      * exchange. After the exchange is put into the fragment and the fragment is split into two ones, fragment meta
@@ -103,7 +103,7 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
         try {
             return fLeft.colocate(fRight);
         }
-        catch (CollocationMappingException e) {
+        catch (ColocationMappingException e) {
             IgniteExchange lExch = new IgniteExchange(rel.getCluster(), left.getTraitSet(), left, TraitUtils.distribution(left));
             IgniteExchange rExch = new IgniteExchange(rel.getCluster(), right.getTraitSet(), right, TraitUtils.distribution(right));
 
@@ -123,7 +123,7 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
     /**
      * See {@link IgniteMdFragmentMapping#fragmentMapping(RelNode, RelMetadataQuery)}
      *
-     * {@link CollocationMappingException} may be thrown on two children nodes locations merge. This means
+     * {@link ColocationMappingException} may be thrown on two children nodes locations merge. This means
      * that the fragment (which part the parent node is) cannot be executed on any node and additional exchange
      * is needed. This case we throw {@link NodeMappingException} with an edge, where we need the additional
      * exchange. After the exchange is put into the fragment and the fragment is split into two ones, fragment meta
@@ -141,7 +141,7 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
                 try {
                     res = res == null ? _fragmentMapping(input, mq) : res.colocate(_fragmentMapping(input, mq));
                 }
-                catch (CollocationMappingException e) {
+                catch (ColocationMappingException e) {
                     throw new NodeMappingException("Failed to calculate physical distribution", input, e);
                 }
             }
@@ -169,7 +169,7 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
             return FragmentMapping.create(rel.sourceId())
                 .colocate(_fragmentMapping(rel.getInput(), mq));
         }
-        catch (CollocationMappingException e) {
+        catch (ColocationMappingException e) {
             throw new AssertionError(e);
         }
     }

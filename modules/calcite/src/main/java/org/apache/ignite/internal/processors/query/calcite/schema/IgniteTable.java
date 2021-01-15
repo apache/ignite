@@ -27,7 +27,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
@@ -92,7 +92,7 @@ public interface IgniteTable extends TranslatableTable {
      */
     public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
-        CollocationGroup group,
+        ColocationGroup group,
         Predicate<Row> filter,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet usedColumns);
@@ -103,7 +103,7 @@ public interface IgniteTable extends TranslatableTable {
      * @param ctx Planning context.
      * @return Nodes mapping.
      */
-    CollocationGroup colocationGroup(PlanningContext ctx);
+    ColocationGroup colocationGroup(PlanningContext ctx);
 
     /**
      * @return Table distribution.

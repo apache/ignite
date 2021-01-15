@@ -28,7 +28,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
-import org.apache.ignite.internal.processors.query.calcite.metadata.CollocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -121,7 +121,7 @@ public class ExecutionContext<Row> implements DataContext {
     /**
      * @return Target mapping.
      */
-    public CollocationGroup target() {
+    public ColocationGroup target() {
         return fragmentDesc.target();
     }
 
@@ -131,7 +131,7 @@ public class ExecutionContext<Row> implements DataContext {
     }
 
     /** */
-    public CollocationGroup group(long sourceId) {
+    public ColocationGroup group(long sourceId) {
         return fragmentDesc.mapping().findGroup(sourceId);
     }
 
