@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -241,9 +242,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rightType = rel.getRight().getRowType();
         JoinRelType joinType = rel.getJoinType();
 
+        int pairsCnt = rel.analyzeCondition().pairs().size();
+
         Comparator<Row> comp = expressionFactory.comparator(
-            rel.getLeft().getTraitSet().getCollation().getFieldCollations().subList(0, rel.analyzeCondition().pairs().size()),
-            rel.getRight().getTraitSet().getCollation().getFieldCollations().subList(0, rel.analyzeCondition().pairs().size())
+            rel.leftCollation().getFieldCollations().subList(0, pairsCnt),
+            rel.rightCollation().getFieldCollations().subList(0, pairsCnt)
         );
 
         Node<Row> node = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, comp);

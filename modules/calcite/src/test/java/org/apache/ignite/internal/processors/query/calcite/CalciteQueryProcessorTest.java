@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.Ignite;
@@ -119,30 +120,38 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        // TODO: https://issues.apache.org/jira/browse/IGNITE-13849
-        // we have a problem with serialization/deserialization of MergeJoin
-        String sqlCalc = "SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ count(*)" +
-            " FROM RISK R," +
-            " TRADE T," +
-            " BATCH B " +
-            "WHERE R.BATCHKEY = B.BATCHKEY " +
-            "AND R.TRADEID = T.TRADEID " +
-            "AND R.TRADEVER = T.TRADEVER " +
-            "AND T.BOOK = 'BOOK' " +
-            "AND B.LS = TRUE";
+        List<String> joinConverters = Arrays.asList("CorrelatedNestedLoopJoin", "MergeJoinConverter", "NestedLoopJoinConverter");
 
-        // loop for test execution.
-        for (int i = 0; i < 10; i++) {
-            List<List<?>> resLoc = sql(sqlCalc);
-            assertEquals(40L, resLoc.get(0).get(0));
+        // CorrelatedNestedLoopJoin skipped intentionally since it takes too long to finish
+        // the query with only CNLJ
+        for (int i = 1; i < joinConverters.size(); i++) {
+            String currJoin = joinConverters.get(i);
+
+            log.info("Verifying " + currJoin);
+
+            String disableRuleArgs = joinConverters.stream()
+                .filter(rn -> !rn.equals(currJoin))
+                .collect(Collectors.joining("', '", "'", "'"));
+
+            String sql = "SELECT /*+ DISABLE_RULE(" + disableRuleArgs + ") */ count(*)" +
+                " FROM RISK R," +
+                " TRADE T," +
+                " BATCH B " +
+                "WHERE R.BATCHKEY = B.BATCHKEY " +
+                "AND R.TRADEID = T.TRADEID " +
+                "AND R.TRADEVER = T.TRADEVER " +
+                "AND T.BOOK = 'BOOK' " +
+                "AND B.LS = TRUE";
+
+            // loop for test execution.
+            for (int j = 0; j < 10; j++) {
+                List<List<?>> res = sql(sql);
+
+                assertEquals(1, res.size());
+                assertEquals(1, res.get(0).size());
+                assertEquals(40L, res.get(0).get(0));
+            }
         }
-
-        //calcite
-        List<List<?>> res1 = sql(sqlCalc);
-
-        assertEquals(1, res1.size());
-        assertEquals(1, res1.get(0).size());
-        assertEquals(40L, res1.get(0).get(0));
     }
 
     /** */
@@ -547,7 +556,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13849")
     @Test
     public void query() throws Exception {
         IgniteCache<Integer, Developer> developer = grid(1).createCache(new CacheConfiguration<Integer, Developer>()
@@ -616,7 +624,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13849")
     @Test
     public void queryMultiStatement() throws Exception {
         IgniteCache<Integer, Developer> developer = grid(1).getOrCreateCache(new CacheConfiguration<Integer, Developer>()
