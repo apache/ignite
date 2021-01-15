@@ -33,6 +33,12 @@ namespace Apache.Ignite.Core.Tests.Examples
         [Test]
         public void CheckConfigFilesExist()
         {
+            // TODO:
+            // * All projects are in solution
+            // * All projects are in VS Code config
+            // * All projects have correct namespaces
+            // * All examples have Thin and Thick variants when possible
+
             var paths = Directory.GetFiles(PathUtil.ExamplesSourcePath, "*.cs", SearchOption.AllDirectories)
                 .Select(File.ReadAllText)
                 .SelectMany(src => Regex.Matches(src, @"platforms[^\s]+.config").OfType<Match>())
