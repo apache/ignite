@@ -19,4 +19,9 @@
             <HintPath>$(MSBuildThisFileDirectory)..\bin\Apache.Ignite.Linq.dll</HintPath>
         </Reference>
     </ItemGroup>
+
+    <ItemGroup Condition="$(IgniteBinaryDistro) == '' And $(IgniteSourceDistro) == 'true'">
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\Apache.Ignite.Linq\Apache.Ignite.Linq.DotNetCore.csproj" />
+    </ItemGroup>
 </Project>
