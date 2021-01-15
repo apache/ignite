@@ -20,17 +20,18 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System.IO;
 
     /// <summary>
-    /// Grid path resolver.
+    /// Example paths.
     /// </summary>
     public static class ExamplePaths
     {
-        /// <summary>
-        /// Examples source code path.
-        /// </summary>
-        public static readonly string ExamplesSourcePath =
+        /** */
+        public static readonly string SourcesPath =
             Path.Combine(Impl.Common.IgniteHome.Resolve(), "modules", "platforms", "dotnet", "examples");
 
-        public static readonly string ExamplesSlnFile =
-            Path.Combine(ExamplesSourcePath, "IgniteExamples.sln");
+        /** */
+        public static readonly string SlnFile = Path.Combine(SourcesPath, "IgniteExamples.sln");
+
+        /** */
+        public static readonly string LaunchJsonFile = Path.Combine(SourcesPath, ".vscode", "launch.json");
     }
 }

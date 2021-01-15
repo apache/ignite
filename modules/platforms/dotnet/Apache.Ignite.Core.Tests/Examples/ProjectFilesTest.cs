@@ -29,7 +29,10 @@ namespace Apache.Ignite.Core.Tests.Examples
         private static readonly Example[] Examples = Example.AllExamples;
 
         /** */
-        private static readonly string ExamplesSlnText = File.ReadAllText(ExamplePaths.ExamplesSlnFile);
+        private static readonly string ExamplesSlnText = File.ReadAllText(ExamplePaths.SlnFile);
+
+        /** */
+        private static readonly string LaunchJsonText = File.ReadAllText(ExamplePaths.LaunchJsonFile);
 
         /// <summary>
         /// Checks csproj files.
@@ -38,7 +41,6 @@ namespace Apache.Ignite.Core.Tests.Examples
         public void TestCsprojFiles(Example example)
         {
             // TODO:
-            // * All projects are in VS Code config
             // * All projects have correct namespaces
             // * All examples have Thin and Thick variants when possible
             Assert.IsTrue(File.Exists(example.ProjectFile), $"File.Exists({example.ProjectFile})");
@@ -49,8 +51,8 @@ namespace Apache.Ignite.Core.Tests.Examples
             StringAssert.Contains("<TargetFramework>netcoreapp2.1</TargetFramework>", text);
             StringAssert.Contains("<RootNamespace>IgniteExamples.", text);
             StringAssert.Contains("<ProjectReference Include=\"..\\..\\..\\Shared\\Shared.csproj", text);
-
             StringAssert.Contains($"{example.Name}.csproj", ExamplesSlnText);
+            StringAssert.Contains($"{example.Name}.dll", LaunchJsonText);
         }
     }
 }
