@@ -29,25 +29,28 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public class Example
     {
-        /** */
+        /** All examples. */
         public static readonly Example[] AllExamples = GetExamples().ToArray();
 
         /** Method invoke flags. */
         private const BindingFlags InvokeFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.InvokeMethod;
 
-        /** Name */
+        /** Example name. */
         public string Name { get; }
 
-        /** Project file */
+        /** Project file. */
         public string ProjectFile { get; }
 
-        /** Assembly path */
+        /** Assembly path. */
         public string AssemblyFile { get; }
 
         /** Whether this is a thin client example (needs a server node). */
         public bool IsThin => ProjectFile.Contains("Thin");
 
-        public Example(string name, string projectFile, string assemblyFile)
+        /// <summary>
+        /// Initializes a new instance of <see cref="Example"/> class.
+        /// </summary>
+        private Example(string name, string projectFile, string assemblyFile)
         {
             Name = name;
             ProjectFile = projectFile;
@@ -87,10 +90,17 @@ namespace Apache.Ignite.Core.Tests.Examples
             throw new Exception("ReadKey is missing at the end of the example.");
         }
 
+        /** <inheritdoc /> */
+        public override string ToString()
+        {
+            // This will be displayed by the test runner in CI and IDE.
+            return Name;
+        }
+
         /// <summary>
         /// Gets all examples.
         /// </summary>
-        public static IEnumerable<Example> GetExamples()
+        private static IEnumerable<Example> GetExamples()
         {
             var projFiles = Directory.GetFiles(ExamplePaths.ExamplesSourcePath, "*.csproj", SearchOption.AllDirectories)
                 .Where(x => !x.EndsWith("Shared.csproj") && !x.EndsWith("ServerNode.csproj")).ToArray();
@@ -106,13 +116,6 @@ namespace Apache.Ignite.Core.Tests.Examples
 
                     return new Example(name, projFile, asmFile);
                 });
-        }
-
-        /** <inheritdoc /> */
-        public override string ToString()
-        {
-            // This will be displayed in TeamCity and R# test runner
-            return Name;
         }
     }
 }
