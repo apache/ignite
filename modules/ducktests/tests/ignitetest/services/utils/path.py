@@ -185,4 +185,3 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         :return: absolute path to the specified script
         """
         return os.path.join(self.home_dir, "bin", script_name)
-

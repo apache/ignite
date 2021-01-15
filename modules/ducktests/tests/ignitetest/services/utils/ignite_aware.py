@@ -29,11 +29,12 @@ from ducktape.services.background_thread import BackgroundThreadService
 from ducktape.utils.util import wait_until
 
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
-from ignitetest.services.utils.ignite_configuration import SslContextFactory, ConnectorConfiguration
 from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
+from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
+from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
 
 
 # pylint: disable=too-many-public-methods
@@ -82,8 +83,18 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         super().start(clean=clean)
 
     def start(self, clean=True):
+        self.update_config_with_globals()
         self.start_async(clean=clean)
         self.await_started()
+
+    def update_config_with_globals(self):
+        """
+        Update configuration with global parameters.
+        """
+        if self.globals.get("use_ssl", False) and self.config.ssl_context_factory is None:
+            self.config.ssl_context_factory = SslContextFactory(self.context.globals)
+            self.config.connector_configuration = \
+                ConnectorConfiguration(ssl_enabled=True, ssl_context_factory=self.config.ssl_context_factory)
 
     def await_started(self):
         """
@@ -169,11 +180,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         :param node: Ignite service node.
         """
         super().init_persistent(node)
-
-        if self.globals.get("use_ssl", False) and self.config.ssl_context_factory is None:
-            self.config.ssl_context_factory = SslContextFactory(self.context.globals)
-            self.config.connector_configuration = \
-                ConnectorConfiguration(ssl_enabled=True, ssl_context_factory=self.config.ssl_context_factory)
 
         node_config = self._prepare_config(node)
 

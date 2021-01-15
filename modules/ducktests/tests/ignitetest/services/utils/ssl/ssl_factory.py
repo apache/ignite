@@ -27,7 +27,8 @@ class SslContextFactory:
     """
     Ignite SslContextFactory.
     """
-    def __init__(self, globals: dict,
+    # pylint: disable=W0622, R0913
+    def __init__(self, globals,
                  key_store_jks: str = DEFAULT_KEYSTORE, key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD):
         self.globals = globals

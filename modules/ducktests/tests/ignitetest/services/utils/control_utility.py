@@ -21,9 +21,11 @@ import random
 import re
 import time
 from typing import NamedTuple
-from ignite_configuration.ssl_factory import DEFAULT_PASSWORD, DEFAULT_KEYSTORE, DEFAULT_TRUSTSTORE
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
+
+from ignitetest.services.utils.ssl.ssl_factory import DEFAULT_PASSWORD, DEFAULT_TRUSTSTORE, \
+    DEFAULT_KEYSTORE
 
 
 class ControlUtility:
@@ -32,6 +34,7 @@ class ControlUtility:
     """
     BASE_COMMAND = "control.sh"
 
+    # pylint: disable=R0913
     def __init__(self, cluster,
                  key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD):
@@ -288,7 +291,6 @@ class ControlUtility:
                   f"--truststore {self.trust_store_path} --truststore-password {self.trust_store_password}"
 
         return self._cluster.script(f"{self.BASE_COMMAND} --host {node.account.externally_routable_ip} {cmd} {ssl}")
-
 
     @staticmethod
     def __parse_output(raw_output):

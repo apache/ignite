@@ -19,7 +19,7 @@ This module contains classes and utilities for Ignite ConnectorConfiguration.
 
 from typing import NamedTuple
 
-from ignitetest.services.utils.ignite_configuration import SslContextFactory
+from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
 
 
 class ConnectorConfiguration(NamedTuple):

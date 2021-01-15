@@ -20,10 +20,10 @@ This module contains IgniteConfiguration classes and utilities.
 from typing import NamedTuple
 
 from ignitetest.services.utils.ignite_configuration.communication import CommunicationSpi, TcpCommunicationSpi
-from ignitetest.services.utils.ignite_configuration.connector_configuration import ConnectorConfiguration
+from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import DiscoverySpi, TcpDiscoverySpi
-from ignitetest.services.utils.ignite_configuration.ssl_factory import SslContextFactory
+from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
 

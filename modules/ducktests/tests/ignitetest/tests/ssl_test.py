@@ -19,12 +19,13 @@ This module contains ssl tests.
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, SslContextFactory
-from ignitetest.services.utils.ignite_configuration.connector_configuration import ConnectorConfiguration
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+from ignitetest.services.utils.ssl.ssl_factory import SslContextFactory
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST_2_9, LATEST_2_8
+from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST_2_9, LATEST_2_8
 
 
 # pylint: disable=W0223
@@ -39,8 +40,10 @@ class SslTest(IgniteTest):
         Test that IgniteService, IgniteApplicationService correctly start and stop with ssl configurations.
         And check ControlUtility with ssl arguments.
         """
+        server_ssl = SslContextFactory(self.test_context.globals)
+
         server_configuration = IgniteConfiguration(
-            version=IgniteVersion(ignite_version), ssl_context_factory=SslContextFactory(self.test_context.globals),
+            version=IgniteVersion(ignite_version), ssl_context_factory=server_ssl,
             connector_configuration=ConnectorConfiguration(ssl_enabled=True, ssl_context_factory=server_ssl))
 
         ignite = IgniteService(self.test_context, server_configuration, num_nodes=2,
