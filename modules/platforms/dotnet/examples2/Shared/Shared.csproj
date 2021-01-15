@@ -5,8 +5,17 @@
     <RootNamespace>IgniteExamples.Shared</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="!Exists('..\..\bin\netcoreapp2.0')">
     <PackageReference Include="Apache.Ignite" Version="2.*" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('..\..\bin\netcoreapp2.0')">
+    <Reference Include="Apache.Ignite.Core">
+      <HintPath>..\..\bin\netcoreapp2.0\Apache.Ignite.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Apache.Ignite.Linq">
+      <HintPath>..\..\bin\netcoreapp2.0\Apache.Ignite.Linq.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
