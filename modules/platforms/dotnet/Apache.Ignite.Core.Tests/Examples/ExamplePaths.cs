@@ -24,13 +24,13 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public static class ExamplePaths
     {
-        /** */
-        public static readonly string IgniteHome = Impl.Common.IgniteHome.Resolve();
-
         /// <summary>
         /// Examples source code path.
         /// </summary>
         public static readonly string ExamplesSourcePath =
-            Path.Combine(IgniteHome, "modules", "platforms", "dotnet", "examples");
+            Path.Combine(Impl.Common.IgniteHome.Resolve(), "modules", "platforms", "dotnet", "examples");
+
+        public static readonly string ExamplesSlnFile =
+            Path.Combine(ExamplesSourcePath, "IgniteExamples.sln");
     }
 }
