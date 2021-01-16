@@ -71,7 +71,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     }
 
     /** Starts collecting performance statistics. */
-    protected void startCollectStatistics() throws Exception {
+    protected static void startCollectStatistics() throws Exception {
         List<Ignite> grids = G.allGrids();
 
         assertFalse(grids.isEmpty());
@@ -82,7 +82,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     }
 
     /** Stops and reads collecting performance statistics. */
-    protected void stopCollectStatisticsAndRead(TestHandler... handlers) throws Exception {
+    protected static void stopCollectStatisticsAndRead(TestHandler... handlers) throws Exception {
         List<Ignite> grids = G.allGrids();
 
         assertFalse(grids.isEmpty());
@@ -97,7 +97,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     }
 
     /** Wait for statistics started/stopped in the cluster. */
-    protected void waitForStatisticsEnabled(boolean performanceStatsEnabled) throws Exception {
+    public static void waitForStatisticsEnabled(boolean performanceStatsEnabled) throws Exception {
         assertTrue(waitForCondition(() -> {
             List<Ignite> grids = G.allGrids();
 
@@ -124,14 +124,9 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
      * @param igniteInstanceName Ignite instance name.
      * @return Ignite performance statistics MBean.
      */
-    protected PerformanceStatisticsMBean statisticsMBean(String igniteInstanceName) {
-        try {
-            return getMxBean(igniteInstanceName, "PerformanceStatistics", PerformanceStatisticsMBeanImpl.class,
-                PerformanceStatisticsMBean.class);
-        }
-        catch (Exception e) {
-            throw new RuntimeException("Failed to get MBean.", e);
-        }
+    protected static PerformanceStatisticsMBean statisticsMBean(String igniteInstanceName) {
+        return getMxBean(igniteInstanceName, "PerformanceStatistics", PerformanceStatisticsMBeanImpl.class,
+            PerformanceStatisticsMBean.class);
     }
 
     /** @return Performance statistics files. */
@@ -142,7 +137,12 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     }
 
     /** Test performance statistics handler. */
-    public class TestHandler implements PerformanceStatisticsHandler {
+    public static class TestHandler implements PerformanceStatisticsHandler {
+        /** {@inheritDoc} */
+        @Override public void cacheStart(UUID nodeId, int cacheId, String name) {
+            // No-op.
+        }
+
         /** {@inheritDoc} */
         @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime,
             long duration) {
