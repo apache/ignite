@@ -54,5 +54,18 @@ namespace Apache.Ignite.Core.Tests.Examples
             StringAssert.Contains($"{example.Name}.csproj", ExamplesSlnText);
             StringAssert.Contains($"{example.Name}.dll", LaunchJsonText);
         }
+
+        /// <summary>
+        /// Updates launch.json with all examples.
+        /// <para />
+        /// Run this test to update the file when necessary.
+        /// This test is not won't be run automatically because of <see cref="ExplicitAttribute"/>.
+        /// </summary>
+        [Test]
+        [Explicit]
+        public void UpdateLaunchJson()
+        {
+            // TODO
+        }
     }
 }
