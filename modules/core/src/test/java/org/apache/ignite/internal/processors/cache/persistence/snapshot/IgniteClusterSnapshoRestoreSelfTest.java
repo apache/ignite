@@ -39,11 +39,13 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -444,7 +446,7 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
     private void checkBaselineChange(boolean stopNode) throws Exception {
         int keysCnt = 10_000;
 
-        startGridsWithSnapshot(4, keysCnt);
+        IgniteEx ignite = startGridsWithSnapshot(4, keysCnt);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(3));
 
@@ -465,19 +467,50 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
             return;
         }
 
-        startGrid(4);
-
-        resetBaselineTopology();
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> startGrid(4),
+            IgniteSpiException.class,
+            "Joining node during caches restore is not allowed"
+        );
 
         spi.stopBlock();
 
         fut.get(MAX_AWAIT_MILLIS);
 
-        IgniteCache<Object, Object> cache = grid(4).cache(dfltCacheCfg.getName());
+        IgniteCache<Object, Object> cache = ignite.cache(dfltCacheCfg.getName());
 
         assertTrue(cache.indexReadyFuture().isDone());
 
         checkCacheKeys(cache, keysCnt);
+    }
+
+    @Test
+    public void testClusterStateChangeActiveReadonly() throws Exception {
+        Ignite ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
+
+        IgniteFuture<Void> fut = waitForBlockOnRestore(spi, START_SNAPSHOT_RESTORE, dfltCacheCfg.getName());
+
+        ignite.cluster().state(ClusterState.ACTIVE_READ_ONLY);
+
+        spi.stopBlock();
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> fut.get(MAX_AWAIT_MILLIS),
+            IgniteClusterReadOnlyException.class,
+            "Failed to perform start cache operation (cluster is in read-only mode)"
+        );
+
+        ensureCacheDirEmpty(2, dfltCacheCfg.getName());
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        ignite.snapshot().restoreCacheGroups(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName())).get(MAX_AWAIT_MILLIS);
+
+        checkCacheKeys(ignite.cache(dfltCacheCfg.getName()), CACHE_KEYS_RANGE);
     }
 
     private void ensureCacheDirEmpty(int nodesCnt, String cacheName) throws IgniteCheckedException {

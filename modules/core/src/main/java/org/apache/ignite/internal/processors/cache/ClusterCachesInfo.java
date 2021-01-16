@@ -1019,6 +1019,9 @@ public class ClusterCachesInfo {
         }
 
         if (err != null) {
+            if (req.restoredCache())
+                ctx.cache().context().snapshotMgr().rollbackRestoreLocal();
+
             if (persistedCfgs)
                 res.errs.add(err);
             else

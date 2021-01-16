@@ -4273,6 +4273,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (res == null)
             res = validateRestartingCaches(node);
 
+        if (res == null)
+            res = validateRestoringCaches(node);
+
         return res;
     }
 
@@ -4292,6 +4295,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cachesInfo.hasRestartingCaches()) {
             String msg = "Joining node during caches restart is not allowed [joiningNodeId=" + node.id() +
                 ", restartingCaches=" + new HashSet<>(cachesInfo.restartingCaches()) + ']';
+
+            return new IgniteNodeValidationResult(node.id(), msg);
+        }
+
+        return null;
+    }
+
+    private IgniteNodeValidationResult validateRestoringCaches(ClusterNode node) {
+        if (ctx.cache().context().snapshotMgr().isCacheGroupRestoring(null)) {
+            String msg = "Joining node during caches restore is not allowed [joiningNodeId=" + node.id() + ']';
 
             return new IgniteNodeValidationResult(node.id(), msg);
         }
