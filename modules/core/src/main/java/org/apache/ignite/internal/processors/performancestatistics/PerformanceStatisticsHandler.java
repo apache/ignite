@@ -29,6 +29,13 @@ import org.apache.ignite.lang.IgniteUuid;
 public interface PerformanceStatisticsHandler {
     /**
      * @param nodeId Node id.
+     * @param cacheId Cache id.
+     * @param name Cache name.
+     */
+    void cacheStart(UUID nodeId, int cacheId, String name);
+
+    /**
+     * @param nodeId Node id.
      * @param type Operation type.
      * @param cacheId Cache id.
      * @param startTime Start time in milliseconds.

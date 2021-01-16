@@ -76,7 +76,10 @@ public enum OperationType {
     TASK(15),
 
     /** Job. */
-    JOB(16);
+    JOB(16),
+
+    /** Cache start. */
+    CACHE_START(17);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,
@@ -128,6 +131,15 @@ public enum OperationType {
     /** @return {@code True} if transaction operation. */
     public static boolean transactionOperation(OperationType op) {
         return TX_OPS.contains(op);
+    }
+
+    /**
+     * @param nameLen Cache name length.
+     * @param cached {@code True} if cache name cached.
+     * @return Cache start record size.
+     */
+    public static int cacheStartRecordSize(int nameLen, boolean cached) {
+        return 1 + 4 + (cached ? 4 : 4 + nameLen);
     }
 
     /** @return Cache record size. */
