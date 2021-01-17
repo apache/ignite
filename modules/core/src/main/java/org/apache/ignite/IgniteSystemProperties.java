@@ -1971,11 +1971,11 @@ public final class IgniteSystemProperties {
         "IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE";
 
     /**
-     * Maximum performance statistics file size in bytes. Performance statistics collection will be stopped when the
-     * file size exceeded. The default value is {@link FilePerformanceStatisticsWriter#DFLT_FILE_MAX_SIZE}.
+     * Maximum performance statistics file size in bytes. Performance statistics collection is stopped when the
+     * file size is exceeded. The default value is {@link FilePerformanceStatisticsWriter#DFLT_FILE_MAX_SIZE}.
      */
     @SystemProperty(value = "Maximum performance statistics file size in bytes. Performance statistics collection " +
-        "will be stopped when the file size exceeded", type = Long.class, defaults = "" + DFLT_FILE_MAX_SIZE)
+        "is stopped when the file size is exceeded", type = Long.class, defaults = "" + DFLT_FILE_MAX_SIZE)
     public static final String IGNITE_PERF_STAT_FILE_MAX_SIZE = "IGNITE_PERF_STAT_FILE_MAX_SIZE";
 
     /**
@@ -1995,11 +1995,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PERF_STAT_FLUSH_SIZE = "IGNITE_PERF_STAT_FLUSH_SIZE";
 
     /**
-     * Maximum performance statistics cached strings threshold. String caching will be stopped, when the threshold
+     * Maximum performance statistics cached strings threshold. String caching is stopped when the threshold
      * is exceeded. The default value is {@link FilePerformanceStatisticsWriter#DFLT_CACHED_STRINGS_THRESHOLD}.
      */
-    @SystemProperty(value = "Maximum performance statistics cached strings threshold. String caching will be " +
-        "stopped, when the threshold is exceeded", type = Integer.class, defaults = "" + DFLT_CACHED_STRINGS_THRESHOLD)
+    @SystemProperty(value = "Maximum performance statistics cached strings threshold. String caching is " +
+        "stopped when the threshold is exceeded", type = Integer.class, defaults = "" + DFLT_CACHED_STRINGS_THRESHOLD)
     public static final String IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD = "IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD";
 
     /**
