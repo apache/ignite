@@ -436,7 +436,7 @@
           url: monitoring-metrics/new-metrics
     - title: System Views
       url: monitoring-metrics/system-views
-    - title: Performance statistics
+    - title: Performance Statistics
       url: monitoring-metrics/performance-statistics
     - title: Tracing
       url: monitoring-metrics/tracing

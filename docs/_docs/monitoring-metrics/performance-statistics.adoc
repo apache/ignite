@@ -37,11 +37,11 @@ file when the flush size is reached. Some statistics are skipped if the buffer o
 the link:#system-properties[properties] section for customization.
 
 Each statistics collection process creates a new file on nodes. Each next file has the same name with the
-corresponding index:
+corresponding index. See the examples below:
 
-    node-faedc6c9-3542-4610-ae10-4ff7e0600000.prf
-    node-faedc6c9-3542-4610-ae10-4ff7e0600000-1.prf
-    node-faedc6c9-3542-4610-ae10-4ff7e0600000-2.prf
+* `node-faedc6c9-3542-4610-ae10-4ff7e0600000.prf`
+* `node-faedc6c9-3542-4610-ae10-4ff7e0600000-1.prf`
+* `node-faedc6c9-3542-4610-ae10-4ff7e0600000-2.prf`
 
 == Building the Report
 
