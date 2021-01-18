@@ -29,6 +29,9 @@ namespace Apache.Ignite.Core.Tests.Examples
     public class ProjectFilesTest
     {
         /** */
+        private const string WorkspaceFolder = "${workspaceFolder}";
+
+        /** */
         private static readonly Example[] Examples = Example.AllExamples;
 
         /** */
@@ -72,10 +75,9 @@ namespace Apache.Ignite.Core.Tests.Examples
             {
                 Configurations = Examples.Select(e => new LaunchConfig
                 {
-                    // TODO: Paths are based on ${workspaceFolder}
                     Name = e.Name,
-                    Program = e.AssemblyFile,
-                    Cwd = Path.GetDirectoryName(e.ProjectFile)
+                    Program = e.AssemblyFile.Replace(ExamplePaths.SourcesPath, WorkspaceFolder),
+                    Cwd = Path.GetDirectoryName(e.ProjectFile).Replace(ExamplePaths.SourcesPath, WorkspaceFolder)
                 }).ToArray()
             };
 
@@ -85,6 +87,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         }
         
         // ReSharper disable UnusedMember.Local
+        // ReSharper disable UnusedAutoPropertyAccessor.Local
         /** launch.json */
         private class Launch
         {
