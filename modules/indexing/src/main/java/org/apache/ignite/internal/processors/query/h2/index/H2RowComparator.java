@@ -103,16 +103,12 @@ public class H2RowComparator implements IndexRowComparator {
         if (left instanceof IndexSearchRowImpl)
             ltype = DataType.getTypeFromClass(lobject.getClass());
         else
-            ltype = InlineIndexKeyTypeRegistry
-                .get(lobject.getClass(), left.getSchema().getKeyDefinitions()[idx].getIdxType())
-                .type();
+            ltype = left.getSchema().getKeyDefinitions()[idx].getIdxType();
 
         if (right instanceof IndexSearchRowImpl)
             rtype = DataType.getTypeFromClass(robject.getClass());
         else
-            rtype = InlineIndexKeyTypeRegistry
-                .get(robject.getClass(), right.getSchema().getKeyDefinitions()[idx].getIdxType())
-                .type();
+            rtype = right.getSchema().getKeyDefinitions()[idx].getIdxType();
 
         int c = compareValues(wrap(lobject, ltype), wrap(robject, rtype));
 
