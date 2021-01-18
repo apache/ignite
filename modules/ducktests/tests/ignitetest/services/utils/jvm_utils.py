@@ -93,7 +93,8 @@ def _to_map(params):
     if isinstance(params, dict):
         return params
 
-    params = params.split()
+    if isinstance(params, str):
+        params = params.split()
 
     as_map = {}
 
