@@ -56,7 +56,7 @@ def create_jvm_settings(heap_size="768M", gc_settings=JVM_PARAMS_GC_CMS, generic
     if to_merge or kwargs.get("as_map"):
         return merge_jvm_settings(as_string, to_merge if to_merge else {}, **kwargs)
 
-    if kwargs.get("as_list", False):
+    if kwargs.get("as_list"):
         return as_string.split()
 
     return as_string
@@ -71,18 +71,23 @@ def merge_jvm_settings(src_settings, additionals, **kwargs):
     param as_map: If True, represents result as dict.
     :return merged JVM settings. By default as string.
     """
-    as_map = _to_map(src_settings)
+    mapped = _to_map(src_settings)
 
-    as_map.update(_to_map(additionals))
+    mapped.update(_to_map(additionals))
 
-    _remove_duplicates(as_map)
+    _remove_duplicates(mapped)
 
     if kwargs.get("as_map"):
-        return as_map
+        return mapped
 
-    as_list = [e[0] + '=' + e[1] if len(e) > 0 and e[1] else e[0] for e in as_map.items()]
+    as_list = []
+    for param, value in mapped.items():
+        if value:
+            as_list.append(f"{param}={value}")
+        else:
+            as_list.append(param)
 
-    if kwargs.get("as_list", False):
+    if kwargs.get("as_list"):
         return as_list
 
     return ' '.join(as_list)
