@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             public string Cwd { get; set; } = "${workspaceFolder}/Thin/Cache/PutGet";
 
             /** */
-            public string Console { get; set; } = "internalConsole";
+            public string Console { get; set; } = "externalTerminal"; // Or "integratedTerminal" 
 
             /** */
             public bool StopAtEntry { get; set; } = false;
