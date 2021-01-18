@@ -145,7 +145,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        assertEquals(0, grids.get1().context().encryption().groupKey(grpId).id());
+        assertEquals(0, grids.get1().context().encryption().getActiveKey(grpId).id());
 
         TestRecordingCommunicationSpi commSpi = TestRecordingCommunicationSpi.spi(grids.get2());
 
