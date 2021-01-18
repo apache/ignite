@@ -110,7 +110,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     AddUserType(new BinaryTypeConfiguration(typeName), typeResolver);
 
             _registerSameJavaType = _cfg.NameMapper == null || 
-                 _cfg.NameMapper is BinaryBasicNameMapper && !((BinaryBasicNameMapper)_cfg.NameMapper).IsSimpleName;
+                 _cfg.NameMapper is BinaryBasicNameMapper && !((BinaryBasicNameMapper)_cfg.NameMapper).IsSimpleName &&
+                 _cfg.IdMapper == null;
         }
 
         /// <summary>
