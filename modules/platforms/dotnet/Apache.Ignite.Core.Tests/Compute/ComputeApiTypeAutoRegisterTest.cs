@@ -29,14 +29,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Echo type: V1. */
         private const int EchoTypeV1Action = 24;
 
-        /** Echo type: V2. */
-        private const int EchoTypeV2Action = 25;
-
-        /** Echo type: V4. */
-        private const int EchoTypeV4Action = 26;
-
-        /** Echo type: V5. */
-        private const int EchoTypeV5Action = 27;
+        /** Echo type: V3. */
+        private const int EchoTypeV3Action = 25;
 
         /** First node. */
         private IIgnite _grid1;
@@ -72,17 +66,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual("V1", v1.Name);
 
-            _grid1.CreateCache<int, V2>("V2").Put(1, new V2 { Name = "V2"});
+            var arg = new V2 {Name = "V2"};
 
-            var v2 = _grid1.GetCompute().ExecuteJavaTask<V2>(ComputeApiTest.EchoTask, EchoTypeV2Action);
+            var v2 = _grid1.GetCompute().ExecuteJavaTask<V2>(ComputeApiTest.EchoArgTask, arg);
 
-            Assert.AreEqual("V2", v2.Name);
-
-            var arg = new V3 {Name = "V3"};
-
-            var v3 = _grid1.GetCompute().ExecuteJavaTask<V3>(ComputeApiTest.EchoArgTask, arg);
-
-            Assert.AreEqual(arg.Name, v3.Name);
+            Assert.AreEqual(arg.Name, v2.Name);
         }
 
         /// <summary>
@@ -91,21 +79,15 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoAsyncTasksAutoRegisterType()
         {
-            var v4 = _grid1.GetCompute().ExecuteJavaTaskAsync<V4>(ComputeApiTest.EchoTask, EchoTypeV4Action).Result;
+            var v3 = _grid1.GetCompute().ExecuteJavaTaskAsync<V3>(ComputeApiTest.EchoTask, EchoTypeV3Action).Result;
 
-            Assert.AreEqual("V4", v4.Name);
+            Assert.AreEqual("V3", v3.Name);
 
-            _grid1.CreateCache<int, V5>("V5").Put(1, new V5 { Name = "V5"});
+            var arg = new V4 {Name = "V4"};
 
-            var v5 = _grid1.GetCompute().ExecuteJavaTaskAsync<V5>(ComputeApiTest.EchoTask, EchoTypeV5Action).Result;
+            var v4 = _grid1.GetCompute().ExecuteJavaTaskAsync<V4>(ComputeApiTest.EchoArgTask, arg).Result;
 
-            Assert.AreEqual("V5", v5.Name);
-
-            var arg = new V6 {Name = "V6"};
-
-            var v6 = _grid1.GetCompute().ExecuteJavaTaskAsync<V6>(ComputeApiTest.EchoArgTask, arg).Result;
-
-            Assert.AreEqual(arg.Name, v6.Name);
+            Assert.AreEqual(arg.Name, v4.Name);
         }
     }
 }

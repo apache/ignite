@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.Linq;
     using System.Runtime.Serialization;
+    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Common;
@@ -42,6 +43,9 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class Marshaller
     {
+        /** Register same java type flag. */
+        public static readonly ThreadLocal<Boolean> RegisterSameJavaType = new ThreadLocal<Boolean>(() => false);
+
         /** Binary configuration. */
         private readonly BinaryConfiguration _cfg;
 
@@ -148,19 +152,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets the compact footer flag.
-        /// </summary>
-        public bool RegisterSameJavaType
-        {
-            get { return _registerSameJavaType; }
-        }
-
-        /// <summary>
         /// Gets date time converter.
         /// </summary>
         public ITimestampConverter TimestampConverter
         {
             get { return _cfg.TimestampConverter; }
+        }
+
+        /// <summary>
+        /// Returns register same java type flag value.
+        /// </summary>
+        public bool IsRegisterSameJavaType()
+        {
+            return _registerSameJavaType && RegisterSameJavaType.Value;
         }
 
         /// <summary>
@@ -545,7 +549,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (type == null && _ignite != null)
                 {
-                    typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId, _registerSameJavaType);
+                    typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId, IsRegisterSameJavaType());
 
                     if (typeName != null)
                     {
