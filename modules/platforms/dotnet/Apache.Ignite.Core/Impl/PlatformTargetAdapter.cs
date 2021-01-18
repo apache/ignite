@@ -436,7 +436,7 @@ namespace Apache.Ignite.Core.Impl
 
             var fut = convertFunc == null && futType != FutureType.Object
                 ? new Future<T>()
-                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, _marsh.RegisterSameJavaType, convertFunc));
+                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, convertFunc));
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 
@@ -478,7 +478,7 @@ namespace Apache.Ignite.Core.Impl
 
             var fut = convertFunc == null && futType != FutureType.Object
                 ? new Future<T>()
-                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, _marsh.RegisterSameJavaType, convertFunc));
+                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, convertFunc));
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 

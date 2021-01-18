@@ -35,9 +35,6 @@ namespace Apache.Ignite.Core.Impl.Common
         /** Converting function. */
         private readonly Func<BinaryReader, T> _func;
 
-        /** Register same java type flag. */
-        private readonly bool _registerSameJavaType;
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -45,13 +42,11 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>	
         /// <param name="func">Converting function.</param>
-        public FutureConverter(Marshaller marsh, bool keepBinary, bool registerSameJavaType,
-            Func<BinaryReader, T> func = null)
+        public FutureConverter(Marshaller marsh, bool keepBinary, Func<BinaryReader, T> func = null)
         {
             _marsh = marsh;
             _keepBinary = keepBinary;
             _func = func ?? (reader => reader == null ? default(T) : reader.ReadObject<T>());
-            _registerSameJavaType = registerSameJavaType;
         }
 
         /// <summary>
@@ -59,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public T Convert(IBinaryStream stream)
         {
-            Marshaller.RegisterSameJavaTypeTl.Value = _registerSameJavaType;
+            Marshaller.RegisterSameJavaTypeTl.Value = _marsh.RegisterSameJavaType;
 
             try
             {
