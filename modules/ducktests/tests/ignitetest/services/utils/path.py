@@ -166,6 +166,17 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
     def log_config_file(self):
         return os.path.join(self.persistent_root, "ignite-log4j.xml")
 
+    @property
+    def certificate_dir(self):
+        """
+        :return: path to the certificate directory.
+        """
+        ignite_dev_dir = get_home_dir(self.install_root, self.project, DEV_BRANCH)
+
+        path = os.path.join(ignite_dev_dir, "modules", "ducktests", "tests", "certs")
+
+        return path
+
     def script(self, script_name):
         """
         :param script_name: name of Ignite script
