@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.sql;
 import java.util.List;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  */
+@Ignore("MVCC is not supported.")
 public class IgniteTransactionSQLColumnConstraintTest extends IgniteSQLColumnConstraintsTest {
     /** {@inheritDoc} */
     @Override protected void checkSQLThrows(String sql, String sqlStateCode, Object... args) {
