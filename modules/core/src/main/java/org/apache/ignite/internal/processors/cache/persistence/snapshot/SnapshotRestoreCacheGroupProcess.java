@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -46,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.RestoreOperationContext;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestorePrepareResponse.CacheGroupSnapshotDetails;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -157,17 +157,14 @@ public class SnapshotRestoreCacheGroupProcess {
         if (fut0.isDone() || fut0.request() == null)
             return false;
 
-        return cacheName == null || fut0.request().groups().contains(cacheName) || fut0.sharedCacheNames().contains(cacheName);
+        return cacheName == null || fut0.containsCache(cacheName);
     }
 
     public boolean rollbackLocal() {
         RestoreSnapshotFuture fut0 = fut;
 
-//        if (fut0.isDone() || fut0.request() == null) {
-//            System.out.println(">xxx> fut0 done " + fut0.isDone());
-//
+//        if (fut0.isDone() || fut0.request() == null)
 //            return false;
-//        }
 
         rollbackLock.lock();
 
@@ -323,10 +320,6 @@ public class SnapshotRestoreCacheGroupProcess {
 
         List<String> notFoundGroups = new ArrayList<>(fut.request().groups());
 
-        Set<String> sharedCacheNames = new HashSet<>();
-
-        fut.sharedCacheNames(sharedCacheNames);
-
         try {
             Collection<CacheGroupSnapshotDetails> grpsDetails = mergeNodeResults(res);
 
@@ -352,7 +345,7 @@ public class SnapshotRestoreCacheGroupProcess {
                     String cacheName = cacheData.config().getName();
 
                     if (grpDetails.shared())
-                        sharedCacheNames.add(cacheName);
+                        fut.addCacheId(CU.cacheId(cacheName));
 
                     cacheCfgs.add(cacheData);
 
@@ -596,14 +589,28 @@ public class SnapshotRestoreCacheGroupProcess {
 
         private volatile Collection<StoredCacheData> cacheCfgsToStart;
 
-        private volatile Set<String> sharedCacheNames;
-
         public SnapshotRestoreRequest request() {
             return reqRef.get();
         }
 
+        public Set<Integer> cacheIds = new GridConcurrentHashSet<>();
+
+        public boolean containsCache(String name) {
+            return cacheIds.contains(CU.cacheId(name));
+        }
+
+        public void addCacheId(int cacheId) {
+            cacheIds.add(cacheId);
+        }
+
         public boolean request(SnapshotRestoreRequest req) {
-            return reqRef.compareAndSet(null, req);
+            if (!reqRef.compareAndSet(null, req))
+                return false;
+
+            for (String grpName : req.groups())
+                cacheIds.add(CU.cacheId(grpName));
+
+            return true;
         }
 
         /**
@@ -630,16 +637,6 @@ public class SnapshotRestoreCacheGroupProcess {
 
         public void startConfigs(Collection<StoredCacheData> ccfgs) {
             cacheCfgsToStart = ccfgs;
-        }
-
-        public void sharedCacheNames(Set<String> sharedCacheNames) {
-            this.sharedCacheNames = sharedCacheNames;
-        }
-
-        public Set<String> sharedCacheNames() {
-            Set<String> sharedCacheNames0 = sharedCacheNames;
-
-            return sharedCacheNames0 == null ? Collections.emptySet() : sharedCacheNames0;
         }
 
         public Collection<StoredCacheData> startConfigs() {
