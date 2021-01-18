@@ -18,7 +18,12 @@
 namespace IgniteExamples.Thick.Cache.OptimisticTransaction
 {
     using System;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Transactions;
     using IgniteExamples.Shared;
 
     /// <summary>
@@ -26,21 +31,69 @@ namespace IgniteExamples.Thick.Cache.OptimisticTransaction
     /// </summary>
     public class Program
     {
+        private const string CacheName = "dotnet_optimistic_tx_example";
+
+        [STAThread]
         public static void Main()
         {
-            using (IIgnite ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
+            using (var ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Example started.");
+                Console.WriteLine(">>> Optimistic transaction example started.");
 
-                // TODO
+                // Create Transactional cache.
+                var cacheCfg = new CacheConfiguration(CacheName) { AtomicityMode = CacheAtomicityMode.Transactional };
+
+                var cache = ignite.GetOrCreateCache<int, int>(cacheCfg);
+
+                // Put a value.
+                cache[1] = 0;
+
+                // Increment a value in parallel within a transaction.
+                var task1 = Task.Factory.StartNew(() => IncrementCacheValue(cache, 1));
+                var task2 = Task.Factory.StartNew(() => IncrementCacheValue(cache, 2));
+
+                Task.WaitAll(task1, task2);
 
                 Console.WriteLine();
-            }
+                Console.WriteLine(">>> Resulting value in cache: " + cache[1]);
 
-            Console.WriteLine();
-            Console.WriteLine(">>> Example finished, press any key to exit ...");
-            Console.ReadKey();
+                Console.WriteLine();
+                Console.WriteLine(">>> Example finished, press any key to exit ...");
+                Console.ReadKey();
+            }
+        }
+
+        /// <summary>
+        /// Increments the cache value within a transaction.
+        /// </summary>
+        /// <param name="cache">The cache.</param>
+        /// <param name="threadId">The thread identifier.</param>
+        private static void IncrementCacheValue(ICache<int, int> cache, int threadId)
+        {
+            try
+            {
+                var transactions = cache.Ignite.GetTransactions();
+
+                using (var tx = transactions.TxStart(TransactionConcurrency.Optimistic,
+                    TransactionIsolation.Serializable))
+                {
+                    // Increment cache value.
+                    cache[1]++;
+
+                    // Introduce a delay to ensure lock conflict.
+                    Thread.Sleep(TimeSpan.FromSeconds(2.5));
+
+                    tx.Commit();
+                }
+
+                Console.WriteLine("\n>>> Thread {0} successfully incremented cached value.", threadId);
+            }
+            catch (TransactionOptimisticException ex)
+            {
+                Console.WriteLine("\n>>> Thread {0} failed to increment cached value. " +
+                                  "Caught an expected optimistic exception: {1}", threadId, ex.Message);
+            }
         }
     }
 }
