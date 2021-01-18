@@ -341,6 +341,20 @@ your custom procedures.
 | EVT_CLUSTER_SNAPSHOT_FAILED | A cluster snapshot operation is failed. | The node where the snapshot operation was initiated. Note that the message will contain a failure description from another node. You may check the logs for details.
 |===
 
+== Node Validation Failure Events
+
+These events are triggered when a new node cannot join the Ignite cluster because some of the cluster member nodes failed to validate it.
+Validation should be understood as the configuration and state compatibility check between the joining node and the cluster member nodes.
+Node validation failure events provide information about the node that tried to join the cluster and the reason for the validation failure.
+
+Events related to node validation failures are instances of the link:{events_url}/NodeValidationFailedEvent.html[NodeValidationFailedEvent] class.
+
+[cols="2,5,3",opts="header"]
+|===
+|Event Type | Event Description | Where Event Is Fired
+|EVT_NODE_VALIDATION_FAILED | Node validation failed. | The cluster member node that failed to validate new node that tried to join the cluster.
+|===
+
 
 ////
 == Management Task Events
