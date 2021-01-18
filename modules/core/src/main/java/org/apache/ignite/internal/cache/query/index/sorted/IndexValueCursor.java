@@ -39,7 +39,7 @@ public class IndexValueCursor<V> implements GridCursor<V> {
 
         /** {@inheritDoc} */
         @Override public Object get() {
-            throw new IllegalStateException("No next element");
+            return null;
         }
     };
 

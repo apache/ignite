@@ -275,6 +275,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** */
     private H2Row mapIndexRow(IndexRow row) {
+        if (row == null)
+            return null;
+
         return new H2CacheRow(rowDescriptor(), row.getCacheDataRow());
     }
 
