@@ -80,17 +80,17 @@ def merge_jvm_settings(src_settings, additionals, **kwargs):
     if kwargs.get("as_map"):
         return mapped
 
-    lested = []
+    listed = []
     for param, value in mapped.items():
         if value:
-            lested.append(f"{param}={value}")
+            listed.append(f"{param}={value}")
         else:
-            lested.append(param)
+            listed.append(param)
 
     if kwargs.get("as_list"):
-        return lested
+        return listed
 
-    return ' '.join(lested)
+    return ' '.join(listed)
 
 
 def _to_map(params):
