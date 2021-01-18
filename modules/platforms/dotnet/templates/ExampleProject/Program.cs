@@ -28,7 +28,7 @@ namespace IgniteExamples.Thick.ExampleProject
     /// <summary>
     /// TODO
     /// </summary>
-    public class Program
+    public static class Program
     {
         public static void Main()
         {

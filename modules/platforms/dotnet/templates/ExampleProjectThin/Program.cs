@@ -35,7 +35,7 @@ namespace IgniteExamples.Thin.ExampleProjectThin
     /// * dotnet run -p ServerNode.csproj
     /// * ignite.sh/ignite.bat from the distribution
     /// </summary>
-    public class Program
+    public static class Program
     {
         public static void Main()
         {
