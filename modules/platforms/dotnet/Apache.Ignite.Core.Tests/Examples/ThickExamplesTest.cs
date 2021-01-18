@@ -27,7 +27,9 @@ namespace Apache.Ignite.Core.Tests.Examples
     public class ThickExamplesTest
     {
         /** */
-        private static readonly Example[] ThickExamples = Example.AllExamples.Where(e => !e.IsThin).ToArray();
+        private static readonly Example[] ThickExamples = Example.AllExamples
+            .Where(e => !e.IsThin && !e.IsClient)
+            .ToArray();
 
         /// <summary>
         /// Tests thick mode example.
