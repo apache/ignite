@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Client;
 
@@ -107,23 +108,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public string GetTypeName(int id, bool registerSameJavaType)
         {
-            try
-            {
-                return GetTypeName(id, BinaryProcessor.DotNetPlatformId);
-            }
-            catch (Exception)
+            return GetTypeName(id, BinaryProcessor.DotNetPlatformId, (statusCode, msg) =>
             {
                 if (!registerSameJavaType)
-                    throw;
-            }
+                    throw new IgniteClientException(msg, null, statusCode);
 
-            // Try to get java type name and register corresponding DotNet type.
-            var javaTypeName = GetTypeName(id, BinaryProcessor.JavaPlatformId);
-            var netTypeName = _marsh.GetTypeName(javaTypeName);
+                // Try to get java type name and register corresponding DotNet type.
+                var javaTypeName = GetTypeName(id, BinaryProcessor.JavaPlatformId, null);
+                var netTypeName = _marsh.GetTypeName(javaTypeName);
 
-            RegisterType(id, netTypeName, false);
+                RegisterType(id, netTypeName, false);
 
-            return netTypeName;
+                return netTypeName;
+            });
         }
         
         /// <summary>
@@ -132,14 +129,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="id">The identifier.</param>
         /// <param name="platformId">Platform identifier.</param>
         /// <returns>Type or null.</returns>
-        private string GetTypeName(int id, byte platformId)
+        private string GetTypeName(int id, byte platformId, Func<ClientStatusCode, string, string> errorFunc)
         {
             return _socket.DoOutInOp(ClientOp.BinaryTypeNameGet, ctx =>
                 {
                     ctx.Stream.WriteByte(platformId);
                     ctx.Stream.WriteInt(id);
                 },
-                ctx => ctx.Reader.ReadString());
+                ctx => ctx.Reader.ReadString(), errorFunc);
         }
     }
 }
