@@ -32,6 +32,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SpiQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.cache.query.index.IgniteIndexing;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -43,10 +44,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -284,7 +283,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     /**
      * Indexing Spi implementation for test
      */
-    private static class TestIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
+    private static class TestIndexingSpi extends IgniteIndexing {
         /** Index. */
         private final SortedMap<Object, Object> idx = new TreeMap<>();
 
@@ -310,6 +309,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
             boolean prevRowAvailable) throws IgniteSpiException {
+            super.store(cctx, newRow, prevRow, prevRowAvailable);
 
             CacheObjectContext coctx = cctx.cacheObjectContext();
 

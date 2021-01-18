@@ -34,6 +34,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SpiQuery;
+import org.apache.ignite.cache.query.index.IgniteIndexing;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
@@ -41,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
-import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
@@ -232,19 +232,9 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * Indexing Spi implementation for test
      */
-    private static class MyIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
+    private static class MyIndexingSpi extends IgniteIndexing {
         /** Index. */
         private final SortedMap<Object, Object> idx = new TreeMap<>();
-
-        /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void spiStop() throws IgniteSpiException {
-            // No-op.
-        }
 
         /** {@inheritDoc} */
         @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String cacheName, Collection<Object> params,
@@ -273,6 +263,8 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void store(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
             boolean prevRowAvailable) {
+            super.store(cctx, newRow, prevRow, prevRowAvailable);
+
             CacheObjectContext coctx = cctx.cacheObjectContext();
 
             Object key = newRow.key().value(coctx, false);
