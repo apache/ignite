@@ -135,6 +135,8 @@ Register name: `cacheGroups.{group_name}`
 |StorageSize |long|    Storage space allocated for group, in bytes.
 |TotalAllocatedPages |long|    Cache group total allocated pages.
 |TotalAllocatedSize  |long|    Total size of memory allocated for group, in bytes.
+|ReencryptionBytesLeft |long| The number of bytes left for re-encryption.
+|ReencryptionFinished |boolean| The flag indicates whether re-encryption is finished or not.
 |===
 
 
