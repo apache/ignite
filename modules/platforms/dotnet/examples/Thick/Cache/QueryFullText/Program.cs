@@ -31,7 +31,6 @@ namespace IgniteExamples.Thick.Cache.QueryFullText
     /// </summary>
     public class Program
     {
-        /// <summary>Employee cache name.</summary>
         private const string EmployeeCacheName = "dotnet_cache_query_employee";
 
         public static void Main()
