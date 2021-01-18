@@ -70,7 +70,13 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             var launch = new Launch
             {
-                Configurations = Examples.Select(e => new LaunchConfig()).ToArray()
+                Configurations = Examples.Select(e => new LaunchConfig
+                {
+                    // TODO: Paths are based on ${workspaceFolder}
+                    Name = e.Name,
+                    Program = e.AssemblyFile,
+                    Cwd = Path.GetDirectoryName(e.ProjectFile)
+                }).ToArray()
             };
 
             var json = JsonConvert.SerializeObject(launch, Formatting.Indented);
@@ -105,13 +111,13 @@ namespace Apache.Ignite.Core.Tests.Examples
             public string PreLaunchTask { get; set; } = "build";
             
             /** */
-            public string Program { get; set; } = "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll"; // TODO
+            public string Program { get; set; } = "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll";
 
             /** */
             public string[] Args { get; set; } = Array.Empty<string>();
             
             /** */
-            public string Cwd { get; set; } = "${workspaceFolder}/Thin/Cache/PutGet"; // TODO
+            public string Cwd { get; set; } = "${workspaceFolder}/Thin/Cache/PutGet";
 
             /** */
             public string Console { get; set; } = "internalConsole";
