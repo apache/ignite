@@ -1013,15 +1013,12 @@ public class ClusterCachesInfo {
 
             String conflictingName;
 
-            if (snapshotMgr.isCacheGroupRestoring(conflictingName = cacheName) ||
-                ((conflictingName = ccfg.getGroupName()) != null && snapshotMgr.isCacheGroupRestoring(conflictingName)))
+            if (snapshotMgr.isCacheRestoring(conflictingName = cacheName) ||
+                ((conflictingName = ccfg.getGroupName()) != null && snapshotMgr.isCacheRestoring(conflictingName)))
                 err = new IgniteCheckedException("Cache start failed. A cache named \"" + conflictingName + "\" is currently being restored from a snapshot.");
         }
 
         if (err != null) {
-            if (req.restoredCache())
-                ctx.cache().context().snapshotMgr().rollbackRestoreLocal();
-
             if (persistedCfgs)
                 res.errs.add(err);
             else

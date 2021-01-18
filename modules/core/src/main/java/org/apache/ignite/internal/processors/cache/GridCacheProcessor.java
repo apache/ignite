@@ -2987,6 +2987,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (fut != null)
                 fut.onDone(success, err);
         }
+
+        if (req.restoredCache()) {
+            ctx.cache().context().snapshotMgr().afterRestoredCacheStarted(req.cacheName(),
+                req.startCacheConfiguration().getGroupName(), err);
+        }
     }
 
     /**
@@ -4302,8 +4307,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return null;
     }
 
+    /**
+     * @param node Joining node to validate.
+     * @return Node validation result if there was an issue with the joining node, {@code null} otherwise.
+     */
     private IgniteNodeValidationResult validateRestoringCaches(ClusterNode node) {
-        if (ctx.cache().context().snapshotMgr().isCacheGroupRestoring(null)) {
+        if (ctx.cache().context().snapshotMgr().isCacheRestoring(null)) {
             String msg = "Joining node during caches restore is not allowed [joiningNodeId=" + node.id() + ']';
 
             return new IgniteNodeValidationResult(node.id(), msg);

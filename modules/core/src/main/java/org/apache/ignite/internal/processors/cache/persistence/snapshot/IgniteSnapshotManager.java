@@ -53,7 +53,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -773,12 +772,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    public boolean isCacheGroupRestoring(@Nullable String cacheName) {
+    public boolean isCacheRestoring(@Nullable String cacheName) {
         return restoreCacheGrpProcess.inProgress(cacheName);
     }
 
-    public void rollbackRestoreLocal() {
-        restoreCacheGrpProcess.rollbackLocal();
+    public void afterRestoredCacheStarted(String cacheName, @Nullable String grpName, @Nullable Throwable err) {
+        restoreCacheGrpProcess.handleCacheStart(cacheName, grpName, err);
     }
 
     /**
@@ -1100,7 +1099,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         return restoreCacheGrpProcess.start(snpName, grpNames);
     }
 
-    protected void ensureMetaCanBeMerged(String snpName) throws IgniteCheckedException, IOException {
+    protected void checkMetaCompatibility(String snpName) throws IgniteCheckedException, IOException {
         String nodeFolderName = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
 
         File workDIr = resolveSnapshotWorkDirectory(cctx.kernalContext().config());
@@ -1130,9 +1129,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    protected RestoreOperationContext restoreCacheGroupsLocal(String snpName, Collection<String> grpNames) throws IgniteCheckedException {
-        RestoreOperationContext opCtx = new RestoreOperationContext();
-
+    protected IgniteInternalFuture<SnapshotRestorePerformResponse> restoreCacheGroupsLocal(
+        String snpName,
+        Collection<String> grpNames,
+        RestoreOperationContext opCtx
+    ) throws IgniteCheckedException {
         String nodeFolderName = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
 
         File workDIr = resolveSnapshotWorkDirectory(cctx.kernalContext().config());
@@ -1143,7 +1144,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         File snapshotMetadataDir = new File(workDIr, subPath);
 
         if (!snapshotMetadataDir.exists())
-            return opCtx;
+            return new GridFinishedFuture<>();
 
         // restore metadata
         CacheObjectBinaryProcessorImpl procImpl = (CacheObjectBinaryProcessorImpl)cctx.kernalContext().cacheObjects();
@@ -1163,15 +1164,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }
 
+        GridFutureAdapter<SnapshotRestorePerformResponse> updateMetaFut = new GridFutureAdapter<>();
+
         // todo should register only from one node and validate result
         if (!F.isEmpty(metas)) {
-            Future<?> updateMetaFut = cctx.kernalContext().getSystemExecutorService().submit(() -> {
-                for (BinaryMetadata meta : metas)
-                    procImpl.addMeta(meta.typeId(), meta.wrap(procImpl.binaryContext()), false);
-            });
+            cctx.kernalContext().getSystemExecutorService().submit(() -> {
+                try {
+                    for (BinaryMetadata meta : metas)
+                        procImpl.addMeta(meta.typeId(), meta.wrap(procImpl.binaryContext()), false);
 
-            opCtx.updateMetaFuture(updateMetaFut);
+                    updateMetaFut.onDone();
+                }
+                catch (Exception e) {
+                    updateMetaFut.onDone(e);
+                }
+            });
         }
+        else
+            updateMetaFut.onDone();
 
         for (String grpName : grpNames) {
             File cacheDir = resolveCacheDir(grpName);
@@ -1208,7 +1218,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }
 
-        return opCtx;
+        return updateMetaFut;
     }
 
     protected void rollbackRestoreOperation(Collection<String> grps, RestoreOperationContext opCtx) {
@@ -1248,7 +1258,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     protected File resolveSnapshotCacheDir(String snpName, IgniteConfiguration cfg, String cacheName) throws IgniteCheckedException {
         File workDIr = resolveSnapshotWorkDirectory(cfg);
 
-        String nodeDirName = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName() + File.separator;
+        String nodeDirName = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
 
         String subPath = snpName + File.separator + DFLT_STORE_DIR + File.separator + nodeDirName + File.separator;
 
@@ -2188,16 +2198,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private final Map<String, List<File>> files = new HashMap<>();
 
         private final List<Integer> metadataTypes = new ArrayList<>();
-
-        private volatile Future<?> updateMetaFuture;
-
-        public void updateMetaFuture(Future<?> updateMetaFuture) {
-            this.updateMetaFuture = updateMetaFuture;
-        }
-
-        public @Nullable Future<?> updateMetaFuture() {
-            return this.updateMetaFuture;
-        }
 
         public void cacheGroupFile(String grpName, File newFile) {
             files.computeIfAbsent(grpName, v -> new ArrayList<>()).add(newFile);
