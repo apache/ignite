@@ -29,7 +29,7 @@ namespace IgniteExamples.Thick.Cache.OptimisticTransaction
     /// <summary>
     /// This example demonstrates optimistic transaction concurrency control.
     /// </summary>
-    public class Program
+    public static class Program
     {
         private const string CacheName = "dotnet_optimistic_tx_example";
 

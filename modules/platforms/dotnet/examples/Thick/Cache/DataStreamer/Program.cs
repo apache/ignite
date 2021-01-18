@@ -29,7 +29,7 @@ namespace IgniteExamples.Thick.Cache.DataStreamer
     /// Data streamer is a lot more efficient to use than standard cache put operation
     /// as it properly buffers cache requests together and properly manages load on remote nodes.
     /// </summary>
-    public class Program
+    public static class Program
     {
         private const int EntryCount = 500000;
 

@@ -29,7 +29,7 @@ namespace IgniteExamples.Thick.Cache.QueryScan
     /// <summary>
     /// This example demonstrates Scan query with a remote filter.
     /// </summary>
-    public class Program
+    public static class Program
     {
         private const string EmployeeCacheName = "dotnet_cache_query_employee";
 

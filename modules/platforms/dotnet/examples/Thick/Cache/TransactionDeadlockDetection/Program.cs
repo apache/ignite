@@ -31,7 +31,7 @@ namespace IgniteExamples.Thick.Cache.TransactionDeadlockDetection
     /// <summary>
     /// This example demonstrates the transaction deadlock detection mechanism.
     /// </summary>
-    public class Program
+    public static class Program
     {
         private const string CacheName = "dotnet_cache_tx_deadlock";
 

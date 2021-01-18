@@ -28,7 +28,7 @@ namespace IgniteExamples.Thick.Cache.PutGet
     /// <summary>
     /// Put/Get example.
     /// </summary>
-    public class Program
+    public static class Program
     {
         private const string CacheName = "dotnet_cache_put_get";
 

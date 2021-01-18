@@ -31,7 +31,7 @@ namespace IgniteExamples.Thick.Cache.MultiTieredCache
     /// memory spaces (on-heap, off-heap, swap) depending on the total cache size and eviction policies that are set.
     /// NOTE: There must be no other cluster nodes running on the host.
     /// </summary>
-    public class Program
+    public static class Program
     {
         /// <summary>Example cache name.</summary>
         private const string CacheName = "dotnet_multi_tiered_example_cache";

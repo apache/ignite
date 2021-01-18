@@ -32,7 +32,7 @@ namespace IgniteExamples.Thick.Cache.NearCache
     /// * dotnet run -p ServerNode.csproj
     /// * ignite.sh/ignite.bat from the distribution
     /// </summary>
-    public class Program
+    public static class Program
     {
         private const string CacheName = "dotnet_near_cache_example";
 

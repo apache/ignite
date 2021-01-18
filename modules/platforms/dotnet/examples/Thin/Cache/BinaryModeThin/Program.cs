@@ -34,7 +34,7 @@ namespace IgniteExamples.Thin.Cache.BinaryModeThin
     /// * dotnet run -p ServerNode.csproj
     /// * ignite.sh/ignite.bat from the distribution
     /// </summary>
-    public class Program
+    public static class Program
     {
         private const string CacheName = "dotnet_binary_cache";
 

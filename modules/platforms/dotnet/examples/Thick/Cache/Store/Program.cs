@@ -28,7 +28,7 @@ namespace IgniteExamples.Thick.Cache.Store
     /// <summary>
     /// This example demonstrates a custom cache store usage.
     /// </summary>
-    public class Program
+    public static class Program
     {
         private const string CacheName = "dotnet_cache_with_store";
 

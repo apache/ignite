@@ -28,7 +28,7 @@ namespace IgniteExamples.Thick.Cache.BinaryMode
     /// <summary>
     /// This example works with cache entirely in binary mode: no classes are needed.
     /// </summary>
-    public class Program
+    public static class Program
     {
         private const string CacheName = "dotnet_binary_cache";
 

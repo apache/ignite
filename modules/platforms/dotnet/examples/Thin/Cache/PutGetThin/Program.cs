@@ -10,7 +10,7 @@
     using IgniteExamples.Shared;
     using IgniteExamples.Shared.Models;
 
-    public class Program
+    public static class Program
     {
         /// <summary>
         /// Put/Get example.

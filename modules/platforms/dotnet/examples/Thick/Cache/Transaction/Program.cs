@@ -29,7 +29,7 @@ namespace IgniteExamples.Thick.Cache.Transaction
     /// <summary>
     /// This example demonstrates transactional data updates.
     /// </summary>
-    public class Program
+    public static class Program
     {
         private const string CacheName = "dotnet_cache_tx";
 

@@ -29,7 +29,7 @@ namespace IgniteExamples.Thick.Cache.QueryFullText
     /// <summary>
     /// This example demonstrates full-text search capabilities.
     /// </summary>
-    public class Program
+    public static class Program
     {
         private const string EmployeeCacheName = "dotnet_cache_query_employee";
 
