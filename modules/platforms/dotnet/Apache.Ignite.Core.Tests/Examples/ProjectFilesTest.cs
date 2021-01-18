@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         private static readonly string LaunchJsonText = File.ReadAllText(ExamplePaths.LaunchJsonFile);
 
         private static readonly string[] ThickOnlyExamples = {
-            "NearCache"
+            "NearCache", "DataStreamer", "MultiTieredCache", "QueryFullText", "Store"
         };
 
         /// <summary>
@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Tests.Examples
 
                 Assert.IsTrue(
                     Examples.Any(e => e.Name == thinCounterpart),
-                    $"Missing Thin example: {thinCounterpart}");
+                    $"Missing thin client example: {thinCounterpart}");
             }
         }
 
