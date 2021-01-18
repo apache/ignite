@@ -59,7 +59,8 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             var expectedRootNamespace = example.ProjectFile
                 .Replace(ExamplePaths.SourcesPath, string.Empty)
-                .Replace(Path.DirectorySeparatorChar, '.');
+                .Replace(Path.DirectorySeparatorChar, '.')
+                .Replace("." + Path.GetFileName(example.ProjectFile), string.Empty);
 
             StringAssert.Contains($"<RootNamespace>IgniteExamples{expectedRootNamespace}</RootNamespace>", text);
 
