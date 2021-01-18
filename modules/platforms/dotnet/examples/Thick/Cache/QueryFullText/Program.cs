@@ -19,21 +19,41 @@ namespace IgniteExamples.Thick.Cache.QueryFullText
 {
     using System;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using IgniteExamples.Shared;
+    using IgniteExamples.Shared.Cache;
+    using IgniteExamples.Shared.Models;
 
     /// <summary>
-    /// TODO
+    /// This example demonstrates full-text search capabilities.
     /// </summary>
     public class Program
     {
+        /// <summary>Employee cache name.</summary>
+        private const string EmployeeCacheName = "dotnet_cache_query_employee";
+
+        [STAThread]
         public static void Main()
         {
-            using (IIgnite ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
+            using (var ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Example started.");
+                Console.WriteLine(">>> Cache full-text query example started.");
 
-                // TODO
+                var employeeCache = ignite.GetOrCreateCache<int, Employee>(
+                    new CacheConfiguration(EmployeeCacheName, new QueryEntity(typeof(int), typeof(Employee))));
+
+                Utils.PopulateCache(employeeCache);
+
+                var qry = employeeCache.Query(new TextQuery(queryType: "Employee", text: "TX"));
+
+                Console.WriteLine();
+                Console.WriteLine(">>> Employees living in Texas:");
+
+                foreach (var entry in qry)
+                    Console.WriteLine(">>> " + entry.Value);
 
                 Console.WriteLine();
             }

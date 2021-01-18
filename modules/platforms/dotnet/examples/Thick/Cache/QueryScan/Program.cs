@@ -19,21 +19,43 @@ namespace IgniteExamples.Thick.Cache.QueryScan
 {
     using System;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using IgniteExamples.Shared;
+    using IgniteExamples.Shared.Cache;
+    using IgniteExamples.Shared.Models;
 
     /// <summary>
-    /// TODO
+    /// This example demonstrates Scan query with a remote filter.
     /// </summary>
     public class Program
     {
+        /// <summary>Employee cache name.</summary>
+        private const string EmployeeCacheName = "dotnet_cache_query_employee";
+
+        [STAThread]
         public static void Main()
         {
-            using (IIgnite ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
+            using (var ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Example started.");
+                Console.WriteLine(">>> Cache full-text query example started.");
 
-                // TODO
+                var employeeCache = ignite.GetOrCreateCache<int, Employee>(
+                    new CacheConfiguration(EmployeeCacheName, new QueryEntity(typeof(int), typeof(Employee))));
+
+                Utils.PopulateCache(employeeCache);
+
+                const int zip = 94109;
+
+                var qry = employeeCache.Query(new ScanQuery<int, Employee>(new ScanQueryFilter(zip)));
+
+                Console.WriteLine();
+                Console.WriteLine(">>> Employees with zipcode {0} (scan):", zip);
+
+                foreach (var entry in qry)
+                    Console.WriteLine(">>>    " + entry.Value);
 
                 Console.WriteLine();
             }
