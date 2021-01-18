@@ -17,9 +17,11 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
 
     /// <summary>
@@ -169,23 +171,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Type or null.</returns>
         public string GetTypeName(int id, bool registerSameJavaType)
         {
-            try
-            {
-                return GetTypeName(id, DotNetPlatformId);
-            }
-            catch (BinaryObjectException)
+            return GetTypeName(id, DotNetPlatformId, ex =>
             {
                 if (!registerSameJavaType)
-                    throw;
-            }
+                    throw ex;
 
-            // Try to get java type name and register corresponding DotNet type.
-            var javaTypeName = GetTypeName(id, JavaPlatformId);
-            var netTypeName = Marshaller.GetTypeName(javaTypeName);
+                // Try to get java type name and register corresponding DotNet type.
+                var javaTypeName = GetTypeName(id, JavaPlatformId, null);
+                var netTypeName = Marshaller.GetTypeName(javaTypeName);
 
-            RegisterType(id, netTypeName, false);
+                RegisterType(id, netTypeName, false);
 
-            return netTypeName;
+                return netTypeName;
+            });
         }
 
         /// <summary>
@@ -193,14 +191,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <param name="platformId">Platform identifier.</param>
+        /// <param name="errorAction">Error action.</param>
         /// <returns>Type or null.</returns>
-        private string GetTypeName(int id, byte platformId)
+        private string GetTypeName(int id, byte platformId, Func<JavaException, string> errorAction)
         {
             return DoOutInOp((int) Op.GetType, w =>
             {
                 w.WriteInt(id);
                 w.WriteByte(platformId);
-            }, r => Marshaller.StartUnmarshal(r).ReadString());
+            }, r => Marshaller.StartUnmarshal(r).ReadString(), errorAction);
         }
 
         /// <summary>

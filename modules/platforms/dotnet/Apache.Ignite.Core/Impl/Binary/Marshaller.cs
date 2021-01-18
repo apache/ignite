@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     internal class Marshaller
     {
         /** Register same java type flag. */
-        public static readonly ThreadLocal<Boolean> RegisterSameJavaType = new ThreadLocal<Boolean>(() => false);
+        public static readonly ThreadLocal<Boolean> RegisterSameJavaTypeTl = new ThreadLocal<Boolean>(() => false);
 
         /** Binary configuration. */
         private readonly BinaryConfiguration _cfg;
@@ -162,9 +162,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Returns register same java type flag value.
         /// </summary>
-        public bool IsRegisterSameJavaType()
+        public bool RegisterSameJavaType
         {
-            return _registerSameJavaType && RegisterSameJavaType.Value;
+            get { return _registerSameJavaType && RegisterSameJavaTypeTl.Value; }
         }
 
         /// <summary>
@@ -549,7 +549,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (type == null && _ignite != null)
                 {
-                    typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId, IsRegisterSameJavaType());
+                    typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId, RegisterSameJavaType);
 
                     if (typeName != null)
                     {

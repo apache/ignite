@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
@@ -212,10 +213,11 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
         /// <param name="inAction">In action.</param>
+        /// <param name="errorAction">Error action.</param>
         /// <returns>Result.</returns>
-        protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction)
+        protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction, Func<JavaException, TR> errorAction = null)
         {
-            return _target.InStreamOutStream(type, stream => WriteToStream(outAction, stream, _marsh), inAction);
+            return _target.InStreamOutStream(type, stream => WriteToStream(outAction, stream, _marsh), inAction, errorAction);
         }
 
         /// <summary>
@@ -434,7 +436,7 @@ namespace Apache.Ignite.Core.Impl
 
             var fut = convertFunc == null && futType != FutureType.Object
                 ? new Future<T>()
-                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, _marsh.IsRegisterSameJavaType(), convertFunc));
+                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, _marsh.RegisterSameJavaType, convertFunc));
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 
@@ -476,7 +478,7 @@ namespace Apache.Ignite.Core.Impl
 
             var fut = convertFunc == null && futType != FutureType.Object
                 ? new Future<T>()
-                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, _marsh.IsRegisterSameJavaType(), convertFunc));
+                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, _marsh.RegisterSameJavaType, convertFunc));
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 

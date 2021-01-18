@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Impl
 
         /** <inheritdoc /> */
         public TR InStreamOutStream<TR>(int type, Action<IBinaryStream> writeAction, 
-            Func<IBinaryStream, TR> readAction)
+            Func<IBinaryStream, TR> readAction, Func<JavaException, TR> errorAction = null)
         {
             try
             {
@@ -177,6 +177,9 @@ namespace Apache.Ignite.Core.Impl
             }
             catch (JavaException jex)
             {
+                if (errorAction != null)
+                    return errorAction.Invoke(jex);
+
                 throw ConvertException(jex);
             }
         }
@@ -309,7 +312,7 @@ namespace Apache.Ignite.Core.Impl
 
             var fut = convertFunc == null && futType != FutureType.Object
                 ? new Future<T>()
-                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, _marsh.IsRegisterSameJavaType(),
+                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, _marsh.RegisterSameJavaType,
                     convertFunc));
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
@@ -352,7 +355,7 @@ namespace Apache.Ignite.Core.Impl
 
             var fut = convertFunc == null && futType != FutureType.Object
                 ? new Future<T>()
-                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, _marsh.IsRegisterSameJavaType(), convertFunc));
+                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, _marsh.RegisterSameJavaType, convertFunc));
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 

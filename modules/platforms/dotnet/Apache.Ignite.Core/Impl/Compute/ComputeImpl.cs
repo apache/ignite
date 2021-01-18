@@ -174,7 +174,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             ICollection<IClusterNode> nodes = _prj.Predicate == null ? null : _prj.GetNodes();
 
-            Marshaller.RegisterSameJavaType.Value = true;
+            Marshaller.RegisterSameJavaTypeTl.Value = true;
 
             try
             {
@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             finally
             {
                 _keepBinary.Value = false;
-                Marshaller.RegisterSameJavaType.Value = false;
+                Marshaller.RegisterSameJavaTypeTl.Value = false;
             }
         }
 
@@ -198,7 +198,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             ICollection<IClusterNode> nodes = _prj.Predicate == null ? null : _prj.GetNodes();
 
-            Marshaller.RegisterSameJavaType.Value = true;
+            Marshaller.RegisterSameJavaTypeTl.Value = true;
 
             try
             {
@@ -207,7 +207,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             finally
             {
                 _keepBinary.Value = false;
-                Marshaller.RegisterSameJavaType.Value = false;
+                Marshaller.RegisterSameJavaTypeTl.Value = false;
             }
         }
 
