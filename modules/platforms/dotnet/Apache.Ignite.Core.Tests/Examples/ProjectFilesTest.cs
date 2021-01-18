@@ -41,6 +41,10 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** */
         private static readonly string LaunchJsonText = File.ReadAllText(ExamplePaths.LaunchJsonFile);
 
+        private static readonly string[] ThickOnlyExamples = {
+            "NearCache"
+        };
+
         /// <summary>
         /// Checks csproj files.
         /// </summary>
@@ -64,7 +68,7 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             StringAssert.Contains($"<RootNamespace>IgniteExamples{expectedRootNamespace}</RootNamespace>", text);
 
-            if (!example.IsThin)
+            if (!example.IsThin && !ThickOnlyExamples.Contains(example.Name))
             {
                 var thinCounterpart = example.Name + "Thin";
 
