@@ -17,7 +17,10 @@
 
 namespace Apache.Ignite.Core.Tests.Examples
 {
+    using System;
     using System.IO;
+    using System.Linq;
+    using Newtonsoft.Json;
     using NUnit.Framework;
 
     /// <summary>
@@ -65,7 +68,56 @@ namespace Apache.Ignite.Core.Tests.Examples
         [Explicit]
         public void UpdateLaunchJson()
         {
-            // TODO
+            var launch = new Launch
+            {
+                Configurations = Examples.Select(e => new LaunchConfig()).ToArray()
+            };
+
+            var json = JsonConvert.ToString(launch);
+            
+            File.WriteAllText(ExamplePaths.LaunchJsonFile, json);
+        }
+        
+        // ReSharper disable UnusedMember.Local
+        /** launch.json */
+        private class Launch
+        {
+            /** */
+            public string Version { get; set; } = "0.2.0";
+            
+            /** */
+            public LaunchConfig[] Configurations { get; set; }
+        }
+
+        /** launch.json configuration */
+        private class LaunchConfig
+        {
+            /** */
+            public string Name { get; set; }
+            
+            /** */
+            public string Type { get; set; } = "coreclr";
+            
+            /** */
+            public string Request { get; set; } = "launch";
+
+            /** */
+            public string PreLaunchTask { get; set; } = "build";
+            
+            /** */
+            public string Program { get; set; } = "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll"; // TODO
+
+            /** */
+            public string[] Args { get; set; } = Array.Empty<string>();
+            
+            /** */
+            public string Cwd { get; set; } = "${workspaceFolder}/Thin/Cache/PutGet"; // TODO
+
+            /** */
+            public string Console { get; set; } = "internalConsole";
+
+            /** */
+            public bool StopAtEntry { get; set; } = false;
         }
     }
 }
