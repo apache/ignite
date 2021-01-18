@@ -60,6 +60,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             StringAssert.Contains("<ProjectReference Include=\"..\\..\\..\\Shared\\Shared.csproj", text);
             StringAssert.Contains($"{example.Name}.csproj", ExamplesSlnText);
             StringAssert.Contains($"{example.Name}.dll", LaunchJsonText);
+            // StringAssert.DoesNotContain("TODO", );
 
             var expectedRootNamespace = example.ProjectFile
                 .Replace(ExamplePaths.SourcesPath, string.Empty)
