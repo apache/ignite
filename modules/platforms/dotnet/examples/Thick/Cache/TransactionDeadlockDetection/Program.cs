@@ -35,7 +35,6 @@ namespace IgniteExamples.Thick.Cache.TransactionDeadlockDetection
     {
         private const string CacheName = "dotnet_cache_tx_deadlock";
 
-        [STAThread]
         public static void Main()
         {
             using (var ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
