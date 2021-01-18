@@ -29,7 +29,7 @@ namespace IgniteExamples.Thick.Cache.TransactionDeadlockDetection
     using IgniteExamples.Shared;
 
     /// <summary>
-    /// TODO
+    /// This example demonstrates the transaction deadlock detection mechanism.
     /// </summary>
     public class Program
     {

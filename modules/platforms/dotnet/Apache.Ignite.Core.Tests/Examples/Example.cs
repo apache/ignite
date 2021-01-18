@@ -50,18 +50,22 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** Whether this is a thin client example (needs a server node). */
         public bool IsThin => ProjectFile.Contains("Thin");
 
+        /** Example source code. */
+        public string SourceCode { get; }
+
         /** Whether this example runs in thick client mode. */
         public bool IsClient { get; }
 
         /// <summary>
         /// Initializes a new instance of <see cref="Example"/> class.
         /// </summary>
-        private Example(string name, string projectFile, string assemblyFile, bool isClient)
+        private Example(string name, string projectFile, string assemblyFile, string sourceCode)
         {
             Name = name;
             ProjectFile = projectFile;
             AssemblyFile = assemblyFile;
-            IsClient = isClient;
+            SourceCode = sourceCode;
+            IsClient = sourceCode.Contains("GetClientNodeConfiguration");
         }
 
         /// <summary>
@@ -123,9 +127,9 @@ namespace Apache.Ignite.Core.Tests.Examples
                     var asmFile = Path.Combine(path, "bin", "Debug", "netcoreapp2.1", $"{name}.dll");
 
                     var sourceFile = Path.Combine(path, "Program.cs");
-                    var isClient = File.ReadAllText(sourceFile).Contains("GetClientNodeConfiguration");
+                    var sourceCode = File.ReadAllText(sourceFile);
 
-                    return new Example(name, projFile, asmFile, isClient);
+                    return new Example(name, projFile, asmFile, sourceCode);
                 });
         }
     }
