@@ -1,41 +1,170 @@
 {
-   // Use IntelliSense to find out which attributes exist for C# debugging
-   // Use hover for the description of the existing attributes
-   // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
-   "version": "0.2.0",
-   "configurations": [
-        {
-            "name": "ThickPutGet",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "build",
-            "program": "${workspaceFolder}/Thick/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
-            "args": [],
-            "cwd": "${workspaceFolder}/Thick/Cache/PutGet",
-            "console": "internalConsole",
-            "stopAtEntry": false
-        },
-        {
-            "name": "ThickScanQuery",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "build",
-            "program": "${workspaceFolder}/Thick/Cache/ScanQuery/bin/Debug/netcoreapp2.1/ScanQuery.dll",
-            "args": [],
-            "cwd": "${workspaceFolder}/Thick/Cache/ScanQuery",
-            "console": "internalConsole",
-            "stopAtEntry": false
-        },
-        {
-            "name": "ThinPutGet",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "build",
-            "program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
-            "args": [],
-            "cwd": "${workspaceFolder}/Thin/Cache/PutGet",
-            "console": "internalConsole",
-            "stopAtEntry": false
-        },
-    ]
+  "Version": "0.2.0",
+  "Configurations": [
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    },
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    },
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    },
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    },
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    },
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    },
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    },
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    },
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    },
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    },
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    },
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    },
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    },
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    },
+    {
+      "Name": null,
+      "Type": "coreclr",
+      "Request": "launch",
+      "PreLaunchTask": "build",
+      "Program": "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "Args": [],
+      "Cwd": "${workspaceFolder}/Thin/Cache/PutGet",
+      "Console": "internalConsole",
+      "StopAtEntry": false
+    }
+  ]
 }

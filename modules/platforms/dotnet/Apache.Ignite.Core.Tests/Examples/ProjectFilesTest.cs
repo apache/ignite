@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Examples
                 Configurations = Examples.Select(e => new LaunchConfig()).ToArray()
             };
 
-            var json = JsonConvert.ToString(launch);
+            var json = JsonConvert.SerializeObject(launch, Formatting.Indented);
             
             File.WriteAllText(ExamplePaths.LaunchJsonFile, json);
         }
