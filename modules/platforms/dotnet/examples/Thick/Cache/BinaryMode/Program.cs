@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.BinaryMode
+namespace IgniteExamples.Thick.Cache.BinaryMode
 {
     using System;
     using Apache.Ignite.Core;

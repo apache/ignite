@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.EntryProcessor
+namespace IgniteExamples.Thick.Cache.EntryProcessor
 {
     using System;
     using System.Linq;

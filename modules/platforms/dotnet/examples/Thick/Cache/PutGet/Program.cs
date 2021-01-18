@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.PutGet
+namespace IgniteExamples.Thick.Cache.PutGet
 {
     using System;
     using System.Collections.Generic;

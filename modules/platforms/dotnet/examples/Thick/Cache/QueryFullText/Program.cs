@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.QueryFullText
+namespace IgniteExamples.Thick.Cache.QueryFullText
 {
     using System;
     using Apache.Ignite.Core;

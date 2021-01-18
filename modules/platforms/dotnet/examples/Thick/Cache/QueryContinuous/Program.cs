@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.QueryContinuous
+namespace IgniteExamples.Thick.Cache.QueryContinuous
 {
     using System;
     using System.Collections.Generic;

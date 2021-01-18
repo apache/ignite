@@ -15,15 +15,11 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Transaction
+namespace IgniteExamples.Thick.Cache.Transaction
 {
     using System;
-    using System.Collections.Generic;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache;
     using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Models;
 
     /// <summary>
     /// TODO

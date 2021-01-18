@@ -15,14 +15,11 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.DataStreamer
+namespace IgniteExamples.Thick.Cache.DataStreamer
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Datastream;
     using IgniteExamples.Shared;
     using IgniteExamples.Shared.Models;
