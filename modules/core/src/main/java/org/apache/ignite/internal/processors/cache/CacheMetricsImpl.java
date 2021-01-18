@@ -408,7 +408,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             () -> getEntriesStat().cacheSize(), "Local cache size.");
 
         idxRebuildKeyProcessed = mreg.longAdderMetric("IndexRebuildKeyProcessed",
-            "Number of keys processed during index rebuilding.");
+            "Number of keys processed during the index rebuilding.");
     }
 
     /**

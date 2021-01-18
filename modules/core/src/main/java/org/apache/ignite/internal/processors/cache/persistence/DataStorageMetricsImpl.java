@@ -235,7 +235,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             "Duration of the sync phase of the last checkpoint in milliseconds.");
 
         lastCpWalRecordFsyncDuration = mreg.longMetric("LastCheckpointWalRecordFsyncDuration",
-            "Duration of the WAL fsync after logging CheckpointRecord on begin of the last checkpoint " +
+            "Duration of the WAL fsync after logging CheckpointRecord on the start of the last checkpoint " +
                 "in milliseconds.");
 
         lastCpWriteEntryDuration = mreg.longMetric("LastCheckpointWriteEntryDuration",
@@ -276,38 +276,38 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         long[] cpBounds = new long[] {100, 500, 1000, 5000, 30000};
 
         cpBeforeLockHistogram = mreg.histogram("CheckpointBeforeLockHistogram", cpBounds,
-                "Histogram of checkpoint action before taken write lock durations in milliseconds.");
+                "Histogram of checkpoint action before taken write lock duration in milliseconds.");
 
         cpLockWaitHistogram = mreg.histogram("CheckpointLockWaitHistogram", cpBounds,
-                "Histogram of checkpoint lock wait durations in milliseconds.");
+                "Histogram of checkpoint lock wait duration in milliseconds.");
 
         cpListenersExecuteHistogram = mreg.histogram("CheckpointListenersExecuteHistogram", cpBounds,
-                "Histogram of checkpoint execution listeners under write lock durations in milliseconds.");
+                "Histogram of checkpoint execution listeners under write lock duration in milliseconds.");
 
         cpMarkHistogram = mreg.histogram("CheckpointMarkHistogram", cpBounds,
-                "Histogram of checkpoint mark durations in milliseconds.");
+                "Histogram of checkpoint mark duration in milliseconds.");
 
         cpLockHoldHistogram = mreg.histogram("CheckpointLockHoldHistogram", cpBounds,
-                "Histogram of checkpoint lock hold durations in milliseconds.");
+                "Histogram of checkpoint lock hold duration in milliseconds.");
 
         cpPagesWriteHistogram = mreg.histogram("CheckpointPagesWriteHistogram", cpBounds,
-                "Histogram of checkpoint pages write durations in milliseconds.");
+                "Histogram of checkpoint pages write duration in milliseconds.");
 
         cpFsyncHistogram = mreg.histogram("CheckpointFsyncHistogram", cpBounds,
-                "Histogram of checkpoint fsync durations in milliseconds.");
+                "Histogram of checkpoint fsync duration in milliseconds.");
 
         cpWalRecordFsyncHistogram = mreg.histogram("CheckpointWalRecordFsyncHistogram", cpBounds,
-                "Histogram of the WAL fsync after logging CheckpointRecord on begin of checkpoint durations " +
+                "Histogram of the WAL fsync after logging CheckpointRecord on begin of checkpoint duration " +
                     "in milliseconds.");
 
         cpWriteEntryHistogram = mreg.histogram("CheckpointWriteEntryHistogram", cpBounds,
-                "Histogram of entry buffer writing to file durations in milliseconds.");
+                "Histogram of entry buffer writing to file duration in milliseconds.");
 
         cpSplitAndSortPagesHistogram = mreg.histogram("CheckpointSplitAndSortPagesHistogram", cpBounds,
-                "Histogram of splitting and sorting checkpoint pages durations in milliseconds.");
+                "Histogram of splitting and sorting checkpoint pages duration in milliseconds.");
 
         cpHistogram = mreg.histogram("CheckpointHistogram", cpBounds,
-                "Histogram of checkpoint durations in milliseconds.");
+                "Histogram of checkpoint duration in milliseconds.");
     }
 
     /** {@inheritDoc} */
