@@ -47,19 +47,30 @@ namespace Apache.Ignite.Core.Tests.Examples
         [Test, TestCaseSource(nameof(Examples))]
         public void TestCsprojFiles(Example example)
         {
-            // TODO:
-            // * All projects have correct namespaces
-            // * All examples have Thin and Thick variants when possible
             Assert.IsTrue(File.Exists(example.ProjectFile), $"File.Exists({example.ProjectFile})");
 
             var text = File.ReadAllText(example.ProjectFile);
 
             StringAssert.Contains("<OutputType>Exe</OutputType>", text);
             StringAssert.Contains("<TargetFramework>netcoreapp2.1</TargetFramework>", text);
-            StringAssert.Contains("<RootNamespace>IgniteExamples.", text);
             StringAssert.Contains("<ProjectReference Include=\"..\\..\\..\\Shared\\Shared.csproj", text);
             StringAssert.Contains($"{example.Name}.csproj", ExamplesSlnText);
             StringAssert.Contains($"{example.Name}.dll", LaunchJsonText);
+
+            var expectedRootNamespace = example.ProjectFile
+                .Replace(ExamplePaths.SourcesPath, string.Empty)
+                .Replace(Path.DirectorySeparatorChar, '.');
+
+            StringAssert.Contains($"<RootNamespace>IgniteExamples{expectedRootNamespace}</RootNamespace>", text);
+
+            if (!example.IsThin)
+            {
+                var thinCounterpart = example.Name + "Thin";
+
+                Assert.IsTrue(
+                    Examples.Any(e => e.Name == thinCounterpart),
+                    $"Missing Thin example: {thinCounterpart}");
+            }
         }
 
         /// <summary>
@@ -86,10 +97,10 @@ namespace Apache.Ignite.Core.Tests.Examples
             {
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             });
-            
+
             File.WriteAllText(ExamplePaths.LaunchJsonFile, json);
         }
-        
+
         // ReSharper disable UnusedMember.Local
         // ReSharper disable UnusedAutoPropertyAccessor.Local
         /** launch.json */
@@ -97,7 +108,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             /** */
             public string Version { get; set; } = "0.2.0";
-            
+
             /** */
             public LaunchConfig[] Configurations { get; set; }
         }
@@ -107,27 +118,27 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             /** */
             public string Name { get; set; }
-            
+
             /** */
             public string Type { get; set; } = "coreclr";
-            
+
             /** */
             public string Request { get; set; } = "launch";
 
             /** */
             public string PreLaunchTask { get; set; } = "build";
-            
+
             /** */
             public string Program { get; set; } = "${workspaceFolder}/Thin/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll";
 
             /** */
             public string[] Args { get; set; } = Array.Empty<string>();
-            
+
             /** */
             public string Cwd { get; set; } = "${workspaceFolder}/Thin/Cache/PutGet";
 
             /** */
-            public string Console { get; set; } = "externalTerminal"; // Or "integratedTerminal" 
+            public string Console { get; set; } = "externalTerminal"; // Or "integratedTerminal"
 
             /** */
             public bool StopAtEntry { get; set; } = false;
