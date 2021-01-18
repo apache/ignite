@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -105,6 +107,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.OomExceptionHandler;
@@ -176,6 +180,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot metrics prefix. */
     public static final String SNAPSHOT_METRICS = "snapshot";
 
+    /** Snapshot metafile extension. */
+    private static final String SNAPSHOT_METAFILE_EXT = ".smf";
+
     /** Prefix for snapshot threads. */
     private static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
 
@@ -210,6 +217,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Check previously performed snapshot operation and delete uncompleted files if need. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endSnpProc;
+
+    /** Marshaller. */
+    private final Marshaller marsh;
 
     /** Resolved persistent data storage settings. */
     private volatile PdsFolderSettings pdsSettings;
@@ -266,6 +276,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::initLocalSnapshotEndStage,
             this::processLocalSnapshotEndStageResult);
+
+        marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
     }
 
     /**
@@ -599,12 +611,31 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when the snapshot will be finalized.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
-        if (clusterSnpReq == null)
+        SnapshotOperationRequest req0 = clusterSnpReq;
+
+        if (req0 == null)
             return new GridFinishedFuture<>(new SnapshotOperationResponse());
 
         try {
             if (req.err != null)
                 deleteSnapshot(snapshotLocalDir(req.snpName), pdsSettings.folderName());
+            else {
+                Set<String> blts = req.bltNodes.stream()
+                    .map(n -> cctx.discovery().node(n).consistentId().toString())
+                    .collect(Collectors.toSet());
+
+                File smf = new File(snapshotLocalDir(req.snpName), pdsSettings.folderName() + SNAPSHOT_METAFILE_EXT);
+
+                U.delete(smf);
+
+                try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
+                    U.marshal(marsh,
+                        new SnapshotMetadata(req0.rqId, req0.snpName, req0.grpIds, blts, req0.pairs),
+                        out);
+
+                    log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
+                }
+            }
 
             removeLastMetaStorageKey();
         }
@@ -961,7 +992,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
             }
 
-            snpFutTask.listen(f -> locSnpTasks.remove(snpName));
+            snpFutTask.listen(f -> {
+                SnapshotOperationRequest req = clusterSnpReq;
+
+                if (req != null && req.snpName.equals(snpName))
+                    req.pairs = f.result();
+
+                locSnpTasks.remove(snpName);
+            });
 
             return snpFutTask;
         }
@@ -1286,6 +1324,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Exception occurred during snapshot operation processing. */
         private volatile IgniteCheckedException err;
 
+        /** Partitions which have been saved on disk and were included into snapshot. */
+        private volatile Set<GroupPartitionId> pairs;
+
         /**
          * @param snpName Snapshot name.
          * @param grpIds Cache groups to include into snapshot.
@@ -1301,6 +1342,50 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SnapshotOperationRequest.class, this);
+        }
+    }
+
+    /** Snapshot metadata file. */
+    private static class SnapshotMetadata implements Serializable {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Unique snapshot request id. */
+        private UUID rqId;
+
+        /** Snapshot name. */
+        private String snpName;
+
+        /** The list of cache groups ids which were included into snapshot. */
+        private List<Integer> grpIds;
+
+        /** The set of affected by snapshot baseline nodes. */
+        private Set<String> bltNodes;
+
+        /** Map of cache group partitions. */
+        private Map<Integer, Set<Integer>> parts = new HashMap<>();
+
+        /**
+         * @param rqId Unique snapshot request id.
+         * @param snpName Snapshot name.
+         * @param grpIds The list of cache groups ids which were included into snapshot.
+         * @param bltNodes The set of affected by snapshot baseline nodes.
+         */
+        public SnapshotMetadata(
+            UUID rqId,
+            String snpName,
+            List<Integer> grpIds,
+            Set<String> bltNodes,
+            Set<GroupPartitionId> pairs
+        ) {
+            this.rqId = rqId;
+            this.snpName = snpName;
+            this.grpIds = grpIds;
+            this.bltNodes = bltNodes;
+
+            pairs.forEach(p ->
+                parts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
+                    .add(p.getPartitionId()));
         }
     }
 
