@@ -86,7 +86,7 @@ The following code sample illustrates how to use the partition awareness feature
 include::{sourceCodeFile}[tag=partition-awareness,indent=0]
 ----
 
-If list of server nodes is dynamically changing or scaling than it is possible to configure connection with custom implementation of `ClientAddressFinder`. It should provide actual server addresses collection for every time client ask it.
+If a list of server nodes is dynamically changing or scaling, then it is possible to configure the connection with custom implementation of `ClientAddressFinder`. It should provide a number of current server addresses every time a client asks for them.
 The following code sample illustrates how to use it.
 
 [source, java]
@@ -335,5 +335,4 @@ Configure link:security/authentication[authentication on the cluster side] and p
 -------------------------------------------------------------------------------
 include::{sourceCodeFile}[tag=client-authentication,indent=0]
 -------------------------------------------------------------------------------
-
 

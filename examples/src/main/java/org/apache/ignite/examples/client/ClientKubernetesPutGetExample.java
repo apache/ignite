@@ -30,7 +30,7 @@ import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfigurat
  * <p>
  * Prerequisites:
  * <ul>
- * <li>Running Ignite Kubernetes cluster. Check modules/kubernetes/DEVNOTES.md for example how to run a cluster locally.</li>
+ * <li>Running Ignite Kubernetes cluster. Check modules/kubernetes/DEVNOTES.md as an example of how to run a cluster locally.</li>
  * <li>A thin client application should be run within the cluster to have access to Ignite nodes pods.</li>
  * <li>KubernetesConnectionConfiguration must be in sync with the Ignite nodes configuration.</li>
  * </ul>
