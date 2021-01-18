@@ -33,7 +33,6 @@ namespace IgniteExamples.Thick.Cache.OptimisticTransaction
     {
         private const string CacheName = "dotnet_optimistic_tx_example";
 
-        [STAThread]
         public static void Main()
         {
             using (var ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))

@@ -34,7 +34,6 @@ namespace IgniteExamples.Thick.Cache.QueryFullText
         /// <summary>Employee cache name.</summary>
         private const string EmployeeCacheName = "dotnet_cache_query_employee";
 
-        [STAThread]
         public static void Main()
         {
             using (var ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))

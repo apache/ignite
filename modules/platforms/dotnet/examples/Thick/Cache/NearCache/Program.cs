@@ -36,7 +36,6 @@ namespace IgniteExamples.Thick.Cache.NearCache
     {
         private const string CacheName = "dotnet_near_cache_example";
 
-        [STAThread]
         public static void Main()
         {
             using (var ignite = Ignition.Start(Utils.GetClientNodeConfiguration()))

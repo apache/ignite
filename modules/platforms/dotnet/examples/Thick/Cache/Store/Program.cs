@@ -30,13 +30,8 @@ namespace IgniteExamples.Thick.Cache.Store
     /// </summary>
     public class Program
     {
-        /// <summary>Cache name.</summary>
         private const string CacheName = "dotnet_cache_with_store";
 
-        /// <summary>
-        /// Runs the example.
-        /// </summary>
-        [STAThread]
         public static void Main()
         {
             using (var ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
