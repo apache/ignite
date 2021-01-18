@@ -27,7 +27,7 @@ namespace IgniteExamples.Thick.Cache.OptimisticTransaction
     using IgniteExamples.Shared;
 
     /// <summary>
-    /// TODO
+    /// This example demonstrates optimistic transaction concurrency control.
     /// </summary>
     public class Program
     {
