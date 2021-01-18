@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System.IO;
     using System.Linq;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
     using NUnit.Framework;
 
     /// <summary>
@@ -81,7 +82,10 @@ namespace Apache.Ignite.Core.Tests.Examples
                 }).ToArray()
             };
 
-            var json = JsonConvert.SerializeObject(launch, Formatting.Indented);
+            var json = JsonConvert.SerializeObject(launch, Formatting.Indented, new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            });
             
             File.WriteAllText(ExamplePaths.LaunchJsonFile, json);
         }
