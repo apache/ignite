@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             var launch = new Launch
             {
-                Configurations = Examples.Select(e => new LaunchConfig
+                Configurations = Example.AllProjects.Select(e => new LaunchConfig
                 {
                     Name = e.Name,
                     Program = e.AssemblyFile.Replace(ExamplePaths.SourcesPath, WorkspaceFolder),

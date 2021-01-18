@@ -29,8 +29,11 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public class Example
     {
+        /** All projects. */
+        public static readonly Example[] AllProjects = GetExamples().ToArray();
+
         /** All examples. */
-        public static readonly Example[] AllExamples = GetExamples().ToArray();
+        public static readonly Example[] AllExamples = AllProjects.Where(p => p.Name != "ServerNode").ToArray();
 
         /** Method invoke flags. */
         private const BindingFlags InvokeFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.InvokeMethod;
@@ -102,8 +105,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// </summary>
         private static IEnumerable<Example> GetExamples()
         {
-            var projFiles = Directory.GetFiles(ExamplePaths.SourcesPath, "*.csproj", SearchOption.AllDirectories)
-                .Where(x => !x.EndsWith("Shared.csproj") && !x.EndsWith("ServerNode.csproj")).ToArray();
+            var projFiles = Directory
+                .GetFiles(ExamplePaths.SourcesPath, "*.csproj", SearchOption.AllDirectories)
+                .Where(x => !x.EndsWith("Shared.csproj")).ToArray();
 
             Assert.IsTrue(projFiles.Any());
 
