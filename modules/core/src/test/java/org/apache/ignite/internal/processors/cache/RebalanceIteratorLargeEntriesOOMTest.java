@@ -115,7 +115,7 @@ public class RebalanceIteratorLargeEntriesOOMTest extends GridCommonAbstractTest
             }
         }, NUM_LOAD_THREADS, "loader-");
 
-        startGrid("server-2");
+        startDemander();
         awaitPartitionMapExchange(true, true, null);
     }
 
