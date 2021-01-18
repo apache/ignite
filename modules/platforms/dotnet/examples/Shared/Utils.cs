@@ -63,6 +63,14 @@ namespace IgniteExamples.Shared
             };
         }
 
+        public static IgniteConfiguration GetClientNodeConfiguration()
+        {
+            return new IgniteConfiguration(GetServerNodeConfiguration())
+            {
+                ClientMode = true
+            };
+        }
+
         public static IgniteClientConfiguration GetThinClientConfiguration()
         {
             return new IgniteClientConfiguration
