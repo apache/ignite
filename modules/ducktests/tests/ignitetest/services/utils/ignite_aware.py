@@ -92,7 +92,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         Update configuration with global parameters.
         """
         if self.globals.get("use_ssl", False) and (self.config.ssl_context_factory is None):
-            self.config = self.config._replace(ssl_context_factory=SslContextFactory(self.context.globals))
+            self.config = self.config._replace(ssl_context_factory=SslContextFactory(self.install_root))
             self.config = self.config._replace(connector_configuration=ConnectorConfiguration(
                 ssl_enabled=True, ssl_context_factory=self.config.ssl_context_factory))
 

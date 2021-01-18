@@ -39,7 +39,9 @@ class SslTest(IgniteTest):
         Test that IgniteService, IgniteApplicationService correctly start and stop with ssl configurations.
         And check ControlUtility with ssl arguments.
         """
-        server_ssl = SslContextFactory(self.test_context.globals)
+        root_dir = self.test_context.globals.get("install_root", "/opt")
+
+        server_ssl = SslContextFactory(root_dir=root_dir)
 
         server_configuration = IgniteConfiguration(
             version=IgniteVersion(ignite_version), ssl_context_factory=server_ssl,
@@ -50,7 +52,7 @@ class SslTest(IgniteTest):
 
         client_configuration = server_configuration._replace(
             client_mode=True,
-            ssl_context_factory=SslContextFactory(self.test_context.globals, key_store_jks="client.jks"))
+            ssl_context_factory=SslContextFactory(root_dir, key_store_jks="client.jks"))
 
         app = IgniteApplicationService(
             self.test_context,
