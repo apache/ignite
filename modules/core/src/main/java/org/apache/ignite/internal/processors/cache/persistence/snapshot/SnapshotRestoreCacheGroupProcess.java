@@ -207,6 +207,27 @@ public class SnapshotRestoreCacheGroupProcess {
         }
     }
 
+    public void stop(String msg) {
+        if (ctx.clientNode())
+            return;
+
+        RestoreSnapshotFuture fut0 = fut;
+
+        if (fut0.isDone())
+            return;
+
+        SnapshotRestoreRequest req = fut0.request();
+
+        if (req == null)
+            return;
+
+        log.warning("Snapshot restore process has been interrupted [grps=" + req.groups() + ']');
+
+        rollbackLocal();
+
+        fut0.onDone(new IgniteCheckedException("Restore process has been interrupted: " + msg));
+    }
+
     private IgniteInternalFuture<SnapshotRestorePrepareResponse> prepare(SnapshotRestoreRequest req) {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();

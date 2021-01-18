@@ -40,7 +40,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
-import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -486,23 +486,47 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
     }
 
     @Test
-    public void testClusterStateChangeActiveReadonly() throws Exception {
+    public void testClusterStateChangeActiveReadonlyDuringPrepare() throws Exception {
+        checkReadOnlyDuringRestoring(START_SNAPSHOT_RESTORE);
+    }
+
+    @Test
+    public void testClusterStateChangeActiveReadonlyDuringPerform() throws Exception {
+        checkReadOnlyDuringRestoring(END_SNAPSHOT_RESTORE);
+    }
+
+    private void checkReadOnlyDuringRestoring(DistributedProcessType procType) throws Exception {
+        checkClusterStateChange(ClusterState.ACTIVE_READ_ONLY, procType, IgniteClusterReadOnlyException.class,
+            "Failed to perform start cache operation (cluster is in read-only mode)");
+    }
+
+    @Test
+    public void testClusterDeactivateOnPrepare() throws Exception {
+        checkDeactivationDuringRestoring(START_SNAPSHOT_RESTORE);
+    }
+
+    @Test
+    public void testClusterDeactivateOnPerform() throws Exception {
+        checkDeactivationDuringRestoring(END_SNAPSHOT_RESTORE);
+    }
+
+    private void checkDeactivationDuringRestoring(DistributedProcessType procType) throws Exception {
+        checkClusterStateChange(ClusterState.INACTIVE, procType, IgniteCheckedException.class,
+            "The cluster has been deactivated.");
+    }
+
+    private void checkClusterStateChange(ClusterState state, DistributedProcessType procType, Class<? extends Throwable> expCls, String expMsg) throws Exception {
         Ignite ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
 
-        IgniteFuture<Void> fut = waitForBlockOnRestore(spi, START_SNAPSHOT_RESTORE, dfltCacheCfg.getName());
+        IgniteFuture<Void> fut = waitForBlockOnRestore(spi, procType, dfltCacheCfg.getName());
 
-        ignite.cluster().state(ClusterState.ACTIVE_READ_ONLY);
+        ignite.cluster().state(state);
 
         spi.stopBlock();
 
-        GridTestUtils.assertThrowsAnyCause(
-            log,
-            () -> fut.get(MAX_AWAIT_MILLIS),
-            IgniteClusterReadOnlyException.class,
-            "Failed to perform start cache operation (cluster is in read-only mode)"
-        );
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(MAX_AWAIT_MILLIS), expCls, expMsg);
 
         ensureCacheDirEmpty(2, dfltCacheCfg.getName());
 
@@ -551,7 +575,7 @@ public class IgniteClusterSnapshoRestoreSelfTest extends AbstractSnapshotSelfTes
         return ignite;
     }
 
-    private IgniteFuture<Void> waitForBlockOnRestore(TestRecordingCommunicationSpi spi, DistributedProcess.DistributedProcessType restorePhase, String grpName) throws InterruptedException {
+    private IgniteFuture<Void> waitForBlockOnRestore(TestRecordingCommunicationSpi spi, DistributedProcessType restorePhase, String grpName) throws InterruptedException {
         spi.blockMessages((node, msg) ->
             msg instanceof SingleNodeMessage && ((SingleNodeMessage<?>)msg).type() == restorePhase.ordinal());
 
