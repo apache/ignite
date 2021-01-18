@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.tracing;
 
 import java.util.Iterator;
+import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 
 import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
 
@@ -41,9 +42,7 @@ public class TraceableIterator<T> implements Iterator<T> {
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() {
-        MTC.supportInitial(span);
-
-        try {
+        try (TraceSurroundings ignored = MTC.supportContinual(span)) {
             return iter.hasNext();
         }
         catch (Throwable th) {
@@ -55,9 +54,7 @@ public class TraceableIterator<T> implements Iterator<T> {
 
     /** {@inheritDoc} */
     @Override public T next() {
-        MTC.supportInitial(span);
-
-        try {
+        try (TraceSurroundings ignored = MTC.supportContinual(span)) {
             return iter.next();
         }
         catch (Throwable th) {
