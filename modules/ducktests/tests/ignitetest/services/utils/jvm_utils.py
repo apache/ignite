@@ -93,26 +93,24 @@ def _to_map(params):
     if isinstance(params, dict):
         return params
 
-    if isinstance(params, list):
-        params = iter(params)
-    else:
-        params = str(params).split()
+    params = params.split()
 
     as_map = {}
 
-    for key_val in [entry.split(sep='=', maxsplit=1) for entry in params]:
-        as_map[str(key_val[0])] = str(key_val[1]) if len(key_val) > 1 else None
+    for elem in params:
+        param_val = elem.split(sep="=", maxsplit=1)
+        as_map[param_val[0]] = param_val[1] if len(param_val) > 1 else None
 
     return as_map
 
 
 def _remove_duplicates(params: dict):
     """Removes specific duplicates"""
-    duplicates = {"-xmx": [], "-xmn": []}
+    duplicates = {"-Xmx": [], "-Xms": []}
 
     for param_key in params.keys():
         for dbl in duplicates.items():
-            if param_key.lower().startswith(dbl[0]):
+            if param_key.startswith(dbl[0]):
                 dbl[1].append(param_key)
 
     for dbl_lst in duplicates.values():
