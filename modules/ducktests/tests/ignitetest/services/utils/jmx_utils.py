@@ -187,7 +187,7 @@ class IgniteJmxMixin:
         """
         :return: IgniteKernal MBean.
         """
-        return self.jmx_client().find_mbean('.*group=Kernal,name=IgniteKernal')
+        return self.jmx_client().find_mbean('.*group=Kernal.*name=IgniteKernal')
 
     @memoize
     def disco_mbean(self):
@@ -197,6 +197,6 @@ class IgniteJmxMixin:
         disco_spi = next(self.kernal_mbean().DiscoverySpiFormatted).strip()
 
         if 'ZookeeperDiscoverySpi' in disco_spi:
-            return self.jmx_client().find_mbean('.*group=SPIs,name=ZookeeperDiscoverySpi')
+            return self.jmx_client().find_mbean('.*group=SPIs.*name=ZookeeperDiscoverySpi')
 
-        return self.jmx_client().find_mbean('.*group=SPIs,name=TcpDiscoverySpi')
+        return self.jmx_client().find_mbean('.*group=SPIs.*name=TcpDiscoverySpi')
