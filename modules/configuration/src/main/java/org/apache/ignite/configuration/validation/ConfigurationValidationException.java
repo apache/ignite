@@ -21,10 +21,8 @@ package org.apache.ignite.configuration.validation;
  * Configuration validation exception.
  */
 public class ConfigurationValidationException extends RuntimeException {
-
     /** Constructor. */
     public ConfigurationValidationException(String message) {
         super(message);
     }
-
 }

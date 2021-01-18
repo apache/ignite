@@ -132,14 +132,12 @@ public class Configurator<T extends DynamicConfiguration<?, ?, ?>> {
         Selector<T, TARGET, VIEW, INIT, CHANGE> selector,
         CHANGE newValue
     ) throws ConfigurationValidationException {
-        // TODO: atomic change start
         final T copy = (T) root.copy();
 
         final TARGET select = selector.select(copy);
         select.changeWithoutValidation(newValue);
         copy.validate(root);
         selector.select(root).changeWithoutValidation(newValue);
-        // TODO: atomic change end
     }
 
     /**
@@ -198,7 +196,7 @@ public class Configurator<T extends DynamicConfiguration<?, ?, ?>> {
         final String key = property.key();
         property.addListener(new PropertyListener<PROP, PROP>() {
             /** {@inheritDoc} */
-            public void update(PROP newValue, ConfigurationProperty<PROP, PROP> modifier) {
+            @Override public void update(PROP newValue, ConfigurationProperty<PROP, PROP> modifier) {
                 storage.save(key, newValue);
             }
         });

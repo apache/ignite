@@ -36,5 +36,4 @@ public interface Selector<ROOT, TARGET extends Modifier<VIEW, INIT, CHANGE>, VIE
      * @return Configuration element.
      */
     TARGET select(ROOT root);
-
 }

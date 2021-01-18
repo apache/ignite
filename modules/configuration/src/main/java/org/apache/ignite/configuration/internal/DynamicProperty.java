@@ -141,7 +141,7 @@ public class DynamicProperty<T extends Serializable> implements Modifier<T, T, T
     }
 
     /** {@inheritDoc} */
-    public T value() {
+    @Override public T value() {
         return val;
     }
 
@@ -199,5 +199,4 @@ public class DynamicProperty<T extends Serializable> implements Modifier<T, T, T
     public DynamicProperty<T> copy(DynamicConfiguration<?, ?, ?> newRoot) {
         return new DynamicProperty<>(this, newRoot);
     }
-
 }

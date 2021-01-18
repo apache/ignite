@@ -43,5 +43,4 @@ public abstract class FieldValidator<T extends Serializable, C extends Configura
      * @throws ConfigurationValidationException If validation failed.
      */
     public abstract void validate(T value, C newRoot, C oldRoot) throws ConfigurationValidationException;
-
 }

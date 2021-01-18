@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.validation.ConfigurationValidationExcepti
 public interface Modifier<VIEW, INIT, CHANGE> extends ConfigurationProperty<VIEW, CHANGE> {
     /**
      * Change this configuration node value, but without validation.
-     * FIXME: this is a necessary evil, but this should'n be accessed from outside of the configurator.
      * @param change CHANGE object.
      */
     void changeWithoutValidation(CHANGE change);

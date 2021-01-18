@@ -52,5 +52,4 @@ public interface ConfigurationStorage {
      * @throws StorageException If failed to attach listener to configuration storage.
      */
     <T extends Serializable> void listen(String key, Consumer<T> listener) throws StorageException;
-
 }
