@@ -44,7 +44,7 @@ public class SingleCursor<T> implements GridCursor<T> {
 
     /** {@inheritDoc} */
     @Override public T get() throws IgniteCheckedException {
-        if (currIdx.get() == 0)
+        if (currIdx.get() <= 0)
             return val;
 
         throw new IgniteCheckedException("No next element.");
