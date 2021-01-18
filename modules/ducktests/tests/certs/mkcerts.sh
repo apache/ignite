@@ -17,7 +17,7 @@
 
 CERTS_DIR="$(dirname "$0")"
 
-cd "${CERTS_DIR}" || retern
+cd "${CERTS_DIR}" || exit 1
 
 source ./functions.sh
 
@@ -33,4 +33,4 @@ mkCert ca server "CN=Ignite Server" "${PSWD}"
 mkCert ca client "CN=Ignite Client" "${PSWD}"
 mkCert ca admin "CN=Ignite Admin" "${PSWD}"
 
-cd - || retern
+cd - || exit 1
