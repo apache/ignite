@@ -22,7 +22,6 @@ from distutils.version import LooseVersion
 
 from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
-
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import PathAware
 
@@ -36,6 +35,7 @@ class ZookeeperSettings:
         self.tick_time = kwargs.get('tick_time', self.min_session_timeout // 3)
         self.init_limit = kwargs.get('init_limit', 10)
         self.sync_limit = kwargs.get('sync_limit', 5)
+        self.force_sync = kwargs.get('force_sync', 'no')
         self.client_port = kwargs.get('client_port', 2181)
 
         version = kwargs.get("version")
