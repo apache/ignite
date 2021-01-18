@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.database;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.junit.Ignore;
 
 /**
  * Test index rebuild with MVCC enabled.
  */
+@Ignore("MVCC is deprecated.")
 public class RebuildIndexWithMVCCTest extends RebuildIndexTest {
 
     /** {@inheritDoc} */
