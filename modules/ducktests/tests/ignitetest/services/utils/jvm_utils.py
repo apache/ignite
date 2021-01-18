@@ -107,13 +107,12 @@ def _to_map(params):
 
 def _remove_duplicates(params: dict):
     """Removes specific duplicates"""
-    duplicates = {"-Xmx": [], "-Xms": []}
+    duplicates = {"-Xmx": False, "-Xms": False}
 
-    for param_key in params.keys():
-        for dbl in duplicates.items():
-            if param_key.startswith(dbl[0]):
-                dbl[1].append(param_key)
-
-    for dbl_lst in duplicates.values():
-        for to_remove in dbl_lst[:-1]:
-            params.pop(to_remove)
+    for param_key in list(params.keys()):
+        for dup_key in duplicates.keys():
+            if param_key.startswith(dup_key):
+                if duplicates[dup_key]:
+                    del params[param_key]
+                else:
+                    duplicates[dup_key] = True
