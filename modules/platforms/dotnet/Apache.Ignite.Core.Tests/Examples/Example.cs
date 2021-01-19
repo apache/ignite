@@ -58,6 +58,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** Whether this example runs in thick client mode. */
         public bool IsClient { get; }
 
+        /** Whether this example requires an external node. */
+        public bool RequiresExternalNode { get; }
+
         /// <summary>
         /// Initializes a new instance of <see cref="Example"/> class.
         /// </summary>
@@ -68,6 +71,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             AssemblyFile = assemblyFile;
             SourceCode = sourceCode;
             IsClient = sourceCode.Contains("GetClientNodeConfiguration");
+            RequiresExternalNode = sourceCode.Contains("ServerNode project");
         }
 
         /// <summary>
