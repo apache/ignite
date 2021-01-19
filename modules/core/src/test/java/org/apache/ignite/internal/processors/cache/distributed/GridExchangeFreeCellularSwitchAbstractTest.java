@@ -174,7 +174,7 @@ public abstract class GridExchangeFreeCellularSwitchAbstractTest extends GridCom
         Ignite origNode, int origCnt,
         List<Ignite> brokenCellNodes, int brokenCellCnt,
         List<Ignite> aliveCellNodes, int aliveCellCnt,
-        Set<GridCacheVersion> vers){
+        Set<GridCacheVersion> vers) {
         Function<Ignite, Collection<GridCacheVersion>> txs = ignite -> {
             Collection<IgniteInternalTx> active = ((IgniteEx)ignite).context().cache().context().tm().activeTransactions();
 
