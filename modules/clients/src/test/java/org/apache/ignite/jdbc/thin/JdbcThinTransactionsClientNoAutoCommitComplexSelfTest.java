@@ -17,9 +17,12 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import org.junit.Ignore;
+
 /**
  *
  */
+@Ignore("MVCC is deprecated.")
 public class JdbcThinTransactionsClientNoAutoCommitComplexSelfTest extends JdbcThinTransactionsAbstractComplexSelfTest {
     /** {@inheritDoc} */
     @Override boolean autoCommit() {

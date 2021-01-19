@@ -50,6 +50,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
 /**
  * Abstract data types coverage  test.
  */
@@ -157,6 +159,9 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
         Object[] paramLine = null;
 
         for (CacheAtomicityMode atomicityMode : CacheAtomicityMode.values()) {
+            if (TRANSACTIONAL_SNAPSHOT == atomicityMode)
+                continue;
+
             paramLine = Arrays.copyOf(baseParamLine, baseParamLine.length);
 
             paramLine[1] = atomicityMode;
@@ -174,7 +179,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
         assert paramLine != null;
 
-        if ((paramLine[1]) != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT) {
+        if ((paramLine[1]) != TRANSACTIONAL_SNAPSHOT) {
             for (Factory ttlFactory : TTL_FACTORIES) {
                 paramLine = Arrays.copyOf(baseParamLine, baseParamLine.length);
 

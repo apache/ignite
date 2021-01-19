@@ -26,11 +26,13 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Tests for ddl queries that contain multiply sql statements, separated by ";".
  */
+@Ignore("MVCC is deprecated.")
 public class JdbcThinMultiStatementSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override public void beforeTestsStarted() throws Exception {
