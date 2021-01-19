@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         private static readonly string LaunchJsonText = File.ReadAllText(ExamplePaths.LaunchJsonFile);
 
         private static readonly string[] ThickOnlyExamples = {
-            "NearCache", "DataStreamer", "MultiTieredCache", "QueryFullText", "Store"
+            "NearCache", "DataStreamer", "MultiTieredCache", "QueryFullText", "Store", "EntryProcessor"
         };
 
         /// <summary>
