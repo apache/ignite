@@ -277,6 +277,28 @@
       "stopAtEntry": false
     },
     {
+      "name": "Services",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Misc/Services/bin/Debug/netcoreapp2.1/Services.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Misc/Services",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "ServicesThin",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thin/Misc/ServicesThin/bin/Debug/netcoreapp2.1/ServicesThin.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thin/Misc/ServicesThin",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
       "name": "Store",
       "type": "coreclr",
       "request": "launch",
