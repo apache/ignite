@@ -14,6 +14,7 @@ Windows, Linux, and macOS are supported.
 # Download
 
 TODO: Download with the binary packge, or download from GitHub
+TODO: Link to here from the docs? How are users supposed to find the examples?
 
 # Run
 
