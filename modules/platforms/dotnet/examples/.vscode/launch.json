@@ -13,6 +13,28 @@
       "stopAtEntry": false
     },
     {
+      "name": "AtomicReference",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/DataStructures/AtomicReference/bin/Debug/netcoreapp2.1/AtomicReference.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/DataStructures/AtomicReference",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "AtomicSequence",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/DataStructures/AtomicSequence/bin/Debug/netcoreapp2.1/AtomicSequence.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/DataStructures/AtomicSequence",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
       "name": "BinaryMode",
       "type": "coreclr",
       "request": "launch",
