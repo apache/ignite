@@ -124,7 +124,8 @@ public class IgniteCDC implements Runnable {
 
         if (nodeDir == null) {
             log.warning("Can't determine nodeDir. It is recommended to set consistent ID for production " +
-                "clusters (use IgniteConfiguration.setConsistentId or " + IGNITE_CDC_CONSISTENT_ID + ", " + IGNITE_CDC_NODE_IDX + " property)");
+                "clusters (use IgniteConfiguration.setConsistentId or " + IGNITE_CDC_CONSISTENT_ID + ", " +
+                IGNITE_CDC_NODE_IDX + " property)");
         }
     }
 

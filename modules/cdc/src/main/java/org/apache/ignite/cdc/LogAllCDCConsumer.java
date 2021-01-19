@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc;
 
+import java.util.EnumSet;
 import java.util.Objects;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -31,6 +32,18 @@ public class LogAllCDCConsumer implements CDCConsumer {
     /** Ignite logger. */
     private IgniteLogger log;
 
+    private EnumSet<WALRecord.RecordPurpose> toView = EnumSet.of(LOGICAL);
+
+    /** Empty constructor. */
+    public LogAllCDCConsumer() {
+        // No-op.
+    }
+
+    /** @param toView Record types to view. */
+    public LogAllCDCConsumer(EnumSet<WALRecord.RecordPurpose> toView) {
+        this.toView = toView;
+    }
+
     @Override public String id() {
         return "log-all-consumer";
     }
@@ -42,7 +55,7 @@ public class LogAllCDCConsumer implements CDCConsumer {
 
     /** {@inheritDoc} */
     @Override public <T extends WALRecord> boolean onRecord(T record) {
-        if (record.type().purpose() == LOGICAL)
+        if (toView.contains(record.type().purpose()))
             log.info(Objects.toString(record));
 
         return false;
