@@ -2,83 +2,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "ServerNode",
-      "type": "coreclr",
-      "request": "launch",
-      "preLaunchTask": "build",
-      "program": "${workspaceFolder}/ServerNode/bin/Debug/netcoreapp2.1/ServerNode.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/ServerNode",
-      "console": "externalTerminal",
-      "stopAtEntry": false
-    },
-    {
-      "name": "MultiTieredCache",
-      "type": "coreclr",
-      "request": "launch",
-      "preLaunchTask": "build",
-      "program": "${workspaceFolder}/Thick/Cache/MultiTieredCache/bin/Debug/netcoreapp2.1/MultiTieredCache.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/Thick/Cache/MultiTieredCache",
-      "console": "externalTerminal",
-      "stopAtEntry": false
-    },
-    {
-      "name": "Transaction",
-      "type": "coreclr",
-      "request": "launch",
-      "preLaunchTask": "build",
-      "program": "${workspaceFolder}/Thick/Cache/Transaction/bin/Debug/netcoreapp2.1/Transaction.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/Thick/Cache/Transaction",
-      "console": "externalTerminal",
-      "stopAtEntry": false
-    },
-    {
-      "name": "QueryContinuous",
-      "type": "coreclr",
-      "request": "launch",
-      "preLaunchTask": "build",
-      "program": "${workspaceFolder}/Thick/Cache/QueryContinuous/bin/Debug/netcoreapp2.1/QueryContinuous.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/Thick/Cache/QueryContinuous",
-      "console": "externalTerminal",
-      "stopAtEntry": false
-    },
-    {
-      "name": "NearCache",
-      "type": "coreclr",
-      "request": "launch",
-      "preLaunchTask": "build",
-      "program": "${workspaceFolder}/Thick/Cache/NearCache/bin/Debug/netcoreapp2.1/NearCache.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/Thick/Cache/NearCache",
-      "console": "externalTerminal",
-      "stopAtEntry": false
-    },
-    {
-      "name": "Store",
-      "type": "coreclr",
-      "request": "launch",
-      "preLaunchTask": "build",
-      "program": "${workspaceFolder}/Thick/Cache/Store/bin/Debug/netcoreapp2.1/Store.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/Thick/Cache/Store",
-      "console": "externalTerminal",
-      "stopAtEntry": false
-    },
-    {
-      "name": "EntryProcessor",
-      "type": "coreclr",
-      "request": "launch",
-      "preLaunchTask": "build",
-      "program": "${workspaceFolder}/Thick/Cache/EntryProcessor/bin/Debug/netcoreapp2.1/EntryProcessor.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/Thick/Cache/EntryProcessor",
-      "console": "externalTerminal",
-      "stopAtEntry": false
-    },
-    {
       "name": "BinaryMode",
       "type": "coreclr",
       "request": "launch",
@@ -86,72 +9,6 @@
       "program": "${workspaceFolder}/Thick/Cache/BinaryMode/bin/Debug/netcoreapp2.1/BinaryMode.dll",
       "args": [],
       "cwd": "${workspaceFolder}/Thick/Cache/BinaryMode",
-      "console": "externalTerminal",
-      "stopAtEntry": false
-    },
-    {
-      "name": "TransactionDeadlockDetection",
-      "type": "coreclr",
-      "request": "launch",
-      "preLaunchTask": "build",
-      "program": "${workspaceFolder}/Thick/Cache/TransactionDeadlockDetection/bin/Debug/netcoreapp2.1/TransactionDeadlockDetection.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/Thick/Cache/TransactionDeadlockDetection",
-      "console": "externalTerminal",
-      "stopAtEntry": false
-    },
-    {
-      "name": "PutGet",
-      "type": "coreclr",
-      "request": "launch",
-      "preLaunchTask": "build",
-      "program": "${workspaceFolder}/Thick/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/Thick/Cache/PutGet",
-      "console": "externalTerminal",
-      "stopAtEntry": false
-    },
-    {
-      "name": "DataStreamer",
-      "type": "coreclr",
-      "request": "launch",
-      "preLaunchTask": "build",
-      "program": "${workspaceFolder}/Thick/Cache/DataStreamer/bin/Debug/netcoreapp2.1/DataStreamer.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/Thick/Cache/DataStreamer",
-      "console": "externalTerminal",
-      "stopAtEntry": false
-    },
-    {
-      "name": "QueryScan",
-      "type": "coreclr",
-      "request": "launch",
-      "preLaunchTask": "build",
-      "program": "${workspaceFolder}/Thick/Cache/QueryScan/bin/Debug/netcoreapp2.1/QueryScan.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/Thick/Cache/QueryScan",
-      "console": "externalTerminal",
-      "stopAtEntry": false
-    },
-    {
-      "name": "QueryFullText",
-      "type": "coreclr",
-      "request": "launch",
-      "preLaunchTask": "build",
-      "program": "${workspaceFolder}/Thick/Cache/QueryFullText/bin/Debug/netcoreapp2.1/QueryFullText.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/Thick/Cache/QueryFullText",
-      "console": "externalTerminal",
-      "stopAtEntry": false
-    },
-    {
-      "name": "OptimisticTransaction",
-      "type": "coreclr",
-      "request": "launch",
-      "preLaunchTask": "build",
-      "program": "${workspaceFolder}/Thick/Cache/OptimisticTransaction/bin/Debug/netcoreapp2.1/OptimisticTransaction.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/Thick/Cache/OptimisticTransaction",
       "console": "externalTerminal",
       "stopAtEntry": false
     },
@@ -167,6 +24,83 @@
       "stopAtEntry": false
     },
     {
+      "name": "DataStreamer",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Cache/DataStreamer/bin/Debug/netcoreapp2.1/DataStreamer.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Cache/DataStreamer",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "EntryProcessor",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Cache/EntryProcessor/bin/Debug/netcoreapp2.1/EntryProcessor.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Cache/EntryProcessor",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "MultiTieredCache",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Cache/MultiTieredCache/bin/Debug/netcoreapp2.1/MultiTieredCache.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Cache/MultiTieredCache",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "NearCache",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Cache/NearCache/bin/Debug/netcoreapp2.1/NearCache.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Cache/NearCache",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "OptimisticTransaction",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Cache/OptimisticTransaction/bin/Debug/netcoreapp2.1/OptimisticTransaction.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Cache/OptimisticTransaction",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "OptimisticTransactionThin",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thin/Cache/OptimisticTransactionThin/bin/Debug/netcoreapp2.1/OptimisticTransactionThin.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thin/Cache/OptimisticTransactionThin",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "PutGet",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Cache/PutGet/bin/Debug/netcoreapp2.1/PutGet.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Cache/PutGet",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
       "name": "PutGetThin",
       "type": "coreclr",
       "request": "launch",
@@ -174,6 +108,83 @@
       "program": "${workspaceFolder}/Thin/Cache/PutGetThin/bin/Debug/netcoreapp2.1/PutGetThin.dll",
       "args": [],
       "cwd": "${workspaceFolder}/Thin/Cache/PutGetThin",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "QueryContinuous",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Cache/QueryContinuous/bin/Debug/netcoreapp2.1/QueryContinuous.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Cache/QueryContinuous",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "QueryFullText",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Cache/QueryFullText/bin/Debug/netcoreapp2.1/QueryFullText.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Cache/QueryFullText",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "QueryScan",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Cache/QueryScan/bin/Debug/netcoreapp2.1/QueryScan.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Cache/QueryScan",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "ServerNode",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/ServerNode/bin/Debug/netcoreapp2.1/ServerNode.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/ServerNode",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Store",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Cache/Store/bin/Debug/netcoreapp2.1/Store.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Cache/Store",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Transaction",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Cache/Transaction/bin/Debug/netcoreapp2.1/Transaction.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Cache/Transaction",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "TransactionDeadlockDetection",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Cache/TransactionDeadlockDetection/bin/Debug/netcoreapp2.1/TransactionDeadlockDetection.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Cache/TransactionDeadlockDetection",
       "console": "externalTerminal",
       "stopAtEntry": false
     }
