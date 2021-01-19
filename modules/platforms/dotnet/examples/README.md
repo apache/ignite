@@ -1,5 +1,9 @@
 # Ignite.NET Examples
 
+* Examples are grouped by Thick and Thin modes in corresponding folders.
+* `Shared` project contains common code, such as configuration and model classes.
+* `ServerNode` project is used to start Ignite server nodes.
+
 ## Requirements
 
 * [.NET Core 2.1+](https://dotnet.microsoft.com/download/dotnet-core)
