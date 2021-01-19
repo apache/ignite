@@ -39,7 +39,8 @@ namespace IgniteExamples.Thick.Misc.Lifecycle
 
             var cfg = new IgniteConfiguration(Utils.GetServerNodeConfiguration())
             {
-                LifecycleHandlers = new[] {lifecycleAwareExample}
+                LifecycleHandlers = new[] {lifecycleAwareExample},
+                IgniteInstanceName = "lifecycle-example"
             };
 
             // Provide lifecycle bean to configuration.
