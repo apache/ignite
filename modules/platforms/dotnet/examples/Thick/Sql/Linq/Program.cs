@@ -92,10 +92,12 @@ namespace IgniteExamples.Thick.Sql.Linq
                 cache.AsCacheQueryable().Where(emp => emp.Value.Address.Zip == zip);
 
             Console.WriteLine();
-            Console.WriteLine(">>> Employees with zipcode " + zip + ":");
+            Console.WriteLine($">>> Employees with zipcode {zip}:");
 
             foreach (ICacheEntry<int, Employee> entry in qry)
                 Console.WriteLine(">>>    " + entry.Value);
+
+            Console.WriteLine($">>> Generated SQL: {qry.ToCacheQueryable().GetFieldsQuery().Sql}");
         }
 
         private static void CompiledQueryExample(ICache<int, Employee> cache)
@@ -131,10 +133,12 @@ namespace IgniteExamples.Thick.Sql.Linq
 
 
             Console.WriteLine();
-            Console.WriteLine(">>> Employees working for " + orgName + ":");
+            Console.WriteLine($">>> Employees working for {orgName}:");
 
             foreach (ICacheEntry<AffinityKey, Employee> entry in qry)
                 Console.WriteLine(">>>     " + entry.Value);
+
+            Console.WriteLine($">>> Generated SQL: {qry.ToCacheQueryable().GetFieldsQuery().Sql}");
         }
 
         private static void DistributedJoinQueryExample(ICache<int, Employee> employeeCache,
@@ -159,10 +163,12 @@ namespace IgniteExamples.Thick.Sql.Linq
 
 
             Console.WriteLine();
-            Console.WriteLine(">>> Employees working for " + orgName + ":");
+            Console.WriteLine($">>> Employees working for {orgName} using distributed joins:");
 
             foreach (ICacheEntry<int, Employee> entry in qry)
                 Console.WriteLine(">>>     " + entry.Value);
+
+            Console.WriteLine($">>> Generated SQL: {qry.ToCacheQueryable().GetFieldsQuery().Sql}");
         }
 
         private static void FieldsQueryExample(ICache<int, Employee> cache)
@@ -173,7 +179,9 @@ namespace IgniteExamples.Thick.Sql.Linq
             Console.WriteLine(">>> Employee names and their salaries:");
 
             foreach (var row in qry)
-                Console.WriteLine(">>>     [Name=" + row.Name + ", salary=" + row.Salary + ']');
+                Console.WriteLine($">>>     [Name={row.Name}, salary={row.Salary}{']'}");
+
+            Console.WriteLine($">>> Generated SQL: {qry.ToCacheQueryable().GetFieldsQuery().Sql}");
         }
 
         private static void PopulateCache(ICache<int, Organization> cache)
