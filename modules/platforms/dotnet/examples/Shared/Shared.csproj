@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <RootNamespace>IgniteExamples.Shared</RootNamespace>
+    <NoWarn>CS0649</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="$(IgniteBinaryDistro) == '' And $(IgniteSourceDistro) == ''">

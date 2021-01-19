@@ -6,6 +6,7 @@
         <RootNamespace>IgniteExamples.Thick.Compute.PeerAssemblyLoading</RootNamespace>
         <AssemblyVersion>1.0.*</AssemblyVersion>
         <Deterministic>false</Deterministic>
+        <NoWarn>CS7035</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
