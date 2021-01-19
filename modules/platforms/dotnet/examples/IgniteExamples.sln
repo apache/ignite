@@ -83,7 +83,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Services", "Thick\Misc\Serv
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misc", "Misc", "{20FBB84F-8A6F-4D51-B3EA-F20AE49942CE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Services", "Thin\Misc\Services\Services.csproj", "{E48EC44D-1793-4DD3-9931-A388EFC3B105}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServicesThin", "Thin\Misc\ServicesThin\ServicesThin.csproj", "{E48EC44D-1793-4DD3-9931-A388EFC3B105}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
