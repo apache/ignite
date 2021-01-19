@@ -59,11 +59,11 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
 
         assertArrayEquals(
             new double[]{72.26948107, 15.95144674, 24.07403921, 66.73038781},
-            mdl.getWeights().getStorage().data(),
+            mdl.weights().getStorage().data(),
             1e-6
         );
 
-        assertEquals(2.8421709430404007e-14, mdl.getIntercept(), 1e-6);
+        assertEquals(2.8421709430404007e-14, mdl.intercept(), 1e-6);
     }
 
     /**
@@ -95,9 +95,9 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        assertArrayEquals(coef, mdl.getWeights().getStorage().data(), 1e-6);
+        assertArrayEquals(coef, mdl.weights().getStorage().data(), 1e-6);
 
-        assertEquals(intercept, mdl.getIntercept(), 1e-6);
+        assertEquals(intercept, mdl.intercept(), 1e-6);
     }
 
     /** */
@@ -142,10 +142,10 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
             vectorizer
         );
 
-        assertArrayEquals(originalMdl.getWeights().getStorage().data(), updatedOnSameDS.getWeights().getStorage().data(), 1e-6);
-        assertEquals(originalMdl.getIntercept(), updatedOnSameDS.getIntercept(), 1e-6);
+        assertArrayEquals(originalMdl.weights().getStorage().data(), updatedOnSameDS.weights().getStorage().data(), 1e-6);
+        assertEquals(originalMdl.intercept(), updatedOnSameDS.intercept(), 1e-6);
 
-        assertArrayEquals(originalMdl.getWeights().getStorage().data(), updatedOnEmptyDS.getWeights().getStorage().data(), 1e-6);
-        assertEquals(originalMdl.getIntercept(), updatedOnEmptyDS.getIntercept(), 1e-6);
+        assertArrayEquals(originalMdl.weights().getStorage().data(), updatedOnEmptyDS.weights().getStorage().data(), 1e-6);
+        assertEquals(originalMdl.intercept(), updatedOnEmptyDS.intercept(), 1e-6);
     }
 }

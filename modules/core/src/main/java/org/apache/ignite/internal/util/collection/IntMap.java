@@ -82,4 +82,10 @@ public interface IntMap<V> {
      * Returns <tt>true</tt> if this map contains no key-value mappings.
      */
     boolean isEmpty();
+
+    /** Returns array of keys. */
+    int[] keys();
+
+    /** Return array of values. */
+    V[] values();
 }

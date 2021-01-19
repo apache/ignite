@@ -76,7 +76,7 @@ class IgniteApplicationService(IgniteAwareService):
 
         node.account.kill_java_processes(self.servicejava_class_name, clean_shutdown=False, allow_fail=True)
 
-        node.account.ssh("rm -rf %s" % self.PERSISTENT_ROOT, allow_fail=False)
+        node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
     def pids(self, node):
         return node.account.java_pids(self.servicejava_class_name)
@@ -102,7 +102,7 @@ class IgniteApplicationService(IgniteAwareService):
 
         for node in self.nodes:
             output = node.account.ssh_capture(
-                "grep '%s' %s" % (name + "->", self.STDOUT_STDERR_CAPTURE), allow_fail=False)
+                "grep '%s' %s" % (name + "->", node.log_file), allow_fail=False)
             for line in output:
                 res.append(re.search("%s(.*)%s" % (name + "->", "<-"), line).group(1))
 

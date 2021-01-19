@@ -36,7 +36,7 @@ from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
 from ignitetest.utils import ignite_versions, version_if, cluster
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST, V_2_8_0, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, LATEST, LATEST_2_7, V_2_8_0, V_2_9_0, IgniteVersion
 from ignitetest.utils.enum import constructible
 
 
@@ -166,6 +166,9 @@ class DiscoveryTest(IgniteTest):
         else:
             discovery_spi = TcpDiscoverySpi()
 
+            if LATEST_2_7 < test_config.version <= V_2_9_0:
+                discovery_spi.so_linger = 0
+
         ignite_config = IgniteConfiguration(
             version=test_config.version,
             discovery_spi=discovery_spi,
@@ -244,13 +247,13 @@ class DiscoveryTest(IgniteTest):
 
     def _check_failed_number(self, failed_nodes, survived_node):
         """Ensures number of failed nodes is correct."""
-        cmd = "grep '%s' %s | wc -l" % (node_failed_event_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE)
+        cmd = "grep '%s' %s | wc -l" % (node_failed_event_pattern(), survived_node.log_file)
 
         failed_cnt = int(str(survived_node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding()))
 
         if failed_cnt != len(failed_nodes):
             failed = str(survived_node.account.ssh_client.exec_command(
-                "grep '%s' %s" % (node_failed_event_pattern(), IgniteAwareService.STDOUT_STDERR_CAPTURE))[1].read(),
+                "grep '%s' %s" % (node_failed_event_pattern(), survived_node.log_file))[1].read(),
                          sys.getdefaultencoding())
 
             self.logger.warn("Node '%s' (%s) has detected the following failures:%s%s" % (
@@ -263,7 +266,7 @@ class DiscoveryTest(IgniteTest):
         """Ensures only target nodes failed"""
         for service in [srv for srv in self.test_context.services if isinstance(srv, IgniteAwareService)]:
             for node in [srv_node for srv_node in service.nodes if srv_node not in failed_nodes]:
-                cmd = "grep -i '%s' %s | wc -l" % ("local node segmented", IgniteAwareService.STDOUT_STDERR_CAPTURE)
+                cmd = "grep -i '%s' %s | wc -l" % ("local node segmented", node.log_file)
 
                 failed = str(node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding())
 

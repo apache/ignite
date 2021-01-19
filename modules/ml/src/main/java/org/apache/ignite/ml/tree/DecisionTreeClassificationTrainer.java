@@ -35,7 +35,7 @@ import org.apache.ignite.ml.tree.leaf.MostCommonDecisionTreeLeafBuilder;
  * Decision tree classifier based on distributed decision tree trainer that allows to fit trees using row-partitioned
  * dataset.
  */
-public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurityMeasure> {
+public class DecisionTreeClassificationTrainer extends DecisionTreeTrainer<GiniImpurityMeasure> {
     /**
      * Constructs a new decision tree classifier with default impurity function compressor.
      *

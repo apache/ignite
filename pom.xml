@@ -83,6 +83,7 @@
         <module>modules/ml</module>
         <module>modules/ml/spark-model-parser</module>
         <module>modules/ml/xgboost-model-parser</module>
+        <module>modules/ml/catboost-model-parser</module>
         <module>modules/ml/h2o-model-parser</module>
         <module>modules/opencensus</module>
         <module>modules/control-utility</module>

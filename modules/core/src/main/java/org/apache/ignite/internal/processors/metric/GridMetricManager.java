@@ -439,8 +439,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             opsFut.markInitialized();
             opsFut.get();
         }
+        catch (NodeStoppingException ignored) {
+            // No-op.
+        }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            log.error("Failed to remove metrics configuration.", e);
         }
     }
 
