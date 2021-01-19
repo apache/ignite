@@ -18,15 +18,12 @@
 namespace IgniteExamples.Thin.Linq
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
-    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Linq;
     using IgniteExamples.Shared;
