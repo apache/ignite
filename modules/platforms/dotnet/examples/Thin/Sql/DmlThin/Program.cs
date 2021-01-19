@@ -15,20 +15,18 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thin.DmlThin
+namespace IgniteExamples.Thin.Sql.DmlThin
 {
     using System;
-    using System.Collections.Generic;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client.Cache;
     using IgniteExamples.Shared;
     using IgniteExamples.Shared.Models;
 
     /// <summary>
-    /// TODO
+    /// This example showcases DML capabilities of the Ignite SQL engine with thin client
     /// <para />
     /// This example requires an Ignite server node. You can start the node in any of the following ways:
     /// * docker run -p 10800:10800 apacheignite/ignite
@@ -37,14 +35,34 @@ namespace IgniteExamples.Thin.DmlThin
     /// </summary>
     public static class Program
     {
+        private const string OrganizationCacheName = "dotnet_cache_query_dml_organization";
+
+        private const string EmployeeCacheName = "dotnet_cache_query_dml_employee";
+
         public static void Main()
         {
-            using (IIgniteClient ignite = Ignition.StartClient(Utils.GetThinClientConfiguration()))
+            using (var ignite = Ignition.StartClient(Utils.GetThinClientConfiguration()))
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Example started.");
+                Console.WriteLine(">>> Cache query DML example started.");
 
-                // TODO
+                var employeeCache = ignite.GetOrCreateCache<int, Employee>(
+                    new CacheClientConfiguration(EmployeeCacheName, new QueryEntity(typeof(int), typeof(Employee))));
+
+                var organizationCache = ignite.GetOrCreateCache<int, Organization>(new CacheClientConfiguration(
+                    OrganizationCacheName, new QueryEntity(typeof(int), typeof(Organization))));
+
+                employeeCache.Clear();
+                organizationCache.Clear();
+
+                Insert(organizationCache, employeeCache);
+                Select(employeeCache, "Inserted data");
+
+                Update(employeeCache);
+                Select(employeeCache, "Update salary for ASF employees");
+
+                Delete(employeeCache);
+                Select(employeeCache, "Delete non-ASF employees");
 
                 Console.WriteLine();
             }
@@ -52,6 +70,83 @@ namespace IgniteExamples.Thin.DmlThin
             Console.WriteLine();
             Console.WriteLine(">>> Example finished, press any key to exit ...");
             Console.ReadKey();
+        }
+
+        /// <summary>
+        /// Selects and displays Employee data.
+        /// </summary>
+        private static void Select(ICacheClient<int, Employee> employeeCache, string message)
+        {
+            Console.WriteLine("\n>>> {0}", message);
+
+            var qry = new SqlFieldsQuery(string.Format(
+                "select emp._key, emp.name, org.name, emp.salary " +
+                "from Employee as emp, " +
+                "\"{0}\".Organization as org " +
+                "where emp.organizationId = org._key", OrganizationCacheName))
+            {
+                EnableDistributedJoins = true
+            };
+
+            using (var cursor = employeeCache.Query(qry))
+            {
+                foreach (var row in cursor)
+                {
+                    Console.WriteLine(">>> {0}: {1}, {2}, {3}", row[0], row[1], row[2], row[3]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Populates cache with test data.
+        /// </summary>
+        private static void Insert(
+            ICacheClient<int, Organization> organizationCache,
+            ICacheClient<int, Employee> employeeCache)
+        {
+            // Insert organizations.
+            var qry = new SqlFieldsQuery("insert into Organization (_key, name) values (?, ?)", 1, "ASF");
+            organizationCache.Query(qry);
+
+            qry.Arguments = new object[] {2, "Eclipse"};
+            organizationCache.Query(qry);
+
+            // Insert employees.
+            qry = new SqlFieldsQuery("insert into Employee (_key, name, organizationId, salary) values (?, ?, ?, ?)");
+
+            qry.Arguments = new object[] {1, "John Doe", 1, 4000};
+            employeeCache.Query(qry);
+
+            qry.Arguments = new object[] {2, "Jane Roe", 1, 5000};
+            employeeCache.Query(qry);
+
+            qry.Arguments = new object[] {3, "Mary Major", 2, 2000};
+            employeeCache.Query(qry);
+
+            qry.Arguments = new object[] {4, "Richard Miles", 2, 3000};
+            employeeCache.Query(qry);
+        }
+
+        /// <summary>
+        /// Conditional UPDATE query: raise salary for ASF employees.
+        /// </summary>
+        /// <param name="employeeCache">Employee cache.</param>
+        private static void Update(ICacheClient<int, Employee> employeeCache)
+        {
+            var qry = new SqlFieldsQuery("update Employee set salary = salary * 1.1 where organizationId = ?", 1);
+
+            employeeCache.Query(qry);
+        }
+
+        /// <summary>
+        /// Conditional DELETE query: remove non-ASF employees.
+        /// </summary>
+        /// <param name="employeeCache">Employee cache.</param>
+        private static void Delete(ICacheClient<int, Employee> employeeCache)
+        {
+            var qry = new SqlFieldsQuery("delete from Employee where organizationId != ?", 1);
+
+            employeeCache.Query(qry);
         }
     }
 }
