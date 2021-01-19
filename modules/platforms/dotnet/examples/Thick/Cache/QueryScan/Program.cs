@@ -37,7 +37,7 @@ namespace IgniteExamples.Thick.Cache.QueryScan
             using (var ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Cache full-text query example started.");
+                Console.WriteLine(">>> Cache scan query example started.");
 
                 var employeeCache = ignite.GetOrCreateCache<int, Employee>(
                     new CacheConfiguration(EmployeeCacheName, new QueryEntity(typeof(int), typeof(Employee))));
