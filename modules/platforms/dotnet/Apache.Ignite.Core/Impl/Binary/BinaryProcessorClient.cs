@@ -128,6 +128,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <param name="platformId">Platform identifier.</param>
+        /// <param name="errorFunc">Error handler.</param>
         /// <returns>Type or null.</returns>
         private string GetTypeName(int id, byte platformId, Func<ClientStatusCode, string, string> errorFunc)
         {
