@@ -19,14 +19,13 @@ namespace IgniteExamples.Thick.Compute.Func
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache;
     using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Models;
+    using IgniteExamples.Shared.Compute;
 
     /// <summary>
-    /// TODO
+    /// This example demonstrates compute func execution.
     /// </summary>
     public static class Program
     {
@@ -35,10 +34,25 @@ namespace IgniteExamples.Thick.Compute.Func
             using (IIgnite ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Example started.");
+                Console.WriteLine(">>> Closure execution example started.");
 
-                // TODO
+                // Split the string by spaces to count letters in each word in parallel.
+                ICollection<string> words = "Count characters using closure".Split().ToList();
 
+                Console.WriteLine();
+                Console.WriteLine(">>> Calculating character count with manual reducing:");
+
+                var res = ignite.GetCompute().Apply(new CharacterCountFunc(), words);
+
+                int totalLen = res.Sum();
+
+                Console.WriteLine(">>> Total character count: " + totalLen);
+                Console.WriteLine();
+                Console.WriteLine(">>> Calculating character count with reducer:");
+
+                totalLen = ignite.GetCompute().Apply(new CharacterCountFunc(), words, new CharacterCountReducer());
+
+                Console.WriteLine(">>> Total character count: " + totalLen);
                 Console.WriteLine();
             }
 

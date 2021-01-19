@@ -22,7 +22,7 @@ namespace IgniteExamples.Shared.Compute
     /// <summary>
     /// Closure counting characters in a string.
     /// </summary>
-    public class CharacterCountClosure : IComputeFunc<string, int>
+    public class CharacterCountFunc : IComputeFunc<string, int>
     {
         /// <summary>
         /// Calculate character count of the given word.
