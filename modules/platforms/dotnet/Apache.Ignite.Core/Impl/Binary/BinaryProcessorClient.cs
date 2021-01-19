@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Client;
 
@@ -33,20 +32,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Socket. */
         private readonly ClientFailoverSocket _socket;
 
-        /** Marshaller. */
-        private readonly Marshaller _marsh;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryProcessorClient"/> class.
         /// </summary>
         /// <param name="socket">The socket.</param>
-        /// <param name="marsh">The marshaller.</param>
-        public BinaryProcessorClient(ClientFailoverSocket socket, Marshaller marsh)
+        public BinaryProcessorClient(ClientFailoverSocket socket)
         {
             Debug.Assert(socket != null);
 
             _socket = socket;
-            _marsh = marsh;
         }
 
         /** <inheritdoc /> */
