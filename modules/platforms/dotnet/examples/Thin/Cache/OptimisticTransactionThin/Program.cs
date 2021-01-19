@@ -72,10 +72,6 @@ namespace IgniteExamples.Thin.Cache.OptimisticTransactionThin
                 Console.WriteLine(">>> Example finished, press any key to exit ...");
                 Console.ReadKey();
             }
-
-            Console.WriteLine();
-            Console.WriteLine(">>> Example finished, press any key to exit ...");
-            Console.ReadKey();
         }
 
         /// <summary>
@@ -102,7 +98,7 @@ namespace IgniteExamples.Thin.Cache.OptimisticTransactionThin
 
                 Console.WriteLine("\n>>> Thread {0} successfully incremented cached value.", threadId);
             }
-            catch (TransactionOptimisticException ex)
+            catch (IgniteClientException ex)
             {
                 Console.WriteLine("\n>>> Thread {0} failed to increment cached value. " +
                                   "Caught an expected optimistic exception: {1}", threadId, ex.Message);
