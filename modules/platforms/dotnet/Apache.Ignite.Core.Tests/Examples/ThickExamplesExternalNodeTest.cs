@@ -11,7 +11,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     {
         /** */
         private static readonly Example[] ThickExamples = Example.AllExamples
-            .Where(e => !e.IsThin && !e.IsClient && e.RequiresExternalNode)
+            .Where(e => !e.IsThin && !e.IsClient && !e.DisallowsExternalNode)
             .ToArray();
 
         /// <summary>

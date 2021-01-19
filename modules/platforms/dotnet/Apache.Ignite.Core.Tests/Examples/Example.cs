@@ -61,6 +61,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** Whether this example requires an external node. */
         public bool RequiresExternalNode { get; }
 
+        /** Whether this example disallows external nodes. */
+        public bool DisallowsExternalNode { get; }
+
         /// <summary>
         /// Initializes a new instance of <see cref="Example"/> class.
         /// </summary>
@@ -71,8 +74,8 @@ namespace Apache.Ignite.Core.Tests.Examples
             AssemblyFile = assemblyFile;
             SourceCode = sourceCode;
             RequiresExternalNode = sourceCode.Contains("ServerNode project");
-            IsClient = sourceCode.Contains("GetClientNodeConfiguration") &&
-                       !sourceCode.Contains("without external node");
+            DisallowsExternalNode = sourceCode.Contains("without external node");
+            IsClient = sourceCode.Contains("GetClientNodeConfiguration") && !DisallowsExternalNode;
         }
 
         /// <summary>
