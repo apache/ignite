@@ -30,7 +30,9 @@ namespace Apache.Ignite.Core.Tests.Examples
     public class Example
     {
         /** All projects. */
-        public static readonly Example[] AllProjects = GetExamples().ToArray();
+        public static readonly Example[] AllProjects = GetExamples()
+            .OrderBy(x => x.Name)
+            .ToArray();
 
         /** All examples. */
         public static readonly Example[] AllExamples = AllProjects.Where(p => p.Name != "ServerNode").ToArray();
