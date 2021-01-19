@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 649 // Readonly field is never assigned
 namespace IgniteExamples.Shared.Messaging
 {
     using System;
@@ -28,9 +29,7 @@ namespace IgniteExamples.Shared.Messaging
     {
         /** Injected Ignite instance. */
         [InstanceResource]
-#pragma warning disable 649
         private readonly IIgnite _ignite;
-#pragma warning restore 649
 
         /// <summary>
         /// Receives a message and returns a value

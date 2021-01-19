@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 649 // Readonly field is never assigned
 namespace IgniteExamples.Thick.Misc.Lifecycle
 {
     using System;
@@ -64,9 +65,7 @@ namespace IgniteExamples.Thick.Misc.Lifecycle
         {
             /** Auto-injected Ignite instance. */
             [InstanceResource]
-#pragma warning disable 649
             private IIgnite _ignite;
-#pragma warning restore 649
 
             /** <inheritDoc /> */
             public void OnLifecycleEvent(LifecycleEventType evt)

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 649 // Readonly field is never assigned
 namespace IgniteExamples.Shared.Services
 {
     using System;
@@ -50,7 +51,7 @@ namespace IgniteExamples.Shared.Services
         /// <summary>
         /// Starts execution of this service. This method is automatically invoked whenever an instance of the service
         /// is deployed on an Ignite node. Note that service is considered deployed even after it exits the Execute
-        /// method and can be cancelled (or undeployed) only by calling any of the Cancel methods on 
+        /// method and can be cancelled (or undeployed) only by calling any of the Cancel methods on
         /// <see cref="IServices"/> API. Also note that service is not required to exit from Execute method until
         /// Cancel method was called.
         /// </summary>
