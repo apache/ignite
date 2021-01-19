@@ -70,8 +70,9 @@ namespace Apache.Ignite.Core.Tests.Examples
             ProjectFile = projectFile;
             AssemblyFile = assemblyFile;
             SourceCode = sourceCode;
-            IsClient = sourceCode.Contains("GetClientNodeConfiguration");
             RequiresExternalNode = sourceCode.Contains("ServerNode project");
+            IsClient = sourceCode.Contains("GetClientNodeConfiguration") &&
+                       !sourceCode.Contains("without external node");
         }
 
         /// <summary>
