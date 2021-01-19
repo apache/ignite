@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 foreach (string typeName in typeNames)
                     AddUserType(new BinaryTypeConfiguration(typeName), typeResolver);
 
-            _registerSameJavaType = _cfg.NameMapper == null || 
+            _registerSameJavaType = _cfg.NameMapper == null ||
                  _cfg.NameMapper is BinaryBasicNameMapper && !((BinaryBasicNameMapper)_cfg.NameMapper).IsSimpleName &&
                  _cfg.IdMapper == null;
         }
@@ -585,21 +585,26 @@ namespace Apache.Ignite.Core.Impl.Binary
             return new BinarySurrogateTypeDescriptor(_cfg, typeId, typeName);
         }
 
+        /// <summary>
+        /// Gets the type name by id.
+        /// </summary>
         private string GetTypeName(int typeId)
         {
-            return _ignite.BinaryProcessor.GetTypeName(typeId, BinaryProcessor.DotNetPlatformId, ex =>
-            {
-                if (!RegisterSameJavaType)
-                    throw new BinaryObjectException(ex.Message, ex);
+            var errorAction = RegisterSameJavaType
+                ? ex =>
+                {
+                    // Try to get java type name and register corresponding DotNet type.
+                    var javaTypeName =
+                        _ignite.BinaryProcessor.GetTypeName(typeId, BinaryProcessor.JavaPlatformId, null);
+                    var netTypeName = GetTypeName(javaTypeName);
 
-                // Try to get java type name and register corresponding DotNet type.
-                var javaTypeName = _ignite.BinaryProcessor.GetTypeName(typeId, BinaryProcessor.JavaPlatformId, null);
-                var netTypeName = GetTypeName(javaTypeName);
+                    _ignite.BinaryProcessor.RegisterType(typeId, netTypeName, false);
 
-                _ignite.BinaryProcessor.RegisterType(typeId, netTypeName, false);
+                    return netTypeName;
+                }
+                : (Func<Exception, string>) null;
 
-                return netTypeName;
-            });
+            return _ignite.BinaryProcessor.GetTypeName(typeId, BinaryProcessor.DotNetPlatformId, errorAction);
         }
 
         /// <summary>

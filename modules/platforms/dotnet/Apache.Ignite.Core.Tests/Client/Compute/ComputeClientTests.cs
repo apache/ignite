@@ -464,7 +464,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 () => Client.GetCompute().ExecuteJavaTask<object>(
                     ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizableJava));
 
-            var clientEx = (BinaryObjectException) ex.GetInnermostException();
+            var clientEx = (IgniteClientException) ex.GetInnermostException();
 
             Assert.AreEqual("Failed to resolve Java class 'org.apache.ignite.platform.PlatformComputeJavaBinarizable'" +
                             " in .NET [platformId=1, typeId=-422570294].", clientEx.Message);

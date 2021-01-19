@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Client;
 
@@ -100,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public string GetTypeName(int id, byte platformId, Func<Exception, string> errorFunc)
+        public string GetTypeName(int id, byte platformId, Func<Exception, string> errorFunc = null)
         {
             return _socket.DoOutInOp(ClientOp.BinaryTypeNameGet, ctx =>
                 {
@@ -108,7 +109,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ctx.Stream.WriteInt(id);
                 },
                 ctx => ctx.Reader.ReadString(),
-                (statusCode, msg) => errorFunc.Invoke(new BinaryObjectException(msg)));
+                errorFunc == null
+                    ? (Func<ClientStatusCode, string, string>) null
+                    : (statusCode, msg) => errorFunc(new BinaryObjectException(msg)));
         }
     }
 }
