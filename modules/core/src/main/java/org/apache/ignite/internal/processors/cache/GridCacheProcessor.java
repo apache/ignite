@@ -81,7 +81,7 @@ import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.PartitionStateViewWalker;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
-import org.apache.ignite.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;

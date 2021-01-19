@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.wal.WALPointer;
 
 /**
  * Internal interface to provide size, read and write operations of WAL records

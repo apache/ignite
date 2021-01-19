@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.wal.WALPointer;
 
 /**
  * Tracks various checkpoint phases and stats.

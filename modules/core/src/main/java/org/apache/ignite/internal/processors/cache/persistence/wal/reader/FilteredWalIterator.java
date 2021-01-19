@@ -23,7 +23,7 @@ import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.wal.WALIterator;
 import org.apache.ignite.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.wal.WALPointer;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 

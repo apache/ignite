@@ -43,7 +43,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
-import org.apache.ignite.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.wal.record.PageSnapshot;
 import org.apache.ignite.wal.record.WALRecord;
@@ -62,7 +62,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.CU;

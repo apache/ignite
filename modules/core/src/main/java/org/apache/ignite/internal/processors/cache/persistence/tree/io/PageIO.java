@@ -26,7 +26,7 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLogInnerIO;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLogLeafIO;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;

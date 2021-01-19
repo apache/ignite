@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.wal;
+package org.apache.ignite.internal.pagemem.wal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.wal.WALIterator;
 import org.apache.ignite.wal.record.RolloverType;
 import org.apache.ignite.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.wal.WALPointer;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;

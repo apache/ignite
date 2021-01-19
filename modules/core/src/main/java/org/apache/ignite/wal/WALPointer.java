@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal;
+package org.apache.ignite.wal;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.S;

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.CacheObject;

@@ -24,7 +24,7 @@ import org.apache.ignite.wal.record.PageSnapshot;
 import org.apache.ignite.wal.record.WALRecord;
 import org.apache.ignite.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.wal.record.delta.PartitionMetaStateRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
 

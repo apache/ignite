@@ -35,7 +35,7 @@ import org.apache.ignite.wal.record.PageSnapshot;
 import org.apache.ignite.wal.record.TxRecord;
 import org.apache.ignite.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.transactions.TransactionState;

@@ -40,7 +40,7 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.wal.record.delta.FixCountRecord;
 import org.apache.ignite.wal.record.delta.FixLeftmostChildRecord;
 import org.apache.ignite.wal.record.delta.FixRemoveId;

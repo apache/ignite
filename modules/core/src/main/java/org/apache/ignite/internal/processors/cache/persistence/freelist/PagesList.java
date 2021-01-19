@@ -35,7 +35,7 @@ import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.wal.record.delta.DataPageSetFreeListPageRecord;
 import org.apache.ignite.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.wal.record.delta.PageListMetaResetCountRecord;

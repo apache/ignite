@@ -18,7 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.Collection;
 import org.apache.ignite.DataRegionMetrics;
-import org.apache.ignite.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;

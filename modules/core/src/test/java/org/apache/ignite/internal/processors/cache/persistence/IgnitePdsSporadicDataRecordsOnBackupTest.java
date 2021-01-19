@@ -37,7 +37,7 @@ import org.apache.ignite.wal.WALIterator;
 import org.apache.ignite.wal.record.DataRecord;
 import org.apache.ignite.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.internal.CU;

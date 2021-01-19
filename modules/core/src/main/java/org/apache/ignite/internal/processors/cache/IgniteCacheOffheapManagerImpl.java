@@ -45,7 +45,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.wal.record.delta.DataPageMvccMarkUpdatedRecord;
 import org.apache.ignite.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
 import org.apache.ignite.wal.record.delta.DataPageMvccUpdateTxStateHintRecord;

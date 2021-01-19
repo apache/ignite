@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.wal.WALPointer;
 import org.apache.ignite.wal.record.MarshalledRecord;
 import org.apache.ignite.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;

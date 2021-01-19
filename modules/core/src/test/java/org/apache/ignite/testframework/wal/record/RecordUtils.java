@@ -82,7 +82,7 @@ import org.apache.ignite.wal.record.delta.TrackingPageDeltaRecord;
 import org.apache.ignite.wal.record.delta.TrackingPageRepairDeltaRecord;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.transactions.TransactionState;

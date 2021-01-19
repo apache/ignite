@@ -19,7 +19,6 @@ package org.apache.ignite.wal;
 
 import java.util.Optional;
 import org.apache.ignite.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
 
