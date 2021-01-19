@@ -16,6 +16,7 @@
 """
 This module contains JVM utilities.
 """
+DEFAULT_HEAP = "768M"
 
 JVM_PARAMS_GC_CMS = "-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSIncrementalMode " \
                     "-XX:ConcGCThreads=$(((`nproc`/4)>1?(`nproc`/4):1)) " \
@@ -32,7 +33,7 @@ JVM_PARAMS_GENERIC = "-server -da -XX:+DisableExplicitGC -XX:+AggressiveOpts -XX
                      "-XX:+OptimizeStringConcat -XX:+UseStringDeduplication"
 
 
-def create_jvm_settings(heap_size="768M", gc_settings=JVM_PARAMS_GC_CMS, generic_params=JVM_PARAMS_GENERIC,
+def create_jvm_settings(heap_size=DEFAULT_HEAP, gc_settings=JVM_PARAMS_GC_CMS, generic_params=JVM_PARAMS_GENERIC,
                         gc_dump_path=None, oom_path=None, **kwargs):
     """
     Provides settings string for JVM process.
@@ -114,8 +115,8 @@ def _remove_duplicates(params: dict):
     """Removes specific duplicates"""
     duplicates = {"-Xmx": False, "-Xms": False}
 
-    for param_key in list(params.keys()):
-        for dup_key in duplicates.keys():
+    for param_key in reversed(list(params.keys())):
+        for dup_key, _ in duplicates.items():
             if param_key.startswith(dup_key):
                 if duplicates[dup_key]:
                     del params[param_key]
