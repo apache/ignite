@@ -18,7 +18,7 @@
 package org.apache.ignite.cdc.internal;
 
 import java.io.File;
-import org.apache.ignite.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 
 /** Consumer state. */
 public class ConsumerState {

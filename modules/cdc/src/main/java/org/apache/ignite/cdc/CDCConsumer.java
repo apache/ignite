@@ -19,9 +19,9 @@ package org.apache.ignite.cdc;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 
-/** Consumer of WAL records */
+/** Consumer of WAL records. */
 public interface CDCConsumer {
     /**
      * @return Consumer ID.
@@ -29,13 +29,17 @@ public interface CDCConsumer {
     String id();
 
     /**
-     * Initialize this consumer.
+     * Starts the consumer.
      *
      * @param configuration Ignite configuration.
      */
     void start(IgniteConfiguration configuration, IgniteLogger log);
 
     /**
+     * Handles record from the WAL.
+     * If this method return {@code true} then current offset in WAL will be stored and WAL iteration will be
+     * started from it on CDC application fail/restart.
+     *
      * @param record WAL record.
      * @param <T> Record type.
      * @return {@code True} if current offset in WAL should be commited.
@@ -43,7 +47,7 @@ public interface CDCConsumer {
     <T extends WALRecord> boolean onRecord(T record);
 
     /**
-     * Stops this consumer.
+     * Stops the consumer.
      * This methods can be invoked only after {@link #start(IgniteConfiguration, IgniteLogger)}.
      */
     void stop();

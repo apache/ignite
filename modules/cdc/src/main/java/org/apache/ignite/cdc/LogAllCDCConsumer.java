@@ -21,9 +21,9 @@ import java.util.EnumSet;
 import java.util.Objects;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 
-import static org.apache.ignite.wal.record.WALRecord.RecordPurpose.LOGICAL;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.LOGICAL;
 
 /**
  * CDC consumer that log all records.

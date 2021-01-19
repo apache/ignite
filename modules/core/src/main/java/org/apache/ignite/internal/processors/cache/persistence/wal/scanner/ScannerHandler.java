@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.scanner;
 
-import org.apache.ignite.wal.record.WALRecord;
-import org.apache.ignite.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**

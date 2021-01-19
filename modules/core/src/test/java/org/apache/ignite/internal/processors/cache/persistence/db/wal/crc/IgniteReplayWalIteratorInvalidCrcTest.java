@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal.crc;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
