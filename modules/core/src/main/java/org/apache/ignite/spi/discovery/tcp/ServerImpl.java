@@ -3879,10 +3879,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
+                    //log.error("TEST | not sent on " + locNode.internalOrder() + ": " + msg);
+
                     if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
                         sndState = new CrossRingMessageSendState();
                     else if (sndState != null && sndState.checkTimeout() ||
                         spi.getEffectiveConnectionRecoveryTimeout() == 0 && !failedNodes.isEmpty()) {
+                        //log.error("TEST | segmented after !sent: " + locNode.internalOrder());
+
                         segmentLocalNodeOnSendFail(failedNodes);
 
                         return; // Nothing to do here.
@@ -3921,7 +3925,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     next = null;
-
                     errs = null;
                 }
                 else
