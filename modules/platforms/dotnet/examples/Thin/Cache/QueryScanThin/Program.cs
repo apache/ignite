@@ -30,7 +30,6 @@ namespace IgniteExamples.Thin.Cache.QueryScanThin
     /// <summary>
     /// This example demonstrates a Scan query with a remote filter.
     /// <para />
-    /// <para />
     /// This example requires an Ignite server node with <see cref="ScanQueryFilter"/> type loaded,
     /// run ServerNode project to start it:
     /// * dotnet run -p ServerNode.csproj

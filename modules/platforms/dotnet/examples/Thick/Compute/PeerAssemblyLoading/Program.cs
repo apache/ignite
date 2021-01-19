@@ -20,17 +20,21 @@ namespace IgniteExamples.Thick.Compute.PeerAssemblyLoading
     using System;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Deployment;
     using IgniteExamples.Shared;
 
     /// <summary>
     /// Example demonstrating compute execution with peer assembly loading.
-    ///
-    /// Before executing the example start one or more instances of the ServerNode project.
-    /// Note that <see cref="HelloAction"/> is not present in ServerNode project.
-    ///
+    /// <para />
+    /// This example requires an Ignite server node with <see cref="IgniteConfiguration.PeerAssemblyLoadingMode"/>
+    /// set to <see cref="PeerAssemblyLoadingMode.CurrentAppDomain"/>, run ServerNode project to start it:
+    /// * dotnet run -p ServerNode.csproj
+    /// <para />
+    /// Note that <see cref="HelloAction"/> is not present in the ServerNode project.
+    /// <para />
     /// Modify and re-run this example while keeping standalone nodes running to see that the
     /// modified version of the computation will be executed because of automatic deployment of the updated assembly.
-    ///
+    /// <para />
     /// Version is updated automatically on build because of '*' in AssemblyVersion (see the csproj file).
     /// <para />
     /// </summary>
