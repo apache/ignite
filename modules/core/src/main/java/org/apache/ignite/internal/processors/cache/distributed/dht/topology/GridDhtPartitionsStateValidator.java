@@ -370,8 +370,8 @@ public class GridDhtPartitionsStateValidator {
      * @param topVer Topology version.
      * @param invalidPartitionsCounters Invalid partitions counters map.
      * @param invalidPartitionsSize Invalid partitions size map.
-     * @return value is String in the following format: Part [id]:
-     * [consistentId=value meta=[updCnt=value, size=value]]
+     * @return value is String in the following format:
+     *     Part [id]: [consistentId=value meta=[updCnt=value, size=value]]
      */
     private String fold(
         AffinityTopologyVersion topVer,
@@ -409,7 +409,7 @@ public class GridDhtPartitionsStateValidator {
     }
 
     /**
-     * Add pair of counters and size in result map.
+     * Adds pair of counters and size in result map
      * @param srcMap PartitionCounters or PartitionSize
      * @param resultMap  result map with pair of values
      */
