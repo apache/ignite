@@ -123,6 +123,17 @@
       "stopAtEntry": false
     },
     {
+      "name": "QueryContinuousThin",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thin/Cache/QueryContinuousThin/bin/Debug/netcoreapp2.1/QueryContinuousThin.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thin/Cache/QueryContinuousThin",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
       "name": "QueryFullText",
       "type": "coreclr",
       "request": "launch",
