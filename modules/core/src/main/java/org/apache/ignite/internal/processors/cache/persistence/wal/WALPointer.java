@@ -15,17 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal;
+package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * File WAL pointer.
  */
-@IgniteEvolvingAPI
 public class WALPointer implements Serializable, Comparable<WALPointer> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
