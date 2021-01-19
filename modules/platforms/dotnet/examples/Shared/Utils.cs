@@ -24,7 +24,9 @@ using Apache.Ignite.Core.Log;
 namespace IgniteExamples.Shared
 {
     using System;
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Client.Cache;
     using IgniteExamples.Shared.Models;
 
     public static class Utils
@@ -85,58 +87,80 @@ namespace IgniteExamples.Shared
         }
 
         /// <summary>
-        /// Populate cache with employee date.
+        /// Populates the cache with employee data.
         /// </summary>
         public static void PopulateCache(ICache<int, Employee> cache)
         {
-            cache.Put(1, new Employee(
+            var id = 0;
+
+            foreach (var employee in GetSampleEmployees())
+                cache.Put(id++, employee);
+        }
+
+        /// <summary>
+        /// Populates the cache with employee data.
+        /// </summary>
+        public static void PopulateCache(ICacheClient<int, Employee> cache)
+        {
+            var id = 0;
+
+            foreach (var employee in GetSampleEmployees())
+                cache.Put(id++, employee);
+        }
+
+        /// <summary>
+        /// Gets the sample employee data.
+        /// </summary>
+        private static IEnumerable<Employee> GetSampleEmployees()
+        {
+            yield return new Employee(
                 "James Wilson",
                 12500,
                 new Address("1096 Eddy Street, San Francisco, CA", 94109),
                 new[] {"Human Resources", "Customer Service"},
-                1));
+                1);
 
-            cache.Put(2, new Employee(
+            yield return new Employee(
                 "Daniel Adams",
                 11000,
                 new Address("184 Fidler Drive, San Antonio, TX", 78130),
                 new[] {"Development", "QA"},
-                1));
+                1);
 
-            cache.Put(3, new Employee(
+            yield return new Employee(
                 "Cristian Moss",
                 12500,
                 new Address("667 Jerry Dove Drive, Florence, SC", 29501),
                 new[] {"Logistics"},
-                1));
+                1);
 
-            cache.Put(4, new Employee(
+            yield return new Employee(
                 "Allison Mathis",
                 25300,
                 new Address("2702 Freedom Lane, San Francisco, CA", 94109),
                 new[] {"Development"},
-                2));
+                2);
 
-            cache.Put(5, new Employee(
+            yield return new Employee(
                 "Breana Robbin",
                 6500,
                 new Address("3960 Sundown Lane, Austin, TX", 78130),
                 new[] {"Sales"},
-                2));
+                2);
 
-            cache.Put(6, new Employee(
+            yield return new Employee(
                 "Philip Horsley",
                 19800,
                 new Address("2803 Elsie Drive, Sioux Falls, SD", 57104),
                 new[] {"Sales"},
-                2));
+                2);
 
-            cache.Put(7, new Employee(
+            yield return new Employee(
                 "Brian Peters",
                 10600,
                 new Address("1407 Pearlman Avenue, Boston, MA", 12110),
                 new[] {"Development", "QA"},
-                2));
+                2);
         }
     }
 }

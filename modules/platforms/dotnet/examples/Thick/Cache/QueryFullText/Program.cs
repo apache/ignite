@@ -19,11 +19,9 @@ namespace IgniteExamples.Thick.Cache.QueryFullText
 {
     using System;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using IgniteExamples.Shared;
-    using IgniteExamples.Shared.Cache;
     using IgniteExamples.Shared.Models;
 
     /// <summary>

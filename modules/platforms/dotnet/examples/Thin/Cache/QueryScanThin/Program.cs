@@ -15,18 +15,25 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Cache.QueryScan
+namespace IgniteExamples.Thin.Cache.QueryScanThin
 {
     using System;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Cache;
     using IgniteExamples.Shared;
     using IgniteExamples.Shared.Cache;
     using IgniteExamples.Shared.Models;
 
     /// <summary>
     /// This example demonstrates a Scan query with a remote filter.
+    /// <para />
+    /// <para />
+    /// This example requires an Ignite server node with <see cref="ScanQueryFilter"/> type loaded,
+    /// run ServerNode project to start it:
+    /// * dotnet run -p ServerNode.csproj
     /// </summary>
     public static class Program
     {
@@ -34,13 +41,13 @@ namespace IgniteExamples.Thick.Cache.QueryScan
 
         public static void Main()
         {
-            using (var ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
+            using (IIgniteClient ignite = Ignition.StartClient(Utils.GetThinClientConfiguration()))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache full-text query example started.");
 
                 var employeeCache = ignite.GetOrCreateCache<int, Employee>(
-                    new CacheConfiguration(EmployeeCacheName, new QueryEntity(typeof(int), typeof(Employee))));
+                    new CacheClientConfiguration(EmployeeCacheName, new QueryEntity(typeof(int), typeof(Employee))));
 
                 Utils.PopulateCache(employeeCache);
 
