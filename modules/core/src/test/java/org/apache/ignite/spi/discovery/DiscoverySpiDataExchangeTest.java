@@ -32,7 +32,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -66,33 +65,18 @@ public class DiscoverySpiDataExchangeTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJoiningNodeClientFlag() throws Exception {
-        Collection<T2<ClusterNode, DiscoveryDataBag>> dataBags = new ConcurrentLinkedQueue<>();
+        for (int nodeIdx = 0; nodeIdx < 4; nodeIdx++) {
+            Collection<T2<ClusterNode, DiscoveryDataBag>> dataBags = new ConcurrentLinkedQueue<>();
 
-        dataExchangeCollectClosure = (locNode, dataBag) -> dataBags.add(new T2<>(locNode, dataBag));
+            dataExchangeCollectClosure = (locNode, dataBag) -> dataBags.add(new T2<>(locNode, dataBag));
 
-        checkJoiningNodeData(true, dataBags);
-        checkJoiningNodeData(false, dataBags);
-        checkJoiningNodeData(true, dataBags);
-        checkJoiningNodeData(false, dataBags);
-    }
+            IgniteEx node = nodeIdx % 2 == 0 ? startGrid(nodeIdx) : startClientGrid(nodeIdx);
 
-    /**
-     * @param srv Server node flag.
-     * @param bags Collection of discovery data bags with the node ID where this bag was collected.
-     */
-    private void checkJoiningNodeData(boolean srv, Collection<T2<ClusterNode, DiscoveryDataBag>> bags) throws Exception {
-        int idx = G.allGrids().size();
+            assertFalse(dataBags.isEmpty());
 
-        if (srv)
-            startGrid("server-" + idx);
-        else
-            startClientGrid("client-" + idx);
-
-        assertFalse(bags.isEmpty());
-
-        assertTrue(bags.toString(), bags.stream().allMatch(pair -> srv != pair.get2().isJoiningNodeClient()));
-
-        bags.clear();
+            assertTrue(dataBags.toString(),
+                dataBags.stream().allMatch(pair -> node.context().clientNode() == pair.get2().isJoiningNodeClient()));
+        }
     }
 
     /** Delegated discovery. */
