@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             throw IgniteClient.GetClientNotSupportedException();
         }
-        
+
         /** <inheritdoc /> */
         public string GetTypeName(int id, byte platformId, Func<Exception, string> errorFunc)
         {
