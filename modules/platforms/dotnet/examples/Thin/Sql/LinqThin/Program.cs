@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thin.Linq
+namespace IgniteExamples.Thin.Sql.LinqThin
 {
     using System;
     using System.Linq;
