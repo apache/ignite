@@ -46,6 +46,17 @@
       "stopAtEntry": false
     },
     {
+      "name": "Func",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Compute/Func/bin/Debug/netcoreapp2.1/Func.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Compute/Func",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
       "name": "MultiTieredCache",
       "type": "coreclr",
       "request": "launch",
@@ -86,6 +97,17 @@
       "program": "${workspaceFolder}/Thin/Cache/OptimisticTransactionThin/bin/Debug/netcoreapp2.1/OptimisticTransactionThin.dll",
       "args": [],
       "cwd": "${workspaceFolder}/Thin/Cache/OptimisticTransactionThin",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "PeerAssemblyLoading",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Compute/PeerAssemblyLoading/bin/Debug/netcoreapp2.1/PeerAssemblyLoading.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Compute/PeerAssemblyLoading",
       "console": "externalTerminal",
       "stopAtEntry": false
     },
@@ -185,6 +207,17 @@
       "program": "${workspaceFolder}/Thick/Cache/Store/bin/Debug/netcoreapp2.1/Store.dll",
       "args": [],
       "cwd": "${workspaceFolder}/Thick/Cache/Store",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Task",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Compute/Task/bin/Debug/netcoreapp2.1/Task.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Compute/Task",
       "console": "externalTerminal",
       "stopAtEntry": false
     },
