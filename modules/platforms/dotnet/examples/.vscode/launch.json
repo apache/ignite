@@ -209,6 +209,17 @@
       "cwd": "${workspaceFolder}/Thick/Cache/TransactionDeadlockDetection",
       "console": "externalTerminal",
       "stopAtEntry": false
+    },
+    {
+      "name": "TransactionThin",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thin/Cache/TransactionThin/bin/Debug/netcoreapp2.1/TransactionThin.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thin/Cache/TransactionThin",
+      "console": "externalTerminal",
+      "stopAtEntry": false
     }
   ]
 }
