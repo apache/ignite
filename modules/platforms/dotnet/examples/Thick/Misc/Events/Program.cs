@@ -23,7 +23,6 @@ namespace IgniteExamples.Thick.Misc.Events
     using Apache.Ignite.Core.Events;
     using IgniteExamples.Shared;
     using IgniteExamples.Shared.Compute;
-    using IgniteExamples.Shared.Events;
     using IgniteExamples.Shared.Models;
     using LocalEventListener = IgniteExamples.Shared.Events.LocalEventListener;
 
