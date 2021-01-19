@@ -16,37 +16,39 @@
 
 == Overview
 
-As memory management mechanism of Apache Ignite can only create or reuse pages for user data but never frees them files where Ignite persists data can only grow and never shrinks.
+Apache Ignite memory management mechanism can only create or reuse pages for user data, but it never frees them. So the files, where Ignite persists data, can only grow and never shrink.
 
-In most use cases it doesn't cause any problems as once created page can be reused multiple times. However in certain cases it is possible that cache contains very little data but occupies large chunks of disk space because a lot of data was removed from the cache.
+In most use cases, it does not cause any problem as once created page can be reused multiple times. However, in certain cases, it is possible that cache contains very little data but occupies large chunks of disk space because a significant volume of data was removed from the cache.
 
-Defragmentation is aimed to enable user to shrink data files and claim back disk space.
+Defragmentation enables user to shrink data files and claim back disk space.
 
 [NOTE]
 ====
-Defragmentation can only be used with historical rebalance enabled (link to historical rebalance page). If historical rebalance is disabled server node always triggers full rebalance after restart throwing away defragmented partition. Full set of data is transferred to the node from other nodes over network, depending of size of data set it may require a lot of time and may slow down the whole cluster as network capacity is important to fulfill user requests.
+Defragmentation can only be used with historical rebalance enabled. If historical rebalancing is disabled, the server node always triggers full rebalance after the restart, which would throw away the defragmented partition. A full set of data is transferred to the node from other nodes over a network. Depending on the dataset’s size, transferring may require significant time and slow down the whole cluster as network capacity is essential to fulfill user requests.
 ====
 
-== Usage: how and when
+== Performing Defragmentation
 
 Defragmentation is costly operation in terms of disk IO so to avoid slowing down user operations it cannot be executed on regular node joined to the cluster. To execute defragmentation user needs to request it first on a particular node or set of nodes and than restart these nodes.
 
+=== Starting Defragmentation
+
 To request defragmentation use the following command: *control.(sh|bat) --defragmentation schedule --nodes <consistentIds> [--caches <cacheNames>]*.
 
-After restart node with requested defragmentation will enter special mode called maintenance mode. Node in maintenance doesn't join the rest of the cluster but stays isolated until defragmentation is completed (or cancelled by explicit user request). After that user has to restart the node one more time: it will exit maintenance mode and returns back to normal operations (joins the cluster and starts to serve regular workload).
+After the manual restart, the node with the requested defragmentation enters a special mode called maintenance mode. The node in maintenance mode does not join the rest of the cluster but remains isolated until defragmentation is completed (or canceled by explicit user request). After that, the user has to restart the node one more time: it exits maintenance mode and returns to normal operations (joining the cluster and starting to serve regular workload).
 
 [NOTE]
 ====
-As nodes in maintenance don't participate in serving usual workload, it is not recommended to execute defragmentation on several nodes at once as it reduces number of backups thus increasing the risk of partition loss.
+Nodes in maintenance mode do not participate in serving the regular workload. It is not recommended to execute defragmentation on several nodes simultaneously as it reduces the number of backups, thus increasing the risk of partition loss.
 ====
 
-When node executes defragmentation it is possible to cancel it using the following command available in control utility: *control.(sh|bat) --defragmentation cancel --host --port.*
+=== Stopping Defragmentation
 
-For more information about commands refer to their help.
+When a node executes defragmentation, it is possible to cancel it. To stop defragmentation, run the following command available in the control utility: *control.(sh|bat) --defragmentation cancel --host --port.*
 
 [NOTE]
 ====
-To reduce disk space requirements during defragmentation caches are defragmented one by one (if defragmentation of more than one cache was requested). To calculate additional space required find the cache that occupies the most disk space. The same amount of disk space is required for defragmentation at max.
+To reduce disk space requirements during defragmentation, caches are defragmented one by one (if a defragmentation of more than one cache is requested). To calculate additional required space, find the cache that occupies the most disk space. The same amount of disk space is required for defragmentation at max.
 ====
 
 == Conclusion
