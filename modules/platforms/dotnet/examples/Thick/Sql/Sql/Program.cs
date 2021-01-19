@@ -37,13 +37,12 @@ namespace IgniteExamples.Thick.Sql.Sql
 
         private const string EmployeeCacheNameColocated = "dotnet_cache_query_employee_colocated";
 
-        [STAThread]
         public static void Main()
         {
             using (var ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Cache query example started.");
+                Console.WriteLine(">>> Cache SQL example started.");
 
                 var employeeCache = ignite.GetOrCreateCache<int, Employee>(
                     new CacheConfiguration(EmployeeCacheName, new QueryEntity(typeof(int), typeof(Employee))));
