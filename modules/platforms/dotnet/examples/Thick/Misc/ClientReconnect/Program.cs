@@ -97,7 +97,6 @@ namespace IgniteExamples.Thick.Misc.ClientReconnect
             }
         }
 
-
         /// <summary>
         /// Runs the server node.
         /// </summary>
