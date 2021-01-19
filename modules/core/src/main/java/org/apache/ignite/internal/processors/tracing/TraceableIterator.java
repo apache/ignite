@@ -29,7 +29,7 @@ public class TraceableIterator<T> implements Iterator<T> {
     /** Iterator to which all calls will be delegated. */
     private final Iterator<T> iter;
 
-    /** Span that reperesents trace context in which iterator runs. */
+    /** Span that represents trace context in which iterator runs. */
     private final Span span;
 
     /**
