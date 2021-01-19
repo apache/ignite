@@ -537,7 +537,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         MetricRegistry clusterReg = cctx.kernalContext().metric().registry(CLUSTER_METRICS);
 
         rebalanced = clusterReg.booleanMetric(REBALANCED,
-            "True if the cluster has achieved fully rebalanced state. Note that an inactive cluster always has" +
+            "True if the cluster has fully achieved rebalanced state. Note that an inactive cluster always has" +
             " this metric in False regardless of the real partitions state.");
 
         startLatch.countDown();

@@ -1,5 +1,3 @@
----
----
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// Docs-specific global styles
-body {
+
+package org.apache.ignite.internal.managers.encryption;
+
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Provider for cache's encryption keys.
+ */
+public interface EncryptionCacheKeyProvider {
+    /**
+     * Returns group encryption key, that was set for writing.
+     *
+     * @param grpId Cache group ID.
+     * @return Group encryption key with ID, that was set for writing.
+     */
+    @Nullable GroupKey getActiveKey(int grpId);
+
+    /**
+     * Returns group encryption key with specified ID.
+     *
+     * @param grpId Cache group ID.
+     * @param keyId Encryption key ID.
+     * @return Group encryption key.
+     */
+    @Nullable GroupKey groupKey(int grpId, int keyId);
 }
