@@ -111,7 +111,7 @@ namespace IgniteExamples.Shared
         /// <summary>
         /// Gets the sample employee data.
         /// </summary>
-        private static IEnumerable<Employee> GetSampleEmployees()
+        public static IEnumerable<Employee> GetSampleEmployees()
         {
             yield return new Employee(
                 "James Wilson",
