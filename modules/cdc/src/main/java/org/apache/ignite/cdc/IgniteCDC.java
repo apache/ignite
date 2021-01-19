@@ -36,7 +36,7 @@ import org.apache.ignite.cdc.internal.CDCState;
 import org.apache.ignite.cdc.internal.WatchUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;

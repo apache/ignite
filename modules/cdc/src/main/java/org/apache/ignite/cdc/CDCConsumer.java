@@ -19,7 +19,7 @@ package org.apache.ignite.cdc;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.wal.record.WALRecord;
 
 /** Consumer of WAL records */
 public interface CDCConsumer {

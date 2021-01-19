@@ -31,10 +31,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
+import org.apache.ignite.wal.WALIterator;
+import org.apache.ignite.wal.record.PageSnapshot;
+import org.apache.ignite.wal.record.WALRecord;
+import org.apache.ignite.wal.record.delta.MetaPageUpdatePartitionDataRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
@@ -46,8 +46,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.PHYSICAL;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
+import static org.apache.ignite.wal.record.WALRecord.RecordPurpose.PHYSICAL;
+import static org.apache.ignite.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 
 /**
  * Tests WAL replying after node restart when wal archiver is disabled.

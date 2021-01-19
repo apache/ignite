@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.nio.file.StandardOpenOption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;

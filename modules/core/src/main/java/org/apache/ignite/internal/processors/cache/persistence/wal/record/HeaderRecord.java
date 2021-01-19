@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.record;
 
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.wal.record.WALRecord;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**

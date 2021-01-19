@@ -18,7 +18,7 @@
 package org.apache.ignite.development.utils;
 
 import java.util.Arrays;
-import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
+import org.apache.ignite.wal.record.MetastoreDataRecord;
 
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.UTF_8;

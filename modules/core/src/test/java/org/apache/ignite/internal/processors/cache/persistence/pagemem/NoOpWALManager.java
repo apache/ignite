@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.wal.WALIterator;
+import org.apache.ignite.wal.record.RolloverType;
+import org.apache.ignite.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;

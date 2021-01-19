@@ -17,8 +17,8 @@
 
 package org.apache.ignite.development.utils;
 
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
+import org.apache.ignite.wal.record.DataEntry;
+import org.apache.ignite.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 

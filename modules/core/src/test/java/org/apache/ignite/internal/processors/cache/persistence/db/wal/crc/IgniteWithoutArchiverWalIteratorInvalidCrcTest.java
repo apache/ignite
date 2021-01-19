@@ -28,7 +28,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -40,9 +40,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.LOGICAL;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.PHYSICAL;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
+import static org.apache.ignite.wal.record.WALRecord.RecordPurpose.LOGICAL;
+import static org.apache.ignite.wal.record.WALRecord.RecordPurpose.PHYSICAL;
+import static org.apache.ignite.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 
 /** */
 public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAbstractTest {

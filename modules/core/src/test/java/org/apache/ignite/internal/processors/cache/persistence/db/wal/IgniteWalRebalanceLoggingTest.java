@@ -25,8 +25,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -37,7 +37,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
-import static org.apache.ignite.internal.pagemem.wal.record.RolloverType.CURRENT_SEGMENT;
+import static org.apache.ignite.wal.record.RolloverType.CURRENT_SEGMENT;
 
 /**
  * Tests for checking historical rebalance log messages.

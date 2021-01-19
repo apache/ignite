@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  * This exception is thrown either when we reach the end of file of WAL segment, or when we encounter
  * a record with type equal to
- * {@link org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType#STOP_ITERATION_RECORD_TYPE}
+ * {@link org.apache.ignite.wal.record.WALRecord.RecordType#STOP_ITERATION_RECORD_TYPE}
  */
 public class SegmentEofException extends IgniteCheckedException {
     /** */
