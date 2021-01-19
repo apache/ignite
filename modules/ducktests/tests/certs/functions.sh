@@ -94,6 +94,7 @@ function mkCert() {
 
 function makeTruststore() {
     rm truststore.jks
+
     # shellcheck disable=SC2068
     for cert in $@ ; do
       keytool -keystore truststore.jks -importcert -alias "${cert}" -storepass 123456 -file "${cert}.pem" \

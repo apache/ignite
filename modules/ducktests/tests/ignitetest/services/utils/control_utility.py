@@ -40,13 +40,12 @@ class ControlUtility:
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD):
         self._cluster = cluster
         self.logger = cluster.context.logger
-        self.globals = cluster.context.globals
 
-        if self.globals.get("use_ssl", False):
-            self.key_store_path = self.globals.get("key_store_path", self.jks_path(DEFAULT_KEYSTORE))
-            self.key_store_password = self.globals.get("key_store_password", DEFAULT_PASSWORD)
-            self.trust_store_path = self.globals.get("trust_store_path", self.jks_path(DEFAULT_TRUSTSTORE))
-            self.trust_store_password = self.globals.get("trust_store_password", DEFAULT_PASSWORD)
+        if cluster.context.globals.get("use_ssl", False) and key_store_jks is None:
+            self.key_store_path = self.jks_path(DEFAULT_KEYSTORE)
+            self.key_store_password = DEFAULT_PASSWORD
+            self.trust_store_path = self.jks_path(DEFAULT_TRUSTSTORE)
+            self.trust_store_password = DEFAULT_PASSWORD
 
         if key_store_jks is not None:
             self.key_store_path = self.jks_path(key_store_jks)

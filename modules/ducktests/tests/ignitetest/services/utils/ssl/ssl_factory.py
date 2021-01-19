@@ -27,11 +27,13 @@ class SslContextFactory:
     """
     Ignite SslContextFactory.
     """
-    # pylint: disable=W0622, R0913
+    # pylint: disable=R0913
     def __init__(self, root_dir,
                  key_store_jks: str = DEFAULT_KEYSTORE, key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD):
+
         certificate_dir = os.path.join(root_dir, "ignite-dev", "modules", "ducktests", "tests", "certs")
+
         self.key_store_path = os.path.join(certificate_dir, key_store_jks)
         self.key_store_password = key_store_password
         self.trust_store_path = os.path.join(certificate_dir, trust_store_jks)
