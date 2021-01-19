@@ -18,6 +18,15 @@ Thin Client examples require one or mode Ignite server node, run this in a separ
 
 ## Visual Studio
 
+* Open `IgniteExamples.sln`
+* Select an example on the Run toolbar (TODO: picture) and run
+
 ## VS Code
+
+* Open current folder (from UI or with `code .` command)
+* Open "Run" panel (`Ctrl+Shift+D` - default shortcut for `workbench.view.debug`)
+* Select an example from the combobox on top (TODO: picture) and run
+
+![VS Code Screenshot](images/vs-code.png)
 
 ## Rider
