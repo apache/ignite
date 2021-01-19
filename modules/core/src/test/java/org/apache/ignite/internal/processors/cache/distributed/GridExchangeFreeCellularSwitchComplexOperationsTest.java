@@ -87,33 +87,33 @@ public class GridExchangeFreeCellularSwitchComplexOperationsTest extends GridExc
 
         Ignite failed = G.allGrids().get(new Random().nextInt(nodes));
 
-        Integer partKey = primaryKey(failed.getOrCreateCache(PART_CACHE_NAME));
+        Integer cellKey = primaryKey(failed.getOrCreateCache(PART_CACHE_NAME));
 
-        List<Ignite> backupNodes = backupNodes(partKey, PART_CACHE_NAME);
-        List<Ignite> nearNodes = new ArrayList<>(G.allGrids());
+        List<Ignite> brokenCellNodes = backupNodes(cellKey, PART_CACHE_NAME);
+        List<Ignite> aliveCellNodes = new ArrayList<>(G.allGrids());
 
-        nearNodes.remove(failed);
-        nearNodes.removeAll(backupNodes);
+        aliveCellNodes.remove(failed);
+        aliveCellNodes.removeAll(brokenCellNodes);
 
-        assertTrue(Collections.disjoint(backupNodes, nearNodes));
-        assertEquals(nodes / 2 - 1, backupNodes.size()); // Cell 1.
-        assertEquals(nodes / 2, nearNodes.size()); // Cell 2.
+        assertTrue(Collections.disjoint(brokenCellNodes, aliveCellNodes));
+        assertEquals(nodes / 2 - 1, brokenCellNodes.size());
+        assertEquals(nodes / 2, aliveCellNodes.size());
 
         Ignite orig;
 
         switch (startFrom) {
-            case PRIMARY:
+            case FAILED:
                 orig = failed;
 
                 break;
 
-            case BACKUP:
-                orig = backupNodes.get(0);
+            case BROKEN_CELL:
+                orig = brokenCellNodes.get(0);
 
                 break;
 
-            case NEAR:
-                orig = nearNodes.get(0);
+            case ALIVE_CELL:
+                orig = aliveCellNodes.get(0);
 
                 break;
 
@@ -232,9 +232,9 @@ public class GridExchangeFreeCellularSwitchComplexOperationsTest extends GridExc
                 Transaction tx = orig.transactions().txStart(concurrency, isolation);
 
                 Integer pKey = partAtCell1 ? nextPrimaryKey.apply(failed, PART_CACHE_NAME) :
-                    nextPrimaryKey.apply(nearNodes.get(0), PART_CACHE_NAME);
+                    nextPrimaryKey.apply(aliveCellNodes.get(0), PART_CACHE_NAME);
 
-                Integer rKey = partAtCell1 ? nextPrimaryKey.apply(nearNodes.get(0), REPL_CACHE_NAME) :
+                Integer rKey = partAtCell1 ? nextPrimaryKey.apply(aliveCellNodes.get(0), REPL_CACHE_NAME) :
                     nextPrimaryKey.apply(failed, REPL_CACHE_NAME);
 
                 IgniteCache<Integer, Integer> pCache = orig.getOrCreateCache(PART_CACHE_NAME);
@@ -309,14 +309,14 @@ public class GridExchangeFreeCellularSwitchComplexOperationsTest extends GridExc
             }
         };
 
-        for (Ignite backup : backupNodes) {
-            futs.add(multithreadedAsync(() -> partTxRun.accept(backup), 1));
-            futs.add(multithreadedAsync(() -> replTxRun.accept(backup), 1));
+        for (Ignite brokenCellNode : brokenCellNodes) {
+            futs.add(multithreadedAsync(() -> partTxRun.accept(brokenCellNode), 1));
+            futs.add(multithreadedAsync(() -> replTxRun.accept(brokenCellNode), 1));
         }
 
-        for (Ignite near : nearNodes) {
-            futs.add(multithreadedAsync(() -> partTxRun.accept(near), 1));
-            futs.add(multithreadedAsync(() -> replTxRun.accept(near), 1));
+        for (Ignite aliveCellNode : aliveCellNodes) {
+            futs.add(multithreadedAsync(() -> partTxRun.accept(aliveCellNode), 1));
+            futs.add(multithreadedAsync(() -> replTxRun.accept(aliveCellNode), 1));
         }
 
         // Allowing recovery.
@@ -346,9 +346,8 @@ public class GridExchangeFreeCellularSwitchComplexOperationsTest extends GridExc
         // Final check that any transactions are absent.
         checkTransactionsCount(
             null, 0,
-            null, 0,
-            backupNodes, 0,
-            nearNodes, 0,
-            null);
+            brokenCellNodes, 0,
+            aliveCellNodes, 0,
+            null /*any*/);
     }
 }

@@ -935,7 +935,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 });
 
         for (IgniteInternalTx tx : activeTransactions()) {
-            if (tx.state() == PREPARED && tx.transactionNodes().containsKey(node.id())) {
+            if (tx.dht() && tx.state() == PREPARED && tx.transactionNodes().containsKey(node.id())) {
                 assert needWaitTransaction(tx, topVer);
 
                 res.add(tx.finishFuture());

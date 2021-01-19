@@ -259,7 +259,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
         for (Map.Entry<UUID, Collection<UUID>> entry : txNodes.entrySet()) {
             UUID nodeId = entry.getKey();
 
-            // Skip left nodes and local node.
+            // Skip local primaries.
             if (!nodes.containsKey(nodeId) && nodeId.equals(cctx.localNodeId()))
                 continue;
 

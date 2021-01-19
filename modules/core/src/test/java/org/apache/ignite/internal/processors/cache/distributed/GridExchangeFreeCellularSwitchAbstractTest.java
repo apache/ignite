@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
@@ -170,15 +171,10 @@ public abstract class GridExchangeFreeCellularSwitchAbstractTest extends GridCom
      *
      */
     protected void checkTransactionsCount(
-        Ignite orig,
-        int origCnt,
-        Ignite primary,
-        int primaryCnt,
-        List<Ignite> backupNodes,
-        int backupCnt,
-        List<Ignite> nearNodes,
-        int nearCnt,
-        Set<GridCacheVersion> vers) {
+        Ignite origNode, int origCnt,
+        List<Ignite> brokenCellNodes, int brokenCellCnt,
+        List<Ignite> aliveCellNodes, int aliveCellCnt,
+        Set<GridCacheVersion> vers){
         Function<Ignite, Collection<GridCacheVersion>> txs = ignite -> {
             Collection<IgniteInternalTx> active = ((IgniteEx)ignite).context().cache().context().tm().activeTransactions();
 
@@ -189,19 +185,29 @@ public abstract class GridExchangeFreeCellularSwitchAbstractTest extends GridCom
                 .collect(Collectors.toSet());
         };
 
-        if (orig != null)
-            assertEquals(origCnt, txs.apply(orig).size());
+        long till = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
 
-        if (primary != null && primary != orig)
-            assertEquals(primaryCnt, txs.apply(primary).size());
+        while (true) {
+            try {
+                if (origNode != null)
+                    assertEquals(origCnt, txs.apply(origNode).size());
 
-        for (Ignite backup : backupNodes)
-            if (backup != orig)
-                assertEquals(backupCnt, txs.apply(backup).size());
+                for (Ignite brokenCellNode : brokenCellNodes)
+                    if (brokenCellNode != origNode)
+                        assertEquals(brokenCellCnt, txs.apply(brokenCellNode).size());
 
-        for (Ignite near : nearNodes)
-            if (near != orig)
-                assertEquals(nearCnt, txs.apply(near).size());
+                for (Ignite aliveCellNode : aliveCellNodes)
+                    if (aliveCellNode != origNode)
+                        assertEquals(aliveCellCnt, txs.apply(aliveCellNode).size());
+
+                break;
+            }
+            catch (Throwable err) {
+                if (System.nanoTime() > till)
+                    throw err;
+            }
+        }
+
     }
 
     /**
@@ -275,14 +281,14 @@ public abstract class GridExchangeFreeCellularSwitchAbstractTest extends GridCom
      * Specifies node starts the transaction (originating node).
      */
     protected enum TransactionCoordinatorNode {
-        /** Primary. */
-        PRIMARY,
+        /** Failed. */
+        FAILED,
 
-        /** Backup. */
-        BACKUP,
+        /**Broken cell. */
+        BROKEN_CELL,
 
-        /** Near. */
-        NEAR,
+        /** Alive cell. */
+        ALIVE_CELL,
 
         /** Client. */
         CLIENT
