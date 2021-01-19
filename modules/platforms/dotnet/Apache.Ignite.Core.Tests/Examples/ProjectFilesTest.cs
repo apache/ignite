@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Examples
 
         private static readonly string[] ThickOnlyExamples = {
             "NearCache", "DataStreamer", "MultiTieredCache", "QueryFullText", "Store", "EntryProcessor",
-             "TransactionDeadlockDetection"
+             "TransactionDeadlockDetection", "Func", "PeerAssemblyLoading", "Task"
         };
 
         /// <summary>
