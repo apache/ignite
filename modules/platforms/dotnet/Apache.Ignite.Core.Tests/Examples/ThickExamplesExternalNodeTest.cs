@@ -38,9 +38,6 @@ namespace Apache.Ignite.Core.Tests.Examples
         [Test, TestCaseSource(nameof(ThickExamples))]
         public void TestThickExampleWithExternalNode(Example example)
         {
-            Assert.IsFalse(example.IsThin);
-            Assert.IsTrue(example.RequiresExternalNode);
-
             example.Run();
         }
     }
