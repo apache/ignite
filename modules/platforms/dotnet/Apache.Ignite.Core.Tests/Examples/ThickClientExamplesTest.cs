@@ -38,7 +38,6 @@ namespace Apache.Ignite.Core.Tests.Examples
         [Test, TestCaseSource(nameof(ThickClientExamples))]
         public void TestThickExample(Example example)
         {
-            // TODO: Verify required output ("example started", "example finished").
             Assert.IsFalse(example.IsThin);
 
             example.Run();
