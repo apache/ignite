@@ -8,6 +8,7 @@
 
   <ItemGroup Condition="$(IgniteBinaryDistro) == '' And $(IgniteSourceDistro) == ''">
     <PackageReference Include="Apache.Ignite" Version="2.*" />
+    <PackageReference Include="Apache.Ignite.Linq" Version="2.*" />
   </ItemGroup>
 
 </Project>
