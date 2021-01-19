@@ -79,6 +79,50 @@
       "stopAtEntry": false
     },
     {
+      "name": "Ddl",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Sql/Ddl/bin/Debug/netcoreapp2.1/Ddl.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Sql/Ddl",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "DdlThin",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thin/Sql/DdlThin/bin/Debug/netcoreapp2.1/DdlThin.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thin/Sql/DdlThin",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Dml",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Sql/Dml/bin/Debug/netcoreapp2.1/Dml.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Sql/Dml",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "DmlThin",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thin/Sql/DmlThin/bin/Debug/netcoreapp2.1/DmlThin.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thin/Sql/DmlThin",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
       "name": "EntryProcessor",
       "type": "coreclr",
       "request": "launch",
@@ -119,6 +163,28 @@
       "program": "${workspaceFolder}/Thick/Misc/Lifecycle/bin/Debug/netcoreapp2.1/Lifecycle.dll",
       "args": [],
       "cwd": "${workspaceFolder}/Thick/Misc/Lifecycle",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Linq",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Sql/Linq/bin/Debug/netcoreapp2.1/Linq.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Sql/Linq",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "LinqThin",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thin/Sql/LinqThin/bin/Debug/netcoreapp2.1/LinqThin.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thin/Sql/LinqThin",
       "console": "externalTerminal",
       "stopAtEntry": false
     },
@@ -295,6 +361,28 @@
       "program": "${workspaceFolder}/Thin/Misc/ServicesThin/bin/Debug/netcoreapp2.1/ServicesThin.dll",
       "args": [],
       "cwd": "${workspaceFolder}/Thin/Misc/ServicesThin",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Sql",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Sql/Sql/bin/Debug/netcoreapp2.1/Sql.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Sql/Sql",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "SqlThin",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thin/Sql/SqlThin/bin/Debug/netcoreapp2.1/SqlThin.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thin/Sql/SqlThin",
       "console": "externalTerminal",
       "stopAtEntry": false
     },
