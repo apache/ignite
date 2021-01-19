@@ -15,19 +15,26 @@
  * limitations under the License.
  */
 
-namespace IgniteExamples.Thick.Cache.OptimisticTransaction
+namespace IgniteExamples.Thin.Cache.OptimisticTransactionThin
 {
     using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Transactions;
     using IgniteExamples.Shared;
 
     /// <summary>
     /// This example demonstrates optimistic transaction concurrency control.
+    /// <para />
+    /// This example requires an Ignite server node. You can start the node in any of the following ways:
+    /// * docker run -p 10800:10800 apacheignite/ignite
+    /// * dotnet run -p ServerNode.csproj
+    /// * ignite.sh/ignite.bat from the distribution
     /// </summary>
     public static class Program
     {
@@ -35,13 +42,13 @@ namespace IgniteExamples.Thick.Cache.OptimisticTransaction
 
         public static void Main()
         {
-            using (var ignite = Ignition.Start(Utils.GetServerNodeConfiguration()))
+            using (IIgniteClient ignite = Ignition.StartClient(Utils.GetThinClientConfiguration()))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Optimistic transaction example started.");
 
                 // Create Transactional cache.
-                var cacheCfg = new CacheConfiguration(CacheName)
+                var cacheCfg = new CacheClientConfiguration(CacheName)
                 {
                     AtomicityMode = CacheAtomicityMode.Transactional
                 };
@@ -52,8 +59,9 @@ namespace IgniteExamples.Thick.Cache.OptimisticTransaction
                 cache[1] = 0;
 
                 // Increment a value in parallel within a transaction.
-                var task1 = Task.Factory.StartNew(() => IncrementCacheValue(cache, 1));
-                var task2 = Task.Factory.StartNew(() => IncrementCacheValue(cache, 2));
+                var transactions = ignite.GetTransactions();
+                var task1 = Task.Factory.StartNew(() => IncrementCacheValue(cache, transactions, 1));
+                var task2 = Task.Factory.StartNew(() => IncrementCacheValue(cache, transactions, 2));
 
                 Task.WaitAll(task1, task2);
 
@@ -64,19 +72,22 @@ namespace IgniteExamples.Thick.Cache.OptimisticTransaction
                 Console.WriteLine(">>> Example finished, press any key to exit ...");
                 Console.ReadKey();
             }
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Example finished, press any key to exit ...");
+            Console.ReadKey();
         }
 
         /// <summary>
         /// Increments the cache value within a transaction.
         /// </summary>
-        /// <param name="cache">The cache.</param>
-        /// <param name="threadId">The thread identifier.</param>
-        private static void IncrementCacheValue(ICache<int, int> cache, int threadId)
+        private static void IncrementCacheValue(
+            ICacheClient<int, int> cache,
+            ITransactionsClient transactions,
+            int threadId)
         {
             try
             {
-                var transactions = cache.Ignite.GetTransactions();
-
                 using (var tx = transactions.TxStart(TransactionConcurrency.Optimistic,
                     TransactionIsolation.Serializable))
                 {
