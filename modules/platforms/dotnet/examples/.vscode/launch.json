@@ -57,6 +57,17 @@
       "stopAtEntry": false
     },
     {
+      "name": "ClientReconnect",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Misc/ClientReconnect/bin/Debug/netcoreapp2.1/ClientReconnect.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Misc/ClientReconnect",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
       "name": "DataStreamer",
       "type": "coreclr",
       "request": "launch",
@@ -79,6 +90,17 @@
       "stopAtEntry": false
     },
     {
+      "name": "Events",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Misc/Events/bin/Debug/netcoreapp2.1/Events.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Misc/Events",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
       "name": "Func",
       "type": "coreclr",
       "request": "launch",
@@ -86,6 +108,28 @@
       "program": "${workspaceFolder}/Thick/Compute/Func/bin/Debug/netcoreapp2.1/Func.dll",
       "args": [],
       "cwd": "${workspaceFolder}/Thick/Compute/Func",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Lifecycle",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Misc/Lifecycle/bin/Debug/netcoreapp2.1/Lifecycle.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Misc/Lifecycle",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Messaging",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thick/Misc/Messaging/bin/Debug/netcoreapp2.1/Messaging.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thick/Misc/Messaging",
       "console": "externalTerminal",
       "stopAtEntry": false
     },
