@@ -156,6 +156,17 @@
       "stopAtEntry": false
     },
     {
+      "name": "QueryScanThin",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/Thin/Cache/QueryScanThin/bin/Debug/netcoreapp2.1/QueryScanThin.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Thin/Cache/QueryScanThin",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    },
+    {
       "name": "ServerNode",
       "type": "coreclr",
       "request": "launch",
