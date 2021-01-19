@@ -25,7 +25,7 @@ Thin Client examples require one or mode Ignite server node, run this in a separ
 
 * Open current folder (from UI or with `code .` command)
 * Open "Run" panel (`Ctrl+Shift+D` - default shortcut for `workbench.view.debug`)
-* Select an example from the combobox on top (TODO: picture) and run
+* Select an example from the combobox on top and run
 
 ![VS Code Screenshot](images/vs-code.png)
 
