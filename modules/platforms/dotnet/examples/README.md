@@ -30,3 +30,12 @@ Thin Client examples require one or mode Ignite server node, run this in a separ
 ![VS Code Screenshot](images/vs-code.png)
 
 ## Rider
+
+* Open `IgniteExamples.sln`
+* Select an example on the Run toolbar and run
+
+![Rider Toolbar Screenshot](images/rider.png)
+
+* Alternatively, open the example source code an run it using the sidebar icon
+
+![Rider Sidebar Screenshot](images/rider-sidebar.png)
