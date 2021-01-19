@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import org.apache.ignite.lang.IgniteEvolvingAPI;
-
 /**
  * WAL record related to specific cache group.
  */
-@IgniteEvolvingAPI
 public interface WalRecordCacheGroupAware {
     /**
      * @return Cache group ID.

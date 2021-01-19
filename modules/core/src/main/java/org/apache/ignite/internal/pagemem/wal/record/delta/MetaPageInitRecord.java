@@ -22,13 +22,11 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-@IgniteEvolvingAPI
 public class MetaPageInitRecord extends InitNewPageRecord {
     /** */
     private long treeRoot;

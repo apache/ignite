@@ -21,12 +21,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Initialize new root page.
  */
-@IgniteEvolvingAPI
 public class NewRootInitRecord<L> extends PageDeltaRecord {
     /** */
     private long newRootId;

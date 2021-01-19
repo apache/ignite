@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Wal snapshot record.
  */
-@IgniteEvolvingAPI
 public class SnapshotRecord extends WALRecord {
     /** Snapshot id. */
     private long snapshotId;

@@ -24,12 +24,10 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Split existing page.
  */
-@IgniteEvolvingAPI
 public class SplitExistingPageRecord extends PageDeltaRecord {
     /** */
     private int mid;

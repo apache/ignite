@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -25,7 +24,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  *
  */
-@IgniteEvolvingAPI
 public class PartitionDestroyRecord extends WALRecord implements WalRecordCacheGroupAware {
     /** */
     private int grpId;

@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import org.apache.ignite.lang.IgniteEvolvingAPI;
-
 /**
  * Encrypted record from WAL.
  * That types of record returned from a {@code RecordDataSerializer} on offline WAL iteration.
  */
-@IgniteEvolvingAPI
 public class EncryptedRecord extends WALRecord implements WalRecordCacheGroupAware {
     /**
      * Group id.

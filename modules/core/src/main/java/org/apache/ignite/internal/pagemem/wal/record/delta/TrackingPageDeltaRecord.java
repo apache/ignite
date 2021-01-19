@@ -21,12 +21,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Delta record for updates in tracking pages
  */
-@IgniteEvolvingAPI
 public class TrackingPageDeltaRecord extends PageDeltaRecord {
     /** Page id to mark. */
     private final long pageIdToMark;

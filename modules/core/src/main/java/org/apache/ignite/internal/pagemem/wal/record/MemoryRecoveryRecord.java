@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Marker indicates that binary memory recovery has finished.
  */
-@IgniteEvolvingAPI
 public class MemoryRecoveryRecord extends WALRecord {
     /** Create timestamp, millis */
     private final long time;

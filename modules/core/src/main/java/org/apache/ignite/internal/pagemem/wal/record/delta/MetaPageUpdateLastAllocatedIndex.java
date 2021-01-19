@@ -22,12 +22,10 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  *
  */
-@IgniteEvolvingAPI
 public class MetaPageUpdateLastAllocatedIndex extends PageDeltaRecord {
     /** */
     private final int lastAllocatedIdx;

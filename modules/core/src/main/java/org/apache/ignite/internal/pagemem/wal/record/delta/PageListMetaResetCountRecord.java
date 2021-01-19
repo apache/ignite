@@ -21,12 +21,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Delta record for page-list meta count reset
  */
-@IgniteEvolvingAPI
 public class PageListMetaResetCountRecord extends PageDeltaRecord {
     /**
      * @param grpId Cache group ID.

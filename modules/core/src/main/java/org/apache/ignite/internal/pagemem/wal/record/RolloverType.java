@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import org.apache.ignite.lang.IgniteEvolvingAPI;
-
 /**
  * Defines WAL logging type with regard to segment rollover.
  */
-@IgniteEvolvingAPI
 public enum RolloverType {
     /** Record being logged is not a rollover record. */
     NONE,

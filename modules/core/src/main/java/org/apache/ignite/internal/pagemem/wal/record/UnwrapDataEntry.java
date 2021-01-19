@@ -25,12 +25,10 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Data Entry for automatic unwrapping key and value from Data Entry
  */
-@IgniteEvolvingAPI
 public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
     /** Cache object value context. Context is used for unwrapping objects. */
     private final CacheObjectValueContext cacheObjValCtx;
@@ -50,7 +48,6 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
      * @param partCnt Partition counter.
      * @param cacheObjValCtx cache object value context for unwrapping objects.
      * @param keepBinary disable unwrapping for non primitive objects, Binary Objects would be returned instead.
-     * @param primary {@code True} if node is primary for partition in the moment of logging.
      */
     public UnwrapDataEntry(
         final int cacheId,
@@ -63,9 +60,8 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
         final int partId,
         final long partCnt,
         final CacheObjectValueContext cacheObjValCtx,
-        final boolean keepBinary,
-        final boolean primary) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, primary);
+        final boolean keepBinary) {
+        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt);
         this.cacheObjValCtx = cacheObjValCtx;
         this.keepBinary = keepBinary;
     }

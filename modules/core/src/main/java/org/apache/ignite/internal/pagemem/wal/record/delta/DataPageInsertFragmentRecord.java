@@ -23,12 +23,10 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractD
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Insert fragment (part of big object which is bigger than page size) to data page record.
  */
-@IgniteEvolvingAPI
 public class DataPageInsertFragmentRecord extends PageDeltaRecord {
     /** Link to the last entry fragment. */
     private final long lastLink;

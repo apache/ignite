@@ -26,12 +26,10 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIOV3;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Partition meta page delta record includes encryption status data.
  */
-@IgniteEvolvingAPI
 public class MetaPageUpdatePartitionDataRecordV3 extends MetaPageUpdatePartitionDataRecordV2 {
     /** Index of the last reencrypted page. */
     private int encryptedPageIdx;

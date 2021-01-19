@@ -25,12 +25,10 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  *
  */
-@IgniteEvolvingAPI
 public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     /** */
     private long updateCntr;

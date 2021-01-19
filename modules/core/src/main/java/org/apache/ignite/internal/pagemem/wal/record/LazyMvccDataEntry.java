@@ -27,13 +27,11 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Represents Data Entry ({@link #key}, {@link #val value}) pair update {@link #op operation}. <br>
  * This Data entry was not converted to key, value pair during record deserialization.
  */
-@IgniteEvolvingAPI
 public class LazyMvccDataEntry extends MvccDataEntry implements MarshalledDataEntry {
     /** */
     private GridCacheSharedContext cctx;

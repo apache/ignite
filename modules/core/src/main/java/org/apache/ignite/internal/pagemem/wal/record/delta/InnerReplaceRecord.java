@@ -21,12 +21,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Inner replace on remove.
  */
-@IgniteEvolvingAPI
 public class InnerReplaceRecord<L> extends PageDeltaRecord {
     /** */
     private int dstIdx;

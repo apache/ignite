@@ -21,12 +21,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Replace.
  */
-@IgniteEvolvingAPI
 public class ReplaceRecord<L> extends PageDeltaRecord {
     /** */
     private BPlusIO<L> io;

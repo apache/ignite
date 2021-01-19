@@ -21,12 +21,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Rotated (when page has been recycled) id part delta record.
  */
-@IgniteEvolvingAPI
 public class RotatedIdPartRecord extends PageDeltaRecord {
     /** Rotated id part. */
     private byte rotatedIdPart;

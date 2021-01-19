@@ -22,7 +22,6 @@ import java.util.Map;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +29,6 @@ import org.jetbrains.annotations.Nullable;
  * Logical data record indented for transaction (tx) related actions.<br>
  * This record is marker of begin, prepare, commit, and rollback transactions.
  */
-@IgniteEvolvingAPI
 public class TxRecord extends TimeStampRecord {
     /** Transaction state. */
     @GridToStringInclude

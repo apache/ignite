@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Thrown in case when delta application to the page failed.
  */
-@IgniteEvolvingAPI
 public class DeltaApplicationException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;

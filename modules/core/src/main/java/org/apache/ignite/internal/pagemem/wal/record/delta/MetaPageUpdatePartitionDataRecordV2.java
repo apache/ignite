@@ -26,12 +26,10 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIOV2;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  *
  */
-@IgniteEvolvingAPI
 public class MetaPageUpdatePartitionDataRecordV2 extends MetaPageUpdatePartitionDataRecord {
     /** */
     private long link;

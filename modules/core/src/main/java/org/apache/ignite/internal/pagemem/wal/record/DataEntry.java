@@ -23,13 +23,11 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents Data Entry ({@link #key}, {@link #val value}) pair update {@link #op operation} in WAL log.
  */
-@IgniteEvolvingAPI
 public class DataEntry {
     /** Cache ID. */
     @GridToStringInclude

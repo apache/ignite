@@ -20,8 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointStatus;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -34,13 +33,11 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurp
 /**
  * Log entry abstract class.
  */
-@IgniteEvolvingAPI
 public abstract class WALRecord {
     /**
      * Record type. Ordinal of this record will be written to file. <br>
      * <b>Note:</b> Do not change order of elements <br>
      */
-    @IgniteEvolvingAPI
     public enum RecordType {
         /** */
         TX_RECORD(0, LOGICAL),
@@ -332,7 +329,6 @@ public abstract class WALRecord {
     /**
      * Record purposes set.
      */
-    @IgniteEvolvingAPI
     public enum RecordPurpose {
         /**
          * Internal records are needed for correct iterating over WAL structure.

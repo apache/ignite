@@ -23,12 +23,10 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Merge on remove.
  */
-@IgniteEvolvingAPI
 public class MergeRecord<L> extends PageDeltaRecord {
     /** */
     @GridToStringExclude

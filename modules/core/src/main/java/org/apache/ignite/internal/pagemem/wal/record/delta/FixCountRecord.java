@@ -22,12 +22,10 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Fix elements count record.
  */
-@IgniteEvolvingAPI
 public class FixCountRecord extends PageDeltaRecord {
     /** */
     private int cnt;

@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.util.Arrays;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  *
  */
-@IgniteEvolvingAPI
 public class CacheState {
     /** */
     private int[] parts;

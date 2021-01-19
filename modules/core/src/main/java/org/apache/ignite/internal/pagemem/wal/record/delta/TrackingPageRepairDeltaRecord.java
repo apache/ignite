@@ -21,12 +21,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Record that indicates that "corrupted" flag should be removed from tracking page.
  */
-@IgniteEvolvingAPI
 public class TrackingPageRepairDeltaRecord extends PageDeltaRecord {
     /**
      * @param grpId Cache group ID.

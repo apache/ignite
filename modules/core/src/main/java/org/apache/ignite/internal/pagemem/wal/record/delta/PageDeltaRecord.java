@@ -20,7 +20,6 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -30,7 +29,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Abstract page delta record.
  */
-@IgniteEvolvingAPI
 public abstract class PageDeltaRecord extends WALRecord implements WalRecordCacheGroupAware {
     /** */
     private int grpId;

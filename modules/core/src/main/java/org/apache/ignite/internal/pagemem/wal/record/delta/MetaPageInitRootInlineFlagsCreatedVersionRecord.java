@@ -22,13 +22,11 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 /**
  *
  */
-@IgniteEvolvingAPI
 public class MetaPageInitRootInlineFlagsCreatedVersionRecord extends MetaPageInitRootInlineRecord {
     /** Flags for the created meta page. */
     private final long flags;

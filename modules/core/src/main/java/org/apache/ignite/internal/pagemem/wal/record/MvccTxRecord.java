@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,7 +30,6 @@ import org.jetbrains.annotations.Nullable;
  * Logical data record indented for MVCC transaction related actions.<br>
  * This record is marker of prepare, commit, and rollback transactions.
  */
-@IgniteEvolvingAPI
 public class MvccTxRecord extends TxRecord implements WalRecordCacheGroupAware {
     /** Transaction mvcc snapshot version. */
     private final MvccVersion mvccVer;

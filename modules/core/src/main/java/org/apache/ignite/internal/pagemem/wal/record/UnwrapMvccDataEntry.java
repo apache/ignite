@@ -26,12 +26,10 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Data Entry for automatic unwrapping key and value from Mvcc Data Entry
  */
-@IgniteEvolvingAPI
 public class UnwrapMvccDataEntry extends MvccDataEntry implements UnwrappedDataEntry {
     /** Cache object value context. Context is used for unwrapping objects. */
     private final CacheObjectValueContext cacheObjValCtx;

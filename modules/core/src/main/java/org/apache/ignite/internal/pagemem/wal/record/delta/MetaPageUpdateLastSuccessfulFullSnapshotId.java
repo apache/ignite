@@ -21,13 +21,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * @deprecated Will be removed at 3.0. See IGNITE-11139.
  */
 @Deprecated
-@IgniteEvolvingAPI
 public class MetaPageUpdateLastSuccessfulFullSnapshotId extends PageDeltaRecord {
     /** */
     private final long lastSuccessfulFullSnapshotId;

@@ -21,14 +21,12 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Logical data record with cache operation description.
  * This record contains information about operation we want to do.
  * Contains operation type (put, remove) and (Key, Value, Version) for each {@link MvccDataEntry}
  */
-@IgniteEvolvingAPI
 public class MvccDataRecord extends DataRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {

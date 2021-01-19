@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Partition map exchange WAL record.
  */
-@IgniteEvolvingAPI
 public class ExchangeRecord extends TimeStampRecord {
     /** Event. */
     private Short constId;

@@ -22,12 +22,10 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Insert into data page.
  */
-@IgniteEvolvingAPI
 public class DataPageInsertRecord extends PageDeltaRecord {
     /** */
     private byte[] payload;

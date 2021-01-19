@@ -21,12 +21,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Split forward page record.
  */
-@IgniteEvolvingAPI
 public class SplitForwardPageRecord extends PageDeltaRecord {
     /** */
     private long fwdId;

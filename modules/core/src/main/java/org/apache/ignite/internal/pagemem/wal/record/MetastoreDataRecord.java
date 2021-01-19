@@ -21,13 +21,11 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-@IgniteEvolvingAPI
 public class MetastoreDataRecord extends WALRecord implements WalRecordCacheGroupAware {
     /** */
     @GridToStringInclude(sensitive = true)

@@ -23,12 +23,10 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Insert into inner or leaf page.
  */
-@IgniteEvolvingAPI
 public class InsertRecord<L> extends PageDeltaRecord {
     /** */
     private int idx;

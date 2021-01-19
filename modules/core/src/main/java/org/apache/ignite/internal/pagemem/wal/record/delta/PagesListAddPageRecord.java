@@ -23,12 +23,10 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.io.Pages
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  *
  */
-@IgniteEvolvingAPI
 public class PagesListAddPageRecord extends PageDeltaRecord {
     /** */
     @GridToStringExclude

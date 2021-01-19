@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import org.apache.ignite.lang.IgniteEvolvingAPI;
-
 /**
  * Interface for Data Entry for automatic unwrapping key and value from Data Entry
  */
-@IgniteEvolvingAPI
 public interface UnwrappedDataEntry {
     /**
      * Unwraps key value from cache key object into primitive boxed type or source class. If client classes were used in

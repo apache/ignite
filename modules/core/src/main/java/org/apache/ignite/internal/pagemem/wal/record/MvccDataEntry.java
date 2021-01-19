@@ -23,13 +23,11 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents Data Entry ({@link #key}, {@link #val value}) pair for mvcc update {@link #op operation} in WAL log.
  */
-@IgniteEvolvingAPI
 public class MvccDataEntry extends DataEntry {
     /** Entry version. */
     private MvccVersion mvccVer;
@@ -45,7 +43,6 @@ public class MvccDataEntry extends DataEntry {
      * @param partId Partition ID.
      * @param partCnt Partition counter.
      * @param mvccVer Mvcc version.
-     * @param primary {@code True} if node is primary for partition in the moment of logging.
      */
     public MvccDataEntry(
         int cacheId,

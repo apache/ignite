@@ -25,13 +25,11 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Initializes new page by calling {@link PageIO#initNewPage(long, long, int)}.
  */
-@IgniteEvolvingAPI
 public class InitNewPageRecord extends PageDeltaRecord {
     /** */
     protected int ioType;

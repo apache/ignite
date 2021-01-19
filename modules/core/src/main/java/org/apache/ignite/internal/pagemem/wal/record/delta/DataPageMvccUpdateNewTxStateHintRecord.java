@@ -22,12 +22,10 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * MVCC update tx state hint record.
  */
-@IgniteEvolvingAPI
 public class DataPageMvccUpdateNewTxStateHintRecord extends PageDeltaRecord {
     /** */
     private int itemId;
