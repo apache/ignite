@@ -171,11 +171,8 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         """
         :return: path to the certificate directory.
         """
-        ignite_dev_dir = get_home_dir(self.install_root, self.project, DEV_BRANCH)
-
-        path = os.path.join(ignite_dev_dir, "modules", "ducktests", "tests", "certs")
-
-        return path
+        return os.path.join(get_home_dir(self.install_root, self.project, DEV_BRANCH),
+                            "modules", "ducktests", "tests", "certs")
 
     def script(self, script_name):
         """
