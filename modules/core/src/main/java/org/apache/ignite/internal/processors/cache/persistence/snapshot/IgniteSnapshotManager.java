@@ -549,9 +549,29 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         clusterSnpReq = req;
 
         return task0.chain(fut -> {
-            if (fut.error() == null)
+            if (fut.error() == null) {
+                Set<String> blts = req.bltNodes.stream()
+                    .map(n -> cctx.discovery().node(n).consistentId().toString())
+                    .collect(Collectors.toSet());
+
+                File smf = new File(snapshotLocalDir(req.snpName), pdsSettings.folderName() + SNAPSHOT_METAFILE_EXT);
+
+                if (smf.exists())
+                    throw new GridClosureException(new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath()));
+
+                try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
+                    U.marshal(marsh,
+                        new SnapshotMetadata(req.rqId, req.snpName, req.grpIds, blts, fut.result()),
+                        out);
+
+                    log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    throw new GridClosureException(e);
+                }
+
                 return new SnapshotOperationResponse();
-            else
+            } else
                 throw new GridClosureException(fut.error());
         });
     }
@@ -619,23 +639,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try {
             if (req.err != null)
                 deleteSnapshot(snapshotLocalDir(req.snpName), pdsSettings.folderName());
-            else {
-                Set<String> blts = req.bltNodes.stream()
-                    .map(n -> cctx.discovery().node(n).consistentId().toString())
-                    .collect(Collectors.toSet());
-
-                File smf = new File(snapshotLocalDir(req.snpName), pdsSettings.folderName() + SNAPSHOT_METAFILE_EXT);
-
-                U.delete(smf);
-
-                try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
-                    U.marshal(marsh,
-                        new SnapshotMetadata(req0.rqId, req0.snpName, req0.grpIds, blts, req0.pairs),
-                        out);
-
-                    log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
-                }
-            }
 
             removeLastMetaStorageKey();
         }
@@ -767,6 +770,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             else
                 throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @param name Snapshot name.
+     * @return {@code true} if snapshot is OK.
+     */
+    public boolean checkSnapshot(String name) {
+        A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -992,14 +1005,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
             }
 
-            snpFutTask.listen(f -> {
-                SnapshotOperationRequest req = clusterSnpReq;
-
-                if (req != null && req.snpName.equals(snpName))
-                    req.pairs = f.result();
-
-                locSnpTasks.remove(snpName);
-            });
+            snpFutTask.listen(f -> locSnpTasks.remove(snpName));
 
             return snpFutTask;
         }
@@ -1323,9 +1329,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** Exception occurred during snapshot operation processing. */
         private volatile IgniteCheckedException err;
-
-        /** Partitions which have been saved on disk and were included into snapshot. */
-        private volatile Set<GroupPartitionId> pairs;
 
         /**
          * @param snpName Snapshot name.
