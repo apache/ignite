@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
@@ -63,8 +64,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the type name by id.
         /// </summary>
         /// <param name="id">The identifier.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
+        /// <param name="platformId">Platform identifier.</param>
+        /// <param name="errorAction">Error action.</param>
         /// <returns>Type or null.</returns>
-        string GetTypeName(int id, bool registerSameJavaType);
+        string GetTypeName(int id, byte platformId, Func<Exception, string> errorAction);
     }
 }

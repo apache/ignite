@@ -104,40 +104,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             throw IgniteClient.GetClientNotSupportedException();
         }
-
-        /** <inheritdoc /> */
-        public string GetTypeName(int id, bool registerSameJavaType)
-        {
-            return GetTypeName(id, BinaryProcessor.DotNetPlatformId, (statusCode, msg) =>
-            {
-                if (!registerSameJavaType)
-                    throw new IgniteClientException(msg, null, statusCode);
-
-                // Try to get java type name and register corresponding DotNet type.
-                var javaTypeName = GetTypeName(id, BinaryProcessor.JavaPlatformId, null);
-                var netTypeName = _marsh.GetTypeName(javaTypeName);
-
-                RegisterType(id, netTypeName, false);
-
-                return netTypeName;
-            });
-        }
         
-        /// <summary>
-        /// Gets the type name by id for specific platform.
-        /// </summary>
-        /// <param name="id">The identifier.</param>
-        /// <param name="platformId">Platform identifier.</param>
-        /// <param name="errorFunc">Error handler.</param>
-        /// <returns>Type or null.</returns>
-        private string GetTypeName(int id, byte platformId, Func<ClientStatusCode, string, string> errorFunc)
+        /** <inheritdoc /> */
+        public string GetTypeName(int id, byte platformId, Func<Exception, string> errorFunc)
         {
             return _socket.DoOutInOp(ClientOp.BinaryTypeNameGet, ctx =>
                 {
                     ctx.Stream.WriteByte(platformId);
                     ctx.Stream.WriteInt(id);
                 },
-                ctx => ctx.Reader.ReadString(), errorFunc);
+                ctx => ctx.Reader.ReadString(),
+                (statusCode, msg) => errorFunc.Invoke(new BinaryObjectException(msg)));
         }
     }
 }

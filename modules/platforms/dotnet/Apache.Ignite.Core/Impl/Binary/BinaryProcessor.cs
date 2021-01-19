@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
 
     /// <summary>
@@ -164,36 +163,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets the type name by id.
-        /// </summary>
-        /// <param name="id">The identifier.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
-        /// <returns>Type or null.</returns>
-        public string GetTypeName(int id, bool registerSameJavaType)
-        {
-            return GetTypeName(id, DotNetPlatformId, ex =>
-            {
-                if (!registerSameJavaType)
-                    throw ex;
-
-                // Try to get java type name and register corresponding DotNet type.
-                var javaTypeName = GetTypeName(id, JavaPlatformId, null);
-                var netTypeName = Marshaller.GetTypeName(javaTypeName);
-
-                RegisterType(id, netTypeName, false);
-
-                return netTypeName;
-            });
-        }
-
-        /// <summary>
         /// Gets the type name by id for specific platform.
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <param name="platformId">Platform identifier.</param>
         /// <param name="errorAction">Error action.</param>
         /// <returns>Type or null.</returns>
-        private string GetTypeName(int id, byte platformId, Func<JavaException, string> errorAction)
+        public string GetTypeName(int id, byte platformId, Func<Exception, string> errorAction)
         {
             return DoOutInOp((int) Op.GetType, w =>
             {

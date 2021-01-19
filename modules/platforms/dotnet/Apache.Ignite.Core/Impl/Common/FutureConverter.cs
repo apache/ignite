@@ -57,6 +57,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public T Convert(IBinaryStream stream)
         {
+            bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
+
             Marshaller.RegisterSameJavaTypeTl.Value = _registerSameJavaType;
 
             try
@@ -67,7 +69,7 @@ namespace Apache.Ignite.Core.Impl.Common
             }
             finally
             {
-                Marshaller.RegisterSameJavaTypeTl.Value = false;
+                Marshaller.RegisterSameJavaTypeTl.Value = locRegisterSameJavaType;
             }
         }
     }

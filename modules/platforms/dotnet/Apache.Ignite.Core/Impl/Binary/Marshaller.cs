@@ -549,7 +549,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (type == null && _ignite != null)
                 {
-                    typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId, RegisterSameJavaType);
+                    typeName = typeName ?? GetTypeName(typeId);
 
                     if (typeName != null)
                     {
@@ -585,6 +585,23 @@ namespace Apache.Ignite.Core.Impl.Binary
             return new BinarySurrogateTypeDescriptor(_cfg, typeId, typeName);
         }
 
+        private string GetTypeName(int typeId)
+        {
+            return _ignite.BinaryProcessor.GetTypeName(typeId, BinaryProcessor.DotNetPlatformId, ex =>
+            {
+                if (!RegisterSameJavaType)
+                    throw new BinaryObjectException(ex.Message, ex);
+
+                // Try to get java type name and register corresponding DotNet type.
+                var javaTypeName = _ignite.BinaryProcessor.GetTypeName(typeId, BinaryProcessor.JavaPlatformId, null);
+                var netTypeName = GetTypeName(javaTypeName);
+
+                _ignite.BinaryProcessor.RegisterType(typeId, netTypeName, false);
+
+                return netTypeName;
+            });
+        }
+
         /// <summary>
         /// Registers the type.
         /// </summary>
@@ -597,7 +614,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var typeName = GetTypeName(type);
             var typeId = GetTypeId(typeName, _cfg.IdMapper);
 
-            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName, _registerSameJavaType);
+            var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, typeName, RegisterSameJavaType);
 
             return AddUserType(type, typeId, typeName, registered, desc);
         }

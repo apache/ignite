@@ -189,7 +189,11 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
 
             var clientEx = (IgniteClientException) ex.GetInnermostException();
 
-            Assert.AreEqual(arg.GetType().FullName, clientEx.Message);
+            var expected = string.Format(
+                "Failed to resolve .NET class '{0}' in Java [platformId=0, typeId=-315989221].",
+                arg.GetType().FullName);
+
+            Assert.AreEqual(expected, clientEx.Message);
         }
 
         /// <summary>
@@ -460,7 +464,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 () => Client.GetCompute().ExecuteJavaTask<object>(
                     ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizableJava));
 
-            var clientEx = (IgniteClientException) ex.GetInnermostException();
+            var clientEx = (BinaryObjectException) ex.GetInnermostException();
 
             Assert.AreEqual("Failed to resolve Java class 'org.apache.ignite.platform.PlatformComputeJavaBinarizable'" +
                             " in .NET [platformId=1, typeId=-422570294].", clientEx.Message);

@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
@@ -215,7 +214,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="inAction">In action.</param>
         /// <param name="errorAction">Error action.</param>
         /// <returns>Result.</returns>
-        protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction, Func<JavaException, TR> errorAction = null)
+        protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction, Func<Exception, TR> errorAction = null)
         {
             return _target.InStreamOutStream(type, stream => WriteToStream(outAction, stream, _marsh), inAction, errorAction);
         }

@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl
 {
     using System;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Interop;
@@ -63,7 +62,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="readAction">Read action.</param>
         /// <param name="errorAction">Error action.</param>
         /// <returns>Result.</returns>
-        T InStreamOutStream<T>(int type, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readAction, Func<JavaException, T> errorAction = null);
+        T InStreamOutStream<T>(int type, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readAction, Func<Exception, T> errorAction = null);
 
         /// <summary>
         /// Performs InStreamOutObject operation.
