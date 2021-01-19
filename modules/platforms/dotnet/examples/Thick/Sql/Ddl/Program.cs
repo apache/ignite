@@ -89,7 +89,7 @@ namespace IgniteExamples.Thick.Sql.Ddl
                 cache.Query(new SqlFieldsQuery("drop table City")).GetAll();
 
                 Console.WriteLine("\n>>> Dropped database objects.");
-             }
+            }
 
             Console.WriteLine();
             Console.WriteLine(">>> Example finished, press any key to exit ...");
