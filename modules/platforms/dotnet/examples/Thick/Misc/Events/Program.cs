@@ -28,7 +28,7 @@ namespace IgniteExamples.Thick.Misc.Events
     using LocalEventListener = IgniteExamples.Shared.Events.LocalEventListener;
 
     /// <summary>
-    /// TODO
+    /// This example demonstrates Ignite events.
     /// </summary>
     public static class Program
     {
