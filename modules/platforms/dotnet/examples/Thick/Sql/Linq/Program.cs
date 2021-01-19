@@ -47,14 +47,19 @@ namespace IgniteExamples.Thick.Sql.Linq
                 Console.WriteLine(">>> Cache LINQ example started.");
 
                 var employeeCache = ignite.GetOrCreateCache<int, Employee>(
-                    new CacheConfiguration(EmployeeCacheName, new QueryEntity(typeof(int), typeof(Employee))));
+                    new CacheConfiguration(
+                        EmployeeCacheName,
+                        new QueryEntity(typeof(int), typeof(Employee))));
 
                 var employeeCacheColocated = ignite.GetOrCreateCache<AffinityKey, Employee>(
-                    new CacheConfiguration(EmployeeCacheNameColocated,
+                    new CacheConfiguration(
+                        EmployeeCacheNameColocated,
                         new QueryEntity(typeof(AffinityKey), typeof(Employee))));
 
                 var organizationCache = ignite.GetOrCreateCache<int, Organization>(
-                    new CacheConfiguration(OrganizationCacheName, new QueryEntity(typeof(int), typeof(Organization))));
+                    new CacheConfiguration(
+                        OrganizationCacheName,
+                        new QueryEntity(typeof(int), typeof(Organization))));
 
                 // Populate cache with sample data entries.
                 PopulateCache(employeeCache);
