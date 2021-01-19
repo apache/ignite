@@ -23,7 +23,7 @@ namespace IgniteExamples.Shared.Events
     /// <summary>
     /// Local event listener.
     /// </summary>
-    public class LocalListener : IEventListener<IEvent>
+    public class LocalEventListener : IEventListener<IEvent>
     {
         /** Count of received events. */
         private int _eventsReceived;

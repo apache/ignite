@@ -17,31 +17,23 @@
 namespace IgniteExamples.Shared.Messaging
 {
     using System;
-    using System.Threading;
+    using Apache.Ignite.Core;
     using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Resource;
 
     /// <summary>
-    /// Local message listener which signals countdown event on each received message.
+    /// Listener for Unordered topic.
     /// </summary>
-    public class LocalListener : IMessageListener<int>
+    public class RemoteUnorderedMessageListener : IMessageListener<int>
     {
-        /** Countdown event. */
-        private readonly CountdownEvent _countdown;
+        /** Injected Ignite instance. */
+        [InstanceResource]
+#pragma warning disable 649
+        private readonly IIgnite _ignite;
+#pragma warning restore 649
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="LocalListener"/> class.
-        /// </summary>
-        /// <param name="countdown">The countdown event.</param>
-        public LocalListener(CountdownEvent countdown)
-        {
-            if (countdown == null)
-                throw new ArgumentNullException("countdown");
-
-            _countdown = countdown;
-        }
-
-        /// <summary>
-        /// Receives a message and returns a value 
+        /// Receives a message and returns a value
         /// indicating whether provided message and node id satisfy this predicate.
         /// Returning false will unsubscribe this listener from future notifications.
         /// </summary>
@@ -50,9 +42,11 @@ namespace IgniteExamples.Shared.Messaging
         /// <returns>Value indicating whether provided message and node id satisfy this predicate.</returns>
         public bool Invoke(Guid nodeId, int message)
         {
-            _countdown.Signal();
+            Console.WriteLine("Received unordered message [msg={0}, fromNodeId={1}]", message, nodeId);
 
-            return !_countdown.IsSet;
+            _ignite.GetCluster().ForNodeIds(nodeId).GetMessaging().Send(message, Topic.Unordered);
+
+            return true;
         }
     }
 }

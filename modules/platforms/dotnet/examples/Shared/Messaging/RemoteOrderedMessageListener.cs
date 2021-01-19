@@ -22,9 +22,9 @@ namespace IgniteExamples.Shared.Messaging
     using Apache.Ignite.Core.Resource;
 
     /// <summary>
-    /// Listener for Unordered topic.
+    /// Listener for Ordered topic.
     /// </summary>
-    public class RemoteUnorderedListener : IMessageListener<int>
+    public class RemoteOrderedMessageListener : IMessageListener<int>
     {
         /** Injected Ignite instance. */
         [InstanceResource]
@@ -33,7 +33,7 @@ namespace IgniteExamples.Shared.Messaging
 #pragma warning restore 649
 
         /// <summary>
-        /// Receives a message and returns a value 
+        /// Receives a message and returns a value
         /// indicating whether provided message and node id satisfy this predicate.
         /// Returning false will unsubscribe this listener from future notifications.
         /// </summary>
@@ -42,9 +42,9 @@ namespace IgniteExamples.Shared.Messaging
         /// <returns>Value indicating whether provided message and node id satisfy this predicate.</returns>
         public bool Invoke(Guid nodeId, int message)
         {
-            Console.WriteLine("Received unordered message [msg={0}, fromNodeId={1}]", message, nodeId);
+            Console.WriteLine("Received ordered message [msg={0}, fromNodeId={1}]", message, nodeId);
 
-            _ignite.GetCluster().ForNodeIds(nodeId).GetMessaging().Send(message, Topic.Unordered);
+            _ignite.GetCluster().ForNodeIds(nodeId).GetMessaging().Send(message, Topic.Ordered);
 
             return true;
         }

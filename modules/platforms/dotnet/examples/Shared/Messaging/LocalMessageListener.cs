@@ -17,23 +17,31 @@
 namespace IgniteExamples.Shared.Messaging
 {
     using System;
-    using Apache.Ignite.Core;
+    using System.Threading;
     using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.Resource;
 
     /// <summary>
-    /// Listener for Ordered topic.
+    /// Local message listener which signals countdown event on each received message.
     /// </summary>
-    public class RemoteOrderedListener : IMessageListener<int>
+    public class LocalMessageListener : IMessageListener<int>
     {
-        /** Injected Ignite instance. */
-        [InstanceResource]
-#pragma warning disable 649
-        private readonly IIgnite _ignite;
-#pragma warning restore 649
+        /** Countdown event. */
+        private readonly CountdownEvent _countdown;
 
         /// <summary>
-        /// Receives a message and returns a value 
+        /// Initializes a new instance of the <see cref="LocalMessageListener"/> class.
+        /// </summary>
+        /// <param name="countdown">The countdown event.</param>
+        public LocalMessageListener(CountdownEvent countdown)
+        {
+            if (countdown == null)
+                throw new ArgumentNullException("countdown");
+
+            _countdown = countdown;
+        }
+
+        /// <summary>
+        /// Receives a message and returns a value
         /// indicating whether provided message and node id satisfy this predicate.
         /// Returning false will unsubscribe this listener from future notifications.
         /// </summary>
@@ -42,11 +50,9 @@ namespace IgniteExamples.Shared.Messaging
         /// <returns>Value indicating whether provided message and node id satisfy this predicate.</returns>
         public bool Invoke(Guid nodeId, int message)
         {
-            Console.WriteLine("Received ordered message [msg={0}, fromNodeId={1}]", message, nodeId);
+            _countdown.Signal();
 
-            _ignite.GetCluster().ForNodeIds(nodeId).GetMessaging().Send(message, Topic.Ordered);
-
-            return true;
+            return !_countdown.IsSet;
         }
     }
 }
