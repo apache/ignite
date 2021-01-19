@@ -119,7 +119,7 @@ public class IgniteIndexing implements IndexingSpi {
 
     /** {@inheritDoc} */
     @Override public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException {
-        throw new IgniteSpiException("Not implemented.");
+        // No-op.
     }
 
     /** {@inheritDoc} */

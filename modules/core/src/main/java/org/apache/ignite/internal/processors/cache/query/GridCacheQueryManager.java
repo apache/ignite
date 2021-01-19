@@ -434,6 +434,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             // val may be null if we have no previous value. We should not call processor in this case.
             if (prevRow != null)
                 qryProc.remove(cctx, prevRow);
+            else {
+                // Removing by key is meaningless, but save this for backward compatibility.
+                Object key0 = unwrapIfNeeded(key, cctx.cacheObjectContext());
+
+                cctx.kernalContext().indexing().remove(cacheName, key0);
+            }
         }
         finally {
             invalidateResultCache();

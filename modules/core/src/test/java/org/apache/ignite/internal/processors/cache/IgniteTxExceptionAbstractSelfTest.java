@@ -29,6 +29,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.index.IgniteIndexing;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,10 +39,8 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
@@ -676,7 +675,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     /**
      * Indexing SPI that can fail on demand.
      */
-    private static class TestIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
+    private static class TestIndexingSpi extends IgniteIndexing {
         /** Fail flag. */
         private static volatile boolean fail;
 
@@ -701,6 +700,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 throw new IgniteSpiException("Test exception.");
             }
+            super.store(cctx, newRow, prevRow, prevRowAvailable);
         }
 
         /** {@inheritDoc} */
@@ -714,13 +714,13 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-            // No-op.
-        }
+        @Override public void remove(String cacheName, @Nullable CacheDataRow prevRow)
+            throws IgniteSpiException {
+            if (fail) {
+                fail = false;
 
-        /** {@inheritDoc} */
-        @Override public void spiStop() throws IgniteSpiException {
-            // No-op.
+                throw new IgniteSpiException("Test exception.");
+            }
         }
     }
 }

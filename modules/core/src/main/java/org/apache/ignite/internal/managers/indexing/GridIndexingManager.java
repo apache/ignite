@@ -265,6 +265,26 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
 
     /**
      * @param cacheName Cache name.
+     * @param key Key.
+     * @throws IgniteCheckedException Thrown in case of any errors.
+     */
+    public void remove(String cacheName, Object key) throws IgniteCheckedException {
+        assert key != null;
+        assert enabled();
+
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to remove from index (grid is stopping).");
+
+        try {
+            getSpi().remove(cacheName, key);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param cacheName Cache name.
      * @param params Parameters collection.
      * @param filters Filters.
      * @return Query result.
