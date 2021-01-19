@@ -76,7 +76,7 @@ import org.apache.ignite.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.wal.record.PageSnapshot;
 import org.apache.ignite.wal.record.TxRecord;
 import org.apache.ignite.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.delta.PageDeltaRecord;
+import org.apache.ignite.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;

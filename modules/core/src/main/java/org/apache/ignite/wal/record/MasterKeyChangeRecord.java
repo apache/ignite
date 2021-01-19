@@ -19,7 +19,6 @@ package org.apache.ignite.wal.record;
 
 import java.util.Map;
 import java.util.Map.Entry;
-import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 import static org.apache.ignite.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
 
@@ -29,7 +28,6 @@ import static org.apache.ignite.wal.record.WALRecord.RecordType.MASTER_KEY_CHANG
  * @deprecated Replaced by MasterKeyChangeRecordV2.
  */
 @Deprecated
-@IgniteEvolvingAPI
 public class MasterKeyChangeRecord extends WALRecord {
     /** Master key name. */
     private final String masterKeyName;

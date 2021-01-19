@@ -29,7 +29,7 @@ import org.apache.ignite.wal.record.CheckpointRecord;
 import org.apache.ignite.wal.record.MetastoreDataRecord;
 import org.apache.ignite.wal.record.PageSnapshot;
 import org.apache.ignite.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.delta.PartitionMetaStateRecord;
+import org.apache.ignite.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.wal.WALPointer;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.junit.Test;

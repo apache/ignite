@@ -43,7 +43,7 @@ import org.apache.ignite.wal.record.SnapshotRecord;
 import org.apache.ignite.wal.record.TxRecord;
 import org.apache.ignite.wal.record.WALRecord;
 import org.apache.ignite.wal.record.WALRecord.RecordType;
-import org.apache.ignite.internal.pagemem.wal.delta.TrackingPageRepairDeltaRecord;
+import org.apache.ignite.wal.record.delta.TrackingPageRepairDeltaRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;

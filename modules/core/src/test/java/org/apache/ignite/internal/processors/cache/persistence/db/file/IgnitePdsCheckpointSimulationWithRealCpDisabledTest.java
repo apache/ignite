@@ -59,7 +59,7 @@ import org.apache.ignite.wal.record.MvccDataEntry;
 import org.apache.ignite.wal.record.MvccDataRecord;
 import org.apache.ignite.wal.record.PageSnapshot;
 import org.apache.ignite.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.delta.PartitionMetaStateRecord;
+import org.apache.ignite.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
