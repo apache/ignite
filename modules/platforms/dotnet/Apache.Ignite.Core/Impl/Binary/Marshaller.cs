@@ -595,7 +595,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     // Try to get java type name and register corresponding DotNet type.
                     var javaTypeName =
-                        _ignite.BinaryProcessor.GetTypeName(typeId, BinaryProcessor.JavaPlatformId, null);
+                        _ignite.BinaryProcessor.GetTypeName(typeId, BinaryProcessor.JavaPlatformId);
                     var netTypeName = GetTypeName(javaTypeName);
 
                     _ignite.BinaryProcessor.RegisterType(typeId, netTypeName, false);
