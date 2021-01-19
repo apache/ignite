@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.lang.IgniteEvolvingAPI;
 import org.apache.ignite.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -28,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Checkpoint (begin) record
  */
+@IgniteEvolvingAPI
 public class CheckpointRecord extends WALRecord {
     /** Checkpoint ID. */
     private UUID cpId;

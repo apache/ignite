@@ -18,6 +18,7 @@
 package org.apache.ignite.wal;
 
 import java.util.Optional;
+import org.apache.ignite.lang.IgniteEvolvingAPI;
 import org.apache.ignite.wal.record.WALRecord;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -25,6 +26,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 /**
  *
  */
+@IgniteEvolvingAPI
 public interface WALIterator extends GridCloseableIterator<IgniteBiTuple<WALPointer, WALRecord>> {
     /**
      * @return Pointer of last read valid record. Empty if no records were read.

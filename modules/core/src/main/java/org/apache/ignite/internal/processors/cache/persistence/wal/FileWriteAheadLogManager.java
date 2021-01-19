@@ -78,7 +78,7 @@ import org.apache.ignite.wal.record.PageSnapshot;
 import org.apache.ignite.wal.record.RolloverType;
 import org.apache.ignite.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.wal.record.WALRecord;
-import org.apache.ignite.wal.record.delta.PageDeltaRecord;
+import org.apache.ignite.internal.pagemem.wal.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;

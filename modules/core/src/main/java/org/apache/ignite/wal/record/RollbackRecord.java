@@ -19,10 +19,12 @@ package org.apache.ignite.wal.record;
 
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Rollback record. Used to close gap in partition update sequence on tx rollback.
  */
+@IgniteEvolvingAPI
 public class RollbackRecord extends WALRecord {
     /** Cache ID. */
     @GridToStringInclude

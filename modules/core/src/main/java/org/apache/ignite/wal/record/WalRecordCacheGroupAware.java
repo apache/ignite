@@ -17,9 +17,12 @@
 
 package org.apache.ignite.wal.record;
 
+import org.apache.ignite.lang.IgniteEvolvingAPI;
+
 /**
  * WAL record related to specific cache group.
  */
+@IgniteEvolvingAPI
 public interface WalRecordCacheGroupAware {
     /**
      * @return Cache group ID.

@@ -18,10 +18,12 @@
 package org.apache.ignite.wal.record;
 
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Interface for Data Entry record that was not converted to key, value pair during record deserialization.
  */
+@IgniteEvolvingAPI
 public interface MarshalledDataEntry {
     /**
      * @return Data Entry Key type code. See {@link CacheObject} for built-in value type codes.

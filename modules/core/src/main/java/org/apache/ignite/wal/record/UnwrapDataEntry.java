@@ -25,10 +25,12 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Data Entry for automatic unwrapping key and value from Data Entry
  */
+@IgniteEvolvingAPI
 public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
     /** Cache object value context. Context is used for unwrapping objects. */
     private final CacheObjectValueContext cacheObjValCtx;

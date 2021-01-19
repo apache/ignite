@@ -17,12 +17,14 @@
 package org.apache.ignite.wal.record;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.lang.IgniteEvolvingAPI;
 import org.apache.ignite.wal.WALPointer;
 
 /**
  * Special type of WAL record. Shouldn't be stored in file.
  * Contains complete binary representation of record in {@link #buf} and record position in {@link #pos}.
  */
+@IgniteEvolvingAPI
 public class MarshalledRecord extends WALRecord {
     /** Type of marshalled record. */
     private WALRecord.RecordType type;

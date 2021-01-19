@@ -18,10 +18,12 @@
 package org.apache.ignite.wal.record;
 
 import java.util.Map;
+import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Logical record to restart reencryption with the latest encryption key.
  */
+@IgniteEvolvingAPI
 public class ReencryptionStartRecord extends WALRecord {
     /** Map of reencrypted cache groups with encryption key identifiers. */
     private final Map<Integer, Byte> grps;

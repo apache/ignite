@@ -17,9 +17,12 @@
 
 package org.apache.ignite.wal.record;
 
+import org.apache.ignite.lang.IgniteEvolvingAPI;
+
 /**
  * Record is needed to mark end of segment.
  */
+@IgniteEvolvingAPI
 public class SwitchSegmentRecord extends WALRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {

@@ -18,10 +18,12 @@
 package org.apache.ignite.wal.record;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Partition map exchange WAL record.
  */
+@IgniteEvolvingAPI
 public class ExchangeRecord extends TimeStampRecord {
     /** Event. */
     private Short constId;
@@ -72,6 +74,7 @@ public class ExchangeRecord extends TimeStampRecord {
     /**
      *
      */
+    @IgniteEvolvingAPI
     public enum Type {
         /** Join. */
         JOIN,

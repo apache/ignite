@@ -20,11 +20,13 @@ package org.apache.ignite.wal.record;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteEvolvingAPI;
 
 /**
  * Base class for records with timeStamp.
  * All records which support timeStamp should be inherited from {@code TimeStampRecord}.
  */
+@IgniteEvolvingAPI
 public abstract class TimeStampRecord extends WALRecord {
     /** Timestamp. */
     @GridToStringInclude
